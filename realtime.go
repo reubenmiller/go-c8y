@@ -1,4 +1,4 @@
-package realtime
+package c8y
 
 import (
 	"encoding/base64"
@@ -26,7 +26,7 @@ const (
 )
 
 // Client allows connecting to a Bayeux server and subscribing to channels.
-type Client struct {
+type RealtimeClient struct {
 	mtx           sync.RWMutex
 	url           *url.URL
 	clientID      string
@@ -125,7 +125,7 @@ func getRealtimURL(host string) *url.URL {
 
 // NewClient initialises a new Bayeux client. By default `http.DefaultClient`
 // is used for HTTP connections.
-func NewClient(host string, wsDialer *websocket.Dialer, tenant, username, password string) *Client {
+func NewRealtimeClient(host string, wsDialer *websocket.Dialer, tenant, username, password string) *RealtimeClient {
 	if wsDialer == nil {
 		wsDialer = &websocket.Dialer{
 			Proxy:             http.ProxyFromEnvironment,
@@ -137,7 +137,7 @@ func NewClient(host string, wsDialer *websocket.Dialer, tenant, username, passwo
 	// Convert url to a websocket
 	websocketURL := getRealtimURL(host)
 
-	return &Client{
+	return &RealtimeClient{
 		url:       websocketURL,
 		dialer:    wsDialer,
 		messages:  make(chan *Message, 100),
@@ -151,13 +151,13 @@ func NewClient(host string, wsDialer *websocket.Dialer, tenant, username, passwo
 
 // Connect performs a handshake with the server and will repeatedly initiate a
 // websocket connection until `Close` is called on the client.
-func (c *Client) Connect() error {
+func (c *RealtimeClient) Connect() error {
 	return c.connect()
 }
 
 // Close notifies the Bayeux server of the intent to disconnect and terminates
 // the background polling loop.
-func (c *Client) Close() error {
+func (c *RealtimeClient) Close() error {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 	c.tomb.Killf("Close")
@@ -165,7 +165,7 @@ func (c *Client) Close() error {
 	return c.disconnect()
 }
 
-func (c *Client) disconnect() error {
+func (c *RealtimeClient) disconnect() error {
 	message := &request{
 		Channel:  "/meta/disconnect",
 		ClientID: c.clientID,
@@ -181,7 +181,7 @@ func (c *Client) disconnect() error {
 }
 
 // WaitForConnection wait for the connection to be estabilished before returning
-func (c *Client) WaitForConnection() error {
+func (c *RealtimeClient) WaitForConnection() error {
 	for c.connected == false {
 		time.Sleep(100 * time.Millisecond)
 	}
@@ -189,7 +189,7 @@ func (c *Client) WaitForConnection() error {
 }
 
 // StartWebsocket opens a websocket to cumulocity
-func (c *Client) connect() error {
+func (c *RealtimeClient) connect() error {
 	dialer := websocket.Dialer{
 		Proxy:             http.ProxyFromEnvironment,
 		HandshakeTimeout:  10 * time.Second,
@@ -213,7 +213,7 @@ func (c *Client) connect() error {
 	return nil
 }
 
-func (c *Client) worker() error {
+func (c *RealtimeClient) worker() error {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 	done := make(chan struct{})
@@ -287,7 +287,7 @@ func (c *Client) worker() error {
 	}
 }
 
-func (c *Client) handshake() error {
+func (c *RealtimeClient) handshake() error {
 	handshakeMessage := &request{
 		Channel:                  "/meta/handshake",
 		Version:                  VERSION,
@@ -303,7 +303,7 @@ func (c *Client) handshake() error {
 	return c.writeJSON(handshakeMessage)
 }
 
-func (c *Client) sendMetaConnect() error {
+func (c *RealtimeClient) sendMetaConnect() error {
 	if c.ws == nil {
 		return fmt.Errorf("Websocket is nil")
 	}
@@ -330,7 +330,7 @@ const (
 )
 
 // Subscribe setup a subscription to
-func (c *Client) Subscribe(pattern string, out chan<- *Message) error {
+func (c *RealtimeClient) Subscribe(pattern string, out chan<- *Message) error {
 	fmt.Println("Subscribing to ", pattern)
 
 	glob, err := ohmyglob.Compile(pattern, nil)
@@ -358,6 +358,6 @@ func (c *Client) Subscribe(pattern string, out chan<- *Message) error {
 	return err
 }
 
-func (c *Client) writeJSON(r *request) error {
+func (c *RealtimeClient) writeJSON(r *request) error {
 	return c.ws.WriteJSON([]request{*r})
 }

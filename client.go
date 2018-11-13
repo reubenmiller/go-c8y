@@ -13,11 +13,8 @@ import (
 	"strings"
 	"sync"
 
-	"bitbucket.org/reubenmiller/go-c8y/realtime"
-
 	"github.com/fatih/color"
 	"github.com/google/go-querystring/query"
-	"github.com/gorilla/websocket"
 )
 
 type service struct {
@@ -29,7 +26,7 @@ type Client struct {
 	clientMu sync.Mutex   // clientMu protects the client during calls that modify the CheckRedirect func.
 	client   *http.Client // HTTP client used to communicate with the API.
 
-	Realtime *realtime.Client
+	Realtime *RealtimeClient
 
 	// Base URL for API requests. Defaults to the public GitHub API, but can be
 	// set to a domain endpoint to use with GitHub Enterprise. BaseURL should
@@ -71,11 +68,6 @@ const (
 	defaultUserAgent = "go-client"
 )
 
-// NewRealtimeClient returns a new Cumulocity Realtime Client which uses websockets for communication.
-func NewRealtimeClient(host string, wsDialer *websocket.Dialer, tenant, username, password string) *realtime.Client {
-	return realtime.NewClient(host, wsDialer, tenant, username, password)
-}
-
 // NewClient returns a new Cumulocity API client. If a nil httpClient is
 // provided, http.DefaultClient will be used. To use API methods which require
 // authentication, provide an http.Client that will perform the authentication
@@ -93,7 +85,7 @@ func NewClient(httpClient *http.Client, baseURL string, username string, passwor
 		tenantName = usernameParts[0]
 	}
 
-	realtimeClient := realtime.NewClient(targetBaseURL.String(), nil, tenantName, username, password)
+	realtimeClient := NewRealtimeClient(targetBaseURL.String(), nil, tenantName, username, password)
 
 	userAgent := defaultUserAgent
 
