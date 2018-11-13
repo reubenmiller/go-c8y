@@ -81,12 +81,16 @@ func NewClient(httpClient *http.Client, baseURL string, username string, passwor
 	usernameParts := strings.Split(username, "/")
 
 	var tenantName string
+	var usernameWithoutTenant string
 	if len(usernameParts) == 2 {
 		tenantName = usernameParts[0]
+		usernameWithoutTenant = usernameParts[1]
+	} else {
+		usernameWithoutTenant = username
 	}
 
 	fmt.Printf("Creating realtime client %s\n", baseURL)
-	realtimeClient := NewRealtimeClient(baseURL, nil, tenantName, username, password)
+	realtimeClient := NewRealtimeClient(baseURL, nil, tenantName, usernameWithoutTenant, password)
 
 	userAgent := defaultUserAgent
 
