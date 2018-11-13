@@ -17,6 +17,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/google/go-querystring/query"
+	"github.com/gorilla/websocket"
 )
 
 type service struct {
@@ -66,12 +67,16 @@ type Client struct {
 	Identity    *IdentityService
 }
 
-
 const (
 	defaultUserAgent = "go-client"
 )
 
-// NewClient returns a new GitHub API client. If a nil httpClient is
+// NewRealtimeClient returns a new Cumulocity Realtime Client which uses websockets for communication.
+func NewRealtimeClient(host string, wsDialer *websocket.Dialer, tenant, username, password string) *realtime.Client {
+	return realtime.NewClient(host, wsDialer, tenant, username, password)
+}
+
+// NewClient returns a new Cumulocity API client. If a nil httpClient is
 // provided, http.DefaultClient will be used. To use API methods which require
 // authentication, provide an http.Client that will perform the authentication
 // for you (such as that provided by the golang.org/x/oauth2 library).
@@ -96,7 +101,7 @@ func NewClient(httpClient *http.Client, baseURL string, username string, passwor
 		client:         httpClient,
 		BaseURL:        targetBaseURL,
 		UserAgent:      userAgent,
-		Realtime: 		realtimeClient,
+		Realtime:       realtimeClient,
 		Username:       username,
 		Password:       password,
 		TenantName:     tenantName,
