@@ -1,4 +1,4 @@
-package go-c8y
+package c8y
 
 // Statistics statistics about the returned rest response
 type Statistics struct {

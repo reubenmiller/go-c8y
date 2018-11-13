@@ -1,4 +1,4 @@
-package go-c8y
+package c8y
 
 import (
 	"bytes"
@@ -13,6 +13,8 @@ import (
 	"strings"
 	"sync"
 
+	"bitbucket.org/reubenmiller/go-c8y/realtime"
+
 	"github.com/fatih/color"
 	"github.com/google/go-querystring/query"
 )
@@ -25,6 +27,8 @@ type service struct {
 type Client struct {
 	clientMu sync.Mutex   // clientMu protects the client during calls that modify the CheckRedirect func.
 	client   *http.Client // HTTP client used to communicate with the API.
+
+	Realtime *realtime.Client
 
 	// Base URL for API requests. Defaults to the public GitHub API, but can be
 	// set to a domain endpoint to use with GitHub Enterprise. BaseURL should
@@ -62,17 +66,6 @@ type Client struct {
 	Identity    *IdentityService
 }
 
-// Client is an example of the c8y client
-/* type Client struct {
-	BaseURL   *url.URL
-	UserAgent string
-
-	httpClient *http.Client
-
-	common service
-
-	Measurement *MeasurementService
-} */
 
 const (
 	defaultUserAgent = "go-client"
@@ -95,12 +88,15 @@ func NewClient(httpClient *http.Client, baseURL string, username string, passwor
 		tenantName = usernameParts[0]
 	}
 
+	realtimeClient := realtime.NewClient(targetBaseURL.String(), nil, tenantName, username, password)
+
 	userAgent := defaultUserAgent
 
 	c := &Client{
 		client:         httpClient,
 		BaseURL:        targetBaseURL,
 		UserAgent:      userAgent,
+		Realtime: 		realtimeClient,
 		Username:       username,
 		Password:       password,
 		TenantName:     tenantName,

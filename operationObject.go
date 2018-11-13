@@ -1,4 +1,4 @@
-package go-c8y
+package c8y
 
 // Operation todo
 type Operation struct {

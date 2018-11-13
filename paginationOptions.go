@@ -1,4 +1,4 @@
-package go-c8y
+package c8y
 
 // PaginationOptions is the cumulocity pagination options
 type PaginationOptions struct {
