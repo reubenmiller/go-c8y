@@ -85,7 +85,8 @@ func NewClient(httpClient *http.Client, baseURL string, username string, passwor
 		tenantName = usernameParts[0]
 	}
 
-	realtimeClient := NewRealtimeClient(targetBaseURL.String(), nil, tenantName, username, password)
+	fmt.Printf("Creating realtime client %s\n", baseURL)
+	realtimeClient := NewRealtimeClient(baseURL, nil, tenantName, username, password)
 
 	userAgent := defaultUserAgent
 
