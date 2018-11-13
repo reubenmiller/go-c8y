@@ -241,6 +241,8 @@ func (c *RealtimeClient) worker() error {
 						c.connected = true
 						c.mtx.Unlock()
 						fmt.Printf("Detected clientID: %s\n", message.ClientID)
+					} else {
+						fmt.Printf("No clientID present in handshake. %s\n", message)
 					}
 
 				case "/meta/subscribe":
