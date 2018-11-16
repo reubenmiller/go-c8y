@@ -193,7 +193,7 @@ func (c *Client) NewRequest(method, path string, query string, body interface{})
 
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgent)
-	req.Header.Set("X-NX-APPLICATION", "nx-nif-quality-gate")
+	req.Header.Set("X-APPLICATION", "go-client")
 	return req, nil
 }
 
@@ -433,30 +433,5 @@ func CheckResponse(r *http.Response) error {
 	if err == nil && data != nil {
 		json.Unmarshal(data, errorResponse)
 	}
-	switch {
-	/* case r.StatusCode == http.StatusUnauthorized && strings.HasPrefix(r.Header.Get(headerOTP), "required"):
-	return (*TwoFactorAuthError)(errorResponse) */
-	/* case r.StatusCode == http.StatusForbidden && r.Header.Get(headerRateRemaining) == "0" && strings.HasPrefix(errorResponse.Message, "API rate limit exceeded for "):
-	return &RateLimitError{
-		Rate:     parseRate(r),
-		Response: errorResponse.Response,
-		Message:  errorResponse.Message,
-	} */
-	/* case r.StatusCode == http.StatusForbidden && strings.HasSuffix(errorResponse.DocumentationURL, "/v3/#abuse-rate-limits"):
-	abuseRateLimitError := &AbuseRateLimitError{
-		Response: errorResponse.Response,
-		Message:  errorResponse.Message,
-	}
-	if v := r.Header["Retry-After"]; len(v) > 0 {
-		// According to GitHub support, the "Retry-After" header value will be
-		// an integer which represents the number of seconds that one should
-		// wait before resuming making requests.
-		retryAfterSeconds, _ := strconv.ParseInt(v[0], 10, 64) // Error handling is noop.
-		retryAfter := time.Duration(retryAfterSeconds) * time.Second
-		abuseRateLimitError.RetryAfter = &retryAfter
-	}
-	return abuseRateLimitError */
-	default:
-		return errorResponse
-	}
+	return errorResponse
 }
