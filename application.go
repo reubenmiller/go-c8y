@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"strings"
+
+	"github.com/tidwall/gjson"
 )
 
 // ApplicationService does something
@@ -21,6 +23,8 @@ type Application struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
 	Self string `json:"self"`
+
+	Item gjson.Result
 }
 
 // ApplicationCollection todo
@@ -28,6 +32,8 @@ type ApplicationCollection struct {
 	*BaseResponse
 
 	Applications []Application `json:"applications"`
+
+	Items []gjson.Result
 }
 
 // getApplicationData todo
@@ -74,6 +80,8 @@ func (s *ApplicationService) GetApplicationCollectionByName(ctx context.Context,
 		return nil, nil, err
 	}
 
+	data.Items = resp.JSON.Get("applications").Array()
+
 	return data, resp, nil
 }
 
@@ -86,6 +94,8 @@ func (s *ApplicationService) GetApplicationCollectionByOwner(ctx context.Context
 	if err != nil {
 		return nil, nil, err
 	}
+
+	data.Items = resp.JSON.Get("applications").Array()
 
 	return data, resp, nil
 }
@@ -100,6 +110,8 @@ func (s *ApplicationService) GetApplicationCollectionByTenant(ctx context.Contex
 		return nil, nil, err
 	}
 
+	data.Items = resp.JSON.Get("applications").Array()
+
 	return data, resp, nil
 }
 
@@ -113,6 +125,8 @@ func (s *ApplicationService) GetApplicationCollectionByID(ctx context.Context, I
 		return nil, nil, err
 	}
 
+	data.Items = resp.JSON.Get("applications").Array()
+
 	return data, resp, nil
 }
 
@@ -123,6 +137,8 @@ func (s *ApplicationService) GetApplicationCollection(ctx context.Context, opt *
 	if err != nil {
 		return nil, nil, err
 	}
+
+	data.Items = resp.JSON.Get("applications").Array()
 
 	return data, resp, nil
 }

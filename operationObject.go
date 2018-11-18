@@ -1,5 +1,7 @@
 package c8y
 
+import "github.com/tidwall/gjson"
+
 // Operation todo
 type Operation struct {
 	ID           string    `json:"id"`
@@ -11,4 +13,6 @@ type Operation struct {
 	Description  string    `json:"description"`
 	Self         string    `json:"self"`
 	EventID      string    `json:"eventId"`
+
+	Item gjson.Result
 }

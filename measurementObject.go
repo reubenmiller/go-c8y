@@ -1,5 +1,7 @@
 package c8y
 
+import "github.com/tidwall/gjson"
+
 // MeasurementObject todo
 type MeasurementObject struct {
 	ID     string `json:"id"`
@@ -11,4 +13,6 @@ type MeasurementObject struct {
 	Self string `json:"self"`
 	// Time string `json:"time"`
 	Time Timestamp `json:"time"`
+
+	Item gjson.Result
 }

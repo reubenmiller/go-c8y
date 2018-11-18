@@ -3,7 +3,8 @@ package c8y
 import (
 	"context"
 	"fmt"
-	"log"
+
+	"github.com/tidwall/gjson"
 )
 
 // OperationService todo
@@ -27,6 +28,8 @@ type OperationCollection struct {
 	*BaseResponse
 
 	Operations []Operation `json:"operations"`
+
+	Items []gjson.Result
 }
 
 // OperationStatus todo
@@ -73,20 +76,16 @@ func (s *OperationService) GetOperationCollection(ctx context.Context, opt *Oper
 		return nil, nil, err
 	}
 
-	opCol := new(OperationCollection)
+	data := new(OperationCollection)
 
-	resp, err := s.client.Do(ctx, req, opCol)
+	resp, err := s.client.Do(ctx, req, data)
 	if err != nil {
 		return nil, resp, err
 	}
 
-	if opt.PaginationOptions.WithTotalPages == true {
-		log.Printf("Total operations: %d\n", *opCol.Statistics.TotalPages)
-	} else {
-		log.Printf("Total operations: %d\n", len(opCol.Operations))
-	}
+	data.Items = resp.JSON.Get("operations").Array()
 
-	return opCol, resp, nil
+	return data, resp, nil
 }
 
 // UpdateOperation updates a Cumulocity operation
@@ -98,12 +97,14 @@ func (s *OperationService) UpdateOperation(ctx context.Context, ID string, body 
 		return nil, nil, err
 	}
 
-	opCol := new(Operation)
+	data := new(Operation)
 
-	resp, err := s.client.Do(ctx, req, opCol)
+	resp, err := s.client.Do(ctx, req, data)
 	if err != nil {
 		return nil, resp, err
 	}
 
-	return opCol, resp, nil
+	data.Item = *resp.JSON
+
+	return data, resp, nil
 }

@@ -3,7 +3,8 @@ package c8y
 import (
 	"context"
 	"fmt"
-	"log"
+
+	"github.com/tidwall/gjson"
 )
 
 // InventoryService responsible for all inventory api calls
@@ -50,6 +51,7 @@ type ManagedObject struct {
 	Kpi              Kpi                `json:"c8y_Kpi,omitempty"`
 	C8yIsDevice      DeviceFragment     `json:"c8y_IsDevice,omitempty"`
 	C8yConfiguration AgentConfiguration `json:"c8y_Configuration,omitempty"`
+	Item             gjson.Result
 }
 
 // Kpi is the Data Point Library fragment
@@ -75,11 +77,17 @@ type ManagedObjectCollection struct {
 	*BaseResponse
 
 	ManagedObjects []ManagedObject `json:"managedObjects"`
+	Items          []gjson.Result
 }
 
 // SupportedSeries is a list of the supported series in the format of <fragment>.<series>
 type SupportedSeries struct {
 	SupportedSeries []string `json:"c8y_SupportedSeries"`
+}
+
+// SupportedMeasurements is a list of measurement fragments for the given device
+type SupportedMeasurements struct {
+	SupportedMeasurements []string `json:"c8y_SupportedMeasurements"`
 }
 
 // ManagedObjectReferencesCollection Managed object references
@@ -95,12 +103,12 @@ type ManagedObjectReference struct {
 }
 
 // GetDevices returns the c8y device managed objects. These are the objects with the fragment "c8y_IsDevice"
-func (s *InventoryService) GetDevices(ctx context.Context, paging PaginationOptions) (*ManagedObjectCollection, *Response, error) {
+func (s *InventoryService) GetDevices(ctx context.Context, paging *PaginationOptions) (*ManagedObjectCollection, *Response, error) {
 	u := fmt.Sprintf("inventory/managedObjects")
 
 	opt := &ManagedObjectOptions{
 		FragmentType:      "c8y_IsDevice",
-		PaginationOptions: paging,
+		PaginationOptions: *paging,
 	}
 
 	queryParams, err := addOptions("", opt)
@@ -109,6 +117,7 @@ func (s *InventoryService) GetDevices(ctx context.Context, paging PaginationOpti
 	}
 
 	req, err := s.client.NewRequest("GET", u, queryParams, nil)
+
 	if err != nil {
 		return nil, nil, err
 	}
@@ -119,6 +128,8 @@ func (s *InventoryService) GetDevices(ctx context.Context, paging PaginationOpti
 	if err != nil {
 		return nil, resp, err
 	}
+
+	data.Items = resp.JSON.Get("managedObjects").Array()
 
 	return data, resp, nil
 }
@@ -150,6 +161,8 @@ func (s *InventoryService) GetManagedObject(ctx context.Context, ID string, opt 
 		return nil, resp, err
 	}
 
+	data.Item = *resp.JSON
+
 	return data, resp, nil
 }
 
@@ -174,6 +187,8 @@ func (s *InventoryService) GetManagedObjectCollection(ctx context.Context, opt *
 		return nil, resp, err
 	}
 
+	data.Items = resp.JSON.Get("managedObjects").Array()
+
 	return data, resp, nil
 }
 
@@ -193,7 +208,24 @@ func (s *InventoryService) GetSupportedSeries(ctx context.Context, id string) (*
 		return nil, resp, err
 	}
 
-	log.Printf("Total count: %d\n", len(data.SupportedSeries))
+	return data, resp, nil
+}
+
+// GetSupportedMeasurements returns the supported measurements for a given device
+func (s *InventoryService) GetSupportedMeasurements(ctx context.Context, id string) (*SupportedMeasurements, *Response, error) {
+	u := fmt.Sprintf("/inventory/managedObjects/%s/supportedMeasurements", id)
+
+	req, err := s.client.NewRequest("GET", u, "", nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	data := new(SupportedMeasurements)
+
+	resp, err := s.client.Do(ctx, req, data)
+	if err != nil {
+		return nil, resp, err
+	}
 
 	return data, resp, nil
 }

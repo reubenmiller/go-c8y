@@ -3,7 +3,8 @@ package c8y
 import (
 	"context"
 	"fmt"
-	"log"
+
+	"github.com/tidwall/gjson"
 )
 
 // MeasurementService does something
@@ -38,9 +39,11 @@ type MeasurementCollection struct {
 	*BaseResponse
 
 	Measurements []MeasurementObject `json:"measurements"`
+
+	Items []gjson.Result
 }
 
-// GetMeasurementCollection return the measurement collection
+// GetMeasurementCollection return a measurement collection (multiple measurements)
 func (s *MeasurementService) GetMeasurementCollection(ctx context.Context, opt *MeasurementCollectionOptions) (*MeasurementCollection, *Response, error) {
 	u := fmt.Sprintf("measurement/measurements")
 
@@ -54,18 +57,35 @@ func (s *MeasurementService) GetMeasurementCollection(ctx context.Context, opt *
 		return nil, nil, err
 	}
 
-	mcol := new(MeasurementCollection)
+	data := new(MeasurementCollection)
 
-	resp, err := s.client.Do(ctx, req, mcol)
+	resp, err := s.client.Do(ctx, req, data)
 	if err != nil {
 		return nil, resp, err
 	}
 
-	log.Printf("Total count: %d\n", len(mcol.Measurements))
-	if len(mcol.Measurements) > 0 {
-		log.Printf("Last time: %v\n", mcol.Measurements[0].Time)
-	}
-	log.Printf("Measurement Collection: currentPage=%d, pageSize=%v\n", *mcol.Statistics.CurrentPage, *mcol.Statistics.PageSize)
+	data.Items = resp.JSON.Get("measurements").Array()
 
-	return mcol, resp, nil
+	return data, resp, nil
+}
+
+// GetMeasurement returns a single measurement
+func (s *MeasurementService) GetMeasurement(ctx context.Context, ID string) (*MeasurementObject, *Response, error) {
+	u := fmt.Sprintf("measurement/measurements/%s", ID)
+
+	req, err := s.client.NewRequest("GET", u, "", nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	data := new(MeasurementObject)
+
+	resp, err := s.client.Do(ctx, req, data)
+	if err != nil {
+		return nil, resp, err
+	}
+
+	data.Item = *resp.JSON
+
+	return data, resp, nil
 }

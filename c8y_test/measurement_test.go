@@ -10,11 +10,16 @@ import (
 
 func TestMeasurementService_GetMeasurementCollection(t *testing.T) {
 	client := createTestClient()
+
+	col, _, _ := getDevices(client, "*WEA*", 1)
+
+	sourceID := col.ManagedObjects[0].ID
+
 	dateFrom, dateTo := c8y.GetDateRange("1d")
 	_, resp, _ := client.Measurement.GetMeasurementCollection(context.Background(), &c8y.MeasurementCollectionOptions{
 		DateFrom: dateFrom,
 		DateTo:   dateTo,
-		Source:   "31032",
+		Source:   sourceID,
 	})
 
 	if resp == nil {
