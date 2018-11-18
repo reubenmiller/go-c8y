@@ -15,29 +15,27 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/google/go-querystring/query"
+	"github.com/tidwall/gjson"
 )
 
 type service struct {
 	client *Client
 }
 
-// A Client manages communication with the GitHub API.
+// A Client manages communication with the Cumulocity API.
 type Client struct {
 	clientMu sync.Mutex   // clientMu protects the client during calls that modify the CheckRedirect func.
 	client   *http.Client // HTTP client used to communicate with the API.
 
 	Realtime *RealtimeClient
 
-	// Base URL for API requests. Defaults to the public GitHub API, but can be
-	// set to a domain endpoint to use with GitHub Enterprise. BaseURL should
+	// Base URL for API requests. Defaults to the public Cumulocity API, but can be
+	// set to a domain endpoint to use with Cumulocity. BaseURL should
 	// always be specified with a trailing slash.
 	BaseURL *url.URL
 
-	// User agent used when communicating with the GitHub API.
+	// User agent used when communicating with the Cumulocity API.
 	UserAgent string
-
-	rateMu sync.Mutex
-	// rateLimits [categories]Rate // Rate limits for the client as determined by the most recent API calls.
 
 	// Username for Cumulocity Authentication
 	Username string
@@ -53,8 +51,7 @@ type Client struct {
 
 	common service // Reuse a single struct instead of allocating one for each service on the heap.
 
-	// Services used for talking to different parts of the GitHub API.
-	//Activity       *ActivityService
+	// Services used for talking to different parts of the Cumulocity API.
 	Measurement *MeasurementService
 	Operation   *OperationService
 	Tenant      *TenantService
@@ -72,25 +69,14 @@ const (
 // provided, http.DefaultClient will be used. To use API methods which require
 // authentication, provide an http.Client that will perform the authentication
 // for you (such as that provided by the golang.org/x/oauth2 library).
-func NewClient(httpClient *http.Client, baseURL string, username string, password string) *Client {
+func NewClient(httpClient *http.Client, baseURL string, tenant string, username string, password string) *Client {
 	if httpClient == nil {
 		httpClient = http.DefaultClient
 	}
 	targetBaseURL, _ := url.Parse(baseURL)
 
-	usernameParts := strings.Split(username, "/")
-
-	var tenantName string
-	var usernameWithoutTenant string
-	if len(usernameParts) == 2 {
-		tenantName = usernameParts[0]
-		usernameWithoutTenant = usernameParts[1]
-	} else {
-		usernameWithoutTenant = username
-	}
-
 	fmt.Printf("Creating realtime client %s\n", baseURL)
-	realtimeClient := NewRealtimeClient(baseURL, nil, tenantName, usernameWithoutTenant, password)
+	realtimeClient := NewRealtimeClient(baseURL, nil, tenant, username, password)
 
 	userAgent := defaultUserAgent
 
@@ -101,7 +87,7 @@ func NewClient(httpClient *http.Client, baseURL string, username string, passwor
 		Realtime:       realtimeClient,
 		Username:       username,
 		Password:       password,
-		TenantName:     tenantName,
+		TenantName:     tenant,
 		verboseMessage: color.New(color.FgMagenta),
 		warningMessage: color.New(color.FgYellow),
 	}
@@ -114,10 +100,6 @@ func NewClient(httpClient *http.Client, baseURL string, username string, passwor
 	c.Application = (*ApplicationService)(&c.common)
 	c.Identity = (*IdentityService)(&c.common)
 	return c
-}
-
-func meTest() {
-	println("test api")
 }
 
 // addOptions adds the parameters in opt as URL query parameters to s. opt
@@ -156,22 +138,16 @@ func (c *Client) Noop() {
 
 // NewRequest does something
 func (c *Client) NewRequest(method, path string, query string, body interface{}) (*http.Request, error) {
-	// c.verboseMessage.Println("newRequest", path)
-
 	if !strings.HasSuffix(c.BaseURL.Path, "/") {
 		return nil, fmt.Errorf("BaseURL must have a trailing slash, but %q does not", c.BaseURL)
 	}
 
-	// c.verboseMessage.Println("Before url: ", path)
-	// rel := &url.URL{Opaque: path}
 	rel := &url.URL{Path: path}
 	if query != "" {
 		rel.RawQuery = query
 	}
-	// c.verboseMessage.Println("Before resolve: ", path, rel.String())
-	u := c.BaseURL.ResolveReference(rel)
 
-	// c.verboseMessage.Println("After resolve: ", u.String())
+	u := c.BaseURL.ResolveReference(rel)
 
 	var buf io.ReadWriter
 	if body != nil {
@@ -189,7 +165,8 @@ func (c *Client) NewRequest(method, path string, query string, body interface{})
 		req.Header.Set("Content-Type", "application/json")
 	}
 
-	req.SetBasicAuth(c.Username, c.Password)
+	usernameWithTenantPrefix := fmt.Sprintf("%s/%s", c.TenantName, c.Username)
+	req.SetBasicAuth(usernameWithTenantPrefix, c.Password)
 
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgent)
@@ -197,30 +174,18 @@ func (c *Client) NewRequest(method, path string, query string, body interface{})
 	return req, nil
 }
 
-type measurement struct {
-	ID string `json:"id"`
-}
 
-// Rate represents the rate limit for the current client.
-type Rate struct {
-	// The number of requests per hour the client is currently limited to.
-	Measurements []measurement `json:"measurements"`
-
-	// The number of remaining requests the client can make this hour.
-	Remaining int `json:"remaining"`
-
-	// The time at which the current rate limit will reset.
-	// Reset Timestamp `json:"reset"`
-}
-
-// Response is a GitHub API response. This wraps the standard http.Response
-// returned from GitHub and provides convenient access to things like
+// Response is a Cumulocity API response. This wraps the standard http.Response
+// returned from Cumulocity and provides convenient access to things like
 // pagination links.
 type Response struct {
 	*http.Response
 
 	// JSONData raw json response
 	JSONData *string
+
+	// JSON
+	JSON gjson.Result
 }
 
 // newResponse creates a new Response for the provided http.Response.
@@ -236,6 +201,7 @@ func newResponse(r *http.Response) *Response {
 	bodyBytes, _ := ioutil.ReadAll(rdr1)
 	bodyString := string(bodyBytes)
 	response.JSONData = &bodyString
+	response.JSON = gjson.ParseBytes(bodyBytes)
 
 	r.Body = rdr2
 	return response
@@ -261,8 +227,7 @@ func withContext(ctx context.Context, req *http.Request) *http.Request {
 // JSON decoded and stored in the value pointed to by v, or returned as an
 // error if an API error has occurred. If v implements the io.Writer
 // interface, the raw response body will be written to v, without attempting to
-// first decode it. If rate limit is exceeded and reset time is in the future,
-// Do returns *RateLimitError immediately without making a network API call.
+// first decode it.
 //
 // The provided ctx must be non-nil. If it is canceled or times out,
 // ctx.Err() will be returned.
@@ -299,10 +264,6 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 	}()
 
 	response := newResponse(resp)
-
-	c.rateMu.Lock()
-	// c.rateLimits[rateLimitCategory] = response.Rate
-	c.rateMu.Unlock()
 
 	err = CheckResponse(resp)
 	if err != nil {
@@ -357,7 +318,6 @@ These are the possible validation error codes:
     custom:
         some resources return this (e.g. github.User.CreateKey()), additional
         information is set in the Message field of the Error
-GitHub API docs: https://developer.github.com/v3/#client-errors
 */
 type Error struct {
 	Resource string `json:"resource"` // resource on which the error occurred
@@ -373,7 +333,6 @@ func (e *Error) Error() string {
 
 /*
 An ErrorResponse reports one or more errors caused by an API request.
-GitHub API docs: https://developer.github.com/v3/#client-errors
 */
 type ErrorResponse struct {
 	Response *http.Response // HTTP response that caused this error
@@ -398,8 +357,8 @@ func (r *ErrorResponse) Error() string {
 		r.Response.StatusCode, r.Message, r.Errors)
 }
 
-// AcceptedError occurs when GitHub returns 202 Accepted response with an
-// empty body, which means a job was scheduled on the GitHub side to process
+// AcceptedError occurs when Cumulocity returns 202 Accepted response with an
+// empty body, which means a job was scheduled on the Cumulocity side to process
 // the information needed and cache it.
 // Technically, 202 Accepted is not a real error, it's just used to
 // indicate that results are not ready yet, but should be available soon.
@@ -407,7 +366,7 @@ func (r *ErrorResponse) Error() string {
 type AcceptedError struct{}
 
 func (*AcceptedError) Error() string {
-	return "job scheduled on GitHub side; try again later"
+	return "job scheduled on Cumulocity side; try again later"
 }
 
 // CheckResponse checks the API response for errors, and returns them if
@@ -417,9 +376,6 @@ func (*AcceptedError) Error() string {
 // body, or a JSON response body that maps to ErrorResponse. Any other
 // response body will be silently ignored.
 //
-// The error type will be *RateLimitError for rate limit exceeded errors,
-// *AcceptedError for 202 Accepted status codes,
-// and *TwoFactorAuthError for two-factor authentication errors.
 func CheckResponse(r *http.Response) error {
 	if r.StatusCode == http.StatusAccepted {
 		return &AcceptedError{}

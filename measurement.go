@@ -33,14 +33,14 @@ type MeasurementCollectionOptions struct {
 	PaginationOptions
 }
 
-// MeasurementCollection todo
+// MeasurementCollection is the generic data structure which contains the response cumulocity when requesting a measurement collection
 type MeasurementCollection struct {
-	*C8yBaseResponse
+	*BaseResponse
 
 	Measurements []MeasurementObject `json:"measurements"`
 }
 
-// GetMeasurementCollection does something
+// GetMeasurementCollection return the measurement collection
 func (s *MeasurementService) GetMeasurementCollection(ctx context.Context, opt *MeasurementCollectionOptions) (*MeasurementCollection, *Response, error) {
 	u := fmt.Sprintf("measurement/measurements")
 
@@ -61,7 +61,6 @@ func (s *MeasurementService) GetMeasurementCollection(ctx context.Context, opt *
 		return nil, resp, err
 	}
 
-	// println("jsonData: ", *resp.jsonData)
 	log.Printf("Total count: %d\n", len(mcol.Measurements))
 	if len(mcol.Measurements) > 0 {
 		log.Printf("Last time: %v\n", mcol.Measurements[0].Time)

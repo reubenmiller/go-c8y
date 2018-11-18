@@ -6,10 +6,10 @@ import (
 	"log"
 )
 
-// InventoryService does something
+// InventoryService responsible for all inventory api calls
 type InventoryService service
 
-// ManagedObjectOptions todo
+// ManagedObjectOptions managed object options which can be given with the managed object request
 type ManagedObjectOptions struct {
 	Type string `url:"type,omitempty"`
 
@@ -30,6 +30,7 @@ type ManagedObjectOptions struct {
 // DeviceFragment Special device fragment used by Cumulocity to mark the managed objects as devices
 type DeviceFragment struct{}
 
+// EmptyFragment fragment used for special c8y fragments, i.e. c8y_IsDevice etc.
 type EmptyFragment struct{}
 
 // AgentConfiguration agent configuration fragment
@@ -37,53 +38,24 @@ type AgentConfiguration struct {
 	Configuration string `json:"config"`
 }
 
-// ManagedObject todo
+// ManagedObject is the general Inventory Managed Object data structure
 type ManagedObject struct {
-	ID                   string               `json:"id"`
-	Name                 string               `json:"name"`
-	FarmName             string               `json:"farmName,omitempty"`
-	Type                 string               `json:"type"`
-	Self                 string               `json:"self"`
-	Owner                string               `json:"owner"`
-	DeviceParents        ParentDevices        `json:"deviceParents"`
-	ChildDevices         ChildDevices         `json:"childDevices"`
-	DeviceTypeDefinition DeviceTypeDefinition `json:"nx_DeviceTypeDefinition"`
-	DeviceProperties     DeviceProperties     `json:"nx_DeviceProperties,omitempty"`
-	NxUserSubscriptions  []UserSubscription   `json:"nx_userSubscriptions,omitempty"`
-	C8yKpi               C8yKpi               `json:"c8y_Kpi,omitempty"`
-	NxDevicetypeDetails  NxDevicetypeDetails  `json:"nx_devicetype_Details,omitempty"`
-	C8yIsDevice          DeviceFragment       `json:"c8y_IsDevice,omitempty"`
-	C8yConfiguration     AgentConfiguration   `json:"c8y_Configuration,omitempty"`
+	ID               string             `json:"id"`
+	Name             string             `json:"name"`
+	Type             string             `json:"type"`
+	Self             string             `json:"self"`
+	Owner            string             `json:"owner"`
+	DeviceParents    ParentDevices      `json:"deviceParents"`
+	ChildDevices     ChildDevices       `json:"childDevices"`
+	Kpi              Kpi                `json:"c8y_Kpi,omitempty"`
+	C8yIsDevice      DeviceFragment     `json:"c8y_IsDevice,omitempty"`
+	C8yConfiguration AgentConfiguration `json:"c8y_Configuration,omitempty"`
 }
 
-// C8yKpi todo
-type C8yKpi struct {
+// Kpi is the Data Point Library fragment
+type Kpi struct {
 	Series   string `json:"series"`
 	Fragment string `json:"fragment"`
-}
-
-// NxDevicetypeDetails todo
-type NxDevicetypeDetails struct {
-	SampleTime int `json:"sampleTime"`
-}
-
-// UserSubscription Nx Customer User Subscriptions
-type UserSubscription struct {
-	PollingRate int    `json:"pollingRate"`
-	KksID       string `json:"kksid"`
-}
-
-// DeviceTypeDefinition Device Type Definition containing the information model identifier
-type DeviceTypeDefinition struct {
-	MeasurementFragment string `json:"nx_measurementFragment"`
-	Self                string `json:"self"`
-}
-
-// DeviceProperties todo
-type DeviceProperties struct {
-	RFCType          string `json:"RFCType"`
-	TurbineType      string `json:"TurbineType"`
-	SoftwareRevision string `json:"SoftwareRevision"`
 }
 
 // ChildDevices todo
@@ -100,19 +72,19 @@ type ParentDevices struct {
 
 // ManagedObjectCollection todo
 type ManagedObjectCollection struct {
-	*C8yBaseResponse
+	*BaseResponse
 
 	ManagedObjects []ManagedObject `json:"managedObjects"`
 }
 
-// SupportedSeries todo
+// SupportedSeries is a list of the supported series in the format of <fragment>.<series>
 type SupportedSeries struct {
 	SupportedSeries []string `json:"c8y_SupportedSeries"`
 }
 
 // ManagedObjectReferencesCollection Managed object references
 type ManagedObjectReferencesCollection struct {
-	*C8yBaseResponse
+	*BaseResponse
 	References []ManagedObjectReference `json:"references"`
 }
 
@@ -122,16 +94,13 @@ type ManagedObjectReference struct {
 	ManagedObject ManagedObject `json:"managedObject"`
 }
 
-// GetDevices todo
-func (s *InventoryService) GetDevices(ctx context.Context) (*ManagedObjectCollection, *Response, error) {
-	u := fmt.Sprintf("inventory/managedObjects?fragment=c8y_IsDevice&pageSize=1000")
+// GetDevices returns the c8y device managed objects. These are the objects with the fragment "c8y_IsDevice"
+func (s *InventoryService) GetDevices(ctx context.Context, paging PaginationOptions) (*ManagedObjectCollection, *Response, error) {
+	u := fmt.Sprintf("inventory/managedObjects")
 
 	opt := &ManagedObjectOptions{
-		FragmentType: "c8y_IsDevice",
-		PaginationOptions: PaginationOptions{
-			PageSize:       1000,
-			WithTotalPages: true,
-		},
+		FragmentType:      "c8y_IsDevice",
+		PaginationOptions: paging,
 	}
 
 	queryParams, err := addOptions("", opt)
@@ -160,7 +129,7 @@ func (s *ManagedObjectCollection) All() error {
 	return nil
 }
 
-// GetManagedObject todo
+// GetManagedObject returns a managed object by its id
 func (s *InventoryService) GetManagedObject(ctx context.Context, ID string, opt *ManagedObjectOptions) (*ManagedObject, *Response, error) {
 	u := fmt.Sprintf("inventory/managedObjects/%s", ID)
 
@@ -208,7 +177,7 @@ func (s *InventoryService) GetManagedObjectCollection(ctx context.Context, opt *
 	return data, resp, nil
 }
 
-// GetSupportedSeries does something
+// GetSupportedSeries returns the supported series for a give device
 func (s *InventoryService) GetSupportedSeries(ctx context.Context, id string) (*SupportedSeries, *Response, error) {
 	u := fmt.Sprintf("/inventory/managedObjects/%s/supportedSeries", id)
 
@@ -224,10 +193,7 @@ func (s *InventoryService) GetSupportedSeries(ctx context.Context, id string) (*
 		return nil, resp, err
 	}
 
-	// println("jsonData: ", *resp.jsonData)
 	log.Printf("Total count: %d\n", len(data.SupportedSeries))
-	// log.Printf("Last time: %v\n", data.Measurements[0].Time)
-	// log.Printf("Measurement Collection: currentPage=%d, pageSize=%v\n", *mcol.Statistics.CurrentPage, *mcol.Statistics.PageSize)
 
 	return data, resp, nil
 }
@@ -256,7 +222,8 @@ func (s *InventoryService) GetManagedObjectChildDevices(ctx context.Context, id 
 	return data, resp, nil
 }
 
-// UpdateManagedObject todo
+// UpdateManagedObject updates a managed object
+// Link: http://cumulocity.com/guides/reference/inventory
 func (s *InventoryService) UpdateManagedObject(ctx context.Context, ID string, body interface{}) (*ManagedObject, *Response, error) {
 	u := fmt.Sprintf("inventory/managedObjects/%s", ID)
 
@@ -275,7 +242,7 @@ func (s *InventoryService) UpdateManagedObject(ctx context.Context, ID string, b
 	return data, resp, nil
 }
 
-// CreateManagedObject todo
+// CreateManagedObject create a new managed object
 func (s *InventoryService) CreateManagedObject(ctx context.Context, body interface{}) (*ManagedObject, *Response, error) {
 	u := fmt.Sprintf("inventory/managedObjects")
 

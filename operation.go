@@ -9,20 +9,6 @@ import (
 // OperationService todo
 type OperationService service
 
-/* const (
-	// Pending todo
-	Pending = "PENDING"
-
-	// Executing todo
-	Executing = "EXECUTING"
-
-	// Successful todo
-	Successful = "SUCCESSFUL"
-
-	// Failed todo
-	Failed = "FAILED"
-) */
-
 // OperationCollectionOptions todo
 type OperationCollectionOptions struct {
 	// Source device to filter measurements by
@@ -38,7 +24,7 @@ type OperationCollectionOptions struct {
 
 // OperationCollection todo
 type OperationCollection struct {
-	*C8yBaseResponse
+	*BaseResponse
 
 	Operations []Operation `json:"operations"`
 }
@@ -73,7 +59,7 @@ type OperationUpdateOptions struct {
 	Status string `json:"status"`
 }
 
-// GetOperationCollection todo
+// GetOperationCollection returns a collection of Cumulocity operations
 func (s *OperationService) GetOperationCollection(ctx context.Context, opt *OperationCollectionOptions) (*OperationCollection, *Response, error) {
 	u := fmt.Sprintf("devicecontrol/operations")
 
@@ -103,7 +89,7 @@ func (s *OperationService) GetOperationCollection(ctx context.Context, opt *Oper
 	return opCol, resp, nil
 }
 
-// UpdateOperation todo
+// UpdateOperation updates a Cumulocity operation
 func (s *OperationService) UpdateOperation(ctx context.Context, ID string, body *OperationUpdateOptions) (*Operation, *Response, error) {
 	u := fmt.Sprintf("devicecontrol/operations/%s", ID)
 

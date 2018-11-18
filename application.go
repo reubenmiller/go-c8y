@@ -25,7 +25,7 @@ type Application struct {
 
 // ApplicationCollection todo
 type ApplicationCollection struct {
-	*C8yBaseResponse
+	*BaseResponse
 
 	Applications []Application `json:"applications"`
 }
@@ -59,7 +59,7 @@ func (s *ApplicationService) getApplicationData(ctx context.Context, partialURL 
 		return nil, resp, err
 	}
 
-	log.Printf("Total applicaitons: %d\n", *data.C8yBaseResponse.Statistics.TotalPages)
+	log.Printf("Total applicaitons: %d\n", *data.BaseResponse.Statistics.TotalPages)
 
 	return data, resp, nil
 }

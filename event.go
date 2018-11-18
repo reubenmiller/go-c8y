@@ -41,7 +41,7 @@ type EventObject struct {
 
 // EventCollection todo
 type EventCollection struct {
-	*C8yBaseResponse
+	*BaseResponse
 
 	Events []EventObject `json:"events"`
 }
@@ -67,8 +67,8 @@ func (s *EventService) GetEventCollection(ctx context.Context, opt *EventCollect
 		return nil, resp, err
 	}
 
-	if data.C8yBaseResponse.Statistics.TotalPages != nil {
-		log.Printf("Total events: %d\n", *data.C8yBaseResponse.Statistics.TotalPages)
+	if data.BaseResponse.Statistics.TotalPages != nil {
+		log.Printf("Total events: %d\n", *data.BaseResponse.Statistics.TotalPages)
 	}
 
 	return data, resp, nil
