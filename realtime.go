@@ -21,11 +21,11 @@ const (
 	// VERSION prefered Bayeux version
 	VERSION = "1.0"
 
-	// MINIMUM_VERSION supported Bayeux version
-	MINIMUM_VERSION = "1.0"
+	// MINIMUMVERSION supported Bayeux version
+	MINIMUMVERSION = "1.0"
 )
 
-// Client allows connecting to a Bayeux server and subscribing to channels.
+// RealtimeClient allows connecting to a Bayeux server and subscribing to channels.
 type RealtimeClient struct {
 	mtx           sync.RWMutex
 	url           *url.URL
@@ -123,7 +123,7 @@ func getRealtimURL(host string) *url.URL {
 	return c8yhost
 }
 
-// NewClient initialises a new Bayeux client. By default `http.DefaultClient`
+// NewRealtimeClient initialises a new Bayeux client. By default `http.DefaultClient`
 // is used for HTTP connections.
 func NewRealtimeClient(host string, wsDialer *websocket.Dialer, tenant, username, password string) *RealtimeClient {
 	if wsDialer == nil {
@@ -293,7 +293,7 @@ func (c *RealtimeClient) handshake() error {
 	handshakeMessage := &request{
 		Channel:                  "/meta/handshake",
 		Version:                  VERSION,
-		MinimumVersion:           MINIMUM_VERSION,
+		MinimumVersion:           MINIMUMVERSION,
 		SupportedConnectionTypes: []string{"websocket", "long-polling"},
 		Extension:                c.extension,
 		Advice: advice{

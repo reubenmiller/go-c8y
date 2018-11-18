@@ -1,9 +1,11 @@
-package c8y
+package c8y_test
 
 import (
 	"fmt"
 	"os"
 	"testing"
+
+	c8y "github.com/reubenmiller/go-c8y"
 )
 
 func TestRealtimeClient(t *testing.T) {
@@ -17,7 +19,7 @@ func TestRealtimeClient(t *testing.T) {
 	if tenant == "" || username == "" || password == "" {
 		t.Errorf("Missing Cumulocity C8Y_TENANT, C8Y_USERNAME, C8Y_PASSWORD environement variable which are required for this test")
 	}
-	client := NewRealtimeClient(host, nil, tenant, username, password)
+	client := c8y.NewRealtimeClient(host, nil, tenant, username, password)
 
 	err := client.Connect()
 

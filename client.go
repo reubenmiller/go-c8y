@@ -73,10 +73,17 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 	if httpClient == nil {
 		httpClient = http.DefaultClient
 	}
-	targetBaseURL, _ := url.Parse(baseURL)
 
-	fmt.Printf("Creating realtime client %s\n", baseURL)
-	realtimeClient := NewRealtimeClient(baseURL, nil, tenant, username, password)
+	var fmtURL string
+	if !strings.HasSuffix(baseURL, "/") {
+		fmtURL = baseURL + "/"
+	} else {
+		fmtURL = baseURL
+	}
+	targetBaseURL, _ := url.Parse(fmtURL)
+
+	fmt.Printf("Creating realtime client %s\n", fmtURL)
+	realtimeClient := NewRealtimeClient(fmtURL, nil, tenant, username, password)
 
 	userAgent := defaultUserAgent
 
@@ -185,7 +192,7 @@ type Response struct {
 	JSONData *string
 
 	// JSON
-	JSON gjson.Result
+	JSON *gjson.Result
 }
 
 // newResponse creates a new Response for the provided http.Response.
@@ -201,7 +208,9 @@ func newResponse(r *http.Response) *Response {
 	bodyBytes, _ := ioutil.ReadAll(rdr1)
 	bodyString := string(bodyBytes)
 	response.JSONData = &bodyString
-	response.JSON = gjson.ParseBytes(bodyBytes)
+
+	jsonObject := gjson.Parse(bodyString)
+	response.JSON = &jsonObject
 
 	r.Body = rdr2
 	return response

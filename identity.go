@@ -22,6 +22,7 @@ type Identity struct {
 	ManagedObject IdentityReference `json:"managedObject"`
 }
 
+// IdentityReference contains the id and self link to the identify resource
 type IdentityReference struct {
 	ID   string `json:"id"`
 	Self string `json:"self"`
