@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strings"
 
 	"github.com/tidwall/gjson"
 )
@@ -38,10 +37,7 @@ type ApplicationCollection struct {
 
 // getApplicationData todo
 func (s *ApplicationService) getApplicationData(ctx context.Context, partialURL string, opt *ApplicationOptions) (*ApplicationCollection, *Response, error) {
-	if !strings.HasPrefix(partialURL, "/") {
-		partialURL = "/" + partialURL
-	}
-	u := fmt.Sprintf("application/applications%s", partialURL)
+	u := partialURL
 
 	var queryParams string
 	var err error
@@ -70,9 +66,9 @@ func (s *ApplicationService) getApplicationData(ctx context.Context, partialURL 
 	return data, resp, nil
 }
 
-// GetApplicationCollectionByName todo
+// GetApplicationCollectionByName returns a list of applications by name
 func (s *ApplicationService) GetApplicationCollectionByName(ctx context.Context, name string, opt *ApplicationOptions) (*ApplicationCollection, *Response, error) {
-	u := fmt.Sprintf("/applicationByName/%s", name)
+	u := fmt.Sprintf("application/applicationsByName/%s", name)
 
 	data, resp, err := s.getApplicationData(ctx, u, opt)
 
@@ -85,9 +81,9 @@ func (s *ApplicationService) GetApplicationCollectionByName(ctx context.Context,
 	return data, resp, nil
 }
 
-// GetApplicationCollectionByOwner todo
+// GetApplicationCollectionByOwner retuns a list of applications by owner
 func (s *ApplicationService) GetApplicationCollectionByOwner(ctx context.Context, tenant string, opt *ApplicationOptions) (*ApplicationCollection, *Response, error) {
-	u := fmt.Sprintf("/applicationsByOwner/%s", tenant)
+	u := fmt.Sprintf("appplication/applicationsByOwner/%s", tenant)
 
 	data, resp, err := s.getApplicationData(ctx, u, opt)
 
@@ -100,9 +96,9 @@ func (s *ApplicationService) GetApplicationCollectionByOwner(ctx context.Context
 	return data, resp, nil
 }
 
-// GetApplicationCollectionByTenant todo
+// GetApplicationCollectionByTenant returns a list of applications by tenant name
 func (s *ApplicationService) GetApplicationCollectionByTenant(ctx context.Context, tenant string, opt *ApplicationOptions) (*ApplicationCollection, *Response, error) {
-	u := fmt.Sprintf("/applicationsByTenant/%s", tenant)
+	u := fmt.Sprintf("application/applicationsByTenant/%s", tenant)
 
 	data, resp, err := s.getApplicationData(ctx, u, opt)
 
@@ -115,22 +111,31 @@ func (s *ApplicationService) GetApplicationCollectionByTenant(ctx context.Contex
 	return data, resp, nil
 }
 
-// GetApplicationCollectionByID todo
-func (s *ApplicationService) GetApplicationCollectionByID(ctx context.Context, ID string) (*ApplicationCollection, *Response, error) {
-	u := fmt.Sprintf("/%s", ID)
+// GetApplicationCollectionByID returns an application by its ID
+func (s *ApplicationService) GetApplicationCollectionByID(ctx context.Context, ID string) (*Application, *Response, error) {
+	u := fmt.Sprintf("application/applications/%s", ID)
 
-	data, resp, err := s.getApplicationData(ctx, u, nil)
+	var queryParams string
+	var err error
 
+	req, err := s.client.NewRequest("GET", u, queryParams, nil)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	data.Items = resp.JSON.Get("applications").Array()
+	data := new(Application)
+
+	resp, err := s.client.Do(ctx, req, data)
+	if err != nil {
+		return nil, resp, err
+	}
+
+	data.Item = *resp.JSON
 
 	return data, resp, nil
 }
 
-// GetApplicationCollection todo
+// GetApplicationCollection returns a list of applications with no filtering
 func (s *ApplicationService) GetApplicationCollection(ctx context.Context, opt *ApplicationOptions) (*ApplicationCollection, *Response, error) {
 	data, resp, err := s.getApplicationData(ctx, "/applications", opt)
 
