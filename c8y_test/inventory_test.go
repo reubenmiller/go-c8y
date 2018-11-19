@@ -38,3 +38,23 @@ func TestInventoryService_GetDevices(t *testing.T) {
 
 	fmt.Printf("Device Name: %s\n", deviceName)
 }
+
+func TestInventoryService_AuthenticationToken(t *testing.T) {
+	client := createTestClient()
+
+	pageSize := 1
+	opt := &c8y.PaginationOptions{
+		PageSize: pageSize,
+	}
+	// Throw invalid credentials
+	ctx := c8y.NewAuthorizationContext("test", "something", "value")
+	_, resp, err := client.Inventory.GetDevices(ctx, opt)
+
+	if resp.StatusCode != 401 {
+		t.Errorf("Expected unauthorized access response. want: 401, got: %d", resp.StatusCode)
+	}
+
+	if err == nil {
+		t.Errorf("Function should have thrown an error. %s", err)
+	}
+}

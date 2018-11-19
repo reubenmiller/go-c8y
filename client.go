@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -17,6 +18,14 @@ import (
 	"github.com/google/go-querystring/query"
 	"github.com/tidwall/gjson"
 )
+
+// ContextAuthTokenKey todo
+type ContextAuthTokenKey string
+
+// GetContextAuthTokenKey authentication key used to override the given Basic Authentication token 
+func GetContextAuthTokenKey() ContextAuthTokenKey {
+	return ContextAuthTokenKey("authToken")
+}
 
 type service struct {
 	client *Client
@@ -143,6 +152,28 @@ func (c *Client) Noop() {
 
 }
 
+// NewAuthorizationContextFromRequest returns a new context with the Authorization token set which will override the Basic Auth in subsequent 
+// REST requests
+func NewAuthorizationContextFromRequest(req *http.Request) context.Context {
+	if req == nil {
+		return context.Background()
+	}
+	auth := req.Header.Get("Authorization")
+	return context.WithValue(context.Background(), GetContextAuthTokenKey(), auth)
+}
+
+// NewAuthorizationContext returns context with the Authorization token set given explicit tenant, username and password.
+func NewAuthorizationContext(tenant, username, password string) context.Context {
+	auth := NewBasicAuthString(tenant, username, password)
+	return context.WithValue(context.Background(), GetContextAuthTokenKey(), auth)
+}
+
+// NewBasicAuthString returns a Basic Authorization key used for rest requests
+func NewBasicAuthString(tenant, username, password string) string {
+	auth := fmt.Sprintf("%s/%s:%s", tenant, username, password)
+	return "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
+}
+
 // NewRequest does something
 func (c *Client) NewRequest(method, path string, query string, body interface{}) (*http.Request, error) {
 	if !strings.HasSuffix(c.BaseURL.Path, "/") {
@@ -242,6 +273,12 @@ func withContext(ctx context.Context, req *http.Request) *http.Request {
 // ctx.Err() will be returned.
 func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Response, error) {
 	req = withContext(ctx, req)
+	
+	// Check if an authorization key is provided in the context, if so then override the c8y authentication
+	if authToken := ctx.Value(GetContextAuthTokenKey()); authToken != nil {
+		fmt.Printf("Overriding basic auth provided in the context")
+		req.Header.Set("Authorization", authToken.(string))
+	}
 
 	c.verboseMessage.Println("Sending request: ", req.URL.Path)
 
