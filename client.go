@@ -138,12 +138,8 @@ func addOptions(s string, opt interface{}) (string, error) {
 
 	u.RawQuery = qs.Encode()
 
-	// c := color.New(color.FgMagenta)
-	// c.Println("rawQuery: ", u.RawQuery)
-
 	rawQuery := u.String()
 	rawQuery = rawQuery[1:len(rawQuery)]
-	// c.Println("query: ", rawQuery)
 	return rawQuery, nil
 }
 
@@ -174,7 +170,7 @@ func NewBasicAuthString(tenant, username, password string) string {
 	return "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
 }
 
-// NewRequest does something
+// NewRequest returns a request with the required additional base url, authentication header, accept and user-agent.NewRequest
 func (c *Client) NewRequest(method, path string, query string, body interface{}) (*http.Request, error) {
 	if !strings.HasSuffix(c.BaseURL.Path, "/") {
 		return nil, fmt.Errorf("BaseURL must have a trailing slash, but %q does not", c.BaseURL)
@@ -224,6 +220,19 @@ type Response struct {
 
 	// JSON
 	JSON *gjson.Result
+}
+
+// DecodeJSON returns the json response decoded into the given interface
+func (r *Response) DecodeJSON(v interface{}) (error) {
+	if r.JSON == nil {
+		return fmt.Errorf("JSON object does not exist (i.e. is nil)")
+	}
+	err := json.Unmarshal([]byte(r.JSON.Raw), v)
+
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // newResponse creates a new Response for the provided http.Response.
@@ -303,11 +312,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 		return nil, err
 	}
 
-	defer func() {
-		// Drain up to 512 bytes and close the body to let the Transport reuse the connection
-		io.CopyN(ioutil.Discard, resp.Body, 512)
-		resp.Body.Close()
-	}()
+	defer resp.Body.Close()
 
 	response := newResponse(resp)
 
@@ -370,6 +375,8 @@ type Error struct {
 	Field    string `json:"field"`    // field on which the error occurred
 	Code     string `json:"code"`     // validation error code
 	Message  string `json:"message"`  // Message describing the error. Errors with Code == "custom" will always have this set.
+	ErrorMessage string `json:"error"`
+	Information string `json:"info"`
 }
 
 func (e *Error) Error() string {
@@ -431,7 +438,7 @@ func CheckResponse(r *http.Response) error {
 	}
 	errorResponse := &ErrorResponse{Response: r}
 	data, err := ioutil.ReadAll(r.Body)
-	// text := string(data)
+
 	if err == nil && data != nil {
 		json.Unmarshal(data, errorResponse)
 	}

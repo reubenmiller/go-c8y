@@ -3,15 +3,14 @@ package c8y
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/tidwall/gjson"
 )
 
-// ApplicationService does something
+// ApplicationService provides the service provider for the Cumulocity Application API
 type ApplicationService service
 
-// ApplicationOptions todo
+// ApplicationOptions options that can be provided when using application api calls
 type ApplicationOptions struct {
 	PaginationOptions
 }
@@ -26,7 +25,7 @@ type Application struct {
 	Item gjson.Result
 }
 
-// ApplicationCollection todo
+// ApplicationCollection contains information about a list of applications
 type ApplicationCollection struct {
 	*BaseResponse
 
@@ -61,54 +60,26 @@ func (s *ApplicationService) getApplicationData(ctx context.Context, partialURL 
 		return nil, resp, err
 	}
 
-	log.Printf("Total applicaitons: %d\n", *data.BaseResponse.Statistics.TotalPages)
-
 	return data, resp, nil
 }
 
 // GetApplicationCollectionByName returns a list of applications by name
 func (s *ApplicationService) GetApplicationCollectionByName(ctx context.Context, name string, opt *ApplicationOptions) (*ApplicationCollection, *Response, error) {
 	u := fmt.Sprintf("application/applicationsByName/%s", name)
-
 	data, resp, err := s.getApplicationData(ctx, u, opt)
-
-	if err != nil {
-		return nil, nil, err
-	}
-
-	data.Items = resp.JSON.Get("applications").Array()
-
-	return data, resp, nil
+	return data, resp, err
 }
 
 // GetApplicationCollectionByOwner retuns a list of applications by owner
 func (s *ApplicationService) GetApplicationCollectionByOwner(ctx context.Context, tenant string, opt *ApplicationOptions) (*ApplicationCollection, *Response, error) {
 	u := fmt.Sprintf("appplication/applicationsByOwner/%s", tenant)
-
-	data, resp, err := s.getApplicationData(ctx, u, opt)
-
-	if err != nil {
-		return nil, nil, err
-	}
-
-	data.Items = resp.JSON.Get("applications").Array()
-
-	return data, resp, nil
+	return s.getApplicationData(ctx, u, opt)
 }
 
 // GetApplicationCollectionByTenant returns a list of applications by tenant name
 func (s *ApplicationService) GetApplicationCollectionByTenant(ctx context.Context, tenant string, opt *ApplicationOptions) (*ApplicationCollection, *Response, error) {
 	u := fmt.Sprintf("application/applicationsByTenant/%s", tenant)
-
-	data, resp, err := s.getApplicationData(ctx, u, opt)
-
-	if err != nil {
-		return nil, nil, err
-	}
-
-	data.Items = resp.JSON.Get("applications").Array()
-
-	return data, resp, nil
+	return s.getApplicationData(ctx, u, opt)
 }
 
 // GetApplicationCollectionByID returns an application by its ID
@@ -137,13 +108,5 @@ func (s *ApplicationService) GetApplicationCollectionByID(ctx context.Context, I
 
 // GetApplicationCollection returns a list of applications with no filtering
 func (s *ApplicationService) GetApplicationCollection(ctx context.Context, opt *ApplicationOptions) (*ApplicationCollection, *Response, error) {
-	data, resp, err := s.getApplicationData(ctx, "/applications", opt)
-
-	if err != nil {
-		return nil, nil, err
-	}
-
-	data.Items = resp.JSON.Get("applications").Array()
-
-	return data, resp, nil
+	return s.getApplicationData(ctx, "/applications", opt)
 }

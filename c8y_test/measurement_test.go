@@ -8,6 +8,27 @@ import (
 	c8y "github.com/reubenmiller/go-c8y"
 )
 
+func TestMeasurementService_GetMeasurementSeries(t *testing.T) {
+	client := createTestClient()
+
+	col, _, _ := getDevices(client, "*WEA*", 1)
+
+	sourceID := col.ManagedObjects[0].ID
+
+	dateFrom, dateTo := c8y.GetDateRange("1d")
+
+	_, _, err := client.Measurement.GetMeasurementSeries(context.Background(), &c8y.MeasurementSeriesOptions{
+		Source:    sourceID,
+		Variables: []string{"nx_WEA_27_Delta.ANA014", "nx_WEA_27_Delta.ANA017"},
+		DateFrom:  dateFrom,
+		DateTo:    dateTo,
+	})
+
+	if err != nil {
+		t.Errorf("No error should be returned. want: nil, got: %s", err)
+	}
+
+}
 func TestMeasurementService_GetMeasurementCollection(t *testing.T) {
 	client := createTestClient()
 
