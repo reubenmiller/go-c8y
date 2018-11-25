@@ -2,9 +2,10 @@ package c8y
 
 import (
 	"context"
-	"fmt"
-	"time"
 	"encoding/json"
+	"fmt"
+	"strings"
+	"time"
 
 	"github.com/tidwall/gjson"
 )
@@ -85,133 +86,213 @@ func (s *MeasurementService) GetMeasurementCollection(ctx context.Context, opt *
 	return data, resp, nil
 }
 
-type MeasurementSeries struct {
+// MeasurementSerieDefinition represents information about a serie
+type MeasurementSerieDefinition struct {
 	Unit string `json:"unit"`
 	Name string `json:"name"`
 	Type string `json:"type"`
 }
 
-type MeasurementSeriesValue struct {
-	Timestamp time.Time
-	Min float64	`json:"min,omitempty"`
-	Max float64	`json:"max,omitempty"`
-}
-
-type MeasurementValues struct {
-	MeasurementSeries
-	
-}
-
-type MeasurementValue struct {
+// MeasurementSeriesValueGroup represents multiple values for multiple series for a single timestamp
+type MeasurementSeriesValueGroup struct {
 	Timestamp time.Time `json:"timestamp"`
-	Min float64	`json:"min"`
-	Max float64	`json:"max"`
+	Values    []Number  `json:"values"`
+	// Values    []float64     `json:"values"`
 }
 
-type MeasurementSeriesResponse struct {
-	Values MeasurementRawValues `json:"values"`	// Needs to be processed more 
-	Series []MeasurementSeries	`json:""`
-	Truncated bool `json:"truncated"`
+// MeasurementSeriesAggregateValueGroup represents multiple aggregate values for multiple series for a single timestamp
+type MeasurementSeriesAggregateValueGroup struct {
+	Timestamp time.Time                   `json:"timestamp"`
+	Values    []MeasurementAggregateValue `json:"values"`
 }
 
-type MeasurementRawValues struct {
-	Values []MeasurementSeriesValue
+// MeasurementSeriesGroup represents a group of series values (no aggregate values)
+type MeasurementSeriesGroup struct {
+	DeviceID  string                        `json:"deviceId"`
+	Series    []MeasurementSerieDefinition  `json:"series"`
+	Values    []MeasurementSeriesValueGroup `json:"values"`
+	DateFrom  time.Time                     `json:"dateFrom"`
+	DateTo    time.Time                     `json:"dateTo"`
+	Truncated bool                          `json:"truncated"`
+}
+
+// MeasurementSeriesAggregateGroup represents a group of aggregate series
+type MeasurementSeriesAggregateGroup struct {
+	Series    []MeasurementSerieDefinition           `json:"series"`
+	Values    []MeasurementSeriesAggregateValueGroup `json:"values"`
+	DateFrom  time.Time                              `json:"dateFrom"`
+	DateTo    time.Time                              `json:"dateTo"`
+	Truncated bool                                   `json:"truncated"`
+}
+
+// MeasurementAggregateValue represents the aggregate value of a single measurement.
+type MeasurementAggregateValue struct {
+	Min Number `json:"min"`
+	Max Number `json:"max"`
 }
 
 // UnmarshalJSON converts the Cumulocity measurement Series response to a format which is easier to parse.
 //
 //
-// [{
-//     "series": [{
-//         "type": "myType",
-//         "name": "Variable1",
-//         "unit": "",
-//         "values": [
-//             { "timestamp": "2018-11-11T23:20:00.000+01:00", "min": 0.0001, "max": 10.1234 },
-//             { "timestamp": "2018-11-11T23:20:00.000+01:00", "min": 1.0001, "max": 9.1234 },
-//             { "timestamp": "2018-11-11T23:20:00.000+01:00", "min": -1.123, "max": 50.5 }
-//         ]
-//     }]
-// }]
+// {
+//     "series": [ "c8y_Temperature.A", "c8y_Temperature.B" ],
+//     "unit": [ "degC", "degC" ],
+//     "truncated": true,
+//     "values": [
+//         { "timestamp": "2018-11-11T23:20:00.000+01:00", values: [0.0001, 0.1001] },
+//         { "timestamp": "2018-11-11T23:20:01.000+01:00", values: [0.1234, 2.2919] },
+//         { "timestamp": "2018-11-11T23:20:02.000+01:00", values: [0.8370, 4.8756] }
+//     ]
+// }
 //
-func (d *MeasurementSeriesResponse) UnmarshalJSON(data []byte) error {
+func (d *MeasurementSeriesGroup) UnmarshalJSON(data []byte) error {
 	c8ySeries := gjson.ParseBytes(data)
 
-	var allSeries [][]MeasurementSeriesValue
+	// Get the series definitions
+	var seriesDefinitions []MeasurementSerieDefinition
 
-	c8ySeries.ForEach(func(key, values gjson.Result) bool {
+	c8ySeries.Get("series").ForEach(func(_, serie gjson.Result) bool {
+		v := &MeasurementSerieDefinition{}
+		if err := json.Unmarshal([]byte(serie.String()), &v); err != nil {
+			fmt.Printf("Could not unmarshal series definition. %s", serie.String())
+		}
 
-		var seriesValues []MeasurementSeriesValue
+		seriesDefinitions = append(seriesDefinitions, *v)
+		return true
+	})
+
+	d.Series = seriesDefinitions
+	d.Truncated = c8ySeries.Get("truncated").Bool()
+
+	totalSeries := len(seriesDefinitions)
+
+	// Get each series values
+	var allSeries []MeasurementSeriesValueGroup
+	c8ySeries.Get("values").ForEach(func(key, values gjson.Result) bool {
+		timestamp, err := time.Parse(time.RFC3339, key.Str)
+
+		if err != nil {
+			panic(fmt.Sprintf("Invalid timestamp: %s", key.Str))
+		}
+
+		seriesValues := &MeasurementSeriesValueGroup{
+			Timestamp: timestamp,
+			Values:    make([]Number, totalSeries),
+		}
+
+		index := 0
+		values.ForEach(func(_, value gjson.Result) bool {
+			// Note: min and max values are the same when no aggregation is being used!
+			// so technically we could get the value from either min or max.
+			v := value.Get("max").String()
+
+			seriesValues.Values[index] = *NewNumber(v)
+			index++
+			return true
+		})
+
+		allSeries = append(allSeries, *seriesValues)
+		return true
+	})
+
+	// Store the first and last timestamps
+	d.DateFrom = allSeries[0].Timestamp
+	d.DateTo = allSeries[len(allSeries)-1].Timestamp
+
+	d.Values = allSeries
+	return nil
+}
+
+func (d *MeasurementSeriesAggregateGroup) UnmarshalJSON(data []byte) error {
+	c8ySeries := gjson.ParseBytes(data)
+
+	// Get the series definitions
+	var seriesDefinitions []MeasurementSerieDefinition
+
+	c8ySeries.Get("series").ForEach(func(_, serie gjson.Result) bool {
+		v := &MeasurementSerieDefinition{}
+		if err := json.Unmarshal([]byte(serie.String()), &v); err != nil {
+			fmt.Printf("Could not unmarshal series definition. %s", serie.String())
+		}
+
+		seriesDefinitions = append(seriesDefinitions, *v)
+		return true
+	})
+
+	d.Series = seriesDefinitions
+	d.Truncated = c8ySeries.Get("truncated").Bool()
+
+	totalSeries := len(seriesDefinitions)
+
+	// Get each series values
+	var allSeries []MeasurementSeriesAggregateValueGroup
+	c8ySeries.Get("values").ForEach(func(key, values gjson.Result) bool {
+
+		fmt.Printf("Key: %s\n", key)
+		fmt.Printf("Values: %s\n", values)
 
 		timestamp, err := time.Parse(time.RFC3339, key.Str)
 
 		if err != nil {
 			panic(fmt.Sprintf("Invalid timestamp: %s", key.Str))
 		}
-		values.ForEach(func(_, value gjson.Result) bool {
-			v := MeasurementSeriesValue{}
-			json.Unmarshal([]byte(value.Str), &v)
-			v.Timestamp = timestamp
 
-			seriesValues = append(seriesValues, v)
+		seriesValues := &MeasurementSeriesAggregateValueGroup{
+			Timestamp: timestamp,
+			Values:    make([]MeasurementAggregateValue, totalSeries),
+		}
+
+		index := 0
+		values.ForEach(func(_, value gjson.Result) bool {
+			fmt.Printf("Current value: %s\n", value)
+			v := &MeasurementAggregateValue{}
+			json.Unmarshal([]byte(value.String()), &v)
+
+			fmt.Printf("Full Value: %v\n", v)
+
+			seriesValues.Values[index] = *v
+			index++
 			return true
 		})
 
-		allSeries = append(allSeries, seriesValues)
+		allSeries = append(allSeries, *seriesValues)
 		return true
 	})
 
-	d = &allSeries
+	// Store the first and last timestamps
+	d.DateFrom = allSeries[0].Timestamp
+	d.DateTo = allSeries[len(allSeries)-1].Timestamp
+
+	d.Values = allSeries
 	return nil
 }
 
 // GetMeasurementSeries returns the measurement series for a given source and variables
-func (s *MeasurementService) GetMeasurementSeries(ctx context.Context, opt *MeasurementSeriesOptions) (*MeasurementCollection, *Response, error) {
-	u := fmt.Sprintf("measurement/measurements")
+// The data is returned in a user friendly format to make it easier to use the data
+func (s *MeasurementService) GetMeasurementSeries(ctx context.Context, opt *MeasurementSeriesOptions) (*MeasurementSeriesGroup, *Response, error) {
+	u := fmt.Sprintf("measurement/measurements/series")
 
 	queryParams, err := addOptions("", opt)
 	if err != nil {
 		return nil, nil, err
 	}
 
+	fmt.Printf("query Parameters: %s\n", queryParams)
+
 	req, err := s.client.NewRequest("GET", u, queryParams, nil)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	data := new(MeasurementCollection)
+	data := new(MeasurementSeriesGroup)
 
 	resp, err := s.client.Do(ctx, req, data)
 	if err != nil {
 		return nil, resp, err
 	}
 
-	series := resp.JSON.Get("series").Array()
-
-	totalSeries := len(series)
-
-	values := resp.JSON.Get("values").ForEach(func (key, values gjson.Result) bool {
-
-		// Loop through results
-		t, err := time.Parse(time.RFC3339, key.String())
-
-
-		values.ForEach(func(index, value gjson.Result){
-			v := MeasurementSeriesValue{}
-
-			gjson.Unmarshal([]byte(value.Str), &v)
-			return true
-		})
-
-		seriesValue
-		json.Unmarshal()
-		return true
-	})
-
-	series.
-
-	// values.
-	truncated := resp.JSON.Get("truncated").Bool()
+	// Add extra information to the results
+	data.DeviceID = opt.Source
 
 	return data, resp, nil
 }
@@ -235,4 +316,47 @@ func (s *MeasurementService) GetMeasurement(ctx context.Context, ID string) (*Me
 	data.Item = *resp.JSON
 
 	return data, resp, nil
+}
+
+// MarshalCSV converts the measurement series group to a csv output so it can be more easily parsed by other languages
+// Example output
+// timestamp,c8y_Temperature.A,c8y_Temperature.B
+// 2018-11-23T00:45:39+01:00,60.699993,44.300003
+// 2018-11-23T01:45:39+01:00,67.63333,47.199997
+//
+func (d *MeasurementSeriesGroup) MarshalCSV(delimiter string) ([]byte, error) {
+
+	useDelimiter := delimiter
+	if useDelimiter == "" {
+		useDelimiter = ","
+	}
+
+	totalSeries := len(d.Series)
+
+	// First column is the timestamp
+	headers := make([]string, totalSeries+1)
+	row := make([]string, totalSeries+1)
+
+	headers[0] = "timestamp"
+
+	var output string
+
+	for i, header := range d.Series {
+		headers[i+1] = fmt.Sprintf("%s.%s", header.Type, header.Name)
+		output = strings.Join(headers, useDelimiter) + "\n"
+	}
+
+	for _, datapoint := range d.Values {
+		row[0] = datapoint.Timestamp.Format(time.RFC3339)
+		for i := 0; i < totalSeries; i++ {
+			if datapoint.Values[i].IsNull() {
+				row[i+1] = ""
+			} else {
+				row[i+1] = datapoint.Values[i].String()
+			}
+		}
+		output += strings.Join(row, useDelimiter) + "\n"
+	}
+
+	return []byte(output), nil
 }
