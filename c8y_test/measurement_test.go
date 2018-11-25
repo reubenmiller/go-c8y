@@ -2,6 +2,7 @@ package c8y_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -11,15 +12,15 @@ import (
 func TestMeasurementService_GetMeasurementSeries(t *testing.T) {
 	client := createTestClient()
 
-	col, _, _ := getDevices(client, "*WEA*", 1)
+	col, _, _ := getDevices(client, "*", 1)
 
 	sourceID := col.ManagedObjects[0].ID
 
-	dateFrom, dateTo := c8y.GetDateRange("1d")
+	dateFrom, dateTo := c8y.GetDateRange("2d")
 
-	_, _, err := client.Measurement.GetMeasurementSeries(context.Background(), &c8y.MeasurementSeriesOptions{
+	data, resp, err := client.Measurement.GetMeasurementSeries(context.Background(), &c8y.MeasurementSeriesOptions{
 		Source:    sourceID,
-		Variables: []string{"nx_WEA_27_Delta.ANA014", "nx_WEA_27_Delta.ANA017"},
+		Variables: []string{"c8y_Temperature.A", "c8y_Temperature.B"},
 		DateFrom:  dateFrom,
 		DateTo:    dateTo,
 	})
@@ -28,11 +29,22 @@ func TestMeasurementService_GetMeasurementSeries(t *testing.T) {
 		t.Errorf("No error should be returned. want: nil, got: %s", err)
 	}
 
+	csv, _ := data.MarshalCSV(",")
+
+	fmt.Printf("csv: %s\n", csv)
+
+	if respJson, err := json.Marshal(data); err != nil {
+		t.Errorf("Could not convert object to json. %v", data)
+	} else {
+		fmt.Printf("JSON Response: %s\n", respJson)
+	}
+
+	fmt.Printf("Response: %v\n", resp)
 }
 func TestMeasurementService_GetMeasurementCollection(t *testing.T) {
 	client := createTestClient()
 
-	col, _, _ := getDevices(client, "*WEA*", 1)
+	col, _, _ := getDevices(client, "*", 1)
 
 	sourceID := col.ManagedObjects[0].ID
 

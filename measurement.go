@@ -196,8 +196,10 @@ func (d *MeasurementSeriesGroup) UnmarshalJSON(data []byte) error {
 	})
 
 	// Store the first and last timestamps
-	d.DateFrom = allSeries[0].Timestamp
-	d.DateTo = allSeries[len(allSeries)-1].Timestamp
+	if len(allSeries) > 0 {
+		d.DateFrom = allSeries[0].Timestamp
+		d.DateTo = allSeries[len(allSeries)-1].Timestamp
+	}
 
 	d.Values = allSeries
 	return nil
@@ -260,8 +262,10 @@ func (d *MeasurementSeriesAggregateGroup) UnmarshalJSON(data []byte) error {
 	})
 
 	// Store the first and last timestamps
-	d.DateFrom = allSeries[0].Timestamp
-	d.DateTo = allSeries[len(allSeries)-1].Timestamp
+	if len(allSeries) > 0 {
+		d.DateFrom = allSeries[0].Timestamp
+		d.DateTo = allSeries[len(allSeries)-1].Timestamp
+	}
 
 	d.Values = allSeries
 	return nil
