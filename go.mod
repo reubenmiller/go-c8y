@@ -11,5 +11,6 @@ require (
 	github.com/spf13/viper v1.2.1
 	github.com/tidwall/gjson v1.1.3
 	github.com/tidwall/match v0.0.0-20171002075945-1731857f09b1 // indirect
+	golang.org/x/net v0.0.0-20181114220301-adae6a3d119a // indirect
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 )
