@@ -4,12 +4,31 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
 	c8y "github.com/reubenmiller/go-c8y"
 	"github.com/spf13/viper"
 )
+
+func TestMain(m *testing.M) {
+	setupTestSystem()
+
+	res := m.Run()
+
+	cleanupTestSystem()
+
+	os.Exit(res)
+}
+
+func setupTestSystem() {
+	fmt.Printf("Setting up tests\n")
+}
+
+func cleanupTestSystem() {
+	fmt.Printf("Running Cleanup\n")
+}
 
 func createTestClient() *c8y.Client {
 	config := readConfig()

@@ -7,6 +7,8 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+const DeviceFragmentName = "c8y_IsDevice"
+
 // InventoryService responsible for all inventory api calls
 type InventoryService service
 
@@ -100,6 +102,15 @@ type ManagedObjectReferencesCollection struct {
 type ManagedObjectReference struct {
 	Self          string        `json:"self"`
 	ManagedObject ManagedObject `json:"managedObject"`
+}
+
+// GetDevicesByName returns managed object devices by filter by a name
+func (s *InventoryService) GetDevicesByName(ctx context.Context, name string, paging *PaginationOptions) (*ManagedObjectCollection, *Response, error) {
+	opt := &ManagedObjectOptions{
+		Query:             fmt.Sprintf("(name eq '%s') and has(%s)", name, DeviceFragmentName),
+		PaginationOptions: *paging,
+	}
+	return s.GetManagedObjectCollection(ctx, opt)
 }
 
 // GetDevices returns the c8y device managed objects. These are the objects with the fragment "c8y_IsDevice"

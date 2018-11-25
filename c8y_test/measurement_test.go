@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
+	"time"
 
 	c8y "github.com/reubenmiller/go-c8y"
 )
@@ -72,4 +73,107 @@ func TestMeasurementService_GetMeasurementCollection(t *testing.T) {
 		t.Errorf("expected id to exist. Wanted: Existing but go: no exist")
 	}
 	fmt.Printf("JSON value: %s", value)
+}
+
+// TestMeasurementService_MarshalMeasurement tests the custom json marshalling function for the
+// measurement representation.
+func TestMeasurementService_MarshalMeasurement(t *testing.T) {
+	timestamp, _ := time.Parse(time.RFC3339, "2018-11-25T14:41:51+01:00")
+
+	m, _ := c8y.NewSimpleMeasurementRepresentation(c8y.SimpleMeasurementOptions{
+		SourceID:            "12345",
+		Timestamp:           &timestamp,
+		ValueFragmentType:   "c8y_Temperature",
+		ValueFragmentSeries: "A",
+		Value:               1.101,
+		Unit:                "degC",
+		FragmentType:        []string{"c8y_Test"},
+	})
+
+	mJSON, err := json.Marshal(m)
+
+	if err != nil {
+		t.Errorf("Decoding threw an error when marshalling measurement to json. wanted: nil, got: %s", err)
+	}
+
+	expectedOutput := `{"source":{"id":"12345"},"time":"2018-11-25T14:41:51+01:00","c8y_Test":{},"c8y_Temperature":{"A":{"value":1.101,"unit":"degC"}}}`
+
+	if string(mJSON) != expectedOutput {
+		t.Errorf("json does not match. wanted: %s, got: %s", expectedOutput, mJSON)
+	}
+
+	fmt.Printf("json: %s\n", mJSON)
+}
+
+func TestMeasurementService_MarshalMeasurementMultipleSeries(t *testing.T) {
+	timestamp, _ := time.Parse(time.RFC3339, "2018-11-25T14:41:51+01:00")
+
+	m := c8y.MeasurementRepresentation{
+		Source: c8y.MeasurementSource{
+			ID: "12345",
+		},
+		Timestamp: timestamp,
+		Fragments: c8y.NewFragmentNameSeries("c8y_Test"),
+		ValueFragmentTypes: []c8y.ValueFragmentType{
+			c8y.ValueFragmentType{
+				Name: "c8y_Temperature",
+				Values: []c8y.ValueFragmentSeries{
+					c8y.ValueFragmentSeries{
+						Name:  "A",
+						Value: 1.101,
+						Unit:  "degC",
+					},
+					c8y.ValueFragmentSeries{
+						Name:  "B",
+						Value: 56.876,
+						Unit:  "degC",
+					},
+				},
+			},
+		},
+	}
+
+	mJSON, err := json.Marshal(m)
+
+	if err != nil {
+		t.Errorf("Decoding threw an error when marshalling measurement to json. wanted: nil, got: %s", err)
+	}
+
+	expectedOutput := `{"source":{"id":"12345"},"time":"2018-11-25T14:41:51+01:00","c8y_Test":{},"c8y_Temperature":{"A":{"value":1.101,"unit":"degC"},"B":{"value":56.876,"unit":"degC"}}}`
+
+	if string(mJSON) != expectedOutput {
+		t.Errorf("json does not match. wanted: %s, got: %s", expectedOutput, mJSON)
+	}
+
+	fmt.Printf("json: %s\n", mJSON)
+}
+
+func TestMeasurementService_Create(t *testing.T) {
+	client := createTestClient()
+
+	m, _ := c8y.NewSimpleMeasurementRepresentation(c8y.SimpleMeasurementOptions{
+		SourceID:            "753613707",
+		Timestamp:           nil,
+		Type:                "c8yTest",
+		ValueFragmentType:   "c8y_Temperature",
+		ValueFragmentSeries: "A",
+		Value:               1.101,
+		Unit:                "degC",
+		FragmentType:        []string{"c8y_Test"},
+	})
+
+	data, resp, err := client.Measurement.Create(context.Background(), *m)
+
+	if resp.StatusCode != 201 {
+		t.Errorf("Unexpected server return code. wanted: 201, got: %d", resp.StatusCode)
+	}
+
+	if err != nil {
+		t.Errorf("Unexpected error when creating measurement. wanted: nil, got: %s", err)
+		return
+	}
+
+	if data != nil {
+		fmt.Printf("json: %s\n", data.Item.String())
+	}
 }

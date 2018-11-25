@@ -205,6 +205,7 @@ func (d *MeasurementSeriesGroup) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// UnmarshalJSON controls the conversion of json bytes to the MeasurementSeriesAggregateGroup struct
 func (d *MeasurementSeriesAggregateGroup) UnmarshalJSON(data []byte) error {
 	c8ySeries := gjson.ParseBytes(data)
 
@@ -363,4 +364,27 @@ func (d *MeasurementSeriesGroup) MarshalCSV(delimiter string) ([]byte, error) {
 	}
 
 	return []byte(output), nil
+}
+
+// Create posts a new measurement in the platform
+func (s *MeasurementService) Create(ctx context.Context, m MeasurementRepresentation) (*MeasurementObject, *Response, error) {
+	u := fmt.Sprintf("measurement/measurements")
+
+	req, err := s.client.NewRequest("POST", u, "", m)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	req.Header.Add("Accept", "application/json")
+
+	data := new(MeasurementObject)
+
+	resp, err := s.client.Do(ctx, req, data)
+	if err != nil {
+		return nil, resp, err
+	}
+
+	data.Item = *resp.JSON
+
+	return data, resp, nil
 }

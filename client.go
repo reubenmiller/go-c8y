@@ -3,8 +3,8 @@ package c8y
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -22,7 +22,7 @@ import (
 // ContextAuthTokenKey todo
 type ContextAuthTokenKey string
 
-// GetContextAuthTokenKey authentication key used to override the given Basic Authentication token 
+// GetContextAuthTokenKey authentication key used to override the given Basic Authentication token
 func GetContextAuthTokenKey() ContextAuthTokenKey {
 	return ContextAuthTokenKey("authToken")
 }
@@ -148,7 +148,7 @@ func (c *Client) Noop() {
 
 }
 
-// NewAuthorizationContextFromRequest returns a new context with the Authorization token set which will override the Basic Auth in subsequent 
+// NewAuthorizationContextFromRequest returns a new context with the Authorization token set which will override the Basic Auth in subsequent
 // REST requests
 func NewAuthorizationContextFromRequest(req *http.Request) context.Context {
 	if req == nil {
@@ -187,6 +187,7 @@ func (c *Client) NewRequest(method, path string, query string, body interface{})
 	if body != nil {
 		buf = new(bytes.Buffer)
 		err := json.NewEncoder(buf).Encode(body)
+
 		if err != nil {
 			return nil, err
 		}
@@ -208,7 +209,6 @@ func (c *Client) NewRequest(method, path string, query string, body interface{})
 	return req, nil
 }
 
-
 // Response is a Cumulocity API response. This wraps the standard http.Response
 // returned from Cumulocity and provides convenient access to things like
 // pagination links.
@@ -223,7 +223,7 @@ type Response struct {
 }
 
 // DecodeJSON returns the json response decoded into the given interface
-func (r *Response) DecodeJSON(v interface{}) (error) {
+func (r *Response) DecodeJSON(v interface{}) error {
 	if r.JSON == nil {
 		return fmt.Errorf("JSON object does not exist (i.e. is nil)")
 	}
@@ -282,7 +282,7 @@ func withContext(ctx context.Context, req *http.Request) *http.Request {
 // ctx.Err() will be returned.
 func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Response, error) {
 	req = withContext(ctx, req)
-	
+
 	// Check if an authorization key is provided in the context, if so then override the c8y authentication
 	if authToken := ctx.Value(GetContextAuthTokenKey()); authToken != nil {
 		fmt.Printf("Overriding basic auth provided in the context")
@@ -371,12 +371,12 @@ These are the possible validation error codes:
         information is set in the Message field of the Error
 */
 type Error struct {
-	Resource string `json:"resource"` // resource on which the error occurred
-	Field    string `json:"field"`    // field on which the error occurred
-	Code     string `json:"code"`     // validation error code
-	Message  string `json:"message"`  // Message describing the error. Errors with Code == "custom" will always have this set.
+	Resource     string `json:"resource"` // resource on which the error occurred
+	Field        string `json:"field"`    // field on which the error occurred
+	Code         string `json:"code"`     // validation error code
+	Message      string `json:"message"`  // Message describing the error. Errors with Code == "custom" will always have this set.
 	ErrorMessage string `json:"error"`
-	Information string `json:"info"`
+	Information  string `json:"info"`
 }
 
 func (e *Error) Error() string {
