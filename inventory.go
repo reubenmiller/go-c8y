@@ -43,17 +43,25 @@ type AgentConfiguration struct {
 
 // ManagedObject is the general Inventory Managed Object data structure
 type ManagedObject struct {
-	ID               string             `json:"id"`
-	Name             string             `json:"name"`
-	Type             string             `json:"type"`
-	Self             string             `json:"self"`
-	Owner            string             `json:"owner"`
-	DeviceParents    ParentDevices      `json:"deviceParents"`
-	ChildDevices     ChildDevices       `json:"childDevices"`
+	ID               string             `json:"id,omitempty"`
+	Name             string             `json:"name,omitempty"`
+	Type             string             `json:"type,omitempty"`
+	Self             string             `json:"self,omitempty"`
+	Owner            string             `json:"owner,omitempty"`
+	DeviceParents    ParentDevices      `json:"deviceParents,omitempty"`
+	ChildDevices     ChildDevices       `json:"childDevices,omitempty"`
 	Kpi              Kpi                `json:"c8y_Kpi,omitempty"`
 	C8yIsDevice      DeviceFragment     `json:"c8y_IsDevice,omitempty"`
 	C8yConfiguration AgentConfiguration `json:"c8y_Configuration,omitempty"`
 	Item             gjson.Result
+}
+
+// NewDevice returns a simple device managed object
+func NewDevice(name string) *ManagedObject {
+	return &ManagedObject{
+		Name:        name,
+		C8yIsDevice: DeviceFragment{},
+	}
 }
 
 // Kpi is the Data Point Library fragment
@@ -285,6 +293,11 @@ func (s *InventoryService) UpdateManagedObject(ctx context.Context, ID string, b
 	return data, resp, nil
 }
 
+// CreateDevice creates a device in the Cumulocity platform with the required Device Fragment
+func (s *InventoryService) CreateDevice(ctx context.Context, name string) (*ManagedObject, *Response, error) {
+	return s.CreateManagedObject(ctx, NewDevice(name))
+}
+
 // CreateManagedObject create a new managed object
 func (s *InventoryService) CreateManagedObject(ctx context.Context, body interface{}) (*ManagedObject, *Response, error) {
 	u := fmt.Sprintf("inventory/managedObjects")
@@ -302,4 +315,21 @@ func (s *InventoryService) CreateManagedObject(ctx context.Context, body interfa
 	}
 
 	return data, resp, nil
+}
+
+// Delete removes a managed object by ID
+func (s *InventoryService) Delete(ctx context.Context, ID string) (*Response, error) {
+	u := fmt.Sprintf("inventory/managedObjects/%s", ID)
+
+	req, err := s.client.NewRequest("DELETE", u, "", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.Do(ctx, req, nil)
+	if err != nil {
+		return resp, err
+	}
+
+	return resp, nil
 }

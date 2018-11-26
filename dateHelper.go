@@ -1,13 +1,10 @@
 package c8y
 
 import (
-	"fmt"
 	"log"
 	"regexp"
 	"strconv"
 	"time"
-
-	"github.com/araddon/dateparse"
 )
 
 // GetDateRange returns the dateFrom and dateTo based on an interval string, i.e. 1d, is 1 day
@@ -90,7 +87,7 @@ func GetRoundedTime(date *time.Time, unit string) (roundTime time.Time) {
 }
 
 // ParseDate returns a Time object from a string
-func ParseDate(value string) (dateObj *time.Time, err error) {
+/* func ParseDate(value string) (dateObj *time.Time, err error) {
 	var tempDate time.Time
 	// Try to parse with ISO8801 format
 	if tempDate, err = time.Parse("2006-01-02T15:04:05-07", value); err == nil {
@@ -106,4 +103,4 @@ func ParseDate(value string) (dateObj *time.Time, err error) {
 
 	err = fmt.Errorf("Could not parse date")
 	return nil, err
-}
+} */

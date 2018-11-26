@@ -152,7 +152,7 @@ func TestMeasurementService_Create(t *testing.T) {
 	client := createTestClient()
 
 	m, _ := c8y.NewSimpleMeasurementRepresentation(c8y.SimpleMeasurementOptions{
-		SourceID:            "753613707",
+		SourceID:            CumulocityConfiguration.ExampleDevice.ID,
 		Timestamp:           nil,
 		Type:                "c8yTest",
 		ValueFragmentType:   "c8y_Temperature",
@@ -170,10 +170,9 @@ func TestMeasurementService_Create(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("Unexpected error when creating measurement. wanted: nil, got: %s", err)
-		return
 	}
 
 	if data != nil {
-		fmt.Printf("json: %s\n", data.Item.String())
+		fmt.Printf("measurement: %s\n", data.Item.String())
 	}
 }

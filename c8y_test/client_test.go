@@ -12,6 +12,18 @@ import (
 	"github.com/spf13/viper"
 )
 
+var CumulocityConfiguration SetupConfiguration
+
+type TestDevice struct {
+	ID           string
+	IdentityType string
+	ExternalID   string
+}
+
+type SetupConfiguration struct {
+	ExampleDevice TestDevice
+}
+
 func TestMain(m *testing.M) {
 	setupTestSystem()
 
@@ -22,12 +34,77 @@ func TestMain(m *testing.M) {
 	os.Exit(res)
 }
 
+// setupTestSystem configures the system ready for testing
 func setupTestSystem() {
 	fmt.Printf("Setting up tests\n")
+
+	mo, err := createTestDevice()
+
+	if err != nil {
+		fmt.Printf("Could not create/find test device\n")
+	} else {
+		fmt.Printf("Using test device: %s\n", mo.ID)
+	}
+
+	if mo != nil {
+		CumulocityConfiguration.ExampleDevice.ID = mo.ID
+	}
 }
 
 func cleanupTestSystem() {
 	fmt.Printf("Running Cleanup\n")
+
+	client := createTestClient()
+	config := readConfig()
+
+	removeDevices := config.GetBool("testing.cleanup.removeDevice")
+	if removeDevices && CumulocityConfiguration.ExampleDevice.ID != "" {
+		fmt.Printf("Removing test device\n")
+		_, err := client.Inventory.Delete(context.Background(), CumulocityConfiguration.ExampleDevice.ID)
+		if err != nil {
+			fmt.Printf("Could not remove the id. %s", err)
+		}
+	}
+}
+
+// createTestDevice create a test device by looking for the special test external identity
+func createTestDevice() (*c8y.ManagedObject, error) {
+	client := createTestClient()
+
+	var err error
+	var mo *c8y.ManagedObject
+
+	externalType := "c8y_Testing"
+	externalID := "c8yDeviceTest001"
+
+	moRef, _, _ := client.Identity.GetExternalID(context.Background(), externalType, externalID)
+
+	if moRef == nil {
+		mo, _, err = client.Inventory.CreateDevice(context.Background(), externalID)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to create device: %s", err)
+		}
+		// Store a reference to the test device
+		CumulocityConfiguration.ExampleDevice.ID = mo.ID
+
+		// Create Identity for new managed object
+		_, _, err = client.Identity.NewExternalIdentity(context.Background(), mo.ID, &c8y.IdentityOptions{
+			Type:       externalType,
+			ExternalID: externalID,
+		})
+
+		if err != nil {
+			return nil, fmt.Errorf("Failed to create external id for the test managed object: %s", err)
+		}
+	} else {
+		mo, _, err = client.Inventory.GetManagedObject(context.Background(), moRef.ManagedObject.ID, nil)
+
+		if err != nil {
+			return nil, fmt.Errorf("Failed to get managed object found using the external id")
+		}
+	}
+
+	return mo, nil
 }
 
 func createTestClient() *c8y.Client {
