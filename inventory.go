@@ -7,6 +7,7 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+// DeviceFragmentName name of the c8yDevice Fragment property
 const DeviceFragmentName = "c8y_IsDevice"
 
 // InventoryService responsible for all inventory api calls
@@ -36,9 +37,29 @@ type DeviceFragment struct{}
 // EmptyFragment fragment used for special c8y fragments, i.e. c8y_IsDevice etc.
 type EmptyFragment struct{}
 
+// ConfigurationFragment fragment containing the agent's configuration information
+type ConfigurationFragment struct {
+	C8yConfiguration AgentConfiguration `json:"c8y_Configuration,omitempty"`
+}
+
+// SupportedOperationsFragment list of supported operations which can be sent to device/agent which has this fragment
+type SupportedOperationsFragment struct {
+	SupportedOperations []string `json:"c8y_SupportedOperations,omitempty"`
+}
+
 // AgentConfiguration agent configuration fragment
 type AgentConfiguration struct {
 	Configuration string `json:"config"`
+}
+
+// AgentFragment is the special agent fragment used to identify managed objects which are representations of an Agent.
+type AgentFragment struct {
+	AgentFragment struct{} `json:"com_cumulocity_model_Agent"`
+}
+
+// DeviceFragmentType marks a managed object which are device representations
+type DeviceFragmentType struct {
+	DeviceFragmentType struct{} `json:"c8y_IsDevice"`
 }
 
 // ManagedObject is the general Inventory Managed Object data structure
