@@ -55,6 +55,8 @@ type Client struct {
 	// Password for Cumulocity Authentication
 	Password string
 
+	UseTenantInUsername bool
+
 	verboseMessage *color.Color
 	warningMessage *color.Color
 
@@ -97,15 +99,16 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 	userAgent := defaultUserAgent
 
 	c := &Client{
-		client:         httpClient,
-		BaseURL:        targetBaseURL,
-		UserAgent:      userAgent,
-		Realtime:       realtimeClient,
-		Username:       username,
-		Password:       password,
-		TenantName:     tenant,
-		verboseMessage: color.New(color.FgMagenta),
-		warningMessage: color.New(color.FgYellow),
+		client:              httpClient,
+		BaseURL:             targetBaseURL,
+		UserAgent:           userAgent,
+		Realtime:            realtimeClient,
+		Username:            username,
+		Password:            password,
+		TenantName:          tenant,
+		UseTenantInUsername: true,
+		verboseMessage:      color.New(color.FgMagenta),
+		warningMessage:      color.New(color.FgYellow),
 	}
 	c.common.client = c
 	c.Measurement = (*MeasurementService)(&c.common)
@@ -200,8 +203,14 @@ func (c *Client) NewRequest(method, path string, query string, body interface{})
 		req.Header.Set("Content-Type", "application/json")
 	}
 
-	usernameWithTenantPrefix := fmt.Sprintf("%s/%s", c.TenantName, c.Username)
-	req.SetBasicAuth(usernameWithTenantPrefix, c.Password)
+	var headerUsername string
+	if c.UseTenantInUsername {
+		headerUsername = fmt.Sprintf("%s/%s", c.TenantName, c.Username)
+	} else {
+		headerUsername = c.Username
+	}
+
+	req.SetBasicAuth(headerUsername, c.Password)
 
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgent)
@@ -285,7 +294,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 
 	// Check if an authorization key is provided in the context, if so then override the c8y authentication
 	if authToken := ctx.Value(GetContextAuthTokenKey()); authToken != nil {
-		fmt.Printf("Overriding basic auth provided in the context")
+		fmt.Printf("Overriding basic auth provided in the context\n")
 		req.Header.Set("Authorization", authToken.(string))
 	}
 
