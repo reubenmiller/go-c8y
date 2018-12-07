@@ -80,7 +80,7 @@ const (
 // provided, http.DefaultClient will be used. To use API methods which require
 // authentication, provide an http.Client that will perform the authentication
 // for you (such as that provided by the golang.org/x/oauth2 library).
-func NewClient(httpClient *http.Client, baseURL string, tenant string, username string, password string) *Client {
+func NewClient(httpClient *http.Client, baseURL string, tenant string, username string, password string, skipRealtimeClient bool) *Client {
 	if httpClient == nil {
 		httpClient = http.DefaultClient
 	}
@@ -93,8 +93,11 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 	}
 	targetBaseURL, _ := url.Parse(fmtURL)
 
-	fmt.Printf("Creating realtime client %s\n", fmtURL)
-	realtimeClient := NewRealtimeClient(fmtURL, nil, tenant, username, password)
+	var realtimeClient *RealtimeClient
+	if !skipRealtimeClient {
+		fmt.Printf("Creating realtime client %s\n", fmtURL)
+		realtimeClient = NewRealtimeClient(fmtURL, nil, tenant, username, password)
+	}
 
 	userAgent := defaultUserAgent
 
