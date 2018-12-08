@@ -233,27 +233,27 @@ func (c *RealtimeClient) worker() error {
 			for _, message := range messages {
 				switch channelType := message.Channel; channelType {
 				case "/meta/handshake":
-					fmt.Printf("ws: Handshake\n")
+					log.Printf("ws: Handshake\n")
 
 					if message.ClientID != "" {
 						c.mtx.Lock()
 						c.clientID = message.ClientID
 						c.connected = true
 						c.mtx.Unlock()
-						fmt.Printf("Detected clientID: %s\n", message.ClientID)
+						log.Printf("Detected clientID: %s\n", message.ClientID)
 					} else {
-						panic(fmt.Sprintf("No clientID present in handshake. Check that the tenant, usename and password is correct. Raw Message: %s\n", message))
+						log.Panicf("No clientID present in handshake. Check that the tenant, usename and password is correct. Raw Message: %s\n", message)
 					}
 
 				case "/meta/subscribe":
-					fmt.Printf("ws: Subscribe\n")
+					log.Printf("ws: Subscribe\n")
 					c.sendMetaConnect()
 
 				case "/meta/connect":
-					fmt.Printf("ws: Connect\n")
+					log.Printf("ws: Connect\n")
 
 				case "/meta/disconnect":
-					fmt.Printf("ws: disconnect\n")
+					log.Printf("ws: disconnect\n")
 
 				default:
 					// Data package received
@@ -309,7 +309,7 @@ func (c *RealtimeClient) sendMetaConnect() error {
 	if c.ws == nil {
 		return fmt.Errorf("Websocket is nil")
 	}
-	fmt.Println("Sending meta/connect")
+	log.Print("Sending meta/connect")
 	message := &request{
 		ID:             "2",
 		Channel:        "/meta/connect",
@@ -333,7 +333,7 @@ const (
 
 // Subscribe setup a subscription to
 func (c *RealtimeClient) Subscribe(pattern string, out chan<- *Message) error {
-	fmt.Println("Subscribing to ", pattern)
+	log.Println("Subscribing to ", pattern)
 
 	glob, err := ohmyglob.Compile(pattern, nil)
 	if err != nil {

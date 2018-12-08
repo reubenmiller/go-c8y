@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -95,7 +96,7 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 
 	var realtimeClient *RealtimeClient
 	if !skipRealtimeClient {
-		fmt.Printf("Creating realtime client %s\n", fmtURL)
+		log.Printf("Creating realtime client %s\n", fmtURL)
 		realtimeClient = NewRealtimeClient(fmtURL, nil, tenant, username, password)
 	}
 
