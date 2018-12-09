@@ -34,6 +34,20 @@ type ApplicationCollection struct {
 	Items []gjson.Result
 }
 
+// ApplicationSubscriptions contains the list of service users for each application subscription
+type ApplicationSubscriptions struct {
+	Users []ServiceUser `json:"users"`
+
+	Item gjson.Result
+}
+
+// ServiceUser has the service user credentials for a given application subscription
+type ServiceUser struct {
+	Username string `json:"name"`
+	Password string `json:"password"`
+	Tenant   string `json:"tenant"`
+}
+
 // getApplicationData todo
 func (s *ApplicationService) getApplicationData(ctx context.Context, partialURL string, opt *ApplicationOptions) (*ApplicationCollection, *Response, error) {
 	u := partialURL
@@ -109,4 +123,29 @@ func (s *ApplicationService) GetApplicationCollectionByID(ctx context.Context, I
 // GetApplicationCollection returns a list of applications with no filtering
 func (s *ApplicationService) GetApplicationCollection(ctx context.Context, opt *ApplicationOptions) (*ApplicationCollection, *Response, error) {
 	return s.getApplicationData(ctx, "/applications", opt)
+}
+
+// GetCurrentApplicationSubscriptions returns the list of application subscriptions per tenant along with the service user credentials
+// This function can only be called using Application Bootstrap credentials, otherwise a 403 (forbidden) response will be returned
+func (s *ApplicationService) GetCurrentApplicationSubscriptions(ctx context.Context, ID string) (*ApplicationSubscriptions, *Response, error) {
+	u := fmt.Sprintf("/application/currentApplication/subscriptions")
+
+	var queryParams string
+	var err error
+
+	req, err := s.client.NewRequest("GET", u, queryParams, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	data := new(ApplicationSubscriptions)
+
+	resp, err := s.client.Do(ctx, req, data)
+	if err != nil {
+		return nil, resp, err
+	}
+
+	data.Item = *resp.JSON
+
+	return data, resp, nil
 }
