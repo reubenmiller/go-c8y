@@ -15,7 +15,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/fatih/color"
 	"github.com/google/go-querystring/query"
 	"github.com/tidwall/gjson"
 )
@@ -58,8 +57,7 @@ type Client struct {
 
 	UseTenantInUsername bool
 
-	verboseMessage *color.Color
-	warningMessage *color.Color
+	logger log.Logger
 
 	common service // Reuse a single struct instead of allocating one for each service on the heap.
 
@@ -111,8 +109,7 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 		Password:            password,
 		TenantName:          tenant,
 		UseTenantInUsername: true,
-		verboseMessage:      color.New(color.FgMagenta),
-		warningMessage:      color.New(color.FgYellow),
+		logger:              log.Logger{},
 	}
 	c.common.client = c
 	c.Measurement = (*MeasurementService)(&c.common)
@@ -302,7 +299,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 		req.Header.Set("Authorization", authToken.(string))
 	}
 
-	c.verboseMessage.Println("Sending request: ", req.URL.Path)
+	c.logger.Println("Sending request: ", req.URL.Path)
 
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -349,7 +346,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 		}
 	}
 
-	c.verboseMessage.Println(fmt.Sprintf("Status code: %v", response.StatusCode))
+	c.logger.Println(fmt.Sprintf("Status code: %v", response.StatusCode))
 
 	return response, err
 }

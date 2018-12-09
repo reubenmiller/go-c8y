@@ -117,7 +117,7 @@ func createTestClient() *c8y.Client {
 	password := config.GetString("c8y.password")
 
 	log.Printf("Host=%s, Tenant=%s, Username=%s, Password=%s\n", host, tenant, username, password)
-	client := c8y.NewClient(nil, host, tenant, username, password)
+	client := c8y.NewClient(nil, host, tenant, username, password, false)
 	return client
 }
 
