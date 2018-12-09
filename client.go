@@ -57,8 +57,6 @@ type Client struct {
 
 	UseTenantInUsername bool
 
-	logger log.Logger
-
 	common service // Reuse a single struct instead of allocating one for each service on the heap.
 
 	// Services used for talking to different parts of the Cumulocity API.
@@ -109,7 +107,6 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 		Password:            password,
 		TenantName:          tenant,
 		UseTenantInUsername: true,
-		logger:              log.Logger{},
 	}
 	c.common.client = c
 	c.Measurement = (*MeasurementService)(&c.common)
@@ -299,7 +296,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 		req.Header.Set("Authorization", authToken.(string))
 	}
 
-	c.logger.Println("Sending request: ", req.URL.Path)
+	log.Println("Sending request: ", req.URL.Path)
 
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -346,7 +343,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 		}
 	}
 
-	c.logger.Println(fmt.Sprintf("Status code: %v", response.StatusCode))
+	log.Println(fmt.Sprintf("Status code: %v", response.StatusCode))
 
 	return response, err
 }
