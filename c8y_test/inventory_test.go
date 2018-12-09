@@ -3,6 +3,7 @@ package c8y_test
 import (
 	"context"
 	"fmt"
+	"log"
 	"testing"
 
 	c8y "github.com/reubenmiller/go-c8y"
@@ -36,7 +37,7 @@ func TestInventoryService_GetDevices(t *testing.T) {
 
 	deviceName := data.Items[0].Get("name")
 
-	fmt.Printf("Device Name: %s\n", deviceName)
+	log.Printf("Device Name: %s\n", deviceName)
 }
 
 func TestInventoryService_AuthenticationToken(t *testing.T) {

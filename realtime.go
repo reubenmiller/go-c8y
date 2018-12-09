@@ -195,7 +195,8 @@ func (c *RealtimeClient) connect() error {
 		HandshakeTimeout:  10 * time.Second,
 		EnableCompression: false,
 	}
-	ws, _, err := dialer.Dial("wss://nordex.nifqa.nordex-online.com/cep/realtime/", nil)
+	log.Printf("Establishing connection to %s", c.url.String())
+	ws, _, err := dialer.Dial(c.url.String(), nil)
 
 	if err != nil {
 		return err

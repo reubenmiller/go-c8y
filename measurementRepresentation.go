@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 )
@@ -196,7 +197,7 @@ func (m MeasurementRepresentation) MarshalJSON() ([]byte, error) {
 	}
 
 	o := []byte(fmt.Sprintf("{%s}", strings.Join(parts, ",")))
-	fmt.Printf("%s\n", o)
+	log.Printf("%s\n", o)
 
 	return o, nil
 }

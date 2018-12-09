@@ -3,7 +3,7 @@ package c8y_test
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"log"
 	"testing"
 	"time"
 
@@ -32,15 +32,15 @@ func TestMeasurementService_GetMeasurementSeries(t *testing.T) {
 
 	csv, _ := data.MarshalCSV(",")
 
-	fmt.Printf("csv: %s\n", csv)
+	log.Printf("csv: %s\n", csv)
 
 	if respJson, err := json.Marshal(data); err != nil {
 		t.Errorf("Could not convert object to json. %v", data)
 	} else {
-		fmt.Printf("JSON Response: %s\n", respJson)
+		log.Printf("JSON Response: %s\n", respJson)
 	}
 
-	fmt.Printf("Response: %v\n", resp)
+	log.Printf("Response: %v\n", resp)
 }
 func TestMeasurementService_GetMeasurementCollection(t *testing.T) {
 	client := createTestClient()
@@ -60,7 +60,7 @@ func TestMeasurementService_GetMeasurementCollection(t *testing.T) {
 		t.Errorf("Result should not be nil")
 	}
 
-	fmt.Printf("json result: %s\n", *resp.JSONData)
+	log.Printf("json result: %s\n", *resp.JSONData)
 
 	totalmeasurements := resp.JSON.Get("measurements.#").Int()
 
@@ -72,7 +72,7 @@ func TestMeasurementService_GetMeasurementCollection(t *testing.T) {
 	if !value.Exists() {
 		t.Errorf("expected id to exist. Wanted: Existing but go: no exist")
 	}
-	fmt.Printf("JSON value: %s", value)
+	log.Printf("JSON value: %s", value)
 }
 
 // TestMeasurementService_MarshalMeasurement tests the custom json marshalling function for the
@@ -102,7 +102,7 @@ func TestMeasurementService_MarshalMeasurement(t *testing.T) {
 		t.Errorf("json does not match. wanted: %s, got: %s", expectedOutput, mJSON)
 	}
 
-	fmt.Printf("json: %s\n", mJSON)
+	log.Printf("json: %s\n", mJSON)
 }
 
 func TestMeasurementService_MarshalMeasurementMultipleSeries(t *testing.T) {
@@ -145,7 +145,7 @@ func TestMeasurementService_MarshalMeasurementMultipleSeries(t *testing.T) {
 		t.Errorf("json does not match. wanted: %s, got: %s", expectedOutput, mJSON)
 	}
 
-	fmt.Printf("json: %s\n", mJSON)
+	log.Printf("json: %s\n", mJSON)
 }
 
 func TestMeasurementService_Create(t *testing.T) {
@@ -173,6 +173,6 @@ func TestMeasurementService_Create(t *testing.T) {
 	}
 
 	if data != nil {
-		fmt.Printf("measurement: %s\n", data.Item.String())
+		log.Printf("measurement: %s\n", data.Item.String())
 	}
 }

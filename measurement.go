@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -154,7 +155,7 @@ func (d *MeasurementSeriesGroup) UnmarshalJSON(data []byte) error {
 	c8ySeries.Get("series").ForEach(func(_, serie gjson.Result) bool {
 		v := &MeasurementSerieDefinition{}
 		if err := json.Unmarshal([]byte(serie.String()), &v); err != nil {
-			fmt.Printf("Could not unmarshal series definition. %s", serie.String())
+			log.Printf("Could not unmarshal series definition. %s", serie.String())
 		}
 
 		seriesDefinitions = append(seriesDefinitions, *v)
@@ -215,7 +216,7 @@ func (d *MeasurementSeriesAggregateGroup) UnmarshalJSON(data []byte) error {
 	c8ySeries.Get("series").ForEach(func(_, serie gjson.Result) bool {
 		v := &MeasurementSerieDefinition{}
 		if err := json.Unmarshal([]byte(serie.String()), &v); err != nil {
-			fmt.Printf("Could not unmarshal series definition. %s", serie.String())
+			log.Printf("Could not unmarshal series definition. %s", serie.String())
 		}
 
 		seriesDefinitions = append(seriesDefinitions, *v)
@@ -231,8 +232,8 @@ func (d *MeasurementSeriesAggregateGroup) UnmarshalJSON(data []byte) error {
 	var allSeries []MeasurementSeriesAggregateValueGroup
 	c8ySeries.Get("values").ForEach(func(key, values gjson.Result) bool {
 
-		fmt.Printf("Key: %s\n", key)
-		fmt.Printf("Values: %s\n", values)
+		log.Printf("Key: %s\n", key)
+		log.Printf("Values: %s\n", values)
 
 		timestamp, err := time.Parse(time.RFC3339, key.Str)
 
@@ -247,11 +248,11 @@ func (d *MeasurementSeriesAggregateGroup) UnmarshalJSON(data []byte) error {
 
 		index := 0
 		values.ForEach(func(_, value gjson.Result) bool {
-			fmt.Printf("Current value: %s\n", value)
+			log.Printf("Current value: %s\n", value)
 			v := &MeasurementAggregateValue{}
 			json.Unmarshal([]byte(value.String()), &v)
 
-			fmt.Printf("Full Value: %v\n", v)
+			log.Printf("Full Value: %v\n", v)
 
 			seriesValues.Values[index] = *v
 			index++
@@ -282,7 +283,7 @@ func (s *MeasurementService) GetMeasurementSeries(ctx context.Context, opt *Meas
 		return nil, nil, err
 	}
 
-	fmt.Printf("query Parameters: %s\n", queryParams)
+	log.Printf("query Parameters: %s\n", queryParams)
 
 	req, err := s.client.NewRequest("GET", u, queryParams, nil)
 	if err != nil {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"testing"
@@ -36,14 +37,14 @@ func TestMain(m *testing.M) {
 
 // setupTestSystem configures the system ready for testing
 func setupTestSystem() {
-	fmt.Printf("Setting up tests\n")
+	log.Printf("Setting up tests\n")
 
 	mo, err := createTestDevice()
 
 	if err != nil {
-		fmt.Printf("Could not create/find test device\n")
+		log.Printf("Could not create/find test device\n")
 	} else {
-		fmt.Printf("Using test device: %s\n", mo.ID)
+		log.Printf("Using test device: %s\n", mo.ID)
 	}
 
 	if mo != nil {
@@ -52,17 +53,17 @@ func setupTestSystem() {
 }
 
 func cleanupTestSystem() {
-	fmt.Printf("Running Cleanup\n")
+	log.Printf("Running Cleanup\n")
 
 	client := createTestClient()
 	config := readConfig()
 
 	removeDevices := config.GetBool("testing.cleanup.removeDevice")
 	if removeDevices && CumulocityConfiguration.ExampleDevice.ID != "" {
-		fmt.Printf("Removing test device\n")
+		log.Printf("Removing test device\n")
 		_, err := client.Inventory.Delete(context.Background(), CumulocityConfiguration.ExampleDevice.ID)
 		if err != nil {
-			fmt.Printf("Could not remove the id. %s", err)
+			log.Printf("Could not remove the id. %s", err)
 		}
 	}
 }
@@ -115,7 +116,7 @@ func createTestClient() *c8y.Client {
 	username := config.GetString("c8y.username")
 	password := config.GetString("c8y.password")
 
-	fmt.Printf("Host=%s, Tenant=%s, Username=%s, Password=%s\n", host, tenant, username, password)
+	log.Printf("Host=%s, Tenant=%s, Username=%s, Password=%s\n", host, tenant, username, password)
 	client := c8y.NewClient(nil, host, tenant, username, password)
 	return client
 }
@@ -164,7 +165,7 @@ func TestInventoryService_DecodeJSONManagedObject(t *testing.T) {
 
 	err := json.Unmarshal([]byte(data.Items[0].Raw), &mo)
 
-	fmt.Printf("Values: %s", mo)
+	log.Printf("Values: %s", mo)
 
 	if err != nil {
 		t.Errorf("Could not decode json. want: nil, got: %s", err)
@@ -186,7 +187,7 @@ func TestInventoryService_DecodeJSONManagedObjects(t *testing.T) {
 
 	err := resp.DecodeJSON(&managedObjects)
 
-	fmt.Printf("Values: %s", managedObjects)
+	log.Printf("Values: %s", managedObjects)
 
 	if err != nil {
 		t.Errorf("Could not decode json. want: nil, got: %s", err)
