@@ -127,7 +127,7 @@ func (s *ApplicationService) GetApplicationCollection(ctx context.Context, opt *
 
 // GetCurrentApplicationSubscriptions returns the list of application subscriptions per tenant along with the service user credentials
 // This function can only be called using Application Bootstrap credentials, otherwise a 403 (forbidden) response will be returned
-func (s *ApplicationService) GetCurrentApplicationSubscriptions(ctx context.Context, ID string) (*ApplicationSubscriptions, *Response, error) {
+func (s *ApplicationService) GetCurrentApplicationSubscriptions(ctx context.Context) (*ApplicationSubscriptions, *Response, error) {
 	u := fmt.Sprintf("/application/currentApplication/subscriptions")
 
 	var queryParams string

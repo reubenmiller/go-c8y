@@ -57,16 +57,22 @@ type Client struct {
 
 	UseTenantInUsername bool
 
+	// Microservice bootstrap and service users
+	BootstrapUser ServiceUser
+	ServiceUsers  []ServiceUser
+
 	common service // Reuse a single struct instead of allocating one for each service on the heap.
 
 	// Services used for talking to different parts of the Cumulocity API.
-	Measurement *MeasurementService
-	Operation   *OperationService
-	Tenant      *TenantService
-	Event       *EventService
-	Inventory   *InventoryService
-	Application *ApplicationService
-	Identity    *IdentityService
+	Context      *ContextService
+	Measurement  *MeasurementService
+	Operation    *OperationService
+	Tenant       *TenantService
+	Event        *EventService
+	Inventory    *InventoryService
+	Application  *ApplicationService
+	Identity     *IdentityService
+	Microservice *MicroserviceService
 }
 
 const (
