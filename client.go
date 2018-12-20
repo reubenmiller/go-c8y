@@ -122,6 +122,8 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 	c.Inventory = (*InventoryService)(&c.common)
 	c.Application = (*ApplicationService)(&c.common)
 	c.Identity = (*IdentityService)(&c.common)
+	c.Microservice = (*MicroserviceService)(&c.common)
+	c.Context = (*ContextService)(&c.common)
 	return c
 }
 
