@@ -1,7 +1,19 @@
 package c8y
 
+import "os"
+
 // MicroserviceService api
 type MicroserviceService service
+
+// GetBootstrapUserFromEnvironment returns the tenant, username and password set in environment variables (used by the microservice)
+func GetBootstrapUserFromEnvironment() (tenant, username, password string) {
+	return os.Getenv("C8Y_BOOTSTRAP_TENANT"), os.Getenv("C8Y_BOOTSTRAP_USER"), os.Getenv("C8Y_BOOTSTRAP_PASSWORD")
+}
+
+// GetServiceUserFromEnvironment returns the service user information (tenant, username and password) from environment variables.
+func GetServiceUserFromEnvironment() (tenant, username, password string) {
+	return os.Getenv("C8Y_TENANT"), os.Getenv("C8Y_USER"), os.Getenv("C8Y_PASSWORD")
+}
 
 // SetServiceUsers sets the service users which can then be used later for following requests
 // The service users are retrieved by using the bootstrap credentials stored in environment variables

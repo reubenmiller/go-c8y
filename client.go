@@ -79,6 +79,37 @@ const (
 	defaultUserAgent = "go-client"
 )
 
+// NewRealtimeClientFromServiceUser returns a realtime client using a microservice's service user for a specified tenant
+// If no service user is found for the set tenant, then nil is returned
+func (c *Client) NewRealtimeClientFromServiceUser(tenant string) *RealtimeClient {
+	if len(c.ServiceUsers) == 0 {
+		log.Panic("No service users found")
+	}
+	for _, user := range c.ServiceUsers {
+		if tenant == user.Tenant || tenant == "" {
+			return NewRealtimeClient(c.BaseURL.String(), nil, user.Tenant, user.Username, user.Password)
+		}
+	}
+	return nil
+}
+
+// NewClientUsingBootstrapUserFromEnvironment returns a Cumulocity client using the the bootstrap credentials set in the environment variables
+func NewClientUsingBootstrapUserFromEnvironment(httpClient *http.Client, baseURL string) *Client {
+	tenant, username, password := GetBootstrapUserFromEnvironment()
+
+	client := NewClient(httpClient, baseURL, tenant, username, password, true)
+	client.Microservice.SetServiceUsers()
+
+	// TODO: Setup a realtime client
+	// if !skipRealtimeClient {
+	// 	client.clientMu.Lock()
+	// 	client.Realtime =
+	// 	client.clientMu.Unlock()
+	// }
+
+	return client
+}
+
 // NewClient returns a new Cumulocity API client. If a nil httpClient is
 // provided, http.DefaultClient will be used. To use API methods which require
 // authentication, provide an http.Client that will perform the authentication

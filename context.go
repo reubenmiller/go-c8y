@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 )
 
@@ -14,21 +13,15 @@ type ContextService service
 
 // BootstrapUserFromEnvironment returns a context with the Microservice Bootstrap user (set via environment variables)
 func (s *ContextService) BootstrapUserFromEnvironment() context.Context {
-	auth := NewBasicAuthString(
-		os.Getenv("C8Y_BOOTSTRAP_TENANT"),
-		os.Getenv("C8Y_BOOTSTRAP_USER"),
-		os.Getenv("C8Y_BOOTSTRAP_PASSWORD"),
-	)
+	tenant, username, password := GetBootstrapUserFromEnvironment()
+	auth := NewBasicAuthString(tenant, username, password)
 	return context.WithValue(context.Background(), GetContextAuthTokenKey(), auth)
 }
 
 // ServiceUserFromEnvironment returns a context with the Service User authorization (set via environment variables)
 func (s *ContextService) ServiceUserFromEnvironment() context.Context {
-	auth := NewBasicAuthString(
-		os.Getenv("C8Y_TENANT"),
-		os.Getenv("C8Y_USER"),
-		os.Getenv("C8Y_PASSWORD"),
-	)
+	tenant, username, password := GetServiceUserFromEnvironment()
+	auth := NewBasicAuthString(tenant, username, password)
 	return context.WithValue(context.Background(), GetContextAuthTokenKey(), auth)
 }
 
