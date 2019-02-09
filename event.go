@@ -73,3 +73,15 @@ func (s *EventService) GetEventCollection(ctx context.Context, opt *EventCollect
 
 	return data, resp, nil
 }
+
+// CreateEvent creates a new event object
+func (s *EventService) CreateEvent(ctx context.Context, body interface{}) (*EventObject, *Response, error) {
+	data := new(EventObject)
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "POST",
+		Path:         "event/events",
+		Body:         body,
+		ResponseData: data,
+	})
+	return data, resp, err
+}

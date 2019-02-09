@@ -210,6 +210,37 @@ func NewBasicAuthString(tenant, username, password string) string {
 	return "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
 }
 
+// RequestOptions struct which contains the options to be used with the SendRequest function
+type RequestOptions struct {
+	Method       string
+	Host         string
+	Path         string
+	Query        string
+	Body         interface{}
+	ResponseData interface{}
+}
+
+// SendRequest creates and sends a request
+func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Response, error) {
+
+	req, err := c.NewRequest(options.Method, options.Path, options.Query, options.Body)
+
+	if options.Host != "" {
+		log.Printf("Using alternative host %s", options.Host)
+		req.Host = options.Host
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.Do(ctx, req, options.ResponseData)
+	if err != nil {
+		return resp, err
+	}
+	return resp, nil
+}
+
 // NewRequest returns a request with the required additional base url, authentication header, accept and user-agent.NewRequest
 func (c *Client) NewRequest(method, path string, query string, body interface{}) (*http.Request, error) {
 	if !strings.HasSuffix(c.BaseURL.Path, "/") {
