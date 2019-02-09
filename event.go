@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+
+	"github.com/tidwall/gjson"
 )
 
 // EventService does something
@@ -28,15 +30,15 @@ type EventCollectionOptions struct {
 
 // EventObject todo
 type EventObject struct {
-	ID     string `json:"id"`
-	Source struct {
-		Self string `json:"self"`
-		ID   string `json:"id"`
-	} `json:"source"`
-	Type string    `json:"type"`
-	Text string    `json:"text"`
-	Self string    `json:"self"`
-	Time Timestamp `json:"time"`
+	ID     string    `json:"id,omitempty"`
+	Source Source    `json:"source,omitempty"`
+	Type   string    `json:"type,omitempty"`
+	Text   string    `json:"text,omitempty"`
+	Self   string    `json:"self,omitempty"`
+	Time   Timestamp `json:"time,omitempty"`
+
+	// Allow access to custom fields
+	Item gjson.Result `json:"-"`
 }
 
 // EventCollection todo
@@ -44,6 +46,9 @@ type EventCollection struct {
 	*BaseResponse
 
 	Events []EventObject `json:"events"`
+
+	// Allow access to custom fields
+	Items []gjson.Result `json:"-"`
 }
 
 // GetEventCollection todo
@@ -71,6 +76,7 @@ func (s *EventService) GetEventCollection(ctx context.Context, opt *EventCollect
 		log.Printf("Total events: %d\n", *data.BaseResponse.Statistics.TotalPages)
 	}
 
+	data.Items = resp.JSON.Get("events").Array()
 	return data, resp, nil
 }
 
@@ -83,5 +89,6 @@ func (s *EventService) CreateEvent(ctx context.Context, body interface{}) (*Even
 		Body:         body,
 		ResponseData: data,
 	})
+	data.Item = gjson.Parse(resp.JSON.Raw)
 	return data, resp, err
 }

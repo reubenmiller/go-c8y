@@ -65,6 +65,7 @@ type Client struct {
 
 	// Services used for talking to different parts of the Cumulocity API.
 	Context      *ContextService
+	Alarm        *AlarmService
 	Measurement  *MeasurementService
 	Operation    *OperationService
 	Tenant       *TenantService
@@ -146,6 +147,7 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 		UseTenantInUsername: true,
 	}
 	c.common.client = c
+	c.Alarm = (*AlarmService)(&c.common)
 	c.Measurement = (*MeasurementService)(&c.common)
 	c.Operation = (*OperationService)(&c.common)
 	c.Tenant = (*TenantService)(&c.common)
@@ -215,7 +217,7 @@ type RequestOptions struct {
 	Method       string
 	Host         string
 	Path         string
-	Query        string
+	Query        interface{} // Use string if you want
 	Body         interface{}
 	ResponseData interface{}
 }
@@ -223,7 +225,22 @@ type RequestOptions struct {
 // SendRequest creates and sends a request
 func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Response, error) {
 
-	req, err := c.NewRequest(options.Method, options.Path, options.Query, options.Body)
+	queryParams := ""
+
+	if options.Query != nil {
+		if v, ok := options.Query.(string); ok {
+			queryParams = v
+		} else {
+			if v, err := addOptions("", options.Query); err == nil {
+				queryParams = v
+			} else {
+				log.Printf("ERROR: Could not convert query parameter interface{} to a string. %s", err)
+				return nil, err
+			}
+		}
+	}
+
+	req, err := c.NewRequest(options.Method, options.Path, queryParams, options.Body)
 
 	if options.Host != "" {
 		log.Printf("Using alternative host %s", options.Host)
