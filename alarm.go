@@ -38,17 +38,17 @@ type AlarmCollectionOptions struct {
 
 // AlarmObject todo
 type AlarmObject struct {
-	ID                  string    `json:"id,omitempty"`
-	Source              Source    `json:"source,omitempty"`
-	Type                string    `json:"type,omitempty"`
-	Time                Timestamp `json:"time,omitempty"`
-	CreationTime        Timestamp `json:"creationTime,omitempty"`
-	FirstOccurrenceTime Timestamp `json:"firstOccurrenceTime,omitempty"`
-	Text                string    `json:"text,omitempty"`
-	Status              string    `json:"status,omitempty"`
-	Severity            string    `json:"severity,omitempty"`
-	Count               uint64    `json:"count,omitempty"`
-	Self                string    `json:"self,omitempty"`
+	ID                  string     `json:"id,omitempty"`
+	Source              *Source    `json:"source,omitempty"`
+	Type                string     `json:"type,omitempty"`
+	Time                *Timestamp `json:"time,omitempty"`
+	CreationTime        *Timestamp `json:"creationTime,omitempty"`
+	FirstOccurrenceTime *Timestamp `json:"firstOccurrenceTime,omitempty"`
+	Text                string     `json:"text,omitempty"`
+	Status              string     `json:"status,omitempty"`
+	Severity            string     `json:"severity,omitempty"`
+	Count               uint64     `json:"count,omitempty"`
+	Self                string     `json:"self,omitempty"`
 
 	// Allow access to custom fields
 	Item gjson.Result `json:"-"`

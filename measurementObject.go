@@ -2,17 +2,13 @@ package c8y
 
 import "github.com/tidwall/gjson"
 
-// MeasurementObject todo
+// MeasurementObject is the Cumulocity measurement representation in the platform
 type MeasurementObject struct {
-	ID     string `json:"id"`
-	Source struct {
-		Self string `json:"self"`
-		ID   string `json:"id"`
-	} `json:"source"`
-	Type string `json:"type"`
-	Self string `json:"self"`
-	// Time string `json:"time"`
-	Time Timestamp `json:"time"`
+	ID     string     `json:"id,omitempty"`
+	Source *Source    `json:"source,omitempty"`
+	Type   string     `json:"type,omitempty"`
+	Self   string     `json:"self,omitempty"`
+	Time   *Timestamp `json:"time,omitempty"`
 
-	Item gjson.Result
+	Item gjson.Result `json:"-"`
 }

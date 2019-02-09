@@ -30,12 +30,12 @@ type EventCollectionOptions struct {
 
 // EventObject todo
 type EventObject struct {
-	ID     string    `json:"id,omitempty"`
-	Source Source    `json:"source,omitempty"`
-	Type   string    `json:"type,omitempty"`
-	Text   string    `json:"text,omitempty"`
-	Self   string    `json:"self,omitempty"`
-	Time   Timestamp `json:"time,omitempty"`
+	ID     string     `json:"id,omitempty"`
+	Source *Source    `json:"source,omitempty"`
+	Type   string     `json:"type,omitempty"`
+	Text   string     `json:"text,omitempty"`
+	Self   string     `json:"self,omitempty"`
+	Time   *Timestamp `json:"time,omitempty"`
 
 	// Allow access to custom fields
 	Item gjson.Result `json:"-"`
