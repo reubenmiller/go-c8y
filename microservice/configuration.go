@@ -66,6 +66,11 @@ func (c *Configuration) GetString(key string) string {
 	return c.viper.GetString(key)
 }
 
+// GetInt returns the values associated to the key as an int
+func (c *Configuration) GetInt(key string) int {
+	return c.viper.GetInt(key)
+}
+
 // AllKeys returns all of the keys in the configuration
 func (c *Configuration) AllKeys() []string {
 	return c.viper.AllKeys()
