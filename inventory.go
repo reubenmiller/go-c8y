@@ -31,9 +31,6 @@ type ManagedObjectOptions struct {
 	PaginationOptions
 }
 
-// DeviceFragment Special device fragment used by Cumulocity to mark the managed objects as devices
-type DeviceFragment struct{}
-
 // EmptyFragment fragment used for special c8y fragments, i.e. c8y_IsDevice etc.
 type EmptyFragment struct{}
 
@@ -57,9 +54,9 @@ type AgentFragment struct {
 	AgentFragment struct{} `json:"com_cumulocity_model_Agent"`
 }
 
-// DeviceFragmentType marks a managed object which are device representations
-type DeviceFragmentType struct {
-	DeviceFragmentType struct{} `json:"c8y_IsDevice"`
+// DeviceFragment marks a managed object which are device representations
+type DeviceFragment struct {
+	DeviceFragment struct{} `json:"c8y_IsDevice"`
 }
 
 // ManagedObject is the general Inventory Managed Object data structure
