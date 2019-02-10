@@ -69,17 +69,23 @@ type ManagedObject struct {
 	DeviceParents    *ParentDevices      `json:"deviceParents,omitempty"`
 	ChildDevices     *ChildDevices       `json:"childDevices,omitempty"`
 	Kpi              *Kpi                `json:"c8y_Kpi,omitempty"`
-	C8yIsDevice      *DeviceFragment     `json:"c8y_IsDevice,omitempty"`
 	C8yConfiguration *AgentConfiguration `json:"c8y_Configuration,omitempty"`
 
 	Item gjson.Result `json:"-"`
 }
 
+// Device is a subset of a managed object)
+type Device struct {
+	ManagedObject
+	DeviceFragment
+}
+
 // NewDevice returns a simple device managed object
-func NewDevice(name string) *ManagedObject {
-	return &ManagedObject{
-		Name:        name,
-		C8yIsDevice: &DeviceFragment{},
+func NewDevice(name string) *Device {
+	return &Device{
+		ManagedObject: ManagedObject{
+			Name: name,
+		},
 	}
 }
 
