@@ -64,24 +64,25 @@ type DeviceFragmentType struct {
 
 // ManagedObject is the general Inventory Managed Object data structure
 type ManagedObject struct {
-	ID               string             `json:"id,omitempty"`
-	Name             string             `json:"name,omitempty"`
-	Type             string             `json:"type,omitempty"`
-	Self             string             `json:"self,omitempty"`
-	Owner            string             `json:"owner,omitempty"`
-	DeviceParents    ParentDevices      `json:"deviceParents,omitempty"`
-	ChildDevices     ChildDevices       `json:"childDevices,omitempty"`
-	Kpi              Kpi                `json:"c8y_Kpi,omitempty"`
-	C8yIsDevice      DeviceFragment     `json:"c8y_IsDevice,omitempty"`
-	C8yConfiguration AgentConfiguration `json:"c8y_Configuration,omitempty"`
-	Item             gjson.Result
+	ID               string              `json:"id,omitempty"`
+	Name             string              `json:"name,omitempty"`
+	Type             string              `json:"type,omitempty"`
+	Self             string              `json:"self,omitempty"`
+	Owner            string              `json:"owner,omitempty"`
+	DeviceParents    *ParentDevices      `json:"deviceParents,omitempty"`
+	ChildDevices     *ChildDevices       `json:"childDevices,omitempty"`
+	Kpi              *Kpi                `json:"c8y_Kpi,omitempty"`
+	C8yIsDevice      *DeviceFragment     `json:"c8y_IsDevice,omitempty"`
+	C8yConfiguration *AgentConfiguration `json:"c8y_Configuration,omitempty"`
+
+	Item gjson.Result `json:"-"`
 }
 
 // NewDevice returns a simple device managed object
 func NewDevice(name string) *ManagedObject {
 	return &ManagedObject{
 		Name:        name,
-		C8yIsDevice: DeviceFragment{},
+		C8yIsDevice: &DeviceFragment{},
 	}
 }
 
