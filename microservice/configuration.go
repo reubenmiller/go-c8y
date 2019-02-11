@@ -39,7 +39,7 @@ func (c *Configuration) InitConfiguration() {
 	config.SetDefault("application.name", "go-microservice")
 	config.SetDefault("agent.identityType", "nx_Microservice")
 	config.SetDefault("agent.operations.pollRate", "@every 1m")
-	config.SetDefault("log.file", "/var/log/go-nifgate/app.log")
+	config.SetDefault("log.file", "application.log")
 
 	// Enable all variables to be defined as (case-sensitive) environment variables in the form of
 	config.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
