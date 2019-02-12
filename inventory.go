@@ -31,9 +31,6 @@ type ManagedObjectOptions struct {
 	PaginationOptions
 }
 
-// DeviceFragment Special device fragment used by Cumulocity to mark the managed objects as devices
-type DeviceFragment struct{}
-
 // EmptyFragment fragment used for special c8y fragments, i.e. c8y_IsDevice etc.
 type EmptyFragment struct{}
 
@@ -57,31 +54,38 @@ type AgentFragment struct {
 	AgentFragment struct{} `json:"com_cumulocity_model_Agent"`
 }
 
-// DeviceFragmentType marks a managed object which are device representations
-type DeviceFragmentType struct {
-	DeviceFragmentType struct{} `json:"c8y_IsDevice"`
+// DeviceFragment marks a managed object which are device representations
+type DeviceFragment struct {
+	DeviceFragment struct{} `json:"c8y_IsDevice"`
 }
 
 // ManagedObject is the general Inventory Managed Object data structure
 type ManagedObject struct {
-	ID               string             `json:"id,omitempty"`
-	Name             string             `json:"name,omitempty"`
-	Type             string             `json:"type,omitempty"`
-	Self             string             `json:"self,omitempty"`
-	Owner            string             `json:"owner,omitempty"`
-	DeviceParents    ParentDevices      `json:"deviceParents,omitempty"`
-	ChildDevices     ChildDevices       `json:"childDevices,omitempty"`
-	Kpi              Kpi                `json:"c8y_Kpi,omitempty"`
-	C8yIsDevice      DeviceFragment     `json:"c8y_IsDevice,omitempty"`
-	C8yConfiguration AgentConfiguration `json:"c8y_Configuration,omitempty"`
-	Item             gjson.Result
+	ID               string              `json:"id,omitempty"`
+	Name             string              `json:"name,omitempty"`
+	Type             string              `json:"type,omitempty"`
+	Self             string              `json:"self,omitempty"`
+	Owner            string              `json:"owner,omitempty"`
+	DeviceParents    *ParentDevices      `json:"deviceParents,omitempty"`
+	ChildDevices     *ChildDevices       `json:"childDevices,omitempty"`
+	Kpi              *Kpi                `json:"c8y_Kpi,omitempty"`
+	C8yConfiguration *AgentConfiguration `json:"c8y_Configuration,omitempty"`
+
+	Item gjson.Result `json:"-"`
+}
+
+// Device is a subset of a managed object)
+type Device struct {
+	ManagedObject
+	DeviceFragment
 }
 
 // NewDevice returns a simple device managed object
-func NewDevice(name string) *ManagedObject {
-	return &ManagedObject{
-		Name:        name,
-		C8yIsDevice: DeviceFragment{},
+func NewDevice(name string) *Device {
+	return &Device{
+		ManagedObject: ManagedObject{
+			Name: name,
+		},
 	}
 }
 
