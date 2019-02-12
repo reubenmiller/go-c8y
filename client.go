@@ -65,6 +65,7 @@ type Client struct {
 
 	// Services used for talking to different parts of the Cumulocity API.
 	Context      *ContextService
+	Alarm        *AlarmService
 	Measurement  *MeasurementService
 	Operation    *OperationService
 	Tenant       *TenantService
@@ -83,8 +84,7 @@ const (
 // If no service user is found for the set tenant, then nil is returned
 func (c *Client) NewRealtimeClientFromServiceUser(tenant string) *RealtimeClient {
 	if len(c.ServiceUsers) == 0 {
-		log.Print("No service users found")
-		return nil
+		log.Panic("No service users found")
 	}
 	for _, user := range c.ServiceUsers {
 		if tenant == user.Tenant || tenant == "" {
@@ -147,6 +147,7 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 		UseTenantInUsername: true,
 	}
 	c.common.client = c
+	c.Alarm = (*AlarmService)(&c.common)
 	c.Measurement = (*MeasurementService)(&c.common)
 	c.Operation = (*OperationService)(&c.common)
 	c.Tenant = (*TenantService)(&c.common)
@@ -209,6 +210,52 @@ func NewAuthorizationContext(tenant, username, password string) context.Context 
 func NewBasicAuthString(tenant, username, password string) string {
 	auth := fmt.Sprintf("%s/%s:%s", tenant, username, password)
 	return "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
+}
+
+// RequestOptions struct which contains the options to be used with the SendRequest function
+type RequestOptions struct {
+	Method       string
+	Host         string
+	Path         string
+	Query        interface{} // Use string if you want
+	Body         interface{}
+	ResponseData interface{}
+}
+
+// SendRequest creates and sends a request
+func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Response, error) {
+
+	queryParams := ""
+
+	if options.Query != nil {
+		if v, ok := options.Query.(string); ok {
+			queryParams = v
+		} else {
+			if v, err := addOptions("", options.Query); err == nil {
+				queryParams = v
+			} else {
+				log.Printf("ERROR: Could not convert query parameter interface{} to a string. %s", err)
+				return nil, err
+			}
+		}
+	}
+
+	req, err := c.NewRequest(options.Method, options.Path, queryParams, options.Body)
+
+	if options.Host != "" {
+		log.Printf("Using alternative host %s", options.Host)
+		req.Host = options.Host
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.Do(ctx, req, options.ResponseData)
+	if err != nil {
+		return resp, err
+	}
+	return resp, nil
 }
 
 // NewRequest returns a request with the required additional base url, authentication header, accept and user-agent.NewRequest
