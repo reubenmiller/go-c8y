@@ -83,7 +83,8 @@ const (
 // If no service user is found for the set tenant, then nil is returned
 func (c *Client) NewRealtimeClientFromServiceUser(tenant string) *RealtimeClient {
 	if len(c.ServiceUsers) == 0 {
-		log.Panic("No service users found")
+		log.Print("No service users found")
+		return nil
 	}
 	for _, user := range c.ServiceUsers {
 		if tenant == user.Tenant || tenant == "" {

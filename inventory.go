@@ -304,6 +304,8 @@ func (s *InventoryService) UpdateManagedObject(ctx context.Context, ID string, b
 		return nil, nil, err
 	}
 
+	req.Header.Add("Accept", "application/json")
+
 	data := new(ManagedObject)
 
 	resp, err := s.client.Do(ctx, req, data)
