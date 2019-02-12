@@ -134,7 +134,7 @@ func readConfig() *viper.Viper {
 
 	// Set default settings
 	config.SetDefault("report.concurrency", 20)
-	config.SetDefault("log.file", "/var/log/go-nifgate/app.log")
+	config.SetDefault("log.file", "application.log")
 
 	// Enable all variables to be defined as (case-senstive) environment variables in the form of
 	// export C8Y_USERNAME=testuser
