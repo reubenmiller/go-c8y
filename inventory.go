@@ -1,10 +1,21 @@
 package c8y
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"os"
+	"path"
+
+	"github.com/pkg/errors"
 
 	"github.com/tidwall/gjson"
+	"go.uber.org/zap"
 )
 
 // DeviceFragmentName name of the c8yDevice Fragment property
@@ -359,4 +370,94 @@ func (s *InventoryService) Delete(ctx context.Context, ID string) (*Response, er
 	}
 
 	return resp, nil
+}
+
+// DownloadBinary downloads a binary by its ID
+func (s *InventoryService) DownloadBinary(ctx context.Context, ID string) (filepath string, err error) {
+	// set binary api
+	client := s.client
+	u, _ := url.Parse(client.BaseURL.String())
+	u.Path = path.Join(u.Path, "/inventory/binaries", ID)
+
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		zap.S().Errorf("Could not create request. %s", err)
+		return
+	}
+
+	req.Header.Add("Accept", "*/*")
+
+	// Get the data
+	resp, err := client.Do(ctx, req, nil)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	// Check server response
+	if resp.StatusCode != http.StatusOK {
+		err = fmt.Errorf("bad status: %s", resp.Status)
+		return
+	}
+
+	// Create the file
+	tempDir, err := ioutil.TempDir("", "go-c8y_")
+
+	if err != nil {
+		err = fmt.Errorf("Could not create temp folder. %s", err)
+		return
+	}
+
+	filepath = path.Join(tempDir, "binary-"+ID)
+	out, err := os.Create(filepath)
+	if err != nil {
+		filepath = ""
+		return
+	}
+	defer out.Close()
+
+	// Writer the body to file
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		filepath = ""
+		return
+	}
+
+	return
+}
+
+// UploadBinary uploads a given binary to Cumulocity under the inventory managed objects
+func (s *InventoryService) UploadBinary(ctx context.Context, filename string, properties interface{}) (*ManagedObject, *Response, error) {
+	client := s.client
+	metadataBytes, err := json.Marshal(properties)
+
+	values := map[string]io.Reader{
+		"file":   mustOpen(filename), // lets assume its this file
+		"object": bytes.NewReader(metadataBytes),
+	}
+
+	// set binary api
+	u, _ := url.Parse(client.BaseURL.String())
+	u.Path = path.Join(u.Path, "/inventory/binaries")
+
+	req, err := prepareMultipartRequest(u.String(), values)
+
+	req.Header.Add("Accept", "*/*")
+
+	if err != nil {
+		err = errors.Wrap(err, "Could not create binary upload request object")
+		zap.S().Error(err)
+		return nil, nil, err
+	}
+
+	data := new(ManagedObject)
+	resp, err := client.Do(ctx, req, data)
+
+	if err != nil {
+		return nil, resp, err
+	}
+
+	data.Item = *resp.JSON
+
+	return data, resp, nil
 }
