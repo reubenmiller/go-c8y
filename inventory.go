@@ -426,8 +426,8 @@ func (s *InventoryService) DownloadBinary(ctx context.Context, ID string) (filep
 	return
 }
 
-// UploadBinary uploads a given binary to Cumulocity under the inventory managed objects
-func (s *InventoryService) UploadBinary(ctx context.Context, filename string, properties interface{}) (*ManagedObject, *Response, error) {
+// NewBinary uploads a given binary to Cumulocity under the inventory managed objects
+func (s *InventoryService) NewBinary(ctx context.Context, filename string, properties interface{}) (*ManagedObject, *Response, error) {
 	client := s.client
 	metadataBytes, err := json.Marshal(properties)
 
@@ -440,7 +440,41 @@ func (s *InventoryService) UploadBinary(ctx context.Context, filename string, pr
 	u, _ := url.Parse(client.BaseURL.String())
 	u.Path = path.Join(u.Path, "/inventory/binaries")
 
-	req, err := prepareMultipartRequest(u.String(), values)
+	req, err := prepareMultipartRequest(u.String(), "POST", values)
+
+	req.Header.Add("Accept", "*/*")
+
+	if err != nil {
+		err = errors.Wrap(err, "Could not create binary upload request object")
+		zap.S().Error(err)
+		return nil, nil, err
+	}
+
+	data := new(ManagedObject)
+	resp, err := client.Do(ctx, req, data)
+
+	if err != nil {
+		return nil, resp, err
+	}
+
+	data.Item = *resp.JSON
+
+	return data, resp, nil
+}
+
+// UpdateBinary updates an existing binary under the inventory managed objects
+func (s *InventoryService) UpdateBinary(ctx context.Context, ID, filename string) (*ManagedObject, *Response, error) {
+	client := s.client
+
+	values := map[string]io.Reader{
+		"file": mustOpen(filename), // lets assume its this file
+	}
+
+	// set binary api
+	u, _ := url.Parse(client.BaseURL.String())
+	u.Path = path.Join(u.Path, "/inventory/binaries")
+
+	req, err := prepareMultipartRequest(u.String(), "PUT", values)
 
 	req.Header.Add("Accept", "*/*")
 

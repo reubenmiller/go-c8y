@@ -9,7 +9,7 @@ import (
 	"os"
 )
 
-func prepareMultipartRequest(url string, values map[string]io.Reader) (req *http.Request, err error) {
+func prepareMultipartRequest(url string, method string, values map[string]io.Reader) (req *http.Request, err error) {
 	// Prepare a form that you will submit to that URL.
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
@@ -39,7 +39,7 @@ func prepareMultipartRequest(url string, values map[string]io.Reader) (req *http
 	w.Close()
 
 	// Now that you have a form, you can submit it to your handler.
-	req, err = http.NewRequest("POST", url, &b)
+	req, err = http.NewRequest(method, url, &b)
 	if err != nil {
 		return
 	}
