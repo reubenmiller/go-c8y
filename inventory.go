@@ -42,6 +42,18 @@ type ManagedObjectOptions struct {
 	PaginationOptions
 }
 
+// BinaryObjectOptions managed object options which can be given with the managed object request
+type BinaryObjectOptions struct {
+	Type string `url:"type,omitempty"`
+
+	FragmentType string `url:"fragmentType,omitempty"`
+
+	// Read-only collection of managed objects fetched for a given list of ids (placeholder {ids}),for example "?ids=41,43,68".
+	Ids []string `url:"ids,omitempty"`
+
+	PaginationOptions
+}
+
 // EmptyFragment fragment used for special c8y fragments, i.e. c8y_IsDevice etc.
 type EmptyFragment struct{}
 
@@ -500,7 +512,20 @@ func (s *InventoryService) UpdateBinary(ctx context.Context, ID, filename string
 func (s *InventoryService) DeleteBinary(ctx context.Context, ID string) (*Response, error) {
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method: "DELETE",
-		Path:   "inventory/managedObjects/" + ID,
+		Path:   "inventory/binaries/" + ID,
 	})
 	return resp, err
+}
+
+// GetBinaryCollection returns a list of managed object binaries
+func (s *InventoryService) GetBinaryCollection(ctx context.Context, opt *BinaryObjectOptions) (*ManagedObjectCollection, *Response, error) {
+	data := new(ManagedObjectCollection)
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "GET",
+		Path:         "inventory/bineries",
+		Query:        opt,
+		ResponseData: data,
+	})
+	data.Items = resp.JSON.Get("managedObjects").Array()
+	return data, resp, err
 }
