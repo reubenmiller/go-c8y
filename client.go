@@ -414,7 +414,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 	if err != nil {
 		// even though there was an error, we still return the response
 		// in case the caller wants to inspect it further
-		println("Invalid response received from server")
+		log.Printf("Invalid response received from server. %s", err)
 		return response, err
 	}
 
@@ -424,7 +424,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 		} else {
 			err = json.NewDecoder(resp.Body).Decode(v)
 			if err == io.EOF {
-				println("error decoding body")
+				log.Printf("Error decoding body. %s", err)
 				err = nil // ignore EOF errors caused by empty response body
 			}
 		}
