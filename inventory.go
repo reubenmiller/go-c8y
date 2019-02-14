@@ -495,3 +495,12 @@ func (s *InventoryService) UpdateBinary(ctx context.Context, ID, filename string
 
 	return data, resp, nil
 }
+
+// DeleteBinary removes a managed object Binary by ID
+func (s *InventoryService) DeleteBinary(ctx context.Context, ID string) (*Response, error) {
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method: "DELETE",
+		Path:   "inventory/managedObjects/" + ID,
+	})
+	return resp, err
+}
