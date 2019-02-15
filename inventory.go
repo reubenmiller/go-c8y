@@ -405,7 +405,7 @@ func (s *InventoryService) UpdateBinary(ctx context.Context, ID, filename string
 
 	// set binary api
 	u, _ := url.Parse(client.BaseURL.String())
-	u.Path = path.Join(u.Path, "/inventory/binaries")
+	u.Path = path.Join(u.Path, "/inventory/binaries/"+ID)
 
 	req, err := prepareMultipartRequest(u.String(), "PUT", values)
 
