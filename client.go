@@ -242,6 +242,8 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 
 	req, err := c.NewRequest(options.Method, options.Path, queryParams, options.Body)
 
+	req.Header.Add("Accept", "*/*")
+
 	if options.Host != "" {
 		log.Printf("Using alternative host %s", options.Host)
 		req.Host = options.Host
