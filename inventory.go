@@ -268,6 +268,7 @@ func (s *InventoryService) UpdateManagedObject(ctx context.Context, ID string, b
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "PUT",
 		Path:         "inventory/managedObjects/" + ID,
+		Body:         body,
 		ResponseData: data,
 	})
 
@@ -286,6 +287,7 @@ func (s *InventoryService) CreateManagedObject(ctx context.Context, body interfa
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "POST",
 		Path:         "inventory/managedObjects",
+		Body:         body,
 		ResponseData: data,
 	})
 
