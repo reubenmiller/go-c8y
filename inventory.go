@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -455,4 +456,52 @@ func (s *InventoryService) GetBinaryCollection(ctx context.Context, opt *BinaryO
 	})
 	data.Items = resp.JSON.Get("managedObjects").Array()
 	return data, resp, err
+}
+
+// ExpandCollection fetches all of the results by iterating through the .next links in the Cumulocity responses
+func (s *InventoryService) ExpandCollection(ctx context.Context, col *ManagedObjectCollection, maxPages int) (out *ManagedObjectCollection) {
+	i := 0
+	out = col
+
+	for i < maxPages {
+		if out.Next == nil {
+			return
+		}
+		log.Printf("Requesting page (index=%d, max=%d): %s", i, maxPages, *out.Next)
+
+		urlObj, err := url.Parse(*out.Next)
+
+		if err != nil {
+			zap.S().Errorf("")
+			return
+		}
+
+		data := new(ManagedObjectCollection)
+
+		resp, err := s.client.SendRequest(ctx, RequestOptions{
+			Path:         urlObj.Path,
+			Query:        urlObj.RawQuery,
+			ResponseData: data,
+		})
+
+		if err != nil {
+			return
+		}
+
+		log.Printf("Adding pagination results - %d managed objects found", len(data.ManagedObjects))
+
+		data.Items = resp.JSON.Get("managedObjects").Array()
+		out.Items = append(out.Items, data.Items...)
+		out.ManagedObjects = append(out.ManagedObjects, data.ManagedObjects...)
+		out.Next = data.Next
+		out.Statistics = data.Statistics
+
+		if len(data.ManagedObjects) < *data.Statistics.PageSize {
+			log.Printf("No more results in pagination result. total=%d, pages=%d", len(data.ManagedObjects), *data.Statistics.PageSize)
+			return
+		}
+
+		i++
+	}
+	return
 }
