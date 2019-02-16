@@ -83,8 +83,9 @@ type DeviceFragment struct {
 }
 
 // BinaryFragment marks a managed object which are binary representations
+// Note: the binary fragment is a string, not a struct!
 type BinaryFragment struct {
-	BinaryFragment struct{} `json:"c8y_IsBinary"`
+	BinaryFragment string `json:"c8y_IsBinary"`
 }
 
 // ManagedObject is the general Inventory Managed Object data structure
