@@ -80,6 +80,24 @@ const (
 	defaultUserAgent = "go-client"
 )
 
+// DecodeJSONBytes decodes json preserving number formatting (especially large integers and scientific notation floats)
+func DecodeJSONBytes(v []byte, dst interface{}) error {
+	return DecodeJSONReader(bytes.NewReader(v), dst)
+}
+
+// DecodeJSONReader decodes bytes using a reader interface
+//
+// Note: Decode with the UseNumber() set so large or
+// scientific notation numbers are not wrongly converted to integers!
+// i.e. otherwise this conversion will happen (which causes a problem with mongodb!)
+//  	9.2233720368547758E+18 --> 9223372036854776000
+//
+func DecodeJSONReader(r io.Reader, dst interface{}) error {
+	decoder := json.NewDecoder(r)
+	decoder.UseNumber()
+	return decoder.Decode(&dst)
+}
+
 // NewRealtimeClientFromServiceUser returns a realtime client using a microservice's service user for a specified tenant
 // If no service user is found for the set tenant, then nil is returned
 func (c *Client) NewRealtimeClientFromServiceUser(tenant string) *RealtimeClient {
@@ -323,7 +341,7 @@ func (r *Response) DecodeJSON(v interface{}) error {
 	if r.JSON == nil {
 		return fmt.Errorf("JSON object does not exist (i.e. is nil)")
 	}
-	err := json.Unmarshal([]byte(r.JSON.Raw), v)
+	err := DecodeJSONBytes([]byte(r.JSON.Raw), v)
 
 	if err != nil {
 		return err
@@ -424,15 +442,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 		if w, ok := v.(io.Writer); ok {
 			io.Copy(w, resp.Body)
 		} else {
-			//
-			// Note: Decode with the UseNumber() set so large or
-			// scientific notation numbers are not wrongly converted to integers!
-			// i.e. otherwise this conversion will happen (which causes a problem with mongodb!)
-			//  	9.2233720368547758E+18 --> 9223372036854776000
-			//
-			decoder := json.NewDecoder(resp.Body)
-			decoder.UseNumber()
-			err = decoder.Decode(v)
+			err = DecodeJSONReader(resp.Body, v)
 
 			if err == io.EOF {
 				log.Printf("Error decoding body. %s", err)
@@ -545,7 +555,7 @@ func CheckResponse(r *http.Response) error {
 	data, err := ioutil.ReadAll(r.Body)
 
 	if err == nil && data != nil {
-		json.Unmarshal(data, errorResponse)
+		DecodeJSONBytes(data, errorResponse)
 	}
 	return errorResponse
 }
