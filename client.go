@@ -424,7 +424,16 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 		if w, ok := v.(io.Writer); ok {
 			io.Copy(w, resp.Body)
 		} else {
-			err = json.NewDecoder(resp.Body).Decode(v)
+			//
+			// Note: Decode with the UseNumber() set so large or
+			// scientific notation numbers are not wrongly converted to integers!
+			// i.e. otherwise this conversion will happen (which causes a problem with mongodb!)
+			//  	9.2233720368547758E+18 --> 9223372036854776000
+			//
+			decoder := json.NewDecoder(resp.Body)
+			decoder.UseNumber()
+			err = decoder.Decode(v)
+
 			if err == io.EOF {
 				log.Printf("Error decoding body. %s", err)
 				err = nil // ignore EOF errors caused by empty response body
