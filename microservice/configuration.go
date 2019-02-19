@@ -134,7 +134,15 @@ func (c *Configuration) GetMicroserviceHost() (microserviceHost string) {
 // isPrivateSetting tests whether the configuration key is private or not
 // Private keys are not stored in the Cumulocity Agent configuration settings
 func (c *Configuration) isPrivateSetting(key string) (exists bool) {
-	privateKeys := []string{"server.port", "application.name", "log.file"}
+	privateKeys := []string{
+		"server.port",
+		"application.name",
+		"log.file",
+		"c8y.host",
+		"c8y.tenant",
+		"c8y.microservice.isolation",
+	}
+
 	for _, name := range privateKeys {
 		if key == name {
 			exists = true
