@@ -87,8 +87,10 @@ func (c *Configuration) SetDefault(key, value string) {
 func (c *Configuration) GetConfigurationString() string {
 	var properties []string
 	for _, key := range c.viper.AllKeys() {
-		value := c.viper.GetString(key)
-		properties = append(properties, fmt.Sprintf("%s=%s", key, value))
+		if !c.isPrivateSetting(key) {
+			value := c.viper.GetString(key)
+			properties = append(properties, fmt.Sprintf("%s=%s", key, value))
+		}
 	}
 	return strings.Join(properties, "\n")
 }
@@ -124,6 +126,19 @@ func (c *Configuration) GetMicroserviceHost() (microserviceHost string) {
 		port := c.viper.GetString("server.port")
 		if !strings.HasSuffix(microserviceHost, port) {
 			microserviceHost += ":" + port
+		}
+	}
+	return
+}
+
+// isPrivateSetting tests whether the configuration key is private or not
+// Private keys are not stored in the Cumulocity Agent configuration settings
+func (c *Configuration) isPrivateSetting(key string) (exists bool) {
+	privateKeys := []string{"server.port", "application.name", "log.file"}
+	for _, name := range privateKeys {
+		if key == name {
+			exists = true
+			break
 		}
 	}
 	return

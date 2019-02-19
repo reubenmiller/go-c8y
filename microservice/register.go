@@ -190,11 +190,13 @@ func (m *Microservice) UpdateApplicationConfiguration(configAsString string) {
 			key := strings.TrimSpace(parts[0])
 			value := strings.TrimSpace(parts[1])
 
-			if !strings.HasPrefix(key, "#") {
+			if m.Config.isPrivateSetting(key) {
+				zap.S().Infof("Ignoring private property [%s] to [%s]", key, value)
+			} else if strings.HasPrefix(key, "#") {
+				zap.S().Infof("Ignore comment [%s]", key)
+			} else {
 				zap.S().Infof("Setting property [%s] to [%s]", key, value)
 				m.Config.viper.Set(key, value)
-			} else {
-				zap.S().Infof("Ignore comment [%s]", key)
 			}
 		} else {
 			zap.L().Info("Checking item")
