@@ -7,10 +7,17 @@ import (
 	"net/url"
 
 	"go.uber.org/zap"
-	"gopkg.in/robfig/cron.v2"
+	cron "gopkg.in/robfig/cron.v2"
 
-	"github.com/reubenmiller/go-c8y"
+	c8y "github.com/reubenmiller/go-c8y"
 )
+
+// Options contains the additional microsevice options
+type Options struct {
+	// List of supported operations
+	SupportedOperations AgentSupportedOperations
+	AgentInformation    AgentInformation
+}
 
 // NewDefaultMicroservice returns a new microservice instance.
 // The bootstrap user will be automatically read from the environment variables
@@ -20,16 +27,22 @@ import (
 // RegisterMicroserviceAgent(). Though before you call it be sure to set your default
 // configuration values in the Config.SetDefault()
 //
-func NewDefaultMicroservice() *Microservice {
+func NewDefaultMicroservice(opts Options) *Microservice {
 	ConfigureLogger(nil, "microservice_bootstrap.log")
 
 	// Read the configuration
 	config := NewConfiguration()
 	config.InitConfiguration()
 
+	// add the c8y_Configuration operation by default
+	supportedOperations := AgentSupportedOperations{"c8y_Configuration"}
+	supportedOperations.AddOperations(opts.SupportedOperations)
+
 	ms := &Microservice{
-		Config:    config,
-		Scheduler: NewScheduler(),
+		Config:              config,
+		Scheduler:           NewScheduler(),
+		SupportedOperations: supportedOperations,
+		AgentInformation:    opts.AgentInformation,
 	}
 
 	// Init logger using default log.file value provided in settings
@@ -77,12 +90,14 @@ func (m *Microservice) InitializeLogger(logfile ...string) {
 
 // Microservice contains information and
 type Microservice struct {
-	Config           *Configuration
-	Client           *c8y.Client
-	AgentID          string
-	MicroserviceHost string
-	Scheduler        *Scheduler
-	Logger           *zap.Logger
+	Config              *Configuration
+	Client              *c8y.Client
+	AgentID             string
+	MicroserviceHost    string
+	Scheduler           *Scheduler
+	Logger              *zap.Logger
+	SupportedOperations AgentSupportedOperations
+	AgentInformation    AgentInformation
 }
 
 // Scheduler to control cronjob tasks

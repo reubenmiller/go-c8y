@@ -32,7 +32,7 @@ func (m *Microservice) GetAgent() *c8y.ManagedObject {
 }
 
 // CreateMicroserviceRepresentation Create a microservice representation in the Cumulocity platform, so that the microservice can store its configuration in the managed object
-func (m *Microservice) CreateMicroserviceRepresentation(supportedOperations []string) (*c8y.ManagedObject, error) {
+func (m *Microservice) CreateMicroserviceRepresentation() (*c8y.ManagedObject, error) {
 	mo := m.GetAgent()
 
 	if mo != nil {
@@ -48,6 +48,12 @@ func (m *Microservice) CreateMicroserviceRepresentation(supportedOperations []st
 	externalID := m.Config.GetApplicationName()
 	configuration := m.Config.GetConfigurationString()
 
+	// Set default agent information
+	agentInfo := m.AgentInformation
+	if agentInfo.Model == "" {
+		agentInfo.Model = m.Config.GetApplicationName()
+	}
+
 	agentMo := &AgentManagedObject{
 		AgentConfiguration: &AgentConfiguration{
 			Config: configuration,
@@ -55,14 +61,9 @@ func (m *Microservice) CreateMicroserviceRepresentation(supportedOperations []st
 		ManagedObject: c8y.ManagedObject{
 			Name: m.Config.GetApplicationName(),
 			Type: m.Config.GetIdentityType(),
-			// C8yIsDevice: &c8y.DeviceFragment{},
 		},
-		AgentInformation: &AgentInformation{
-			Model: m.Config.GetApplicationName(),
-			// SerialNumber: m.Config.
-			Revision: "0.0.1",
-		},
-		AgentSupportedOperations: supportedOperations,
+		AgentInformation:         &agentInfo,
+		AgentSupportedOperations: m.SupportedOperations,
 		DeviceFragment:           c8y.DeviceFragment{},
 	}
 
@@ -124,12 +125,11 @@ func (m *Microservice) SaveConfiguration(rawConfiguration string) error {
 	return nil
 }
 
+// RegisterMicroserviceAgent registers an agent representation of the microservice
 func (m *Microservice) RegisterMicroserviceAgent() {
 	zap.L().Info("Registering microservice agent")
-	supportedOperations := []string{
-		"c8y_Configuration",
-	}
-	mo, _ := m.CreateMicroserviceRepresentation(supportedOperations)
+
+	mo, _ := m.CreateMicroserviceRepresentation()
 
 	if mo != nil {
 		zap.S().Infof("Start Polling for Operations on device %s", mo.ID)
