@@ -40,8 +40,11 @@ func (m *Microservice) CreateMicroserviceRepresentation() (*c8y.ManagedObject, e
 		zap.S().Infof("Updating agent meta information (info and supported operations). [%s]", mo.ID)
 
 		agentMo := &AgentManagedObject{
-			AgentInformation:         &m.AgentInformation,
 			AgentSupportedOperations: m.SupportedOperations,
+		}
+		// Only set information if revision is set
+		if m.AgentInformation.Revision != "" {
+			agentMo.AgentInformation = &m.AgentInformation
 		}
 		updatedMo, _, err := m.Client.Inventory.UpdateManagedObject(m.WithServiceUser(), mo.ID, agentMo)
 
