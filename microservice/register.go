@@ -37,7 +37,20 @@ func (m *Microservice) CreateMicroserviceRepresentation() (*c8y.ManagedObject, e
 
 	if mo != nil {
 		zap.S().Infof("Found agent by its identity. [%s]", mo.ID)
-		return mo, nil
+		zap.S().Infof("Updating agent meta information (info and supported operations). [%s]", mo.ID)
+
+		agentMo := &AgentManagedObject{
+			AgentInformation:         &m.AgentInformation,
+			AgentSupportedOperations: m.SupportedOperations,
+		}
+		updatedMo, _, err := m.Client.Inventory.UpdateManagedObject(m.WithServiceUser(), mo.ID, agentMo)
+
+		if err != nil {
+			zap.S().Errorf("Failed to update agent managed object with meta information. %s", err)
+			return mo, nil
+		}
+		zap.S().Infof("Updated agent meta information successfully [%s]", mo.ID)
+		return updatedMo, nil
 	}
 
 	zap.S().Infof("Could not find agent so it will be created")
