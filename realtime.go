@@ -155,6 +155,11 @@ func (c *RealtimeClient) Connect() error {
 	return c.connect()
 }
 
+// IsConnected returns true if the websocket is connected
+func (c *RealtimeClient) IsConnected() bool {
+	return c.connected
+}
+
 // Close notifies the Bayeux server of the intent to disconnect and terminates
 // the background polling loop.
 func (c *RealtimeClient) Close() error {
@@ -185,6 +190,38 @@ func (c *RealtimeClient) WaitForConnection() error {
 	for c.connected == false {
 		time.Sleep(100 * time.Millisecond)
 	}
+	return nil
+}
+
+func (c *RealtimeClient) createWebsocket() error {
+	dialer := websocket.Dialer{
+		Proxy:             http.ProxyFromEnvironment,
+		HandshakeTimeout:  10 * time.Second,
+		EnableCompression: false,
+	}
+	log.Printf("Establishing connection to %s", c.url.String())
+	ws, _, err := dialer.Dial(c.url.String(), nil)
+
+	if err != nil {
+		return err
+	}
+	c.mtx.Lock()
+	c.ws = ws
+	c.mtx.Unlock()
+	return nil
+}
+
+func (c *RealtimeClient) reconnect() error {
+	c.ws.Close()
+	err := c.createWebsocket()
+
+	if err != nil {
+		c.mtx.Unlock()
+		c.connected = false
+		c.mtx.Lock()
+		return err
+	}
+	c.sendMetaConnect()
 	return nil
 }
 
@@ -228,7 +265,11 @@ func (c *RealtimeClient) worker() error {
 
 			if err != nil {
 				log.Println("read:", err, messages)
-				return
+				log.Println("Handling connection error. You need to reconnect")
+
+				// Try to reconnect with a new websocket
+				c.reconnect()
+				// return
 			}
 
 			for _, message := range messages {
@@ -251,6 +292,9 @@ func (c *RealtimeClient) worker() error {
 					c.sendMetaConnect()
 
 				case "/meta/connect":
+					c.mtx.Lock()
+					c.connected = true
+					c.mtx.Unlock()
 					log.Printf("ws: Connect\n")
 
 				case "/meta/disconnect":
