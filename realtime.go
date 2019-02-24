@@ -9,7 +9,9 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -42,6 +44,7 @@ type RealtimeClient struct {
 	tenant        string
 	username      string
 	password      string
+	requestID     uint64
 }
 
 // Message is the type delivered to subscribers.
@@ -356,7 +359,6 @@ func (c *RealtimeClient) sendMetaConnect() error {
 	}
 	log.Print("Sending meta/connect")
 	message := &request{
-		ID:             "2",
 		Channel:        "/meta/connect",
 		ConnectionType: "websocket",
 		ClientID:       c.clientID,
@@ -386,7 +388,6 @@ func (c *RealtimeClient) Subscribe(pattern string, out chan<- *Message) error {
 	}
 
 	message := &request{
-		ID:             "2",
 		Channel:        "/meta/subscribe",
 		Subscription:   pattern,
 		ConnectionType: "websocket",
@@ -405,6 +406,44 @@ func (c *RealtimeClient) Subscribe(pattern string, out chan<- *Message) error {
 	return err
 }
 
+// UnsubscribeAll unsubscribes to all of the subscribed channels
+func (c *RealtimeClient) UnsubscribeAll() (errs []error) {
+
+	for _, pattern := range c.subscriptions {
+		err := c.Unsubscribe(pattern.glob.String())
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return
+}
+
+// Unsubscribe unsubscribe to a given pattern
+func (c *RealtimeClient) Unsubscribe(pattern string) error {
+	log.Println("unsubscribing to ", pattern)
+
+	_, err := ohmyglob.Compile(pattern, nil)
+	if err != nil {
+		return fmt.Errorf("Invalid pattern: %s", err)
+	}
+
+	message := &request{
+		Channel:      "/meta/unsubscribe",
+		Subscription: pattern,
+		ClientID:     c.clientID,
+	}
+
+	err = c.writeJSON(message)
+
+	if err != nil {
+		log.Printf("Failed to unsubscribe to subscription. %s", err)
+	}
+
+	return err
+}
+
 func (c *RealtimeClient) writeJSON(r *request) error {
+	// Add a unique request id
+	r.ID = strconv.FormatUint(atomic.AddUint64(&c.requestID, 1), 10)
 	return c.ws.WriteJSON([]request{*r})
 }
