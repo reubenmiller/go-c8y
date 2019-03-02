@@ -136,7 +136,7 @@ func TestRealtimeSubscriptions_SubscribeToOperations(t *testing.T) {
 			msgCount++
 
 			if msg.Payload.RealtimeAction != "CREATE" {
-				t.Errorf("Unexpected realtime action type. wanted: CREATE, got: %s", msg.RealtimeAction)
+				t.Errorf("Unexpected realtime action type. wanted: CREATE, got: %s", msg.Payload.RealtimeAction)
 			}
 
 			opName := msg.Payload.Item.Get("test_operation.name").String()
