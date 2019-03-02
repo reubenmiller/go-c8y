@@ -1,6 +1,7 @@
 package c8y_test
 
 import (
+	"context"
 	"log"
 	"testing"
 	"time"
@@ -22,17 +23,18 @@ func TestRealtimeClient(t *testing.T) {
 }
 
 func TestRealtimeSubscriptions(t *testing.T) {
+	_, err := createTestDevice()
+
+	if err != nil {
+		t.Errorf("Device should exist. wanted nil, got %s", err)
+	}
+
 	client := createTestClient()
 	realtime := client.Realtime
-
-	// err := realtime.Connect()
-	var err error
 
 	go func() {
 		realtime.Connect()
 	}()
-
-	// m.Client.Realtime.WaitForConnection()
 
 	err = realtime.WaitForConnection()
 
@@ -56,7 +58,7 @@ func TestRealtimeSubscriptions(t *testing.T) {
 		select {
 		case msg := <-ch:
 			log.Printf("Received notification")
-			log.Printf("ws: [frame]: Channel: %s, %s\n", msg.Channel, string(msg.Data))
+			log.Printf("ws: [frame]: Channel: %s, %s\n", msg.Channel, string(msg.Payload.Item.Raw))
 
 		case <-tickChan:
 			if realtime.IsConnected() {
@@ -69,6 +71,95 @@ func TestRealtimeSubscriptions(t *testing.T) {
 		case <-timerChan:
 			log.Printf("[Unsubscribe]")
 			// realtime.UnsubscribeAll()
+		}
+	}
+}
+
+func TestRealtimeSubscriptions_SubscribeToOperations(t *testing.T) {
+	device, err := createTestDevice()
+
+	if err != nil {
+		t.Errorf("Device should exist. wanted nil, got %s", err)
+	}
+
+	client := createTestClient()
+	realtime := client.Realtime
+
+	go func() {
+		realtime.Connect()
+	}()
+
+	err = realtime.WaitForConnection()
+
+	if err != nil {
+		t.Errorf("Unknown error")
+	}
+
+	ch := make(chan *c8y.Message)
+	timerChan := time.NewTimer(time.Second * 5).C
+
+	realtime.Subscribe("/operations/"+device.ID, ch)
+
+	// Create a dummy operation
+	sendOperation := func() {
+		_, _, err = client.Operation.CreateOperation(
+			context.Background(),
+			map[string]interface{}{
+				"deviceId": device.ID,
+				"test_operation": map[string]interface{}{
+					"name": "test operation",
+					"parameters": map[string]interface{}{
+						"value1": 1,
+					},
+				},
+			},
+		)
+		if err != nil {
+			t.Errorf("Failed to create operation. %s", err)
+		}
+	}
+
+	sendOperation()
+	sendOperation()
+
+	defer func() {
+		close(ch)
+		realtime.Close()
+	}()
+
+	msgCount := 0
+	expectedOpName := "test operation"
+
+	for {
+		select {
+		case msg := <-ch:
+			msgCount++
+
+			if msg.Payload.RealtimeAction != "CREATE" {
+				t.Errorf("Unexpected realtime action type. wanted: CREATE, got: %s", msg.RealtimeAction)
+			}
+
+			opName := msg.Payload.Item.Get("test_operation.name").String()
+			if opName != expectedOpName {
+				t.Errorf("Unexpected operation name. wanted: %s, got: %s", expectedOpName, opName)
+			}
+
+			deviceId := msg.Payload.Item.Get("deviceId").String()
+			if deviceId != device.ID {
+				t.Errorf("Unexpected device id in operation. wanted: %s, got: %s", device.ID, deviceId)
+			}
+
+			log.Printf("Received notification")
+			log.Printf("ws: [frame]: Channel: %s, %s\n", msg.Channel, string(msg.Payload.Item.Raw))
+
+		case <-timerChan:
+			realtime.UnsubscribeAll()
+
+			if msgCount != 2 {
+				t.Errorf("Unexpected message count. wanted: 2, got: %d", msgCount)
+			}
+			realtime.Close()
+			return
 		}
 	}
 }
