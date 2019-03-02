@@ -263,10 +263,13 @@ func (c *RealtimeClient) worker() error {
 		defer close(done)
 		for {
 			messages := []Message{}
-
 			err := c.ws.ReadJSON(&messages)
 
 			if err != nil {
+				if !c.IsConnected() {
+					log.Println("Connection has been closed by the client")
+					return
+				}
 				log.Println("read:", err, messages)
 				log.Println("Handling connection error. You need to reconnect")
 
