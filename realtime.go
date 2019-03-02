@@ -16,6 +16,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/obeattie/ohmyglob"
+	"github.com/tidwall/gjson"
 	tomb "gopkg.in/tomb.v2"
 )
 
@@ -49,11 +50,19 @@ type RealtimeClient struct {
 
 // Message is the type delivered to subscribers.
 type Message struct {
-	Channel   string          `json:"channel"`
-	Data      json.RawMessage `json:"data,omitempty"`
-	ID        string          `json:"id,omitempty"`
-	ClientID  string          `json:"clientId,omitempty"`
-	Extension interface{}     `json:"ext,omitempty"`
+	Channel   string       `json:"channel"`
+	Payload   RealtimeData `json:"data,omitempty"`
+	ID        string       `json:"id,omitempty"`
+	ClientID  string       `json:"clientId,omitempty"`
+	Extension interface{}  `json:"ext,omitempty"`
+}
+
+// RealtimeData contains the websocket frame data
+type RealtimeData struct {
+	RealtimeAction string          `json:"realtimeAction,omitempty"`
+	Data           json.RawMessage `json:"data,omitempty"`
+
+	Item gjson.Result `json:"-"`
 }
 
 type subscription struct {
@@ -308,6 +317,7 @@ func (c *RealtimeClient) worker() error {
 
 				default:
 					// Data package received
+					message.Payload.Item = gjson.ParseBytes(message.Payload.Data)
 					for _, s := range c.subscriptions {
 						if s.glob.MatchString(message.Channel) {
 							s.out <- &message
