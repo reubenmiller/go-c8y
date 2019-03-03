@@ -76,7 +76,7 @@ func TestRealtimeSubscriptions(t *testing.T) {
 }
 
 func TestRealtimeSubscriptions_SubscribeToOperations(t *testing.T) {
-	device, err := createTestDevice()
+	device, err := createRandomTestDevice()
 
 	if err != nil {
 		t.Errorf("Device should exist. wanted nil, got %s", err)
@@ -165,7 +165,7 @@ func TestRealtimeSubscriptions_SubscribeToOperations(t *testing.T) {
 }
 
 func TestRealtimeSubscriptions_SubscribeToMeasurements(t *testing.T) {
-	device, err := createTestDevice()
+	device, err := createRandomTestDevice()
 
 	if err != nil {
 		t.Errorf("Device should exist. wanted nil, got %s", err)

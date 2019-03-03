@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"math/rand"
 	"os"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	c8y "github.com/reubenmiller/go-c8y"
 	"github.com/spf13/viper"
@@ -22,10 +25,14 @@ type TestDevice struct {
 }
 
 type SetupConfiguration struct {
+	mu            sync.Mutex
 	ExampleDevice TestDevice
+	Devices       []c8y.ManagedObject
 }
 
 func TestMain(m *testing.M) {
+	rand.Seed(time.Now().UnixNano())
+
 	setupTestSystem()
 
 	res := m.Run()
@@ -48,7 +55,9 @@ func setupTestSystem() {
 	}
 
 	if mo != nil {
+		CumulocityConfiguration.mu.Lock()
 		CumulocityConfiguration.ExampleDevice.ID = mo.ID
+		CumulocityConfiguration.mu.Unlock()
 	}
 }
 
@@ -57,15 +66,39 @@ func cleanupTestSystem() {
 
 	client := createTestClient()
 	config := readConfig()
+	CumulocityConfiguration.mu.Lock()
 
 	removeDevices := config.GetBool("testing.cleanup.removeDevice")
-	if removeDevices && CumulocityConfiguration.ExampleDevice.ID != "" {
-		log.Printf("Removing test device\n")
-		_, err := client.Inventory.Delete(context.Background(), CumulocityConfiguration.ExampleDevice.ID)
+	if removeDevices {
+		// Remove example device
+		if CumulocityConfiguration.ExampleDevice.ID != "" {
+			log.Printf("Removing test device\n")
+			_, err := client.Inventory.Delete(context.Background(), CumulocityConfiguration.ExampleDevice.ID)
+			if err != nil {
+				log.Printf("Could not remove the id. %s", err)
+			}
+		}
+		CumulocityConfiguration.ExampleDevice = TestDevice{}
+
+		// Remove all the devices that were created during testing
+		for _, mo := range CumulocityConfiguration.Devices {
+			_, err := client.Inventory.Delete(context.Background(), mo.ID)
+			if err != nil {
+				log.Printf("Could not remove the id. %s", err)
+			}
+		}
+		CumulocityConfiguration.Devices = nil
+	}
+
+	// Remove all the devices that were created during testing
+	for _, mo := range CumulocityConfiguration.Devices {
+		_, err := client.Inventory.Delete(context.Background(), mo.ID)
 		if err != nil {
 			log.Printf("Could not remove the id. %s", err)
 		}
 	}
+	CumulocityConfiguration.Devices = nil
+	CumulocityConfiguration.mu.Unlock()
 }
 
 func createTestClient() *c8y.Client {
@@ -111,7 +144,7 @@ func readConfig() *viper.Viper {
 }
 
 // createTestDevice create a test device by looking for the special test external identity
-func createTestDevice() (*c8y.ManagedObject, error) {
+func createTestDevice(randomPrefix ...string) (*c8y.ManagedObject, error) {
 	client := createTestClient()
 
 	var err error
@@ -128,7 +161,10 @@ func createTestDevice() (*c8y.ManagedObject, error) {
 			return nil, fmt.Errorf("Failed to create device: %s", err)
 		}
 		// Store a reference to the test device
+		CumulocityConfiguration.mu.Lock()
 		CumulocityConfiguration.ExampleDevice.ID = mo.ID
+		CumulocityConfiguration.Devices = append(CumulocityConfiguration.Devices, *mo)
+		CumulocityConfiguration.mu.Unlock()
 
 		// Create Identity for new managed object
 		_, _, err = client.Identity.NewExternalIdentity(context.Background(), mo.ID, &c8y.IdentityOptions{
@@ -150,9 +186,48 @@ func createTestDevice() (*c8y.ManagedObject, error) {
 	return mo, nil
 }
 
+func createRandomTestDevice(prefix ...string) (*c8y.ManagedObject, error) {
+	client := createTestClient()
+
+	var err error
+	var mo *c8y.ManagedObject
+	var deviceName string
+
+	if len(prefix) > 0 && prefix[0] != "" {
+		deviceName = prefix[0]
+	} else {
+		deviceName = "TestDevice"
+	}
+	deviceName = deviceName + randSeq(10)
+
+	mo, _, err = client.Inventory.CreateManagedObject(
+		context.Background(),
+		c8y.NewAgent(deviceName),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create device: %s", err)
+	}
+	// Store a reference to the test device
+	CumulocityConfiguration.mu.Lock()
+	CumulocityConfiguration.Devices = append(CumulocityConfiguration.Devices, *mo)
+	CumulocityConfiguration.mu.Unlock()
+
+	return mo, nil
+}
+
 const float64EqualityThreshold = 1e-7
 
 func almostEqual(a, b float64) bool {
 	diff := math.Abs(a - b)
 	return diff <= float64EqualityThreshold
+}
+
+var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func randSeq(n int) string {
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
 }
