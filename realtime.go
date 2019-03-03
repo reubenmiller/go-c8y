@@ -381,14 +381,23 @@ func (c *RealtimeClient) sendMetaConnect() error {
 }
 
 const (
-	// MEASUREMENTS cep realtime
-	MEASUREMENTS = "measurements"
+	// RealtimeAlarms subscribes to events on alarms objects from the CEP realtime engine
+	RealtimeAlarms = "alarms"
 
-	// ALARMS CEP realtime
-	ALARMS = "alarms"
+	// RealtimeAlarmsWithChildren subscribes to events on alarms (including children) objects from the CEP realtime engine
+	RealtimeAlarmsWithChildren = "alarmsWithChildren"
 
-	// OPERATIONS CEP realtime
-	OPERATIONS = "operations"
+	// RealtimeEvents subscribes to events on event objects from the CEP realtime engine
+	RealtimeEvents = "events"
+
+	// RealtimeManagedObjects subscribes to events on managed objects from the CEP realtime engine
+	RealtimeManagedObjects = "managedobjects"
+
+	// RealtimeMeasurements subscribes to events on measurement objects from the CEP realtime engine
+	RealtimeMeasurements = "measurements"
+
+	// RealtimeOperations subscribes to events on operations objects from the CEP realtime engine
+	RealtimeOperations = "operations"
 )
 
 // Subscribe setup a subscription to
