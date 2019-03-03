@@ -134,10 +134,22 @@ func (m ValueFragmentType) MarshalJSON() ([]byte, error) {
 		valueStr := ""
 		switch v := value.Value.(type) {
 
-		case float64:
-			valueStr = fmt.Sprintf("{\"value\": %v, \"unit\":\"%s\" }", v, value.Unit)
-
+		case []byte:
+		case []rune:
+		case string:
+		case bool:
+		case int:
+		case int8:
+		case int16:
+		case int32:
 		case int64:
+		case uint:
+		case uint8:
+		case uint16:
+		case uint32:
+		case uint64:
+		case float32:
+		case float64:
 			valueStr = fmt.Sprintf("{\"value\": %v, \"unit\":\"%s\" }", v, value.Unit)
 
 		default:
