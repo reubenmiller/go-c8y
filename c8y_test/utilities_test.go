@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"strings"
 	"testing"
@@ -147,4 +148,11 @@ func createTestDevice() (*c8y.ManagedObject, error) {
 	}
 
 	return mo, nil
+}
+
+const float64EqualityThreshold = 1e-7
+
+func almostEqual(a, b float64) bool {
+	diff := math.Abs(a - b)
+	return diff <= float64EqualityThreshold
 }

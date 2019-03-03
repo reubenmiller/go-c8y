@@ -176,3 +176,128 @@ func TestMeasurementService_Create(t *testing.T) {
 		log.Printf("measurement: %s\n", data.Item.String())
 	}
 }
+
+func TestMeasurementService_CreateWithDifferentTypes(t *testing.T) {
+	client := createTestClient()
+	device, _ := createTestDevice()
+
+	createMeasurement := func(value interface{}) *c8y.MeasurementObject {
+		m, _ := c8y.NewSimpleMeasurementRepresentation(c8y.SimpleMeasurementOptions{
+			SourceID:            device.ID,
+			Timestamp:           nil,
+			Type:                "c8yTest",
+			ValueFragmentType:   "c8y_Temperature",
+			ValueFragmentSeries: "A",
+			Value:               value,
+			Unit:                "degC",
+			FragmentType:        []string{"c8y_Test"},
+		})
+
+		data, resp, err := client.Measurement.Create(context.Background(), *m)
+
+		if resp.StatusCode != 201 {
+			t.Errorf("Unexpected server return code. wanted: 201, got: %d", resp.StatusCode)
+		}
+		if err != nil {
+			t.Errorf("Unexpected error when creating measurement. wanted: nil, got: %s", err)
+		}
+		if data != nil {
+			log.Printf("measurement: %s\n", data.Item.Raw)
+		}
+
+		path := "c8y_Temperature.A.value"
+
+		switch v := value.(type) {
+		case []byte:
+			if actualVal := data.Item.Get(path).String(); string(v) != string(actualVal) {
+				t.Errorf("Invalid value. wanted: %v, got: %v", v, actualVal)
+			}
+		case []rune:
+			if actualVal := data.Item.Get(path).String(); string(v) != string(actualVal) {
+				t.Errorf("Invalid value. wanted: %v, got: %v", v, actualVal)
+			}
+		case string:
+			if actualVal := data.Item.Get(path).String(); v != string(actualVal) {
+				t.Errorf("Invalid value. wanted: %v, got: %v", v, actualVal)
+			}
+		case bool:
+			if actualVal := data.Item.Get(path).Bool(); v != actualVal {
+				t.Errorf("Invalid value. wanted: %v, got: %v", v, actualVal)
+			}
+		case int:
+			if actualVal := data.Item.Get(path).Int(); int64(v) != actualVal {
+				t.Errorf("Invalid value. wanted: %v, got: %v", v, actualVal)
+			}
+		case int8:
+			if actualVal := data.Item.Get(path).Int(); int64(v) != actualVal {
+				t.Errorf("Invalid value. wanted: %v, got: %v", v, actualVal)
+			}
+		case int16:
+			if actualVal := data.Item.Get(path).Int(); int64(v) != actualVal {
+				t.Errorf("Invalid value. wanted: %v, got: %v", v, actualVal)
+			}
+		case int32:
+			if actualVal := data.Item.Get(path).Int(); int64(v) != actualVal {
+				t.Errorf("Invalid value. wanted: %v, got: %v", v, actualVal)
+			}
+		case int64:
+			if actualVal := data.Item.Get(path).Int(); v != actualVal {
+				t.Errorf("Invalid value. wanted: %v, got: %v", v, actualVal)
+			}
+		case uint:
+			if actualVal := data.Item.Get(path).Uint(); uint64(v) != actualVal {
+				t.Errorf("Invalid value. wanted: %v, got: %v", v, actualVal)
+			}
+		case uint8:
+			if actualVal := data.Item.Get(path).Uint(); uint64(v) != actualVal {
+				t.Errorf("Invalid value. wanted: %v, got: %v", v, actualVal)
+			}
+		case uint16:
+			if actualVal := data.Item.Get(path).Uint(); uint64(v) != actualVal {
+				t.Errorf("Invalid value. wanted: %v, got: %v", v, actualVal)
+			}
+		case uint32:
+			if actualVal := data.Item.Get(path).Uint(); uint64(v) != actualVal {
+				t.Errorf("Invalid value. wanted: %v, got: %v", v, actualVal)
+			}
+		case uint64:
+			if actualVal := data.Item.Get(path).Uint(); v != actualVal {
+				t.Errorf("Invalid value. wanted: %v, got: %v", v, actualVal)
+			}
+		case float32:
+			if actualVal := data.Item.Get(path).Float(); !almostEqual(float64(v), actualVal) {
+				t.Errorf("Invalid value. wanted: %v, got: %v", v, actualVal)
+			}
+		case float64:
+			if actualVal := data.Item.Get(path).Float(); !almostEqual(float64(v), actualVal) {
+				t.Errorf("Invalid value. wanted: %v, got: %v", v, actualVal)
+			}
+		default:
+			t.Errorf("Unsupported data type")
+		}
+
+		return data
+	}
+
+	// Float values
+	createMeasurement(float64(1.64))
+	createMeasurement(float32(1.32))
+
+	// integer values
+	createMeasurement(int64(64))
+	createMeasurement(int32(32))
+	createMeasurement(int16(16))
+	createMeasurement(int8(8))
+	createMeasurement(int(101))
+
+	// unsigned integer values
+	createMeasurement(uint64(64))
+	createMeasurement(uint32(32))
+	createMeasurement(uint16(16))
+	createMeasurement(uint8(8))
+	createMeasurement(uint(101))
+
+	// boolean values
+	createMeasurement(true)
+	createMeasurement(false)
+}

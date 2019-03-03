@@ -367,24 +367,14 @@ func (d *MeasurementSeriesGroup) MarshalCSV(delimiter string) ([]byte, error) {
 }
 
 // Create posts a new measurement in the platform
-func (s *MeasurementService) Create(ctx context.Context, m MeasurementRepresentation) (*MeasurementObject, *Response, error) {
-	u := fmt.Sprintf("measurement/measurements")
-
-	req, err := s.client.NewRequest("POST", u, "", m)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	req.Header.Add("Accept", "application/json")
-
+func (s *MeasurementService) Create(ctx context.Context, body MeasurementRepresentation) (*MeasurementObject, *Response, error) {
 	data := new(MeasurementObject)
-
-	resp, err := s.client.Do(ctx, req, data)
-	if err != nil {
-		return nil, resp, err
-	}
-
-	data.Item = *resp.JSON
-
-	return data, resp, nil
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "POST",
+		Path:         "measurement/measurements",
+		Body:         body,
+		ResponseData: data,
+	})
+	data.Item = gjson.Parse(resp.JSON.Raw)
+	return data, resp, err
 }
