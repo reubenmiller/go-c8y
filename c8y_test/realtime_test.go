@@ -98,7 +98,7 @@ func TestRealtimeSubscriptions_SubscribeToOperations(t *testing.T) {
 	ch := make(chan *c8y.Message)
 	timerChan := time.NewTimer(time.Second * 5).C
 
-	realtime.Subscribe("/operations/"+device.ID, ch)
+	realtime.Subscribe(c8y.RealtimeOperations(device.ID), ch)
 
 	// Create a dummy operation
 	sendOperation := func() {
@@ -187,7 +187,7 @@ func TestRealtimeSubscriptions_SubscribeToMeasurements(t *testing.T) {
 	ch := make(chan *c8y.Message)
 	timerChan := time.NewTimer(time.Second * 5).C
 
-	realtime.Subscribe("/measurements/"+device.ID, ch)
+	realtime.Subscribe(c8y.RealtimeMeasurements(device.ID), ch)
 
 	// Create a dummy measurement
 	sendMeasurement := func(value float64) {
@@ -244,7 +244,6 @@ func TestRealtimeSubscriptions_SubscribeToMeasurements(t *testing.T) {
 				t.Errorf("Unexpected device id in operation. wanted: %s, got: %s", device.ID, deviceId)
 			}
 
-			log.Printf("Received notification")
 			log.Printf("ws: [frame]: Channel: %s, %s\n", msg.Channel, string(msg.Payload.Item.Raw))
 
 		case <-timerChan:

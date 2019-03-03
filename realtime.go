@@ -380,25 +380,42 @@ func (c *RealtimeClient) sendMetaConnect() error {
 	return c.writeJSON(message)
 }
 
-const (
-	// RealtimeAlarms subscribes to events on alarms objects from the CEP realtime engine
-	RealtimeAlarms = "alarms"
+func getRealtimeID(id ...string) string {
+	if len(id) > 0 {
+		return id[0]
+	}
+	return "*"
+}
 
-	// RealtimeAlarmsWithChildren subscribes to events on alarms (including children) objects from the CEP realtime engine
-	RealtimeAlarmsWithChildren = "alarmsWithChildren"
+// RealtimeAlarms subscribes to events on alarms objects from the CEP realtime engine
+func RealtimeAlarms(id ...string) string {
+	return "/alarms/" + getRealtimeID(id...)
+}
 
-	// RealtimeEvents subscribes to events on event objects from the CEP realtime engine
-	RealtimeEvents = "events"
+// RealtimeAlarmsWithChildren subscribes to events on alarms (including children) objects from the CEP realtime engine
+func RealtimeAlarmsWithChildren(id ...string) string {
+	return "/alarmsWithChildren/" + getRealtimeID(id...)
+}
 
-	// RealtimeManagedObjects subscribes to events on managed objects from the CEP realtime engine
-	RealtimeManagedObjects = "managedobjects"
+// RealtimeEvents subscribes to events on event objects from the CEP realtime engine
+func RealtimeEvents(id ...string) string {
+	return "/events/" + getRealtimeID(id...)
+}
 
-	// RealtimeMeasurements subscribes to events on measurement objects from the CEP realtime engine
-	RealtimeMeasurements = "measurements"
+// RealtimeManagedObjects subscribes to events on managed objects from the CEP realtime engine
+func RealtimeManagedObjects(id ...string) string {
+	return "/managedobjects/" + getRealtimeID(id...)
+}
 
-	// RealtimeOperations subscribes to events on operations objects from the CEP realtime engine
-	RealtimeOperations = "operations"
-)
+// RealtimeMeasurements subscribes to events on measurement objects from the CEP realtime engine
+func RealtimeMeasurements(id ...string) string {
+	return "/measurements/" + getRealtimeID(id...)
+}
+
+// RealtimeOperations subscribes to events on operations objects from the CEP realtime engine
+func RealtimeOperations(id ...string) string {
+	return "/operations/" + getRealtimeID(id...)
+}
 
 // Subscribe setup a subscription to
 func (c *RealtimeClient) Subscribe(pattern string, out chan<- *Message) error {
