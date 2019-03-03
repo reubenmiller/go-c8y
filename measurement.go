@@ -98,7 +98,6 @@ type MeasurementSerieDefinition struct {
 type MeasurementSeriesValueGroup struct {
 	Timestamp time.Time `json:"timestamp"`
 	Values    []Number  `json:"values"`
-	// Values    []float64     `json:"values"`
 }
 
 // MeasurementSeriesAggregateValueGroup represents multiple aggregate values for multiple series for a single timestamp
