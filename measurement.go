@@ -376,7 +376,7 @@ func (s *MeasurementService) Create(ctx context.Context, m MeasurementRepresenta
 		return nil, nil, err
 	}
 
-	req.Header.Add("Accept", "application/json")
+	req.Header.Set("Accept", "application/json")
 
 	data := new(MeasurementObject)
 
