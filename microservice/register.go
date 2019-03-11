@@ -108,8 +108,12 @@ func (m *Microservice) CreateMicroserviceRepresentation() (*c8y.ManagedObject, e
 func (m *Microservice) GetConfiguration() (string, error) {
 	mo, _, _ := m.Client.Inventory.GetManagedObject(m.WithServiceUser(), m.AgentID, nil)
 
-	if mo == nil {
+	if mo == nil || mo.ID == "" {
 		return "", fmt.Errorf("Could not retrieve managed object")
+	}
+
+	if mo.C8yConfiguration == nil {
+		return "", fmt.Errorf("No configuration found on managed object id=%s", mo.ID)
 	}
 
 	return mo.C8yConfiguration.Configuration, nil
