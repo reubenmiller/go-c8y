@@ -325,7 +325,7 @@ func (s *InventoryService) DownloadBinary(ctx context.Context, ID string) (filep
 		return
 	}
 
-	req.Header.Add("Accept", "*/*")
+	req.Header.Set("Accept", "*/*")
 
 	// Get the data
 	resp, err := client.Do(ctx, req, nil)
@@ -382,7 +382,7 @@ func (s *InventoryService) NewBinary(ctx context.Context, filename string, prope
 
 	req, err := prepareMultipartRequest(u.String(), "POST", values)
 
-	req.Header.Add("Accept", "*/*")
+	req.Header.Set("Accept", "*/*")
 
 	if err != nil {
 		err = errors.Wrap(err, "Could not create binary upload request object")
@@ -416,7 +416,7 @@ func (s *InventoryService) UpdateBinary(ctx context.Context, ID, filename string
 
 	req, err := prepareMultipartRequest(u.String(), "PUT", values)
 
-	req.Header.Add("Accept", "*/*")
+	req.Header.Set("Accept", "*/*")
 
 	if err != nil {
 		err = errors.Wrap(err, "Could not create binary upload request object")
