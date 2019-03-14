@@ -261,7 +261,7 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 	req, err := c.NewRequest(options.Method, options.Path, queryParams, options.Body)
 
 	if req.Header.Get("Accept") == "" {
-		req.Header.Set("Accept", "*/*")
+		req.Header.Set("Accept", "application/json")
 	}
 
 	if options.Host != "" {

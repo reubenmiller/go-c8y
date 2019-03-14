@@ -382,7 +382,7 @@ func (s *InventoryService) NewBinary(ctx context.Context, filename string, prope
 
 	req, err := prepareMultipartRequest(u.String(), "POST", values)
 
-	req.Header.Set("Accept", "*/*")
+	req.Header.Set("Accept", "application/json")
 
 	if err != nil {
 		err = errors.Wrap(err, "Could not create binary upload request object")
@@ -416,7 +416,7 @@ func (s *InventoryService) UpdateBinary(ctx context.Context, ID, filename string
 
 	req, err := prepareMultipartRequest(u.String(), "PUT", values)
 
-	req.Header.Set("Accept", "*/*")
+	req.Header.Set("Accept", "application/json")
 
 	if err != nil {
 		err = errors.Wrap(err, "Could not create binary upload request object")
