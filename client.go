@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"reflect"
 	"strings"
 	"sync"
@@ -295,11 +296,16 @@ func (c *Client) NewRequest(method, path string, query string, body interface{})
 
 	var buf io.ReadWriter
 	if body != nil {
-		buf = new(bytes.Buffer)
-		err := json.NewEncoder(buf).Encode(body)
+		switch v := body.(type) {
+		case *os.File:
+			buf = v
+		default:
+			buf = new(bytes.Buffer)
+			err := json.NewEncoder(buf).Encode(body)
 
-		if err != nil {
-			return nil, err
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	req, err := http.NewRequest(method, u.String(), buf)

@@ -404,36 +404,22 @@ func (s *InventoryService) NewBinary(ctx context.Context, filename string, prope
 
 // UpdateBinary updates an existing binary under the inventory managed objects
 func (s *InventoryService) UpdateBinary(ctx context.Context, ID, filename string) (*ManagedObject, *Response, error) {
-	client := s.client
-
-	values := map[string]io.Reader{
-		"file": mustOpen(filename), // lets assume its this file
-	}
-
-	// set binary api
-	u, _ := url.Parse(client.BaseURL.String())
-	u.Path = path.Join(u.Path, "/inventory/binaries/"+ID)
-
-	req, err := prepareMultipartRequest(u.String(), "PUT", values)
-
-	req.Header.Set("Accept", "application/json")
-
+	binarydata, err := os.Open(filename)
 	if err != nil {
-		err = errors.Wrap(err, "Could not create binary upload request object")
-		zap.S().Error(err)
-		return nil, nil, err
+		log.Fatal(err)
 	}
+	defer binarydata.Close()
 
 	data := new(ManagedObject)
-	resp, err := client.Do(ctx, req, data)
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "PUT",
+		Path:         "inventory/binaries/" + ID,
+		Body:         binarydata,
+		ResponseData: data,
+	})
 
-	if err != nil {
-		return nil, resp, err
-	}
-
-	data.Item = *resp.JSON
-
-	return data, resp, nil
+	data.Item = gjson.Parse(resp.JSON.Raw)
+	return data, resp, err
 }
 
 // DeleteBinary removes a managed object Binary by ID
