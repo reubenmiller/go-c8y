@@ -11,6 +11,12 @@ import (
 // ContextService api
 type ContextService service
 
+// ClientUser returns a context with the client username (if set)
+func (s *ContextService) ClientUser() context.Context {
+	auth := NewBasicAuthString(s.client.TenantName, s.client.Username, s.client.Password)
+	return context.WithValue(context.Background(), GetContextAuthTokenKey(), auth)
+}
+
 // BootstrapUserFromEnvironment returns a context with the Microservice Bootstrap user (set via environment variables)
 func (s *ContextService) BootstrapUserFromEnvironment() context.Context {
 	tenant, username, password := GetBootstrapUserFromEnvironment()

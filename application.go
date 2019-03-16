@@ -74,6 +74,7 @@ func (s *ApplicationService) getApplicationData(ctx context.Context, partialURL 
 		return nil, resp, err
 	}
 
+	data.Items = resp.JSON.Get("applications").Array()
 	return data, resp, nil
 }
 

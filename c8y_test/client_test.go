@@ -183,11 +183,11 @@ func TestInventoryService_DecodeJSONManagedObjects(t *testing.T) {
 
 	_, resp, _ := client.Inventory.GetDevices(context.Background(), opt)
 
-	managedObjects := make([]c8y.ManagedObject, 0)
+	var apiResponse map[string]interface{}
 
-	err := resp.DecodeJSON(&managedObjects)
+	err := resp.DecodeJSON(&apiResponse)
 
-	log.Printf("Values: %s", managedObjects)
+	log.Printf("Values: %s", apiResponse)
 
 	if err != nil {
 		t.Errorf("Could not decode json. want: nil, got: %s", err)

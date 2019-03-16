@@ -316,19 +316,22 @@ func (c *Client) NewRequest(method, path string, query string, body interface{})
 		req.Header.Set("Content-Type", "application/json")
 	}
 
+	c.SetAuthorization(req)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", c.UserAgent)
+	req.Header.Set("X-APPLICATION", "go-client")
+	return req, nil
+}
+
+// SetAuthorization sets the configured authorization to the given request. By default it will set the Basic Authorization header
+func (c *Client) SetAuthorization(req *http.Request) {
 	var headerUsername string
 	if c.UseTenantInUsername {
 		headerUsername = fmt.Sprintf("%s/%s", c.TenantName, c.Username)
 	} else {
 		headerUsername = c.Username
 	}
-
 	req.SetBasicAuth(headerUsername, c.Password)
-
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", c.UserAgent)
-	req.Header.Set("X-APPLICATION", "go-client")
-	return req, nil
 }
 
 // Response is a Cumulocity API response. This wraps the standard http.Response

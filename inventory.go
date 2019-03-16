@@ -316,10 +316,10 @@ func (s *InventoryService) Delete(ctx context.Context, ID string) (*Response, er
 func (s *InventoryService) DownloadBinary(ctx context.Context, ID string) (filepath string, err error) {
 	// set binary api
 	client := s.client
-	u, _ := url.Parse(client.BaseURL.String())
-	u.Path = path.Join(u.Path, "/inventory/binaries", ID)
+	u := "inventory/binaries/" + ID
 
-	req, err := http.NewRequest("GET", u.String(), nil)
+	// req, err := http.NewRequest("GET", u.String(), nil)
+	req, err := s.client.NewRequest("GET", u, "", nil)
 	if err != nil {
 		zap.S().Errorf("Could not create request. %s", err)
 		return
@@ -381,6 +381,7 @@ func (s *InventoryService) NewBinary(ctx context.Context, filename string, prope
 	u.Path = path.Join(u.Path, "/inventory/binaries")
 
 	req, err := prepareMultipartRequest(u.String(), "POST", values)
+	s.client.SetAuthorization(req)
 
 	req.Header.Set("Accept", "application/json")
 
