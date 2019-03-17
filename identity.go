@@ -3,6 +3,8 @@ package c8y
 import (
 	"context"
 	"fmt"
+
+	"github.com/tidwall/gjson"
 )
 
 // IdentityService does something
@@ -20,6 +22,8 @@ type Identity struct {
 	Type          string            `json:"type"`
 	Self          string            `json:"self"`
 	ManagedObject IdentityReference `json:"managedObject"`
+
+	Item gjson.Result `json:"-"`
 }
 
 // IdentityReference contains the id and self link to the identify resource
@@ -43,6 +47,8 @@ func (s *IdentityService) GetExternalID(ctx context.Context, identityType string
 	if err != nil {
 		return nil, resp, err
 	}
+
+	data.Item = gjson.Parse(resp.JSON.Raw)
 
 	return data, resp, nil
 }
