@@ -43,7 +43,7 @@ func TestMeasurementService_GetMeasurementSeries(t *testing.T) {
 
 	log.Printf("Response: %v\n", resp)
 }
-func TestMeasurementService_GetMeasurementCollection(t *testing.T) {
+func TestMeasurementService_GetMeasurements(t *testing.T) {
 	client := createTestClient()
 
 	testDevice, _, err := client.Inventory.CreateDevice(context.Background(), "TestDevice")
@@ -66,7 +66,7 @@ func TestMeasurementService_GetMeasurementCollection(t *testing.T) {
 	// Get a list of the measurements
 	dateFrom, _ := c8y.GetDateRange("1d")
 
-	measCollection, resp, _ := client.Measurement.GetMeasurementCollection(context.Background(), &c8y.MeasurementCollectionOptions{
+	measCollection, resp, _ := client.Measurement.GetMeasurements(context.Background(), &c8y.MeasurementCollectionOptions{
 		DateFrom: dateFrom,
 		Source:   testDevice.ID,
 	})
@@ -200,7 +200,7 @@ func TestMeasurementService_CreateWithDifferentTypes(t *testing.T) {
 	client := createTestClient()
 	device, _ := createTestDevice()
 
-	createMeasurement := func(value interface{}) *c8y.MeasurementObject {
+	createMeasurement := func(value interface{}) *c8y.Measurement {
 		m, _ := c8y.NewSimpleMeasurementRepresentation(c8y.SimpleMeasurementOptions{
 			SourceID:            device.ID,
 			Timestamp:           nil,

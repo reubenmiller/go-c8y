@@ -56,35 +56,22 @@ type MeasurementSeriesOptions struct {
 type MeasurementCollection struct {
 	*BaseResponse
 
-	Measurements []MeasurementObject `json:"measurements"`
+	Measurements []Measurement `json:"measurements"`
 
 	Items []gjson.Result
 }
 
-// GetMeasurementCollection return a measurement collection (multiple measurements)
-func (s *MeasurementService) GetMeasurementCollection(ctx context.Context, opt *MeasurementCollectionOptions) (*MeasurementCollection, *Response, error) {
-	u := fmt.Sprintf("measurement/measurements")
-
-	queryParams, err := addOptions("", opt)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	req, err := s.client.NewRequest("GET", u, queryParams, nil)
-	if err != nil {
-		return nil, nil, err
-	}
-
+// GetMeasurements return a measurement collection (multiple measurements)
+func (s *MeasurementService) GetMeasurements(ctx context.Context, opt *MeasurementCollectionOptions) (*MeasurementCollection, *Response, error) {
 	data := new(MeasurementCollection)
-
-	resp, err := s.client.Do(ctx, req, data)
-	if err != nil {
-		return nil, resp, err
-	}
-
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "GET",
+		Path:         "measurement/measurements",
+		Query:        opt,
+		ResponseData: data,
+	})
 	data.Items = resp.JSON.Get("measurements").Array()
-
-	return data, resp, nil
+	return data, resp, err
 }
 
 // MeasurementSerieDefinition represents information about a serie
@@ -303,7 +290,7 @@ func (s *MeasurementService) GetMeasurementSeries(ctx context.Context, opt *Meas
 }
 
 // GetMeasurement returns a single measurement
-func (s *MeasurementService) GetMeasurement(ctx context.Context, ID string) (*MeasurementObject, *Response, error) {
+func (s *MeasurementService) GetMeasurement(ctx context.Context, ID string) (*Measurement, *Response, error) {
 	u := fmt.Sprintf("measurement/measurements/%s", ID)
 
 	req, err := s.client.NewRequest("GET", u, "", nil)
@@ -311,7 +298,7 @@ func (s *MeasurementService) GetMeasurement(ctx context.Context, ID string) (*Me
 		return nil, nil, err
 	}
 
-	data := new(MeasurementObject)
+	data := new(Measurement)
 
 	resp, err := s.client.Do(ctx, req, data)
 	if err != nil {
@@ -367,8 +354,8 @@ func (d *MeasurementSeriesGroup) MarshalCSV(delimiter string) ([]byte, error) {
 }
 
 // Create posts a new measurement in the platform
-func (s *MeasurementService) Create(ctx context.Context, body MeasurementRepresentation) (*MeasurementObject, *Response, error) {
-	data := new(MeasurementObject)
+func (s *MeasurementService) Create(ctx context.Context, body MeasurementRepresentation) (*Measurement, *Response, error) {
+	data := new(Measurement)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "POST",
 		Path:         "measurement/measurements",

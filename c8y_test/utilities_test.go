@@ -156,7 +156,7 @@ func createTestDevice(randomPrefix ...string) (*c8y.ManagedObject, error) {
 	moRef, _, _ := client.Identity.GetExternalID(context.Background(), externalType, externalID)
 
 	if moRef == nil {
-		mo, _, err = client.Inventory.CreateManagedObject(context.Background(), c8y.NewAgent(externalID))
+		mo, _, err = client.Inventory.Create(context.Background(), c8y.NewAgent(externalID))
 		if err != nil {
 			return nil, fmt.Errorf("Failed to create device: %s", err)
 		}
@@ -167,7 +167,7 @@ func createTestDevice(randomPrefix ...string) (*c8y.ManagedObject, error) {
 		CumulocityConfiguration.mu.Unlock()
 
 		// Create Identity for new managed object
-		_, _, err = client.Identity.NewExternalIdentity(context.Background(), mo.ID, &c8y.IdentityOptions{
+		_, _, err = client.Identity.Create(context.Background(), mo.ID, &c8y.IdentityOptions{
 			Type:       externalType,
 			ExternalID: externalID,
 		})
@@ -200,7 +200,7 @@ func createRandomTestDevice(prefix ...string) (*c8y.ManagedObject, error) {
 	}
 	deviceName = deviceName + randSeq(10)
 
-	mo, _, err = client.Inventory.CreateManagedObject(
+	mo, _, err = client.Inventory.Create(
 		context.Background(),
 		c8y.NewAgent(deviceName),
 	)

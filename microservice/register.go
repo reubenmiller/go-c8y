@@ -92,7 +92,7 @@ func (m *Microservice) CreateMicroserviceRepresentation() (*c8y.ManagedObject, e
 	zap.S().Infof("Created managed object: %s", mo.ID)
 
 	// Create External ID reference to the new managed object
-	identity, _, err := m.Client.Identity.NewExternalIdentity(m.WithServiceUser(), mo.ID, &c8y.IdentityOptions{
+	identity, _, err := m.Client.Identity.Create(m.WithServiceUser(), mo.ID, &c8y.IdentityOptions{
 		ExternalID: externalID,
 		Type:       identityType,
 	})
@@ -193,7 +193,7 @@ func (m *Microservice) GetOperations(status string) (*c8y.OperationCollection, *
 		},
 	}
 
-	data, resp, err := m.Client.Operation.GetOperationCollection(m.WithServiceUser(), opt)
+	data, resp, err := m.Client.Operation.GetOperations(m.WithServiceUser(), opt)
 	return data, resp, err
 }
 
@@ -226,7 +226,7 @@ func (m *Microservice) UpdateApplicationConfiguration(configAsString string) {
 
 func (m *Microservice) onUpdateConfigurationOperation(operationID string, newConfiguration string) {
 
-	m.Client.Operation.UpdateOperation(
+	m.Client.Operation.Update(
 		m.WithServiceUser(),
 		operationID,
 		&c8y.OperationUpdateOptions{
@@ -237,7 +237,7 @@ func (m *Microservice) onUpdateConfigurationOperation(operationID string, newCon
 	// Save configuration
 	if updateErr := m.SaveConfiguration(newConfiguration); updateErr != nil {
 		// Failed Operation
-		m.Client.Operation.UpdateOperation(
+		m.Client.Operation.Update(
 			m.WithServiceUser(),
 			operationID,
 			&c8y.OperationUpdateOptions{
@@ -247,7 +247,7 @@ func (m *Microservice) onUpdateConfigurationOperation(operationID string, newCon
 	} else {
 		// Successful Operation
 		m.UpdateApplicationConfiguration(newConfiguration)
-		m.Client.Operation.UpdateOperation(
+		m.Client.Operation.Update(
 			m.WithServiceUser(),
 			operationID,
 			&c8y.OperationUpdateOptions{

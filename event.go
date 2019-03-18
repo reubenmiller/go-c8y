@@ -2,8 +2,6 @@ package c8y
 
 import (
 	"context"
-	"fmt"
-	"log"
 
 	"github.com/tidwall/gjson"
 )
@@ -28,8 +26,8 @@ type EventCollectionOptions struct {
 	PaginationOptions
 }
 
-// EventObject todo
-type EventObject struct {
+// Event todo
+type Event struct {
 	ID     string     `json:"id,omitempty"`
 	Source *Source    `json:"source,omitempty"`
 	Type   string     `json:"type,omitempty"`
@@ -45,47 +43,56 @@ type EventObject struct {
 type EventCollection struct {
 	*BaseResponse
 
-	Events []EventObject `json:"events"`
+	Events []Event `json:"events"`
 
 	// Allow access to custom fields
 	Items []gjson.Result `json:"-"`
 }
 
-// GetEventCollection todo
-func (s *EventService) GetEventCollection(ctx context.Context, opt *EventCollectionOptions) (*EventCollection, *Response, error) {
-	u := fmt.Sprintf("event/events")
-
-	queryParams, err := addOptions("", opt)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	req, err := s.client.NewRequest("GET", u, queryParams, nil)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	data := new(EventCollection)
-
-	resp, err := s.client.Do(ctx, req, data)
-	if err != nil {
-		return nil, resp, err
-	}
-
-	if data.BaseResponse.Statistics.TotalPages != nil {
-		log.Printf("Total events: %d\n", *data.BaseResponse.Statistics.TotalPages)
-	}
-
-	data.Items = resp.JSON.Get("events").Array()
-	return data, resp, nil
+// GetEvent returns a new event object
+func (s *EventService) GetEvent(ctx context.Context, ID string) (*Event, *Response, error) {
+	data := new(Event)
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "GET",
+		Path:         "event/events/" + ID,
+		ResponseData: data,
+	})
+	data.Item = gjson.Parse(resp.JSON.Raw)
+	return data, resp, err
 }
 
-// CreateEvent creates a new event object
-func (s *EventService) CreateEvent(ctx context.Context, body interface{}) (*EventObject, *Response, error) {
-	data := new(EventObject)
+// GetEvents returns a list of events based on given filters
+func (s *EventService) GetEvents(ctx context.Context, opt *EventCollectionOptions) (*EventCollection, *Response, error) {
+	data := new(EventCollection)
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "GET",
+		Path:         "event/events",
+		Query:        opt,
+		ResponseData: data,
+	})
+	data.Items = resp.JSON.Get("events").Array()
+	return data, resp, err
+}
+
+// Create creates a new event object
+func (s *EventService) Create(ctx context.Context, body interface{}) (*Event, *Response, error) {
+	data := new(Event)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "POST",
 		Path:         "event/events",
+		Body:         body,
+		ResponseData: data,
+	})
+	data.Item = gjson.Parse(resp.JSON.Raw)
+	return data, resp, err
+}
+
+// Update updates properties on an existing event
+func (s *EventService) Update(ctx context.Context, ID string, body interface{}) (*Event, *Response, error) {
+	data := new(Event)
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "PUT",
+		Path:         "event/events/" + ID,
 		Body:         body,
 		ResponseData: data,
 	})

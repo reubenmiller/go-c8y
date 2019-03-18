@@ -2,8 +2,6 @@ package c8y
 
 import (
 	"context"
-	"fmt"
-	"log"
 )
 
 // TenantService does something
@@ -37,27 +35,12 @@ type CurrentTenant struct {
 
 // GetTenantSummary returns summary of requests and database usage from the start of this month until now.
 func (s *TenantService) GetTenantSummary(ctx context.Context, opt *TenantSummaryOptions) (*TenantSummary, *Response, error) {
-	u := fmt.Sprintf("tenant/statistics/summary")
-
-	queryParams, err := addOptions("", opt)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	req, err := s.client.NewRequest("GET", u, queryParams, nil)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	summary := new(TenantSummary)
-
-	resp, err := s.client.Do(ctx, req, summary)
-	if err != nil {
-		return nil, resp, err
-	}
-
-	println("JSONData: ", *resp.JSONData)
-	log.Printf("Total count: %d\n", summary.StorageSize)
-
-	return summary, resp, nil
+	data := new(TenantSummary)
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "GET",
+		Path:         "tenant/statistics/summary",
+		Query:        opt,
+		ResponseData: data,
+	})
+	return data, resp, err
 }

@@ -49,7 +49,7 @@ func TestRealtimeSubscriptions_SubscribeToOperations(t *testing.T) {
 
 	// Create a dummy operation
 	sendOperation := func() {
-		_, _, err = client.Operation.CreateOperation(
+		_, _, err = client.Operation.Create(
 			context.Background(),
 			map[string]interface{}{
 				"deviceId": device.ID,

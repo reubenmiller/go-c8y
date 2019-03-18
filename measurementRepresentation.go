@@ -8,7 +8,20 @@ import (
 	"log"
 	"strings"
 	"time"
+
+	"github.com/tidwall/gjson"
 )
+
+// Measurement is the Cumulocity measurement representation in the platform
+type Measurement struct {
+	ID     string     `json:"id,omitempty"`
+	Source *Source    `json:"source,omitempty"`
+	Type   string     `json:"type,omitempty"`
+	Self   string     `json:"self,omitempty"`
+	Time   *Timestamp `json:"time,omitempty"`
+
+	Item gjson.Result `json:"-"`
+}
 
 // NewMeasurementSourceByName returns the source object by searching for a matching device by name
 func (s *MeasurementService) NewMeasurementSourceByName(ctx context.Context, name string) (*MeasurementSource, error) {

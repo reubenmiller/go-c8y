@@ -21,7 +21,7 @@ func getDevices(client *c8y.Client, name string, pageSize int) (*c8y.ManagedObje
 			PageSize: pageSize,
 		},
 	}
-	col, resp, err := client.Inventory.GetManagedObjectCollection(context.Background(), opt)
+	col, resp, err := client.Inventory.GetManagedObjects(context.Background(), opt)
 
 	return col, resp, err
 }
@@ -82,7 +82,7 @@ func TestInventoryService_CreateUpdateDeleteBinary(t *testing.T) {
 	}()
 
 	// Upload a new binary
-	binary1, resp, err := client.Inventory.NewBinary(context.Background(), testfile1, fileProperties)
+	binary1, resp, err := client.Inventory.CreateBinary(context.Background(), testfile1, fileProperties)
 	testingutils.Ok(t, err)
 	testingutils.Assert(t, binary1.ID != "", "Binary ID should not be an empty string")
 	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)

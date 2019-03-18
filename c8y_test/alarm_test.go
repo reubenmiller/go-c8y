@@ -7,7 +7,7 @@ import (
 
 	"github.com/reubenmiller/go-c8y/c8y_test/testingutils"
 
-	"github.com/reubenmiller/go-c8y"
+	c8y "github.com/reubenmiller/go-c8y"
 )
 
 func TestAlarmService_CreateAlarm(t *testing.T) {
@@ -17,7 +17,7 @@ func TestAlarmService_CreateAlarm(t *testing.T) {
 	testingutils.Ok(t, err)
 	defer client.Inventory.Delete(context.Background(), testDevice.ID)
 
-	value := c8y.AlarmObject{
+	value := c8y.Alarm{
 		Type:     "testalarm",
 		Text:     "Test alarm",
 		Severity: "MAJOR",
@@ -25,7 +25,7 @@ func TestAlarmService_CreateAlarm(t *testing.T) {
 		Source:   c8y.NewSource(testDevice.ID),
 	}
 
-	alarm, resp, err := client.Alarm.CreateAlarm(context.Background(), value)
+	alarm, resp, err := client.Alarm.Create(context.Background(), value)
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
 	testingutils.Assert(t, alarm != nil, "Alarm object should not be empty")
@@ -38,7 +38,7 @@ func TestAlarmService_UpdateAlarm(t *testing.T) {
 	testingutils.Ok(t, err)
 	defer client.Inventory.Delete(context.Background(), testDevice.ID)
 
-	alarm, resp, err := client.Alarm.CreateAlarm(context.Background(), c8y.AlarmObject{
+	alarm, resp, err := client.Alarm.Create(context.Background(), c8y.Alarm{
 		Time:     c8y.NewTimestamp(),
 		Source:   c8y.NewSource(testDevice.ID),
 		Severity: "MAJOR",
@@ -51,10 +51,10 @@ func TestAlarmService_UpdateAlarm(t *testing.T) {
 	testingutils.Assert(t, alarm != nil, "Alarm should not be nil", alarm)
 
 	// Update serverity
-	updatedAlarm1, resp, err := client.Alarm.UpdateAlarm(
+	updatedAlarm1, resp, err := client.Alarm.Update(
 		context.Background(),
 		alarm.ID,
-		c8y.UpdateAlarmOptions{
+		c8y.AlarmUpdateProperties{
 			Severity: "CRITICAL",
 		})
 
@@ -63,10 +63,10 @@ func TestAlarmService_UpdateAlarm(t *testing.T) {
 	testingutils.Equals(t, "CRITICAL", updatedAlarm1.Severity)
 
 	// Update Text
-	updatedAlarm1, resp, err = client.Alarm.UpdateAlarm(
+	updatedAlarm1, resp, err = client.Alarm.Update(
 		context.Background(),
 		alarm.ID,
-		c8y.UpdateAlarmOptions{
+		c8y.AlarmUpdateProperties{
 			Text: "Updated Alarm Text 1",
 		})
 
@@ -75,10 +75,10 @@ func TestAlarmService_UpdateAlarm(t *testing.T) {
 	testingutils.Equals(t, "Updated Alarm Text 1", updatedAlarm1.Text)
 
 	// Update Status
-	updatedAlarm1, resp, err = client.Alarm.UpdateAlarm(
+	updatedAlarm1, resp, err = client.Alarm.Update(
 		context.Background(),
 		alarm.ID,
-		c8y.UpdateAlarmOptions{
+		c8y.AlarmUpdateProperties{
 			Status: "ACKNOWLEDGED",
 		})
 
@@ -87,10 +87,10 @@ func TestAlarmService_UpdateAlarm(t *testing.T) {
 	testingutils.Equals(t, "ACKNOWLEDGED", updatedAlarm1.Status)
 
 	// Update all fields at once
-	updatedAlarm1, resp, err = client.Alarm.UpdateAlarm(
+	updatedAlarm1, resp, err = client.Alarm.Update(
 		context.Background(),
 		alarm.ID,
-		c8y.UpdateAlarmOptions{
+		c8y.AlarmUpdateProperties{
 			Status:   "CLEARED",
 			Text:     "Alarm is cleared",
 			Severity: "MINOR",
@@ -110,7 +110,7 @@ func TestAlarmService_GetAlarmByID(t *testing.T) {
 	testingutils.Ok(t, err)
 	defer client.Inventory.Delete(context.Background(), testDevice.ID)
 
-	alarm, resp, err := client.Alarm.CreateAlarm(context.Background(), c8y.AlarmObject{
+	alarm, resp, err := client.Alarm.Create(context.Background(), c8y.Alarm{
 		Time:     c8y.NewTimestamp(),
 		Source:   c8y.NewSource(testDevice.ID),
 		Severity: "MAJOR",
@@ -134,8 +134,8 @@ func TestAlarmService_GetAlarmCollection(t *testing.T) {
 	testingutils.Ok(t, err)
 	defer client.Inventory.Delete(context.Background(), testDevice.ID)
 
-	alarmFactory := func(alarmtype string) *c8y.AlarmObject {
-		alarm := c8y.AlarmObject{
+	alarmFactory := func(alarmtype string) *c8y.Alarm {
+		alarm := c8y.Alarm{
 			Time:     c8y.NewTimestamp(),
 			Source:   c8y.NewSource(testDevice.ID),
 			Severity: "MAJOR",
@@ -143,7 +143,7 @@ func TestAlarmService_GetAlarmCollection(t *testing.T) {
 			Type:     alarmtype,
 		}
 
-		alarmObj, resp, err := client.Alarm.CreateAlarm(context.Background(), alarm)
+		alarmObj, resp, err := client.Alarm.Create(context.Background(), alarm)
 		testingutils.Ok(t, err)
 		testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
 		testingutils.Assert(t, alarmObj != nil, "Alarm should not be nil", alarmObj)
@@ -155,7 +155,7 @@ func TestAlarmService_GetAlarmCollection(t *testing.T) {
 	alarm3 := alarmFactory("alarm3")
 
 	// Filter by Source and Severity
-	alarmCollection, resp, err := client.Alarm.GetAlarmCollection(context.Background(), &c8y.AlarmCollectionOptions{
+	alarmCollection, resp, err := client.Alarm.GetAlarms(context.Background(), &c8y.AlarmCollectionOptions{
 		Source:   testDevice.ID,
 		Severity: "MAJOR",
 	})
@@ -168,7 +168,7 @@ func TestAlarmService_GetAlarmCollection(t *testing.T) {
 	testingutils.Equals(t, alarm3.ID, alarmCollection.Alarms[2].ID)
 
 	// Filter by Source and Type
-	alarmCollection, resp, err = client.Alarm.GetAlarmCollection(context.Background(), &c8y.AlarmCollectionOptions{
+	alarmCollection, resp, err = client.Alarm.GetAlarms(context.Background(), &c8y.AlarmCollectionOptions{
 		Source: testDevice.ID,
 		Type:   "alarm2",
 	})
@@ -185,8 +185,8 @@ func TestAlarmService_BulkUpdateAlarms(t *testing.T) {
 	testingutils.Ok(t, err)
 	defer client.Inventory.Delete(context.Background(), testDevice.ID)
 
-	alarmFactory := func(alarmtype string) *c8y.AlarmObject {
-		alarm := c8y.AlarmObject{
+	alarmFactory := func(alarmtype string) *c8y.Alarm {
+		alarm := c8y.Alarm{
 			Time:     c8y.NewTimestamp(),
 			Source:   c8y.NewSource(testDevice.ID),
 			Severity: "MAJOR",
@@ -194,7 +194,7 @@ func TestAlarmService_BulkUpdateAlarms(t *testing.T) {
 			Type:     alarmtype,
 		}
 
-		alarmObj, resp, err := client.Alarm.CreateAlarm(context.Background(), alarm)
+		alarmObj, resp, err := client.Alarm.Create(context.Background(), alarm)
 		testingutils.Ok(t, err)
 		testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
 		testingutils.Assert(t, alarmObj != nil, "Alarm should not be nil", alarmObj)
@@ -214,7 +214,7 @@ func TestAlarmService_BulkUpdateAlarms(t *testing.T) {
 	testingutils.Assert(t, resp.StatusCode == http.StatusAccepted || resp.StatusCode == http.StatusOK, "Accepted or OK")
 
 	// Filter by Source and Severity
-	alarmCollection, resp, err := client.Alarm.GetAlarmCollection(context.Background(), &c8y.AlarmCollectionOptions{
+	alarmCollection, resp, err := client.Alarm.GetAlarms(context.Background(), &c8y.AlarmCollectionOptions{
 		Source: testDevice.ID,
 		Status: "CLEARED",
 	})
@@ -234,8 +234,8 @@ func TestAlarmService_RemoveAlarmCollection(t *testing.T) {
 	testingutils.Ok(t, err)
 	defer client.Inventory.Delete(context.Background(), testDevice.ID)
 
-	alarmFactory := func(alarmtype string) *c8y.AlarmObject {
-		alarm := c8y.AlarmObject{
+	alarmFactory := func(alarmtype string) *c8y.Alarm {
+		alarm := c8y.Alarm{
 			Time:     c8y.NewTimestamp(),
 			Source:   c8y.NewSource(testDevice.ID),
 			Severity: "MAJOR",
@@ -243,7 +243,7 @@ func TestAlarmService_RemoveAlarmCollection(t *testing.T) {
 			Type:     alarmtype,
 		}
 
-		alarmObj, resp, err := client.Alarm.CreateAlarm(context.Background(), alarm)
+		alarmObj, resp, err := client.Alarm.Create(context.Background(), alarm)
 		testingutils.Ok(t, err)
 		testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
 		testingutils.Assert(t, alarmObj != nil, "Alarm should not be nil", alarmObj)
@@ -255,7 +255,7 @@ func TestAlarmService_RemoveAlarmCollection(t *testing.T) {
 	alarmFactory("customAlarm3")
 
 	// Get alarms before deletion
-	alarmCollection, resp, err := client.Alarm.GetAlarmCollection(context.Background(), &c8y.AlarmCollectionOptions{
+	alarmCollection, resp, err := client.Alarm.GetAlarms(context.Background(), &c8y.AlarmCollectionOptions{
 		Source: testDevice.ID,
 	})
 
@@ -263,7 +263,7 @@ func TestAlarmService_RemoveAlarmCollection(t *testing.T) {
 	testingutils.Equals(t, 3, len(alarmCollection.Alarms))
 
 	// Delete alarms
-	resp, err = client.Alarm.DeleteAlarmCollection(context.Background(), &c8y.AlarmCollectionOptions{
+	resp, err = client.Alarm.DeleteAlarms(context.Background(), &c8y.AlarmCollectionOptions{
 		Source: testDevice.ID,
 	})
 
@@ -271,7 +271,7 @@ func TestAlarmService_RemoveAlarmCollection(t *testing.T) {
 	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
 
 	// Get alarms after deletion
-	alarmCollection, resp, err = client.Alarm.GetAlarmCollection(context.Background(), &c8y.AlarmCollectionOptions{
+	alarmCollection, resp, err = client.Alarm.GetAlarms(context.Background(), &c8y.AlarmCollectionOptions{
 		Source: testDevice.ID,
 	})
 

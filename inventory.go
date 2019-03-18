@@ -189,7 +189,7 @@ func (s *InventoryService) GetDevicesByName(ctx context.Context, name string, pa
 		Query:             fmt.Sprintf("(name eq '%s') and has(%s)", name, DeviceFragmentName),
 		PaginationOptions: *paging,
 	}
-	return s.GetManagedObjectCollection(ctx, opt)
+	return s.GetManagedObjects(ctx, opt)
 }
 
 // GetDevices returns the c8y device managed objects. These are the objects with the fragment "c8y_IsDevice"
@@ -232,8 +232,8 @@ func (s *InventoryService) GetManagedObject(ctx context.Context, ID string, opt 
 	return data, resp, err
 }
 
-// GetManagedObjectCollection todo
-func (s *InventoryService) GetManagedObjectCollection(ctx context.Context, opt *ManagedObjectOptions) (*ManagedObjectCollection, *Response, error) {
+// GetManagedObjects returns a list of managed objects
+func (s *InventoryService) GetManagedObjects(ctx context.Context, opt *ManagedObjectOptions) (*ManagedObjectCollection, *Response, error) {
 	data := new(ManagedObjectCollection)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "GET",
@@ -243,7 +243,6 @@ func (s *InventoryService) GetManagedObjectCollection(ctx context.Context, opt *
 	})
 
 	data.Items = resp.JSON.Get("managedObjects").Array()
-
 	return data, resp, err
 }
 
@@ -271,8 +270,8 @@ func (s *InventoryService) GetSupportedMeasurements(ctx context.Context, id stri
 	return data, resp, err
 }
 
-// GetManagedObjectChildDevices Get the child devices of a given managed object
-func (s *InventoryService) GetManagedObjectChildDevices(ctx context.Context, id string, opt *PaginationOptions) (*ManagedObjectReferencesCollection, *Response, error) {
+// GetChildDevices Get the child devices of a given managed object
+func (s *InventoryService) GetChildDevices(ctx context.Context, id string, opt *PaginationOptions) (*ManagedObjectReferencesCollection, *Response, error) {
 	data := new(ManagedObjectReferencesCollection)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "GET",
@@ -284,9 +283,9 @@ func (s *InventoryService) GetManagedObjectChildDevices(ctx context.Context, id 
 	return data, resp, err
 }
 
-// UpdateManagedObject updates a managed object
+// Update updates a managed object
 // Link: http://cumulocity.com/guides/reference/inventory
-func (s *InventoryService) UpdateManagedObject(ctx context.Context, ID string, body interface{}) (*ManagedObject, *Response, error) {
+func (s *InventoryService) Update(ctx context.Context, ID string, body interface{}) (*ManagedObject, *Response, error) {
 	data := new(ManagedObject)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "PUT",
@@ -301,11 +300,11 @@ func (s *InventoryService) UpdateManagedObject(ctx context.Context, ID string, b
 
 // CreateDevice creates a device in the Cumulocity platform with the required Device Fragment
 func (s *InventoryService) CreateDevice(ctx context.Context, name string) (*ManagedObject, *Response, error) {
-	return s.CreateManagedObject(ctx, NewDevice(name))
+	return s.Create(ctx, NewDevice(name))
 }
 
-// CreateManagedObject create a new managed object
-func (s *InventoryService) CreateManagedObject(ctx context.Context, body interface{}) (*ManagedObject, *Response, error) {
+// Create create a new managed object
+func (s *InventoryService) Create(ctx context.Context, body interface{}) (*ManagedObject, *Response, error) {
 	data := new(ManagedObject)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "POST",
@@ -382,8 +381,8 @@ func (s *InventoryService) DownloadBinary(ctx context.Context, ID string) (filep
 	return
 }
 
-// NewBinary uploads a given binary to Cumulocity under the inventory managed objects
-func (s *InventoryService) NewBinary(ctx context.Context, filename string, properties interface{}) (*ManagedObject, *Response, error) {
+// CreateBinary uploads a given binary to Cumulocity under the inventory managed objects
+func (s *InventoryService) CreateBinary(ctx context.Context, filename string, properties interface{}) (*ManagedObject, *Response, error) {
 	client := s.client
 	metadataBytes, err := json.Marshal(properties)
 
@@ -448,8 +447,8 @@ func (s *InventoryService) DeleteBinary(ctx context.Context, ID string) (*Respon
 	return resp, err
 }
 
-// GetBinaryCollection returns a list of managed object binaries
-func (s *InventoryService) GetBinaryCollection(ctx context.Context, opt *BinaryObjectOptions) (*ManagedObjectCollection, *Response, error) {
+// GetBinaries returns a list of managed object binaries
+func (s *InventoryService) GetBinaries(ctx context.Context, opt *BinaryObjectOptions) (*ManagedObjectCollection, *Response, error) {
 	data := new(ManagedObjectCollection)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "GET",

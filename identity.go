@@ -34,40 +34,25 @@ type IdentityReference struct {
 
 // GetExternalID Get a managed object by an external ID
 func (s *IdentityService) GetExternalID(ctx context.Context, identityType string, externalID string) (*Identity, *Response, error) {
-	u := fmt.Sprintf("identity/externalIds/%s/%s", identityType, externalID)
-
-	req, err := s.client.NewRequest("GET", u, "", nil)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	data := new(Identity)
-
-	resp, err := s.client.Do(ctx, req, data)
-	if err != nil {
-		return nil, resp, err
-	}
-
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "GET",
+		Path:         fmt.Sprintf("identity/externalIds/%s/%s", identityType, externalID),
+		ResponseData: data,
+	})
 	data.Item = gjson.Parse(resp.JSON.Raw)
-
-	return data, resp, nil
+	return data, resp, err
 }
 
-// NewExternalIdentity Creates a new external id for the given managed object id
-func (s *IdentityService) NewExternalIdentity(ctx context.Context, ID string, identity *IdentityOptions) (*Identity, *Response, error) {
-	u := fmt.Sprintf("identity/globalIds/%s/externalIds", ID)
-
-	req, err := s.client.NewRequest("POST", u, "", identity)
-	if err != nil {
-		return nil, nil, err
-	}
-
+// Create adds a new external id for the given managed object id
+func (s *IdentityService) Create(ctx context.Context, ID string, identity *IdentityOptions) (*Identity, *Response, error) {
 	data := new(Identity)
-
-	resp, err := s.client.Do(ctx, req, data)
-	if err != nil {
-		return nil, resp, err
-	}
-
-	return data, resp, nil
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "POST",
+		Path:         fmt.Sprintf("identity/globalIds/%s/externalIds", ID),
+		Body:         identity,
+		ResponseData: data,
+	})
+	data.Item = gjson.Parse(resp.JSON.Raw)
+	return data, resp, err
 }

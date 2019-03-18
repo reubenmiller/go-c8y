@@ -65,8 +65,20 @@ type OperationUpdateOptions struct {
 	FailureReason string `json:"failureReason,omitempty"`
 }
 
-// GetOperationCollection returns a collection of Cumulocity operations
-func (s *OperationService) GetOperationCollection(ctx context.Context, opt *OperationCollectionOptions) (*OperationCollection, *Response, error) {
+// GetOperation returns a collection of Cumulocity operations
+func (s *OperationService) GetOperation(ctx context.Context, ID string) (*Operation, *Response, error) {
+	data := new(Operation)
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "GET",
+		Path:         "devicecontrol/operations/" + ID,
+		ResponseData: data,
+	})
+	data.Item = gjson.Parse(resp.JSON.Raw)
+	return data, resp, err
+}
+
+// GetOperations returns a collection of Cumulocity operations
+func (s *OperationService) GetOperations(ctx context.Context, opt *OperationCollectionOptions) (*OperationCollection, *Response, error) {
 	data := new(OperationCollection)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "GET",
@@ -78,8 +90,8 @@ func (s *OperationService) GetOperationCollection(ctx context.Context, opt *Oper
 	return data, resp, err
 }
 
-// DeleteCollection deletes a collection of Cumulocity operations
-func (s *OperationService) DeleteCollection(ctx context.Context, opt *OperationCollectionOptions) (*Response, error) {
+// DeleteOperations deletes a collection of Cumulocity operations
+func (s *OperationService) DeleteOperations(ctx context.Context, opt *OperationCollectionOptions) (*Response, error) {
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method: "DELETE",
 		Path:   "devicecontrol/operations",
@@ -88,8 +100,8 @@ func (s *OperationService) DeleteCollection(ctx context.Context, opt *OperationC
 	return resp, err
 }
 
-// CreateOperation creates a new operation for a device
-func (s *OperationService) CreateOperation(ctx context.Context, body interface{}) (*Operation, *Response, error) {
+// Create creates a new operation for a device
+func (s *OperationService) Create(ctx context.Context, body interface{}) (*Operation, *Response, error) {
 	data := new(Operation)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "POST",
@@ -101,8 +113,8 @@ func (s *OperationService) CreateOperation(ctx context.Context, body interface{}
 	return data, resp, err
 }
 
-// UpdateOperation updates a Cumulocity operation
-func (s *OperationService) UpdateOperation(ctx context.Context, ID string, body *OperationUpdateOptions) (*Operation, *Response, error) {
+// Update updates a Cumulocity operation
+func (s *OperationService) Update(ctx context.Context, ID string, body *OperationUpdateOptions) (*Operation, *Response, error) {
 	data := new(Operation)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "PUT",

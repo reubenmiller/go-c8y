@@ -15,7 +15,7 @@ func operationFactory(client *c8y.Client, deviceID string) func() (*c8y.Operatio
 	counter := 1
 	return func() (*c8y.Operation, *c8y.Response, error) {
 		counter++
-		return client.Operation.CreateOperation(
+		return client.Operation.Create(
 			context.Background(),
 			map[string]interface{}{
 				"deviceId": deviceID,
@@ -41,7 +41,7 @@ func TestOperationService_CreateOperation(t *testing.T) {
 	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
 	testingutils.Equals(t, device.ID, op.DeviceID)
 
-	ops, resp, err := client.Operation.GetOperationCollection(
+	ops, resp, err := client.Operation.GetOperations(
 		context.Background(),
 		&c8y.OperationCollectionOptions{
 			DeviceID: device.ID,
@@ -65,7 +65,7 @@ func TestOperationService_UpdateOperation(t *testing.T) {
 
 	testingutils.Ok(t, err)
 
-	op2, resp, err := client.Operation.UpdateOperation(
+	op2, resp, err := client.Operation.Update(
 		context.Background(),
 		op1.ID,
 		&c8y.OperationUpdateOptions{
@@ -81,7 +81,7 @@ func TestOperationService_UpdateOperation(t *testing.T) {
 	//
 	// Set operation to failed state
 	//
-	op3, resp, err := client.Operation.UpdateOperation(
+	op3, resp, err := client.Operation.Update(
 		context.Background(),
 		op1.ID,
 		&c8y.OperationUpdateOptions{
@@ -116,7 +116,7 @@ func TestOperationService_DeleteOperation(t *testing.T) {
 	//
 	// Check if operations were created
 	//
-	ops, resp, err := client.Operation.GetOperationCollection(
+	ops, resp, err := client.Operation.GetOperations(
 		context.Background(),
 		filterOptions,
 	)
@@ -129,7 +129,7 @@ func TestOperationService_DeleteOperation(t *testing.T) {
 	//
 	// Remove the operations using the same query
 	//
-	resp, err = client.Operation.DeleteCollection(
+	resp, err = client.Operation.DeleteOperations(
 		context.Background(),
 		filterOptions,
 	)
@@ -139,7 +139,7 @@ func TestOperationService_DeleteOperation(t *testing.T) {
 	//
 	// Check count of operations after the delete action
 	//
-	ops, resp, err = client.Operation.GetOperationCollection(
+	ops, resp, err = client.Operation.GetOperations(
 		context.Background(),
 		filterOptions,
 	)

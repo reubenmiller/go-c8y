@@ -5,9 +5,8 @@ import (
 	"net/http"
 	"testing"
 
+	c8y "github.com/reubenmiller/go-c8y"
 	"github.com/reubenmiller/go-c8y/c8y_test/testingutils"
-
-	"github.com/reubenmiller/go-c8y"
 )
 
 func TestIdentityService_NewExternalIdentity(t *testing.T) {
@@ -17,7 +16,7 @@ func TestIdentityService_NewExternalIdentity(t *testing.T) {
 	testingutils.Ok(t, err)
 	defer client.Inventory.Delete(context.Background(), testDevice.ID)
 
-	identity, resp, err := client.Identity.NewExternalIdentity(context.Background(), testDevice.ID, &c8y.IdentityOptions{
+	identity, resp, err := client.Identity.Create(context.Background(), testDevice.ID, &c8y.IdentityOptions{
 		Type:       "test_Type",
 		ExternalID: "testDevice1",
 	})

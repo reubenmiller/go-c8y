@@ -121,32 +121,20 @@ func (s *ApplicationService) GetApplicationCollectionByID(ctx context.Context, I
 	return data, resp, nil
 }
 
-// GetApplicationCollection returns a list of applications with no filtering
-func (s *ApplicationService) GetApplicationCollection(ctx context.Context, opt *ApplicationOptions) (*ApplicationCollection, *Response, error) {
+// GetApplications returns a list of applications with no filtering
+func (s *ApplicationService) GetApplications(ctx context.Context, opt *ApplicationOptions) (*ApplicationCollection, *Response, error) {
 	return s.getApplicationData(ctx, "/applications", opt)
 }
 
 // GetCurrentApplicationSubscriptions returns the list of application subscriptions per tenant along with the service user credentials
 // This function can only be called using Application Bootstrap credentials, otherwise a 403 (forbidden) response will be returned
 func (s *ApplicationService) GetCurrentApplicationSubscriptions(ctx context.Context) (*ApplicationSubscriptions, *Response, error) {
-	u := fmt.Sprintf("/application/currentApplication/subscriptions")
-
-	var queryParams string
-	var err error
-
-	req, err := s.client.NewRequest("GET", u, queryParams, nil)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	data := new(ApplicationSubscriptions)
-
-	resp, err := s.client.Do(ctx, req, data)
-	if err != nil {
-		return nil, resp, err
-	}
-
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "GET",
+		Path:         "application/currentApplication/subscriptions",
+		ResponseData: data,
+	})
 	data.Item = *resp.JSON
-
-	return data, resp, nil
+	return data, resp, err
 }
