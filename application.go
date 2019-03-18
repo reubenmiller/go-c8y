@@ -22,7 +22,7 @@ type Application struct {
 	Type string `json:"type"`
 	Self string `json:"self"`
 
-	Item gjson.Result
+	Item gjson.Result `json:"-"`
 }
 
 // ApplicationCollection contains information about a list of applications
@@ -31,14 +31,14 @@ type ApplicationCollection struct {
 
 	Applications []Application `json:"applications"`
 
-	Items []gjson.Result
+	Items []gjson.Result `json:"-"`
 }
 
 // ApplicationSubscriptions contains the list of service users for each application subscription
 type ApplicationSubscriptions struct {
 	Users []ServiceUser `json:"users"`
 
-	Item gjson.Result
+	Item gjson.Result `json:"-"`
 }
 
 // ServiceUser has the service user credentials for a given application subscription

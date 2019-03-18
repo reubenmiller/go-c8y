@@ -58,7 +58,7 @@ type MeasurementCollection struct {
 
 	Measurements []Measurement `json:"measurements"`
 
-	Items []gjson.Result
+	Items []gjson.Result `json:"-"`
 }
 
 // GetMeasurements return a measurement collection (multiple measurements)

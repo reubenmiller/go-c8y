@@ -28,7 +28,7 @@ type OperationCollection struct {
 
 	Operations []Operation `json:"operations"`
 
-	Items []gjson.Result
+	Items []gjson.Result `json:"-"`
 }
 
 // OperationStatus todo
