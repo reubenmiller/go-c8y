@@ -2,7 +2,6 @@ package c8y
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/tidwall/gjson"
 )
@@ -59,33 +58,34 @@ func (s OperationStatus) String() string {
 
 // OperationUpdateOptions todo
 type OperationUpdateOptions struct {
-	Status string `json:"status"`
+	// Status Operation status, can be one of SUCCESSFUL, FAILED, EXECUTING or PENDING
+	Status string `json:"status,omitempty"`
+
+	// FailureReason is the Reason for the failure
+	FailureReason string `json:"failureReason,omitempty"`
 }
 
 // GetOperationCollection returns a collection of Cumulocity operations
 func (s *OperationService) GetOperationCollection(ctx context.Context, opt *OperationCollectionOptions) (*OperationCollection, *Response, error) {
-	u := fmt.Sprintf("devicecontrol/operations")
-
-	queryParams, err := addOptions("", opt)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	req, err := s.client.NewRequest("GET", u, queryParams, nil)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	data := new(OperationCollection)
-
-	resp, err := s.client.Do(ctx, req, data)
-	if err != nil {
-		return nil, resp, err
-	}
-
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "GET",
+		Path:         "devicecontrol/operations",
+		Query:        opt,
+		ResponseData: data,
+	})
 	data.Items = resp.JSON.Get("operations").Array()
+	return data, resp, err
+}
 
-	return data, resp, nil
+// DeleteCollection deletes a collection of Cumulocity operations
+func (s *OperationService) DeleteCollection(ctx context.Context, opt *OperationCollectionOptions) (*Response, error) {
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method: "DELETE",
+		Path:   "devicecontrol/operations",
+		Query:  opt,
+	})
+	return resp, err
 }
 
 // CreateOperation creates a new operation for a device
@@ -103,21 +103,13 @@ func (s *OperationService) CreateOperation(ctx context.Context, body interface{}
 
 // UpdateOperation updates a Cumulocity operation
 func (s *OperationService) UpdateOperation(ctx context.Context, ID string, body *OperationUpdateOptions) (*Operation, *Response, error) {
-	u := fmt.Sprintf("devicecontrol/operations/%s", ID)
-
-	req, err := s.client.NewRequest("PUT", u, "", body)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	data := new(Operation)
-
-	resp, err := s.client.Do(ctx, req, data)
-	if err != nil {
-		return nil, resp, err
-	}
-
-	data.Item = *resp.JSON
-
-	return data, resp, nil
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "PUT",
+		Path:         "devicecontrol/operations/" + ID,
+		Body:         body,
+		ResponseData: data,
+	})
+	data.Item = gjson.Parse(resp.JSON.Raw)
+	return data, resp, err
 }
