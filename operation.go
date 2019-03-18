@@ -88,6 +88,19 @@ func (s *OperationService) GetOperationCollection(ctx context.Context, opt *Oper
 	return data, resp, nil
 }
 
+// CreateOperation creates a new operation for a device
+func (s *OperationService) CreateOperation(ctx context.Context, body interface{}) (*Operation, *Response, error) {
+	data := new(Operation)
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "POST",
+		Path:         "devicecontrol/operations",
+		Body:         body,
+		ResponseData: data,
+	})
+	data.Item = gjson.Parse(resp.JSON.Raw)
+	return data, resp, err
+}
+
 // UpdateOperation updates a Cumulocity operation
 func (s *OperationService) UpdateOperation(ctx context.Context, ID string, body *OperationUpdateOptions) (*Operation, *Response, error) {
 	u := fmt.Sprintf("devicecontrol/operations/%s", ID)

@@ -317,7 +317,7 @@ func (m *Microservice) SubscribeToOperations(onMessageFunc func(*c8y.Message) er
 		for {
 			select {
 			case msg := <-ch:
-				zap.S().Infof("ws: [frame]: %s\n", string(msg.Data))
+				zap.S().Infof("ws: [frame]: %s\n", string(msg.Payload.Item.Raw))
 				if onMessageFunc != nil {
 					fmt.Println("calling func")
 					onMessageFunc(msg)

@@ -9,11 +9,14 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/obeattie/ohmyglob"
+	"github.com/tidwall/gjson"
 	tomb "gopkg.in/tomb.v2"
 )
 
@@ -42,15 +45,24 @@ type RealtimeClient struct {
 	tenant        string
 	username      string
 	password      string
+	requestID     uint64
 }
 
 // Message is the type delivered to subscribers.
 type Message struct {
-	Channel   string          `json:"channel"`
-	Data      json.RawMessage `json:"data,omitempty"`
-	ID        string          `json:"id,omitempty"`
-	ClientID  string          `json:"clientId,omitempty"`
-	Extension interface{}     `json:"ext,omitempty"`
+	Channel   string       `json:"channel"`
+	Payload   RealtimeData `json:"data,omitempty"`
+	ID        string       `json:"id,omitempty"`
+	ClientID  string       `json:"clientId,omitempty"`
+	Extension interface{}  `json:"ext,omitempty"`
+}
+
+// RealtimeData contains the websocket frame data
+type RealtimeData struct {
+	RealtimeAction string          `json:"realtimeAction,omitempty"`
+	Data           json.RawMessage `json:"data,omitempty"`
+
+	Item gjson.Result `json:"-"`
 }
 
 type subscription struct {
@@ -155,6 +167,11 @@ func (c *RealtimeClient) Connect() error {
 	return c.connect()
 }
 
+// IsConnected returns true if the websocket is connected
+func (c *RealtimeClient) IsConnected() bool {
+	return c.connected
+}
+
 // Close notifies the Bayeux server of the intent to disconnect and terminates
 // the background polling loop.
 func (c *RealtimeClient) Close() error {
@@ -183,8 +200,41 @@ func (c *RealtimeClient) disconnect() error {
 // WaitForConnection wait for the connection to be estabilished before returning
 func (c *RealtimeClient) WaitForConnection() error {
 	for c.connected == false {
-		time.Sleep(100 * time.Millisecond)
+		// TODO: only return once the connection has been made instead of fixed delay
+		time.Sleep(250 * time.Millisecond)
 	}
+	return nil
+}
+
+func (c *RealtimeClient) createWebsocket() error {
+	dialer := websocket.Dialer{
+		Proxy:             http.ProxyFromEnvironment,
+		HandshakeTimeout:  10 * time.Second,
+		EnableCompression: false,
+	}
+	log.Printf("Establishing connection to %s", c.url.String())
+	ws, _, err := dialer.Dial(c.url.String(), nil)
+
+	if err != nil {
+		return err
+	}
+	c.mtx.Lock()
+	c.ws = ws
+	c.mtx.Unlock()
+	return nil
+}
+
+func (c *RealtimeClient) reconnect() error {
+	c.ws.Close()
+	err := c.createWebsocket()
+
+	if err != nil {
+		c.mtx.Unlock()
+		c.connected = false
+		c.mtx.Lock()
+		return err
+	}
+	c.sendMetaConnect()
 	return nil
 }
 
@@ -223,12 +273,19 @@ func (c *RealtimeClient) worker() error {
 		defer close(done)
 		for {
 			messages := []Message{}
-
 			err := c.ws.ReadJSON(&messages)
 
 			if err != nil {
+				if !c.IsConnected() {
+					log.Println("Connection has been closed by the client")
+					return
+				}
 				log.Println("read:", err, messages)
-				return
+				log.Println("Handling connection error. You need to reconnect")
+
+				// Try to reconnect with a new websocket
+				c.reconnect()
+				// return
 			}
 
 			for _, message := range messages {
@@ -251,6 +308,9 @@ func (c *RealtimeClient) worker() error {
 					c.sendMetaConnect()
 
 				case "/meta/connect":
+					c.mtx.Lock()
+					c.connected = true
+					c.mtx.Unlock()
 					log.Printf("ws: Connect\n")
 
 				case "/meta/disconnect":
@@ -258,6 +318,7 @@ func (c *RealtimeClient) worker() error {
 
 				default:
 					// Data package received
+					message.Payload.Item = gjson.ParseBytes(message.Payload.Data)
 					for _, s := range c.subscriptions {
 						if s.glob.MatchString(message.Channel) {
 							s.out <- &message
@@ -312,7 +373,6 @@ func (c *RealtimeClient) sendMetaConnect() error {
 	}
 	log.Print("Sending meta/connect")
 	message := &request{
-		ID:             "2",
 		Channel:        "/meta/connect",
 		ConnectionType: "websocket",
 		ClientID:       c.clientID,
@@ -321,16 +381,42 @@ func (c *RealtimeClient) sendMetaConnect() error {
 	return c.writeJSON(message)
 }
 
-const (
-	// MEASUREMENTS cep realtime
-	MEASUREMENTS = "measurements"
+func getRealtimeID(id ...string) string {
+	if len(id) > 0 {
+		return id[0]
+	}
+	return "*"
+}
 
-	// ALARMS CEP realtime
-	ALARMS = "alarms"
+// RealtimeAlarms subscribes to events on alarms objects from the CEP realtime engine
+func RealtimeAlarms(id ...string) string {
+	return "/alarms/" + getRealtimeID(id...)
+}
 
-	// OPERATIONS CEP realtime
-	OPERATIONS = "operations"
-)
+// RealtimeAlarmsWithChildren subscribes to events on alarms (including children) objects from the CEP realtime engine
+func RealtimeAlarmsWithChildren(id ...string) string {
+	return "/alarmsWithChildren/" + getRealtimeID(id...)
+}
+
+// RealtimeEvents subscribes to events on event objects from the CEP realtime engine
+func RealtimeEvents(id ...string) string {
+	return "/events/" + getRealtimeID(id...)
+}
+
+// RealtimeManagedObjects subscribes to events on managed objects from the CEP realtime engine
+func RealtimeManagedObjects(id ...string) string {
+	return "/managedobjects/" + getRealtimeID(id...)
+}
+
+// RealtimeMeasurements subscribes to events on measurement objects from the CEP realtime engine
+func RealtimeMeasurements(id ...string) string {
+	return "/measurements/" + getRealtimeID(id...)
+}
+
+// RealtimeOperations subscribes to events on operations objects from the CEP realtime engine
+func RealtimeOperations(id ...string) string {
+	return "/operations/" + getRealtimeID(id...)
+}
 
 // Subscribe setup a subscription to
 func (c *RealtimeClient) Subscribe(pattern string, out chan<- *Message) error {
@@ -342,7 +428,6 @@ func (c *RealtimeClient) Subscribe(pattern string, out chan<- *Message) error {
 	}
 
 	message := &request{
-		ID:             "2",
 		Channel:        "/meta/subscribe",
 		Subscription:   pattern,
 		ConnectionType: "websocket",
@@ -361,6 +446,44 @@ func (c *RealtimeClient) Subscribe(pattern string, out chan<- *Message) error {
 	return err
 }
 
+// UnsubscribeAll unsubscribes to all of the subscribed channels
+func (c *RealtimeClient) UnsubscribeAll() (errs []error) {
+
+	for _, pattern := range c.subscriptions {
+		err := c.Unsubscribe(pattern.glob.String())
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return
+}
+
+// Unsubscribe unsubscribe to a given pattern
+func (c *RealtimeClient) Unsubscribe(pattern string) error {
+	log.Println("unsubscribing to ", pattern)
+
+	_, err := ohmyglob.Compile(pattern, nil)
+	if err != nil {
+		return fmt.Errorf("Invalid pattern: %s", err)
+	}
+
+	message := &request{
+		Channel:      "/meta/unsubscribe",
+		Subscription: pattern,
+		ClientID:     c.clientID,
+	}
+
+	err = c.writeJSON(message)
+
+	if err != nil {
+		log.Printf("Failed to unsubscribe to subscription. %s", err)
+	}
+
+	return err
+}
+
 func (c *RealtimeClient) writeJSON(r *request) error {
+	// Add a unique request id
+	r.ID = strconv.FormatUint(atomic.AddUint64(&c.requestID, 1), 10)
 	return c.ws.WriteJSON([]request{*r})
 }

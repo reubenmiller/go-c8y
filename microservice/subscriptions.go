@@ -62,7 +62,7 @@ func (m *Microservice) SubscribeToMeasurements(ID string, onMessageFunc func(*c8
 		for {
 			select {
 			case msg := <-ch:
-				zap.S().Infof("ws: [frame]: %s\n", string(msg.Data))
+				zap.S().Infof("ws: [frame]: %s\n", string(msg.Payload.Item.Raw))
 				if onMessageFunc != nil {
 					fmt.Println("calling func")
 					onMessageFunc(msg)

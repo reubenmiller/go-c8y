@@ -129,16 +129,47 @@ type MeasurementRepresentation struct {
 func (m ValueFragmentType) MarshalJSON() ([]byte, error) {
 	buffer := bytes.NewBufferString("{")
 
+	setMeasurementValue := func(val interface{}, unit string) string {
+		return fmt.Sprintf("{\"value\": %v, \"unit\":\"%s\" }", val, unit)
+	}
+
 	valueFragmentSeries := []string{}
 	for _, value := range m.Values {
 		valueStr := ""
 		switch v := value.Value.(type) {
 
-		case float64:
-			valueStr = fmt.Sprintf("{\"value\": %v, \"unit\":\"%s\" }", v, value.Unit)
-
+		case []byte:
+			panic("Only numbers are supported as measurement values")
+		case []rune:
+			panic("Only numbers are supported as measurement values")
+		case string:
+			panic("Only numbers are supported as measurement values")
+		case bool:
+			valueStr = setMeasurementValue(v, value.Unit)
+		case int:
+			valueStr = setMeasurementValue(v, value.Unit)
+		case int8:
+			valueStr = setMeasurementValue(v, value.Unit)
+		case int16:
+			valueStr = setMeasurementValue(v, value.Unit)
+		case int32:
+			valueStr = setMeasurementValue(v, value.Unit)
 		case int64:
-			valueStr = fmt.Sprintf("{\"value\": %v, \"unit\":\"%s\" }", v, value.Unit)
+			valueStr = setMeasurementValue(v, value.Unit)
+		case uint:
+			valueStr = setMeasurementValue(v, value.Unit)
+		case uint8:
+			valueStr = setMeasurementValue(v, value.Unit)
+		case uint16:
+			valueStr = setMeasurementValue(v, value.Unit)
+		case uint32:
+			valueStr = setMeasurementValue(v, value.Unit)
+		case uint64:
+			valueStr = setMeasurementValue(v, value.Unit)
+		case float32:
+			valueStr = setMeasurementValue(v, value.Unit)
+		case float64:
+			valueStr = setMeasurementValue(v, value.Unit)
 
 		default:
 			// Try marshalling it if it is a complex object.

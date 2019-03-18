@@ -104,15 +104,31 @@ type ManagedObject struct {
 	Item gjson.Result `json:"-"`
 }
 
-// Device is a subset of a managed object)
+// Device is a subset of a managed object
 type Device struct {
 	ManagedObject
 	DeviceFragment
 }
 
+// Agent is a subset of a managed object
+type Agent struct {
+	ManagedObject
+	DeviceFragment
+	AgentFragment
+}
+
 // NewDevice returns a simple device managed object
 func NewDevice(name string) *Device {
 	return &Device{
+		ManagedObject: ManagedObject{
+			Name: name,
+		},
+	}
+}
+
+// NewAgent returns a simple agent managed object
+func NewAgent(name string) *Agent {
+	return &Agent{
 		ManagedObject: ManagedObject{
 			Name: name,
 		},
