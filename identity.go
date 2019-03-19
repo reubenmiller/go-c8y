@@ -32,6 +32,21 @@ type IdentityReference struct {
 	Self string `json:"self"`
 }
 
+// Create adds a new external id for the given managed object id
+func (s *IdentityService) Create(ctx context.Context, ID string, identity *IdentityOptions) (*Identity, *Response, error) {
+	data := new(Identity)
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "POST",
+		Path:         fmt.Sprintf("identity/globalIds/%s/externalIds", ID),
+		Body:         identity,
+		ResponseData: data,
+	})
+	data.Item = gjson.Parse(resp.JSON.Raw)
+	return data, resp, err
+}
+
+/* External ID */
+
 // GetExternalID Get a managed object by an external ID
 func (s *IdentityService) GetExternalID(ctx context.Context, identityType string, externalID string) (*Identity, *Response, error) {
 	data := new(Identity)
@@ -44,15 +59,10 @@ func (s *IdentityService) GetExternalID(ctx context.Context, identityType string
 	return data, resp, err
 }
 
-// Create adds a new external id for the given managed object id
-func (s *IdentityService) Create(ctx context.Context, ID string, identity *IdentityOptions) (*Identity, *Response, error) {
-	data := new(Identity)
-	resp, err := s.client.SendRequest(ctx, RequestOptions{
-		Method:       "POST",
-		Path:         fmt.Sprintf("identity/globalIds/%s/externalIds", ID),
-		Body:         identity,
-		ResponseData: data,
+// Delete removes an existing external id
+func (s *IdentityService) Delete(ctx context.Context, identityType, externalID string) (*Response, error) {
+	return s.client.SendRequest(ctx, RequestOptions{
+		Method: "DELETE",
+		Path:   fmt.Sprintf("identity/externalIds/%s/%s", identityType, externalID),
 	})
-	data.Item = gjson.Parse(resp.JSON.Raw)
-	return data, resp, err
 }
