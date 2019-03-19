@@ -67,6 +67,7 @@ type Client struct {
 	// Services used for talking to different parts of the Cumulocity API.
 	Context      *ContextService
 	Alarm        *AlarmService
+	Audit        *AuditService
 	Measurement  *MeasurementService
 	Operation    *OperationService
 	Tenant       *TenantService
@@ -167,6 +168,7 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 	}
 	c.common.client = c
 	c.Alarm = (*AlarmService)(&c.common)
+	c.Audit = (*AuditService)(&c.common)
 	c.Measurement = (*MeasurementService)(&c.common)
 	c.Operation = (*OperationService)(&c.common)
 	c.Tenant = (*TenantService)(&c.common)
