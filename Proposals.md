@@ -19,3 +19,11 @@
 
 * Use workers (channels)
 * 
+
+## TODO
+
+* /user
+* /tenant
+* /retentionRule
+* /application/201/binaries
+* /event/events/binaries
