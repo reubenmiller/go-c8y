@@ -47,6 +47,8 @@ type MeasurementSeriesOptions struct {
 
 	DateTo string `url:"dateTo,omitempty"`
 
+	AggregationType string `url:"aggregationType,omitempty"`
+
 	Variables []string `url:"series,omitempty"`
 
 	Revert bool `url:"revert,omitempty"`
