@@ -50,80 +50,51 @@ type ServiceUser struct {
 
 // getApplicationData todo
 func (s *ApplicationService) getApplicationData(ctx context.Context, partialURL string, opt *ApplicationOptions) (*ApplicationCollection, *Response, error) {
-	u := partialURL
-
-	var queryParams string
-	var err error
-
-	if opt != nil {
-		queryParams, err = addOptions("", opt)
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-
-	req, err := s.client.NewRequest("GET", u, queryParams, nil)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	data := new(ApplicationCollection)
-
-	resp, err := s.client.Do(ctx, req, data)
-	if err != nil {
-		return nil, resp, err
-	}
-
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "GET",
+		Path:         partialURL,
+		Query:        opt,
+		ResponseData: data,
+	})
 	data.Items = resp.JSON.Get("applications").Array()
-	return data, resp, nil
+	return data, resp, err
 }
 
-// GetApplicationCollectionByName returns a list of applications by name
-func (s *ApplicationService) GetApplicationCollectionByName(ctx context.Context, name string, opt *ApplicationOptions) (*ApplicationCollection, *Response, error) {
+// GetApplicationsByName returns a list of applications by name
+func (s *ApplicationService) GetApplicationsByName(ctx context.Context, name string, opt *ApplicationOptions) (*ApplicationCollection, *Response, error) {
 	u := fmt.Sprintf("application/applicationsByName/%s", name)
 	data, resp, err := s.getApplicationData(ctx, u, opt)
 	return data, resp, err
 }
 
-// GetApplicationCollectionByOwner retuns a list of applications by owner
-func (s *ApplicationService) GetApplicationCollectionByOwner(ctx context.Context, tenant string, opt *ApplicationOptions) (*ApplicationCollection, *Response, error) {
-	u := fmt.Sprintf("appplication/applicationsByOwner/%s", tenant)
+// GetApplicationsByOwner retuns a list of applications by owner
+func (s *ApplicationService) GetApplicationsByOwner(ctx context.Context, tenant string, opt *ApplicationOptions) (*ApplicationCollection, *Response, error) {
+	u := fmt.Sprintf("application/applicationsByOwner/%s", tenant)
 	return s.getApplicationData(ctx, u, opt)
 }
 
-// GetApplicationCollectionByTenant returns a list of applications by tenant name
-func (s *ApplicationService) GetApplicationCollectionByTenant(ctx context.Context, tenant string, opt *ApplicationOptions) (*ApplicationCollection, *Response, error) {
+// GetApplicationsByTenant returns a list of applications by tenant name
+func (s *ApplicationService) GetApplicationsByTenant(ctx context.Context, tenant string, opt *ApplicationOptions) (*ApplicationCollection, *Response, error) {
 	u := fmt.Sprintf("application/applicationsByTenant/%s", tenant)
 	return s.getApplicationData(ctx, u, opt)
 }
 
-// GetApplicationCollectionByID returns an application by its ID
-func (s *ApplicationService) GetApplicationCollectionByID(ctx context.Context, ID string) (*Application, *Response, error) {
-	u := fmt.Sprintf("application/applications/%s", ID)
-
-	var queryParams string
-	var err error
-
-	req, err := s.client.NewRequest("GET", u, queryParams, nil)
-	if err != nil {
-		return nil, nil, err
-	}
-
+// GetApplication returns an application by its ID
+func (s *ApplicationService) GetApplication(ctx context.Context, ID string) (*Application, *Response, error) {
 	data := new(Application)
-
-	resp, err := s.client.Do(ctx, req, data)
-	if err != nil {
-		return nil, resp, err
-	}
-
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "GET",
+		Path:         "application/applications/" + ID,
+		ResponseData: data,
+	})
 	data.Item = *resp.JSON
-
-	return data, resp, nil
+	return data, resp, err
 }
 
 // GetApplications returns a list of applications with no filtering
 func (s *ApplicationService) GetApplications(ctx context.Context, opt *ApplicationOptions) (*ApplicationCollection, *Response, error) {
-	return s.getApplicationData(ctx, "/applications", opt)
+	return s.getApplicationData(ctx, "/application/applications", opt)
 }
 
 // GetCurrentApplicationSubscriptions returns the list of application subscriptions per tenant along with the service user credentials
