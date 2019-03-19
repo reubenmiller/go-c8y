@@ -67,7 +67,8 @@ func TestEventService_GetEvents(t *testing.T) {
 	col, resp, err := client.Event.GetEvents(
 		context.Background(),
 		&c8y.EventCollectionOptions{
-			Type: eventType,
+			Source: testDevice.ID,
+			Type:   eventType,
 		},
 	)
 
@@ -99,4 +100,83 @@ func TestEventService_Update(t *testing.T) {
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
 	testingutils.Equals(t, "My new text label", event2.Text)
+}
+
+func TestEventService_Delete(t *testing.T) {
+	client := createTestClient()
+
+	testDevice, err := createRandomTestDevice()
+	testingutils.Ok(t, err)
+
+	createEventType := eventFactory(client, testDevice.ID, "testevent1")
+	event1, resp, err := createEventType()
+
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Assert(t, event1.ID != "", "event.ID should not be empty")
+
+	resp, err = client.Event.Delete(
+		context.Background(),
+		event1.ID,
+	)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
+
+	event2, resp, err := client.Event.GetEvent(
+		context.Background(),
+		event1.ID,
+	)
+	testingutils.Assert(t, err != nil, "Should throw an error")
+	testingutils.Equals(t, http.StatusNotFound, resp.StatusCode)
+	testingutils.Equals(t, "", event2.ID)
+
+}
+
+func TestEventService_DeleteEvents(t *testing.T) {
+	client := createTestClient()
+
+	testDevice, err := createRandomTestDevice()
+	testingutils.Ok(t, err)
+
+	eventType1 := "testevent1"
+	eventType2 := "testevent2"
+
+	createEventType1 := eventFactory(client, testDevice.ID, eventType1)
+	createEventType2 := eventFactory(client, testDevice.ID, eventType2)
+
+	createEventType1()
+	createEventType1()
+	createEventType1()
+	createEventType2()
+
+	col, resp, err := client.Event.GetEvents(
+		context.Background(),
+		&c8y.EventCollectionOptions{
+			Source: testDevice.ID,
+		},
+	)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, 4, len(col.Events))
+
+	resp, err = client.Event.DeleteEvents(
+		context.Background(),
+		&c8y.EventCollectionOptions{
+			Type: eventType1,
+		},
+	)
+
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
+
+	col, resp, err = client.Event.GetEvents(
+		context.Background(),
+		&c8y.EventCollectionOptions{
+			Source: testDevice.ID,
+		},
+	)
+
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, 1, len(col.Events))
+	testingutils.Equals(t, eventType2, col.Events[0].Type)
 }

@@ -99,3 +99,20 @@ func (s *EventService) Update(ctx context.Context, ID string, body interface{}) 
 	data.Item = gjson.Parse(resp.JSON.Raw)
 	return data, resp, err
 }
+
+// Delete event by its ID
+func (s *EventService) Delete(ctx context.Context, ID string) (*Response, error) {
+	return s.client.SendRequest(ctx, RequestOptions{
+		Method: "DELETE",
+		Path:   "event/events/" + ID,
+	})
+}
+
+// DeleteEvents removes a collection of events based on the given filters
+func (s *EventService) DeleteEvents(ctx context.Context, opt *EventCollectionOptions) (*Response, error) {
+	return s.client.SendRequest(ctx, RequestOptions{
+		Method: "DELETE",
+		Path:   "event/events",
+		Query:  opt,
+	})
+}
