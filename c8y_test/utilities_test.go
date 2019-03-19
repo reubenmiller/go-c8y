@@ -167,10 +167,7 @@ func createTestDevice(randomPrefix ...string) (*c8y.ManagedObject, error) {
 		CumulocityConfiguration.mu.Unlock()
 
 		// Create Identity for new managed object
-		_, _, err = client.Identity.Create(context.Background(), mo.ID, &c8y.IdentityOptions{
-			Type:       externalType,
-			ExternalID: externalID,
-		})
+		_, _, err = client.Identity.Create(context.Background(), mo.ID, externalType, externalID)
 
 		if err != nil {
 			return nil, fmt.Errorf("Failed to create external id for the test managed object: %s", err)

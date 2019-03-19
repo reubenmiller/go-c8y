@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"testing"
 
-	c8y "github.com/reubenmiller/go-c8y"
 	"github.com/reubenmiller/go-c8y/c8y_test/testingutils"
 )
 
@@ -16,10 +15,7 @@ func TestIdentityService_Create(t *testing.T) {
 	testingutils.Ok(t, err)
 	defer client.Inventory.Delete(context.Background(), testDevice.ID)
 
-	identity, resp, err := client.Identity.Create(context.Background(), testDevice.ID, &c8y.IdentityOptions{
-		Type:       "test_Type",
-		ExternalID: "testDevice1",
-	})
+	identity, resp, err := client.Identity.Create(context.Background(), testDevice.ID, "test_Type", "testDevice1")
 
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
@@ -65,10 +61,8 @@ func TestIdentityService_Delete(t *testing.T) {
 	identity, resp, err := client.Identity.Create(
 		context.Background(),
 		testDevice.ID,
-		&c8y.IdentityOptions{
-			Type:       identityType,
-			ExternalID: externalID,
-		},
+		identityType,
+		externalID,
 	)
 
 	testingutils.Ok(t, err)

@@ -33,12 +33,16 @@ type IdentityReference struct {
 }
 
 // Create adds a new external id for the given managed object id
-func (s *IdentityService) Create(ctx context.Context, ID string, identity *IdentityOptions) (*Identity, *Response, error) {
+func (s *IdentityService) Create(ctx context.Context, ID string, identityType string, externalID string) (*Identity, *Response, error) {
 	data := new(Identity)
+	body := IdentityOptions{
+		Type:       identityType,
+		ExternalID: externalID,
+	}
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "POST",
 		Path:         fmt.Sprintf("identity/globalIds/%s/externalIds", ID),
-		Body:         identity,
+		Body:         body,
 		ResponseData: data,
 	})
 	data.Item = gjson.Parse(resp.JSON.Raw)
