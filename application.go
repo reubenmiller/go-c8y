@@ -17,12 +17,31 @@ type ApplicationOptions struct {
 
 // Application todo
 type Application struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	Type string `json:"type"`
-	Self string `json:"self"`
+	ID                string            `json:"id,omitempty"`
+	Key               string            `json:"key,omitempty"`
+	Name              string            `json:"name,omitempty"`
+	Type              string            `json:"type,omitempty"`
+	Availability      string            `json:"availability,omitempty"`
+	Self              string            `json:"self,omitempty"`
+	ContextPath       string            `json:"contextPath,omitempty"`
+	ExternalURL       string            `json:"externalUrl,omitempty"`
+	ResourcesURL      string            `json:"resourcesUrl,omitempty"`
+	ResourcesUsername string            `json:"resourcesUsername,omitempty"`
+	ResourcesPassword string            `json:"resourcesPassword,omitempty"`
+	Owner             *ApplicationOwner `json:"owner,omitempty"`
 
 	Item gjson.Result `json:"-"`
+}
+
+// ApplicationOwner application owner
+type ApplicationOwner struct {
+	Self   string                      `json:"self,omitempty"`
+	Tenant *ApplicationTenantReference `json:"tenant,omitempty"`
+}
+
+// ApplicationTenantReference tenant reference information about the application
+type ApplicationTenantReference struct {
+	ID string `json:"id,omitempty"`
 }
 
 // ApplicationCollection contains information about a list of applications
