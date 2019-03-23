@@ -87,6 +87,21 @@ func DecodeJSONBytes(v []byte, dst interface{}) error {
 	return DecodeJSONReader(bytes.NewReader(v), dst)
 }
 
+// DecodeJSONFile decodes a json file into dst interface
+func DecodeJSONFile(filepath string, dst interface{}) error {
+	fp, err := os.Open(filepath)
+	if err != nil {
+		return err
+	}
+
+	defer fp.Close()
+	buf, err := ioutil.ReadAll(fp)
+	if err != nil {
+		return err
+	}
+	return DecodeJSONReader(bytes.NewReader(buf), dst)
+}
+
 // DecodeJSONReader decodes bytes using a reader interface
 //
 // Note: Decode with the UseNumber() set so large or
@@ -292,8 +307,6 @@ func (c *Client) SetJSONItems(resp *Response, v interface{}) error {
 		return nil
 	}
 	// data.Item = gjson.Parse(resp.JSON.Raw)
-
-	log.Printf("%T", v)
 
 	switch t := v.(type) {
 	case *Alarm:
