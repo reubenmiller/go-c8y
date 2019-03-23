@@ -46,7 +46,7 @@ func (m *Microservice) CreateMicroserviceRepresentation() (*c8y.ManagedObject, e
 		if m.AgentInformation.Revision != "" {
 			agentMo.AgentInformation = &m.AgentInformation
 		}
-		updatedMo, _, err := m.Client.Inventory.UpdateManagedObject(m.WithServiceUser(), mo.ID, agentMo)
+		updatedMo, _, err := m.Client.Inventory.Update(m.WithServiceUser(), mo.ID, agentMo)
 
 		if err != nil {
 			zap.S().Errorf("Failed to update agent managed object with meta information. %s", err)
@@ -83,7 +83,7 @@ func (m *Microservice) CreateMicroserviceRepresentation() (*c8y.ManagedObject, e
 		DeviceFragment:           c8y.DeviceFragment{},
 	}
 
-	mo, _, err := m.Client.Inventory.CreateManagedObject(m.WithServiceUser(), agentMo)
+	mo, _, err := m.Client.Inventory.Create(m.WithServiceUser(), agentMo)
 
 	if mo == nil {
 		zap.S().Errorf("Could not create device managed object. %s", err)
@@ -92,10 +92,7 @@ func (m *Microservice) CreateMicroserviceRepresentation() (*c8y.ManagedObject, e
 	zap.S().Infof("Created managed object: %s", mo.ID)
 
 	// Create External ID reference to the new managed object
-	identity, _, err := m.Client.Identity.Create(m.WithServiceUser(), mo.ID, &c8y.IdentityOptions{
-		ExternalID: externalID,
-		Type:       identityType,
-	})
+	identity, _, err := m.Client.Identity.Create(m.WithServiceUser(), mo.ID, identityType, externalID)
 
 	if identity == nil || err != nil {
 		return mo, fmt.Errorf("Error creating external id for managed object, however the managed object was created. %s", err)
@@ -136,7 +133,7 @@ func (m *Microservice) SaveConfiguration(rawConfiguration string) error {
 	configuration["config"] = strings.Join(lines, "\n")
 	body["c8y_Configuration"] = configuration
 
-	mo, _, _ := m.Client.Inventory.UpdateManagedObject(m.WithServiceUser(), m.AgentID, body)
+	mo, _, _ := m.Client.Inventory.Update(m.WithServiceUser(), m.AgentID, body)
 
 	if mo == nil {
 		return fmt.Errorf("Error updating the configuration in the managed object")
@@ -262,7 +259,7 @@ func (m *Microservice) CheckForNewConfiguration() {
 	zap.L().Info("checking pending operations")
 	data, _, err := m.GetOperations(c8y.Pending.String())
 
-	if data == nil {
+	if err != nil {
 		log.Printf("Error getting operations. %s", err)
 		return
 	}
