@@ -277,10 +277,65 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 	}
 
 	resp, err := c.Do(ctx, req, options.ResponseData)
+
+	c.SetJSONItems(resp, options.ResponseData)
+
 	if err != nil {
 		return resp, err
 	}
 	return resp, nil
+}
+
+// SetJSONItems sets the GJSON items to the input v object
+func (c *Client) SetJSONItems(resp *Response, v interface{}) error {
+	if resp == nil {
+		return nil
+	}
+	// data.Item = gjson.Parse(resp.JSON.Raw)
+
+	log.Printf("%T", v)
+
+	switch t := v.(type) {
+	case *Alarm:
+		t.Item = *resp.JSON
+	case *AlarmCollection:
+		t.Items = resp.JSON.Get("alarms").Array()
+
+	case *Application:
+		t.Item = *resp.JSON
+	case *ApplicationCollection:
+		t.Items = resp.JSON.Get("applications").Array()
+
+	case *AuditRecord:
+		t.Item = *resp.JSON
+	case *AuditRecordCollection:
+		t.Items = resp.JSON.Get("auditRecords").Array()
+
+	case *Event:
+		t.Item = *resp.JSON
+	case *EventCollection:
+		t.Items = resp.JSON.Get("events").Array()
+
+	case *Identity:
+		t.Item = *resp.JSON
+
+	case *ManagedObject:
+		t.Item = *resp.JSON
+	case *ManagedObjectCollection:
+		t.Items = resp.JSON.Get("managedObjects").Array()
+
+	case *Measurement:
+		t.Item = *resp.JSON
+	case *MeasurementCollection:
+		t.Items = resp.JSON.Get("measurements").Array()
+
+	case *Operation:
+		t.Item = *resp.JSON
+	case *OperationCollection:
+		t.Items = resp.JSON.Get("operations").Array()
+	}
+
+	return nil
 }
 
 // NewRequest returns a request with the required additional base url, authentication header, accept and user-agent.NewRequest

@@ -45,7 +45,6 @@ func (s *IdentityService) Create(ctx context.Context, ID string, identityType st
 		Body:         body,
 		ResponseData: data,
 	})
-	data.Item = gjson.Parse(resp.JSON.Raw)
 	return data, resp, err
 }
 
@@ -59,7 +58,6 @@ func (s *IdentityService) GetExternalID(ctx context.Context, identityType string
 		Path:         fmt.Sprintf("identity/externalIds/%s/%s", identityType, externalID),
 		ResponseData: data,
 	})
-	data.Item = gjson.Parse(resp.JSON.Raw)
 	return data, resp, err
 }
 

@@ -72,7 +72,6 @@ func (s *MeasurementService) GetMeasurements(ctx context.Context, opt *Measureme
 		Query:        opt,
 		ResponseData: data,
 	})
-	data.Items = resp.JSON.Get("measurements").Array()
 	return data, resp, err
 }
 
@@ -364,6 +363,5 @@ func (s *MeasurementService) Create(ctx context.Context, body MeasurementReprese
 		Body:         body,
 		ResponseData: data,
 	})
-	data.Item = gjson.Parse(resp.JSON.Raw)
 	return data, resp, err
 }

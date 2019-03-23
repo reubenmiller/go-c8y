@@ -206,9 +206,6 @@ func (s *InventoryService) GetDevices(ctx context.Context, paging *PaginationOpt
 		Query:        opt,
 		ResponseData: data,
 	})
-
-	data.Items = resp.JSON.Get("managedObjects").Array()
-
 	return data, resp, err
 }
 
@@ -227,8 +224,6 @@ func (s *InventoryService) GetManagedObject(ctx context.Context, ID string, opt 
 		Query:        opt,
 		ResponseData: data,
 	})
-
-	data.Item = gjson.Parse(resp.JSON.Raw)
 	return data, resp, err
 }
 
@@ -241,8 +236,6 @@ func (s *InventoryService) GetManagedObjects(ctx context.Context, opt *ManagedOb
 		Query:        opt,
 		ResponseData: data,
 	})
-
-	data.Items = resp.JSON.Get("managedObjects").Array()
 	return data, resp, err
 }
 
@@ -293,8 +286,6 @@ func (s *InventoryService) Update(ctx context.Context, ID string, body interface
 		Body:         body,
 		ResponseData: data,
 	})
-
-	data.Item = gjson.Parse(resp.JSON.Raw)
 	return data, resp, err
 }
 
@@ -312,8 +303,6 @@ func (s *InventoryService) Create(ctx context.Context, body interface{}) (*Manag
 		Body:         body,
 		ResponseData: data,
 	})
-
-	data.Item = gjson.Parse(resp.JSON.Raw)
 	return data, resp, err
 }
 
@@ -433,8 +422,6 @@ func (s *InventoryService) UpdateBinary(ctx context.Context, ID, filename string
 		Body:         binarydata,
 		ResponseData: data,
 	})
-
-	data.Item = gjson.Parse(resp.JSON.Raw)
 	return data, resp, err
 }
 
@@ -456,7 +443,6 @@ func (s *InventoryService) GetBinaries(ctx context.Context, opt *BinaryObjectOpt
 		Query:        opt,
 		ResponseData: data,
 	})
-	data.Items = resp.JSON.Get("managedObjects").Array()
 	return data, resp, err
 }
 
@@ -480,7 +466,7 @@ func (s *InventoryService) ExpandCollection(ctx context.Context, col *ManagedObj
 
 		data := new(ManagedObjectCollection)
 
-		resp, err := s.client.SendRequest(ctx, RequestOptions{
+		_, err = s.client.SendRequest(ctx, RequestOptions{
 			Path:         urlObj.Path,
 			Query:        urlObj.RawQuery,
 			ResponseData: data,
@@ -492,7 +478,6 @@ func (s *InventoryService) ExpandCollection(ctx context.Context, col *ManagedObj
 
 		log.Printf("Adding pagination results - %d managed objects found", len(data.ManagedObjects))
 
-		data.Items = resp.JSON.Get("managedObjects").Array()
 		out.Items = append(out.Items, data.Items...)
 		out.ManagedObjects = append(out.ManagedObjects, data.ManagedObjects...)
 		out.Next = data.Next

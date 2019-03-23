@@ -76,7 +76,6 @@ func (s *ApplicationService) getApplicationData(ctx context.Context, partialURL 
 		Query:        opt,
 		ResponseData: data,
 	})
-	data.Items = resp.JSON.Get("applications").Array()
 	return data, resp, err
 }
 
@@ -107,7 +106,6 @@ func (s *ApplicationService) GetApplication(ctx context.Context, ID string) (*Ap
 		Path:         "application/applications/" + ID,
 		ResponseData: data,
 	})
-	data.Item = *resp.JSON
 	return data, resp, err
 }
 
@@ -125,6 +123,5 @@ func (s *ApplicationService) GetCurrentApplicationSubscriptions(ctx context.Cont
 		Path:         "application/currentApplication/subscriptions",
 		ResponseData: data,
 	})
-	data.Item = *resp.JSON
 	return data, resp, err
 }

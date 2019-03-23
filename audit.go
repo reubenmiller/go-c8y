@@ -62,7 +62,6 @@ func (s *AuditService) GetAuditRecord(ctx context.Context, ID string) (*AuditRec
 		Path:         "audit/auditRecords/" + ID,
 		ResponseData: data,
 	})
-	data.Item = gjson.Parse(resp.JSON.Raw)
 	return data, resp, err
 }
 
@@ -75,7 +74,6 @@ func (s *AuditService) GetAuditRecords(ctx context.Context, opt *AuditRecordColl
 		Query:        opt,
 		ResponseData: data,
 	})
-	data.Items = resp.JSON.Get("auditRecords").Array()
 	return data, resp, err
 }
 
@@ -88,7 +86,6 @@ func (s *AuditService) Create(ctx context.Context, body interface{}) (*AuditReco
 		Body:         body,
 		ResponseData: data,
 	})
-	data.Item = gjson.Parse(resp.JSON.Raw)
 	return data, resp, err
 }
 

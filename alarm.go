@@ -89,7 +89,6 @@ func (s *AlarmService) GetAlarm(ctx context.Context, ID string) (*Alarm, *Respon
 		Path:         "alarm/alarms/" + ID,
 		ResponseData: data,
 	})
-	data.Item = gjson.Parse(resp.JSON.Raw)
 	return data, resp, err
 }
 
@@ -102,7 +101,6 @@ func (s *AlarmService) GetAlarms(ctx context.Context, opt *AlarmCollectionOption
 		Query:        opt,
 		ResponseData: data,
 	})
-	data.Items = resp.JSON.Get("alarms").Array()
 	return data, resp, err
 }
 
@@ -115,7 +113,6 @@ func (s *AlarmService) Create(ctx context.Context, body interface{}) (*Alarm, *R
 		Body:         body,
 		ResponseData: data,
 	})
-	data.Item = gjson.Parse(resp.JSON.Raw)
 	return data, resp, err
 }
 
@@ -161,7 +158,6 @@ func (s *AlarmService) Update(ctx context.Context, ID string, body AlarmUpdatePr
 		ResponseData: data,
 		Body:         body,
 	})
-	data.Item = gjson.Parse(resp.JSON.Raw)
 	return data, resp, err
 }
 

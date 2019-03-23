@@ -57,7 +57,6 @@ func (s *EventService) GetEvent(ctx context.Context, ID string) (*Event, *Respon
 		Path:         "event/events/" + ID,
 		ResponseData: data,
 	})
-	data.Item = gjson.Parse(resp.JSON.Raw)
 	return data, resp, err
 }
 
@@ -70,7 +69,6 @@ func (s *EventService) GetEvents(ctx context.Context, opt *EventCollectionOption
 		Query:        opt,
 		ResponseData: data,
 	})
-	data.Items = resp.JSON.Get("events").Array()
 	return data, resp, err
 }
 
@@ -83,7 +81,6 @@ func (s *EventService) Create(ctx context.Context, body interface{}) (*Event, *R
 		Body:         body,
 		ResponseData: data,
 	})
-	data.Item = gjson.Parse(resp.JSON.Raw)
 	return data, resp, err
 }
 
@@ -96,7 +93,6 @@ func (s *EventService) Update(ctx context.Context, ID string, body interface{}) 
 		Body:         body,
 		ResponseData: data,
 	})
-	data.Item = gjson.Parse(resp.JSON.Raw)
 	return data, resp, err
 }
 

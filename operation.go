@@ -73,7 +73,6 @@ func (s *OperationService) GetOperation(ctx context.Context, ID string) (*Operat
 		Path:         "devicecontrol/operations/" + ID,
 		ResponseData: data,
 	})
-	data.Item = gjson.Parse(resp.JSON.Raw)
 	return data, resp, err
 }
 
@@ -86,7 +85,6 @@ func (s *OperationService) GetOperations(ctx context.Context, opt *OperationColl
 		Query:        opt,
 		ResponseData: data,
 	})
-	data.Items = resp.JSON.Get("operations").Array()
 	return data, resp, err
 }
 
@@ -109,7 +107,6 @@ func (s *OperationService) Create(ctx context.Context, body interface{}) (*Opera
 		Body:         body,
 		ResponseData: data,
 	})
-	data.Item = gjson.Parse(resp.JSON.Raw)
 	return data, resp, err
 }
 
@@ -122,6 +119,5 @@ func (s *OperationService) Update(ctx context.Context, ID string, body *Operatio
 		Body:         body,
 		ResponseData: data,
 	})
-	data.Item = gjson.Parse(resp.JSON.Raw)
 	return data, resp, err
 }
