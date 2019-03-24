@@ -75,6 +75,15 @@ func (s *MeasurementService) GetMeasurements(ctx context.Context, opt *Measureme
 	return data, resp, err
 }
 
+// DeleteMeasurements removes a measurement collection
+func (s *MeasurementService) DeleteMeasurements(ctx context.Context, opt *MeasurementCollectionOptions) (*Response, error) {
+	return s.client.SendRequest(ctx, RequestOptions{
+		Method: "DELETE",
+		Path:   "measurement/measurements",
+		Query:  opt,
+	})
+}
+
 // MeasurementSerieDefinition represents information about a serie
 type MeasurementSerieDefinition struct {
 	Unit string `json:"unit"`
@@ -292,23 +301,21 @@ func (s *MeasurementService) GetMeasurementSeries(ctx context.Context, opt *Meas
 
 // GetMeasurement returns a single measurement
 func (s *MeasurementService) GetMeasurement(ctx context.Context, ID string) (*Measurement, *Response, error) {
-	u := fmt.Sprintf("measurement/measurements/%s", ID)
-
-	req, err := s.client.NewRequest("GET", u, "", nil)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	data := new(Measurement)
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "GET",
+		Path:         "measurement/measurements/" + ID,
+		ResponseData: data,
+	})
+	return data, resp, err
+}
 
-	resp, err := s.client.Do(ctx, req, data)
-	if err != nil {
-		return nil, resp, err
-	}
-
-	data.Item = *resp.JSON
-
-	return data, resp, nil
+// Delete removed a measurement by ID
+func (s *MeasurementService) Delete(ctx context.Context, ID string) (*Response, error) {
+	return s.client.SendRequest(ctx, RequestOptions{
+		Method: "DELETE",
+		Path:   "measurement/measurements/" + ID,
+	})
 }
 
 // MarshalCSV converts the measurement series group to a csv output so it can be more easily parsed by other languages

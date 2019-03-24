@@ -27,9 +27,6 @@
 * /retentionRule
 * /application/201/binaries
 * /event/events/binaries
-* GET /measurement/measurements/<<measurementId>>
-* DELETE /measurement/measurements/<<measurementID>>
-* DELETE: /measurement/measurements (delete measurement collection)
 * POST /measurement/measurements (post multiple measurements)
 * Measurements: Allow setting header 'X-Cumulocity-System-Of-Units' to either "imperial" or "metric" (global setting?)
 * 

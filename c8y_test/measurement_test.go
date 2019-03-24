@@ -4,12 +4,32 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"net/http"
 	"testing"
 	"time"
 
 	c8y "github.com/reubenmiller/go-c8y"
 	"github.com/reubenmiller/go-c8y/c8y_test/testingutils"
 )
+
+func measurmentFactory(client *c8y.Client, deviceID string, valueFragmentType, ValueFragmentSeries string) func(float64) (*c8y.Measurement, *c8y.Response, error) {
+	counter := 1
+	return func(value float64) (*c8y.Measurement, *c8y.Response, error) {
+		counter++
+		measValue, _ := c8y.NewSimpleMeasurementRepresentation(c8y.SimpleMeasurementOptions{
+			SourceID:            deviceID,
+			Type:                "TestSeries1",
+			ValueFragmentType:   valueFragmentType,
+			ValueFragmentSeries: ValueFragmentSeries,
+			Unit:                "Counter",
+			Value:               value,
+		})
+		return client.Measurement.Create(
+			context.Background(),
+			*measValue,
+		)
+	}
+}
 
 func TestMeasurementService_GetMeasurementSeries(t *testing.T) {
 	client := createTestClient()
@@ -319,4 +339,107 @@ func TestMeasurementService_CreateWithDifferentTypes(t *testing.T) {
 	// boolean values
 	createMeasurement(true)
 	createMeasurement(false)
+}
+
+func TestMeasurementService_GetMeasurement_DeleteMeasurement(t *testing.T) {
+	client := createTestClient()
+	testDevice, err := createRandomTestDevice()
+
+	// Create a test measurement
+	measurement1, _ := c8y.NewSimpleMeasurementRepresentation(c8y.SimpleMeasurementOptions{
+		SourceID:            testDevice.ID,
+		Type:                "TestSeries1",
+		ValueFragmentType:   "nx_TestDevice",
+		ValueFragmentSeries: "Series1",
+		Unit:                "Counter",
+	})
+	meas, _, err := client.Measurement.Create(context.Background(), *measurement1)
+	testingutils.Ok(t, err)
+	testingutils.Assert(t, meas != nil, "Measurement shouldn't be nil")
+
+	meas2, resp, err := client.Measurement.GetMeasurement(
+		context.Background(),
+		meas.ID,
+	)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, meas, meas2)
+	testingutils.Equals(t, meas.Item.Raw, meas2.Item.Raw)
+
+	// Remove measurement
+	resp, err = client.Measurement.Delete(
+		context.Background(),
+		meas2.ID,
+	)
+
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
+
+	// Check if the measurement has been deleted
+	meas3, resp, err := client.Measurement.GetMeasurement(
+		context.Background(),
+		meas2.ID,
+	)
+	testingutils.Assert(t, err != nil, "Error should not be nil")
+	testingutils.Equals(t, http.StatusNotFound, resp.StatusCode)
+	testingutils.Assert(t, meas3.ID == "", "ID should be empty when the object is not found")
+}
+
+func TestMeasurementService_DeleteMeasurements(t *testing.T) {
+	client := createTestClient()
+	testDevice, err := createRandomTestDevice()
+
+	valueFragmentType := "nx_Type1"
+	createMeasVariable1 := measurmentFactory(client, testDevice.ID, valueFragmentType, "Variable1")
+	createMeasVariable2 := measurmentFactory(client, testDevice.ID, valueFragmentType, "Variable2")
+
+	meas1, resp, err := createMeasVariable1(1.0)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Assert(t, meas1.ID != "", "ID should not be empty")
+
+	meas2, resp, err := createMeasVariable2(2.0)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Assert(t, meas2.ID != "", "ID should not be empty")
+
+	searchOptions := &c8y.MeasurementCollectionOptions{
+		Source:            testDevice.ID,
+		ValueFragmentType: valueFragmentType,
+	}
+
+	measCol1, resp, err := client.Measurement.GetMeasurements(
+		context.Background(),
+		searchOptions,
+	)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, 2, len(measCol1.Measurements))
+
+	// Delete the measurements
+	resp, err = client.Measurement.DeleteMeasurements(
+		context.Background(),
+		searchOptions,
+	)
+
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
+
+	// Check that the measurements have been removed
+	deletedMeas1, resp, err := client.Measurement.GetMeasurement(
+		context.Background(),
+		meas1.ID,
+	)
+	testingutils.Assert(t, err != nil, "Error should not be nil")
+	testingutils.Equals(t, http.StatusNotFound, resp.StatusCode)
+	testingutils.Equals(t, "", deletedMeas1.ID)
+
+	// Check that the measurements have been removed
+	deletedMeas2, resp, err := client.Measurement.GetMeasurement(
+		context.Background(),
+		meas1.ID,
+	)
+	testingutils.Assert(t, err != nil, "Error should not be nil")
+	testingutils.Equals(t, http.StatusNotFound, resp.StatusCode)
+	testingutils.Equals(t, "", deletedMeas2.ID)
 }
