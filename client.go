@@ -329,6 +329,9 @@ func (c *Client) SetJSONItems(resp *Response, v interface{}) error {
 	case *EventCollection:
 		t.Items = resp.JSON.Get("events").Array()
 
+	case *EventBinary:
+		t.Item = *resp.JSON
+
 	case *Identity:
 		t.Item = *resp.JSON
 

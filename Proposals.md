@@ -26,7 +26,7 @@
 * /tenant
 * /retentionRule
 * /application/201/binaries
-* /event/events/binaries
+* /event/events/binaries (tests)
 * POST /measurement/measurements (post multiple measurements)
 * Measurements: Allow setting header 'X-Cumulocity-System-Of-Units' to either "imperial" or "metric" (global setting?)
 * 
