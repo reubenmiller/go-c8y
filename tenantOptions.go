@@ -7,6 +7,7 @@ import (
 // TenantOptionsService does something
 type TenantOptionsService service
 
+// TenantOption is a setting used to customise a tenant
 type TenantOption struct {
 	Category string `json:"category,omitempty"`
 	Key      string `json:"key,omitempty"`
@@ -33,12 +34,12 @@ func (s *TenantOptionsService) GetOptions(ctx context.Context, opt *PaginationOp
 }
 
 // GetOptionsForCategory returns collection of tenant options for the specified category
-func (s *TenantOptionsService) GetOptionsForCategory(ctx context.Context, category string) (*TenantOptionsCollection, *Response, error) {
-	data := new(TenantOptionsCollection)
+func (s *TenantOptionsService) GetOptionsForCategory(ctx context.Context, category string) (map[string]string, *Response, error) {
+	data := make(map[string]string)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "GET",
 		Path:         "tenant/options/" + category,
-		ResponseData: data,
+		ResponseData: &data,
 	})
 	return data, resp, err
 }
@@ -50,7 +51,7 @@ func (s *TenantOptionsService) UpdateOptions(ctx context.Context, category strin
 		Method:       "PUT",
 		Path:         "tenant/options/" + category,
 		Body:         body,
-		ResponseData: data,
+		ResponseData: &data,
 	})
 	return data, resp, err
 }
@@ -80,6 +81,14 @@ func (s *TenantOptionsService) GetOption(ctx context.Context, category, key stri
 	return data, resp, err
 }
 
+// Delete removes an existing tenant option by category and key
+func (s *TenantOptionsService) Delete(ctx context.Context, category, key string) (*Response, error) {
+	return s.client.SendRequest(ctx, RequestOptions{
+		Method: "DELETE",
+		Path:   "tenant/options/" + category + "/" + key,
+	})
+}
+
 // Create adds a new tenant
 func (s *TenantOptionsService) Create(ctx context.Context, body *TenantOption) (*TenantOption, *Response, error) {
 	data := new(TenantOption)
@@ -105,50 +114,6 @@ func (s *TenantOptionsService) Update(ctx context.Context, category, key string,
 		ResponseData: data,
 	})
 	return data, resp, err
-}
-
-// Delete removes a tenant and all of its data
-func (s *TenantOptionsService) Delete(ctx context.Context, ID string, body *Tenant) (*Response, error) {
-	return s.client.SendRequest(ctx, RequestOptions{
-		Method: "DELETE",
-		Path:   "tenant/tenants/" + ID,
-	})
-}
-
-//
-// Application Reference Collection
-//
-
-// AddApplicationReference adds a new tenant
-func (s *TenantOptionsService) AddApplicationReference(ctx context.Context, tenantID string, body *ApplicationTenantReference) (*ApplicationReference, *Response, error) {
-	data := new(ApplicationReference)
-	resp, err := s.client.SendRequest(ctx, RequestOptions{
-		Method:       "POST",
-		Path:         "tenant/tenants/" + tenantID + "/applications",
-		Body:         body,
-		ResponseData: data,
-	})
-	return data, resp, err
-}
-
-// GetApplicationReferences returns list of applications associated with the tenant
-func (s *TenantOptionsService) GetApplicationReferences(ctx context.Context, tenantID string, opts *PaginationOptions) (*ApplicationReferenceCollection, *Response, error) {
-	data := new(ApplicationReferenceCollection)
-	resp, err := s.client.SendRequest(ctx, RequestOptions{
-		Method:       "GET",
-		Path:         "tenant/tenants/" + tenantID + "/applications",
-		Query:        opts,
-		ResponseData: data,
-	})
-	return data, resp, err
-}
-
-// DeleteApplicationReference removes an application references from the tenant
-func (s *TenantOptionsService) DeleteApplicationReference(ctx context.Context, tenantID string, applicationID string) (*Response, error) {
-	return s.client.SendRequest(ctx, RequestOptions{
-		Method: "DELETE",
-		Path:   "tenant/tenants/" + tenantID + "/applications/" + applicationID,
-	})
 }
 
 // GetSystemOptions returns collection system options
