@@ -76,6 +76,7 @@ type Client struct {
 	Application  *ApplicationService
 	Identity     *IdentityService
 	Microservice *MicroserviceService
+	Retention    *RetentionRuleService
 }
 
 const (
@@ -193,6 +194,7 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 	c.Identity = (*IdentityService)(&c.common)
 	c.Microservice = (*MicroserviceService)(&c.common)
 	c.Context = (*ContextService)(&c.common)
+	c.Retention = (*RetentionRuleService)(&c.common)
 	return c
 }
 
