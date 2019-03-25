@@ -16,9 +16,11 @@ import (
 // GetAgent returns the agent representation of the microservice
 func (m *Microservice) GetAgent() *c8y.ManagedObject {
 	var agent *c8y.ManagedObject
-	extID, _, _ := m.Client.Identity.GetExternalID(m.WithServiceUser(), m.Config.GetIdentityType(), m.Config.GetApplicationName())
+	extID, _, err := m.Client.Identity.GetExternalID(m.WithServiceUser(), m.Config.GetIdentityType(), m.Config.GetApplicationName())
 
-	if extID != nil {
+	if err != nil {
+		zap.S().Warnf("No external identity exists for type=%s, id=%s. err %s", m.Config.GetIdentityType(), m.Config.GetApplicationName(), err)
+	} else {
 		zap.L().Info("Retrieving managed object by id found in external id")
 		mo, _, err := m.Client.Inventory.GetManagedObject(m.WithServiceUser(), extID.ManagedObject.ID, nil)
 
@@ -85,16 +87,14 @@ func (m *Microservice) CreateMicroserviceRepresentation() (*c8y.ManagedObject, e
 
 	mo, _, err := m.Client.Inventory.Create(m.WithServiceUser(), agentMo)
 
-	if mo == nil {
+	if err != nil {
 		zap.S().Errorf("Could not create device managed object. %s", err)
 		return nil, fmt.Errorf("Error creating the device managed object")
 	}
 	zap.S().Infof("Created managed object: %s", mo.ID)
 
 	// Create External ID reference to the new managed object
-	identity, _, err := m.Client.Identity.Create(m.WithServiceUser(), mo.ID, identityType, externalID)
-
-	if identity == nil || err != nil {
+	if _, _, err := m.Client.Identity.Create(m.WithServiceUser(), mo.ID, identityType, externalID); err != nil {
 		return mo, fmt.Errorf("Error creating external id for managed object, however the managed object was created. %s", err)
 	}
 
@@ -133,10 +133,8 @@ func (m *Microservice) SaveConfiguration(rawConfiguration string) error {
 	configuration["config"] = strings.Join(lines, "\n")
 	body["c8y_Configuration"] = configuration
 
-	mo, _, _ := m.Client.Inventory.Update(m.WithServiceUser(), m.AgentID, body)
-
-	if mo == nil {
-		return fmt.Errorf("Error updating the configuration in the managed object")
+	if _, _, err := m.Client.Inventory.Update(m.WithServiceUser(), m.AgentID, body); err != nil {
+		return fmt.Errorf("Error updating the configuration in the managed object. %s", err)
 	}
 
 	return nil
@@ -146,9 +144,9 @@ func (m *Microservice) SaveConfiguration(rawConfiguration string) error {
 func (m *Microservice) RegisterMicroserviceAgent() {
 	zap.L().Info("Registering microservice agent")
 
-	mo, _ := m.CreateMicroserviceRepresentation()
+	mo, err := m.CreateMicroserviceRepresentation()
 
-	if mo != nil {
+	if err == nil {
 		zap.S().Infof("Start Polling for Operations on device %s", mo.ID)
 		m.AgentID = mo.ID
 
