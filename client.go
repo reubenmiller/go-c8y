@@ -65,18 +65,19 @@ type Client struct {
 	common service // Reuse a single struct instead of allocating one for each service on the heap.
 
 	// Services used for talking to different parts of the Cumulocity API.
-	Context      *ContextService
-	Alarm        *AlarmService
-	Audit        *AuditService
-	Measurement  *MeasurementService
-	Operation    *OperationService
-	Tenant       *TenantService
-	Event        *EventService
-	Inventory    *InventoryService
-	Application  *ApplicationService
-	Identity     *IdentityService
-	Microservice *MicroserviceService
-	Retention    *RetentionRuleService
+	Context       *ContextService
+	Alarm         *AlarmService
+	Audit         *AuditService
+	Measurement   *MeasurementService
+	Operation     *OperationService
+	Tenant        *TenantService
+	Event         *EventService
+	Inventory     *InventoryService
+	Application   *ApplicationService
+	Identity      *IdentityService
+	Microservice  *MicroserviceService
+	Retention     *RetentionRuleService
+	TenantOptions *TenantOptionsService
 }
 
 const (
@@ -195,6 +196,7 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 	c.Microservice = (*MicroserviceService)(&c.common)
 	c.Context = (*ContextService)(&c.common)
 	c.Retention = (*RetentionRuleService)(&c.common)
+	c.TenantOptions = (*TenantOptionsService)(&c.common)
 	return c
 }
 

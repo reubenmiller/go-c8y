@@ -23,7 +23,7 @@
 ## TODO
 
 * /user
-* /tenant
+* /tenant (tests)
 * /application/201/binaries
 * /event/events/binaries (tests)
 * POST /measurement/measurements (post multiple measurements)
