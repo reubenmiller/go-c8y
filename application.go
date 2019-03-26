@@ -3,8 +3,13 @@ package c8y
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/url"
+	"path"
 
+	"github.com/pkg/errors"
 	"github.com/tidwall/gjson"
+	"go.uber.org/zap"
 )
 
 // ApplicationService provides the service provider for the Cumulocity Application API
@@ -114,6 +119,97 @@ func (s *ApplicationService) GetApplications(ctx context.Context, opt *Applicati
 	return s.getApplicationData(ctx, "/application/applications", opt)
 }
 
+// Create adds a new application to Cumulocity
+func (s *ApplicationService) Create(ctx context.Context, body *Application) (*Application, *Response, error) {
+	data := new(Application)
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "POST",
+		Path:         "application/applications",
+		Body:         body,
+		ResponseData: data,
+	})
+	return data, resp, err
+}
+
+// Copy creates a new application based on an already existing one
+// The properties are copied to the newly created application. For name, key and context path a "clone" prefix is added in order to be unique.
+// If the target application is hosted and has an active version, the new application will have the active version with the same content.
+// The response contains a representation of the newly created application.
+func (s *ApplicationService) Copy(ctx context.Context, ID string) (*Application, *Response, error) {
+	data := new(Application)
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "POST",
+		Path:         "application/applications/" + ID + "/clone",
+		ResponseData: data,
+	})
+	return data, resp, err
+}
+
+// Update updates an existing application
+func (s *ApplicationService) Update(ctx context.Context, ID string, body *Application) (*Application, *Response, error) {
+	data := new(Application)
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "PUT",
+		Path:         "application/applications/" + ID,
+		Body:         body,
+		ResponseData: data,
+	})
+	return data, resp, err
+}
+
+// Delete removes an existing application
+func (s *ApplicationService) Delete(ctx context.Context, ID string) (*Response, error) {
+	return s.client.SendRequest(ctx, RequestOptions{
+		Method: "DELETE",
+		Path:   "application/applications/" + ID,
+	})
+}
+
+//
+// Current Application (Microservice) API
+//
+
+// GetCurrentApplication returns the current application. Note: Required authentication with bootstrap user
+func (s *ApplicationService) GetCurrentApplication(ctx context.Context) (*Application, *Response, error) {
+	data := new(Application)
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "GET",
+		Path:         "application/currentApplication",
+		ResponseData: data,
+	})
+	return data, resp, err
+}
+
+// ApplicationUser is the representation of the bootstrap user for microservices
+type ApplicationUser struct {
+	Name     string `json:"name,omitempty"`
+	Password string `json:"password,omitempty"`
+	Tenant   string `json:"tenant,omitempty"`
+}
+
+// GetApplicationUser returns the application user for a given microservice application
+func (s *ApplicationService) GetApplicationUser(ctx context.Context, ID string) (*ApplicationUser, *Response, error) {
+	data := new(ApplicationUser)
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "GET",
+		Path:         "application/applications/" + ID + "/bootstrapUser",
+		ResponseData: data,
+	})
+	return data, resp, err
+}
+
+// UpdateCurrentApplication updates the current application from a microservice using bootstrap credentials
+func (s *ApplicationService) UpdateCurrentApplication(ctx context.Context, ID string, body *Application) (*Application, *Response, error) {
+	data := new(Application)
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "PUT",
+		Path:         "application/currentApplication",
+		Body:         body,
+		ResponseData: data,
+	})
+	return data, resp, err
+}
+
 // GetCurrentApplicationSubscriptions returns the list of application subscriptions per tenant along with the service user credentials
 // This function can only be called using Application Bootstrap credentials, otherwise a 403 (forbidden) response will be returned
 func (s *ApplicationService) GetCurrentApplicationSubscriptions(ctx context.Context) (*ApplicationSubscriptions, *Response, error) {
@@ -124,4 +220,45 @@ func (s *ApplicationService) GetCurrentApplicationSubscriptions(ctx context.Cont
 		ResponseData: data,
 	})
 	return data, resp, err
+}
+
+/* Application binaries */
+
+// CreateBinary uploads a binary
+// For the applications of type "microservice", "web application" and "custom Apama rule" to be available for Cumulocity platform users, a binary zip file must be uploaded.
+// For the microservice application, the zip file must consist of:
+//  * cumulocity.json - file describing the deployment
+//  * image.tar - executable docker image
+//
+// For the web application, the zip file must include index.html in the root directory.
+// For the custom Apama rule application, the zip file must consist of a single .mon file.
+func (s *ApplicationService) CreateBinary(ctx context.Context, filename string, ID string) (*Response, error) {
+	client := s.client
+
+	values := map[string]io.Reader{
+		"file": mustOpen(filename), // lets assume its this file
+	}
+
+	// set binary api
+	u, _ := url.Parse(client.BaseURL.String())
+	u.Path = path.Join(u.Path, "/application/applications/"+ID+"/binaries")
+
+	req, err := prepareMultipartRequest(u.String(), "POST", values)
+	s.client.SetAuthorization(req)
+
+	req.Header.Set("Accept", "application/json")
+
+	if err != nil {
+		err = errors.Wrap(err, "Could not create binary upload request object")
+		zap.S().Error(err)
+		return nil, err
+	}
+
+	resp, err := client.Do(ctx, req, nil)
+
+	if err != nil {
+		return resp, err
+	}
+
+	return resp, nil
 }

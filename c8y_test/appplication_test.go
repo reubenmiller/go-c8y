@@ -103,3 +103,64 @@ func TestApplicationService_GetApplication(t *testing.T) {
 	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
 	testingutils.Equals(t, expApp.ID, app.ID)
 }
+
+func TestApplicationService_CRUD_Application(t *testing.T) {
+	client := createTestClient()
+
+	appInfo := &c8y.Application{
+		Key:         "testApplicationKey",
+		Name:        "testApplication",
+		Type:        "HOSTED",
+		ContextPath: "/testApplication",
+	}
+
+	//
+	// Create
+	app1, resp, err := client.Application.Create(
+		context.Background(),
+		appInfo,
+	)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, appInfo.Key, app1.Key)
+
+	//
+	// Update
+	app2, resp, err := client.Application.Update(
+		context.Background(),
+		app1.ID,
+		&c8y.Application{
+			Name: "UpdatedTestApplicationName",
+		},
+	)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, "UpdatedTestApplicationName", app2.Name)
+
+	// Copy existing application
+	app2Copy, resp, err := client.Application.Copy(
+		context.Background(),
+		app1.ID,
+	)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, "cloneUpdatedTestApplicationName", app2Copy.Name)
+
+	//
+	// Delete
+	resp, err = client.Application.Delete(
+		context.Background(),
+		app1.ID,
+	)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
+
+	//
+	// Delete copied app
+	resp, err = client.Application.Delete(
+		context.Background(),
+		app2Copy.ID,
+	)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
+}
