@@ -180,3 +180,66 @@ func TestEventService_DeleteEvents(t *testing.T) {
 	testingutils.Equals(t, 1, len(col.Events))
 	testingutils.Equals(t, eventType2, col.Events[0].Type)
 }
+
+func TestEventService_CreateBinary(t *testing.T) {
+	client := createTestClient()
+
+	testDevice, err := createRandomTestDevice()
+	testingutils.Ok(t, err)
+
+	value1 := c8y.Event{
+		Time:   c8y.NewTimestamp(),
+		Type:   "testevent",
+		Text:   "Test Event",
+		Source: c8y.NewSource(testDevice.ID),
+	}
+
+	event1, resp, err := client.Event.Create(
+		context.Background(),
+		value1,
+	)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Assert(t, event1.ID != "", "ID should not be empty")
+
+	//
+	// Upload file to event
+	testfile1 := NewDummyFile("testfile1", "test contents 1")
+	binaryobj1, resp, err := client.Event.CreateBinary(
+		context.Background(),
+		testfile1,
+		event1.ID,
+	)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, event1.ID, binaryobj1.Source)
+	testingutils.Assert(t, binaryobj1.Self != "", "Self link should be set")
+
+	//
+	// Download file
+	downloadedFile1, err := client.Event.DownloadBinary(
+		context.Background(),
+		event1.ID,
+	)
+	testingutils.Ok(t, err)
+	testingutils.FileEquals(t, testfile1, downloadedFile1)
+
+	//
+	// Remove file
+	resp, err = client.Event.DeleteBinary(
+		context.Background(),
+		event1.ID,
+	)
+
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
+
+	//
+	// Check if binary has been deleted
+	downloadedFile2, err := client.Event.DownloadBinary(
+		context.Background(),
+		event1.ID,
+	)
+	testingutils.Assert(t, err != nil, "An error should be thrown if the binary does not exist")
+	testingutils.Equals(t, "", downloadedFile2)
+}
