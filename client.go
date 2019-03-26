@@ -353,6 +353,11 @@ func (c *Client) SetJSONItems(resp *Response, v interface{}) error {
 		t.Item = *resp.JSON
 	case *OperationCollection:
 		t.Items = resp.JSON.Get("operations").Array()
+
+	case *TenantOption:
+		t.Item = *resp.JSON
+	case *TenantOptionCollection:
+		t.Items = resp.JSON.Get("options").Array()
 	}
 
 	return nil

@@ -2,6 +2,8 @@ package c8y
 
 import (
 	"context"
+
+	"github.com/tidwall/gjson"
 )
 
 // TenantOptionsService does something
@@ -12,18 +14,22 @@ type TenantOption struct {
 	Category string `json:"category,omitempty"`
 	Key      string `json:"key,omitempty"`
 	Value    string `json:"value,omitempty"`
+
+	Item gjson.Result `json:"-"`
 }
 
-// TenantOptionsCollection todo
-type TenantOptionsCollection struct {
+// TenantOptionCollection todo
+type TenantOptionCollection struct {
 	*BaseResponse
 
 	Options []TenantOption `json:"options"`
+
+	Items []gjson.Result `json:"-"`
 }
 
 // GetOptions returns collection of tenant options
-func (s *TenantOptionsService) GetOptions(ctx context.Context, opt *PaginationOptions) (*TenantOptionsCollection, *Response, error) {
-	data := new(TenantOptionsCollection)
+func (s *TenantOptionsService) GetOptions(ctx context.Context, opt *PaginationOptions) (*TenantOptionCollection, *Response, error) {
+	data := new(TenantOptionCollection)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "GET",
 		Path:         "tenant/options",
@@ -117,8 +123,8 @@ func (s *TenantOptionsService) Update(ctx context.Context, category, key string,
 }
 
 // GetSystemOptions returns collection system options
-func (s *TenantOptionsService) GetSystemOptions(ctx context.Context, opt *PaginationOptions) (*TenantOptionsCollection, *Response, error) {
-	data := new(TenantOptionsCollection)
+func (s *TenantOptionsService) GetSystemOptions(ctx context.Context, opt *PaginationOptions) (*TenantOptionCollection, *Response, error) {
+	data := new(TenantOptionCollection)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "GET",
 		Path:         "tenant/system/options",

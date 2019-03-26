@@ -139,14 +139,14 @@ func TestTenantOptionsService_GetOptions(t *testing.T) {
 	)
 
 	/*
-		// TODO: Switch to using .GetOptions, but it does not work at the moment (c8y bug)
+		// TODO: Switch to using .GetOptions, but it does not work at the moment (c8y bug https://support.cumulocity.com/hc/en-us/requests/39514)
 		filteredOptions := map[string]string{}
 		for _, opt := range allOptions.Options {
 			if opt.Category == category {
 				filteredOptions[opt.Key] = opt.Value
 			}
-		}
-	*/
+		} */
+
 	testingutils.Equals(t, "value1", filteredOptions["prop1"])
 	testingutils.Equals(t, "value2", filteredOptions["prop2"])
 }
