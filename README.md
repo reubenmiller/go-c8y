@@ -69,7 +69,6 @@ Or, clone the repository:
         alarmCollection, _, err := client.Alarm.GetAlarms(
             context.Background(),
             &c8y.AlarmCollectionOptions{
-                Source:   testDevice.ID,
                 Severity: "MAJOR",
             },
         )
