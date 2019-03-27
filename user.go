@@ -2,6 +2,8 @@ package c8y
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 
 	"github.com/tidwall/gjson"
 )
@@ -47,6 +49,41 @@ type User struct {
 	Item gjson.Result `json:"-"`
 }
 
+func (u *User) SetFirstName(value string) *User {
+	u.FirstName = value
+	return u
+}
+
+func (u *User) SetLastName(value string) *User {
+	u.LastName = value
+	return u
+}
+
+func (u *User) SetEmail(value string) *User {
+	u.Email = value
+	return u
+}
+
+func (u *User) SetPhone(value string) *User {
+	u.Phone = value
+	return u
+}
+
+func (u *User) SetEnabled(value bool) *User {
+	u.Enabled = value
+	return u
+}
+
+// NewUser returns a new user object
+func NewUser(username string, email string, password string) *User {
+	return &User{
+		Username: username,
+		Email:    email,
+		Enabled:  true,
+		Password: password,
+	}
+}
+
 // GroupReference represents group information
 type GroupReference struct {
 	Self  string `json:"self,omitempty"`
@@ -75,6 +112,10 @@ type Group struct {
 	Name              string                   `json:"name,omitempty"`
 	Roles             *RoleReferenceCollection `json:"roles,omitempty"`
 	DevicePermissions map[string]interface{}   `json:"devicePermissions,omitempty"`
+}
+
+func (g *Group) GetID() string {
+	return fmt.Sprintf("%d", g.ID)
 }
 
 // UserCollection contains information about a list of users
@@ -134,7 +175,7 @@ func (s *UserService) Create(ctx context.Context, body *User) (*User, *Response,
 }
 
 // Update updates an existing user
-func (s *UserService) Update(ctx context.Context, ID string, body *Application) (*User, *Response, error) {
+func (s *UserService) Update(ctx context.Context, ID string, body *User) (*User, *Response, error) {
 	data := new(User)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "PUT",
@@ -154,7 +195,7 @@ func (s *UserService) Delete(ctx context.Context, ID string) (*Response, error) 
 }
 
 // GetCurrentUser returns the current user based on the request's credentials
-func (s *UserService) GetCurrentUser(ctx context.Context, ID string) (*User, *Response, error) {
+func (s *UserService) GetCurrentUser(ctx context.Context) (*User, *Response, error) {
 	data := new(User)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "GET",
@@ -165,7 +206,7 @@ func (s *UserService) GetCurrentUser(ctx context.Context, ID string) (*User, *Re
 }
 
 // UpdateCurrentUser updates the current user based on the request's credentials
-func (s *UserService) UpdateCurrentUser(ctx context.Context, ID string, body *Application) (*User, *Response, error) {
+func (s *UserService) UpdateCurrentUser(ctx context.Context, body *User) (*User, *Response, error) {
 	data := new(User)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "PUT",
@@ -196,8 +237,9 @@ type GroupReferenceCollection struct {
 }
 
 // AddUserToGroup adds the user to an existing group
-func (s *UserService) AddUserToGroup(ctx context.Context, user *User, groupID string) (*User, *Response, error) {
-	data := new(User)
+func (s *UserService) AddUserToGroup(ctx context.Context, user *User, groupID uint64) (*UserReference, *Response, error) {
+	data := new(UserReference)
+	id := strconv.FormatUint(groupID, 10)
 
 	body := &UserReference{
 		User: &User{
@@ -207,7 +249,7 @@ func (s *UserService) AddUserToGroup(ctx context.Context, user *User, groupID st
 
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "POST",
-		Path:         "user/" + s.client.TenantName + "/groups/" + groupID + "/users",
+		Path:         "user/" + s.client.TenantName + "/groups/" + id + "/users",
 		Body:         body,
 		ResponseData: data,
 	})
@@ -215,19 +257,21 @@ func (s *UserService) AddUserToGroup(ctx context.Context, user *User, groupID st
 }
 
 // RemoveUserFromGroup removes a user from a group
-func (s *UserService) RemoveUserFromGroup(ctx context.Context, username string, groupID string) (*Response, error) {
+func (s *UserService) RemoveUserFromGroup(ctx context.Context, username string, groupID uint64) (*Response, error) {
+	id := strconv.FormatUint(groupID, 10)
 	return s.client.SendRequest(ctx, RequestOptions{
 		Method: "DELETE",
-		Path:   "user/" + s.client.TenantName + "/groups/" + groupID + "/users/" + username,
+		Path:   "user/" + s.client.TenantName + "/groups/" + id + "/users/" + username,
 	})
 }
 
 // GetUsersByGroup returns the list of users in the given group
-func (s *UserService) GetUsersByGroup(ctx context.Context, groupID string) (*UserReferenceCollection, *Response, error) {
+func (s *UserService) GetUsersByGroup(ctx context.Context, groupID uint64) (*UserReferenceCollection, *Response, error) {
 	data := new(UserReferenceCollection)
+	id := strconv.FormatUint(groupID, 10)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "GET",
-		Path:         "user/management/groups/" + groupID,
+		Path:         "user/" + s.client.TenantName + "/groups/" + id + "/users",
 		ResponseData: data,
 	})
 	return data, resp, err
@@ -241,28 +285,23 @@ type GroupCollection struct {
 }
 
 // GetGroups returns the list of user groups
-func (s *UserService) GetGroups(ctx context.Context, groupID string) (*GroupCollection, *Response, error) {
+func (s *UserService) GetGroups(ctx context.Context) (*GroupCollection, *Response, error) {
 	data := new(GroupCollection)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "GET",
-		Path:         "user/management/groups",
+		Path:         "user/" + s.client.TenantName + "/groups",
 		ResponseData: data,
 	})
 	return data, resp, err
 }
 
-func (s *UserService) CreateGroup(ctx context.Context, user *User, groupID string) (*User, *Response, error) {
-	data := new(User)
-
-	body := &UserReference{
-		User: &User{
-			Self: user.Self,
-		},
-	}
+// CreateGroup creates a new group with the given name
+func (s *UserService) CreateGroup(ctx context.Context, body *Group) (*Group, *Response, error) {
+	data := new(Group)
 
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "POST",
-		Path:         "user/management/groups",
+		Path:         "user/" + s.client.TenantName + "/groups",
 		Body:         body,
 		ResponseData: data,
 	})
@@ -270,11 +309,12 @@ func (s *UserService) CreateGroup(ctx context.Context, user *User, groupID strin
 }
 
 // GetGroup returns a group by its id
-func (s *UserService) GetGroup(ctx context.Context, ID string) (*Group, *Response, error) {
+func (s *UserService) GetGroup(ctx context.Context, ID uint64) (*Group, *Response, error) {
 	data := new(Group)
+	idStr := strconv.FormatUint(ID, 10)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "GET",
-		Path:         "user/management/groups/" + ID,
+		Path:         "user/" + s.client.TenantName + "/groups/" + idStr,
 		ResponseData: data,
 	})
 	return data, resp, err
@@ -293,19 +333,21 @@ func (s *UserService) GetGroupByName(ctx context.Context, name string) (*Group, 
 
 // DeleteGroup deletes an existing group
 // Info: ADMINS and DEVICES groups can not be deleted
-func (s *UserService) DeleteGroup(ctx context.Context, ID string) (*Response, error) {
+func (s *UserService) DeleteGroup(ctx context.Context, ID uint64) (*Response, error) {
+	idStr := strconv.FormatUint(ID, 10)
 	return s.client.SendRequest(ctx, RequestOptions{
 		Method: "DELETE",
-		Path:   "user/" + s.client.TenantName + "/groups/" + ID,
+		Path:   "user/" + s.client.TenantName + "/groups/" + idStr,
 	})
 }
 
 // UpdateGroup updates properties of an existing group
-func (s *UserService) UpdateGroup(ctx context.Context, ID string, body *Group) (*Group, *Response, error) {
+func (s *UserService) UpdateGroup(ctx context.Context, ID uint64, body *Group) (*Group, *Response, error) {
 	data := new(Group)
+	idStr := strconv.FormatUint(ID, 10)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "PUT",
-		Path:         "user/" + s.client.TenantName + "/groups/" + ID,
+		Path:         "user/" + s.client.TenantName + "/groups/" + idStr,
 		Body:         body,
 		ResponseData: data,
 	})
@@ -377,14 +419,15 @@ func (s *UserService) GetRolesByUser(ctx context.Context, username string) (*Rol
 }
 
 // AssignRoleToGroup adds a role to an existing group
-func (s *UserService) AssignRoleToGroup(ctx context.Context, groupID string, role *GroupReference) (*GroupReference, *Response, error) {
+func (s *UserService) AssignRoleToGroup(ctx context.Context, groupID uint64, role *GroupReference) (*GroupReference, *Response, error) {
 	data := new(GroupReference)
+	id := strconv.FormatUint(groupID, 10)
 	body := &GroupReference{
 		Self: role.Self,
 	}
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "POST",
-		Path:         "user/" + s.client.TenantName + "/groups/" + groupID + "/roles",
+		Path:         "user/" + s.client.TenantName + "/groups/" + id + "/roles",
 		Body:         body,
 		ResponseData: data,
 	})
@@ -392,19 +435,21 @@ func (s *UserService) AssignRoleToGroup(ctx context.Context, groupID string, rol
 }
 
 // UnassignRoleFromGroup removes a role from an existing user
-func (s *UserService) UnassignRoleFromGroup(ctx context.Context, groupID string, roleName string) (*Response, error) {
+func (s *UserService) UnassignRoleFromGroup(ctx context.Context, groupID uint64, roleName string) (*Response, error) {
+	id := strconv.FormatUint(groupID, 10)
 	return s.client.SendRequest(ctx, RequestOptions{
 		Method: "DELETE",
-		Path:   "user/" + s.client.TenantName + "/groups/" + groupID + "/roles/" + roleName,
+		Path:   "user/" + s.client.TenantName + "/groups/" + id + "/roles/" + roleName,
 	})
 }
 
 // GetRolesByGroup returns list of roles of an existing group
-func (s *UserService) GetRolesByGroup(ctx context.Context, groupID string) (*RoleReferenceCollection, *Response, error) {
+func (s *UserService) GetRolesByGroup(ctx context.Context, groupID uint64) (*RoleReferenceCollection, *Response, error) {
 	data := new(RoleReferenceCollection)
+	id := strconv.FormatUint(groupID, 10)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "GET",
-		Path:         "user/" + s.client.TenantName + "/groups/" + groupID + "/roles",
+		Path:         "user/" + s.client.TenantName + "/groups/" + id + "/roles",
 		ResponseData: data,
 	})
 	return data, resp, err
