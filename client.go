@@ -78,6 +78,7 @@ type Client struct {
 	Microservice  *MicroserviceService
 	Retention     *RetentionRuleService
 	TenantOptions *TenantOptionsService
+	User          *UserService
 }
 
 const (
@@ -203,6 +204,7 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 	c.Context = (*ContextService)(&c.common)
 	c.Retention = (*RetentionRuleService)(&c.common)
 	c.TenantOptions = (*TenantOptionsService)(&c.common)
+	c.User = (*UserService)(&c.common)
 	return c
 }
 
@@ -285,6 +287,14 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 			}
 		}
 	}
+
+	/*
+		// TODO: Add debug log level to print out body to logs
+		if options.Body != nil {
+			b, _ := json.Marshal(options.Body)
+			log.Printf("body: %s", b)
+		}
+	*/
 
 	req, err := c.NewRequest(options.Method, options.Path, queryParams, options.Body)
 
