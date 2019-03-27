@@ -131,20 +131,26 @@ func (c *Client) NewRealtimeClientFromServiceUser(tenant string) *RealtimeClient
 	return nil
 }
 
+// NewClientFromEnvironment returns a new c8y client configured from environment variables
+//
+// Environment Variables
+// C8Y_HOST - Cumulocity host server address e.g. https://cumulocity.com
+// C8Y_TENANT - Tenant name e.g. mycompany
+// C8Y_USER - Username e.g. myuser@mycompany.com
+// C8Y_PASSWORD - Password
+//
+func NewClientFromEnvironment(httpClient *http.Client, skipRealtimeClient bool) *Client {
+	baseURL := os.Getenv("C8Y_HOST")
+	tenant, username, password := GetServiceUserFromEnvironment()
+	return NewClient(httpClient, baseURL, tenant, username, password, skipRealtimeClient)
+}
+
 // NewClientUsingBootstrapUserFromEnvironment returns a Cumulocity client using the the bootstrap credentials set in the environment variables
 func NewClientUsingBootstrapUserFromEnvironment(httpClient *http.Client, baseURL string) *Client {
 	tenant, username, password := GetBootstrapUserFromEnvironment()
 
 	client := NewClient(httpClient, baseURL, tenant, username, password, true)
 	client.Microservice.SetServiceUsers()
-
-	// TODO: Setup a realtime client
-	// if !skipRealtimeClient {
-	// 	client.clientMu.Lock()
-	// 	client.Realtime =
-	// 	client.clientMu.Unlock()
-	// }
-
 	return client
 }
 
