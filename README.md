@@ -55,15 +55,14 @@ Or, clone the repository:
     import (
         "context"
         "log"
+
         c8y "github.com/reubenmiller/go-c8y"
     )
 
     func main() {
-        // These should be set to actual values, not just empty strings
-        var host, tenant, username, password string
-
-        // Create the client
-        client := c8y.NewClient(nil, host, tenant, username, password, false)
+        // Create the client from the following environment variables
+        // C8Y_HOST, C8Y_TENANT, C8Y_USER, C8Y_PASSWORD
+        client := c8y.NewClientFromEnvironment(nil, false)
 
         // Get list of alarms with MAJOR Severity
         alarmCollection, _, err := client.Alarm.GetAlarms(
@@ -84,10 +83,24 @@ Or, clone the repository:
 
 2. Execute the application
 
+    On Windows
     ```sh
+    set C8Y_HOST=https://cumulocity.com
+    set C8Y_TENANT=mycompany
+    set C8Y_USER=username
+    set C8Y_PASSWORD=password
+    go run main.go
+    ```
+
+    On Linux/MacOS
+    ```sh
+    export C8Y_HOST=https://cumulocity.com
+    export C8Y_TENANT=mycompany
+    export C8Y_USER=username
+    export C8Y_PASSWORD=password
     go run main.go
     ```
 
 ## Examples
 
-Examples will be added to the project at a later date.
+More examples can be found under the `examples` folder.
