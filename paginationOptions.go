@@ -7,3 +7,10 @@ type PaginationOptions struct {
 
 	WithTotalPages bool `url:"withTotalPages,omitempty"`
 }
+
+// NewPaginationOptions returns a pagination options object with a specified pagesize and WithTotalPages set to false
+func NewPaginationOptions(pageSize int) *PaginationOptions {
+	return &PaginationOptions{
+		PageSize: pageSize,
+	}
+}
