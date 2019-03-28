@@ -63,6 +63,13 @@ type MeasurementCollection struct {
 	Items []gjson.Result `json:"-"`
 }
 
+// Measurements represents multiple measurements
+type Measurements struct {
+	Measurements []MeasurementRepresentation `json:"measurements"`
+
+	Items []gjson.Result `json:"-"`
+}
+
 // GetMeasurements return a measurement collection (multiple measurements)
 func (s *MeasurementService) GetMeasurements(ctx context.Context, opt *MeasurementCollectionOptions) (*MeasurementCollection, *Response, error) {
 	data := new(MeasurementCollection)
@@ -361,9 +368,21 @@ func (d *MeasurementSeriesGroup) MarshalCSV(delimiter string) ([]byte, error) {
 	return []byte(output), nil
 }
 
-// Create posts a new measurement in the platform
+// Create posts a new measurement to the platform
 func (s *MeasurementService) Create(ctx context.Context, body MeasurementRepresentation) (*Measurement, *Response, error) {
 	data := new(Measurement)
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "POST",
+		Path:         "measurement/measurements",
+		Body:         body,
+		ResponseData: data,
+	})
+	return data, resp, err
+}
+
+// CreateMeasurements posts multiple measurement to the platform
+func (s *MeasurementService) CreateMeasurements(ctx context.Context, body *Measurements) (*Measurements, *Response, error) {
+	data := new(Measurements)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "POST",
 		Path:         "measurement/measurements",

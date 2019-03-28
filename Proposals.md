@@ -23,8 +23,7 @@
 ## Cumulocity API Coverage
 
 ### TODO
-* /tenant (tests)
-* POST /measurement/measurements (post multiple measurements)
+
 * Measurements: Allow setting header 'X-Cumulocity-System-Of-Units' to either "imperial" or "metric" (global setting?)
 
 

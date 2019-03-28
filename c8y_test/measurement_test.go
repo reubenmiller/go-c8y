@@ -443,3 +443,47 @@ func TestMeasurementService_DeleteMeasurements(t *testing.T) {
 	testingutils.Equals(t, http.StatusNotFound, resp.StatusCode)
 	testingutils.Equals(t, "", deletedMeas2.ID)
 }
+
+func TestMeasurementService_CreateMeasurements(t *testing.T) {
+	// TODO: Create a cumulocity bug ticket as the platform returns 422 Following mandatory fields should be included: time,source,type [] eventhough the fields are set
+	// Cumulocity support ticket: https://support.cumulocity.com/hc/en-us/requests/39577
+	t.SkipNow()
+
+	client := createTestClient()
+	testDevice, err := createRandomTestDevice()
+
+	valueFragmentType := "nx_common"
+
+	meas1Value, _ := c8y.NewSimpleMeasurementRepresentation(c8y.SimpleMeasurementOptions{
+		SourceID:            testDevice.ID,
+		Type:                "TestSeries1",
+		ValueFragmentType:   valueFragmentType,
+		ValueFragmentSeries: "Signal1",
+		Unit:                "Counter",
+		Value:               1.1,
+	})
+
+	meas2Value, _ := c8y.NewSimpleMeasurementRepresentation(c8y.SimpleMeasurementOptions{
+		SourceID:            testDevice.ID,
+		Type:                "TestSeries2",
+		ValueFragmentType:   valueFragmentType,
+		ValueFragmentSeries: "Signal2",
+		Unit:                "Counter",
+		Value:               2.0,
+	})
+
+	measValues := &c8y.Measurements{
+		Measurements: []c8y.MeasurementRepresentation{
+			*meas1Value,
+			*meas2Value,
+		},
+	}
+
+	measurements, resp, err := client.Measurement.CreateMeasurements(
+		context.Background(),
+		measValues,
+	)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, 2, len(measurements.Measurements))
+}
