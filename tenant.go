@@ -13,16 +13,23 @@ type TenantSummaryOptions struct {
 	DateTo   string `url:"dateTill,omitempty"`
 }
 
+type TenantStatisticsOptions struct {
+	DateFrom string `url:"dateFrom,omitempty"`
+	DateTo   string `url:"dateTill,omitempty"`
+
+	PaginationOptions
+}
+
 // TenantSummary todo
 type TenantSummary struct {
 	Self                    string   `json:"self"`
 	Day                     string   `json:"day"`
-	DeviceCount             int      `json:"deviceCount"`
-	DeviceWithChildrenCount int      `json:"deviceWithChildrenCount"`
-	DeviceEndpointCount     int      `json:"deviceEndpointCount"`
-	DeviceRequestCount      int      `json:"deviceRequestCount"`
-	RequestCount            int      `json:"requestCount"`
-	StorageSize             int      `json:"storageSize"`
+	DeviceCount             int64    `json:"deviceCount"`
+	DeviceWithChildrenCount int64    `json:"deviceWithChildrenCount"`
+	DeviceEndpointCount     int64    `json:"deviceEndpointCount"`
+	DeviceRequestCount      int64    `json:"deviceRequestCount"`
+	RequestCount            int64    `json:"requestCount"`
+	StorageSize             int64    `json:"storageSize"`
 	SubscribedApplications  []string `json:"subscribedApplications"`
 }
 
@@ -40,17 +47,45 @@ type CurrentTenant struct {
 }
 
 type TenantUsageStatisticsSummary struct {
-	DeviceCount             int      `json:"deviceCount"`
-	DeviceWithChildrenCount int      `json:"deviceWithChildrenCount"`
-	DeviceEndpointCount     int      `json:"deviceEndpointCount"`
-	DeviceRequestCount      int      `json:"deviceRequestCount"`
-	RequestCount            int      `json:"requestCount"`
-	StorageSize             int      `json:"storageSize"`
+	DeviceCount             int64    `json:"deviceCount"`
+	DeviceWithChildrenCount int64    `json:"deviceWithChildrenCount"`
+	DeviceEndpointCount     int64    `json:"deviceEndpointCount"`
+	DeviceRequestCount      int64    `json:"deviceRequestCount"`
+	RequestCount            int64    `json:"requestCount"`
+	StorageSize             int64    `json:"storageSize"`
 	SubscribedApplications  []string `json:"subscribedApplications"`
 }
 
-// GetTenantSummary returns summary of requests and database usage from the start of this month until now.
-func (s *TenantService) GetTenantSummary(ctx context.Context, opt *TenantSummaryOptions) (*TenantSummary, *Response, error) {
+type TenantUsageStatisticsSummaryExtended struct {
+	DeviceCount             int64    `json:"deviceCount,omitempty"`
+	DeviceWithChildrenCount int64    `json:"deviceWithChildrenCount,omitempty"`
+	DeviceEndpointCount     int64    `json:"deviceEndpointCount,omitempty"`
+	DeviceRequestCount      int64    `json:"deviceRequestCount,omitempty"`
+	RequestCount            int64    `json:"requestCount,omitempty"`
+	StorageSize             int64    `json:"storageSize,omitempty"`
+	SubscribedApplications  []string `json:"subscribedApplications,omitempty"`
+
+	// All
+	TenantID                          string    `json:"tenantId,omitempty"`
+	ParentTenantID                    string    `json:"parentTenantId,omitempty"`
+	TenantDomain                      string    `json:"tenantDomain,omitempty"`
+	InventoriesUpdateCount            int64     `json:"inventoriesUpdateCount,omitempty"`
+	CreationTime                      Timestamp `json:"creationTime,omitempty"`
+	EventsCreatedCount                int64     `json:"eventsCreatedCount,omitempty"`
+	TotalResourceCreateAndUpdateCount int64     `json:"totalResourceCreateAndUpdateCount,omitempty"`
+	PeakDeviceCount                   int64     `json:"peakDeviceCount,omitempty"`
+	TenantCompany                     int64     `json:"tenantCompany,omitempty"`
+	InventoriesCreatedCount           int64     `json:"inventoriesCreatedCount,omitempty"`
+	MeasurementsCreatedCount          int64     `json:"measurementsCreatedCount,omitempty"`
+	PeakDeviceWithChildrenCount       int64     `json:"peakDeviceWithChildrenCount,omitempty"`
+	PeakStorageSize                   int64     `json:"peakStorageSize,omitempty"`
+	AlarmsUpdatedCount                int64     `json:"alarmsUpdatedCount,omitempty"`
+	EventsUpdatedCount                int64     `json:"eventsUpdatedCount,omitempty"`
+	AlarmsCreatedCount                int64     `json:"alarmsCreatedCount,omitempty"`
+}
+
+// GetTenantStatisticsSummary returns summary of requests and database usage from the start of this month until now.
+func (s *TenantService) GetTenantStatisticsSummary(ctx context.Context, opt *TenantSummaryOptions) (*TenantSummary, *Response, error) {
 	data := new(TenantSummary)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "GET",
@@ -62,7 +97,7 @@ func (s *TenantService) GetTenantSummary(ctx context.Context, opt *TenantSummary
 }
 
 // GetTenantStatistics returns statics for the current tenant between the specified days
-func (s *TenantService) GetTenantStatistics(ctx context.Context, opt *TenantSummaryOptions) (*TenantUsageStatisticsCollection, *Response, error) {
+func (s *TenantService) GetTenantStatistics(ctx context.Context, opt *TenantStatisticsOptions) (*TenantUsageStatisticsCollection, *Response, error) {
 	data := new(TenantUsageStatisticsCollection)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "GET",
@@ -73,9 +108,10 @@ func (s *TenantService) GetTenantStatistics(ctx context.Context, opt *TenantSumm
 	return data, resp, err
 }
 
-// GetAllTenantsSummary returns the usage statistics from all of the tenants
-func (s *TenantService) GetAllTenantsSummary(ctx context.Context, opt *TenantSummaryOptions) ([]TenantUsageStatisticsSummary, *Response, error) {
-	data := make([]TenantUsageStatisticsSummary, 0)
+// GetAllTenantsStatisticsSummary returns the usage statistics from all of the subtenants
+// Note: It will only returns results if the current tenant has subtenants or it is called from the managed tenant
+func (s *TenantService) GetAllTenantsStatisticsSummary(ctx context.Context, opt *TenantStatisticsOptions) ([]TenantUsageStatisticsSummaryExtended, *Response, error) {
+	data := make([]TenantUsageStatisticsSummaryExtended, 0)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "GET",
 		Path:         "tenant/statistics/allTenantsSummary",
@@ -98,28 +134,37 @@ func (s *TenantService) GetCurrentTenant(ctx context.Context) (*CurrentTenant, *
 
 type ApplicationReferenceCollection struct {
 	*BaseResponse
-	References []Application `json:"references,omitempty"`
+	References []ApplicationReference `json:"references,omitempty"`
+	Self       string                 `json:"self,omitempty"`
 }
 
 // Tenant [application/vnd.com.nsn.cumulocity.tenant+json]
 type Tenant struct {
-	ID                     string                       `json:"id,omitempty"`
-	Self                   string                       `json:"self,omitempty"`
-	Status                 string                       `json:"status,omitempty"`
-	AdminName              string                       `json:"adminName,omitempty"`
-	AdminEmail             string                       `json:"adminEmail,omitempty"`
-	AllowCreateTenants     bool                         `json:"allowCreateTenants,omitempty"`
-	StorageLimitPerDevice  int64                        `json:"storageLimitPerDevice,omitempty"`
-	AdminPassword          string                       `json:"adminPassword,omitempty"`
-	SendPasswordResetEmail bool                         `json:"sendPasswordResetEmail,omitempty"`
-	Domain                 string                       `json:"domain,omitempty"`
-	Company                string                       `json:"company,omitempty"`
-	ContactName            string                       `json:"contactName,omitempty"`
-	ContactPhone           string                       `json:"contactPhone,omitempty"`
-	Applications           []ApplicationTenantReference `json:"applications,omitempty"`
-	OwnedApplications      []ApplicationTenantReference `json:"ownedApplications,omitempty"`
-	CustomProperties       interface{}                  `json:"customProperties,omitempty"`
-	Parent                 string                       `json:"parent,omitempty"`
+	ID                     string                          `json:"id,omitempty"`
+	Self                   string                          `json:"self,omitempty"`
+	Status                 string                          `json:"status,omitempty"`
+	AdminName              string                          `json:"adminName,omitempty"`
+	AdminEmail             string                          `json:"adminEmail,omitempty"`
+	AllowCreateTenants     bool                            `json:"allowCreateTenants,omitempty"`
+	StorageLimitPerDevice  int64                           `json:"storageLimitPerDevice,omitempty"`
+	AdminPassword          string                          `json:"adminPassword,omitempty"`
+	SendPasswordResetEmail bool                            `json:"sendPasswordResetEmail,omitempty"`
+	Domain                 string                          `json:"domain,omitempty"`
+	Company                string                          `json:"company,omitempty"`
+	ContactName            string                          `json:"contactName,omitempty"`
+	ContactPhone           string                          `json:"contactPhone,omitempty"`
+	Applications           *ApplicationReferenceCollection `json:"applications,omitempty"`
+	OwnedApplications      *ApplicationReferenceCollection `json:"ownedApplications,omitempty"`
+	CustomProperties       interface{}                     `json:"customProperties,omitempty"`
+	Parent                 string                          `json:"parent,omitempty"`
+}
+
+// NewTenant returns a tenant object with the required fields
+func NewTenant(company, domain string) *Tenant {
+	return &Tenant{
+		Company: company,
+		Domain:  domain,
+	}
 }
 
 // TenantCollection todo
@@ -130,8 +175,8 @@ type TenantCollection struct {
 }
 
 type ApplicationReference struct {
-	Self      string `json:"self,omitempty"`
-	Reference string `json:"reference,omitempty"`
+	Self        string       `json:"self,omitempty"`
+	Application *Application `json:"application"`
 }
 
 // GetTenants returns collection of tenants
@@ -182,7 +227,7 @@ func (s *TenantService) Update(ctx context.Context, ID string, body *Tenant) (*T
 }
 
 // Delete removes a tenant and all of its data
-func (s *TenantService) Delete(ctx context.Context, ID string, body *Tenant) (*Response, error) {
+func (s *TenantService) Delete(ctx context.Context, ID string) (*Response, error) {
 	return s.client.SendRequest(ctx, RequestOptions{
 		Method: "DELETE",
 		Path:   "tenant/tenants/" + ID,
@@ -194,8 +239,14 @@ func (s *TenantService) Delete(ctx context.Context, ID string, body *Tenant) (*R
 //
 
 // AddApplicationReference adds a new tenant
-func (s *TenantService) AddApplicationReference(ctx context.Context, tenantID string, body *ApplicationTenantReference) (*ApplicationReference, *Response, error) {
+// Note: Can only be called from the management tenant
+func (s *TenantService) AddApplicationReference(ctx context.Context, tenantID string, appSelfReference string) (*ApplicationReference, *Response, error) {
 	data := new(ApplicationReference)
+	body := &ApplicationReference{
+		Application: &Application{
+			Self: appSelfReference,
+		},
+	}
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "POST",
 		Path:         "tenant/tenants/" + tenantID + "/applications",
@@ -206,6 +257,7 @@ func (s *TenantService) AddApplicationReference(ctx context.Context, tenantID st
 }
 
 // GetApplicationReferences returns list of applications associated with the tenant
+// Note: Can only be called from the management tenant
 func (s *TenantService) GetApplicationReferences(ctx context.Context, tenantID string, opts *PaginationOptions) (*ApplicationReferenceCollection, *Response, error) {
 	data := new(ApplicationReferenceCollection)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
@@ -218,6 +270,7 @@ func (s *TenantService) GetApplicationReferences(ctx context.Context, tenantID s
 }
 
 // DeleteApplicationReference removes an application references from the tenant
+// Note: Can only be called from the management tenant
 func (s *TenantService) DeleteApplicationReference(ctx context.Context, tenantID string, applicationID string) (*Response, error) {
 	return s.client.SendRequest(ctx, RequestOptions{
 		Method: "DELETE",
