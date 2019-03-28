@@ -266,12 +266,13 @@ func (s *UserService) RemoveUserFromGroup(ctx context.Context, username string, 
 }
 
 // GetUsersByGroup returns the list of users in the given group
-func (s *UserService) GetUsersByGroup(ctx context.Context, groupID uint64) (*UserReferenceCollection, *Response, error) {
+func (s *UserService) GetUsersByGroup(ctx context.Context, groupID uint64, opt *UserOptions) (*UserReferenceCollection, *Response, error) {
 	data := new(UserReferenceCollection)
 	id := strconv.FormatUint(groupID, 10)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "GET",
 		Path:         "user/" + s.client.TenantName + "/groups/" + id + "/users",
+		Query:        opt,
 		ResponseData: data,
 	})
 	return data, resp, err
@@ -284,12 +285,18 @@ type GroupCollection struct {
 	Groups []Group `json:"groups,omitempty"`
 }
 
+// GroupOptions available options when querying a list of groups
+type GroupOptions struct {
+	PaginationOptions
+}
+
 // GetGroups returns the list of user groups
-func (s *UserService) GetGroups(ctx context.Context) (*GroupCollection, *Response, error) {
+func (s *UserService) GetGroups(ctx context.Context, opt *GroupOptions) (*GroupCollection, *Response, error) {
 	data := new(GroupCollection)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "GET",
 		Path:         "user/" + s.client.TenantName + "/groups",
+		Query:        opt,
 		ResponseData: data,
 	})
 	return data, resp, err
@@ -354,11 +361,13 @@ func (s *UserService) UpdateGroup(ctx context.Context, ID uint64, body *Group) (
 	return data, resp, err
 }
 
-func (s *UserService) GetGroupsByUser(ctx context.Context, username string) (*GroupReferenceCollection, *Response, error) {
+// GetGroupsByUser returns list of groups assigned to a given user
+func (s *UserService) GetGroupsByUser(ctx context.Context, username string, opt *GroupOptions) (*GroupReferenceCollection, *Response, error) {
 	data := new(GroupReferenceCollection)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "GET",
 		Path:         "user/" + s.client.TenantName + "/users/" + username + "/groups",
+		Query:        opt,
 		ResponseData: data,
 	})
 	return data, resp, err
@@ -374,21 +383,30 @@ type RoleCollection struct {
 	Roles []Role `json:"roles,omitempty"`
 }
 
+// RoleOptions options to be used when querying for roles
+type RoleOptions struct {
+	PaginationOptions
+}
+
 // GetRoles returns a list of existing roles
-func (s *UserService) GetRoles(ctx context.Context, username string) (*RoleCollection, *Response, error) {
+func (s *UserService) GetRoles(ctx context.Context, opt *RoleOptions) (*RoleCollection, *Response, error) {
 	data := new(RoleCollection)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "GET",
 		Path:         "user/roles",
+		Query:        opt,
 		ResponseData: data,
 	})
 	return data, resp, err
 }
 
-func (s *UserService) AssignRoleToUser(ctx context.Context, username string, role *RoleReference) (*RoleReference, *Response, error) {
+func (s *UserService) AssignRoleToUser(ctx context.Context, username string, roleSelfReference string) (*RoleReference, *Response, error) {
 	data := new(RoleReference)
+
 	body := &RoleReference{
-		Self: role.Self,
+		Role: &Role{
+			Self: roleSelfReference,
+		},
 	}
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "POST",
@@ -408,22 +426,25 @@ func (s *UserService) UnassignRoleFromUser(ctx context.Context, username string,
 }
 
 // GetRolesByUser returns list of roles of an existing user
-func (s *UserService) GetRolesByUser(ctx context.Context, username string) (*RoleReferenceCollection, *Response, error) {
+func (s *UserService) GetRolesByUser(ctx context.Context, username string, opt *RoleOptions) (*RoleReferenceCollection, *Response, error) {
 	data := new(RoleReferenceCollection)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "GET",
 		Path:         "user/" + s.client.TenantName + "/users/" + username + "/roles",
+		Query:        opt,
 		ResponseData: data,
 	})
 	return data, resp, err
 }
 
 // AssignRoleToGroup adds a role to an existing group
-func (s *UserService) AssignRoleToGroup(ctx context.Context, groupID uint64, role *GroupReference) (*GroupReference, *Response, error) {
-	data := new(GroupReference)
+func (s *UserService) AssignRoleToGroup(ctx context.Context, groupID uint64, roleSelfReference string) (*RoleReference, *Response, error) {
+	data := new(RoleReference)
 	id := strconv.FormatUint(groupID, 10)
-	body := &GroupReference{
-		Self: role.Self,
+	body := &RoleReference{
+		Role: &Role{
+			Self: roleSelfReference,
+		},
 	}
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "POST",
@@ -444,12 +465,13 @@ func (s *UserService) UnassignRoleFromGroup(ctx context.Context, groupID uint64,
 }
 
 // GetRolesByGroup returns list of roles of an existing group
-func (s *UserService) GetRolesByGroup(ctx context.Context, groupID uint64) (*RoleReferenceCollection, *Response, error) {
+func (s *UserService) GetRolesByGroup(ctx context.Context, groupID uint64, opt *RoleOptions) (*RoleReferenceCollection, *Response, error) {
 	data := new(RoleReferenceCollection)
 	id := strconv.FormatUint(groupID, 10)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "GET",
 		Path:         "user/" + s.client.TenantName + "/groups/" + id + "/roles",
+		Query:        opt,
 		ResponseData: data,
 	})
 	return data, resp, err

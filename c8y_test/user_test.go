@@ -108,6 +108,28 @@ func TestUserService_GetGroupByName(t *testing.T) {
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
 	testingutils.Equals(t, "admins", group.Name)
+
+	//
+	// Get group by id
+	groupByID, resp, err := client.User.GetGroup(
+		context.Background(),
+		group.ID,
+	)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, "admins", groupByID.Name)
+}
+
+func TestUserService_GetCurrentUser(t *testing.T) {
+	client := createTestClient()
+
+	user, resp, err := client.User.GetCurrentUser(
+		context.Background(),
+	)
+
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, client.Username, user.Username)
 }
 
 func TestUserService_UpdateCurrentUser(t *testing.T) {
@@ -163,6 +185,9 @@ func TestUserService_AddUserToGroup(t *testing.T) {
 	userReferences, resp, err := client.User.GetUsersByGroup(
 		context.Background(),
 		group.ID,
+		&c8y.UserOptions{
+			PaginationOptions: *c8y.NewPaginationOptions(100),
+		},
 	)
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
@@ -215,15 +240,191 @@ func TestUserService_GetUsersByGroup(t *testing.T) {
 	userReferences, resp, err := client.User.GetUsersByGroup(
 		context.Background(),
 		group.ID,
+		&c8y.UserOptions{
+			PaginationOptions: *c8y.NewPaginationOptions(100),
+		},
 	)
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
 	testingutils.Assert(t, len(userReferences.References) > 0, "Should be at least one user")
+	testingutils.Equals(t, userReferences.References[0].User.Username, currentUser.Username)
+
+	// Update temp group
+	updatedGroup, resp, err := client.User.UpdateGroup(
+		context.Background(),
+		group.ID,
+		&c8y.Group{
+			Name: "CustomCIGroup-UpdatedName",
+		},
+	)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, "CustomCIGroup-UpdatedName", updatedGroup.Name)
 
 	// Remove temp group
 	resp, err = client.User.DeleteGroup(
 		context.Background(),
 		group.ID,
+	)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
+}
+
+func TestUserService_GetGroups(t *testing.T) {
+	client := createTestClient()
+
+	groupCollection, resp, err := client.User.GetGroups(
+		context.Background(),
+		&c8y.GroupOptions{
+			PaginationOptions: *c8y.NewPaginationOptions(100),
+		},
+	)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Assert(t, len(groupCollection.Groups) > 0, "Should have at least 1 group reference")
+	testingutils.Assert(t, groupCollection.Groups[0].Name != "", "Group reference name should not be empty")
+}
+
+func TestUserService_GetGroupsByUser(t *testing.T) {
+	client := createTestClient()
+
+	groupCollection, resp, err := client.User.GetGroupsByUser(
+		context.Background(),
+		client.Username,
+		&c8y.GroupOptions{
+			PaginationOptions: *c8y.NewPaginationOptions(100),
+		},
+	)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Assert(t, len(groupCollection.References) > 0, "Should have at least 1 group reference")
+	testingutils.Assert(t, groupCollection.References[0].Group.Name != "", "Group reference name should not be empty")
+}
+
+/* ROLES */
+func TestUserService_GetRoles(t *testing.T) {
+	client := createTestClient()
+	roleCollection, resp, err := client.User.GetRoles(
+		context.Background(),
+		&c8y.RoleOptions{
+			PaginationOptions: *c8y.NewPaginationOptions(100),
+		},
+	)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Assert(t, len(roleCollection.Roles) > 0, "Should return at least 1 role")
+	testingutils.Assert(t, roleCollection.Roles[0].Name != "", "Name should not be empty")
+	testingutils.Assert(t, roleCollection.Roles[0].ID != "", "ID should not be empty")
+	testingutils.Assert(t, roleCollection.Roles[0].Self != "", "Self should not be empty")
+}
+
+func TestUserService_AssignRoleToUser(t *testing.T) {
+	client := createTestClient()
+
+	roleCollection, resp, err := client.User.GetRoles(
+		context.Background(),
+		&c8y.RoleOptions{
+			PaginationOptions: *c8y.NewPaginationOptions(100),
+		},
+	)
+	testingutils.Ok(t, err)
+
+	// Assign role to user
+	roleRef, resp, err := client.User.AssignRoleToUser(
+		context.Background(),
+		client.Username,
+		roleCollection.Roles[0].Self,
+	)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, roleCollection.Roles[0].Name, roleRef.Role.Name)
+
+	// Get roles by user
+	userRoleCollection, resp, err := client.User.GetRolesByUser(
+		context.Background(),
+		client.Username,
+		&c8y.RoleOptions{
+			PaginationOptions: *c8y.NewPaginationOptions(100),
+		},
+	)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Assert(t, len(userRoleCollection.References) > 0, "Should have at least 1 reference")
+	// Check if the role has been assigned to the user
+	roleExists := false
+	for _, ref := range userRoleCollection.References {
+		if roleRef.Role.Name == ref.Role.Name {
+			roleExists = true
+		}
+	}
+	testingutils.Equals(t, true, roleExists)
+
+	// Unassign role to user
+	resp, err = client.User.UnassignRoleFromUser(
+		context.Background(),
+		client.Username,
+		roleRef.Role.Name,
+	)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
+}
+
+func TestUserService_AssignRoleToGroup(t *testing.T) {
+	client := createTestClient()
+
+	roleCollection, resp, err := client.User.GetRoles(
+		context.Background(),
+		&c8y.RoleOptions{
+			PaginationOptions: *c8y.NewPaginationOptions(100),
+		},
+	)
+	testingutils.Ok(t, err)
+
+	// Get group
+	group, resp, err := client.User.GetGroupByName(
+		context.Background(),
+		"devices",
+	)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Assert(t, group.Name != "", "Group name should not be empty")
+	testingutils.Assert(t, group.ID > 0, "Group ID should be greater than 0")
+
+	// Assign role to user
+	roleRef, resp, err := client.User.AssignRoleToGroup(
+		context.Background(),
+		group.ID,
+		roleCollection.Roles[0].Self,
+	)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, roleCollection.Roles[0].Name, roleRef.Role.Name)
+
+	// Get roles by user
+	groupRoleCollection, resp, err := client.User.GetRolesByGroup(
+		context.Background(),
+		group.ID,
+		&c8y.RoleOptions{
+			PaginationOptions: *c8y.NewPaginationOptions(100),
+		},
+	)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Assert(t, len(groupRoleCollection.References) > 0, "Should have at least 1 reference")
+	// Check if the role has been assigned to the user
+	roleExists := false
+	for _, ref := range groupRoleCollection.References {
+		if roleRef.Role.Name == ref.Role.Name {
+			roleExists = true
+		}
+	}
+	testingutils.Equals(t, true, roleExists)
+
+	// Unassign role to user
+	resp, err = client.User.UnassignRoleFromGroup(
+		context.Background(),
+		group.ID,
+		roleRef.Role.Name,
 	)
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
