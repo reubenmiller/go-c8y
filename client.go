@@ -354,6 +354,8 @@ func (c *Client) SetJSONItems(resp *Response, v interface{}) error {
 
 	case *Measurement:
 		t.Item = *resp.JSON
+	case *Measurements:
+		t.Items = resp.JSON.Get("measurements").Array()
 	case *MeasurementCollection:
 		t.Items = resp.JSON.Get("measurements").Array()
 
@@ -506,9 +508,24 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 
 	log.Printf("Sending request: %s %s", req.Method, req.URL.String())
 
+	// Log the body (if applicable)
 	if req != nil && req.Body != nil {
-		if body, err := ioutil.ReadAll(io.LimitReader(req.Body, 2048)); err == nil {
-			log.Printf("Body: %s", body)
+		switch v := req.Body.(type) {
+		case *os.File:
+			// Do nothing, because if you read the buffer you need to recreate the body again
+			// But if you wanted to do, you could do it with
+			/* bodyBytes, _ := ioutil.ReadAll(v)
+			req.Body.Close() //  must close
+			req.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+			log.Printf("Body (file): %s", bodyBytes) */
+		default:
+			// if body, err := ioutil.ReadAll(io.LimitReader(v, 4096)); err == nil {
+			// Don't print out multie part forms, but everything else is fine.
+			if !strings.Contains(req.Header.Get("Content-Type"), "multipart/form-data") {
+				if body, err := ioutil.ReadAll(v); err == nil {
+					log.Printf("Body: %s", body)
+				}
+			}
 		}
 	}
 
