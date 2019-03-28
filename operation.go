@@ -31,30 +31,13 @@ type OperationCollection struct {
 	Items []gjson.Result `json:"-"`
 }
 
-// OperationStatus todo
-type OperationStatus int
-
-// Operation Status Contansts
+// Cumulocity Operation Status states
 const (
-	Pending OperationStatus = iota
-	Executing
-	Failed
-	Success
+	OperationStatusPending    = "PENDING"
+	OperationStatusExecuting  = "EXECUTING"
+	OperationStatusSuccessful = "SUCCESSFUL"
+	OperationStatusFailed     = "FAILED"
 )
-
-func (s OperationStatus) String() string {
-	switch s {
-	case Pending:
-		return "PENDING"
-	case Executing:
-		return "EXECUTING"
-	case Failed:
-		return "FAILED"
-	case Success:
-		return "SUCCESSFUL"
-	}
-	return ""
-}
 
 // OperationUpdateOptions todo
 type OperationUpdateOptions struct {

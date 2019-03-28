@@ -9,6 +9,21 @@ import (
 // AlarmService provides api to get/set/delete alarms in Cumulocity
 type AlarmService service
 
+// Cumulocity alarm Serverity types
+const (
+	AlarmSeverityCritical = "CRITICAL"
+	AlarmSeverityMajor    = "MAJOR"
+	AlarmSeverityMinor    = "MINOR"
+	AlarmSeverityWarning  = "WARNING"
+)
+
+//  Cumulocity alarm status states
+const (
+	AlarmStatusActive       = "ACTIVE"
+	AlarmStatusAcknowledged = "ACKNOWLEDGED"
+	AlarmStatusCleared      = "CLEARED"
+)
+
 // AlarmCollectionOptions to use when search for alarms
 type AlarmCollectionOptions struct {
 	// Source device to filter measurements by
