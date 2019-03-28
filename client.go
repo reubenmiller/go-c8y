@@ -288,14 +288,6 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 		}
 	}
 
-	/*
-		// TODO: Add debug log level to print out body to logs
-		if options.Body != nil {
-			b, _ := json.Marshal(options.Body)
-			log.Printf("body: %s", b)
-		}
-	*/
-
 	req, err := c.NewRequest(options.Method, options.Path, queryParams, options.Body)
 
 	if req.Header.Get("Accept") == "" {
@@ -512,7 +504,13 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 		req.Header.Set("Authorization", authToken.(string))
 	}
 
-	log.Println("Sending request: ", req.URL.Path)
+	log.Printf("Sending request: %s %s", req.Method, req.URL.String())
+
+	if req != nil && req.Body != nil {
+		if body, err := ioutil.ReadAll(io.LimitReader(req.Body, 2048)); err == nil {
+			log.Printf("Body: %s", body)
+		}
+	}
 
 	resp, err := c.client.Do(req)
 	if err != nil {
