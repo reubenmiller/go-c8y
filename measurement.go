@@ -386,6 +386,7 @@ func (s *MeasurementService) CreateMeasurements(ctx context.Context, body *Measu
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "POST",
 		Path:         "measurement/measurements",
+		ContentType:  "application/vnd.com.nsn.cumulocity.measurementCollection+json",
 		Body:         body,
 		ResponseData: data,
 	})

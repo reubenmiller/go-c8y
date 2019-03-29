@@ -267,6 +267,8 @@ type RequestOptions struct {
 	Method       string
 	Host         string
 	Path         string
+	Accept       string
+	ContentType  string
 	Query        interface{} // Use string if you want
 	Body         interface{}
 	ResponseData interface{}
@@ -293,7 +295,15 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 	req, err := c.NewRequest(options.Method, options.Path, queryParams, options.Body)
 
 	if req.Header.Get("Accept") == "" {
-		req.Header.Set("Accept", "application/json")
+		acceptType := "application/json"
+		if options.Accept != "" {
+			acceptType = options.Accept
+		}
+		req.Header.Set("Accept", acceptType)
+	}
+
+	if options.ContentType != "" {
+		req.Header.Set("Content-Type", options.ContentType)
 	}
 
 	if options.Host != "" {

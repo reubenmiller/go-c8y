@@ -445,10 +445,6 @@ func TestMeasurementService_DeleteMeasurements(t *testing.T) {
 }
 
 func TestMeasurementService_CreateMeasurements(t *testing.T) {
-	// TODO: Create a cumulocity bug ticket as the platform returns 422 Following mandatory fields should be included: time,source,type [] eventhough the fields are set
-	// Cumulocity support ticket: https://support.cumulocity.com/hc/en-us/requests/39577
-	t.SkipNow()
-
 	client := createTestClient()
 	testDevice, err := createRandomTestDevice()
 
