@@ -20,6 +20,20 @@ type ApplicationOptions struct {
 	PaginationOptions
 }
 
+//  Cumulocity Application Types
+const (
+	ApplicationTypeMicroservice = "MICROSERVICE"
+	ApplicationTypeExternal     = "EXTERNAL"
+	ApplicationTypeHosted       = "HOSTED"
+	ApplicationTypeApamaCEPRule = "APAMA_CEP_RULE"
+)
+
+//  Cumulocity Application Availability values
+const (
+	ApplicationAvailabilityMarket  = "MARKET"
+	ApplicationAvailabilityPrivate = "PRIVATE"
+)
+
 // Application todo
 type Application struct {
 	ID                string            `json:"id,omitempty"`
@@ -35,7 +49,19 @@ type Application struct {
 	ResourcesPassword string            `json:"resourcesPassword,omitempty"`
 	Owner             *ApplicationOwner `json:"owner,omitempty"`
 
+	// Microservice roles
+	RequiredRoles []string `json:"requiredRoles"`
+
 	Item gjson.Result `json:"-"`
+}
+
+// NewApplicationMicroservice returns a new microservice application representation
+func NewApplicationMicroservice(name string) *Application {
+	return &Application{
+		Name: name,
+		Key:  name + "-microservice-key",
+		Type: ApplicationTypeMicroservice,
+	}
 }
 
 // ApplicationOwner application owner
@@ -182,7 +208,7 @@ func (s *ApplicationService) GetCurrentApplication(ctx context.Context) (*Applic
 
 // ApplicationUser is the representation of the bootstrap user for microservices
 type ApplicationUser struct {
-	Name     string `json:"name,omitempty"`
+	Username string `json:"name,omitempty"`
 	Password string `json:"password,omitempty"`
 	Tenant   string `json:"tenant,omitempty"`
 }
