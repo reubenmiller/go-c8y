@@ -122,30 +122,32 @@ func TestTenantOptionsService_GetOptions(t *testing.T) {
 	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
 
 	//
-	// Update multiple options
+	// Get options by category
+	filteredOptionsByCategory, resp, err := client.TenantOptions.GetOptionsForCategory(
+		context.Background(),
+		category,
+	)
+	testingutils.Equals(t, "value1", filteredOptionsByCategory["prop1"])
+	testingutils.Equals(t, "value2", filteredOptionsByCategory["prop2"])
+
+	//
+	// Get all options and filter by category
+	// TODO: Switch to using .GetOptions, but it does not work at the moment (c8y bug https://support.cumulocity.com/hc/en-us/requests/39514)
+	t.SkipNow()
 	allOptions, resp, err := client.TenantOptions.GetOptions(
 		context.Background(),
-		&c8y.PaginationOptions{
-			PageSize: 100,
-		},
+		c8y.NewPaginationOptions(100),
 	)
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
 	testingutils.Assert(t, len(allOptions.Options) >= 2, "Should be at least 2 options")
 
-	filteredOptions, resp, err := client.TenantOptions.GetOptionsForCategory(
-		context.Background(),
-		category,
-	)
-
-	/*
-		// TODO: Switch to using .GetOptions, but it does not work at the moment (c8y bug https://support.cumulocity.com/hc/en-us/requests/39514)
-		filteredOptions := map[string]string{}
-		for _, opt := range allOptions.Options {
-			if opt.Category == category {
-				filteredOptions[opt.Key] = opt.Value
-			}
-		} */
+	filteredOptions := map[string]string{}
+	for _, opt := range allOptions.Options {
+		if opt.Category == category {
+			filteredOptions[opt.Key] = opt.Value
+		}
+	}
 
 	testingutils.Equals(t, "value1", filteredOptions["prop1"])
 	testingutils.Equals(t, "value2", filteredOptions["prop2"])

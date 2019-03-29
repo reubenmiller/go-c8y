@@ -33,6 +33,7 @@ func (s *TenantOptionsService) GetOptions(ctx context.Context, opt *PaginationOp
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "GET",
 		Path:         "tenant/options",
+		Accept:       "application/vnd.com.nsn.cumulocity.optionCollection+json",
 		Query:        opt,
 		ResponseData: data,
 	})
