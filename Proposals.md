@@ -30,5 +30,4 @@
 # Microservice Features TODO
 
 ## Lifecyle hooks
- * onConfigurationUpdateFunc
  * onRegisterFunc

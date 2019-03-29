@@ -140,8 +140,25 @@ func (m *Microservice) SaveConfiguration(rawConfiguration string) error {
 	return nil
 }
 
+// DeleteMicroserviceAgent removes the microservice's agent managed object if it exists.
+func (m *Microservice) DeleteMicroserviceAgent() error {
+	if m.AgentID == "" {
+		return nil
+	}
+	zap.S().Infof("Deleting microservice's agent managed object [id=%s]", m.AgentID)
+
+	_, err := m.Client.Inventory.Delete(
+		m.WithServiceUser(),
+		m.AgentID,
+	)
+	if err != nil {
+		zap.S().Errorf("Could not delete microservice's agent managed object. %s", err)
+	}
+	return err
+}
+
 // RegisterMicroserviceAgent registers an agent representation of the microservice
-func (m *Microservice) RegisterMicroserviceAgent() {
+func (m *Microservice) RegisterMicroserviceAgent() error {
 	zap.L().Info("Registering microservice agent")
 
 	mo, err := m.CreateMicroserviceRepresentation()
@@ -166,6 +183,7 @@ func (m *Microservice) RegisterMicroserviceAgent() {
 		m.StartOperationPolling()
 		// m.SubscribeToOperations(nil)
 	}
+	return err
 }
 
 var (
@@ -225,7 +243,7 @@ func (m *Microservice) onUpdateConfigurationOperation(operationID string, newCon
 		m.WithServiceUser(),
 		operationID,
 		&c8y.OperationUpdateOptions{
-			Status: c8y.Pending.String(),
+			Status: c8y.OperationStatusPending,
 		},
 	)
 
@@ -236,7 +254,7 @@ func (m *Microservice) onUpdateConfigurationOperation(operationID string, newCon
 			m.WithServiceUser(),
 			operationID,
 			&c8y.OperationUpdateOptions{
-				Status: c8y.Failed.String(),
+				Status: c8y.OperationStatusFailed,
 			},
 		)
 	} else {
@@ -246,16 +264,21 @@ func (m *Microservice) onUpdateConfigurationOperation(operationID string, newCon
 			m.WithServiceUser(),
 			operationID,
 			&c8y.OperationUpdateOptions{
-				Status: c8y.Success.String(),
+				Status: c8y.OperationStatusSuccessful,
 			},
 		)
+
+		if m.Hooks.OnConfigurationUpdateFunc != nil {
+			zap.S().Info("Calling OnConfigurationUpdate lifecycle hook")
+			go m.Hooks.OnConfigurationUpdateFunc(*m.Config)
+		}
 	}
 }
 
 // CheckForNewConfiguration checks for any pending operations with new configuration
 func (m *Microservice) CheckForNewConfiguration() {
 	zap.L().Info("checking pending operations")
-	data, _, err := m.GetOperations(c8y.Pending.String())
+	data, _, err := m.GetOperations(c8y.OperationStatusPending)
 
 	if err != nil {
 		log.Printf("Error getting operations. %s", err)
@@ -302,12 +325,15 @@ func (m *Microservice) SubscribeToOperations(onMessageFunc func(*c8y.Message) er
 	m.Client.Realtime.WaitForConnection()
 	ch := make(chan *c8y.Message)
 
-	_ = m.Client.Realtime.Subscribe(fmt.Sprintf("/operations/%s", m.AgentID), ch)
+	err := m.Client.Realtime.Subscribe(c8y.RealtimeOperations(m.AgentID), ch)
+	if err != nil {
+		zap.S().Errorf("Failed to subscribe to operations. %s", err)
+	}
 
 	go func() {
 		defer func() {
 			close(ch)
-			m.Client.Realtime.Close()
+			// m.Client.Realtime.Close()
 		}()
 		for {
 			select {

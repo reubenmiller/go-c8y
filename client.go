@@ -148,10 +148,10 @@ func NewClientFromEnvironment(httpClient *http.Client, skipRealtimeClient bool) 
 }
 
 // NewClientUsingBootstrapUserFromEnvironment returns a Cumulocity client using the the bootstrap credentials set in the environment variables
-func NewClientUsingBootstrapUserFromEnvironment(httpClient *http.Client, baseURL string) *Client {
+func NewClientUsingBootstrapUserFromEnvironment(httpClient *http.Client, baseURL string, skipRealtimeClient bool) *Client {
 	tenant, username, password := GetBootstrapUserFromEnvironment()
 
-	client := NewClient(httpClient, baseURL, tenant, username, password, true)
+	client := NewClient(httpClient, baseURL, tenant, username, password, skipRealtimeClient)
 	client.Microservice.SetServiceUsers()
 	return client
 }
@@ -524,19 +524,16 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 	if req != nil && req.Body != nil {
 		switch v := req.Body.(type) {
 		case *os.File:
-			// Do nothing, because if you read the buffer you need to recreate the body again
-			// But if you wanted to do, you could do it with
-			/* bodyBytes, _ := ioutil.ReadAll(v)
-			req.Body.Close() //  must close
-			req.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-			log.Printf("Body (file): %s", bodyBytes) */
+			// Only log the file name
+			log.Printf("Body (file): %s", v.Name())
 		default:
-			// if body, err := ioutil.ReadAll(io.LimitReader(v, 4096)); err == nil {
 			// Don't print out multie part forms, but everything else is fine.
 			if !strings.Contains(req.Header.Get("Content-Type"), "multipart/form-data") {
-				if body, err := ioutil.ReadAll(v); err == nil {
-					log.Printf("Body: %s", body)
-				}
+				// bodyBytes, _ := ioutil.ReadAll(io.LimitReader(v, 4096))
+				bodyBytes, _ := ioutil.ReadAll(v)
+				req.Body.Close() //  must close
+				req.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+				log.Printf("Body: %s", bodyBytes)
 			}
 		}
 	}

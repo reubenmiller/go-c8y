@@ -5,6 +5,8 @@ import (
 	"os"
 	"strings"
 
+	c8y "github.com/reubenmiller/go-c8y"
+
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
@@ -46,8 +48,8 @@ func (c *Configuration) InitConfiguration() {
 	config.AutomaticEnv()
 
 	// Add extra aliases for Cumulocity Microservice SDK Specific environment variables
-	config.BindEnv("c8y.host", "C8Y_BASEURL")
-	config.BindEnv("c8y.microservice.isolation", "C8Y_MICROSERVICE_ISOLATION")
+	config.BindEnv("c8y.host", c8y.EnvironmentBaseURL)
+	config.BindEnv("c8y.microservice.isolation", c8y.EnvironmentMicroserviceIsolation)
 
 	// Set proxy settings if defined. Otherwise the existing HTTP_PROXY and HTTPS_PROXY settings
 	// will be honoured

@@ -49,9 +49,18 @@ func NewDefaultMicroservice(opts Options) *Microservice {
 	ms.InitializeLogger()
 
 	// Create a Cumulocity client
-	client := c8y.NewClientUsingBootstrapUserFromEnvironment(nil, config.GetHost())
+	client := c8y.NewClientUsingBootstrapUserFromEnvironment(nil, config.GetHost(), false)
 	client.UseTenantInUsername = true
 	ms.Client = client
+
+	// Get current application
+	currentApplication, _, err := client.Application.GetCurrentApplication(context.Background())
+
+	if err != nil {
+		zap.S().Errorf("Failed to get current application information. %s", err)
+	} else {
+		ms.Application = currentApplication
+	}
 
 	// Test the Cumulocity Client
 	if err := ms.TestClientConnection(); err != nil {
@@ -63,11 +72,11 @@ func NewDefaultMicroservice(opts Options) *Microservice {
 }
 
 // NewMicroservice create a new microservice where the user can customise the http client and the host
-// This functin will not initiliase the logger (.InitializeLogger()) nor call .Config.InitConfiguration(), it
-// is up to the user to call this functions
-func NewMicroservice(httpClient *http.Client, host string) *Microservice {
+// This function will not initiliase the logger (.InitializeLogger()) nor call .Config.InitConfiguration(), it
+// is up to the user to call these functions
+func NewMicroservice(httpClient *http.Client, host string, skipRealtimeClient bool) *Microservice {
 	return &Microservice{
-		Client:    c8y.NewClientUsingBootstrapUserFromEnvironment(httpClient, host),
+		Client:    c8y.NewClientUsingBootstrapUserFromEnvironment(httpClient, host, skipRealtimeClient),
 		Config:    NewConfiguration(),
 		Scheduler: NewScheduler(),
 	}
@@ -90,6 +99,7 @@ func (m *Microservice) InitializeLogger(logfile ...string) {
 
 // Microservice contains information and
 type Microservice struct {
+	Application         *c8y.Application
 	Config              *Configuration
 	Client              *c8y.Client
 	AgentID             string
@@ -98,6 +108,12 @@ type Microservice struct {
 	Logger              *zap.Logger
 	SupportedOperations AgentSupportedOperations
 	AgentInformation    AgentInformation
+	Hooks               Hooks
+}
+
+// Hooks contains list of lifecycle hooks that can be used in the microservice
+type Hooks struct {
+	OnConfigurationUpdateFunc func(Configuration)
 }
 
 // Scheduler to control cronjob tasks
