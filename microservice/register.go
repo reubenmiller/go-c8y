@@ -103,9 +103,9 @@ func (m *Microservice) CreateMicroserviceRepresentation() (*c8y.ManagedObject, e
 
 // GetConfiguration returns the Agent configuration as text. This needs to be parsed seperately by the calling function.
 func (m *Microservice) GetConfiguration() (string, error) {
-	mo, _, _ := m.Client.Inventory.GetManagedObject(m.WithServiceUser(), m.AgentID, nil)
+	mo := m.GetAgent()
 
-	if mo == nil || mo.ID == "" {
+	if mo == nil {
 		return "", fmt.Errorf("Could not retrieve managed object")
 	}
 
@@ -309,42 +309,4 @@ func (m *Microservice) StartOperationPolling() {
 	if err != nil {
 		zap.S().Errorf("Could not create polling task with interval [%s]. %s", interval, err)
 	}
-}
-
-// SubscribeToOperations todo
-func (m *Microservice) SubscribeToOperations(onMessageFunc func(*c8y.Message) error) {
-	if m.Client.Realtime == nil {
-		zap.S().Infof("Skipping operation subscription because the Realtime client is nil")
-		return
-	}
-
-	go func() {
-		m.Client.Realtime.Connect()
-	}()
-
-	m.Client.Realtime.WaitForConnection()
-	ch := make(chan *c8y.Message)
-
-	err := m.Client.Realtime.Subscribe(c8y.RealtimeOperations(m.AgentID), ch)
-	if err != nil {
-		zap.S().Errorf("Failed to subscribe to operations. %s", err)
-	}
-
-	go func() {
-		defer func() {
-			close(ch)
-			// m.Client.Realtime.Close()
-		}()
-		for {
-			select {
-			case msg := <-ch:
-				zap.S().Infof("ws: [frame]: %s\n", string(msg.Payload.Item.Raw))
-				if onMessageFunc != nil {
-					fmt.Println("calling func")
-					onMessageFunc(msg)
-				}
-			}
-
-		}
-	}()
 }

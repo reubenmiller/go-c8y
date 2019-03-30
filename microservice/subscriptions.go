@@ -1,6 +1,7 @@
 package microservice
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"regexp"
@@ -41,23 +42,40 @@ func doSomethingWithData(dataStr string) {
 	}
 }
 
-// SubscribeToMeasurements subscribes to c8y measurements for the given device. ID can be a * to include measurements from all devices.
-func (m *Microservice) SubscribeToMeasurements(ID string, onMessageFunc func(*c8y.Message) error) {
-	client := m.Client
+func (m *Microservice) NewRealtimeClientForTenant(user c8y.ServiceUser) *c8y.RealtimeClient {
+	return c8y.NewRealtimeClient(m.Client.BaseURL.Host, nil, user.Tenant, user.Username, user.Password)
+}
+
+// SubscribeToOperations subscribes to operations added to the microservice's agent managed object. onMessageFunc is called on every operation
+func (m *Microservice) SubscribeToOperations(user c8y.ServiceUser, onMessageFunc func(*c8y.Message)) error {
+	return m.SubscribeToNotifications(
+		user,
+		c8y.RealtimeOperations(m.AgentID),
+		onMessageFunc,
+	)
+}
+
+// SubscribeToNotifications subscribes to c8y notifications on the Microservice's agent managed object
+func (m *Microservice) SubscribeToNotifications(user c8y.ServiceUser, realtimeChannel string, onMessageFunc func(*c8y.Message)) error {
+	realtime, err := m.NewRealtimeClient(user)
+
+	if err != nil {
+		return errors.New("Failed to retrieve valid realtime client")
+	}
+
 	time.Sleep(1 * time.Second)
 	go func() {
-		client.Realtime.Connect()
+		realtime.Connect()
 	}()
 
-	client.Realtime.WaitForConnection()
+	realtime.WaitForConnection()
 	ch := make(chan *c8y.Message)
 
-	_ = client.Realtime.Subscribe(fmt.Sprintf("/measurements/%s", ID), ch)
+	err = realtime.Subscribe(realtimeChannel, ch)
 
 	go func() {
 		defer func() {
 			close(ch)
-			client.Realtime.Close()
 		}()
 		for {
 			select {
@@ -71,4 +89,5 @@ func (m *Microservice) SubscribeToMeasurements(ID string, onMessageFunc func(*c8
 
 		}
 	}()
+	return err
 }

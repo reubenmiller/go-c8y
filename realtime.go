@@ -161,6 +161,11 @@ func NewRealtimeClient(host string, wsDialer *websocket.Dialer, tenant, username
 	}
 }
 
+// TenantName returns the tenant name used in the client
+func (c *RealtimeClient) TenantName() string {
+	return c.tenant
+}
+
 // Connect performs a handshake with the server and will repeatedly initiate a
 // websocket connection until `Close` is called on the client.
 func (c *RealtimeClient) Connect() error {
@@ -317,6 +322,7 @@ func (c *RealtimeClient) worker() error {
 					log.Printf("ws: disconnect\n")
 
 				default:
+					log.Printf("ws: data: %s\n", message)
 					// Data package received
 					message.Payload.Item = gjson.ParseBytes(message.Payload.Data)
 					for _, s := range c.subscriptions {

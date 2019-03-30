@@ -55,15 +55,6 @@ func cleanupTestSystem() {
 
 	for _, ms := range CumulocityConfiguration.Microservices {
 		ms.DeleteMicroserviceAgent()
-		/* if ms.AgentID != "" {
-			log.Printf("Deleting agent representation id=%s", ms.AgentID)
-			if _, err := client.Inventory.Delete(
-				context.Background(),
-				ms.AgentID,
-			); err != nil {
-				log.Printf("Failed to delete microservice managed object. %s", err)
-			}
-		} */
 
 		log.Printf("Deleting application id=%s", ms.Application.ID)
 		if _, err := client.Application.Delete(
@@ -78,10 +69,16 @@ func cleanupTestSystem() {
 }
 
 // bootstrapApplication creates an application
-func bootstrapApplication() *microservice.Microservice {
+func bootstrapApplication(appName ...string) *microservice.Microservice {
 	config := readConfig()
 
-	applicationName := "citest" + strings.ToLower(testingutils.RandomString(5))
+	var applicationName string
+
+	if len(appName) == 0 {
+		applicationName = "citest" + strings.ToLower(testingutils.RandomString(5))
+	} else {
+		applicationName = appName[0]
+	}
 
 	host := config.GetString("c8y.host")
 	tenant := config.GetString("c8y.tenant")
@@ -98,26 +95,6 @@ func bootstrapApplication() *microservice.Microservice {
 
 	if err != nil {
 		log.Fatalf("Could not create application. %s", err)
-	}
-
-	_, _, err = client.Tenant.AddApplicationReference(
-		context.Background(),
-		client.TenantName,
-		app.Self,
-	)
-
-	if err != nil {
-		log.Fatalf("Could not subscribe to application. %s", err)
-	}
-
-	// Get Microservice Credentials
-	appCredentials, _, err := client.Application.GetApplicationUser(
-		context.Background(),
-		app.ID,
-	)
-
-	if err != nil {
-		log.Fatalf("Could not get application credentials. %s", err)
 	}
 
 	// Set required roles
@@ -147,6 +124,27 @@ func bootstrapApplication() *microservice.Microservice {
 
 	if err != nil {
 		log.Fatalf("Could not update microservice's requiredRoles. %s", err)
+	}
+
+	// Subscribe to application
+	_, _, err = client.Tenant.AddApplicationReference(
+		context.Background(),
+		client.TenantName,
+		app.Self,
+	)
+
+	if err != nil {
+		log.Fatalf("Could not subscribe to application. %s", err)
+	}
+
+	// Get Microservice Credentials
+	appCredentials, _, err := client.Application.GetApplicationUser(
+		context.Background(),
+		app.ID,
+	)
+
+	if err != nil {
+		log.Fatalf("Could not get application credentials. %s", err)
 	}
 
 	// Set microservice env variables

@@ -2,7 +2,9 @@ package microservice
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 
@@ -67,6 +69,8 @@ func NewDefaultMicroservice(opts Options) *Microservice {
 		zap.S().Errorf("Cumulocity client failed to connect to client. If you are running this microservice locally, are you sure you set the bootstrap user credentials correctly?. Error: %s", err)
 	}
 
+	ms.realtimeClients = NewRealtimeClients(config.GetHost())
+
 	// Register the agent. Don't register the application
 	return ms
 }
@@ -76,9 +80,10 @@ func NewDefaultMicroservice(opts Options) *Microservice {
 // is up to the user to call these functions
 func NewMicroservice(httpClient *http.Client, host string, skipRealtimeClient bool) *Microservice {
 	return &Microservice{
-		Client:    c8y.NewClientUsingBootstrapUserFromEnvironment(httpClient, host, skipRealtimeClient),
-		Config:    NewConfiguration(),
-		Scheduler: NewScheduler(),
+		Client:          c8y.NewClientUsingBootstrapUserFromEnvironment(httpClient, host, skipRealtimeClient),
+		Config:          NewConfiguration(),
+		Scheduler:       NewScheduler(),
+		realtimeClients: NewRealtimeClients(host),
 	}
 }
 
@@ -109,6 +114,52 @@ type Microservice struct {
 	SupportedOperations AgentSupportedOperations
 	AgentInformation    AgentInformation
 	Hooks               Hooks
+	realtimeClients     *RealtimeClients
+}
+
+func NewRealtimeClients(host string) *RealtimeClients {
+	// clients := make(map[string]*c8y.RealtimeClient)
+	return &RealtimeClients{
+		host:    host,
+		clients: map[string]*c8y.RealtimeClient{},
+	}
+}
+
+type RealtimeClients struct {
+	host    string
+	clients map[string]*c8y.RealtimeClient
+}
+
+// NewRealtimeClient creates a new realtime client for the given tenant service user
+func (m *Microservice) NewRealtimeClient(user c8y.ServiceUser) (*c8y.RealtimeClient, error) {
+	return m.realtimeClients.LoadOrNewClient(user)
+}
+
+func (s *RealtimeClients) SetClient(user c8y.ServiceUser, client *c8y.RealtimeClient) {
+	s.clients[user.Tenant] = client
+}
+
+func (s *RealtimeClients) LoadOrNewClient(user c8y.ServiceUser) (*c8y.RealtimeClient, error) {
+	// TODO: Check if there is an existing client, or not create it
+	if client, err := s.GetClient(user); err == nil {
+		return client, nil
+	}
+	client := c8y.NewRealtimeClient(s.host, nil, user.Tenant, user.Username, user.Password)
+	if client != nil {
+		s.SetClient(user, client)
+		return client, nil
+	}
+	return nil, errors.New("No existing realtime clients")
+}
+
+func (s *RealtimeClients) GetClient(user c8y.ServiceUser) (*c8y.RealtimeClient, error) {
+	log.Printf("Get realtime client for tenant %s", user.Tenant)
+	log.Printf("Total realtime clients in cache %d", len(s.clients))
+	if v, ok := s.clients[user.Tenant]; ok {
+		return v, nil
+	}
+	return nil, errors.New("No realtime client found for tenant")
+
 }
 
 // Hooks contains list of lifecycle hooks that can be used in the microservice
@@ -193,4 +244,23 @@ func (m *Microservice) WithServiceUser(tenant ...string) context.Context {
 		return m.Client.Context.ServiceUserContext("", true)
 	}
 	return m.Client.Context.ServiceUserContext(tenant[0], true)
+}
+
+// WithServiceUserCredentials returns the service user credentials associated with the tenant. If no tenant is given, then the first service user will be returned
+func (m *Microservice) WithServiceUserCredentials(tenant ...string) c8y.ServiceUser {
+	if len(tenant) > 1 {
+		panic(fmt.Errorf("Only accepts 1 tenant"))
+	}
+
+	tenantName := ""
+	if len(tenant) > 0 {
+		tenantName = tenant[0]
+	}
+	for _, user := range m.Client.ServiceUsers {
+		if user.Tenant == tenantName || tenantName == "" {
+			return user
+		}
+	}
+
+	return c8y.ServiceUser{}
 }
