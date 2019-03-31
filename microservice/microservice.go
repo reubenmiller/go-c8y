@@ -69,7 +69,7 @@ func NewDefaultMicroservice(opts Options) *Microservice {
 		zap.S().Errorf("Cumulocity client failed to connect to client. If you are running this microservice locally, are you sure you set the bootstrap user credentials correctly?. Error: %s", err)
 	}
 
-	ms.realtimeClients = NewRealtimeClients(config.GetHost())
+	ms.RealtimeClientCache = NewRealtimeClientCache(config.GetHost())
 
 	// Register the agent. Don't register the application
 	return ms
@@ -80,10 +80,10 @@ func NewDefaultMicroservice(opts Options) *Microservice {
 // is up to the user to call these functions
 func NewMicroservice(httpClient *http.Client, host string, skipRealtimeClient bool) *Microservice {
 	return &Microservice{
-		Client:          c8y.NewClientUsingBootstrapUserFromEnvironment(httpClient, host, skipRealtimeClient),
-		Config:          NewConfiguration(),
-		Scheduler:       NewScheduler(),
-		realtimeClients: NewRealtimeClients(host),
+		Client:              c8y.NewClientUsingBootstrapUserFromEnvironment(httpClient, host, skipRealtimeClient),
+		Config:              NewConfiguration(),
+		Scheduler:           NewScheduler(),
+		RealtimeClientCache: NewRealtimeClientCache(host),
 	}
 }
 
@@ -114,33 +114,36 @@ type Microservice struct {
 	SupportedOperations AgentSupportedOperations
 	AgentInformation    AgentInformation
 	Hooks               Hooks
-	realtimeClients     *RealtimeClients
+	RealtimeClientCache *RealtimeClientCache
 }
 
-func NewRealtimeClients(host string) *RealtimeClients {
-	// clients := make(map[string]*c8y.RealtimeClient)
-	return &RealtimeClients{
+// NewRealtimeClientCache returns a new realtime client cache where realtime clients can be reused for different subscription notifications
+func NewRealtimeClientCache(host string) *RealtimeClientCache {
+	return &RealtimeClientCache{
 		host:    host,
 		clients: map[string]*c8y.RealtimeClient{},
 	}
 }
 
-type RealtimeClients struct {
+// RealtimeClientCache is a cache to store the different realtime clients used in the microservice
+type RealtimeClientCache struct {
 	host    string
 	clients map[string]*c8y.RealtimeClient
 }
 
 // NewRealtimeClient creates a new realtime client for the given tenant service user
 func (m *Microservice) NewRealtimeClient(user c8y.ServiceUser) (*c8y.RealtimeClient, error) {
-	return m.realtimeClients.LoadOrNewClient(user)
+	return m.RealtimeClientCache.LoadOrNewClient(user)
 }
 
-func (s *RealtimeClients) SetClient(user c8y.ServiceUser, client *c8y.RealtimeClient) {
+// SetClient adds the given realtime client in the cache stored under the service user's tenant
+func (s *RealtimeClientCache) SetClient(user c8y.ServiceUser, client *c8y.RealtimeClient) {
 	s.clients[user.Tenant] = client
 }
 
-func (s *RealtimeClients) LoadOrNewClient(user c8y.ServiceUser) (*c8y.RealtimeClient, error) {
-	// TODO: Check if there is an existing client, or not create it
+// LoadOrNewClient returns a Realtime client for the given service user.
+// If a realtime client already exists for the given service user then it will be returned rather than creating a new client
+func (s *RealtimeClientCache) LoadOrNewClient(user c8y.ServiceUser) (*c8y.RealtimeClient, error) {
 	if client, err := s.GetClient(user); err == nil {
 		return client, nil
 	}
@@ -152,7 +155,8 @@ func (s *RealtimeClients) LoadOrNewClient(user c8y.ServiceUser) (*c8y.RealtimeCl
 	return nil, errors.New("No existing realtime clients")
 }
 
-func (s *RealtimeClients) GetClient(user c8y.ServiceUser) (*c8y.RealtimeClient, error) {
+// GetClient returns a realtime client if it already exists in the cache. If no realtime client already exists for the service user, then an error is returned
+func (s *RealtimeClientCache) GetClient(user c8y.ServiceUser) (*c8y.RealtimeClient, error) {
 	log.Printf("Get realtime client for tenant %s", user.Tenant)
 	log.Printf("Total realtime clients in cache %d", len(s.clients))
 	if v, ok := s.clients[user.Tenant]; ok {

@@ -41,10 +41,6 @@ func doSomethingWithData(dataStr string) {
 	}
 }
 
-func (m *Microservice) NewRealtimeClientForTenant(user c8y.ServiceUser) *c8y.RealtimeClient {
-	return c8y.NewRealtimeClient(m.Client.BaseURL.Host, nil, user.Tenant, user.Username, user.Password)
-}
-
 // SubscribeToOperations subscribes to operations added to the microservice's agent managed object. onMessageFunc is called on every operation
 func (m *Microservice) SubscribeToOperations(user c8y.ServiceUser, onMessageFunc func(*c8y.Message)) error {
 	return m.SubscribeToNotifications(

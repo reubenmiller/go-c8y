@@ -29,9 +29,11 @@ type CustomOperation struct {
 
 // NewCustomOperation returns a new Custom Operation with the specified device id
 func NewCustomOperation(deviceID string) *CustomOperation {
-	op := &CustomOperation{}
-	op.data = make(map[string]interface{})
-	op.data["deviceId"] = deviceID
+	op := &CustomOperation{
+		data: map[string]interface{}{},
+	}
+	// op.data = make(map[string]interface{})
+	op.SetDeviceID(deviceID)
 	return op
 }
 
@@ -43,6 +45,12 @@ func (o CustomOperation) MarshalJSON() ([]byte, error) {
 // DeviceID returns the device id of the operation
 func (o CustomOperation) DeviceID() string {
 	return o.data["deviceId"].(string)
+}
+
+// SetDeviceID sets the device id for the custom operation
+func (o *CustomOperation) SetDeviceID(ID string) *CustomOperation {
+	o.data["deviceId"] = ID
+	return o
 }
 
 // Set sets the name property with the given value

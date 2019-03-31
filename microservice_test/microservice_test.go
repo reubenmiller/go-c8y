@@ -116,7 +116,6 @@ prop2=2
 }
 
 func TestMicroservice_SubscribeToNotifications(t *testing.T) {
-	// t.Skip("Skipped due to bug with Cumulocity api where the websocket notification format is not being sent for Application service users (though normal admin users work)")
 	/*
 		Microservice should be able to subscribe to notifications
 	*/
@@ -172,9 +171,8 @@ func TestMicroservice_SubscribeToNotifications(t *testing.T) {
 	testingutils.Ok(t, err)
 
 	// Give the cep engine a chance to send the notification
-	time.Sleep(1000 * time.Millisecond)
+	time.Sleep(2000 * time.Millisecond)
 
 	testingutils.Equals(t, int64(1), atomic.LoadInt64(&eventCounter))
 	testingutils.Equals(t, int64(1), atomic.LoadInt64(&operationCounter))
-
 }
