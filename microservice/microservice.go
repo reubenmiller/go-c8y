@@ -250,8 +250,8 @@ func (m *Microservice) WithServiceUser(tenant ...string) context.Context {
 	return m.Client.Context.ServiceUserContext(tenant[0], true)
 }
 
-// WithApplicationUserCredentials returns the application credentials
-func (m *Microservice) WithApplicationUserCredentials() c8y.ServiceUser {
+// WithBootstrapUserCredentials returns the application credentials
+func (m *Microservice) WithBootstrapUserCredentials() c8y.ServiceUser {
 	return c8y.ServiceUser{
 		Tenant:   m.Client.TenantName,
 		Username: m.Client.Username,
