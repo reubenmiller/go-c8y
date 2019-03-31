@@ -250,6 +250,15 @@ func (m *Microservice) WithServiceUser(tenant ...string) context.Context {
 	return m.Client.Context.ServiceUserContext(tenant[0], true)
 }
 
+// WithApplicationUserCredentials returns the application credentials
+func (m *Microservice) WithApplicationUserCredentials() c8y.ServiceUser {
+	return c8y.ServiceUser{
+		Tenant:   m.Client.TenantName,
+		Username: m.Client.Username,
+		Password: m.Client.Password,
+	}
+}
+
 // WithServiceUserCredentials returns the service user credentials associated with the tenant. If no tenant is given, then the first service user will be returned
 func (m *Microservice) WithServiceUserCredentials(tenant ...string) c8y.ServiceUser {
 	if len(tenant) > 1 {
