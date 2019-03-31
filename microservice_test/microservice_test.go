@@ -120,7 +120,8 @@ func TestMicroservice_SubscribeToNotifications(t *testing.T) {
 	/*
 		Microservice should be able to subscribe to notifications
 	*/
-	var updateCounter int64
+	var eventCounter int64
+	var operationCounter int64
 	var err error
 
 	app := bootstrapApplication()
@@ -132,7 +133,17 @@ func TestMicroservice_SubscribeToNotifications(t *testing.T) {
 		c8y.RealtimeEvents(app.AgentID),
 		func(msg *c8y.Message) {
 			// New message received
-			atomic.AddInt64(&updateCounter, 1)
+			atomic.AddInt64(&eventCounter, 1)
+		},
+	)
+	testingutils.Ok(t, err)
+
+	err = app.SubscribeToNotifications(
+		app.WithServiceUserCredentials(),
+		c8y.RealtimeOperations(app.AgentID),
+		func(msg *c8y.Message) {
+			// New message received
+			atomic.AddInt64(&operationCounter, 1)
 		},
 	)
 	testingutils.Ok(t, err)
@@ -149,9 +160,21 @@ func TestMicroservice_SubscribeToNotifications(t *testing.T) {
 	)
 	testingutils.Ok(t, err)
 
+	// Create operation
+	op := c8y.NewCustomOperation(app.AgentID)
+	op.Set("com_custom_Operation", map[string]string{
+		"name": "Custom Operation 1",
+	})
+	_, _, err = app.Client.Operation.Create(
+		app.WithServiceUser(),
+		op,
+	)
+	testingutils.Ok(t, err)
+
 	// Give the cep engine a chance to send the notification
 	time.Sleep(1000 * time.Millisecond)
 
-	testingutils.Equals(t, int64(1), atomic.LoadInt64(&updateCounter))
+	testingutils.Equals(t, int64(1), atomic.LoadInt64(&eventCounter))
+	testingutils.Equals(t, int64(1), atomic.LoadInt64(&operationCounter))
 
 }

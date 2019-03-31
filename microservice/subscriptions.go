@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"regexp"
-	"time"
 
 	c8y "github.com/reubenmiller/go-c8y"
 	"github.com/tidwall/gjson"
@@ -63,11 +62,7 @@ func (m *Microservice) SubscribeToNotifications(user c8y.ServiceUser, realtimeCh
 		return errors.New("Failed to retrieve valid realtime client")
 	}
 
-	time.Sleep(1 * time.Second)
-	go func() {
-		realtime.Connect()
-	}()
-
+	realtime.Connect()
 	realtime.WaitForConnection()
 	ch := make(chan *c8y.Message)
 

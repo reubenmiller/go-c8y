@@ -169,12 +169,18 @@ func (c *RealtimeClient) TenantName() string {
 // Connect performs a handshake with the server and will repeatedly initiate a
 // websocket connection until `Close` is called on the client.
 func (c *RealtimeClient) Connect() error {
-	return c.connect()
+	if !c.IsConnected() {
+		return c.connect()
+	}
+	return nil
 }
 
 // IsConnected returns true if the websocket is connected
 func (c *RealtimeClient) IsConnected() bool {
-	return c.connected
+	c.mtx.RLock()
+	isConnected := c.connected
+	c.mtx.RUnlock()
+	return isConnected
 }
 
 // Close notifies the Bayeux server of the intent to disconnect and terminates
@@ -310,7 +316,9 @@ func (c *RealtimeClient) worker() error {
 
 				case "/meta/subscribe":
 					log.Printf("ws: Subscribe\n")
-					c.sendMetaConnect()
+					if !c.IsConnected() {
+						c.sendMetaConnect()
+					}
 
 				case "/meta/connect":
 					c.mtx.Lock()
@@ -325,11 +333,13 @@ func (c *RealtimeClient) worker() error {
 					log.Printf("ws: data: %s\n", message)
 					// Data package received
 					message.Payload.Item = gjson.ParseBytes(message.Payload.Data)
+					c.mtx.RLock()
 					for _, s := range c.subscriptions {
 						if s.glob.MatchString(message.Channel) {
 							s.out <- &message
 						}
 					}
+					c.mtx.RUnlock()
 				}
 			}
 		}
@@ -443,12 +453,13 @@ func (c *RealtimeClient) Subscribe(pattern string, out chan<- *Message) error {
 	err = c.writeJSON(message)
 
 	if err == nil {
+		c.mtx.Lock()
 		c.subscriptions = append(c.subscriptions, subscription{
 			glob: glob,
 			out:  out,
 		})
+		c.mtx.Unlock()
 	}
-
 	return err
 }
 
