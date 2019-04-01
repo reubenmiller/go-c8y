@@ -231,7 +231,7 @@ func addOptions(s string, opt interface{}) (string, error) {
 	u.RawQuery = qs.Encode()
 
 	rawQuery := u.String()
-	rawQuery = rawQuery[1:len(rawQuery)]
+	rawQuery = rawQuery[1:]
 	return rawQuery, nil
 }
 
