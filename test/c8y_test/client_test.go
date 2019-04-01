@@ -3,7 +3,6 @@ package c8y_test
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
@@ -24,8 +23,6 @@ func TestInventoryService_DecodeJSONManagedObject(t *testing.T) {
 
 	err := json.Unmarshal([]byte(data.Items[0].Raw), &mo)
 
-	log.Printf("Values: %s", mo)
-
 	if err != nil {
 		t.Errorf("Could not decode json. want: nil, got: %s", err)
 	}
@@ -45,8 +42,6 @@ func TestInventoryService_DecodeJSONManagedObjects(t *testing.T) {
 	var apiResponse map[string]interface{}
 
 	err := resp.DecodeJSON(&apiResponse)
-
-	log.Printf("Values: %s", apiResponse)
 
 	if err != nil {
 		t.Errorf("Could not decode json. want: nil, got: %s", err)
