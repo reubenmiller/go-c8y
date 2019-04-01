@@ -49,8 +49,8 @@ _go_test:
 # 	$(call check_defined, C8Y_PASSWORD, applicaiton.properties file path)
 
 _go_integration_tests:
-	go test -v -timeout 30m github.com/reubenmiller/go-c8y/tests/c8y_test
-	go test -v -timeout 30m github.com/reubenmiller/go-c8y/tests/microservice_test
+	go test -v -timeout 30m github.com/reubenmiller/go-c8y/test/c8y_test
+	go test -v -timeout 30m github.com/reubenmiller/go-c8y/test/microservice_test
 
 test: _go_test
 
