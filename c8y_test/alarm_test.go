@@ -44,7 +44,6 @@ func TestAlarmService_UpdateAlarm(t *testing.T) {
 			Time:     c8y.NewTimestamp(),
 			Source:   c8y.NewSource(testDevice.ID),
 			Severity: "MAJOR",
-			Status:   "",
 			Text:     "Test Alarm 1",
 			Type:     "TestAlarm1",
 		},
