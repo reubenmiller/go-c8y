@@ -146,6 +146,9 @@ func TestMicroservice_SubscribeToNotifications(t *testing.T) {
 	)
 	testingutils.Ok(t, err)
 
+	// Wait for subscriptions to be processed
+	time.Sleep(5 * time.Second)
+
 	// Create event
 	_, _, err = app.Client.Event.Create(
 		app.WithServiceUser(),
