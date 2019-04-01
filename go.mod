@@ -34,7 +34,7 @@ require (
 	github.com/onsi/ginkgo v1.8.0 // indirect
 	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/pkg/errors v0.8.1
-	github.com/reubenmiller/go-c8y/pkg/c8y v0.0.0-20190401160529-913a4f3caafc
+	github.com/reubenmiller/go-c8y/pkg/c8y v0.0.0-20190401170124-d1ab646b69c4
 	github.com/reubenmiller/go-c8y/pkg/microservice v0.0.0-20190401160529-913a4f3caafc
 	github.com/reubenmiller/go-c8y/test/c8y_test v0.0.0-20190401162354-9b76be3325c8 // indirect
 	github.com/rogpeppe/go-internal v1.2.2 // indirect

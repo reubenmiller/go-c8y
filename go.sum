@@ -192,6 +192,8 @@ github.com/prometheus/procfs v0.0.0-20181204211112-1dc9a6cbc91a h1:9a8MnZMP0X2nL
 github.com/prometheus/procfs v0.0.0-20181204211112-1dc9a6cbc91a/go.mod h1:c3At6R/oaqEKCNdg8wHV1ftS6bRYblBhIjjI8uT2IGk=
 github.com/reubenmiller/go-c8y/pkg/c8y v0.0.0-20190401160529-913a4f3caafc h1:3HDZ5vfMK+OfCnfDk4Ot9TgPgU2WFZStWorDGBY4hKI=
 github.com/reubenmiller/go-c8y/pkg/c8y v0.0.0-20190401160529-913a4f3caafc/go.mod h1:sZfGJNFOhe2qCIFhM+wOEvp55qeKKzSLFJ2AvK6ze9Q=
+github.com/reubenmiller/go-c8y/pkg/c8y v0.0.0-20190401170124-d1ab646b69c4 h1:EXdYhUiWUkVDDndbqOpxf1X0mX3IAQcFRYEdq9UUPN8=
+github.com/reubenmiller/go-c8y/pkg/c8y v0.0.0-20190401170124-d1ab646b69c4/go.mod h1:sZfGJNFOhe2qCIFhM+wOEvp55qeKKzSLFJ2AvK6ze9Q=
 github.com/reubenmiller/go-c8y/pkg/microservice v0.0.0-20190401160529-913a4f3caafc h1:C7Lk5UlbNzhdG4r+uVM6xQIq6RqxFHHFRzb+jXv6UyE=
 github.com/reubenmiller/go-c8y/pkg/microservice v0.0.0-20190401160529-913a4f3caafc/go.mod h1:uPZ/+1oIlCBhsgZLt+Ga/0U8nPkYn17veVeTHb2WZOo=
 github.com/reubenmiller/go-c8y/test/c8y_test v0.0.0-20190401162354-9b76be3325c8 h1:OrAuV6We+0lnlnkLErx8AY36fPKjVtBme69eqfmzZDo=
