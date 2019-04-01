@@ -37,7 +37,7 @@ check-path:
 check-integration-variables:
 	$(call check_defined, C8Y_HOST, Cumulocity host url. i.e. https://cumulocity.com)
 	$(call check_defined, C8Y_TENANT , Cumulocity tenant)
-	$(call check_defined, C8Y_USERNAME, Cumulocity username)
+	$(call check_defined, C8Y_USER, Cumulocity username)
 	$(call check_defined, C8Y_PASSWORD, Cumulocity password)
 	@exit 0
 
