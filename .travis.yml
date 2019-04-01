@@ -6,10 +6,21 @@ addons:
     token:
       secure: ********* # encrypted value of your token
 
+cache:
+  directories:
+    - ./pkg/c8y/vendor
+
+# install:
+#   - make dependencies
+
 go:
   - 1.11.x
   - master
 
-script:
-  # other script steps might be done before running the actual analysis
-  - sonar-scanner
+
+jobs:
+  include:
+    - script:
+        # - sonar-scanner
+        - make ./integration-tests
+      name: "Integration Tests"     # names the second Tests stage job
