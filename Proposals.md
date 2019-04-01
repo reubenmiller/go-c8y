@@ -29,5 +29,9 @@
 
 # Microservice Features TODO
 
+## Subscriptions
+ * Add polling task when using a multi tenant microservice, where it will update it's service users lists periodically (every 10 seconds?)
+
 ## Lifecyle hooks
  * onRegisterFunc
+

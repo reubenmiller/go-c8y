@@ -56,7 +56,7 @@ Or, clone the repository:
         "context"
         "log"
 
-        c8y "github.com/reubenmiller/go-c8y"
+        "github.com/reubenmiller/go-c8y/pkg/c8y"
     )
 
     func main() {

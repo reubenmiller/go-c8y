@@ -1,0 +1,24 @@
+package testingutils
+
+import (
+	"math/rand"
+	"time"
+)
+
+const charset = "abcdefghijklmnopqrstuvwxyz" +
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+var seededRand = rand.New(rand.NewSource(time.Now().UnixNano()))
+
+func stringWithCharset(length int, charset string) string {
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[seededRand.Intn(len(charset))]
+	}
+	return string(b)
+}
+
+// RandomString returns a random string of the given length
+func RandomString(length int) string {
+	return stringWithCharset(length, charset)
+}
