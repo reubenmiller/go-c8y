@@ -154,15 +154,15 @@ func TestMeasurementService_MarshalMeasurementMultipleSeries(t *testing.T) {
 		Timestamp: timestamp,
 		Fragments: c8y.NewFragmentNameSeries("c8y_Test"),
 		ValueFragmentTypes: []c8y.ValueFragmentType{
-			c8y.ValueFragmentType{
+			{
 				Name: "c8y_Temperature",
 				Values: []c8y.ValueFragmentSeries{
-					c8y.ValueFragmentSeries{
+					{
 						Name:  "A",
 						Value: 1.101,
 						Unit:  "degC",
 					},
-					c8y.ValueFragmentSeries{
+					{
 						Name:  "B",
 						Value: 56.876,
 						Unit:  "degC",

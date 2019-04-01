@@ -113,10 +113,10 @@ func NewSimpleMeasurementRepresentation(opt SimpleMeasurementOptions) (*Measurem
 		Type:      opt.Type,
 		Fragments: NewFragmentNameSeries(opt.FragmentType...),
 		ValueFragmentTypes: []ValueFragmentType{
-			ValueFragmentType{
+			{
 				Name: opt.ValueFragmentType,
 				Values: []ValueFragmentSeries{
-					ValueFragmentSeries{
+					{
 						Name:  opt.ValueFragmentSeries,
 						Value: opt.Value,
 						Unit:  opt.Unit,
