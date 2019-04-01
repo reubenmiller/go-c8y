@@ -135,9 +135,11 @@ func TestRealtimeSubscriptions_SubscribeToMeasurements(t *testing.T) {
 	}
 
 	ch := make(chan *c8y.Message)
-	timerChan := time.NewTimer(time.Second * 5).C
 
 	realtime.Subscribe(c8y.RealtimeMeasurements(device.ID), ch)
+
+	// Given time for CEP engine to work
+	time.Sleep(2 * time.Second)
 
 	// Create a dummy measurement
 	sendMeasurement := func(value float64) {
@@ -167,6 +169,8 @@ func TestRealtimeSubscriptions_SubscribeToMeasurements(t *testing.T) {
 	expectedMeasValue := 1.0
 	sendMeasurement(expectedMeasValue)
 	sendMeasurement(expectedMeasValue)
+
+	timerChan := time.NewTimer(time.Second * 5).C
 
 	defer func() {
 		close(ch)
