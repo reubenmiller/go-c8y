@@ -26,3 +26,5 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/robfig/cron.v2 v2.0.0-20150107220207-be2e0b0deed5
 )
+
+replace github.com/reubenmiller/go-c8y/pkg/c8y => ../../pkg/c8y
