@@ -11,10 +11,6 @@ branches:
 #     token:
 #       secure: ********* # encrypted value of your token
 
-cache:
-  directories:
-    - ./pkg/c8y/vendor
-
 go:
   - 1.12.x
   - master
