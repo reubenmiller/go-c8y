@@ -45,16 +45,23 @@ _go_test:
 	$(MAKE) check-integration-variables
 	$(MAKE) _go_integration_tests
 
+install_test_deps:
+	go mod download github.com/reubenmiller/go-c8y/test/c8y_test
+	go mod download github.com/reubenmiller/go-c8y/test/microservice_test
+
 # check_integration_configuration:
 # 	$(call check_defined, C8Y_PASSWORD, applicaiton.properties file path)
 
 _go_integration_tests:
-	go test -v -timeout 30m github.com/reubenmiller/go-c8y/test/c8y_test
-	go test -v -timeout 30m github.com/reubenmiller/go-c8y/test/microservice_test
+	GO111MODULE=on go test -v -timeout 30m github.com/reubenmiller/go-c8y/test/c8y_test
+	GO111MODULE=on go test -v -timeout 30m github.com/reubenmiller/go-c8y/test/microservice_test
 
 test: _go_test
 
 lint: metalint
+
+install:
+	go mod download
 
 metalint:
 	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
