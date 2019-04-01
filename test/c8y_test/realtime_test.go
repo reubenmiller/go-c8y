@@ -40,6 +40,7 @@ func TestRealtimeSubscriptions_SubscribeToOperations(t *testing.T) {
 	}()
 
 	err = realtime.WaitForConnection()
+	time.Sleep(2 * time.Second)
 
 	if err != nil {
 		t.Errorf("Unknown error")
