@@ -125,7 +125,7 @@ func (s *EventService) DeleteEvents(ctx context.Context, opt *EventCollectionOpt
 
 // DownloadBinary retrieves the binary attached to the given event
 func (s *EventService) DownloadBinary(ctx context.Context, ID string) (filepath string, err error) {
-	// TODO: consolodate this func and InventoryService.DownloadBinary
+	// TODO: consolidate this func and InventoryService.DownloadBinary
 	// set event binary api
 	client := s.client
 	u := "event/events/" + ID + "/binaries"

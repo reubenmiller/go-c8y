@@ -52,7 +52,7 @@ func (s *MicroserviceService) SetServiceUsers() error {
 	return nil
 }
 
-// GetServiceUsers returns a list of the subscriped tenant where the application is running
+// GetServiceUsers returns a list of the subscribed tenant where the application is running
 // along with the service user subscriptions for each tenant
 func (s *MicroserviceService) GetServiceUsers() (*ApplicationSubscriptions, error) {
 	ctx := s.client.Context.BootstrapUserFromEnvironment()

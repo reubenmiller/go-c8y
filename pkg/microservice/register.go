@@ -101,7 +101,7 @@ func (m *Microservice) CreateMicroserviceRepresentation() (*c8y.ManagedObject, e
 	return mo, nil
 }
 
-// GetConfiguration returns the Agent configuration as text. This needs to be parsed seperately by the calling function.
+// GetConfiguration returns the Agent configuration as text. This needs to be parsed separately by the calling function.
 func (m *Microservice) GetConfiguration() (string, error) {
 	mo := m.GetAgent()
 
@@ -210,7 +210,7 @@ func (m *Microservice) GetOperations(status string) (*c8y.OperationCollection, *
 	return data, resp, err
 }
 
-// UpdateApplicationConfiguration updates the application configuration based on a new config which is parsed from a string. Values should be in the form of "<key>=<value>" seperated by a \n char
+// UpdateApplicationConfiguration updates the application configuration based on a new config which is parsed from a string. Values should be in the form of "<key>=<value>" separated by a \n char
 func (m *Microservice) UpdateApplicationConfiguration(configAsString string) {
 	zap.L().Info("Updating application configuration")
 	items := strings.Split(configAsString, "\n")

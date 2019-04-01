@@ -117,7 +117,7 @@ func (s *ApplicationService) GetApplicationsByName(ctx context.Context, name str
 	return data, resp, err
 }
 
-// GetApplicationsByOwner retuns a list of applications by owner
+// GetApplicationsByOwner returns a list of applications by owner
 func (s *ApplicationService) GetApplicationsByOwner(ctx context.Context, tenant string, opt *ApplicationOptions) (*ApplicationCollection, *Response, error) {
 	u := fmt.Sprintf("application/applicationsByOwner/%s", tenant)
 	return s.getApplicationData(ctx, u, opt)

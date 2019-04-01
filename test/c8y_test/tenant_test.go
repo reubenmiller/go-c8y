@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
+	"github.com/reubenmiller/go-c8y/pkg/c8y"
 )
 
 func TestTenantService_GetTenantStatisticsSummary(t *testing.T) {

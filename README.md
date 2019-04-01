@@ -1,5 +1,7 @@
 # go-c8y
 
+[![Build Status](https://travis-ci.org/reubenmiller/go-c8y.svg?branch=master)](https://travis-ci.org/reubenmiller/go-c8y)
+
 Unofficial Go client for [Cumulocity](http://cumulocity.com/guides/reference/rest-implementation/).
 
 ## Caveats

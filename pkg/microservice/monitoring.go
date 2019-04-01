@@ -129,7 +129,7 @@ func getLastLineWithSeek(filepath string, numberLines int64) string {
 
 		line = fmt.Sprintf("%s%s", string(char), line) // there is more efficient way
 
-		if cursor == -filesize { // stop if we are at the begining
+		if cursor == -filesize { // stop if we are at the beginning
 			break
 		}
 	}

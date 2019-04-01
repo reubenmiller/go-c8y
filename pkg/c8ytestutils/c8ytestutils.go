@@ -71,7 +71,7 @@ func readConfig() *viper.Viper {
 	config.SetDefault("report.concurrency", 20)
 	config.SetDefault("log.file", "application.log")
 
-	// Enable all variables to be defined as (case-senstive) environment variables in the form of
+	// Enable all variables to be defined as (case-sensitive) environment variables in the form of
 	config.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	config.AutomaticEnv()
 

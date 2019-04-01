@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	// VERSION prefered Bayeux version
+	// VERSION preferred Bayeux version
 	VERSION = "1.0"
 
 	// MINIMUMVERSION supported Bayeux version
