@@ -5,27 +5,19 @@ branches:
   - master
   - develop
 
-addons:
-  sonarcloud:
-    organization: "sonarcloud_organization_key" # the key of the org you chose at step #3
-    token:
-      secure: ********* # encrypted value of your token
+# addons:
+#   sonarcloud:
+#     organization: "sonarcloud_organization_key" # the key of the org you chose at step #3
+#     token:
+#       secure: ********* # encrypted value of your token
 
 cache:
   directories:
     - ./pkg/c8y/vendor
 
-# install:
-#   - make dependencies
-
 go:
-  - 1.11.x
+  - 1.12.x
   - master
 
-
-jobs:
-  include:
-    - script:
-        # - sonar-scanner
-        - make ./integration-tests
-      name: "Integration Tests"     # names the second Tests stage job
+script:
+  - make test
