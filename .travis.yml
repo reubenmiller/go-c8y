@@ -1,5 +1,10 @@
 language: go
 
+branches:
+  only:
+  - master
+  - develop
+
 addons:
   sonarcloud:
     organization: "sonarcloud_organization_key" # the key of the org you chose at step #3
