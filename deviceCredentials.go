@@ -2,6 +2,9 @@ package c8y
 
 import (
 	"context"
+	"errors"
+	"log"
+	"time"
 
 	"github.com/tidwall/gjson"
 )
@@ -126,4 +129,42 @@ func (s *DeviceCredentialsService) CreateDeviceCredentials(ctx context.Context, 
 		ResponseData: data,
 	})
 	return data, resp, err
+}
+
+// PollNewDeviceRequest continously polls a device request for a specified id at defined intervales. The func will wait until the device request has been set to ACCEPTED.
+// If the device request does not reach the ACCEPTED state in the defined timeout period, then an error will be returned.
+func (s *DeviceCredentialsService) PollNewDeviceRequest(ctx context.Context, deviceID string, interval time.Duration, timeout time.Duration) (<-chan struct{}, <-chan error) {
+	ticker := time.NewTicker(interval)
+	timeoutTimer := time.NewTimer(timeout)
+
+	done := make(chan struct{}, 0)
+	err := make(chan error, 0)
+
+	go func() {
+		defer func() {
+			ticker.Stop()
+			timeoutTimer.Stop()
+		}()
+		for {
+			select {
+			case <-ctx.Done():
+				err <- ctx.Err()
+
+			case <-ticker.C:
+				log.Printf("Polling for device request")
+				deviceRequest, _, err := s.GetNewDeviceRequest(ctx, deviceID)
+				if err != nil {
+					continue
+				}
+				if deviceRequest.Status == NewDeviceRequestAccepted {
+					done <- struct{}{}
+				}
+
+			case <-timeoutTimer.C:
+				err <- errors.New("Timeout waiting for device request to reach ACCEPTED state")
+			}
+		}
+	}()
+
+	return done, err
 }
