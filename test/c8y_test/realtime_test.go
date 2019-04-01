@@ -40,7 +40,7 @@ func TestRealtimeSubscriptions_SubscribeToOperations(t *testing.T) {
 	}()
 
 	err = realtime.WaitForConnection()
-	time.Sleep(2 * time.Second)
+	time.Sleep(5 * time.Second)
 
 	if err != nil {
 		t.Errorf("Unknown error")
@@ -50,6 +50,7 @@ func TestRealtimeSubscriptions_SubscribeToOperations(t *testing.T) {
 	timerChan := time.NewTimer(time.Second * 5).C
 
 	realtime.Subscribe(c8y.RealtimeOperations(device.ID), ch)
+	time.Sleep(2 * time.Second)
 
 	// Create a dummy operation
 	sendOperation := func() {
