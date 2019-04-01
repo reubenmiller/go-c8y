@@ -33,6 +33,7 @@ func operationFactory(client *c8y.Client, deviceID string) func() (*c8y.Operatio
 func TestOperationService_CreateOperation(t *testing.T) {
 	client := createTestClient()
 	device, err := createRandomTestDevice()
+	testingutils.Ok(t, err)
 
 	createOp := operationFactory(client, device.ID)
 	op, resp, err := createOp()
@@ -59,6 +60,7 @@ func TestOperationService_CreateOperation(t *testing.T) {
 func TestOperationService_UpdateOperation(t *testing.T) {
 	client := createTestClient()
 	device, err := createRandomTestDevice()
+	testingutils.Ok(t, err)
 
 	createOp := operationFactory(client, device.ID)
 	op1, resp, err := createOp()
@@ -99,6 +101,7 @@ func TestOperationService_UpdateOperation(t *testing.T) {
 func TestOperationService_DeleteOperation(t *testing.T) {
 	client := createTestClient()
 	device, err := createRandomTestDevice()
+	testingutils.Ok(t, err)
 
 	//
 	// Create dummy operations

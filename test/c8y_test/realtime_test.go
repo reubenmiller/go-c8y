@@ -16,6 +16,7 @@ func TestRealtimeClient(t *testing.T) {
 	realtime := client.Realtime
 
 	err := realtime.Connect()
+	testingutils.Ok(t, err)
 
 	err = realtime.WaitForConnection()
 

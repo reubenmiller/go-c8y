@@ -375,6 +375,12 @@ func (s *InventoryService) CreateBinary(ctx context.Context, filename string, pr
 	client := s.client
 	metadataBytes, err := json.Marshal(properties)
 
+	if err != nil {
+		err = errors.Wrap(err, "Failed to marshal properties")
+		zap.S().Error(err)
+		return nil, nil, err
+	}
+
 	values := map[string]io.Reader{
 		"file":   mustOpen(filename), // lets assume its this file
 		"object": bytes.NewReader(metadataBytes),

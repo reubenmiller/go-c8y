@@ -127,6 +127,8 @@ func TestTenantOptionsService_GetOptions(t *testing.T) {
 		context.Background(),
 		category,
 	)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
 	testingutils.Equals(t, "value1", filteredOptionsByCategory["prop1"])
 	testingutils.Equals(t, "value2", filteredOptionsByCategory["prop2"])
 

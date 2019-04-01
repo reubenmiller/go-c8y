@@ -346,6 +346,7 @@ func TestMeasurementService_CreateWithDifferentTypes(t *testing.T) {
 func TestMeasurementService_GetMeasurement_DeleteMeasurement(t *testing.T) {
 	client := createTestClient()
 	testDevice, err := createRandomTestDevice()
+	testingutils.Ok(t, err)
 
 	// Create a test measurement
 	measurement1, _ := c8y.NewSimpleMeasurementRepresentation(c8y.SimpleMeasurementOptions{
@@ -390,6 +391,7 @@ func TestMeasurementService_GetMeasurement_DeleteMeasurement(t *testing.T) {
 func TestMeasurementService_DeleteMeasurements(t *testing.T) {
 	client := createTestClient()
 	testDevice, err := createRandomTestDevice()
+	testingutils.Ok(t, err)
 
 	valueFragmentType := "nx_Type1"
 	createMeasVariable1 := measurmentFactory(client, testDevice.ID, valueFragmentType, "Variable1")
@@ -449,6 +451,7 @@ func TestMeasurementService_DeleteMeasurements(t *testing.T) {
 func TestMeasurementService_CreateMeasurements(t *testing.T) {
 	client := createTestClient()
 	testDevice, err := createRandomTestDevice()
+	testingutils.Ok(t, err)
 
 	valueFragmentType := "nx_common"
 
