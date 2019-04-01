@@ -79,6 +79,7 @@ func readConfig() *viper.Viper {
 	config.BindEnv("c8y.host", "C8Y_BASEURL")
 	config.BindEnv("c8y.tenant", "C8Y_BOOTSTRAP_TENANT")
 	config.BindEnv("c8y.username", "C8Y_BOOTSTRAP_USER")
+	config.BindEnv("c8y.username", "C8Y_USER")
 	config.BindEnv("c8y.password", "C8Y_BOOTSTRAP_PASSWORD")
 
 	requiredProperties := []string{
