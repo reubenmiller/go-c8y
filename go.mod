@@ -3,7 +3,6 @@ module github.com/reubenmiller/go-c8y
 require (
 	github.com/reubenmiller/go-c8y/pkg/c8y v0.0.0-20190401191817-d4dface78e96
 	github.com/reubenmiller/go-c8y/pkg/microservice v0.0.0-20190401160529-913a4f3caafc
-	github.com/reubenmiller/go-c8y/test/c8y_test v0.0.0-00010101000000-000000000000 // indirect
 	github.com/spf13/viper v1.3.2
 )
 
