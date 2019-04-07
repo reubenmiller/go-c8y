@@ -12,78 +12,78 @@ type EventBuilder struct {
 // NewEventBuilder returns a new custom event with the required fields set.
 // The event will have a timestamp set to Now(). The timestamp can be set to another timestamp by using SetTimestamp()
 func NewEventBuilder(deviceID string, typeName string, text string) *EventBuilder {
-	c := &EventBuilder{
+	b := &EventBuilder{
 		data: map[string]interface{}{},
 	}
-	c.SetTimestamp(nil)
-	c.SetDeviceID(deviceID)
-	c.SetText(text)
-	c.SetType(typeName)
-	return c
+	b.SetTimestamp(nil)
+	b.SetDeviceID(deviceID)
+	b.SetText(text)
+	b.SetType(typeName)
+	return b
 }
 
 // MarshalJSON returns the given event in json format
-func (c EventBuilder) MarshalJSON() ([]byte, error) {
-	return json.Marshal(c.data)
+func (b EventBuilder) MarshalJSON() ([]byte, error) {
+	return json.Marshal(b.data)
 }
 
 // DeviceID returns the device id of the custom event
-func (c EventBuilder) DeviceID() string {
-	if v, ok := c.data["source"].(Source); ok {
+func (b EventBuilder) DeviceID() string {
+	if v, ok := b.data["source"].(Source); ok {
 		return v.ID
 	}
 	return ""
 }
 
 // SetDeviceID sets the device id for the custom event
-func (c *EventBuilder) SetDeviceID(ID string) *EventBuilder {
-	return c.Set("source", Source{
+func (b *EventBuilder) SetDeviceID(ID string) *EventBuilder {
+	return b.Set("source", Source{
 		ID: ID,
 	})
 }
 
 // Type returns the event type
-func (c EventBuilder) Type() string {
-	return c.data["type"].(string)
+func (b EventBuilder) Type() string {
+	return b.data["type"].(string)
 }
 
 // SetType sets the event type
-func (c *EventBuilder) SetType(name string) *EventBuilder {
-	return c.Set("type", name)
+func (b *EventBuilder) SetType(name string) *EventBuilder {
+	return b.Set("type", name)
 }
 
 // Text returns the device id of the custom event
-func (c EventBuilder) Text() string {
-	return c.data["text"].(string)
+func (b EventBuilder) Text() string {
+	return b.data["text"].(string)
 }
 
 // SetText sets the event text for the custom event
-func (c *EventBuilder) SetText(text string) *EventBuilder {
-	return c.Set("text", text)
+func (b *EventBuilder) SetText(text string) *EventBuilder {
+	return b.Set("text", text)
 }
 
 // Timestamp returns the timestamp of the custom event
-func (c EventBuilder) Timestamp() Timestamp {
-	return *c.data["time"].(*Timestamp)
+func (b EventBuilder) Timestamp() Timestamp {
+	return *b.data["time"].(*Timestamp)
 }
 
 // SetTimestamp sets the timestamp when the event was created. If the value is nil, then the current timestamp will be used
-func (c *EventBuilder) SetTimestamp(value *Timestamp) *EventBuilder {
+func (b *EventBuilder) SetTimestamp(value *Timestamp) *EventBuilder {
 	if value == nil {
 		value = NewTimestamp()
 	}
-	return c.Set("time", value)
+	return b.Set("time", value)
 }
 
 // Set sets the name property with the given value
-func (c *EventBuilder) Set(name string, value interface{}) *EventBuilder {
-	c.data[name] = value
-	return c
+func (b *EventBuilder) Set(name string, value interface{}) *EventBuilder {
+	b.data[name] = value
+	return b
 }
 
-// Get returns the given property value. If the property does not exist, then the second returne parameter will be set to false
-func (c EventBuilder) Get(name string) (interface{}, bool) {
-	if v, ok := c.data[name]; ok {
+// Get returns the given property value. If the property does not exist, then the second return parameter will be set to false
+func (b EventBuilder) Get(name string) (interface{}, bool) {
+	if v, ok := b.data[name]; ok {
 		return v, true
 	}
 	return nil, false

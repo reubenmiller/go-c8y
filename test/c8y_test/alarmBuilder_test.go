@@ -75,6 +75,32 @@ func TestAlarmBuilder_Type(t *testing.T) {
 	testingutils.Equals(t, "anotherType", builder.Type())
 }
 
+func TestAlarmBuilder_Text(t *testing.T) {
+	builder := c8y.NewAlarmBuilder("12345", "customAlarm1", "Custom Event Text 1")
+	testingutils.Equals(t, "Custom Event Text 1", builder.Text())
+
+	builder.SetText("Some other Alarm Text")
+	testingutils.Equals(t, "Some other Alarm Text", builder.Text())
+}
+
+func TestAlarmBuilder_Severity(t *testing.T) {
+	builder := c8y.NewAlarmBuilder("12345", "customAlarm1", "Custom Event Text 1")
+	// Defaults to Major
+	testingutils.Equals(t, c8y.AlarmSeverityMajor, builder.Severity())
+
+	builder.SetSeverityCritical()
+	testingutils.Equals(t, c8y.AlarmSeverityCritical, builder.Severity())
+
+	builder.SetSeverityMajor()
+	testingutils.Equals(t, c8y.AlarmSeverityMajor, builder.Severity())
+
+	builder.SetSeverityMinor()
+	testingutils.Equals(t, c8y.AlarmSeverityMinor, builder.Severity())
+
+	builder.SetSeverityWarning()
+	testingutils.Equals(t, c8y.AlarmSeverityWarning, builder.Severity())
+}
+
 func TestAlarmBuilder_GetSet(t *testing.T) {
 	builder := c8y.NewAlarmBuilder("12345", "customAlarm1", "Custom Event Text 1")
 
