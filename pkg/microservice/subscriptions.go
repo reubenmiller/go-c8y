@@ -2,13 +2,11 @@ package microservice
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"regexp"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/tidwall/gjson"
-	"go.uber.org/zap"
 )
 
 // doSomethingWithData is an example func which can be used when calling the subscribe to measurements
@@ -71,9 +69,8 @@ func (m *Microservice) SubscribeToNotifications(user c8y.ServiceUser, realtimeCh
 		for {
 			select {
 			case msg := <-ch:
-				zap.S().Infof("ws: [frame]: %s\n", string(msg.Payload.Item.Raw))
+				// zap.S().Infof("ws: [frame]: %s\n", string(msg.Payload.Item.Raw))
 				if onMessageFunc != nil {
-					fmt.Println("calling func")
 					onMessageFunc(msg)
 				}
 			}

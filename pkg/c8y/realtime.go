@@ -330,7 +330,7 @@ func (c *RealtimeClient) worker() error {
 					log.Printf("ws: disconnect\n")
 
 				default:
-					log.Printf("ws: data: %s\n", message)
+					// log.Printf("ws: data: %s\n", message)
 					// Data package received
 					message.Payload.Item = gjson.ParseBytes(message.Payload.Data)
 					c.mtx.RLock()
