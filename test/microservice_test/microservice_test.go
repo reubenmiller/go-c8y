@@ -162,7 +162,7 @@ func TestMicroservice_SubscribeToNotifications(t *testing.T) {
 	testingutils.Ok(t, err)
 
 	// Create operation
-	op := c8y.NewCustomOperation(app.AgentID)
+	op := c8y.NewOperationBuilder(app.AgentID)
 	op.Set("com_custom_Operation", map[string]string{
 		"name": "Custom Operation 1",
 	})
