@@ -3,6 +3,7 @@ package c8y
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -162,7 +163,23 @@ func NewClientUsingBootstrapUserFromEnvironment(httpClient *http.Client, baseURL
 // for you (such as that provided by the golang.org/x/oauth2 library).
 func NewClient(httpClient *http.Client, baseURL string, tenant string, username string, password string, skipRealtimeClient bool) *Client {
 	if httpClient == nil {
-		httpClient = http.DefaultClient
+		// Default client ignores self signed certificates (to enable compatibility to the edge which uses self signed certs)
+		defaultTransport := http.DefaultTransport.(*http.Transport)
+		tr := &http.Transport{
+			Proxy:                 defaultTransport.Proxy,
+			DialContext:           defaultTransport.DialContext,
+			MaxIdleConns:          defaultTransport.MaxIdleConns,
+			IdleConnTimeout:       defaultTransport.IdleConnTimeout,
+			ExpectContinueTimeout: defaultTransport.ExpectContinueTimeout,
+			TLSHandshakeTimeout:   defaultTransport.TLSHandshakeTimeout,
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		}
+
+		httpClient = &http.Client{
+			Transport: tr,
+		}
 	}
 
 	var fmtURL string
@@ -542,6 +559,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 	if err != nil {
 		// If we got an error, and the context has been canceled,
 		// the context's error is probably more useful.
+		log.Printf("ERROR: Request failed. %s", err)
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
