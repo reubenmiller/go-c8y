@@ -23,6 +23,24 @@ type Configuration struct {
 	viper *viper.Viper
 }
 
+// SetDefaults sets default configuration settings from the given application.properties file
+// The default values will only be used if other application property does not already exist
+func (c *Configuration) SetDefaults() {
+	tempconfig := c.viper
+	tempconfig.SetConfigName("application")
+	tempconfig.AddConfigPath(".")
+
+	err := tempconfig.ReadInConfig()
+
+	if err != nil {
+		zap.S().Warnf("Could not read default application configuration")
+		return
+	}
+	for key, value := range tempconfig.AllSettings() {
+		c.viper.SetDefault(key, value)
+	}
+}
+
 // InitConfiguration initiliases the configuration (i.e. reads from file / environment variables)
 func (c *Configuration) InitConfiguration() {
 	config := c.viper
