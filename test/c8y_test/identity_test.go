@@ -15,16 +15,18 @@ func TestIdentityService_Create(t *testing.T) {
 	testingutils.Ok(t, err)
 	defer client.Inventory.Delete(context.Background(), testDevice.ID)
 
-	identity, resp, err := client.Identity.Create(context.Background(), testDevice.ID, "test_Type", "testDevice1")
+	identityName := testDevice.Name
+
+	identity, resp, err := client.Identity.Create(context.Background(), testDevice.ID, "test_Type", identityName)
 
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
 	testingutils.Equals(t, testDevice.ID, identity.ManagedObject.ID)
 	testingutils.Equals(t, "test_Type", identity.Type)
-	testingutils.Equals(t, "testDevice1", identity.ExternalID)
+	testingutils.Equals(t, identityName, identity.ExternalID)
 
 	// Get identity object
-	identity, resp, err = client.Identity.GetExternalID(context.Background(), "test_Type", "testDevice1")
+	identity, resp, err = client.Identity.GetExternalID(context.Background(), "test_Type", identityName)
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
 	testingutils.Equals(t, testDevice.ID, identity.ManagedObject.ID)
