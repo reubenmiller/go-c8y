@@ -11,7 +11,7 @@ import (
 func TestIdentityService_Create(t *testing.T) {
 	client := createTestClient()
 
-	testDevice, _, err := client.Inventory.CreateDevice(context.Background(), "testDevice")
+	testDevice, err := createRandomTestDevice()
 	testingutils.Ok(t, err)
 	defer client.Inventory.Delete(context.Background(), testDevice.ID)
 
