@@ -1,6 +1,7 @@
 package c8y
 
 import (
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -139,10 +140,14 @@ func getRealtimURL(host string) *url.URL {
 // is used for HTTP connections.
 func NewRealtimeClient(host string, wsDialer *websocket.Dialer, tenant, username, password string) *RealtimeClient {
 	if wsDialer == nil {
+		// Default client ignores self signed certificates (to enable compatibility to the edge which uses self signed certs)
 		wsDialer = &websocket.Dialer{
 			Proxy:             http.ProxyFromEnvironment,
 			HandshakeTimeout:  10 * time.Second,
 			EnableCompression: false,
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
 		}
 	}
 
