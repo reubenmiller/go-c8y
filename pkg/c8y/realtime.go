@@ -256,13 +256,11 @@ func (c *RealtimeClient) reconnect() error {
 
 // StartWebsocket opens a websocket to cumulocity
 func (c *RealtimeClient) connect() error {
-	dialer := websocket.Dialer{
-		Proxy:             http.ProxyFromEnvironment,
-		HandshakeTimeout:  10 * time.Second,
-		EnableCompression: false,
+	if c.dialer == nil {
+		panic("Missing dialer for realtime client")
 	}
 	log.Printf("Establishing connection to %s", c.url.String())
-	ws, _, err := dialer.Dial(c.url.String(), nil)
+	ws, _, err := c.dialer.Dial(c.url.String(), nil)
 
 	if err != nil {
 		return err
