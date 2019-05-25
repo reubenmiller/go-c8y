@@ -67,8 +67,9 @@ type RealtimeData struct {
 }
 
 type subscription struct {
-	glob ohmyglob.Glob
-	out  chan<- *Message
+	glob     ohmyglob.Glob
+	out      chan<- *Message
+	disabled bool
 }
 
 type request struct {
@@ -338,7 +339,7 @@ func (c *RealtimeClient) worker() error {
 					message.Payload.Item = gjson.ParseBytes(message.Payload.Data)
 					c.mtx.RLock()
 					for _, s := range c.subscriptions {
-						if s.glob.MatchString(message.Channel) {
+						if s.glob.MatchString(message.Channel) && !s.disabled {
 							s.out <- &message
 						}
 					}
@@ -456,17 +457,30 @@ func (c *RealtimeClient) Subscribe(pattern string, out chan<- *Message) error {
 	err = c.writeJSON(message)
 
 	if err == nil {
+		// Check if the subscription already exists, if so then enable it again
 		c.mtx.Lock()
-		c.subscriptions = append(c.subscriptions, subscription{
-			glob: glob,
-			out:  out,
-		})
+		existingSubscription := false
+		for i := range c.subscriptions {
+			if c.subscriptions[i].glob.String() == pattern {
+				log.Printf("Enabling existing channel %s", pattern)
+				existingSubscription = true
+				c.subscriptions[i].disabled = false
+			}
+		}
+		if !existingSubscription {
+			c.subscriptions = append(c.subscriptions, subscription{
+				glob: glob,
+				out:  out,
+			})
+		}
 		c.mtx.Unlock()
 	}
 	return err
 }
 
-// UnsubscribeAll unsubscribes to all of the subscribed channels
+// UnsubscribeAll unsubscribes to all of the subscribed channels.
+// The channel related to the subscriptin is left open, and will be
+// reused if another call with the same pattern is made to Subscribe()
 func (c *RealtimeClient) UnsubscribeAll() (errs []error) {
 
 	for _, pattern := range c.subscriptions {
@@ -475,6 +489,9 @@ func (c *RealtimeClient) UnsubscribeAll() (errs []error) {
 			errs = append(errs, err)
 		}
 	}
+	// c.mtx.Lock()
+	// c.subscriptions = nil
+	// c.mtx.Unlock()
 	return
 }
 
@@ -494,6 +511,16 @@ func (c *RealtimeClient) Unsubscribe(pattern string) error {
 	}
 
 	err = c.writeJSON(message)
+
+	// Mark subscription as disabled (but leave channel open for future reuse)
+	c.mtx.Lock()
+	for i := range c.subscriptions {
+		if c.subscriptions[i].glob.String() == pattern {
+			log.Printf("Disabling subscription [%s]", pattern)
+			c.subscriptions[i].disabled = true
+		}
+	}
+	c.mtx.Unlock()
 
 	if err != nil {
 		log.Printf("Failed to unsubscribe to subscription. %s", err)
