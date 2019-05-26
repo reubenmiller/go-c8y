@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -31,22 +32,23 @@ const (
 
 // RealtimeClient allows connecting to a Bayeux server and subscribing to channels.
 type RealtimeClient struct {
-	mtx           sync.RWMutex
-	url           *url.URL
-	clientID      string
-	tomb          *tomb.Tomb
-	subscriptions []subscription
-	messages      chan *Message
-	connected     bool
-	http          *http.Client
-	dialer        *websocket.Dialer
-	ws            *websocket.Conn
-	interval      time.Duration
-	extension     interface{}
-	tenant        string
-	username      string
-	password      string
-	requestID     uint64
+	mtx            sync.RWMutex
+	url            *url.URL
+	clientID       string
+	tomb           *tomb.Tomb
+	subscriptions  []subscription
+	messages       chan *Message
+	connected      bool
+	sentMetaAdvice bool
+	http           *http.Client
+	dialer         *websocket.Dialer
+	ws             *websocket.Conn
+	interval       time.Duration
+	extension      interface{}
+	tenant         string
+	username       string
+	password       string
+	requestID      uint64
 }
 
 // Message is the type delivered to subscribers.
@@ -56,6 +58,7 @@ type Message struct {
 	ID        string       `json:"id,omitempty"`
 	ClientID  string       `json:"clientId,omitempty"`
 	Extension interface{}  `json:"ext,omitempty"`
+	Advice    *advice      `json:"advice,omitempty"`
 }
 
 // RealtimeData contains the websocket frame data
@@ -83,12 +86,12 @@ type request struct {
 	SupportedConnectionTypes []string        `json:"supportedConnectionTypes,omitempty"`
 	ConnectionType           string          `json:"connectionType,omitempty"`
 	Subscription             string          `json:"subscription,omitempty"`
-	Advice                   advice          `json:"advice"`
+	Advice                   *advice         `json:"advice,omitempty"`
 }
 
 type advice struct {
 	Reconnect string `json:"reconnect,omitempty"`
-	Timeout   int64  `json:"timeout,omitempty"`
+	Timeout   int64  `json:"timeout"` // don't use omitempty, otherwise timeout: 0 will be removed
 	Interval  int    `json:"interval,omitempty"`
 }
 
@@ -164,6 +167,8 @@ func NewRealtimeClient(host string, wsDialer *websocket.Dialer, tenant, username
 		tenant:   tenant,
 		username: username,
 		password: password,
+
+		heartbeatInterval: 10 * time.Minute,
 	}
 }
 
@@ -187,6 +192,14 @@ func (c *RealtimeClient) IsConnected() bool {
 	isConnected := c.connected
 	c.mtx.RUnlock()
 	return isConnected
+}
+
+// HasSentMetaConnectAdvice checks if the meta connect with the advice information has already been sent or not
+func (c *RealtimeClient) HasSentMetaConnectAdvice() bool {
+	c.mtx.RLock()
+	sentMetaAdvice := c.sentMetaAdvice
+	c.mtx.RUnlock()
+	return sentMetaAdvice
 }
 
 // Close notifies the Bayeux server of the intent to disconnect and terminates
@@ -224,13 +237,8 @@ func (c *RealtimeClient) WaitForConnection() error {
 }
 
 func (c *RealtimeClient) createWebsocket() error {
-	dialer := websocket.Dialer{
-		Proxy:             http.ProxyFromEnvironment,
-		HandshakeTimeout:  10 * time.Second,
-		EnableCompression: false,
-	}
 	log.Printf("Establishing connection to %s", c.url.String())
-	ws, _, err := dialer.Dial(c.url.String(), nil)
+	ws, _, err := c.dialer.Dial(c.url.String(), nil)
 
 	if err != nil {
 		return err
@@ -248,10 +256,11 @@ func (c *RealtimeClient) reconnect() error {
 	if err != nil {
 		c.mtx.Unlock()
 		c.connected = false
+		c.sentMetaAdvice = false
 		c.mtx.Lock()
 		return err
 	}
-	c.sendMetaConnect()
+	c.sendInitialMetaConnect()
 	return nil
 }
 
@@ -297,44 +306,46 @@ func (c *RealtimeClient) worker() error {
 				}
 				log.Println("read:", err, messages)
 				log.Println("Handling connection error. You need to reconnect")
-
-				// Try to reconnect with a new websocket
 				c.reconnect()
-				// return
 			}
 
 			for _, message := range messages {
+				if strings.HasPrefix(message.Channel, "/meta") {
+					if messageText, err := json.Marshal(message); err == nil {
+						log.Printf("ws (recv): %s : %s", message.Channel, messageText)
+					}
+				}
 				switch channelType := message.Channel; channelType {
 				case "/meta/handshake":
-					log.Printf("ws: Handshake\n")
-
 					if message.ClientID != "" {
 						c.mtx.Lock()
 						c.clientID = message.ClientID
 						c.connected = true
 						c.mtx.Unlock()
-						log.Printf("Detected clientID: %s\n", message.ClientID)
+						log.Printf("Detected clientID: %s", message.ClientID)
 					} else {
-						log.Panicf("No clientID present in handshake. Check that the tenant, usename and password is correct. Raw Message: %s\n", message)
+						log.Panicf("No clientID present in handshake. Check that the tenant, usename and password is correct. Raw Message: %s", message)
 					}
 
 				case "/meta/subscribe":
-					log.Printf("ws: Subscribe\n")
-					if !c.IsConnected() {
-						c.sendMetaConnect()
+					if err := c.sendInitialMetaConnect(); err != nil {
+						log.Printf("Failed to send init /meta/connect. %s", err)
 					}
+				case "/meta/unsubscribe":
+					// do nothing
 
 				case "/meta/connect":
 					c.mtx.Lock()
 					c.connected = true
 					c.mtx.Unlock()
-					log.Printf("ws: Connect\n")
+					if err := c.sendMetaConnect(); err != nil {
+						log.Printf("Failed to send /meta/connect reponse to server")
+					}
 
 				case "/meta/disconnect":
-					log.Printf("ws: disconnect\n")
+					log.Printf("ws (recv): %s : %v", message.Channel, message)
 
 				default:
-					// log.Printf("ws: data: %s\n", message)
 					// Data package received
 					message.Payload.Item = gjson.ParseBytes(message.Payload.Data)
 					c.mtx.RLock()
@@ -378,9 +389,10 @@ func (c *RealtimeClient) handshake() error {
 		MinimumVersion:           MINIMUMVERSION,
 		SupportedConnectionTypes: []string{"websocket", "long-polling"},
 		Extension:                c.extension,
-		Advice: advice{
-			Interval: 0,
-			Timeout:  60000,
+		Advice: &advice{
+			Interval:  0,
+			Timeout:   60000,
+			Reconnect: "retry",
 		},
 	}
 
@@ -391,7 +403,6 @@ func (c *RealtimeClient) sendMetaConnect() error {
 	if c.ws == nil {
 		return fmt.Errorf("Websocket is nil")
 	}
-	log.Print("Sending meta/connect")
 	message := &request{
 		Channel:        "/meta/connect",
 		ConnectionType: "websocket",
@@ -399,6 +410,29 @@ func (c *RealtimeClient) sendMetaConnect() error {
 	}
 
 	return c.writeJSON(message)
+}
+
+func (c *RealtimeClient) sendInitialMetaConnect() error {
+	if c.ws == nil {
+		return fmt.Errorf("Websocket is nil")
+	}
+	message := &request{
+		Channel:        "/meta/connect",
+		ConnectionType: "websocket",
+		ClientID:       c.clientID,
+		Advice: &advice{
+			Timeout: 0,
+		},
+	}
+
+	if err := c.writeJSON(message); err != nil {
+		return err
+	}
+
+	c.mtx.Lock()
+	c.sentMetaAdvice = true
+	c.mtx.Unlock()
+	return nil
 }
 
 func getRealtimeID(id ...string) string {
@@ -532,5 +566,10 @@ func (c *RealtimeClient) Unsubscribe(pattern string) error {
 func (c *RealtimeClient) writeJSON(r *request) error {
 	// Add a unique request id
 	r.ID = strconv.FormatUint(atomic.AddUint64(&c.requestID, 1), 10)
+	if text, err := json.Marshal(r); err == nil {
+		log.Printf("ws (send): %s : %s", r.Channel, text)
+	} else {
+		log.Printf("Could not marshal message for sending. %s", err)
+	}
 	return c.ws.WriteJSON([]request{*r})
 }
