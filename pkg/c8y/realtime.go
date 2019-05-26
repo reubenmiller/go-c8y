@@ -167,8 +167,6 @@ func NewRealtimeClient(host string, wsDialer *websocket.Dialer, tenant, username
 		tenant:   tenant,
 		username: username,
 		password: password,
-
-		heartbeatInterval: 10 * time.Minute,
 	}
 }
 
