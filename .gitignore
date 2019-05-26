@@ -1,2 +1,6 @@
 c8y_test/application.properties
 c8y_test/debug.test
+examples/issue#2-realtime/out.txt
+test/microservice_test/application.log
+test/microservice_test/debug.test
+test/microservice_test/application.properties

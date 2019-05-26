@@ -53,12 +53,13 @@ type RealtimeClient struct {
 
 // Message is the type delivered to subscribers.
 type Message struct {
-	Channel   string       `json:"channel"`
-	Payload   RealtimeData `json:"data,omitempty"`
-	ID        string       `json:"id,omitempty"`
-	ClientID  string       `json:"clientId,omitempty"`
-	Extension interface{}  `json:"ext,omitempty"`
-	Advice    *advice      `json:"advice,omitempty"`
+	Channel    string       `json:"channel"`
+	Payload    RealtimeData `json:"data,omitempty"`
+	ID         string       `json:"id,omitempty"`
+	ClientID   string       `json:"clientId,omitempty"`
+	Extension  interface{}  `json:"ext,omitempty"`
+	Advice     *advice      `json:"advice,omitempty"`
+	Successful bool         `json:"successful,omitempty"`
 }
 
 // RealtimeData contains the websocket frame data
@@ -227,9 +228,11 @@ func (c *RealtimeClient) disconnect() error {
 
 // WaitForConnection wait for the connection to be estabilished before returning
 func (c *RealtimeClient) WaitForConnection() error {
-	for c.connected == false {
-		// TODO: only return once the connection has been made instead of fixed delay
-		time.Sleep(250 * time.Millisecond)
+	for {
+		if c.IsConnected() {
+			break
+		}
+		time.Sleep(200 * time.Millisecond)
 	}
 	return nil
 }
@@ -315,33 +318,55 @@ func (c *RealtimeClient) worker() error {
 				}
 				switch channelType := message.Channel; channelType {
 				case "/meta/handshake":
-					if message.ClientID != "" {
+					if message.Successful && message.ClientID != "" {
 						c.mtx.Lock()
 						c.clientID = message.ClientID
 						c.connected = true
 						c.mtx.Unlock()
 						log.Printf("Detected clientID: %s", message.ClientID)
 					} else {
-						log.Panicf("No clientID present in handshake. Check that the tenant, usename and password is correct. Raw Message: %s", message)
+						log.Panicf("No clientID present in handshake. Check that the tenant, usename and password is correct. Raw Message: %v", message)
 					}
 
 				case "/meta/subscribe":
-					if err := c.sendInitialMetaConnect(); err != nil {
-						log.Printf("Failed to send init /meta/connect. %s", err)
+					if !c.HasSentMetaConnectAdvice() {
+						if err := c.sendInitialMetaConnect(); err != nil {
+							log.Printf("Failed to send init /meta/connect. %s", err)
+						}
 					}
 				case "/meta/unsubscribe":
 					// do nothing
 
 				case "/meta/connect":
-					c.mtx.Lock()
-					c.connected = true
-					c.mtx.Unlock()
-					if err := c.sendMetaConnect(); err != nil {
-						log.Printf("Failed to send /meta/connect reponse to server")
+					// https://docs.cometd.org/current/reference/
+					wasConnected := c.IsConnected()
+					connected := message.Successful
+
+					if !wasConnected && connected {
+						// Reconnected
+					} else if wasConnected && !connected {
+						// Disconnected
+						c.mtx.Lock()
+						c.connected = false
+						c.mtx.Unlock()
+					} else if connected {
+						// New connection
+						c.mtx.Lock()
+						c.connected = true
+						c.mtx.Unlock()
+
+						if err := c.sendMetaConnect(); err != nil {
+							log.Printf("Failed to send /meta/connect reponse to server")
+						}
 					}
 
 				case "/meta/disconnect":
 					log.Printf("ws (recv): %s : %v", message.Channel, message)
+					if message.Successful {
+						c.mtx.Lock()
+						c.connected = false
+						c.mtx.Unlock()
+					}
 
 				default:
 					// Data package received
