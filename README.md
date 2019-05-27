@@ -48,6 +48,9 @@ Or, clone the repository:
 
     ```sh
     go test -timeout 30s github.com/reubenmiller/go-c8y/c8y_test
+
+    # race detector. Onlwindows use backslashes
+    go test -race -timeout 30s github.com/reubenmiller/go-c8y/test/c8y_test -run "^(TestRealtimeSubscriptions_Unsubscribe)$
     ```
 
 ## Usage

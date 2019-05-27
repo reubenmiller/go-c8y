@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -32,34 +33,38 @@ const (
 
 // RealtimeClient allows connecting to a Bayeux server and subscribing to channels.
 type RealtimeClient struct {
-	mtx            sync.RWMutex
-	url            *url.URL
-	clientID       string
-	tomb           *tomb.Tomb
-	subscriptions  []subscription
-	messages       chan *Message
-	connected      bool
-	sentMetaAdvice bool
-	http           *http.Client
-	dialer         *websocket.Dialer
-	ws             *websocket.Conn
-	interval       time.Duration
-	extension      interface{}
-	tenant         string
-	username       string
-	password       string
-	requestID      uint64
+	mtx           sync.RWMutex
+	url           *url.URL
+	clientID      string
+	tomb          *tomb.Tomb
+	subscriptions []subscription
+	messages      chan *Message
+	connected     bool
+	http          *http.Client
+	dialer        *websocket.Dialer
+	ws            *websocket.Conn
+	interval      time.Duration
+	extension     interface{}
+	tenant        string
+	username      string
+	password      string
+	requestID     uint64
+
+	connectionStatus   chan bool
+	subscribeCommand   chan struct{}
+	unsubscribeCommand chan struct{}
 }
 
 // Message is the type delivered to subscribers.
 type Message struct {
-	Channel    string       `json:"channel"`
-	Payload    RealtimeData `json:"data,omitempty"`
-	ID         string       `json:"id,omitempty"`
-	ClientID   string       `json:"clientId,omitempty"`
-	Extension  interface{}  `json:"ext,omitempty"`
-	Advice     *advice      `json:"advice,omitempty"`
-	Successful bool         `json:"successful,omitempty"`
+	Channel      string       `json:"channel"`
+	Payload      RealtimeData `json:"data,omitempty"`
+	ID           string       `json:"id,omitempty"`
+	ClientID     string       `json:"clientId,omitempty"`
+	Extension    interface{}  `json:"ext,omitempty"`
+	Advice       *advice      `json:"advice,omitempty"`
+	Successful   bool         `json:"successful,omitempty"`
+	Subscription string       `json:"subscription,omitempty"`
 }
 
 // RealtimeData contains the websocket frame data
@@ -168,6 +173,10 @@ func NewRealtimeClient(host string, wsDialer *websocket.Dialer, tenant, username
 		tenant:   tenant,
 		username: username,
 		password: password,
+
+		connectionStatus:   make(chan bool),
+		subscribeCommand:   make(chan struct{}),
+		unsubscribeCommand: make(chan struct{}),
 	}
 }
 
@@ -193,21 +202,20 @@ func (c *RealtimeClient) IsConnected() bool {
 	return isConnected
 }
 
-// HasSentMetaConnectAdvice checks if the meta connect with the advice information has already been sent or not
-func (c *RealtimeClient) HasSentMetaConnectAdvice() bool {
-	c.mtx.RLock()
-	sentMetaAdvice := c.sentMetaAdvice
-	c.mtx.RUnlock()
-	return sentMetaAdvice
-}
-
 // Close notifies the Bayeux server of the intent to disconnect and terminates
 // the background polling loop.
 func (c *RealtimeClient) Close() error {
-	c.mtx.Lock()
-	defer c.mtx.Unlock()
+	if err := c.disconnect(); err != nil {
+		log.Printf("Failed to disconnect. %s", err)
+	}
+	c.WaitForDisconnection()
+	log.Printf("Killing go routine")
 	c.tomb.Killf("Close")
-	c.connected = false
+	return nil
+}
+
+// Disconnect sends a disconnect signal to the server and closes the websocket
+func (c *RealtimeClient) Disconnect() error {
 	return c.disconnect()
 }
 
@@ -217,24 +225,90 @@ func (c *RealtimeClient) disconnect() error {
 		ClientID: c.clientID,
 	}
 
-	err := c.ws.WriteJSON(message)
+	// Change to disconnected state, as the server will not send a reply upon receiving the /meta/disconnect command
+	c.mtx.Lock()
+	c.connected = false
+	c.mtx.Unlock()
+	// c.connectionStatus <- false
+
+	err := c.sendJSON(message)
 
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
-// WaitForConnection wait for the connection to be estabilished before returning
-func (c *RealtimeClient) WaitForConnection() error {
+// WaitForConnection waits for the connection to be estabilished before returning
+func (c *RealtimeClient) WaitForConnection(timeout ...time.Duration) error {
+	d := getDurationWithDefault(timeout...)
+	timeoutCh := time.After(d)
+
 	for {
-		if c.IsConnected() {
-			break
+		select {
+		case isConnected := <-c.connectionStatus:
+			if isConnected {
+				return nil
+			}
+		case <-timeoutCh:
+			err := errors.New("Timed out whilst waiting for pending responses to be received")
+			log.Printf("Waiting error: %s", err)
+			return err
 		}
-		time.Sleep(200 * time.Millisecond)
 	}
-	return nil
+}
+
+// WaitForPendingSubscribe waits for a message to be received on the Subscribe channel.
+// It should be called after using Subscribe() if you want to serially wait for response from
+// the server regarding the last sent Subscribe command
+func (c *RealtimeClient) WaitForPendingSubscribe(timeout ...time.Duration) error {
+	d := getDurationWithDefault(timeout...)
+	timeoutCh := time.After(d)
+
+	select {
+	case <-c.subscribeCommand:
+		return nil
+	case <-timeoutCh:
+		err := errors.New("Timed out whilst waiting for pending responses to be received")
+		log.Printf("Waiting error: %s", err)
+		return err
+	}
+}
+
+// WaitForPendingUnsubscribe waits for a message to be received on the Unsubscribe channel.
+// It should be called after using Unsubscribe() if you want to serially wait for response from
+// the server regarding the last sent Unsubscribe command
+func (c *RealtimeClient) WaitForPendingUnsubscribe(timeout ...time.Duration) {
+	d := getDurationWithDefault(timeout...)
+	timeoutCh := time.After(d)
+
+	select {
+	case <-c.unsubscribeCommand:
+		return
+	case <-timeoutCh:
+		err := errors.New("Timed out whilst waiting for pending responses to be received")
+		log.Printf("Waiting error: %s", err)
+		return
+	}
+}
+
+// WaitForDisconnection waits for the disconnection of the realtime client to the server
+func (c *RealtimeClient) WaitForDisconnection() error {
+	ticker := time.NewTicker(200 * time.Millisecond)
+	timeout := time.After(10 * time.Second)
+	for {
+		select {
+		case <-ticker.C:
+			if !c.IsConnected() {
+				log.Printf("Disconnected from server")
+				return nil
+			}
+		case <-timeout:
+			err := errors.New("Timed out whilst waiting for /meta/disconnect from server")
+			log.Printf("Disconnect error: %s", err)
+			return err
+		}
+	}
 }
 
 func (c *RealtimeClient) createWebsocket() error {
@@ -245,8 +319,8 @@ func (c *RealtimeClient) createWebsocket() error {
 		return err
 	}
 	c.mtx.Lock()
+	defer c.mtx.Unlock()
 	c.ws = ws
-	c.mtx.Unlock()
 	return nil
 }
 
@@ -255,13 +329,13 @@ func (c *RealtimeClient) reconnect() error {
 	err := c.createWebsocket()
 
 	if err != nil {
-		c.mtx.Unlock()
-		c.connected = false
-		c.sentMetaAdvice = false
 		c.mtx.Lock()
+		c.connected = false
+		c.mtx.Unlock()
+		// c.connectionStatus <- false
 		return err
 	}
-	c.sendInitialMetaConnect()
+	c.getAdvice()
 	return nil
 }
 
@@ -301,13 +375,22 @@ func (c *RealtimeClient) worker() error {
 			err := c.ws.ReadJSON(&messages)
 
 			if err != nil {
+				log.Printf("wc ReadJSON: error=%s, message=%v", err, messages)
+
+				/* if strings.Contains(err.Error(), "(normal)") {
+					log.Println("Connection has been closed by the client")
+					return
+				} */
+
 				if !c.IsConnected() {
 					log.Println("Connection has been closed by the client")
 					return
 				}
-				log.Println("read:", err, messages)
 				log.Println("Handling connection error. You need to reconnect")
-				c.reconnect()
+				if err := c.connect(); err != nil {
+					log.Printf("Failed to send connect. %s", err)
+				}
+				// c.reconnect()
 			}
 
 			for _, message := range messages {
@@ -323,61 +406,84 @@ func (c *RealtimeClient) worker() error {
 						c.clientID = message.ClientID
 						c.connected = true
 						c.mtx.Unlock()
-						log.Printf("Detected clientID: %s", message.ClientID)
+						c.connectionStatus <- true
+
+						// Get /meta/connect information about the connection
+						if err := c.getAdvice(); err != nil {
+							log.Printf("Failed to send init /meta/connect. %s", err)
+						}
 					} else {
 						log.Panicf("No clientID present in handshake. Check that the tenant, usename and password is correct. Raw Message: %v", message)
 					}
 
 				case "/meta/subscribe":
-					if !c.HasSentMetaConnectAdvice() {
-						if err := c.sendInitialMetaConnect(); err != nil {
-							log.Printf("Failed to send init /meta/connect. %s", err)
-						}
+					if message.Successful {
+						log.Printf("Successfully subscribed to channel %s", message.Subscription)
+					} else {
+						log.Printf("Failed to subscribe to channel %s", message.Subscription)
 					}
+					c.subscribeCommand <- struct{}{}
+					log.Println("Posted to subscribeCommand channel")
+
 				case "/meta/unsubscribe":
-					// do nothing
+					if message.Successful {
+						// TODO: Unsubscribe to channel
+						log.Printf("Successfully unsubscribed to channel %s", message.Subscription)
+					}
+					c.unsubscribeCommand <- struct{}{}
+					log.Println("Posted to unsubscribeCommand channel")
 
 				case "/meta/connect":
 					// https://docs.cometd.org/current/reference/
 					wasConnected := c.IsConnected()
 					connected := message.Successful
 
+					if message.Advice != nil {
+						if message.Advice.Reconnect == "handshake" {
+							log.Printf("Received advice from server to reconnect using handshake")
+							if err := c.handshake(); err != nil {
+								log.Printf("Failed to send handshake")
+							}
+						}
+					}
+
 					if !wasConnected && connected {
 						// Reconnected
 					} else if wasConnected && !connected {
 						// Disconnected
-						c.mtx.Lock()
-						c.connected = false
-						c.mtx.Unlock()
+						c.disconnect()
 					} else if connected {
 						// New connection
 						c.mtx.Lock()
 						c.connected = true
 						c.mtx.Unlock()
+						// c.connectionStatus <- true
 
-						if err := c.sendMetaConnect(); err != nil {
+						if err := c.sendMeta(); err != nil {
 							log.Printf("Failed to send /meta/connect reponse to server")
 						}
 					}
 
 				case "/meta/disconnect":
-					log.Printf("ws (recv): %s : %v", message.Channel, message)
 					if message.Successful {
-						c.mtx.Lock()
-						c.connected = false
-						c.mtx.Unlock()
+						log.Printf("Successfully disconnected with server")
 					}
 
 				default:
 					// Data package received
+					if !c.IsConnected() {
+						return
+					}
 					message.Payload.Item = gjson.ParseBytes(message.Payload.Data)
-					c.mtx.RLock()
-					for _, s := range c.subscriptions {
+					subscriptions := c.subscriptions
+
+					for _, s := range subscriptions {
 						if s.glob.MatchString(message.Channel) && !s.disabled {
-							s.out <- &message
+							if c.connected {
+								s.out <- &message
+							}
 						}
 					}
-					c.mtx.RUnlock()
 				}
 			}
 		}
@@ -394,11 +500,15 @@ func (c *RealtimeClient) worker() error {
 
 			// Cleanly close the connection by sending a close message and then
 			// waiting (with timeout) for the server to close the connection.
-			err := c.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+			if err := c.Disconnect(); err != nil {
+				log.Println("Failed to send disconnect to server:", err)
+				return err
+			}
+			/* err := c.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 			if err != nil {
 				log.Println("write close:", err)
 				return err
-			}
+			} */
 
 			return fmt.Errorf("Stopping websocket")
 		}
@@ -419,10 +529,11 @@ func (c *RealtimeClient) handshake() error {
 		},
 	}
 
-	return c.writeJSON(handshakeMessage)
+	err := c.sendJSON(handshakeMessage)
+	return err
 }
 
-func (c *RealtimeClient) sendMetaConnect() error {
+func (c *RealtimeClient) sendMeta() error {
 	if c.ws == nil {
 		return fmt.Errorf("Websocket is nil")
 	}
@@ -432,29 +543,27 @@ func (c *RealtimeClient) sendMetaConnect() error {
 		ClientID:       c.clientID,
 	}
 
-	return c.writeJSON(message)
+	return c.sendJSON(message)
 }
 
-func (c *RealtimeClient) sendInitialMetaConnect() error {
+func (c *RealtimeClient) getAdvice() error {
 	if c.ws == nil {
 		return fmt.Errorf("Websocket is nil")
 	}
+	clientID := c.clientID
 	message := &request{
 		Channel:        "/meta/connect",
 		ConnectionType: "websocket",
-		ClientID:       c.clientID,
+		ClientID:       clientID,
 		Advice: &advice{
 			Timeout: 0,
 		},
 	}
 
-	if err := c.writeJSON(message); err != nil {
+	if err := c.sendJSON(message); err != nil {
 		return err
 	}
 
-	c.mtx.Lock()
-	c.sentMetaAdvice = true
-	c.mtx.Unlock()
 	return nil
 }
 
@@ -463,6 +572,13 @@ func getRealtimeID(id ...string) string {
 		return id[0]
 	}
 	return "*"
+}
+
+func getDurationWithDefault(d ...time.Duration) time.Duration {
+	if len(d) == 0 {
+		return 30 * time.Second
+	}
+	return d[0]
 }
 
 // RealtimeAlarms subscribes to events on alarms objects from the CEP realtime engine
@@ -495,7 +611,7 @@ func RealtimeOperations(id ...string) string {
 	return "/operations/" + getRealtimeID(id...)
 }
 
-// Subscribe setup a subscription to
+// Subscribe setup a subscription to the given element
 func (c *RealtimeClient) Subscribe(pattern string, out chan<- *Message) error {
 	log.Println("Subscribing to ", pattern)
 
@@ -511,27 +627,24 @@ func (c *RealtimeClient) Subscribe(pattern string, out chan<- *Message) error {
 		ClientID:       c.clientID,
 	}
 
-	err = c.writeJSON(message)
-
-	if err == nil {
-		// Check if the subscription already exists, if so then enable it again
-		c.mtx.Lock()
-		existingSubscription := false
-		for i := range c.subscriptions {
-			if c.subscriptions[i].glob.String() == pattern {
-				log.Printf("Enabling existing channel %s", pattern)
-				existingSubscription = true
-				c.subscriptions[i].disabled = false
-			}
+	c.mtx.Lock()
+	existingSubscription := false
+	for i := range c.subscriptions {
+		if c.subscriptions[i].glob.String() == pattern {
+			log.Printf("Enabling existing channel %s", pattern)
+			existingSubscription = true
+			// c.subscriptions[i].disabled = false
 		}
-		if !existingSubscription {
-			c.subscriptions = append(c.subscriptions, subscription{
-				glob: glob,
-				out:  out,
-			})
-		}
-		c.mtx.Unlock()
 	}
+	if !existingSubscription {
+		c.subscriptions = append(c.subscriptions, subscription{
+			glob: glob,
+			out:  out,
+		})
+	}
+	c.mtx.Unlock()
+
+	err = c.sendJSON(message)
 	return err
 }
 
@@ -539,16 +652,21 @@ func (c *RealtimeClient) Subscribe(pattern string, out chan<- *Message) error {
 // The channel related to the subscriptin is left open, and will be
 // reused if another call with the same pattern is made to Subscribe()
 func (c *RealtimeClient) UnsubscribeAll() (errs []error) {
-
-	for _, pattern := range c.subscriptions {
-		err := c.Unsubscribe(pattern.glob.String())
-		if err != nil {
-			errs = append(errs, err)
+	for i, subscription := range c.subscriptions {
+		message := &request{
+			Channel:      "/meta/unsubscribe",
+			Subscription: subscription.glob.String(),
+			ClientID:     c.clientID,
 		}
+
+		err := c.sendJSON(message)
+		if err != nil {
+			log.Printf("could not send unsubscribe message. %s", err)
+		}
+		c.mtx.Lock()
+		c.subscriptions[i].disabled = true
+		c.mtx.Unlock()
 	}
-	// c.mtx.Lock()
-	// c.subscriptions = nil
-	// c.mtx.Unlock()
 	return
 }
 
@@ -567,17 +685,7 @@ func (c *RealtimeClient) Unsubscribe(pattern string) error {
 		ClientID:     c.clientID,
 	}
 
-	err = c.writeJSON(message)
-
-	// Mark subscription as disabled (but leave channel open for future reuse)
-	c.mtx.Lock()
-	for i := range c.subscriptions {
-		if c.subscriptions[i].glob.String() == pattern {
-			log.Printf("Disabling subscription [%s]", pattern)
-			c.subscriptions[i].disabled = true
-		}
-	}
-	c.mtx.Unlock()
+	err = c.sendJSON(message)
 
 	if err != nil {
 		log.Printf("Failed to unsubscribe to subscription. %s", err)
@@ -586,7 +694,7 @@ func (c *RealtimeClient) Unsubscribe(pattern string) error {
 	return err
 }
 
-func (c *RealtimeClient) writeJSON(r *request) error {
+func (c *RealtimeClient) sendJSON(r *request) error {
 	// Add a unique request id
 	r.ID = strconv.FormatUint(atomic.AddUint64(&c.requestID, 1), 10)
 	if text, err := json.Marshal(r); err == nil {
@@ -594,5 +702,8 @@ func (c *RealtimeClient) writeJSON(r *request) error {
 	} else {
 		log.Printf("Could not marshal message for sending. %s", err)
 	}
-	return c.ws.WriteJSON([]request{*r})
+	c.mtx.Lock()
+	err := c.ws.WriteJSON([]request{*r})
+	c.mtx.Unlock()
+	return err
 }
