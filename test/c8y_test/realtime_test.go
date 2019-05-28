@@ -37,12 +37,6 @@ func TestRealtimeClient(t *testing.T) {
 
 	err := realtime.Connect()
 	testingutils.Ok(t, err)
-
-	err = realtime.WaitForConnection()
-
-	if err != nil {
-		t.Errorf("Unknown error")
-	}
 }
 
 func TestRealtimeSubscriptions_SubscribeToOperations(t *testing.T) {
@@ -54,12 +48,9 @@ func TestRealtimeSubscriptions_SubscribeToOperations(t *testing.T) {
 
 	client := createTestClient()
 	realtime := client.Realtime
+	err = realtime.Connect()
+	testingutils.Ok(t, err)
 
-	go func() {
-		realtime.Connect()
-	}()
-
-	err = realtime.WaitForConnection()
 	time.Sleep(5 * time.Second)
 
 	if err != nil {
@@ -146,15 +137,8 @@ func TestRealtimeSubscriptions_SubscribeToMeasurements(t *testing.T) {
 	client := createTestClient()
 	realtime := client.Realtime
 
-	go func() {
-		realtime.Connect()
-	}()
-
-	err = realtime.WaitForConnection()
-
-	if err != nil {
-		t.Errorf("Unknown error")
-	}
+	err = realtime.Connect()
+	testingutils.Ok(t, err)
 
 	ch := make(chan *c8y.Message)
 
@@ -259,16 +243,11 @@ func TestRealtimeSubscriptions_Unsubscribe(t *testing.T) {
 	// Create a dummy operation
 	sendOperation := OperationSenderFactory(client, device.ID, t)
 
-	realtime.Connect()
-	err = realtime.WaitForConnection(30 * time.Second)
-	// time.Sleep(2 * time.Second)
-
-	if err != nil {
-		t.Errorf("Client failed to connect to server. %s", err)
-	}
+	err = realtime.Connect()
+	testingutils.Ok(t, err)
 
 	ch := make(chan *c8y.Message)
-	timerChan := time.NewTimer(time.Second * 20).C
+	timerChan := time.NewTimer(time.Second * 15).C
 
 	done := make(chan bool)
 	msgCount := 0
@@ -310,18 +289,19 @@ func TestRealtimeSubscriptions_Unsubscribe(t *testing.T) {
 	}()
 
 	subcriptionPattern := c8y.RealtimeOperations(device.ID)
-	realtime.Subscribe(subcriptionPattern, ch)
-	realtime.WaitForPendingSubscribe()
+
+	err = realtime.Subscribe(subcriptionPattern, ch)
+	testingutils.Ok(t, err)
 
 	// Unsubscribe then resubscribe, this should not lead to duplicated messages
-	realtime.Unsubscribe(subcriptionPattern)
-	realtime.WaitForPendingUnsubscribe()
+	err = realtime.Unsubscribe(subcriptionPattern)
+	testingutils.Ok(t, err)
 
 	sendOperation() // Subscription should not count as the sub
 
 	time.Sleep(2 * time.Second)
-	realtime.Subscribe(subcriptionPattern, ch)
-	realtime.WaitForPendingSubscribe()
+	err = realtime.Subscribe(subcriptionPattern, ch)
+	testingutils.Ok(t, err)
 
 	sendOperation()
 	sendOperation()

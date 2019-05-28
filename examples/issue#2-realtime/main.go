@@ -21,8 +21,6 @@ func main() {
 		log.Fatalf("Could not connect to /cep/realtime. %s", err)
 	}
 
-	client.Realtime.WaitForConnection()
-
 	// Subscribe to all measurements
 	ch := make(chan *c8y.Message)
 	client.Realtime.Subscribe(c8y.RealtimeMeasurements("1079816599"), ch)
