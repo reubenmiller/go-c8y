@@ -32,17 +32,9 @@ func main() {
 	<-time.After(1 * time.Second)
 
 	log.Printf("Unsubscribing to all measurements")
-	client.Realtime.UnsubscribeAll()
+	client.Realtime.Unsubscribe(c8y.RealtimeMeasurements("1079816599"))
 
 	client.Realtime.Subscribe(c8y.RealtimeMeasurements("1079816599"), ch)
-	/* select {
-	case <-time.After(1 * time.Second):
-		log.Printf("Unsubscribing to all measurements")
-		client.Realtime.UnsubscribeAll()
-		return
-	} */
-
-	// client.Realtime.Subscribe(c8y.RealtimeMeasurements(), ch)
 
 	for {
 		select {

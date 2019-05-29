@@ -29,6 +29,9 @@ const (
 
 	// MINIMUMVERSION supported Bayeux version
 	MINIMUMVERSION = "1.0"
+
+	// MINIMUM_RETRY_DELAY is the minimum retry delay in milliseconds to wait before sending another /connect/meta message
+	MINIMUM_RETRY_DELAY int64 = 500
 )
 
 // RealtimeClient allows connecting to a Bayeux server and subscribing to channels.
@@ -99,7 +102,7 @@ type request struct {
 type advice struct {
 	Reconnect string `json:"reconnect,omitempty"`
 	Timeout   int64  `json:"timeout"` // don't use omitempty, otherwise timeout: 0 will be removed
-	Interval  int    `json:"interval,omitempty"`
+	Interval  int64  `json:"interval,omitempty"`
 }
 
 // MetaMessage Bayeux message
@@ -327,11 +330,6 @@ func (c *RealtimeClient) worker() error {
 			if err != nil {
 				log.Printf("wc ReadJSON: error=%s, message=%v", err, messages)
 
-				/* if strings.Contains(err.Error(), "(normal)") {
-					log.Println("Connection has been closed by the client")
-					return
-				} */
-
 				if !c.IsConnected() {
 					log.Println("Connection has been closed by the client")
 					return
@@ -351,7 +349,7 @@ func (c *RealtimeClient) worker() error {
 				}
 				switch channelType := message.Channel; channelType {
 				case "/meta/handshake":
-					if message.Successful && message.ClientID != "" {
+					if message.Successful {
 						c.mtx.Lock()
 						c.clientID = message.ClientID
 						c.connected = true
@@ -395,12 +393,28 @@ func (c *RealtimeClient) worker() error {
 					connected := message.Successful
 
 					if message.Advice != nil {
-						if message.Advice.Reconnect == "handshake" {
-							log.Printf("Received advice from server to reconnect using handshake")
-							if err := c.handshake(); err != nil {
-								log.Printf("Failed to send handshake")
-							}
+						retryDelay := message.Advice.Interval
+						if retryDelay <= 0 {
+							// Minimum retry delay
+							retryDelay = MINIMUM_RETRY_DELAY
 						}
+						switch message.Advice.Reconnect {
+						case "handshake":
+							log.Printf("Scheduling sending of new handshake to server with %d ms delay", retryDelay)
+							time.AfterFunc(time.Duration(retryDelay)*time.Millisecond, func() {
+								c.handshake()
+							})
+						case "retry":
+							log.Printf("Resending /meta/connect heartbeat with %d ms delay", retryDelay)
+							time.AfterFunc(time.Duration(retryDelay)*time.Millisecond, func() {
+								c.sendMeta()
+							})
+						case "none":
+							// Do not attempt to retry or send a handshake as it must respect the servers response
+							panic("Server indicated that no retry or handshake should be done")
+						}
+						// Server indicated that a handshake should be sent again
+						break
 					}
 
 					if !wasConnected && connected {
@@ -636,6 +650,9 @@ func (c *RealtimeClient) UnsubscribeAll() (errs []error) {
 		c.subscriptions[i].disabled = true
 		c.mtx.Unlock()
 	}
+
+	// TODO: Add a wait for the server to response to the unsubscribe messages
+	// only when all of them have been received (or a timeout has occurred) then return
 	return
 }
 
