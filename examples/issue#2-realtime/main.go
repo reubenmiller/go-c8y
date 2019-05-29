@@ -23,7 +23,7 @@ func main() {
 
 	// Subscribe to all measurements
 	ch := make(chan *c8y.Message)
-	client.Realtime.Subscribe(c8y.RealtimeMeasurements("1079816599"), ch)
+	<-client.Realtime.Subscribe(c8y.RealtimeMeasurements("1079816599"), ch)
 
 	// Enable ctrl-c stop signal
 	signalCh := make(chan os.Signal, 1)
@@ -31,8 +31,7 @@ func main() {
 
 	<-time.After(1 * time.Second)
 
-	log.Printf("Unsubscribing to all measurements")
-	client.Realtime.Unsubscribe(c8y.RealtimeMeasurements("1079816599"))
+	<-client.Realtime.Unsubscribe(c8y.RealtimeMeasurements("1079816599"))
 
 	client.Realtime.Subscribe(c8y.RealtimeMeasurements("1079816599"), ch)
 

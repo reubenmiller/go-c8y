@@ -62,7 +62,7 @@ func (m *Microservice) SubscribeToNotifications(user c8y.ServiceUser, realtimeCh
 	}
 	ch := make(chan *c8y.Message)
 
-	err = realtime.Subscribe(realtimeChannel, ch)
+	err = <-realtime.Subscribe(realtimeChannel, ch)
 
 	go func() {
 		defer func() {
