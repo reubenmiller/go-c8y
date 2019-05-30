@@ -36,9 +36,17 @@ const (
 )
 
 const (
-	maxRetryInterval   int64   = 300
-	minRetryInterval   int64   = 10
-	retryBackoffFactor float64 = 1.2
+	// MaximumRetryInterval is the maximum interval (in seconds) between reconnection attempts
+	MaximumRetryInterval int64 = 30
+
+	// MinimumRetryInterval is the minimum interval (in seconds) between reconnection attempts
+	MinimumRetryInterval int64 = 5
+
+	// RetryBackoffFactor is the backoff factor applied to the retry interval for every unsuccessful reconnection attempt.
+	// i.e. the next retry interval is calculated as followins
+	// interval = MinimumRetryInterval
+	// interval = Min(MaximumRetryInterval, interval * RetryBackoffFactor)
+	RetryBackoffFactor float64 = 1.5
 )
 
 // RealtimeClient allows connecting to a Bayeux server and subscribing to channels.
@@ -59,13 +67,6 @@ type RealtimeClient struct {
 	username      string
 	password      string
 	requestID     uint64
-
-	retryInterval int64
-
-	recvConnectAck     chan struct{}
-	recvDisconnectAck  chan struct{}
-	recvSubscribeAck   chan struct{}
-	recvUnsubscribeAck chan struct{}
 
 	send chan *request
 
@@ -191,13 +192,6 @@ func NewRealtimeClient(host string, wsDialer *websocket.Dialer, tenant, username
 		username: username,
 		password: password,
 
-		recvConnectAck:     make(chan struct{}),
-		recvDisconnectAck:  make(chan struct{}),
-		recvSubscribeAck:   make(chan struct{}),
-		recvUnsubscribeAck: make(chan struct{}),
-
-		retryInterval: minRetryInterval,
-
 		send: make(chan *request),
 	}
 
@@ -221,23 +215,6 @@ func (c *RealtimeClient) Connect() error {
 		}
 
 		err = <-c.getAdvice()
-
-		/* select {
-		case <-c.recvConnectAck:
-			// connected
-			return nil
-		case <-c.recvDisconnectAck:
-			// disconnected
-			err := errors.New("Disconnect received whilst waiting to connect")
-			log.Printf("Received disconnect signal. %s", err)
-			return err
-
-		case <-time.After(10 * time.Second):
-			// timeout
-			err := errors.New("Timed out whilst waiting for response from server")
-			log.Printf("Received disconnect signal. %s", err)
-			return err
-		} */
 	}
 	return nil
 }
@@ -277,14 +254,6 @@ func (c *RealtimeClient) disconnect() error {
 	c.mtx.Lock()
 	c.connected = false
 	c.mtx.Unlock()
-	/* go func() {
-		c.recvDisconnectAck <- struct{}{}
-	}() */
-
-	/* err := c.sendJSON(message)
-	if err != nil {
-		return err
-	} */
 	c.send <- message
 
 	return nil
@@ -309,20 +278,19 @@ func (c *RealtimeClient) reconnect() error {
 	c.mtx.Lock()
 	c.tomb.Kill(errors.New("websocket died"))
 	c.tomb = nil
+	c.connected = false
 	c.mtx.Unlock()
 
+	interval := MinimumRetryInterval
+
 	for !connected {
-		<-time.After(time.Duration(c.retryInterval) * time.Second)
+		log.Printf("Retrying in %ds", interval)
+		<-time.After(time.Duration(interval) * time.Second)
 		c.ws.Close()
 		err := c.createWebsocket()
 
 		if err != nil {
-			c.mtx.Lock()
-			c.retryInterval = int64(math.Min(float64(maxRetryInterval), retryBackoffFactor*float64(c.retryInterval)))
-			c.connected = false
-			log.Printf("Retrying. backoff=%ds", c.retryInterval)
-			c.mtx.Unlock()
-			// return err
+			interval = int64(math.Min(float64(MaximumRetryInterval), RetryBackoffFactor*float64(interval)))
 			continue
 		}
 
@@ -333,9 +301,9 @@ func (c *RealtimeClient) reconnect() error {
 		}
 	}
 
-	log.Println("Restablished connection")
+	log.Println("Restablished connection, any subscriptions will be also be resubmitted")
 
-	// TODO: Resubscribe to any existing subscriptions
+	c.reactivateSubscriptions()
 	return nil
 }
 
@@ -361,15 +329,48 @@ func (c *RealtimeClient) connect() chan error {
 	return c.handshake()
 }
 
+/*
+https://github.com/gorilla/websocket/tree/master/examples/chat
+func (c *RealtimeClient) run() {
+	for {
+		select {
+		case client := <-h.register:
+			h.clients[client] = true
+		case client := <-h.unregister:
+			if _, ok := h.clients[client]; ok {
+				delete(h.clients, client)
+				close(client.send)
+			}
+		case message := <-h.broadcast:
+			for client := range h.clients {
+				select {
+				case client.send <- message:
+				default:
+					close(client.send)
+					delete(h.clients, client)
+				}
+			}
+		}
+	}
+} */
+
 func (c *RealtimeClient) worker() error {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 	done := make(chan struct{})
 
+	c.ws.SetPongHandler(func(string) error {
+		c.ws.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
+
 	go func() {
 		defer close(done)
 		for {
 			messages := []Message{}
+			// messageType, p, err := c.ws.ReadMessage()
+			// json.NewDecoder(io.Newrea)
+
 			err := c.ws.ReadJSON(&messages)
 
 			if err != nil {
@@ -381,19 +382,7 @@ func (c *RealtimeClient) worker() error {
 				}
 				log.Println("Handling connection error. You need to reconnect")
 
-				// Try to send handshake if the websocket is still open
-				/* if _, err := c.handshake(); err != nil {
-					log.Printf("Failed to send handshake again. %s", err)
-				} else {
-					return
-				} */
-
-				// Send the connect again (you might have to send the subcriptions again)
-				/* if err := c.connect(); err != nil {
-					log.Printf("Failed to send connect. %s", err)
-				} */
 				go c.reconnect()
-				// c.reconnect()
 				return
 			}
 
@@ -411,14 +400,6 @@ func (c *RealtimeClient) worker() error {
 						c.clientID = message.ClientID
 						c.connected = true
 						c.mtx.Unlock()
-						/* go func() {
-							c.recvConnectAck <- struct{}{}
-						}() */
-
-						// Get /meta/connect information about the connection
-
-						// c.getAdvice()
-
 					} else {
 						log.Panicf("No clientID present in handshake. Check that the tenant, usename and password is correct. Raw Message: %v", message)
 					}
@@ -429,19 +410,12 @@ func (c *RealtimeClient) worker() error {
 					} else {
 						log.Printf("Failed to subscribe to channel %s", message.Subscription)
 					}
-					/* go func() {
-						c.recvSubscribeAck <- struct{}{}
-					}() */
-					// log.Println("Posted to recvSubscribeAck channel")
 
 				case "/meta/unsubscribe":
 					if message.Successful {
 						// TODO: Unsubscribe to channel
 						log.Printf("Successfully unsubscribed to channel %s", message.Subscription)
 					}
-					/* go func() {
-						c.recvUnsubscribeAck <- struct{}{}
-					}() */
 					log.Println("Posted to recvUnsubscribeAck channel")
 
 				case "/meta/connect":
@@ -492,7 +466,6 @@ func (c *RealtimeClient) worker() error {
 					if message.Successful {
 						log.Printf("Successfully disconnected with server")
 					}
-					// c.recvDisconnectAck <- struct{}{}
 
 				default:
 					// Data package received
@@ -562,8 +535,6 @@ func (c *RealtimeClient) handshake() chan error {
 		},
 	}
 
-	/* err := c.sendJSON(message)
-	return err */
 	c.send <- message
 	return c.WaitForMessage(message.ID)
 }
@@ -579,7 +550,6 @@ func (c *RealtimeClient) sendMeta() error {
 		ClientID:       c.clientID,
 	}
 
-	// return c.sendJSON(message)
 	c.send <- message
 	return nil
 }
@@ -596,7 +566,6 @@ func (c *RealtimeClient) getAdvice() chan error {
 		},
 	}
 
-	// return c.sendJSON(message)
 	c.send <- message
 	return c.WaitForMessage(message.ID)
 }
@@ -684,30 +653,39 @@ func (c *RealtimeClient) Subscribe(pattern string, out chan<- *Message) chan err
 	}
 	c.mtx.Unlock()
 
-	/*
-		if err := c.sendJSON(message); err != nil {
-			return err
-		} */
 	c.send <- message
 
 	return c.WaitForMessage(message.ID)
+}
 
-	/* select {
-	case <-c.recvSubscribeAck:
-		// received subscribe command
-		return nil
+func (c *RealtimeClient) reactivateSubscriptions() {
+	ids := []string{}
+	c.mtx.Lock()
+	for _, subscription := range c.subscriptions {
+		if !subscription.disabled {
+			message := &request{
+				ID:             c.nextMessageID(),
+				Channel:        "/meta/subscribe",
+				Subscription:   subscription.glob.String(),
+				ConnectionType: "websocket",
+				ClientID:       c.clientID,
+			}
 
-	case <-time.After(10 * time.Second):
-		err := errors.New("Timeout")
-		log.Printf("Did not receive response from server in time. %s", err)
-		return err
-	} */
+			ids = append(ids, message.ID)
+			c.send <- message
+		}
+	}
+	c.mtx.Unlock()
+
+	c.WaitForMessages(ids...)
+	return
 }
 
 // UnsubscribeAll unsubscribes to all of the subscribed channels.
 // The channel related to the subscriptin is left open, and will be
 // reused if another call with the same pattern is made to Subscribe()
-func (c *RealtimeClient) UnsubscribeAll() (errs []error) {
+func (c *RealtimeClient) UnsubscribeAll() chan error {
+	ids := []string{}
 	for i, subscription := range c.subscriptions {
 		message := &request{
 			ID:           c.nextMessageID(),
@@ -716,10 +694,7 @@ func (c *RealtimeClient) UnsubscribeAll() (errs []error) {
 			ClientID:     c.clientID,
 		}
 
-		/* if err := c.sendJSON(message); err != nil {
-			log.Printf("could not send unsubscribe message. %s", err)
-		} */
-
+		ids = append(ids, message.ID)
 		c.send <- message
 
 		c.mtx.Lock()
@@ -727,9 +702,9 @@ func (c *RealtimeClient) UnsubscribeAll() (errs []error) {
 		c.mtx.Unlock()
 	}
 
-	// TODO: Add a wait for the server to response to the unsubscribe messages
+	// Wait for the server to response to the unsubscribe messages
 	// only when all of them have been received (or a timeout has occurred) then return
-	return
+	return c.WaitForMessages(ids...)
 }
 
 // Unsubscribe unsubscribe to a given pattern
@@ -751,24 +726,9 @@ func (c *RealtimeClient) Unsubscribe(pattern string) chan error {
 		ClientID:     c.clientID,
 	}
 
-	/* if err := c.sendJSON(message); err != nil {
-		log.Printf("Failed to unsubscribe to subscription. %s", err)
-		return err
-	} */
 	c.send <- message
 
 	return c.WaitForMessage(message.ID)
-
-	/* select {
-	case <-c.recvUnsubscribeAck:
-		// received unsubscribe response
-		return nil
-
-	case <-time.After(10 * time.Second):
-		err := errors.New("Timeout")
-		log.Printf("Did not receive response from server in time. %s", err)
-		return err
-	} */
 }
 
 func (c *RealtimeClient) nextMessageID() string {
@@ -781,16 +741,6 @@ func (c *RealtimeClient) logMessage(r *request) {
 	} else {
 		log.Printf("Could not marshal message for sending. %s", err)
 	}
-}
-
-func (c *RealtimeClient) sendJSON(r *request) error {
-	// Add a unique request id
-	r.ID = c.nextMessageID()
-	c.logMessage(r)
-	c.mtx.Lock()
-	err := c.ws.WriteJSON([]request{*r})
-	c.mtx.Unlock()
-	return err
 }
 
 const (
@@ -808,6 +758,30 @@ func (c *RealtimeClient) logRemainingResponses() {
 		return true
 	})
 	log.Printf("Pending messages ids: %s", strings.Join(ids, ","))
+}
+
+// WaitForMessages waits for a server response related to the list of message ids
+func (c *RealtimeClient) WaitForMessages(ids ...string) chan error {
+	if len(ids) == 0 {
+		panic("Requires at least one id")
+	}
+	wg := new(sync.WaitGroup)
+	wg.Add(len(ids))
+
+	errorChannel := make(chan error)
+	defer close(errorChannel)
+
+	for _, id := range ids {
+		go func(id string) {
+			err := <-c.WaitForMessage(id)
+			if err != nil {
+				errorChannel <- err
+			}
+			wg.Done()
+		}(id)
+	}
+	wg.Wait()
+	return errorChannel
 }
 
 func (c *RealtimeClient) WaitForMessage(ID string) chan error {
@@ -877,13 +851,16 @@ func (c *RealtimeClient) writeHandler() {
 			}
 
 		case <-ticker.C:
-			c.ws.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := c.ws.WriteMessage(websocket.PingMessage, nil); err != nil {
-				log.Println("Failed to send ping message to server")
-				// TODO: Handle reconnect
-				// return
+			if c.ws != nil {
+				// A websocket ping should initiate a websocket pong response from the server
+				// If the pong is not received in the minimum time, then the connection will be reset
+				c.ws.SetWriteDeadline(time.Now().Add(writeWait))
+				if err := c.ws.WriteMessage(websocket.PingMessage, nil); err != nil {
+					log.Println("Failed to send ping message to server")
+					break
+				}
+				log.Println("Sent ping successfully")
 			}
-			log.Println("Sent ping successfully")
 		}
 	}
 }
