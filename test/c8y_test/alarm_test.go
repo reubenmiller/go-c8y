@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
 
@@ -221,6 +222,30 @@ func TestAlarmService_BulkUpdateAlarms(t *testing.T) {
 			Status: "ACTIVE",
 		},
 	)
+
+	/*
+		Note:
+		If the StatusCode is "Accepted", then the error will be set to
+		"job scheduled on Cumulocity side; try again later" eventhough the request was accepted.
+		Also, a delay is required before getting the status in the platform.
+
+		Reference: https://cumulocity.com/guides/reference/alarms/
+		"Since this operations can take a lot of time, request returns after maximum 0.5 sec of processing, and updating is continued as a background process in the platform."
+	*/
+	testingutils.Assert(t, resp != nil, "Response should not be nil")
+
+	switch resp.StatusCode {
+	case http.StatusAccepted:
+		testingutils.Equals(t, c8y.AcceptedError{}, err)
+		// Wait for Cumulocity to process the request in the background
+		time.Sleep(5 * time.Second)
+
+	case http.StatusOK:
+		testingutils.Ok(t, err)
+
+	default:
+		t.Error("Unexpected error code. Expected either StatusAccepted (202) or StatusOK (200)")
+	}
 
 	testingutils.Ok(t, err)
 	testingutils.Assert(t, resp.StatusCode == http.StatusAccepted || resp.StatusCode == http.StatusOK, "Accepted or OK")

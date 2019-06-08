@@ -2,6 +2,7 @@ package microservice
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"regexp"
 
@@ -56,11 +57,12 @@ func (m *Microservice) SubscribeToNotifications(user c8y.ServiceUser, realtimeCh
 		return errors.New("Failed to retrieve valid realtime client")
 	}
 
-	realtime.Connect()
-	realtime.WaitForConnection()
+	if err := realtime.Connect(); err != nil {
+		return fmt.Errorf("Failed to connect. %s", err)
+	}
 	ch := make(chan *c8y.Message)
 
-	err = realtime.Subscribe(realtimeChannel, ch)
+	err = <-realtime.Subscribe(realtimeChannel, ch)
 
 	go func() {
 		defer func() {
@@ -69,7 +71,6 @@ func (m *Microservice) SubscribeToNotifications(user c8y.ServiceUser, realtimeCh
 		for {
 			select {
 			case msg := <-ch:
-				// zap.S().Infof("ws: [frame]: %s\n", string(msg.Payload.Item.Raw))
 				if onMessageFunc != nil {
 					onMessageFunc(msg)
 				}
