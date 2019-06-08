@@ -19,7 +19,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Could not connect to /cep/realtime. %s", err)
 	}
-	client.Realtime.WaitForConnection()
 
 	ch := make(chan *c8y.Message)
 	client.Realtime.Subscribe(c8y.RealtimeMeasurements(), ch)
