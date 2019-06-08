@@ -149,6 +149,7 @@ func (s *DeviceCredentialsService) PollNewDeviceRequest(ctx context.Context, dev
 			select {
 			case <-ctx.Done():
 				err <- ctx.Err()
+				return
 
 			case <-ticker.C:
 				log.Printf("Polling for device request")
@@ -162,6 +163,7 @@ func (s *DeviceCredentialsService) PollNewDeviceRequest(ctx context.Context, dev
 
 			case <-timeoutTimer.C:
 				err <- errors.New("Timeout waiting for device request to reach ACCEPTED state")
+				return
 			}
 		}
 	}()
