@@ -49,26 +49,35 @@ const (
 	RetryBackoffFactor float64 = 1.5
 )
 
+const (
+	writeWait = 10 * time.Second
+
+	pongWait = 60 * time.Second
+
+	pingPeriod = (pongWait * 9) / 10
+)
+
 // RealtimeClient allows connecting to a Bayeux server and subscribing to channels.
 type RealtimeClient struct {
-	mtx           sync.RWMutex
-	url           *url.URL
-	clientID      string
-	tomb          *tomb.Tomb
-	subscriptions []subscription
-	messages      chan *Message
-	connected     bool
-	http          *http.Client
-	dialer        *websocket.Dialer
-	ws            *websocket.Conn
-	interval      time.Duration
-	extension     interface{}
-	tenant        string
-	username      string
-	password      string
-	requestID     uint64
+	mtx       sync.RWMutex
+	url       *url.URL
+	clientID  string
+	tomb      *tomb.Tomb
+	messages  chan *Message
+	connected bool
+	http      *http.Client
+	dialer    *websocket.Dialer
+	ws        *websocket.Conn
+	interval  time.Duration
+	extension interface{}
+	tenant    string
+	username  string
+	password  string
+	requestID uint64
 
 	send chan *request
+
+	hub *Hub
 
 	pendingRequests sync.Map
 }
@@ -193,8 +202,11 @@ func NewRealtimeClient(host string, wsDialer *websocket.Dialer, tenant, username
 		password: password,
 
 		send: make(chan *request),
+
+		hub: newHub(),
 	}
 
+	go client.hub.run()
 	go client.writeHandler()
 	return client
 }
@@ -279,6 +291,11 @@ func (c *RealtimeClient) reconnect() error {
 	c.tomb.Kill(errors.New("websocket died"))
 	c.tomb = nil
 	c.connected = false
+	// Remove all pending requests
+	c.pendingRequests.Range(func(key, value interface{}) bool {
+		c.pendingRequests.Delete(key)
+		return true
+	})
 	c.mtx.Unlock()
 
 	interval := MinimumRetryInterval
@@ -329,31 +346,6 @@ func (c *RealtimeClient) connect() chan error {
 	return c.handshake()
 }
 
-/*
-https://github.com/gorilla/websocket/tree/master/examples/chat
-func (c *RealtimeClient) run() {
-	for {
-		select {
-		case client := <-h.register:
-			h.clients[client] = true
-		case client := <-h.unregister:
-			if _, ok := h.clients[client]; ok {
-				delete(h.clients, client)
-				close(client.send)
-			}
-		case message := <-h.broadcast:
-			for client := range h.clients {
-				select {
-				case client.send <- message:
-				default:
-					close(client.send)
-					delete(h.clients, client)
-				}
-			}
-		}
-	}
-} */
-
 func (c *RealtimeClient) worker() error {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
@@ -368,8 +360,6 @@ func (c *RealtimeClient) worker() error {
 		defer close(done)
 		for {
 			messages := []Message{}
-			// messageType, p, err := c.ws.ReadMessage()
-			// json.NewDecoder(io.Newrea)
 
 			err := c.ws.ReadJSON(&messages)
 
@@ -413,10 +403,8 @@ func (c *RealtimeClient) worker() error {
 
 				case "/meta/unsubscribe":
 					if message.Successful {
-						// TODO: Unsubscribe to channel
 						log.Printf("Successfully unsubscribed to channel %s", message.Subscription)
 					}
-					log.Println("Posted to recvUnsubscribeAck channel")
 
 				case "/meta/connect":
 					// https://docs.cometd.org/current/reference/
@@ -469,19 +457,8 @@ func (c *RealtimeClient) worker() error {
 
 				default:
 					// Data package received
-					if !c.IsConnected() {
-						return
-					}
 					message.Payload.Item = gjson.ParseBytes(message.Payload.Data)
-					subscriptions := c.subscriptions
-
-					for _, s := range subscriptions {
-						if s.glob.MatchString(message.Channel) && !s.disabled {
-							if c.connected {
-								s.out <- &message
-							}
-						}
-					}
+					c.hub.broadcast <- &message
 				}
 
 				// remove the message from the queue
@@ -509,11 +486,6 @@ func (c *RealtimeClient) worker() error {
 				log.Println("Failed to send disconnect to server:", err)
 				return err
 			}
-			/* err := c.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-			if err != nil {
-				log.Println("write close:", err)
-				return err
-			} */
 
 			return fmt.Errorf("Stopping websocket")
 		}
@@ -620,12 +592,13 @@ func (c *RealtimeClient) Subscribe(pattern string, out chan<- *Message) chan err
 
 	glob, err := ohmyglob.Compile(pattern, nil)
 	if err != nil {
-		out := make(chan error)
+		errCh := make(chan error)
 		defer func() {
+			fmt.Println("Closing channel")
 			close(out)
 		}()
-		out <- fmt.Errorf("Invalid pattern: %s", err)
-		return out
+		errCh <- fmt.Errorf("Invalid pattern: %s", err)
+		return errCh
 	}
 
 	message := &request{
@@ -636,46 +609,33 @@ func (c *RealtimeClient) Subscribe(pattern string, out chan<- *Message) chan err
 		ClientID:       c.clientID,
 	}
 
-	c.mtx.Lock()
-	existingSubscription := false
-	for i := range c.subscriptions {
-		if c.subscriptions[i].glob.String() == pattern {
-			log.Printf("Enabling existing channel %s", pattern)
-			existingSubscription = true
-			// c.subscriptions[i].disabled = false
-		}
+	c.hub.register <- &subscription{
+		glob:     glob,
+		out:      out,
+		disabled: false,
 	}
-	if !existingSubscription {
-		c.subscriptions = append(c.subscriptions, subscription{
-			glob: glob,
-			out:  out,
-		})
-	}
-	c.mtx.Unlock()
 
 	c.send <- message
 
 	return c.WaitForMessage(message.ID)
 }
 
+// reactivateSubscriptions sends subscription messages to the Bayeux server for each active subscription currently set in the client
 func (c *RealtimeClient) reactivateSubscriptions() {
 	ids := []string{}
-	c.mtx.Lock()
-	for _, subscription := range c.subscriptions {
-		if !subscription.disabled {
-			message := &request{
-				ID:             c.nextMessageID(),
-				Channel:        "/meta/subscribe",
-				Subscription:   subscription.glob.String(),
-				ConnectionType: "websocket",
-				ClientID:       c.clientID,
-			}
 
-			ids = append(ids, message.ID)
-			c.send <- message
+	for _, subscription := range c.hub.GetActiveChannels() {
+		message := &request{
+			ID:             c.nextMessageID(),
+			Channel:        "/meta/subscribe",
+			Subscription:   subscription,
+			ConnectionType: "websocket",
+			ClientID:       c.clientID,
 		}
+
+		ids = append(ids, message.ID)
+		c.send <- message
 	}
-	c.mtx.Unlock()
 
 	c.WaitForMessages(ids...)
 	return
@@ -686,20 +646,18 @@ func (c *RealtimeClient) reactivateSubscriptions() {
 // reused if another call with the same pattern is made to Subscribe()
 func (c *RealtimeClient) UnsubscribeAll() chan error {
 	ids := []string{}
-	for i, subscription := range c.subscriptions {
+
+	subs := c.hub.GetActiveChannels()
+	for _, pattern := range subs {
 		message := &request{
 			ID:           c.nextMessageID(),
 			Channel:      "/meta/unsubscribe",
-			Subscription: subscription.glob.String(),
+			Subscription: pattern,
 			ClientID:     c.clientID,
 		}
 
 		ids = append(ids, message.ID)
 		c.send <- message
-
-		c.mtx.Lock()
-		c.subscriptions[i].disabled = true
-		c.mtx.Unlock()
 	}
 
 	// Wait for the server to response to the unsubscribe messages
@@ -711,14 +669,6 @@ func (c *RealtimeClient) UnsubscribeAll() chan error {
 func (c *RealtimeClient) Unsubscribe(pattern string) chan error {
 	log.Println("unsubscribing to ", pattern)
 
-	_, err := ohmyglob.Compile(pattern, nil)
-	if err != nil {
-		out := make(chan error)
-		defer close(out)
-		out <- fmt.Errorf("Invalid pattern: %s", err)
-		return out
-	}
-
 	message := &request{
 		ID:           c.nextMessageID(),
 		Channel:      "/meta/unsubscribe",
@@ -726,8 +676,8 @@ func (c *RealtimeClient) Unsubscribe(pattern string) chan error {
 		ClientID:     c.clientID,
 	}
 
+	c.hub.unregister <- pattern
 	c.send <- message
-
 	return c.WaitForMessage(message.ID)
 }
 
@@ -743,14 +693,6 @@ func (c *RealtimeClient) logMessage(r *request) {
 	}
 }
 
-const (
-	writeWait = 10 * time.Second
-
-	pongWait = 60 * time.Second
-
-	pingPeriod = (pongWait * 9) / 10
-)
-
 func (c *RealtimeClient) logRemainingResponses() {
 	ids := []string{}
 	c.pendingRequests.Range(func(key, value interface{}) bool {
@@ -762,9 +704,6 @@ func (c *RealtimeClient) logRemainingResponses() {
 
 // WaitForMessages waits for a server response related to the list of message ids
 func (c *RealtimeClient) WaitForMessages(ids ...string) chan error {
-	if len(ids) == 0 {
-		panic("Requires at least one id")
-	}
 	wg := new(sync.WaitGroup)
 	wg.Add(len(ids))
 
@@ -784,6 +723,7 @@ func (c *RealtimeClient) WaitForMessages(ids ...string) chan error {
 	return errorChannel
 }
 
+// WaitForMessage waits for a message with the corresponding id to be sent by the server
 func (c *RealtimeClient) WaitForMessage(ID string) chan error {
 	out := make(chan error)
 
@@ -846,17 +786,21 @@ func (c *RealtimeClient) writeHandler() {
 			c.logMessage(message)
 			c.logRemainingResponses()
 
-			if err := c.ws.WriteJSON([]request{*message}); err != nil {
-				log.Printf("Failed to send JSON message. %s", err)
+			if c.ws != nil {
+				if err := c.ws.WriteJSON([]request{*message}); err != nil {
+					log.Printf("Failed to send JSON message. %s", err)
+				}
 			}
 
 		case <-ticker.C:
+			// Regularly check if the Websocket is alive by sending a PingMessage to the server
 			if c.ws != nil {
 				// A websocket ping should initiate a websocket pong response from the server
 				// If the pong is not received in the minimum time, then the connection will be reset
 				c.ws.SetWriteDeadline(time.Now().Add(writeWait))
 				if err := c.ws.WriteMessage(websocket.PingMessage, nil); err != nil {
 					log.Println("Failed to send ping message to server")
+					go c.reconnect()
 					break
 				}
 				log.Println("Sent ping successfully")
