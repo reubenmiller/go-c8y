@@ -112,8 +112,7 @@ func (c *Configuration) GetApplicationName() string {
 	return c.viper.GetString("application.name")
 }
 
-// GetMicroserviceHost returns the microservice host
-// Either returns
+// GetMicroserviceHost returns either a manual url or the manually set url
 func (c *Configuration) GetMicroserviceHost() (microserviceHost string) {
 	// Get Microservice host address
 	microserviceHost = c.viper.GetString("nx.microservice.host")
@@ -131,6 +130,30 @@ func (c *Configuration) GetMicroserviceHost() (microserviceHost string) {
 		}
 	}
 	return
+}
+
+// GetMicroserviceURL returns the microservices URL given a partial path
+// When the microservice is hosted in the Cumulocity platform, then the url
+// will look like /service/{application.name}/{partialUrl}, otherwise if the
+// nx.microservice.host configuration variable is set, then the url will
+// be returned as is (with a prefixed "/" if not already present)
+func (c *Configuration) GetMicroserviceURL(partialPath string) string {
+
+	if !strings.HasPrefix(partialPath, "/") {
+		partialPath = "/" + partialPath
+	}
+
+	// If overriding host is specified
+	basePath := c.viper.GetString("nx.microservice.host")
+
+	if basePath != "" {
+		return partialPath
+	}
+
+	// Otherwise default to service address
+	basePath = "/service/" + c.viper.GetString("application.name")
+
+	return basePath + partialPath
 }
 
 // isPrivateSetting tests whether the configuration key is private or not
