@@ -103,9 +103,10 @@ type RealtimeData struct {
 }
 
 type subscription struct {
-	glob     ohmyglob.Glob
-	out      chan<- *Message
-	disabled bool
+	glob       ohmyglob.Glob
+	out        chan<- *Message
+	isWildcard bool
+	disabled   bool
 }
 
 type request struct {
@@ -610,9 +611,10 @@ func (c *RealtimeClient) Subscribe(pattern string, out chan<- *Message) chan err
 	}
 
 	c.hub.register <- &subscription{
-		glob:     glob,
-		out:      out,
-		disabled: false,
+		glob:       glob,
+		out:        out,
+		isWildcard: strings.HasSuffix(glob.String(), "*"),
+		disabled:   false,
 	}
 
 	c.send <- message
