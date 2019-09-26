@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
@@ -16,8 +18,9 @@ import (
 )
 
 var (
-	device = flag.String("device", "", "Device id to subscribe to")
-	series = flag.String("series", "", "Device id to subscribe to")
+	device  = flag.String("device", "", "Device id to subscribe to")
+	series  = flag.String("series", "", "Device id to subscribe to")
+	verbose = flag.Bool("verbose", false, "Verbose logging")
 )
 
 func getBetweenBytes(msg, startsWith, endsWith []byte) (string, error) {
@@ -57,6 +60,7 @@ func getReverseBetweenBytes(msg, endsWith, startsWith []byte) (string, error) {
 
 type MeasurementSeries struct {
 	Timestamp string  `json:"timestamp"`
+	SourceID  string  `json:"sourceId"`
 	Fragment  string  `json:"fragment"`
 	Series    string  `json:"series"`
 	Value     float64 `json:"value"`
@@ -70,6 +74,8 @@ func parseMeasurementSeries(data []byte) ([]MeasurementSeries, error) {
 	if err := json.Unmarshal(data, &jsonMap); err != nil {
 		return series, err
 	}
+
+	// fmt.Printf("payload: %s", data)
 
 	flat, _ := flatten.Flatten(jsonMap, "", flatten.DotStyle)
 
@@ -90,6 +96,7 @@ func parseMeasurementSeries(data []byte) ([]MeasurementSeries, error) {
 			keyParts := strings.Split(key, ".")
 			unit, _ := flat[unitKeys[i]].(string)
 			series = append(series, MeasurementSeries{
+				SourceID:  flat["source.id"].(string),
 				Timestamp: flat["time"].(string),
 				Fragment:  keyParts[0],
 				Series:    keyParts[1],
@@ -107,11 +114,15 @@ func main() {
 	var deviceID string
 	flag.Parse()
 
+	if !*verbose {
+		log.SetOutput(ioutil.Discard)
+	}
+
 	// Create the client from the following environment variables
 	// C8Y_HOST, C8Y_TENANT, C8Y_USER, C8Y_PASSWORD
 	client := c8y.NewClientFromEnvironment(nil, false)
 
-	if *device != "" {
+	if *device != "" && *device != "*" {
 		devices, _, err := client.Inventory.GetDevicesByName(context.Background(), *device, c8y.NewPaginationOptions(1))
 
 		if err != nil {
@@ -124,6 +135,7 @@ func main() {
 
 		deviceID = devices.ManagedObjects[0].ID
 	} else {
+		fmt.Println("Using a wildcard")
 		deviceID = "*"
 	}
 
@@ -148,14 +160,17 @@ func main() {
 		select {
 		case msg := <-ch:
 			if bytes.Contains(msg.Payload.Data, []byte(*series)) {
-
 				series, err := parseMeasurementSeries(msg.Payload.Data)
 
 				if err != nil {
 					return
 				}
 				for _, iSeries := range series {
-					log.Printf(" - %s: %s.%s: %.2f %s\n", iSeries.Timestamp, iSeries.Fragment, iSeries.Series, iSeries.Value, iSeries.Unit)
+					if deviceID == "*" {
+						fmt.Printf("%-15s\t%s\t%-40s\t%.2f %s\n", iSeries.SourceID, iSeries.Timestamp, iSeries.Fragment+"."+iSeries.Series, iSeries.Value, iSeries.Unit)
+					} else {
+						fmt.Printf("%-15s\t%s\t%-40s\t%.2f %s\n", *device, iSeries.Timestamp, iSeries.Fragment+"."+iSeries.Series, iSeries.Value, iSeries.Unit)
+					}
 				}
 			}
 
