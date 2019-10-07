@@ -320,6 +320,14 @@ func (s *InventoryService) Delete(ctx context.Context, ID string) (*Response, er
 func (s *InventoryService) DownloadBinary(ctx context.Context, ID string) (filepath string, err error) {
 	// set binary api
 	client := s.client
+
+	mo, _, err := client.Inventory.GetManagedObject(ctx, ID, nil)
+
+	if err != nil {
+		zap.S().Errorf("Could not retrieve managed object. %s", err)
+		return
+	}
+
 	u := "inventory/binaries/" + ID
 
 	// req, err := http.NewRequest("GET", u.String(), nil)
@@ -352,7 +360,7 @@ func (s *InventoryService) DownloadBinary(ctx context.Context, ID string) (filep
 		return
 	}
 
-	filepath = path.Join(tempDir, "binary-"+ID)
+	filepath = path.Join(tempDir, mo.Name)
 	out, err := os.Create(filepath)
 	if err != nil {
 		filepath = ""
