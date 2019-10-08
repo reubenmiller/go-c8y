@@ -13,5 +13,5 @@ var inventoryBinaryCmd = &cobra.Command{
 func init() {
 	inventoryBinaryCmd.AddCommand(inventoryBinaryDownloadCmd)
 	inventoryBinaryCmd.AddCommand(inventoryBinaryDeleteCmd)
-	inventoryBinaryCmd.AddCommand(inventoryBinaryCreateCmd)
+	inventoryBinaryCmd.AddCommand(newNewBinaryManagedObjectCmd().getCommand())
 }

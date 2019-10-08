@@ -8,6 +8,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type baseCmd struct {
+	cmd *cobra.Command
+}
+
+func (c *baseCmd) getCommand() *cobra.Command {
+	return c.cmd
+}
+
+func newBaseCmd(cmd *cobra.Command) *baseCmd {
+	return &baseCmd{cmd: cmd}
+}
+
 var rootCmd = &cobra.Command{
 	Use:   "cy",
 	Short: "Cumulocity command line interface",
