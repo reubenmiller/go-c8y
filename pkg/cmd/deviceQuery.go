@@ -21,7 +21,7 @@ func newQueryDeviceCmd() *queryDeviceCmd {
 	ccmd := &queryDeviceCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "devices",
+		Use:   "query",
 		Short: "Get a list of devices",
 		Long:  `Get a list of devices`,
 		Example: `
