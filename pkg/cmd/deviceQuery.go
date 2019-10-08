@@ -51,7 +51,7 @@ func (n *queryDeviceCmd) doQueryDevice(deviceName []string, deviceType string) e
 
 	for i := range deviceName {
 		go func(index int) {
-			query := fmt.Sprintf("has(c8y_IsDevice) and name eq '%s'", deviceName)
+			query := fmt.Sprintf("has(c8y_IsDevice) and name eq '%s'", deviceName[index])
 
 			if deviceType != "" {
 				query = fmt.Sprintf("%s and type eq '%s'", query, deviceType)
