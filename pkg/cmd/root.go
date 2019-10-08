@@ -51,6 +51,13 @@ func Execute() {
 	// Make flags case-insensitive
 	rootCmd.PersistentFlags().SetNormalizeFunc(flagNormalizeFunc)
 
+	rootCmd.AddCommand(newCompletionsCmd().getCommand())
+	rootCmd.AddCommand(newVersionCmd().getCommand())
+
+	rootCmd.AddCommand(newInventoryCmd().getCommand())
+	rootCmd.AddCommand(newDeviceCmd().getCommand())
+	rootCmd.AddCommand(newRealtimeCmd().getCommand())
+
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)

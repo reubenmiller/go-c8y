@@ -1,20 +1,28 @@
 package cmd
 
 import (
-  "fmt"
+	"fmt"
 
-  "github.com/spf13/cobra"
+	"github.com/spf13/cobra"
 )
 
-func init() {
-  rootCmd.AddCommand(versionCmd)
+type versionCmd struct {
+	*baseCmd
 }
 
-var versionCmd = &cobra.Command{
-  Use:   "version",
-  Short: "Print the version number of Hugo",
-  Long:  `All software has versions. This is Hugo's`,
-  Run: func(cmd *cobra.Command, args []string) {
-    fmt.Println("Hugo Static Site Generator v0.9 -- HEAD")
-  },
+func newVersionCmd() *versionCmd {
+	ccmd := &versionCmd{}
+
+	cmd := &cobra.Command{
+		Use:   "version",
+		Short: "Print the version number of c8y",
+		Long:  `All software has versions. This is c8y`,
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println("Cumulocity command line tool v0.0.1 -- HEAD")
+		},
+	}
+
+	ccmd.baseCmd = newBaseCmd(cmd)
+
+	return ccmd
 }

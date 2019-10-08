@@ -2,45 +2,75 @@ package cmd
 
 import (
 	"context"
-	"log"
 	"sync"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
-var inventoryDeleteCmd = &cobra.Command{
-	Use:   "delete",
-	Short: "Delete a managed object",
-	Long:  `Delete a managed object`,
-	Example: `
-	Remove a list of managed objects
-	c8y inventory delete --id 12345 --id 67891
-	`,
-	Run: func(cmd *cobra.Command, args []string) {
-
-		ids := GetIDs(cmd, args)
-		wg := new(sync.WaitGroup)
-		wg.Add(len(ids))
-
-		for i := range ids {
-			go func(index int) {
-				_, err := client.Inventory.Delete(
-					context.Background(),
-					ids[index],
-				)
-
-				if err != nil {
-					log.Printf("gID=%s, error`=%s", ids[index], err)
-				}
-				wg.Done()
-			}(i)
-		}
-
-		wg.Wait()
-	},
+type deleteManagedObjectCmd struct {
+	*baseCmd
 }
 
-func init() {
+func newDeleteManagedObjectCmd() *deleteManagedObjectCmd {
+	ccmd := &deleteManagedObjectCmd{}
+
+	cmd := &cobra.Command{
+		Use:   "delete",
+		Short: "Delete managed object/s",
+		Long:  `Delete managed object/s`,
+		Example: `
+			Delete a list of managed objects
+			c8y inventory delete --id 12345,67891
+		`,
+		RunE: ccmd.deleteManagedObject,
+	}
+
 	// Flags
-	addIDFlag(inventoryDeleteCmd)
+	addIDFlag(cmd)
+
+	ccmd.baseCmd = newBaseCmd(cmd)
+
+	return ccmd
+}
+
+func (n *deleteManagedObjectCmd) deleteManagedObject(cmd *cobra.Command, args []string) error {
+	ids := GetIDs(cmd, args)
+	return n.doDeleteManagedObject(ids)
+}
+
+func (n *deleteManagedObjectCmd) doDeleteManagedObject(ids []string) error {
+	wg := new(sync.WaitGroup)
+	wg.Add(len(ids))
+
+	errorsCh := make(chan error, len(ids))
+
+	for i := range ids {
+		go func(index int) {
+			_, err := client.Inventory.Delete(
+				context.Background(),
+				ids[index],
+			)
+
+			if err != nil {
+				errorsCh <- err
+			}
+			wg.Done()
+		}(i)
+	}
+
+	wg.Wait()
+	close(errorsCh)
+
+	var errorSummary error
+	for err := range errorsCh {
+		if err != nil {
+			if errorSummary == nil {
+				errorSummary = errors.New("command failed")
+			}
+			errorSummary = errors.WithStack(err)
+		}
+	}
+
+	return errorSummary
 }

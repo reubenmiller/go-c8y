@@ -11,12 +11,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type newManagedObjectCmd struct {
+type getManagedObjectCmd struct {
 	*baseCmd
 }
 
-func newNewManagedObjectCmd() *newManagedObjectCmd {
-	ccmd := &newManagedObjectCmd{}
+func newGetManagedObjectCmd() *getManagedObjectCmd {
+	ccmd := &getManagedObjectCmd{}
 
 	cmd := &cobra.Command{
 		Use:   "get",
@@ -29,7 +29,7 @@ func newNewManagedObjectCmd() *newManagedObjectCmd {
 			Or retrieve multiple managed objects
 			c8y inventory get --id 12345,67891
 		`,
-		RunE: ccmd.newManagedObject,
+		RunE: ccmd.getManagedObject,
 	}
 
 	addInventoryOptions(cmd)
@@ -41,17 +41,17 @@ func newNewManagedObjectCmd() *newManagedObjectCmd {
 	return ccmd
 }
 
-func (n *newManagedObjectCmd) newManagedObject(cmd *cobra.Command, args []string) error {
+func (n *getManagedObjectCmd) getManagedObject(cmd *cobra.Command, args []string) error {
 
 	ids := GetIDs(cmd, args)
 	withParents, _ := cmd.Flags().GetBool("withParents")
 	filterArg, _ := cmd.Flags().GetString("filter")
 	filter := SplitString(filterArg, ",")
 
-	return n.doNewManagedObject(ids, withParents, filter)
+	return n.doGetManagedObject(ids, withParents, filter)
 }
 
-func (n *newManagedObjectCmd) doNewManagedObject(ids []string, withParents bool, filter []string) error {
+func (n *getManagedObjectCmd) doGetManagedObject(ids []string, withParents bool, filter []string) error {
 	wg := new(sync.WaitGroup)
 	wg.Add(len(ids))
 
