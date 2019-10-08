@@ -6,10 +6,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func init() {
-	var completionCmd = &cobra.Command{
+type completionsCmd struct {
+	*baseCmd
+}
+
+func newCompletionsCmd() *completionsCmd {
+	ccmd := &completionsCmd{}
+
+	cmd := &cobra.Command{
 		Use:   "completion",
-		Short: "Generates bash completion scripts",
+		Short: "Generates completion scripts",
 		Long: `To load completion run
 
 . <(bitbucket completion)
@@ -19,11 +25,25 @@ To configure your bash shell to load completions for each session add to your ba
 # ~/.bashrc or ~/.profile
 . <(bitbucket completion)
 `,
-		Run: func(cmd *cobra.Command, args []string) {
-			rootCmd.GenBashCompletion(os.Stdout)
-		},
 	}
-	var completionBashCmd = &cobra.Command{
+
+	// Subcommands
+	cmd.AddCommand(newBashCompletionCmd().getCommand())
+	cmd.AddCommand(newPowershellCompletionCmd().getCommand())
+
+	ccmd.baseCmd = newBaseCmd(cmd)
+
+	return ccmd
+}
+
+type bashCompletionCmd struct {
+	*baseCmd
+}
+
+func newBashCompletionCmd() *bashCompletionCmd {
+	ccmd := &bashCompletionCmd{}
+
+	cmd := &cobra.Command{
 		Use:   "bash",
 		Short: "Generates bash completion scripts",
 		Long: `To load completion run
@@ -40,7 +60,19 @@ To configure your bash shell to load completions for each session add to your ba
 		},
 	}
 
-	var completionPowershellCmd = &cobra.Command{
+	ccmd.baseCmd = newBaseCmd(cmd)
+
+	return ccmd
+}
+
+type powershellCompletionCmd struct {
+	*baseCmd
+}
+
+func newPowershellCompletionCmd() *powershellCompletionCmd {
+	ccmd := &powershellCompletionCmd{}
+
+	cmd := &cobra.Command{
 		Use:   "powershell",
 		Short: "Generates powershell completion scripts",
 		Long: `To load completion run
@@ -57,7 +89,7 @@ To configure your bash shell to load completions for each session add to your ba
 		},
 	}
 
-	completionCmd.AddCommand(completionBashCmd)
-	completionCmd.AddCommand(completionPowershellCmd)
-	rootCmd.AddCommand(completionCmd)
+	ccmd.baseCmd = newBaseCmd(cmd)
+
+	return ccmd
 }
