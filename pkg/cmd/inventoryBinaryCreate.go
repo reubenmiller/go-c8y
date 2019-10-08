@@ -41,7 +41,6 @@ func newNewBinaryManagedObjectCmd() *newBinaryManagedObjectCmd {
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd
-
 }
 
 // newSite creates a new Hugo site and initializes a structured Hugo directory.

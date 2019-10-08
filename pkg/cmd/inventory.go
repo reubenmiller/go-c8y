@@ -13,7 +13,7 @@ var inventoryCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(inventoryCmd)
 	inventoryCmd.AddCommand(inventoryQueryCmd)
-	inventoryCmd.AddCommand(inventoryGetCmd)
+	inventoryCmd.AddCommand(newNewManagedObjectCmd().getCommand())
 	inventoryCmd.AddCommand(inventoryCreateCmd)
 	inventoryCmd.AddCommand(inventoryUpdateCmd)
 	inventoryCmd.AddCommand(inventoryDeleteCmd)
