@@ -58,6 +58,9 @@ func Execute() {
 	rootCmd.AddCommand(newDeviceCmd().getCommand())
 	rootCmd.AddCommand(newRealtimeCmd().getCommand())
 
+	// Generic commands
+	rootCmd.AddCommand(newGetGenericRestCmd().getCommand())
+
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)

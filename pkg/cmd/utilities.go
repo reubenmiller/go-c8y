@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -61,12 +62,30 @@ func parseJSONStructure(value string, data map[string]interface{}) error {
 	return nil
 }
 
+//
+// Examples:
+// "text=one,severity=MAJOR,type=test_Type,time=2019-01-01,source={'id': '12345'}"
+// "text=one,severity=MAJOR,type=test_Type,time=2019-01-01,source={id: '12345'}"
+//	->	{"severity":"MAJOR","source":{"id":"12345"},"text":"one","time":"2019-01-01","type":"test_Type"}
 func parseValue(value string) interface{} {
 	propValue := strings.TrimSpace(value)
 
-	if propValue == "{}" {
-		// Empty object
-		return map[string]interface{}{}
+	if isJSONString(propValue) {
+		// Add quotes to keys
+		re := regexp.MustCompile(`["']?(\w+)["']?\s*:`)
+		propValue = re.ReplaceAllString(propValue, "\"${1}\":")
+
+		// TODO: allow use of single quotes as double quotes
+		propValue = strings.ReplaceAll(propValue, "'", "\"")
+
+		jsonMap := make(map[string]interface{})
+		if err := json.Unmarshal([]byte(propValue), &jsonMap); err != nil {
+			log.Printf("Invalid json. %s", err)
+
+			// Try parsing
+			return parseValue(propValue[1 : len(propValue)-1])
+		}
+		return jsonMap
 	} else if values, valid := isArray(propValue); valid {
 		// parse array values
 		valueArray := []interface{}{}
