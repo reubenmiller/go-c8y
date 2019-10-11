@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -13,7 +14,6 @@ const (
 	hideCursor = ansiEsc + "[?25l"
 	showCursor = ansiEsc + "[?25h"
 )
-
 
 type cmder interface {
 	getCommand() *cobra.Command
@@ -56,4 +56,14 @@ func isUserError(err error) bool {
 	}
 
 	return userErrorRegexp.MatchString(err.Error())
+}
+
+func newErrorSummary(message string, errorsCh <-chan error) error {
+	errorSummary := errors.New(message)
+	for err := range errorsCh {
+		if err != nil {
+			errorSummary = errors.WithStack(err)
+		}
+	}
+	return errorSummary
 }
