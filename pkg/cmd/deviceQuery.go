@@ -78,16 +78,5 @@ func (n *queryDeviceCmd) doQueryDevice(deviceName []string, deviceType string) e
 
 	wg.Wait()
 	close(errorsCh)
-
-	var errorSummary error
-	for err := range errorsCh {
-		if err != nil {
-			if errorSummary == nil {
-				errorSummary = errors.New("command failed")
-			}
-			errorSummary = errors.WithStack(err)
-		}
-	}
-
-	return errorSummary
+	return newErrorSummary("command failed", errorsCh)
 }

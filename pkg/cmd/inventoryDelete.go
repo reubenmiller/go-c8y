@@ -4,7 +4,6 @@ import (
 	"context"
 	"sync"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -61,16 +60,5 @@ func (n *deleteManagedObjectCmd) doDeleteManagedObject(ids []string) error {
 
 	wg.Wait()
 	close(errorsCh)
-
-	var errorSummary error
-	for err := range errorsCh {
-		if err != nil {
-			if errorSummary == nil {
-				errorSummary = errors.New("command failed")
-			}
-			errorSummary = errors.WithStack(err)
-		}
-	}
-
-	return errorSummary
+	return newErrorSummary("command failed", errorsCh)
 }

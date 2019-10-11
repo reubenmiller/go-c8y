@@ -6,7 +6,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/pkg/errors"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/spf13/cobra"
 )
@@ -89,16 +88,5 @@ func (n *getManagedObjectCmd) doGetManagedObject(ids []string, withParents bool,
 
 	wg.Wait()
 	close(errorsCh)
-
-	var errorSummary error
-	for err := range errorsCh {
-		if err != nil {
-			if errorSummary == nil {
-				errorSummary = errors.New("command failed")
-			}
-			errorSummary = errors.WithStack(err)
-		}
-	}
-
-	return errorSummary
+	return newErrorSummary("command failed", errorsCh)
 }
