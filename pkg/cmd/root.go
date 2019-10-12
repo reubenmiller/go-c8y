@@ -61,6 +61,9 @@ func Execute() {
 	// Generic commands
 	rootCmd.AddCommand(newGetGenericRestCmd().getCommand())
 
+	// Alarms
+	rootCmd.AddCommand(newAlarmsCmd().getCommand())
+
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)

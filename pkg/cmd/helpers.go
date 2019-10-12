@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -66,4 +67,17 @@ func newErrorSummary(message string, errorsCh <-chan error) error {
 		}
 	}
 	return errorSummary
+}
+
+// replacePathParameters replaces all of the path parameters in a given URI with the provided values
+// Example:
+// 	"alarm/alarms/{id}" => "alarm/alarms/1234" if given a parameter map of {"id": "1234"}
+func replacePathParameters(uri string, parameters map[string]string) string {
+	if parameters == nil {
+		return uri
+	}
+	for key, value := range parameters {
+		uri = strings.ReplaceAll(uri, "{"+key+"}", value)
+	}
+	return uri
 }
