@@ -9,12 +9,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type dataCmd struct {
+type newAlarmCmd struct {
 	*baseCmd
 }
 
-func newNewAlarmCmd() *dataCmd {
-	ccmd := &dataCmd{}
+func newNewAlarmCmd() *newAlarmCmd {
+	ccmd := &newAlarmCmd{}
 
 	cmd := &cobra.Command{
 		Use:   "new",
@@ -23,7 +23,7 @@ func newNewAlarmCmd() *dataCmd {
 		Example: `
         
 		`,
-		RunE: ccmd.data,
+		RunE: ccmd.newAlarm,
 	}
 
 	cmd.Flags().String("source", "", "The ManagedObject that the alarm originated from")
@@ -39,7 +39,7 @@ func newNewAlarmCmd() *dataCmd {
 	return ccmd
 }
 
-func (n *dataCmd) data(cmd *cobra.Command, args []string) error {
+func (n *newAlarmCmd) newAlarm(cmd *cobra.Command, args []string) error {
 
 	// query parameters
 	queryValue := url.QueryEscape("")
@@ -77,7 +77,7 @@ func (n *dataCmd) data(cmd *cobra.Command, args []string) error {
 	return n.doNewAlarm("POST", path, queryValue, body)
 }
 
-func (n *dataCmd) doNewAlarm(method string, path string, query string, body map[string]interface{}) error {
+func (n *newAlarmCmd) doNewAlarm(method string, path string, query string, body map[string]interface{}) error {
 	resp, err := client.SendRequest(
 		context.Background(),
 		c8y.RequestOptions{
@@ -87,7 +87,7 @@ func (n *dataCmd) doNewAlarm(method string, path string, query string, body map[
 			Body:   body,
 		})
 
-	if resp.JSONData != nil {
+	if resp != nil && resp.JSONData != nil {
 		fmt.Println(*resp.JSONData)
 	}
 	if err != nil {

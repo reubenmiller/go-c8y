@@ -9,12 +9,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type newStatusCmd struct {
+type updateAlarmCollectionCmd struct {
 	*baseCmd
 }
 
-func newUpdateAlarmCollectionCmd() *newStatusCmd {
-	ccmd := &newStatusCmd{}
+func newUpdateAlarmCollectionCmd() *updateAlarmCollectionCmd {
+	ccmd := &updateAlarmCollectionCmd{}
 
 	cmd := &cobra.Command{
 		Use:   "update",
@@ -23,7 +23,7 @@ func newUpdateAlarmCollectionCmd() *newStatusCmd {
 		Example: `
         
 		`,
-		RunE: ccmd.newStatus,
+		RunE: ccmd.updateAlarmCollection,
 	}
 
 	cmd.Flags().String("source", "", "The ManagedObject that the alarm originated from")
@@ -39,7 +39,7 @@ func newUpdateAlarmCollectionCmd() *newStatusCmd {
 	return ccmd
 }
 
-func (n *newStatusCmd) newStatus(cmd *cobra.Command, args []string) error {
+func (n *updateAlarmCollectionCmd) updateAlarmCollection(cmd *cobra.Command, args []string) error {
 
 	// query parameters
 	queryValue := url.QueryEscape("")
@@ -107,7 +107,7 @@ func (n *newStatusCmd) newStatus(cmd *cobra.Command, args []string) error {
 	return n.doUpdateAlarmCollection("PUT", path, queryValue, body)
 }
 
-func (n *newStatusCmd) doUpdateAlarmCollection(method string, path string, query string, body map[string]interface{}) error {
+func (n *updateAlarmCollectionCmd) doUpdateAlarmCollection(method string, path string, query string, body map[string]interface{}) error {
 	resp, err := client.SendRequest(
 		context.Background(),
 		c8y.RequestOptions{
@@ -117,7 +117,7 @@ func (n *newStatusCmd) doUpdateAlarmCollection(method string, path string, query
 			Body:   body,
 		})
 
-	if resp.JSONData != nil {
+	if resp != nil && resp.JSONData != nil {
 		fmt.Println(*resp.JSONData)
 	}
 	if err != nil {

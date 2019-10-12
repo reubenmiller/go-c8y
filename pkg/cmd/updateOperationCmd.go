@@ -9,12 +9,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type updateAlarmCmd struct {
+type updateOperationCmd struct {
 	*baseCmd
 }
 
-func newUpdateAlarmCmd() *updateAlarmCmd {
-	ccmd := &updateAlarmCmd{}
+func newUpdateOperationCmd() *updateOperationCmd {
+	ccmd := &updateOperationCmd{}
 
 	cmd := &cobra.Command{
 		Use:   "update",
@@ -23,12 +23,11 @@ func newUpdateAlarmCmd() *updateAlarmCmd {
 		Example: `
         
 		`,
-		RunE: ccmd.updateAlarm,
+		RunE: ccmd.updateOperation,
 	}
 
-	cmd.Flags().String("status", "", "Comma separated alarm statuses, for example ACTIVE,CLEARED.")
-	cmd.Flags().String("severity", "", "Alarm severity, for example MINOR.")
-	cmd.Flags().String("text", "", "Text description of the alarm.")
+	cmd.Flags().String("status", "", "Operation status, can be one of SUCCESSFUL, FAILED, EXECUTING or PENDING.")
+	cmd.Flags().String("failureReason", "", "Reason for the failure. Use whne setting status to FAILED")
 	addDataFlag(cmd)
 
 	ccmd.baseCmd = newBaseCmd(cmd)
@@ -36,7 +35,7 @@ func newUpdateAlarmCmd() *updateAlarmCmd {
 	return ccmd
 }
 
-func (n *updateAlarmCmd) updateAlarm(cmd *cobra.Command, args []string) error {
+func (n *updateOperationCmd) updateOperation(cmd *cobra.Command, args []string) error {
 
 	// query parameters
 	queryValue := url.QueryEscape("")
@@ -47,11 +46,8 @@ func (n *updateAlarmCmd) updateAlarm(cmd *cobra.Command, args []string) error {
 	if v, err := cmd.Flags().GetString("status"); err == nil && v != "" {
 		body["status"] = v
 	}
-	if v, err := cmd.Flags().GetString("severity"); err == nil && v != "" {
-		body["severity"] = v
-	}
-	if v, err := cmd.Flags().GetString("text"); err == nil && v != "" {
-		body["text"] = v
+	if v, err := cmd.Flags().GetString("failureReason"); err == nil && v != "" {
+		body["failureReason"] = v
 	}
 
 	// path parameters
@@ -62,12 +58,12 @@ func (n *updateAlarmCmd) updateAlarm(cmd *cobra.Command, args []string) error {
 		return newUserError("Flag does not exist")
 	}
 
-	path := replacePathParameters("alarm/alarms/{id}", pathParameters)
+	path := replacePathParameters("devicecontrol/operations/{id}", pathParameters)
 
-	return n.doUpdateAlarm("PUT", path, queryValue, body)
+	return n.doUpdateOperation("PUT", path, queryValue, body)
 }
 
-func (n *updateAlarmCmd) doUpdateAlarm(method string, path string, query string, body map[string]interface{}) error {
+func (n *updateOperationCmd) doUpdateOperation(method string, path string, query string, body map[string]interface{}) error {
 	resp, err := client.SendRequest(
 		context.Background(),
 		c8y.RequestOptions{

@@ -58,11 +58,14 @@ func Execute() {
 	rootCmd.AddCommand(newDeviceCmd().getCommand())
 	rootCmd.AddCommand(newRealtimeCmd().getCommand())
 
-	// Generic commands
+	// generic commands
 	rootCmd.AddCommand(newGetGenericRestCmd().getCommand())
 
-	// Alarms
+	// alarms
 	rootCmd.AddCommand(newAlarmsCmd().getCommand())
+
+	// devicecontrol (operations)
+	rootCmd.AddCommand(newDeviceControlCmd().getCommand())
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)

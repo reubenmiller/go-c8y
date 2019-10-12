@@ -8,4 +8,9 @@ Param(
 
 $OutputDir = Resolve-path (Join-Path $PSScriptRoot -ChildPath "../../pkg/cmd")
 
-New-C8yApi "$PSScriptRoot/alarms.json" -OutputDir $OutputDir
+$SpecFiles = Get-ChildItem -Path $PSScriptRoot -Filter "*.json"
+
+foreach ($iFile in $SpecFiles) {
+    Write-Host ("Generating go cli code [{0}]" -f $iFile.Name) -ForegroundColor Gray
+    New-C8yApi $iFile.FullName -OutputDir $OutputDir
+}

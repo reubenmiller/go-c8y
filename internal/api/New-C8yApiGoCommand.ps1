@@ -62,7 +62,7 @@ Function New-C8yApiGoCommand {
         $null = $RESTBodyBuilder.AppendLine('body = getDataFlag(cmd)')
 
         foreach ($iArg in $Specification.body) {
-            $name = $iArg.name
+            $argname = $iArg.name
             $prop = $iArg.property
             $type = $iArg.type
 
@@ -79,8 +79,8 @@ Function New-C8yApiGoCommand {
                         continue
                     }
                     $null = $RESTBodyBuilder.AppendLine(@"
-    if v, err := cmd.Flags().GetString("${name}") ; err == nil && v != "" {
-        if _, exists := body["${name}"]; !exists {
+    if v, err := cmd.Flags().GetString("${argname}") ; err == nil && v != "" {
+        if _, exists := body["${argname}"]; !exists {
             body["$($propParts[0])"] = make(map[string]interface{})
         }
         body["$($propParts[0])"].(map[string]interface{})["$($propParts[1])"] = v
@@ -93,7 +93,7 @@ Function New-C8yApiGoCommand {
                         }
                         default {
                             $null = $RESTBodyBuilder.AppendLine(@"
-    if v, err := cmd.Flags().GetString("${name}") ; err == nil && v != "" {
+    if v, err := cmd.Flags().GetString("${argname}") ; err == nil && v != "" {
         body["${prop}"] = v
     }
 "@)
@@ -232,7 +232,7 @@ func (n *${Name}Cmd) do${NameCamel}(method string, path string, query string, bo
 			Body:         body,
 		})
 
-    if resp.JSONData != nil {
+    if resp != nil && resp.JSONData != nil {
         fmt.Println(*resp.JSONData)
     }
 	if err != nil {

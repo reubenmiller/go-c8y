@@ -144,7 +144,7 @@ func (n *getAlarmCollectionCmd) doGetAlarmCollection(method string, path string,
 			Body:   body,
 		})
 
-	if resp.JSONData != nil {
+	if resp != nil && resp.JSONData != nil {
 		fmt.Println(*resp.JSONData)
 	}
 	if err != nil {

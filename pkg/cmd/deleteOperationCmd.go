@@ -9,21 +9,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type deleteAlarmCmd struct {
+type deleteOperationCmd struct {
 	*baseCmd
 }
 
-func newDeleteAlarmCmd() *deleteAlarmCmd {
-	ccmd := &deleteAlarmCmd{}
+func newDeleteOperationCmd() *deleteOperationCmd {
+	ccmd := &deleteOperationCmd{}
 
 	cmd := &cobra.Command{
 		Use:   "delete",
-		Short: "Delete alarm/s",
+		Short: "Delete operation/s",
 		Long:  "",
 		Example: `
         
 		`,
-		RunE: ccmd.deleteAlarm,
+		RunE: ccmd.deleteOperation,
 	}
 
 	ccmd.baseCmd = newBaseCmd(cmd)
@@ -31,7 +31,7 @@ func newDeleteAlarmCmd() *deleteAlarmCmd {
 	return ccmd
 }
 
-func (n *deleteAlarmCmd) deleteAlarm(cmd *cobra.Command, args []string) error {
+func (n *deleteOperationCmd) deleteOperation(cmd *cobra.Command, args []string) error {
 
 	// query parameters
 	queryValue := url.QueryEscape("")
@@ -47,12 +47,12 @@ func (n *deleteAlarmCmd) deleteAlarm(cmd *cobra.Command, args []string) error {
 		return newUserError("Flag does not exist")
 	}
 
-	path := replacePathParameters("alarm/alarms/{id}", pathParameters)
+	path := replacePathParameters("devicecontrol/operations/{id}", pathParameters)
 
-	return n.doDeleteAlarm("DELETE", path, queryValue, body)
+	return n.doDeleteOperation("DELETE", path, queryValue, body)
 }
 
-func (n *deleteAlarmCmd) doDeleteAlarm(method string, path string, query string, body map[string]interface{}) error {
+func (n *deleteOperationCmd) doDeleteOperation(method string, path string, query string, body map[string]interface{}) error {
 	resp, err := client.SendRequest(
 		context.Background(),
 		c8y.RequestOptions{

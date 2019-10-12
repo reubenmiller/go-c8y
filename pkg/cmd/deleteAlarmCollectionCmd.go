@@ -144,7 +144,7 @@ func (n *deleteAlarmCollectionCmd) doDeleteAlarmCollection(method string, path s
 			Body:   body,
 		})
 
-	if resp.JSONData != nil {
+	if resp != nil && resp.JSONData != nil {
 		fmt.Println(*resp.JSONData)
 	}
 	if err != nil {
