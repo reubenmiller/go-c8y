@@ -141,6 +141,23 @@ Function New-C8yApiGoCommand {
 "@)
                 }
 
+                # Array of strings
+                "[]string" {
+                    $null = $RESTQueryBuilder.AppendLine(@"
+    if v, err := cmd.Flags().GetStringArray("${prop}"); err == nil {
+        if len(v) > 0 {
+            for _, item := range v {
+                if item != "" {
+                    query.Add("${prop}", item)
+                }
+            }
+        }
+    } else {
+        return newUserError("Flag does not exist")
+    }
+"@)
+                }
+
                 default {
                     $null = $RESTQueryBuilder.AppendLine(@"
     if v, err := cmd.Flags().GetString("${prop}"); err == nil {
@@ -308,7 +325,27 @@ Function Get-C8yGoArgs {
             }
         }
 
-        "string" {
+        "\[\]string" {
+            $SetFlag = if ($UseOption) {
+                "cmd.Flags().StringArray(`"${Name}`", `"${OptionName}`", []string{`"${Default}`"}, `"${Description}`")"
+            } else {
+                "cmd.Flags().StringArray(`"${Name}`", []string{`"${Default}`"}, `"${Description}`")"
+            }
+
+            $GetFlag = @"
+    ${NameLocalVariable}, err := cmd.Flags().GetStringArray("$Name");
+    if  err != nil {
+        return newUserError("Flag does not exist")
+    }
+"@
+
+            @{
+                SetFlag = $SetFlag
+                GetFlag = $GetFlag
+            }
+        }
+
+        "^string$" {
             $SetFlag = if ($UseOption) {
                 'cmd.Flags().StringP("{0}", "{1}", "{2}", "{3}")' -f $Name, $OptionName, $Default, $Description
             } else {
