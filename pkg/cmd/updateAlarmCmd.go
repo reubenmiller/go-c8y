@@ -9,12 +9,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type updateAlarmCmd struct {
+type dataCmd struct {
 	*baseCmd
 }
 
-func newUpdateAlarmCmd() *updateAlarmCmd {
-	ccmd := &updateAlarmCmd{}
+func newUpdateAlarmCmd() *dataCmd {
+	ccmd := &dataCmd{}
 
 	cmd := &cobra.Command{
 		Use:   "update",
@@ -23,12 +23,12 @@ func newUpdateAlarmCmd() *updateAlarmCmd {
 		Example: `
         
 		`,
-		RunE: ccmd.updateAlarm,
+		RunE: ccmd.data,
 	}
 
-	cmd.Flags().String("status", "", "")
-	cmd.Flags().String("severity", "", "")
-	cmd.Flags().String("text", "", "")
+	cmd.Flags().String("status", "", "Comma separated alarm statuses, for example ACTIVE,CLEARED.")
+	cmd.Flags().String("severity", "", "Alarm severity, for example MINOR.")
+	cmd.Flags().String("text", "", "Text description of the alarm.")
 	addDataFlag(cmd)
 
 	ccmd.baseCmd = newBaseCmd(cmd)
@@ -36,7 +36,7 @@ func newUpdateAlarmCmd() *updateAlarmCmd {
 	return ccmd
 }
 
-func (n *updateAlarmCmd) updateAlarm(cmd *cobra.Command, args []string) error {
+func (n *dataCmd) data(cmd *cobra.Command, args []string) error {
 
 	// query parameters
 	queryValue := url.QueryEscape("")
@@ -44,13 +44,13 @@ func (n *updateAlarmCmd) updateAlarm(cmd *cobra.Command, args []string) error {
 	// body
 	var body map[string]interface{}
 	body = getDataFlag(cmd)
-	if v, err := cmd.Flags().GetString("status"); err == nil {
+	if v, err := cmd.Flags().GetString("status"); err == nil && v != "" {
 		body["status"] = v
 	}
-	if v, err := cmd.Flags().GetString("severity"); err == nil {
+	if v, err := cmd.Flags().GetString("severity"); err == nil && v != "" {
 		body["severity"] = v
 	}
-	if v, err := cmd.Flags().GetString("text"); err == nil {
+	if v, err := cmd.Flags().GetString("text"); err == nil && v != "" {
 		body["text"] = v
 	}
 
@@ -67,7 +67,7 @@ func (n *updateAlarmCmd) updateAlarm(cmd *cobra.Command, args []string) error {
 	return n.doUpdateAlarm("PUT", path, queryValue, body)
 }
 
-func (n *updateAlarmCmd) doUpdateAlarm(method string, path string, query string, body map[string]interface{}) error {
+func (n *dataCmd) doUpdateAlarm(method string, path string, query string, body map[string]interface{}) error {
 	resp, err := client.SendRequest(
 		context.Background(),
 		c8y.RequestOptions{

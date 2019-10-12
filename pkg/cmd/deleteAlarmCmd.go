@@ -18,7 +18,7 @@ func newDeleteAlarmCmd() *deleteAlarmCmd {
 
 	cmd := &cobra.Command{
 		Use:   "delete",
-		Short: "",
+		Short: "Delete alarm/s",
 		Long:  "",
 		Example: `
         

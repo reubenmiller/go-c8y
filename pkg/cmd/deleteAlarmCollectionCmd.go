@@ -18,7 +18,7 @@ func newDeleteAlarmCollectionCmd() *deleteAlarmCollectionCmd {
 
 	cmd := &cobra.Command{
 		Use:   "delete",
-		Short: "",
+		Short: "Delete a collection of alarms",
 		Long:  "",
 		Example: `
         
@@ -48,37 +48,51 @@ func (n *deleteAlarmCollectionCmd) deleteAlarmCollection(cmd *cobra.Command, arg
 	queryValue := url.QueryEscape("")
 	query := url.Values{}
 	if v, err := cmd.Flags().GetString("source"); err == nil {
-		query.Add("source", url.QueryEscape(v))
+		if v != "" {
+			query.Add("source", url.QueryEscape(v))
+		}
 	} else {
 		return newUserError("Flag does not exist")
 	}
 	if v, err := cmd.Flags().GetString("dateFrom"); err == nil {
-		query.Add("dateFrom", url.QueryEscape(v))
+		if v != "" {
+			query.Add("dateFrom", url.QueryEscape(v))
+		}
 	} else {
 		return newUserError("Flag does not exist")
 	}
 	if v, err := cmd.Flags().GetString("dateTo"); err == nil {
-		query.Add("dateTo", url.QueryEscape(v))
+		if v != "" {
+			query.Add("dateTo", url.QueryEscape(v))
+		}
 	} else {
 		return newUserError("Flag does not exist")
 	}
 	if v, err := cmd.Flags().GetString("type"); err == nil {
-		query.Add("type", url.QueryEscape(v))
+		if v != "" {
+			query.Add("type", url.QueryEscape(v))
+		}
 	} else {
 		return newUserError("Flag does not exist")
 	}
 	if v, err := cmd.Flags().GetString("fragmentType"); err == nil {
-		query.Add("fragmentType", url.QueryEscape(v))
+		if v != "" {
+			query.Add("fragmentType", url.QueryEscape(v))
+		}
 	} else {
 		return newUserError("Flag does not exist")
 	}
 	if v, err := cmd.Flags().GetString("status"); err == nil {
-		query.Add("status", url.QueryEscape(v))
+		if v != "" {
+			query.Add("status", url.QueryEscape(v))
+		}
 	} else {
 		return newUserError("Flag does not exist")
 	}
 	if v, err := cmd.Flags().GetString("severity"); err == nil {
-		query.Add("severity", url.QueryEscape(v))
+		if v != "" {
+			query.Add("severity", url.QueryEscape(v))
+		}
 	} else {
 		return newUserError("Flag does not exist")
 	}

@@ -12,7 +12,7 @@
 
     go:
       -
-        c8y alarms get --type value
+        c8y alarms get --type value --severity MAJOR
 
   path: alarm/alarms
   accept: 'application/json'
@@ -76,22 +76,22 @@
       type: string
       required: true
       property: source.id
-      description: ''
+      description: The ManagedObject that the alarm originated from
 
     - name: type
       type: string
       required: true
-      description: ''
+      description: Identifies the type of this alarm, e.g. 'com_cumulocity_events_TamperEvent'.
 
     - name: time
       type: datetime
       required: true
-      description: ''
+      description: Time of the alarm.
 
     - name: text
       type: string
       required: true
-      description: ''
+      description: Text description of the alarm.
 
     - name: severity
       type: string
@@ -106,7 +106,7 @@
 
     - name: data
       type: json
-      description: 'Additional properties to add'
+      description: Additional properties of the alarm.
 
 - name: updateAlarmCollection
   method: PUT
@@ -127,29 +127,29 @@
   queryParameters:
     - name: source
       type: string
-      description: ''
+      description: The ManagedObject that the alarm originated from
 
     - name: status
       type: string
-      description: ''
+      description: 'The status of the alarm: ACTIVE, ACKNOWLEDGED or CLEARED. If status was not appeared, new alarm will have status ACTIVE. Must be upper-case.'
       validationSet: [ACTIVE, ACKNOWLEDGED, CLEARED]
 
     - name: severity
       type: string
-      description: ''
+      description: 'The severity of the alarm: CRITICAL, MAJOR, MINOR or WARNING. Must be upper-case.'
       validationSet: [CRITICAL, MAJOR, MINOR, WARNING]
 
     - name: resolved
       type: boolean
-      description: ''
+      description: 'When set to true only resolved alarms will be removed (the one with status CLEARED), false means alarms with status ACTIVE or ACKNOWLEDGED.'
 
     - name: dateFrom
       type: datetime
-      description: ''
+      description: Start date or date and time of alarm occurrence.
 
     - name: dateTo
       type: datetime
-      description: ''
+      description: End date or date and time of alarm occurrence.
 
 - name: updateAlarm
   method: PUT
@@ -162,20 +162,24 @@
     - name: status
       type: string
       required: true
+      description: Comma separated alarm statuses, for example ACTIVE,CLEARED.
       validationSet: [ACTIVE, ACKNOWLEDGED, CLEARED]
 
     - name: severity
       type: string
       required: true
+      description: Alarm severity, for example MINOR.
       validationSet: [CRITICAL, MAJOR, MINOR, WARNING]
 
     - name: text
       type: string
       required: true
+      description: Text description of the alarm.
       validationSet: [CRITICAL, MAJOR, MINOR, WARNING]
 
     - name: data
       type: json
+      description: Additional properties of the alarm.
 
   pathParameters:
     - name: id
@@ -183,6 +187,7 @@
       description: ''
 
 - name: deleteAlarm
+  description: 'Delete alarm/s'
   method: DELETE
   path: alarm/alarms/{id}
   accept: 'application/json'
@@ -193,9 +198,10 @@
     - name: id
       type: string
       required: true
-      description: ''
+      description: Alarm id
 
 - name: deleteAlarmCollection
+  description: 'Delete a collection of alarms'
   method: DELETE
   path: alarm/alarms
   accept: 'application/json'

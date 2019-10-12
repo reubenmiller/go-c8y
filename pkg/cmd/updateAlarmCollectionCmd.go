@@ -9,53 +9,59 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type updateAlarmCollectionCmd struct {
+type newStatusCmd struct {
 	*baseCmd
 }
 
-func newUpdateAlarmCollectionCmd() *updateAlarmCollectionCmd {
-	ccmd := &updateAlarmCollectionCmd{}
+func newUpdateAlarmCollectionCmd() *newStatusCmd {
+	ccmd := &newStatusCmd{}
 
 	cmd := &cobra.Command{
 		Use:   "update",
-		Short: "",
+		Short: "The PUT method allows for updating alarms collections. Currently only the status of alarms can be changed",
 		Long:  "",
 		Example: `
         
 		`,
-		RunE: ccmd.updateAlarmCollection,
+		RunE: ccmd.newStatus,
 	}
 
-	cmd.Flags().String("source", "", "")
-	cmd.Flags().String("status", "", "")
-	cmd.Flags().String("severity", "", "")
-	cmd.Flags().Bool("resolved", false, "")
-	cmd.Flags().String("dateFrom", "", "")
-	cmd.Flags().String("dateTo", "", "")
-	cmd.Flags().String("newStatus", "", "")
+	cmd.Flags().String("source", "", "The ManagedObject that the alarm originated from")
+	cmd.Flags().String("status", "", "The status of the alarm: ACTIVE, ACKNOWLEDGED or CLEARED. If status was not appeared, new alarm will have status ACTIVE. Must be upper-case.")
+	cmd.Flags().String("severity", "", "The severity of the alarm: CRITICAL, MAJOR, MINOR or WARNING. Must be upper-case.")
+	cmd.Flags().Bool("resolved", false, "When set to true only resolved alarms will be removed (the one with status CLEARED), false means alarms with status ACTIVE or ACKNOWLEDGED.")
+	cmd.Flags().String("dateFrom", "", "Start date or date and time of alarm occurrence.")
+	cmd.Flags().String("dateTo", "", "End date or date and time of alarm occurrence.")
+	cmd.Flags().String("newStatus", "", "New status to be applied to all of the matching alarms")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd
 }
 
-func (n *updateAlarmCollectionCmd) updateAlarmCollection(cmd *cobra.Command, args []string) error {
+func (n *newStatusCmd) newStatus(cmd *cobra.Command, args []string) error {
 
 	// query parameters
 	queryValue := url.QueryEscape("")
 	query := url.Values{}
 	if v, err := cmd.Flags().GetString("source"); err == nil {
-		query.Add("source", url.QueryEscape(v))
+		if v != "" {
+			query.Add("source", url.QueryEscape(v))
+		}
 	} else {
 		return newUserError("Flag does not exist")
 	}
 	if v, err := cmd.Flags().GetString("status"); err == nil {
-		query.Add("status", url.QueryEscape(v))
+		if v != "" {
+			query.Add("status", url.QueryEscape(v))
+		}
 	} else {
 		return newUserError("Flag does not exist")
 	}
 	if v, err := cmd.Flags().GetString("severity"); err == nil {
-		query.Add("severity", url.QueryEscape(v))
+		if v != "" {
+			query.Add("severity", url.QueryEscape(v))
+		}
 	} else {
 		return newUserError("Flag does not exist")
 	}
@@ -67,12 +73,16 @@ func (n *updateAlarmCollectionCmd) updateAlarmCollection(cmd *cobra.Command, arg
 		return newUserError("Flag does not exist")
 	}
 	if v, err := cmd.Flags().GetString("dateFrom"); err == nil {
-		query.Add("dateFrom", url.QueryEscape(v))
+		if v != "" {
+			query.Add("dateFrom", url.QueryEscape(v))
+		}
 	} else {
 		return newUserError("Flag does not exist")
 	}
 	if v, err := cmd.Flags().GetString("dateTo"); err == nil {
-		query.Add("dateTo", url.QueryEscape(v))
+		if v != "" {
+			query.Add("dateTo", url.QueryEscape(v))
+		}
 	} else {
 		return newUserError("Flag does not exist")
 	}
@@ -85,7 +95,7 @@ func (n *updateAlarmCollectionCmd) updateAlarmCollection(cmd *cobra.Command, arg
 	// body
 	var body map[string]interface{}
 	body = getDataFlag(cmd)
-	if v, err := cmd.Flags().GetString("status"); err == nil {
+	if v, err := cmd.Flags().GetString("newStatus"); err == nil && v != "" {
 		body["status"] = v
 	}
 
@@ -97,7 +107,7 @@ func (n *updateAlarmCollectionCmd) updateAlarmCollection(cmd *cobra.Command, arg
 	return n.doUpdateAlarmCollection("PUT", path, queryValue, body)
 }
 
-func (n *updateAlarmCollectionCmd) doUpdateAlarmCollection(method string, path string, query string, body map[string]interface{}) error {
+func (n *newStatusCmd) doUpdateAlarmCollection(method string, path string, query string, body map[string]interface{}) error {
 	resp, err := client.SendRequest(
 		context.Background(),
 		c8y.RequestOptions{

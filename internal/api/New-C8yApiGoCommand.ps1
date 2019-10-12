@@ -41,22 +41,6 @@ Function New-C8yApiGoCommand {
     }
 
     $CommandArgs = foreach ($iArg in $ArgumentSources) {
-        <# $ArgParams = @{}
-        if ($iArg.default) {
-            $ArgParams.Default = $iArg.default
-        }
-
-        if ($iArg.default) {
-            $ArgParams.Default = $iArg.default
-        }
-
-        if ($iArg.default) {
-            $ArgParams.Default = $iArg.default
-        }
-
-        if ($iArg.default) {
-            $ArgParams.Default = $iArg.default
-        } #>
         $ArgParams = @{
             Name = $iArg.name
             Type = $iArg.type
@@ -75,10 +59,10 @@ Function New-C8yApiGoCommand {
     #
     $RESTBodyBuilder = New-Object System.Text.StringBuilder
     if ($Specification.body) {
-        # $null = $RESTBodyBuilder.AppendLine('body = make(map[string]interface{})')
         $null = $RESTBodyBuilder.AppendLine('body = getDataFlag(cmd)')
 
         foreach ($iArg in $Specification.body) {
+            $name = $iArg.name
             $prop = $iArg.property
             $type = $iArg.type
 
@@ -88,7 +72,20 @@ Function New-C8yApiGoCommand {
 
             if ($prop) {
                 if ($prop.Contains(".")) {
-                    Write-Warning "TODO: handle nested properties"
+                    [array] $propParts = $prop -split "\."
+
+                    if ($propParts.Count -gt 2) {
+                        Write-Warning "TODO: handle nested properties with depth > 2"
+                        continue
+                    }
+                    $null = $RESTBodyBuilder.AppendLine(@"
+    if v, err := cmd.Flags().GetString("${name}") ; err == nil && v != "" {
+        if _, exists := body["${name}"]; !exists {
+            body["$($propParts[0])"] = make(map[string]interface{})
+        }
+        body["$($propParts[0])"].(map[string]interface{})["$($propParts[1])"] = v
+    }
+"@)
                 } else {
                     switch ($type) {
                         "json" {
@@ -96,7 +93,7 @@ Function New-C8yApiGoCommand {
                         }
                         default {
                             $null = $RESTBodyBuilder.AppendLine(@"
-    if v, err := cmd.Flags().GetString("${prop}") ; err == nil {
+    if v, err := cmd.Flags().GetString("${name}") ; err == nil && v != "" {
         body["${prop}"] = v
     }
 "@)
@@ -106,8 +103,6 @@ Function New-C8yApiGoCommand {
             }
         }
     }
-
-    # $CommandArgs = $CommandArgs + $BodyCommandArgs
 
     #
     # Path Parameters
@@ -131,14 +126,14 @@ Function New-C8yApiGoCommand {
     if ($Specification.queryParameters) {
         $null = $RESTQueryBuilder.AppendLine('query := url.Values{}')
         foreach ($iQueryParameter in $Specification.queryParameters) {
-            $VarName = $iQueryParameter.name
+            $prop = $iQueryParameter.name
 
             switch ($iQueryParameter.type) {
                 "boolean" {
                     $null = $RESTQueryBuilder.AppendLine(@"
-    if v, err := cmd.Flags().GetBool("${VarName}"); err == nil {
+    if v, err := cmd.Flags().GetBool("${prop}"); err == nil {
         if v {
-            query.Add("${VarName}", "true")
+            query.Add("${prop}", "true")
         }
     } else {
         return newUserError("Flag does not exist")
@@ -148,8 +143,10 @@ Function New-C8yApiGoCommand {
 
                 default {
                     $null = $RESTQueryBuilder.AppendLine(@"
-    if v, err := cmd.Flags().GetString("${VarName}"); err == nil {
-        query.Add("${VarName}", url.QueryEscape(v))
+    if v, err := cmd.Flags().GetString("${prop}"); err == nil {
+        if v != "" {
+            query.Add("${prop}", url.QueryEscape(v))
+        }
     } else {
         return newUserError("Flag does not exist")
     }

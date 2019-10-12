@@ -9,12 +9,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type newAlarmCmd struct {
+type dataCmd struct {
 	*baseCmd
 }
 
-func newNewAlarmCmd() *newAlarmCmd {
-	ccmd := &newAlarmCmd{}
+func newNewAlarmCmd() *dataCmd {
+	ccmd := &dataCmd{}
 
 	cmd := &cobra.Command{
 		Use:   "new",
@@ -23,13 +23,13 @@ func newNewAlarmCmd() *newAlarmCmd {
 		Example: `
         
 		`,
-		RunE: ccmd.newAlarm,
+		RunE: ccmd.data,
 	}
 
-	cmd.Flags().String("source", "", "")
-	cmd.Flags().String("type", "", "")
-	cmd.Flags().String("time", "", "")
-	cmd.Flags().String("text", "", "")
+	cmd.Flags().String("source", "", "The ManagedObject that the alarm originated from")
+	cmd.Flags().String("type", "", "Identifies the type of this alarm, e.g. 'com_cumulocity_events_TamperEvent'.")
+	cmd.Flags().String("time", "", "Time of the alarm.")
+	cmd.Flags().String("text", "", "Text description of the alarm.")
 	cmd.Flags().String("severity", "", "The severity of the alarm: CRITICAL, MAJOR, MINOR or WARNING. Must be upper-case.")
 	cmd.Flags().String("status", "", "The status of the alarm: ACTIVE, ACKNOWLEDGED or CLEARED. If status was not appeared, new alarm will have status ACTIVE. Must be upper-case.")
 	addDataFlag(cmd)
@@ -39,7 +39,7 @@ func newNewAlarmCmd() *newAlarmCmd {
 	return ccmd
 }
 
-func (n *newAlarmCmd) newAlarm(cmd *cobra.Command, args []string) error {
+func (n *dataCmd) data(cmd *cobra.Command, args []string) error {
 
 	// query parameters
 	queryValue := url.QueryEscape("")
@@ -47,19 +47,25 @@ func (n *newAlarmCmd) newAlarm(cmd *cobra.Command, args []string) error {
 	// body
 	var body map[string]interface{}
 	body = getDataFlag(cmd)
-	if v, err := cmd.Flags().GetString("type"); err == nil {
+	if v, err := cmd.Flags().GetString("source"); err == nil && v != "" {
+		if _, exists := body["source"]; !exists {
+			body["source"] = make(map[string]interface{})
+		}
+		body["source"].(map[string]interface{})["id"] = v
+	}
+	if v, err := cmd.Flags().GetString("type"); err == nil && v != "" {
 		body["type"] = v
 	}
-	if v, err := cmd.Flags().GetString("time"); err == nil {
+	if v, err := cmd.Flags().GetString("time"); err == nil && v != "" {
 		body["time"] = v
 	}
-	if v, err := cmd.Flags().GetString("text"); err == nil {
+	if v, err := cmd.Flags().GetString("text"); err == nil && v != "" {
 		body["text"] = v
 	}
-	if v, err := cmd.Flags().GetString("severity"); err == nil {
+	if v, err := cmd.Flags().GetString("severity"); err == nil && v != "" {
 		body["severity"] = v
 	}
-	if v, err := cmd.Flags().GetString("status"); err == nil {
+	if v, err := cmd.Flags().GetString("status"); err == nil && v != "" {
 		body["status"] = v
 	}
 
@@ -71,7 +77,7 @@ func (n *newAlarmCmd) newAlarm(cmd *cobra.Command, args []string) error {
 	return n.doNewAlarm("POST", path, queryValue, body)
 }
 
-func (n *newAlarmCmd) doNewAlarm(method string, path string, query string, body map[string]interface{}) error {
+func (n *dataCmd) doNewAlarm(method string, path string, query string, body map[string]interface{}) error {
 	resp, err := client.SendRequest(
 		context.Background(),
 		c8y.RequestOptions{
