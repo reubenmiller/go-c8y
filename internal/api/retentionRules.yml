@@ -1,0 +1,133 @@
+
+---
+
+#
+# retention rules
+# https://cumulocity.com/guides/reference/retention-rules/#retention-rules
+#
+- name: getRetentionRuleCollection
+  description: 'Get collection of retention rules'
+  method: GET
+  path: /retention/retentions
+  accept: application/vnd.com.nsn.cumulocity.retentionRuleCollection+json
+  alias:
+      go: getRetentionRuleCollection
+      powershell: Get-RetentionRuleCollection
+
+- name: newRetentionRule
+  description: 'New retention rule'
+  method: POST
+  path: /retention/retentions
+  accept: application/vnd.com.nsn.cumulocity.retentionRule+json
+  alias:
+      go: create
+      powershell: New-RetentionRule
+
+  body:
+    - name: dataType
+      type: string
+      validationSet: [ALARM, AUDIT, EVENT, MEASUREMENT, OPERATION, '*']
+      required: true
+      description: RetentionRule will be applied to this type of documents, possible values [ALARM, AUDIT, EVENT, MEASUREMENT, OPERATION, *].
+
+    - name: fragmentType
+      type: string
+      required: false
+      description: RetentionRule will be applied to documents with fragmentType.
+
+    - name: type
+      type: string
+      required: false
+      description: RetentionRule will be applied to documents with type.
+
+    - name: source
+      type: string
+      required: false
+      description: RetentionRule will be applied to documents with source.
+
+    - name: maximumAge
+      type: integer
+      required: false
+      description: Maximum age of document in days.
+
+    - name: editable
+      type: boolean
+      required: false
+      description: Whether the rule is editable. Can be updated only by management tenant.
+
+- name: getRetentionRule
+  description: 'Get retention rule'
+  method: GET
+  path: /retention/retentions/{id}
+  alias:
+      go: get
+      powershell: Get-RetentionRule
+  pathParameters:
+    - name: id
+      type: string
+      required: true
+      description: Retention rule id
+
+- name: deleteRetentionRule
+  description: 'Delete retention rule'
+  method: DELETE
+  path: /retention/retentions/{id}
+  alias:
+      go: delete
+      powershell: Remove-RetentionRule
+  pathParameters:
+    - name: id
+      type: string
+      required: true
+      description: Retention rule id
+
+- name: updateRetentionRule
+  description: 'Update retention rule'
+  method: PUT
+  path: /retention/retentions/{id}
+  accept: application/vnd.com.nsn.cumulocity.retentionRule+json
+  alias:
+      go: updateBinary
+      powershell: Update-Binary
+  pathParameters:
+    - name: id
+      type: string
+      required: true
+      description: Inventory binary id
+
+  body:
+    - name: dataType
+      type: string
+      validationSet: [ALARM, AUDIT, EVENT, MEASUREMENT, OPERATION, '*']
+      required: true
+      description: RetentionRule will be applied to this type of documents, possible values [ALARM, AUDIT, EVENT, MEASUREMENT, OPERATION, *].
+
+    - name: fragmentType
+      type: string
+      required: false
+      description: RetentionRule will be applied to documents with fragmentType.
+
+    - name: type
+      type: string
+      required: false
+      description: RetentionRule will be applied to documents with type.
+
+    - name: source
+      type: string
+      required: false
+      description: RetentionRule will be applied to documents with source.
+
+    - name: maximumAge
+      type: integer
+      required: false
+      description: Maximum age of document in days.
+
+    - name: editable
+      type: boolean
+      required: false
+      description: Whether the rule is editable. Can be updated only by management tenant.
+
+    - name: data
+      type: json
+      required: false
+      description: Data
