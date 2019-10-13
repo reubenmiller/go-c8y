@@ -19,7 +19,7 @@ func newGetAuditRecordCmd() *getAuditRecordCmd {
 	cmd := &cobra.Command{
 		Use:   "get",
 		Short: "Get an audit record",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

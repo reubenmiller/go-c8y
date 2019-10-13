@@ -19,7 +19,7 @@ func newDeleteGroupCmd() *deleteGroupCmd {
 	cmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete a new group",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

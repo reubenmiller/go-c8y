@@ -19,7 +19,7 @@ func newNewMeasurementCmd() *newMeasurementCmd {
 	cmd := &cobra.Command{
 		Use:   "new",
 		Short: "Create a new measurement",
-		Long:  "Create a new measurement",
+		Long:  `Create a new measurement`,
 		Example: `
         
 		`,

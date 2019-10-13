@@ -19,7 +19,7 @@ func newNewExternalIDCmd() *newExternalIDCmd {
 	cmd := &cobra.Command{
 		Use:   "new",
 		Short: "Create a new external id",
-		Long:  "Create a new external id",
+		Long:  `Create a new external id`,
 		Example: `
         
 		`,

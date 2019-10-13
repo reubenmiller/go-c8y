@@ -19,7 +19,7 @@ func newDownloadBinaryCmd() *downloadBinaryCmd {
 	cmd := &cobra.Command{
 		Use:   "downloadBinary",
 		Short: "Get binary",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

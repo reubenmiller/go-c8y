@@ -19,7 +19,7 @@ func newNewEventBinaryCmd() *newEventBinaryCmd {
 	cmd := &cobra.Command{
 		Use:   "createBinary",
 		Short: "New event binary",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

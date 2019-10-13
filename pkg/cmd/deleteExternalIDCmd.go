@@ -19,7 +19,7 @@ func newDeleteExternalIDCmd() *deleteExternalIDCmd {
 	cmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete external id",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

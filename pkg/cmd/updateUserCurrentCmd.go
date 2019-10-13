@@ -19,7 +19,7 @@ func newUpdateUserCurrentCmd() *updateUserCurrentCmd {
 	cmd := &cobra.Command{
 		Use:   "getCurrentUser",
 		Short: "Update the current user",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

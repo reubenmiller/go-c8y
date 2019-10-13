@@ -210,7 +210,7 @@ func new${NameCamel}Cmd() *${Name}Cmd {
 	cmd := &cobra.Command{
 		Use:   "$Use",
 		Short: "$Description",
-		Long:  "$DescriptionLong",
+		Long:  ``$DescriptionLong``,
         Example: ``
         $($Examples -join "`n`n")
 		``,

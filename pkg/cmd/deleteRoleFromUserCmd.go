@@ -19,7 +19,7 @@ func newDeleteRoleFromUserCmd() *deleteRoleFromUserCmd {
 	cmd := &cobra.Command{
 		Use:   "deleteRoleFromUser",
 		Short: "Unassign/Remove role from a user",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

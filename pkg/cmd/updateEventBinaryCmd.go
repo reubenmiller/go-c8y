@@ -19,7 +19,7 @@ func newUpdateEventBinaryCmd() *updateEventBinaryCmd {
 	cmd := &cobra.Command{
 		Use:   "updateBinary",
 		Short: "Update event binary",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

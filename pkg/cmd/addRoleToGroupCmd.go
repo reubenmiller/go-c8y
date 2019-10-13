@@ -19,7 +19,7 @@ func newAddRoleToGroupCmd() *addRoleToGroupCmd {
 	cmd := &cobra.Command{
 		Use:   "addRoleToGroup",
 		Short: "Add role to a group",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

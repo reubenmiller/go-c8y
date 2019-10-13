@@ -19,7 +19,7 @@ func newNewAuditCmd() *newAuditCmd {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a new audit record",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

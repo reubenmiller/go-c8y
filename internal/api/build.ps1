@@ -1,7 +1,15 @@
 [cmdletbinding()]
-Param(
+Param()
 
-)
+# Convert the yaml specs to json
+if (!(Get-Command yaml2json -ErrorAction SilentlyContinue)) {
+    Write-Error "Missing yaml2json. Please install it using 'npm install -g yamljs'"
+    return
+}
+
+Write-Host "Converting yaml specs to json" -ForegroundColor Gray
+$WorkDir = Resolve-Path -Path $PSScriptRoot -Relative
+yaml2json -s -r -p $WorkDir
 
 . $PSScriptRoot/New-C8yApi.ps1
 . $PSScriptRoot/New-C8yApiGoCommand.ps1

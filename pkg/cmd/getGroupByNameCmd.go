@@ -19,7 +19,7 @@ func newGetGroupByNameCmd() *getGroupByNameCmd {
 	cmd := &cobra.Command{
 		Use:   "getByName",
 		Short: "Get a group by name",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

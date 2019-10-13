@@ -19,7 +19,7 @@ func newGetEventCmd() *getEventCmd {
 	cmd := &cobra.Command{
 		Use:   "get",
 		Short: "Get event/s",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

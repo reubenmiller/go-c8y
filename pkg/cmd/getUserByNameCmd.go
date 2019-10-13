@@ -19,7 +19,7 @@ func newGetUserByNameCmd() *getUserByNameCmd {
 	cmd := &cobra.Command{
 		Use:   "get",
 		Short: "Get user by username",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

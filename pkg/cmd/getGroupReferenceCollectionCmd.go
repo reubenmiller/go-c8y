@@ -19,7 +19,7 @@ func newGetGroupReferenceCollectionCmd() *getGroupReferenceCollectionCmd {
 	cmd := &cobra.Command{
 		Use:   "getCollection",
 		Short: "Get information about all groups of a user",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

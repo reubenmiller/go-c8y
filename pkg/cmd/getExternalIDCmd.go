@@ -19,7 +19,7 @@ func newGetExternalIDCmd() *getExternalIDCmd {
 	cmd := &cobra.Command{
 		Use:   "get",
 		Short: "Get external id",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

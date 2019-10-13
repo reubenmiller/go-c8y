@@ -19,7 +19,7 @@ func newUpdateGroupCmd() *updateGroupCmd {
 	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "Update a new group",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

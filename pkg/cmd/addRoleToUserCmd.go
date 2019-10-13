@@ -19,7 +19,7 @@ func newAddRoleToUserCmd() *addRoleToUserCmd {
 	cmd := &cobra.Command{
 		Use:   "addRoleTouser",
 		Short: "Add role to a user",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

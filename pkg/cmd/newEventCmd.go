@@ -19,7 +19,7 @@ func newNewEventCmd() *newEventCmd {
 	cmd := &cobra.Command{
 		Use:   "new",
 		Short: "Create a new event",
-		Long:  "Create a new event",
+		Long:  `Create a new event`,
 		Example: `
         
 		`,

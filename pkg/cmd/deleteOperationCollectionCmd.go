@@ -19,7 +19,7 @@ func newDeleteOperationCollectionCmd() *deleteOperationCollectionCmd {
 	cmd := &cobra.Command{
 		Use:   "deleteCollection",
 		Short: "Delete a collection of operations",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

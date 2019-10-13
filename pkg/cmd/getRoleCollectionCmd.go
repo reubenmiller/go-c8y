@@ -19,7 +19,7 @@ func newGetRoleCollectionCmd() *getRoleCollectionCmd {
 	cmd := &cobra.Command{
 		Use:   "getCollection",
 		Short: "Get collection of user roles",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

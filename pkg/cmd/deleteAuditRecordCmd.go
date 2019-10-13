@@ -19,7 +19,7 @@ func newDeleteAuditRecordCmd() *deleteAuditRecordCmd {
 	cmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete an audit record",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

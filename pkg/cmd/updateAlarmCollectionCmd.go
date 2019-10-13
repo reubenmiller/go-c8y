@@ -19,7 +19,7 @@ func newUpdateAlarmCollectionCmd() *updateAlarmCollectionCmd {
 	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "The PUT method allows for updating alarms collections. Currently only the status of alarms can be changed",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

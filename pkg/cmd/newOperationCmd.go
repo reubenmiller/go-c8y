@@ -19,7 +19,7 @@ func newNewOperationCmd() *newOperationCmd {
 	cmd := &cobra.Command{
 		Use:   "new",
 		Short: "Create a new operation",
-		Long:  "Create a new operation",
+		Long:  `Create a new operation`,
 		Example: `
         
 		`,

@@ -19,7 +19,7 @@ func newNewRetentionRuleCmd() *newRetentionRuleCmd {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "New retention rule",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

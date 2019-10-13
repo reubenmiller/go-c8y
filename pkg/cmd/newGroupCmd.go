@@ -19,7 +19,7 @@ func newNewGroupCmd() *newGroupCmd {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a new group",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

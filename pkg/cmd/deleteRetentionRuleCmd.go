@@ -19,7 +19,7 @@ func newDeleteRetentionRuleCmd() *deleteRetentionRuleCmd {
 	cmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete retention rule",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

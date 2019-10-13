@@ -19,7 +19,7 @@ func newGetGroupCmd() *getGroupCmd {
 	cmd := &cobra.Command{
 		Use:   "get",
 		Short: "Create a new group by id",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

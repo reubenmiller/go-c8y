@@ -72,6 +72,7 @@
     "description": "Get retention rule",
     "method": "GET",
     "path": "/retention/retentions/{id}",
+    "accept": "application/vnd.com.nsn.cumulocity.retentionRule+json",
     "alias": {
       "go": "get",
       "powershell": "Get-RetentionRule"

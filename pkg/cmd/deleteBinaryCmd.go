@@ -19,7 +19,7 @@ func newDeleteBinaryCmd() *deleteBinaryCmd {
 	cmd := &cobra.Command{
 		Use:   "deleteBinary",
 		Short: "Delete event binary",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

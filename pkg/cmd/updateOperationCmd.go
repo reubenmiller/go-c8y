@@ -19,7 +19,7 @@ func newUpdateOperationCmd() *updateOperationCmd {
 	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

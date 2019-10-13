@@ -19,7 +19,7 @@ func newGetEventBinaryCmd() *getEventBinaryCmd {
 	cmd := &cobra.Command{
 		Use:   "getBinary",
 		Short: "Get event binary",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

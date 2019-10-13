@@ -19,7 +19,7 @@ func newDeleteMeasurementCmd() *deleteMeasurementCmd {
 	cmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete measurement/s",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

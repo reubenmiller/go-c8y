@@ -19,7 +19,7 @@ func newUpdateRetentionRuleCmd() *updateRetentionRuleCmd {
 	cmd := &cobra.Command{
 		Use:   "updateBinary",
 		Short: "Update retention rule",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

@@ -19,7 +19,7 @@ func newGetOperationCollectionCmd() *getOperationCollectionCmd {
 	cmd := &cobra.Command{
 		Use:   "getCollection",
 		Short: "Get a collection of operations based on filter parameters",
-		Long:  "Get a collection of operations based on filter parameters",
+		Long:  `Get a collection of operations based on filter parameters`,
 		Example: `
         Get a list of pending operations
 c8y operation get --status PENDING

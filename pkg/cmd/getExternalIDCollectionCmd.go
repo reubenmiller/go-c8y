@@ -19,7 +19,7 @@ func newGetExternalIDCollectionCmd() *getExternalIDCollectionCmd {
 	cmd := &cobra.Command{
 		Use:   "getCollection",
 		Short: "Get a collection of external ids based on filter parameters",
-		Long:  "Get a collection of external ids based on filter parameters",
+		Long:  `Get a collection of external ids based on filter parameters`,
 		Example: `
         Get a list of external ids
 c8y identity getCollection

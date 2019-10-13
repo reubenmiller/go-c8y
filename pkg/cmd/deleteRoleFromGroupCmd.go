@@ -19,7 +19,7 @@ func newDeleteRoleFromGroupCmd() *deleteRoleFromGroupCmd {
 	cmd := &cobra.Command{
 		Use:   "deleteRoleFromGroup",
 		Short: "Unassign/Remove role from a group",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

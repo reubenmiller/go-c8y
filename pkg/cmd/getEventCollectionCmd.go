@@ -19,7 +19,7 @@ func newGetEventCollectionCmd() *getEventCollectionCmd {
 	cmd := &cobra.Command{
 		Use:   "getCollection",
 		Short: "Get a collection of events based on filter parameters",
-		Long:  "Get a collection of events based on filter parameters",
+		Long:  `Get a collection of events based on filter parameters`,
 		Example: `
         Get a list of events
 c8y event get

@@ -19,7 +19,7 @@ func newGetUserCurrentCmd() *getUserCurrentCmd {
 	cmd := &cobra.Command{
 		Use:   "getCurrentUser",
 		Short: "Get user",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

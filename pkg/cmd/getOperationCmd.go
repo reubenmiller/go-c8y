@@ -19,7 +19,7 @@ func newGetOperationCmd() *getOperationCmd {
 	cmd := &cobra.Command{
 		Use:   "get",
 		Short: "Get operation/s",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

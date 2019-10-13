@@ -19,7 +19,7 @@ func newAddUserToGroupCmd() *addUserToGroupCmd {
 	cmd := &cobra.Command{
 		Use:   "addUserToGroup",
 		Short: "Get user",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

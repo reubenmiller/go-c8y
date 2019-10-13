@@ -19,7 +19,7 @@ func newGetUserCmd() *getUserCmd {
 	cmd := &cobra.Command{
 		Use:   "get",
 		Short: "Get user",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

@@ -19,7 +19,7 @@ func newNewBinaryCmd() *newBinaryCmd {
 	cmd := &cobra.Command{
 		Use:   "createBinary",
 		Short: "New inventory binary",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

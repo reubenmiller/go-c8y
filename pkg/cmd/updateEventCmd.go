@@ -19,7 +19,7 @@ func newUpdateEventCmd() *updateEventCmd {
 	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "Update an event",
-		Long:  "Update an event",
+		Long:  `Update an event`,
 		Example: `
         
 		`,

@@ -19,7 +19,7 @@ func newDeleteUserCmd() *deleteUserCmd {
 	cmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete user",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

@@ -19,7 +19,7 @@ func newDeleteEventCmd() *deleteEventCmd {
 	cmd := &cobra.Command{
 		Use:   "delete",
 		Short: "Delete event/s",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

@@ -19,7 +19,7 @@ func newUpdateAlarmCmd() *updateAlarmCmd {
 	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

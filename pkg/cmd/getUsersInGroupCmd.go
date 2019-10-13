@@ -19,7 +19,7 @@ func newGetUsersInGroupCmd() *getUsersInGroupCmd {
 	cmd := &cobra.Command{
 		Use:   "getGroupMembership",
 		Short: "Get all users in a group",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

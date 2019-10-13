@@ -19,7 +19,7 @@ func newDeleteUserFromGroupCmd() *deleteUserFromGroupCmd {
 	cmd := &cobra.Command{
 		Use:   "deleteUserFromGroup",
 		Short: "Delete a user from a group",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

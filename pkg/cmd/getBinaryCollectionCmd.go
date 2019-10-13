@@ -19,7 +19,7 @@ func newGetBinaryCollectionCmd() *getBinaryCollectionCmd {
 	cmd := &cobra.Command{
 		Use:   "getBinaryCollection",
 		Short: "Get collection of inventory binaries",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

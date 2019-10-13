@@ -19,7 +19,7 @@ func newGetRetentionRuleCmd() *getRetentionRuleCmd {
 	cmd := &cobra.Command{
 		Use:   "get",
 		Short: "Get retention rule",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

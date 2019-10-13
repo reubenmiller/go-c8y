@@ -19,7 +19,7 @@ func newNewAlarmCmd() *newAlarmCmd {
 	cmd := &cobra.Command{
 		Use:   "new",
 		Short: "Create a new alarm",
-		Long:  "Create a new alarm",
+		Long:  `Create a new alarm`,
 		Example: `
         
 		`,

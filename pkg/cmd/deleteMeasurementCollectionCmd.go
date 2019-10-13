@@ -19,7 +19,7 @@ func newDeleteMeasurementCollectionCmd() *deleteMeasurementCollectionCmd {
 	cmd := &cobra.Command{
 		Use:   "deleteCollection",
 		Short: "Delete a collection of measurements",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

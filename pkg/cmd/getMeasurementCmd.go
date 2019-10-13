@@ -19,7 +19,7 @@ func newGetMeasurementCmd() *getMeasurementCmd {
 	cmd := &cobra.Command{
 		Use:   "get",
 		Short: "Get measurement/s",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

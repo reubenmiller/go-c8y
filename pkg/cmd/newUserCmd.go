@@ -19,7 +19,7 @@ func newNewUserCmd() *newUserCmd {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a new user within the collection",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,

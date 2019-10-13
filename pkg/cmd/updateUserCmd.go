@@ -19,7 +19,7 @@ func newUpdateUserCmd() *updateUserCmd {
 	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "Update user",
-		Long:  "",
+		Long:  ``,
 		Example: `
         
 		`,
