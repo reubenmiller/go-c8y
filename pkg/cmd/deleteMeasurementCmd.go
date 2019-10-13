@@ -26,6 +26,8 @@ func newDeleteMeasurementCmd() *deleteMeasurementCmd {
 		RunE: ccmd.deleteMeasurement,
 	}
 
+	cmd.Flags().String("id", "", "Measurement id")
+
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd

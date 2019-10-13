@@ -21,9 +21,11 @@ func newGetMeasurementSeriesCmd() *getMeasurementSeriesCmd {
 		Short: "Get a collection of measurements based on filter parameters",
 		Long:  "Get a collection of measurements based on filter parameters",
 		Example: `
-        Get a list of measurements c8y measurement get
+        Get a list of measurements
+c8y measurement get
 
-Get a list of series [nx_WEA_29_Delta.MDL10FG001] and [nx_WEA_29_Delta.ST9] for device 12345 measurement getSeries --source 12345 --series nx_WEA_29_Delta.MDL10FG001 --series nx_WEA_29_Delta.ST9 --dateFrom (Get-C8yDate (last 10min)) --dateTo (Get-C8yDate (last 0min))
+Get a list of series [nx_WEA_29_Delta.MDL10FG001] and [nx_WEA_29_Delta.ST9] for device 12345
+measurement getSeries --source 12345 --series nx_WEA_29_Delta.MDL10FG001 --series nx_WEA_29_Delta.ST9 --dateFrom (Get-C8yDate (last 10min)) --dateTo (Get-C8yDate (last 0min))
 		`,
 		RunE: ccmd.getMeasurementSeries,
 	}

@@ -9,31 +9,31 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type getOperationCmd struct {
+type getGroupCollectionCmd struct {
 	*baseCmd
 }
 
-func newGetOperationCmd() *getOperationCmd {
-	ccmd := &getOperationCmd{}
+func newGetGroupCollectionCmd() *getGroupCollectionCmd {
+	ccmd := &getGroupCollectionCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "get",
-		Short: "Get operation/s",
+		Use:   "getCollection",
+		Short: "Get collection of (user) groups",
 		Long:  "",
 		Example: `
         
 		`,
-		RunE: ccmd.getOperation,
+		RunE: ccmd.getGroupCollection,
 	}
 
-	cmd.Flags().String("id", "", "Operation id")
+	cmd.Flags().String("tenant", "", "Tenant")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd
 }
 
-func (n *getOperationCmd) getOperation(cmd *cobra.Command, args []string) error {
+func (n *getGroupCollectionCmd) getGroupCollection(cmd *cobra.Command, args []string) error {
 
 	// query parameters
 	queryValue := url.QueryEscape("")
@@ -43,18 +43,18 @@ func (n *getOperationCmd) getOperation(cmd *cobra.Command, args []string) error 
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v, err := cmd.Flags().GetString("id"); err == nil {
-		pathParameters["id"] = v
+	if v, err := cmd.Flags().GetString("tenant"); err == nil {
+		pathParameters["tenant"] = v
 	} else {
 		return newUserError("Flag does not exist")
 	}
 
-	path := replacePathParameters("devicecontrol/operations/{id}", pathParameters)
+	path := replacePathParameters("/user/{tenant}/groups", pathParameters)
 
-	return n.doGetOperation("GET", path, queryValue, body)
+	return n.doGetGroupCollection("GET", path, queryValue, body)
 }
 
-func (n *getOperationCmd) doGetOperation(method string, path string, query string, body map[string]interface{}) error {
+func (n *getGroupCollectionCmd) doGetGroupCollection(method string, path string, query string, body map[string]interface{}) error {
 	resp, err := client.SendRequest(
 		context.Background(),
 		c8y.RequestOptions{

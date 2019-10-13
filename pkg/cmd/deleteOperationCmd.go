@@ -26,6 +26,8 @@ func newDeleteOperationCmd() *deleteOperationCmd {
 		RunE: ccmd.deleteOperation,
 	}
 
+	cmd.Flags().String("id", "", "Operation id")
+
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd

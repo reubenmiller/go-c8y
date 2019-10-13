@@ -9,31 +9,31 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type getOperationCmd struct {
+type getEventBinaryCmd struct {
 	*baseCmd
 }
 
-func newGetOperationCmd() *getOperationCmd {
-	ccmd := &getOperationCmd{}
+func newGetEventBinaryCmd() *getEventBinaryCmd {
+	ccmd := &getEventBinaryCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "get",
-		Short: "Get operation/s",
+		Use:   "getBinary",
+		Short: "Get event binary",
 		Long:  "",
 		Example: `
         
 		`,
-		RunE: ccmd.getOperation,
+		RunE: ccmd.getEventBinary,
 	}
 
-	cmd.Flags().String("id", "", "Operation id")
+	cmd.Flags().String("id", "", "Event id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd
 }
 
-func (n *getOperationCmd) getOperation(cmd *cobra.Command, args []string) error {
+func (n *getEventBinaryCmd) getEventBinary(cmd *cobra.Command, args []string) error {
 
 	// query parameters
 	queryValue := url.QueryEscape("")
@@ -49,12 +49,12 @@ func (n *getOperationCmd) getOperation(cmd *cobra.Command, args []string) error 
 		return newUserError("Flag does not exist")
 	}
 
-	path := replacePathParameters("devicecontrol/operations/{id}", pathParameters)
+	path := replacePathParameters("event/events/{id}/binaries", pathParameters)
 
-	return n.doGetOperation("GET", path, queryValue, body)
+	return n.doGetEventBinary("PUT", path, queryValue, body)
 }
 
-func (n *getOperationCmd) doGetOperation(method string, path string, query string, body map[string]interface{}) error {
+func (n *getEventBinaryCmd) doGetEventBinary(method string, path string, query string, body map[string]interface{}) error {
 	resp, err := client.SendRequest(
 		context.Background(),
 		c8y.RequestOptions{

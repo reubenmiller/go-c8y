@@ -9,31 +9,31 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type getOperationCmd struct {
+type deleteAuditRecordCmd struct {
 	*baseCmd
 }
 
-func newGetOperationCmd() *getOperationCmd {
-	ccmd := &getOperationCmd{}
+func newDeleteAuditRecordCmd() *deleteAuditRecordCmd {
+	ccmd := &deleteAuditRecordCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "get",
-		Short: "Get operation/s",
+		Use:   "delete",
+		Short: "Delete an audit record",
 		Long:  "",
 		Example: `
         
 		`,
-		RunE: ccmd.getOperation,
+		RunE: ccmd.deleteAuditRecord,
 	}
 
-	cmd.Flags().String("id", "", "Operation id")
+	cmd.Flags().String("id", "", "Audit record id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd
 }
 
-func (n *getOperationCmd) getOperation(cmd *cobra.Command, args []string) error {
+func (n *deleteAuditRecordCmd) deleteAuditRecord(cmd *cobra.Command, args []string) error {
 
 	// query parameters
 	queryValue := url.QueryEscape("")
@@ -49,12 +49,12 @@ func (n *getOperationCmd) getOperation(cmd *cobra.Command, args []string) error 
 		return newUserError("Flag does not exist")
 	}
 
-	path := replacePathParameters("devicecontrol/operations/{id}", pathParameters)
+	path := replacePathParameters("/audit/auditRecords/{id}", pathParameters)
 
-	return n.doGetOperation("GET", path, queryValue, body)
+	return n.doDeleteAuditRecord("DELETE", path, queryValue, body)
 }
 
-func (n *getOperationCmd) doGetOperation(method string, path string, query string, body map[string]interface{}) error {
+func (n *deleteAuditRecordCmd) doDeleteAuditRecord(method string, path string, query string, body map[string]interface{}) error {
 	resp, err := client.SendRequest(
 		context.Background(),
 		c8y.RequestOptions{

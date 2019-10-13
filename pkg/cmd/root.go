@@ -61,13 +61,19 @@ func Execute() {
 	// generic commands
 	rootCmd.AddCommand(newGetGenericRestCmd().getCommand())
 
-	// alarm
+	// alarms
 	rootCmd.AddCommand(newAlarmsCmd().getCommand())
 
 	// devicecontrol (operations)
 	rootCmd.AddCommand(newDeviceControlCmd().getCommand())
 
-	// measurement
+	// events
+	rootCmd.AddCommand(newEventRootCmd().getCommand())
+
+	// identity
+	rootCmd.AddCommand(newIdentityRootCmd().getCommand())
+
+	// measurements
 	rootCmd.AddCommand(newMeasurementRootCmd().getCommand())
 
 	if err := rootCmd.Execute(); err != nil {

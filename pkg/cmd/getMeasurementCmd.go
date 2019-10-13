@@ -26,6 +26,8 @@ func newGetMeasurementCmd() *getMeasurementCmd {
 		RunE: ccmd.getMeasurement,
 	}
 
+	cmd.Flags().String("id", "", "Measurement id")
+
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd

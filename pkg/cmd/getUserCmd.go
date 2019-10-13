@@ -9,31 +9,32 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type getOperationCmd struct {
+type getUserCmd struct {
 	*baseCmd
 }
 
-func newGetOperationCmd() *getOperationCmd {
-	ccmd := &getOperationCmd{}
+func newGetUserCmd() *getUserCmd {
+	ccmd := &getUserCmd{}
 
 	cmd := &cobra.Command{
 		Use:   "get",
-		Short: "Get operation/s",
+		Short: "Get user",
 		Long:  "",
 		Example: `
         
 		`,
-		RunE: ccmd.getOperation,
+		RunE: ccmd.getUser,
 	}
 
-	cmd.Flags().String("id", "", "Operation id")
+	cmd.Flags().String("tenant", "", "Tenant")
+	cmd.Flags().String("id", "", "User id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd
 }
 
-func (n *getOperationCmd) getOperation(cmd *cobra.Command, args []string) error {
+func (n *getUserCmd) getUser(cmd *cobra.Command, args []string) error {
 
 	// query parameters
 	queryValue := url.QueryEscape("")
@@ -43,18 +44,23 @@ func (n *getOperationCmd) getOperation(cmd *cobra.Command, args []string) error 
 
 	// path parameters
 	pathParameters := make(map[string]string)
+	if v, err := cmd.Flags().GetString("tenant"); err == nil {
+		pathParameters["tenant"] = v
+	} else {
+		return newUserError("Flag does not exist")
+	}
 	if v, err := cmd.Flags().GetString("id"); err == nil {
 		pathParameters["id"] = v
 	} else {
 		return newUserError("Flag does not exist")
 	}
 
-	path := replacePathParameters("devicecontrol/operations/{id}", pathParameters)
+	path := replacePathParameters("user/{tenant}/users/{id}", pathParameters)
 
-	return n.doGetOperation("GET", path, queryValue, body)
+	return n.doGetUser("GET", path, queryValue, body)
 }
 
-func (n *getOperationCmd) doGetOperation(method string, path string, query string, body map[string]interface{}) error {
+func (n *getUserCmd) doGetUser(method string, path string, query string, body map[string]interface{}) error {
 	resp, err := client.SendRequest(
 		context.Background(),
 		c8y.RequestOptions{

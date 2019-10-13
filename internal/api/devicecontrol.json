@@ -6,10 +6,10 @@
     "descriptionLong": "Get a collection of operations based on filter parameters",
     "examples": {
       "powershell": [
-        "Get a list of pending operations Get-OperationCollection -Status PENDING"
+        "Get a list of pending operations\nGet-OperationCollection -Status PENDING"
       ],
       "go": [
-        "Get a list of pending operations c8y operation get --status PENDING"
+        "Get a list of pending operations\nc8y operation get --status PENDING"
       ]
     },
     "path": "devicecontrol/operations",

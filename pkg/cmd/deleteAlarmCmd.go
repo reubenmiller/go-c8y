@@ -26,6 +26,8 @@ func newDeleteAlarmCmd() *deleteAlarmCmd {
 		RunE: ccmd.deleteAlarm,
 	}
 
+	cmd.Flags().String("id", "", "Alarm id")
+
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd

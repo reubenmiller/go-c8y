@@ -26,6 +26,7 @@ func newUpdateAlarmCmd() *updateAlarmCmd {
 		RunE: ccmd.updateAlarm,
 	}
 
+	cmd.Flags().String("id", "", "")
 	cmd.Flags().String("status", "", "Comma separated alarm statuses, for example ACTIVE,CLEARED.")
 	cmd.Flags().String("severity", "", "Alarm severity, for example MINOR.")
 	cmd.Flags().String("text", "", "Text description of the alarm.")

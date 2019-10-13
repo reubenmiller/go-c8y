@@ -32,8 +32,11 @@ Function New-C8yApiGoCommand {
     #
     $ArgumentSources = New-Object System.Collections.ArrayList
 
-    if ($Specification.queryParameters) {
+    if ($Specification.pathParameters) {
+        $null = $ArgumentSources.AddRange(([array]$Specification.pathParameters))
+    }
 
+    if ($Specification.queryParameters) {
         $null = $ArgumentSources.AddRange(([array]$Specification.queryParameters))
     }
     if ($Specification.body) {

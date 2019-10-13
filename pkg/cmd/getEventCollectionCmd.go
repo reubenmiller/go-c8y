@@ -9,39 +9,37 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type getMeasurementCollectionCmd struct {
+type getEventCollectionCmd struct {
 	*baseCmd
 }
 
-func newGetMeasurementCollectionCmd() *getMeasurementCollectionCmd {
-	ccmd := &getMeasurementCollectionCmd{}
+func newGetEventCollectionCmd() *getEventCollectionCmd {
+	ccmd := &getEventCollectionCmd{}
 
 	cmd := &cobra.Command{
 		Use:   "getCollection",
-		Short: "Get a collection of measurements based on filter parameters",
-		Long:  "Get a collection of measurements based on filter parameters",
+		Short: "Get a collection of events based on filter parameters",
+		Long:  "Get a collection of events based on filter parameters",
 		Example: `
-        Get a list of measurements
-c8y measurement get
+        Get a list of events
+c8y event get
 		`,
-		RunE: ccmd.getMeasurementCollection,
+		RunE: ccmd.getEventCollection,
 	}
 
 	cmd.Flags().String("source", "", "Device ID")
-	cmd.Flags().String("type", "", "Measurement type.")
-	cmd.Flags().String("valueFragmentType", "", "value fragment type")
-	cmd.Flags().String("valueFragmentSeries", "", "value fragment series")
-	cmd.Flags().String("fragmentType", "", "Fragment name from measurement.")
-	cmd.Flags().String("dateFrom", "", "Start date or date and time of measurement occurrence.")
-	cmd.Flags().String("dateTo", "", "End date or date and time of measurement occurrence.")
-	cmd.Flags().Bool("revert", false, "Return the newest instead of the oldest measurements. Must be used with dateFrom and dateTo parameters")
+	cmd.Flags().String("type", "", "Event type.")
+	cmd.Flags().String("fragmentType", "", "Fragment name from event.")
+	cmd.Flags().String("dateFrom", "", "Start date or date and time of event occurrence.")
+	cmd.Flags().String("dateTo", "", "End date or date and time of event occurrence.")
+	cmd.Flags().Bool("revert", false, "Return the newest instead of the oldest events. Must be used with dateFrom and dateTo parameters")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd
 }
 
-func (n *getMeasurementCollectionCmd) getMeasurementCollection(cmd *cobra.Command, args []string) error {
+func (n *getEventCollectionCmd) getEventCollection(cmd *cobra.Command, args []string) error {
 
 	// query parameters
 	queryValue := url.QueryEscape("")
@@ -56,20 +54,6 @@ func (n *getMeasurementCollectionCmd) getMeasurementCollection(cmd *cobra.Comman
 	if v, err := cmd.Flags().GetString("type"); err == nil {
 		if v != "" {
 			query.Add("type", url.QueryEscape(v))
-		}
-	} else {
-		return newUserError("Flag does not exist")
-	}
-	if v, err := cmd.Flags().GetString("valueFragmentType"); err == nil {
-		if v != "" {
-			query.Add("valueFragmentType", url.QueryEscape(v))
-		}
-	} else {
-		return newUserError("Flag does not exist")
-	}
-	if v, err := cmd.Flags().GetString("valueFragmentSeries"); err == nil {
-		if v != "" {
-			query.Add("valueFragmentSeries", url.QueryEscape(v))
 		}
 	} else {
 		return newUserError("Flag does not exist")
@@ -114,12 +98,12 @@ func (n *getMeasurementCollectionCmd) getMeasurementCollection(cmd *cobra.Comman
 	// path parameters
 	pathParameters := make(map[string]string)
 
-	path := replacePathParameters("measurement/measurements", pathParameters)
+	path := replacePathParameters("event/events", pathParameters)
 
-	return n.doGetMeasurementCollection("GET", path, queryValue, body)
+	return n.doGetEventCollection("GET", path, queryValue, body)
 }
 
-func (n *getMeasurementCollectionCmd) doGetMeasurementCollection(method string, path string, query string, body map[string]interface{}) error {
+func (n *getEventCollectionCmd) doGetEventCollection(method string, path string, query string, body map[string]interface{}) error {
 	resp, err := client.SendRequest(
 		context.Background(),
 		c8y.RequestOptions{
