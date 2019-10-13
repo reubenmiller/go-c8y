@@ -8,7 +8,7 @@ if (!(Get-Command yaml2json -ErrorAction SilentlyContinue)) {
 }
 
 Write-Host "Converting yaml specs to json" -ForegroundColor Gray
-$WorkDir = Resolve-Path -Path $PSScriptRoot -Relative
+$WorkDir = Resolve-Path -Path "$PSScriptRoot/spec" -Relative
 yaml2json -s -r -p $WorkDir
 
 . $PSScriptRoot/New-C8yApi.ps1
@@ -16,7 +16,7 @@ yaml2json -s -r -p $WorkDir
 
 $OutputDir = Resolve-path (Join-Path $PSScriptRoot -ChildPath "../../pkg/cmd")
 
-$SpecFiles = Get-ChildItem -Path $PSScriptRoot -Filter "*.json"
+$SpecFiles = Get-ChildItem -Path "$PSScriptRoot/spec" -Filter "*.json"
 
 foreach ($iFile in $SpecFiles) {
     Write-Host ("Generating go cli code [{0}]" -f $iFile.Name) -ForegroundColor Gray

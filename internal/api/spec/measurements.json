@@ -1,0 +1,280 @@
+{
+  "information": {
+    "name": "measurements",
+    "description": "Cumulocity measurements",
+    "descriptionLong": "REST endpoint to interact with Cumulocity measurements",
+    "link": "https://cumulocity.com/guides/reference/measurements/"
+  },
+  "endpoints": [
+    {
+      "name": "getMeasurementCollection",
+      "method": "GET",
+      "description": "Get a collection of measurements based on filter parameters",
+      "descriptionLong": "Get a collection of measurements based on filter parameters",
+      "examples": {
+        "powershell": [
+          "Get a list of measurements\nGet-MeasurementCollection"
+        ],
+        "go": [
+          "Get a list of measurements\nc8y measurement get"
+        ]
+      },
+      "path": "measurement/measurements",
+      "accept": "application/json",
+      "alias": {
+        "go": "getCollection",
+        "powershell": "Get-MeasurementCollection"
+      },
+      "headerParameters": [
+        {
+          "name": "csv",
+          "type": "boolean",
+          "description": "Results will be displayed in csv format",
+          "header": "Accept",
+          "value": "text/csv"
+        },
+        {
+          "name": "excel",
+          "type": "boolean",
+          "description": "Results will be displayed in Excel format",
+          "header": "Accept",
+          "value": "application/vnd.ms-excel"
+        },
+        {
+          "name": "unit",
+          "type": "string",
+          "description": "Every measurement fragment which contains 'unit' property will be transformed to use required system of units.",
+          "header": "X-Cumulocity-System-Of-Units",
+          "validateSet": [
+            "imperial",
+            "metric"
+          ]
+        }
+      ],
+      "queryParameters": [
+        {
+          "name": "source",
+          "type": "string",
+          "description": "Device ID"
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "description": "Measurement type."
+        },
+        {
+          "name": "valueFragmentType",
+          "type": "string",
+          "description": "value fragment type"
+        },
+        {
+          "name": "valueFragmentSeries",
+          "type": "string",
+          "description": "value fragment series"
+        },
+        {
+          "name": "fragmentType",
+          "type": "string",
+          "deprecated": true,
+          "description": "Fragment name from measurement."
+        },
+        {
+          "name": "dateFrom",
+          "type": "datetime",
+          "description": "Start date or date and time of measurement occurrence."
+        },
+        {
+          "name": "dateTo",
+          "type": "datetime",
+          "description": "End date or date and time of measurement occurrence."
+        },
+        {
+          "name": "revert",
+          "type": "boolean",
+          "description": "Return the newest instead of the oldest measurements. Must be used with dateFrom and dateTo parameters"
+        }
+      ]
+    },
+    {
+      "name": "getMeasurementSeries",
+      "method": "GET",
+      "description": "Get a collection of measurements based on filter parameters",
+      "descriptionLong": "Get a collection of measurements based on filter parameters",
+      "examples": {
+        "powershell": [
+          "Get a list of measurements\nGet-MeasurementCollection"
+        ],
+        "go": [
+          "Get a list of measurements\nc8y measurement get",
+          "Get a list of series [nx_WEA_29_Delta.MDL10FG001] and [nx_WEA_29_Delta.ST9] for device 12345\nmeasurement getSeries --source 12345 --series nx_WEA_29_Delta.MDL10FG001 --series nx_WEA_29_Delta.ST9 --dateFrom (Get-C8yDate (last 10min)) --dateTo (Get-C8yDate (last 0min))"
+        ]
+      },
+      "path": "measurement/measurements/series",
+      "accept": "application/json",
+      "alias": {
+        "go": "getSeries",
+        "powershell": "Get-MeasurementCollection"
+      },
+      "queryParameters": [
+        {
+          "name": "source",
+          "type": "string",
+          "description": "Device ID"
+        },
+        {
+          "name": "series",
+          "type": "[]string",
+          "description": "measurement type and series name, e.g. c8y_AccelerationMeasurement.acceleration"
+        },
+        {
+          "name": "aggregationType",
+          "type": "string",
+          "deprecated": true,
+          "description": "Fragment name from measurement.",
+          "validateSet": [
+            "DAILY",
+            "HOURLY",
+            "MINUTELY"
+          ]
+        },
+        {
+          "name": "dateFrom",
+          "type": "datetime",
+          "required": true,
+          "description": "Start date or date and time of measurement occurrence."
+        },
+        {
+          "name": "dateTo",
+          "type": "datetime",
+          "required": true,
+          "description": "End date or date and time of measurement occurrence."
+        }
+      ]
+    },
+    {
+      "name": "getMeasurement",
+      "description": "Get measurement/s",
+      "method": "GET",
+      "path": "measurement/measurements/{id}",
+      "accept": "application/json",
+      "alias": {
+        "go": "get",
+        "powershell": "Get-Measurement"
+      },
+      "pathParameters": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": "Measurement id"
+        }
+      ]
+    },
+    {
+      "name": "newMeasurement",
+      "method": "POST",
+      "path": "measurement/measurements",
+      "accept": "application/json",
+      "description": "Create a new measurement",
+      "descriptionLong": "Create a new measurement",
+      "alias": {
+        "go": "new",
+        "powershell": "New-Measurement"
+      },
+      "body": [
+        {
+          "name": "source",
+          "type": "string",
+          "required": true,
+          "property": "source.id",
+          "description": "The ManagedObject which is the source of this measurement."
+        },
+        {
+          "name": "time",
+          "type": "string",
+          "required": true,
+          "description": "Time of the measurement."
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "required": true,
+          "description": "The most specific type of this entire measurement."
+        },
+        {
+          "name": "data",
+          "type": "json",
+          "description": "List of measurement fragments."
+        }
+      ]
+    },
+    {
+      "name": "deleteMeasurement",
+      "description": "Delete measurement/s",
+      "method": "DELETE",
+      "path": "measurement/measurements/{id}",
+      "accept": "application/json",
+      "alias": {
+        "go": "delete",
+        "powershell": "Remove-Measurement"
+      },
+      "pathParameters": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": "Measurement id"
+        }
+      ]
+    },
+    {
+      "name": "deleteMeasurementCollection",
+      "description": "Delete a collection of measurements",
+      "method": "DELETE",
+      "path": "measurement/measurements",
+      "accept": "application/json",
+      "alias": {
+        "go": "deleteCollection",
+        "powershell": "Remove-MeasurementCollection"
+      },
+      "queryParameters": [
+        {
+          "name": "source",
+          "type": "string",
+          "description": "Device ID"
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "description": "Measurement type."
+        },
+        {
+          "name": "valueFragmentType",
+          "type": "string",
+          "description": "value fragment type"
+        },
+        {
+          "name": "valueFragmentSeries",
+          "type": "string",
+          "description": "value fragment series"
+        },
+        {
+          "name": "fragmentType",
+          "type": "string",
+          "deprecated": true,
+          "description": "Fragment name from measurement."
+        },
+        {
+          "name": "dateFrom",
+          "type": "datetime",
+          "description": "Start date or date and time of measurement occurrence."
+        },
+        {
+          "name": "dateTo",
+          "type": "datetime",
+          "description": "End date or date and time of measurement occurrence."
+        }
+      ]
+    }
+  ]
+}

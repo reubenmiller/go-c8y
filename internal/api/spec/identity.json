@@ -1,0 +1,122 @@
+{
+  "information": {
+    "name": "identity",
+    "description": "Cumulocity identity",
+    "descriptionLong": "REST endpoint to interact with Cumulocity identity objects",
+    "link": "https://cumulocity.com/guides/reference/identity/"
+  },
+  "endpoints": [
+    {
+      "name": "getExternalIDCollection",
+      "method": "GET",
+      "description": "Get a collection of external ids based on filter parameters",
+      "descriptionLong": "Get a collection of external ids based on filter parameters",
+      "examples": {
+        "powershell": [
+          "Get a list of external ids\nGet-ExternalIdCollection"
+        ],
+        "go": [
+          "Get a list of external ids\nc8y identity getCollection"
+        ]
+      },
+      "path": "identity/globalIds/{deviceId}/externalIds",
+      "accept": "application/vnd.com.nsn.cumulocity.externalIdCollection+json",
+      "alias": {
+        "go": "getCollection",
+        "powershell": "Get-ExternalIDCollection"
+      },
+      "pathParameters": [
+        {
+          "name": "deviceId",
+          "type": "string",
+          "description": "Device id"
+        }
+      ]
+    },
+    {
+      "name": "getExternalID",
+      "description": "Get external id",
+      "method": "GET",
+      "path": "/identity/externalIds/{type}/{name}",
+      "accept": "application/vnd.com.nsn.cumulocity.externalId+json",
+      "alias": {
+        "go": "get",
+        "powershell": "Get-ExternalId"
+      },
+      "pathParameters": [
+        {
+          "name": "type",
+          "type": "string",
+          "required": true,
+          "description": "External identity type"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true,
+          "description": "External identity id/name"
+        }
+      ]
+    },
+    {
+      "name": "deleteExternalID",
+      "description": "Delete external id",
+      "method": "DELETE",
+      "path": "/identity/externalIds/{type}/{name}",
+      "accept": "application/json",
+      "alias": {
+        "go": "delete",
+        "powershell": "Remove-ExternalId"
+      },
+      "pathParameters": [
+        {
+          "name": "type",
+          "type": "string",
+          "required": true,
+          "description": "External identity type"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true,
+          "description": "External identity id/name"
+        }
+      ]
+    },
+    {
+      "name": "newExternalID",
+      "method": "POST",
+      "path": "identity/globalIds/{deviceId}/externalIds",
+      "accept": "application/json",
+      "description": "Create a new external id",
+      "descriptionLong": "Create a new external id",
+      "alias": {
+        "go": "new",
+        "powershell": "New-ExternalID"
+      },
+      "pathParameters": [
+        {
+          "name": "deviceId",
+          "type": "string",
+          "required": true,
+          "description": "The ManagedObject linked to the external ID."
+        }
+      ],
+      "body": [
+        {
+          "name": "type",
+          "type": "string",
+          "required": true,
+          "description": "The type of the external identifier as string, e.g., 'com_cumulocity_model_idtype_SerialNumber'."
+        },
+        {
+          "name": "name",
+          "property": "externalId",
+          "type": "string",
+          "required": true,
+          "description": "The identifier used in the external system that Cumulocity interfaces with."
+        }
+      ]
+    }
+  ]
+}

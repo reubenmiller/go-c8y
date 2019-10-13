@@ -1,0 +1,139 @@
+
+---
+
+information:
+  name: auditRecords
+  description: Cumulocity auditRecords
+  descriptionLong: 'REST endpoint to interact with Cumulocity auditRecords'
+  link: https://cumulocity.com/guides/reference/auditing/#audit-api
+
+endpoints:
+  - name: newAudit
+    description: Create a new audit record
+    method: POST
+    path: /audit/auditRecords
+    accept: application/vnd.com.nsn.cumulocity.auditRecord+json
+    alias:
+        go: create
+        powershell: New-Audit
+    body:
+      - name: type
+        type: string
+        required: true
+        description: Identifies the type of this audit record.
+
+      - name: time
+        type: datetime
+        required: true
+        description: Time of the audit record.
+
+      - name: text
+        type: string
+        required: true
+        description: Text description of the audit record.
+
+      - name: source
+        type: string
+        property: source.id
+        required: true
+        description: An optional ManagedObject that the audit record originated from
+
+      - name: activity
+        type: string
+        required: true
+        description: The activity that was carried out.
+
+      - name: activity
+        type: string
+        required: true
+        description: 'The severity of action: critical, major, minor, warning or information.'
+
+      # Optional parameters
+      - name: user
+        type: string
+        required: false
+        description: The user responsible for the audited action.
+
+      - name: application
+        type: string
+        required: false
+        description: The application used to carry out the audited action.
+
+      # TODO: Handle new data structure: set
+      - name: changes
+        type: set
+        required: false
+        description: An optional collection of objects describing the changes that were carried out.
+
+      - name: data
+        type: json
+        required: false
+        description: Additional properties of the audit record.
+
+
+  - name: getAuditRecordCollection
+    description: Get collection of (user) audits
+    method: GET
+    path: /audit/auditRecords
+    accept: application/vnd.com.nsn.cumulocity.auditRecordCollection+json
+    alias:
+        go: getCollection
+        powershell: Get-AuditRecordCollection
+    queryParameters:
+
+      - name: source
+        type: string
+        description: 'Source Id or object containing an .id property of the element that should be detected. i.e. AlarmID, or Operation ID. Note: Only one source can be provided'
+
+      - name: type
+        type: string
+        description: Type
+
+      - name: user
+        type: string
+        description: Username
+
+      - name: application
+        type: string
+        description: Application
+
+      - name: dateFrom
+        type: datetime
+        description: Start date or date and time of audit record occurrence.
+
+      - name: dateTo
+        type: datetime
+        description: End date or date and time of audit record occurrence.
+
+      - name: revert
+        type: boolean
+        description: Return the newest instead of the oldest audit records. Must be used with dateFrom and dateTo parameters
+
+
+  - name: getAuditRecord
+    description: Get an audit record
+    method: GET
+    path: /audit/auditRecords/{id}
+    accept: application/vnd.com.nsn.cumulocity.auditRecord+json
+    alias:
+        go: get
+        powershell: Get-Audit
+    pathParameters:
+      - name: id
+        type: string
+        required: true
+        description: Audit id
+
+
+  - name: deleteAuditRecord
+    description: Delete an audit record
+    method: DELETE
+    path: /audit/auditRecords/{id}
+    alias:
+        go: delete
+        powershell: Remove-AuditRecord
+    pathParameters:
+      - name: id
+        type: string
+        required: true
+        description: Audit record id

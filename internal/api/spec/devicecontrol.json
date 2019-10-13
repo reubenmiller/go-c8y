@@ -1,0 +1,230 @@
+{
+  "information": {
+    "name": "operations",
+    "description": "Cumulocity operations",
+    "descriptionLong": "REST endpoint to interact with Cumulocity operations",
+    "link": "https://cumulocity.com/guides/reference/device-control/"
+  },
+  "endpoints": [
+    {
+      "name": "getOperationCollection",
+      "method": "GET",
+      "description": "Get a collection of operations based on filter parameters",
+      "descriptionLong": "Get a collection of operations based on filter parameters",
+      "examples": {
+        "powershell": [
+          "Get a list of pending operations\nGet-OperationCollection -Status PENDING"
+        ],
+        "go": [
+          "Get a list of pending operations\nc8y operation get --status PENDING"
+        ]
+      },
+      "path": "devicecontrol/operations",
+      "accept": "application/json",
+      "alias": {
+        "go": "getCollection",
+        "powershell": "Get-OperationCollection"
+      },
+      "queryParameters": [
+        {
+          "name": "agentId",
+          "type": "string",
+          "description": "Agent ID"
+        },
+        {
+          "name": "deviceId",
+          "type": "string",
+          "description": "Device ID"
+        },
+        {
+          "name": "dateFrom",
+          "type": "datetime",
+          "description": ""
+        },
+        {
+          "name": "dateTo",
+          "type": "datetime",
+          "description": ""
+        },
+        {
+          "name": "status",
+          "type": "string",
+          "description": "Operation status, can be one of SUCCESSFUL, FAILED, EXECUTING or PENDING.",
+          "validationSet": [
+            "PENDING",
+            "EXECUTING",
+            "SUCCESSFUL",
+            "FAILED"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "getOperation",
+      "description": "Get operation/s",
+      "method": "GET",
+      "path": "devicecontrol/operations/{id}",
+      "accept": "application/json",
+      "alias": {
+        "go": "get",
+        "powershell": "Get-Operation"
+      },
+      "pathParameters": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": "Operation id"
+        }
+      ]
+    },
+    {
+      "name": "newOperation",
+      "method": "POST",
+      "path": "devicecontrol/operations",
+      "accept": "application/json",
+      "description": "Create a new operation",
+      "descriptionLong": "Create a new operation",
+      "alias": {
+        "go": "new",
+        "powershell": "New-Operation"
+      },
+      "body": [
+        {
+          "name": "deviceId",
+          "type": "string",
+          "required": true,
+          "description": "Identifies the target device on which this operation should be performed."
+        },
+        {
+          "name": "status",
+          "type": "string",
+          "required": true,
+          "description": "Operation status, can be one of SUCCESSFUL, FAILED, EXECUTING or PENDING.",
+          "validationSet": [
+            "PENDING",
+            "EXECUTING",
+            "SUCCESSFUL",
+            "FAILED"
+          ]
+        },
+        {
+          "name": "description",
+          "type": "string",
+          "required": false,
+          "description": "Text description of the operation."
+        },
+        {
+          "name": "data",
+          "type": "json",
+          "description": "Additional properties describing the operation which will be performed on the device."
+        }
+      ]
+    },
+    {
+      "name": "updateOperation",
+      "method": "PUT",
+      "path": "devicecontrol/operations/{id}",
+      "accept": "application/json",
+      "alias": {
+        "go": "update",
+        "powershell": "Update-Operation"
+      },
+      "body": [
+        {
+          "name": "status",
+          "type": "string",
+          "required": true,
+          "description": "Operation status, can be one of SUCCESSFUL, FAILED, EXECUTING or PENDING.",
+          "validationSet": [
+            "PENDING",
+            "EXECUTING",
+            "SUCCESSFUL",
+            "FAILED"
+          ]
+        },
+        {
+          "name": "failureReason",
+          "type": "string",
+          "required": false,
+          "description": "Reason for the failure. Use whne setting status to FAILED"
+        },
+        {
+          "name": "data",
+          "type": "json",
+          "description": "Additional properties describing the operation which will be performed on the device."
+        }
+      ],
+      "pathParameters": [
+        {
+          "name": "id",
+          "type": "string",
+          "description": "Operation id"
+        }
+      ]
+    },
+    {
+      "name": "deleteOperation",
+      "description": "Delete operation/s",
+      "method": "DELETE",
+      "path": "devicecontrol/operations/{id}",
+      "accept": "application/json",
+      "alias": {
+        "go": "delete",
+        "powershell": "Remove-Operation"
+      },
+      "pathParameters": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": "Operation id"
+        }
+      ]
+    },
+    {
+      "name": "deleteOperationCollection",
+      "description": "Delete a collection of operations",
+      "method": "DELETE",
+      "path": "devicecontrol/operations",
+      "accept": "application/json",
+      "alias": {
+        "go": "deleteCollection",
+        "powershell": "Remove-OperationCollection"
+      },
+      "queryParameters": [
+        {
+          "name": "agentId",
+          "type": "string",
+          "description": "Agent ID"
+        },
+        {
+          "name": "deviceId",
+          "type": "string",
+          "description": "Device ID"
+        },
+        {
+          "name": "dateFrom",
+          "type": "datetime",
+          "description": ""
+        },
+        {
+          "name": "dateTo",
+          "type": "datetime",
+          "description": ""
+        },
+        {
+          "name": "status",
+          "type": "string",
+          "description": "Operation status, can be one of SUCCESSFUL, FAILED, EXECUTING or PENDING.",
+          "validationSet": [
+            "PENDING",
+            "EXECUTING",
+            "SUCCESSFUL",
+            "FAILED"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+
+---
+
+information:
+  name: tenantStatistics
+  description: Cumulocity tenant statistics
+  descriptionLong: 'REST endpoint to interact with Cumulocity tenant statistics'
+  link: https://cumulocity.com/guides/reference/tenants/#tenant-usage-statistics
+
+endpoints:
+  - name: getTenantUsageStatisticsCollection
+    description: 'Get collection of tenant usage statistics'
+    method: GET
+    path: /tenant/statistics
+    accept: application/vnd.com.nsn.cumulocity.tenantUsageStatisticsCollection+json
+    alias:
+        go: list
+        powershell: Get-TenantStatisticsCollection
+    queryParameters:
+      - name: dateFrom
+        type: datetime
+        description: Start date or date and time of the statistics.
+
+      - name: dateTo
+        type: datetime
+        description: End date or date and time of the statistics.
+
+  - name: getAllTenantUsageStatisticsSummaryCollection
+    description: 'Get collection of tenant usage statistics summary'
+    method: GET
+    path: /tenant/statistics/allTenantsSummary
+    accept: application/json
+    alias:
+        go: listSummaryAllTenants
+        powershell: Get-AllTenantUsageSummaryStatistics
+    queryParameters:
+      - name: dateFrom
+        type: datetime
+        description: Start date or date and time of the statistics.
+
+      - name: dateTo
+        type: datetime
+        description: End date or date and time of the statistics.
+
+  - name: getTenantUsageStatisticsSummaryCollection
+    description: 'Get collection of tenant usage statistics summary'
+    descriptionLong: 'Get summary of requests and database usage from the start of this month until now'
+    method: GET
+    path: /tenant/statistics/summary
+    accept: application/json
+    alias:
+        go: listSummaryForTenant
+        powershell: Get-TenantUsageSummaryStatistics
+    queryParameters:
+      - name: dateFrom
+        type: datetime
+        description: Start date or date and time of the statistics.
+
+      - name: dateTo
+        type: datetime
+        description: End date or date and time of the statistics.

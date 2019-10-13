@@ -26,7 +26,7 @@ Function New-C8yApi {
 
             $Specifications = Get-Content $Path -Raw | ConvertFrom-Json
 
-			foreach ($iSpec in $Specifications) {
+			foreach ($iSpec in $Specifications.endpoints) {
 				New-C8yApiGoCommand -Specification $iSpec -OutputDir:$OutputDir
 			}
         }

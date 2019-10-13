@@ -1,0 +1,205 @@
+{
+  "information": {
+    "name": "userRoles",
+    "description": "Cumulocity user roles",
+    "descriptionLong": "REST endpoint to interact with Cumulocity user roles",
+    "link": "https://cumulocity.com/guides/reference/users/#group-reference-collection"
+  },
+  "endpoints": [
+    {
+      "name": "getRoleCollection",
+      "description": "Get collection of user roles",
+      "method": "GET",
+      "path": "/user/roles",
+      "accept": "application/vnd.com.nsn.cumulocity.roleCollection+json",
+      "alias": {
+        "go": "getCollection",
+        "powershell": "Get-GroupCollection"
+      },
+      "pathParameters": [
+        {
+          "name": "tenant",
+          "type": "string",
+          "description": "Tenant"
+        },
+        {
+          "name": "username",
+          "type": "string",
+          "required": true,
+          "description": "Username"
+        }
+      ]
+    },
+    {
+      "name": "addRoleToUser",
+      "description": "Add role to a user",
+      "method": "POST",
+      "path": "/user/{tenant}/users/{username}/roles",
+      "accept": "application/vnd.com.nsn.cumulocity.roleReference+json",
+      "alias": {
+        "go": "addRoleTouser",
+        "powershell": "Add-RoleToUser"
+      },
+      "pathParameters": [
+        {
+          "name": "tenant",
+          "type": "string",
+          "description": "Tenant"
+        },
+        {
+          "name": "username",
+          "type": "string",
+          "required": true,
+          "description": "Username"
+        }
+      ],
+      "body": [
+        {
+          "name": "role",
+          "type": "string",
+          "property": "role.self",
+          "valueFormatter": "{url}/user/roles/{role}"
+        }
+      ]
+    },
+    {
+      "name": "deleteRoleFromUser",
+      "description": "Unassign/Remove role from a user",
+      "method": "DELETE",
+      "path": "/user/{tenant}/users/{username}/roles/{role}",
+      "alias": {
+        "go": "deleteRoleFromUser",
+        "powershell": "Remove-RoleFromUser"
+      },
+      "pathParameters": [
+        {
+          "name": "tenant",
+          "type": "string",
+          "description": "Tenant"
+        },
+        {
+          "name": "username",
+          "type": "string",
+          "required": true,
+          "description": "Username"
+        },
+        {
+          "name": "role",
+          "type": "string",
+          "required": true,
+          "description": "Role name"
+        }
+      ]
+    },
+    {
+      "name": "addRoleToGroup",
+      "description": "Add role to a group",
+      "method": "POST",
+      "path": "/user/{tenant}/groups/{groupId}/roles",
+      "accept": "application/vnd.com.nsn.cumulocity.roleReference+json",
+      "alias": {
+        "go": "addRoleToGroup",
+        "powershell": "Add-RoleToGroup"
+      },
+      "pathParameters": [
+        {
+          "name": "tenant",
+          "type": "string",
+          "description": "Tenant"
+        },
+        {
+          "name": "groupId",
+          "type": "string",
+          "required": true,
+          "description": "Group ID"
+        }
+      ],
+      "body": [
+        {
+          "name": "role",
+          "type": "string",
+          "required": true,
+          "property": "role.self",
+          "valueFormatter": "{url}/user/roles/{role}"
+        }
+      ]
+    },
+    {
+      "name": "deleteRoleFromGroup",
+      "description": "Unassign/Remove role from a group",
+      "method": "DELETE",
+      "path": "/user/{tenant}/groups/{groupId}/roles/{role}",
+      "alias": {
+        "go": "deleteRoleFromGroup",
+        "powershell": "Remove-RoleFromGroup"
+      },
+      "pathParameters": [
+        {
+          "name": "tenant",
+          "type": "string",
+          "description": "Tenant"
+        },
+        {
+          "name": "groupId",
+          "type": "string",
+          "required": true,
+          "description": "Group id"
+        },
+        {
+          "name": "role",
+          "type": "string",
+          "required": true,
+          "description": "Role name, e.g. ROLE_TENANT_MANAGEMENT_ADMIN"
+        }
+      ]
+    },
+    {
+      "name": "getRoleReferenceCollectionFromUser",
+      "description": "Get collection of user role references from a user",
+      "method": "GET",
+      "path": "/user/{tenant}/users/{username}/roles",
+      "accept": "application/vnd.com.nsn.cumulocity.roleReferenceCollection+json",
+      "alias": {
+        "go": "getRoleReferenceCollectionFromUser",
+        "powershell": "Get-RoleReferenceCollectionFromUser"
+      },
+      "pathParameters": [
+        {
+          "name": "tenant",
+          "type": "string",
+          "description": "Tenant"
+        },
+        {
+          "name": "username",
+          "type": "string",
+          "required": true,
+          "description": "Username"
+        }
+      ]
+    },
+    {
+      "name": "getRoleReferenceCollectionFromGroup",
+      "description": "Get collection of user role references from a group",
+      "method": "GET",
+      "path": "/user/{tenant}/groups/{groupId}/roles",
+      "accept": "application/vnd.com.nsn.cumulocity.roleReferenceCollection+json",
+      "alias": {
+        "go": "getRoleReferenceCollectionFromGroup",
+        "powershell": "Get-RoleReferenceCollectionFromGroup"
+      },
+      "pathParameters": [
+        {
+          "name": "tenant",
+          "type": "string",
+          "description": "Tenant"
+        },
+        {
+          "name": "groupId",
+          "type": "string",
+          "required": true,
+          "description": "Group id"
+        }
+      ]
+    }
+  ]
+}
