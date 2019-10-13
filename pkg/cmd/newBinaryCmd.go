@@ -9,31 +9,29 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type newEventBinaryCmd struct {
+type newBinaryCmd struct {
 	*baseCmd
 }
 
-func newNewEventBinaryCmd() *newEventBinaryCmd {
-	ccmd := &newEventBinaryCmd{}
+func newNewBinaryCmd() *newBinaryCmd {
+	ccmd := &newBinaryCmd{}
 
 	cmd := &cobra.Command{
 		Use:   "createBinary",
-		Short: "New event binary",
+		Short: "New inventory binary",
 		Long:  "",
 		Example: `
         
 		`,
-		RunE: ccmd.newEventBinary,
+		RunE: ccmd.newBinary,
 	}
-
-	cmd.Flags().String("id", "", "Event id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd
 }
 
-func (n *newEventBinaryCmd) newEventBinary(cmd *cobra.Command, args []string) error {
+func (n *newBinaryCmd) newBinary(cmd *cobra.Command, args []string) error {
 
 	// query parameters
 	queryValue := url.QueryEscape("")
@@ -47,18 +45,13 @@ func (n *newEventBinaryCmd) newEventBinary(cmd *cobra.Command, args []string) er
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v, err := cmd.Flags().GetString("id"); err == nil {
-		pathParameters["id"] = v
-	} else {
-		return newUserError("Flag does not exist")
-	}
 
-	path := replacePathParameters("event/events/{id}/binaries", pathParameters)
+	path := replacePathParameters("/inventory/binaries", pathParameters)
 
-	return n.doNewEventBinary("POST", path, queryValue, body)
+	return n.doNewBinary("POST", path, queryValue, body)
 }
 
-func (n *newEventBinaryCmd) doNewEventBinary(method string, path string, query string, body map[string]interface{}) error {
+func (n *newBinaryCmd) doNewBinary(method string, path string, query string, body map[string]interface{}) error {
 	resp, err := client.SendRequest(
 		context.Background(),
 		c8y.RequestOptions{

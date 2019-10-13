@@ -9,41 +9,37 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type newEventBinaryCmd struct {
+type deleteBinaryCmd struct {
 	*baseCmd
 }
 
-func newNewEventBinaryCmd() *newEventBinaryCmd {
-	ccmd := &newEventBinaryCmd{}
+func newDeleteBinaryCmd() *deleteBinaryCmd {
+	ccmd := &deleteBinaryCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "createBinary",
-		Short: "New event binary",
+		Use:   "deleteBinary",
+		Short: "Delete event binary",
 		Long:  "",
 		Example: `
         
 		`,
-		RunE: ccmd.newEventBinary,
+		RunE: ccmd.deleteBinary,
 	}
 
-	cmd.Flags().String("id", "", "Event id")
+	cmd.Flags().String("id", "", "Inventory binary id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd
 }
 
-func (n *newEventBinaryCmd) newEventBinary(cmd *cobra.Command, args []string) error {
+func (n *deleteBinaryCmd) deleteBinary(cmd *cobra.Command, args []string) error {
 
 	// query parameters
 	queryValue := url.QueryEscape("")
 
 	// body
 	var body map[string]interface{}
-	body = getDataFlag(cmd)
-	if v, err := cmd.Flags().GetString("file"); err == nil && v != "" {
-		body["file"] = v
-	}
 
 	// path parameters
 	pathParameters := make(map[string]string)
@@ -53,12 +49,12 @@ func (n *newEventBinaryCmd) newEventBinary(cmd *cobra.Command, args []string) er
 		return newUserError("Flag does not exist")
 	}
 
-	path := replacePathParameters("event/events/{id}/binaries", pathParameters)
+	path := replacePathParameters("/inventory/binaries/{id}", pathParameters)
 
-	return n.doNewEventBinary("POST", path, queryValue, body)
+	return n.doDeleteBinary("DELETE", path, queryValue, body)
 }
 
-func (n *newEventBinaryCmd) doNewEventBinary(method string, path string, query string, body map[string]interface{}) error {
+func (n *deleteBinaryCmd) doDeleteBinary(method string, path string, query string, body map[string]interface{}) error {
 	resp, err := client.SendRequest(
 		context.Background(),
 		c8y.RequestOptions{

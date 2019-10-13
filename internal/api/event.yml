@@ -195,8 +195,8 @@
   path: event/events/{id}/binaries
   accept: 'application/json'
   alias:
-      go: deleteBinary
-      powershell: Remove-EventBinary
+      go: createBinary
+      powershell: New-EventBinary
   pathParameters:
     - name: id
       type: string
