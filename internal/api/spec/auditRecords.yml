@@ -43,7 +43,7 @@ endpoints:
         required: true
         description: The activity that was carried out.
 
-      - name: activity
+      - name: severity
         type: string
         required: true
         description: 'The severity of action: critical, major, minor, warning or information.'

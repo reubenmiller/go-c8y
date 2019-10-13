@@ -21,7 +21,7 @@ func newBaseCmd(cmd *cobra.Command) *baseCmd {
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "cy",
+	Use:   "c8y",
 	Short: "Cumulocity command line interface",
 	Long: `A Fast and Flexible Static Site Generator built with
                 love by spf13 and friends in Go.
@@ -61,20 +61,60 @@ func Execute() {
 	// generic commands
 	rootCmd.AddCommand(newGetGenericRestCmd().getCommand())
 
-	// alarms
-	rootCmd.AddCommand(newAlarmsCmd().getCommand())
+	// Auto generated commands
+	// alarms commands
+	rootCmd.AddCommand(newAlarmsRootCmd().getCommand())
 
-	// devicecontrol (operations)
-	rootCmd.AddCommand(newDeviceControlCmd().getCommand())
+	// applications commands
+	rootCmd.AddCommand(newApplicationsRootCmd().getCommand())
 
-	// events
-	rootCmd.AddCommand(newEventRootCmd().getCommand())
+	// auditRecords commands
+	rootCmd.AddCommand(newAuditRecordsRootCmd().getCommand())
 
-	// identity
+	// binaries commands
+	rootCmd.AddCommand(newBinariesRootCmd().getCommand())
+
+	// currentApplication commands
+	rootCmd.AddCommand(newCurrentApplicationRootCmd().getCommand())
+
+	// operations commands
+	rootCmd.AddCommand(newOperationsRootCmd().getCommand())
+
+	// events commands
+	rootCmd.AddCommand(newEventsRootCmd().getCommand())
+
+	// identity commands
 	rootCmd.AddCommand(newIdentityRootCmd().getCommand())
 
-	// measurements
-	rootCmd.AddCommand(newMeasurementRootCmd().getCommand())
+	// measurements commands
+	rootCmd.AddCommand(newMeasurementsRootCmd().getCommand())
+
+	// retentionRules commands
+	rootCmd.AddCommand(newRetentionRulesRootCmd().getCommand())
+
+	// systemOptions commands
+	rootCmd.AddCommand(newSystemOptionsRootCmd().getCommand())
+
+	// tenantOptions commands
+	rootCmd.AddCommand(newTenantOptionsRootCmd().getCommand())
+
+	// tenants commands
+	rootCmd.AddCommand(newTenantsRootCmd().getCommand())
+
+	// tenantStatistics commands
+	rootCmd.AddCommand(newTenantStatisticsRootCmd().getCommand())
+
+	// userGroups commands
+	rootCmd.AddCommand(newUserGroupsRootCmd().getCommand())
+
+	// userReferences commands
+	rootCmd.AddCommand(newUserReferencesRootCmd().getCommand())
+
+	// userRoles commands
+	rootCmd.AddCommand(newUserRolesRootCmd().getCommand())
+
+	// currentUser commands
+	rootCmd.AddCommand(newCurrentUserRootCmd().getCommand())
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)

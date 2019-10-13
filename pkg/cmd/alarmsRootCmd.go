@@ -8,27 +8,20 @@ type alarmsCmd struct {
 	*baseCmd
 }
 
-func newAlarmsCmd() *alarmsCmd {
+func newAlarmsRootCmd() *alarmsCmd {
 	ccmd := &alarmsCmd{}
 
 	cmd := &cobra.Command{
 		Use:   "alarms",
-		Short: "Alarms rest endpoint",
-		Long:  `Alarms rest endpoint to interact with Cumulocity managed objects`,
+		Short: "Cumulocity alarms",
+		Long:  `REST endpoint to interact with Cumulocity alarms`,
 	}
 
 	// Subcommands
-	// new
-	cmd.AddCommand(newNewAlarmCmd().getCommand())
-
-	// get
 	cmd.AddCommand(newGetAlarmCollectionCmd().getCommand())
-
-	// updte
-	cmd.AddCommand(newUpdateAlarmCmd().getCommand())
+	cmd.AddCommand(newNewAlarmCmd().getCommand())
 	cmd.AddCommand(newUpdateAlarmCollectionCmd().getCommand())
-
-	// delete
+	cmd.AddCommand(newUpdateAlarmCmd().getCommand())
 	cmd.AddCommand(newDeleteAlarmCmd().getCommand())
 	cmd.AddCommand(newDeleteAlarmCollectionCmd().getCommand())
 

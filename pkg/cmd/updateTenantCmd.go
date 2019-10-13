@@ -29,10 +29,8 @@ func newUpdateTenantCmd() *updateTenantCmd {
 	cmd.Flags().String("id", "", "Tenant id")
 	cmd.Flags().String("company", "", "Company name. Maximum 256 characters")
 	cmd.Flags().String("domain", "", "Domain name to be used for the tenant. Maximum 256 characters")
-	cmd.Flags().String("id", "", "The tenant ID. Will be auto-generated if not present.")
 	cmd.Flags().String("adminName", "", "Username of the tenant administrator")
 	cmd.Flags().String("adminPass", "", "Password of the tenant administrator")
-	cmd.Flags().String("contactName", "", "A contact name, for example an administrator, of the tenant")
 	cmd.Flags().String("contactName", "", "A contact name, for example an administrator, of the tenant")
 	cmd.Flags().String("contact_phone", "", "An international contact phone number")
 	addDataFlag(cmd)
@@ -56,17 +54,11 @@ func (n *updateTenantCmd) updateTenant(cmd *cobra.Command, args []string) error 
 	if v, err := cmd.Flags().GetString("domain"); err == nil && v != "" {
 		body["domain"] = v
 	}
-	if v, err := cmd.Flags().GetString("id"); err == nil && v != "" {
-		body["id"] = v
-	}
 	if v, err := cmd.Flags().GetString("adminName"); err == nil && v != "" {
 		body["adminName"] = v
 	}
 	if v, err := cmd.Flags().GetString("adminPass"); err == nil && v != "" {
 		body["adminPass"] = v
-	}
-	if v, err := cmd.Flags().GetString("contactName"); err == nil && v != "" {
-		body["contactName"] = v
 	}
 	if v, err := cmd.Flags().GetString("contactName"); err == nil && v != "" {
 		body["contactName"] = v

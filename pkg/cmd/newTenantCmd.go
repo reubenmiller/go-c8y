@@ -32,7 +32,6 @@ func newNewTenantCmd() *newTenantCmd {
 	cmd.Flags().String("adminName", "", "Username of the tenant administrator")
 	cmd.Flags().String("adminPass", "", "Password of the tenant administrator")
 	cmd.Flags().String("contactName", "", "A contact name, for example an administrator, of the tenant")
-	cmd.Flags().String("contactName", "", "A contact name, for example an administrator, of the tenant")
 	cmd.Flags().String("contact_phone", "", "An international contact phone number")
 	addDataFlag(cmd)
 
@@ -63,9 +62,6 @@ func (n *newTenantCmd) newTenant(cmd *cobra.Command, args []string) error {
 	}
 	if v, err := cmd.Flags().GetString("adminPass"); err == nil && v != "" {
 		body["adminPass"] = v
-	}
-	if v, err := cmd.Flags().GetString("contactName"); err == nil && v != "" {
-		body["contactName"] = v
 	}
 	if v, err := cmd.Flags().GetString("contactName"); err == nil && v != "" {
 		body["contactName"] = v

@@ -57,11 +57,6 @@ endpoints:
         required: false
         description: A contact name, for example an administrator, of the tenant
 
-      - name: contactName
-        type: string
-        required: false
-        description: A contact name, for example an administrator, of the tenant
-
       - name: contact_phone
         type: string
         required: false
@@ -125,11 +120,6 @@ endpoints:
         required: true
         description: Domain name to be used for the tenant. Maximum 256 characters
 
-      - name: id
-        type: string
-        required: false
-        description: The tenant ID. Will be auto-generated if not present.
-
       - name: adminName
         type: string
         required: false
@@ -139,11 +129,6 @@ endpoints:
         type: string
         required: false
         description: Password of the tenant administrator
-
-      - name: contactName
-        type: string
-        required: false
-        description: A contact name, for example an administrator, of the tenant
 
       - name: contactName
         type: string

@@ -21,14 +21,19 @@ Function New-C8yApi {
 	}
 
     Process {
-        foreach ($iFile in $InFile) {
+        $importStatements = foreach ($iFile in $InFile) {
 			$Path = Resolve-Path $iFile
 
-            $Specifications = Get-Content $Path -Raw | ConvertFrom-Json
+            $Specification = Get-Content $Path -Raw | ConvertFrom-Json
 
-			foreach ($iSpec in $Specifications.endpoints) {
-				New-C8yApiGoCommand -Specification $iSpec -OutputDir:$OutputDir
+            # Create root command
+            New-C8yApiGoRootCommand -Specification:$Specification -OutputDir:$OutputDir
+
+			foreach ($iSpec in $Specification.endpoints) {
+				New-C8yApiGoCommand -Specification:$iSpec -OutputDir:$OutputDir
 			}
         }
+
+        $importStatements
     }
 }

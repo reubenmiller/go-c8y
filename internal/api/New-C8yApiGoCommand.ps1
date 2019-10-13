@@ -12,7 +12,7 @@ Function New-C8yApiGoCommand {
         [string] $OutputDir = "./"
     )
 
-    $Name = $Specification.Name
+    $Name = $Specification.name
 	$NameCamel = $Name[0].ToString().ToUpperInvariant() + $Name.Substring(1)
 	$File = Join-Path -Path $OutputDir -ChildPath ("{0}Cmd.go" -f $Name)
 

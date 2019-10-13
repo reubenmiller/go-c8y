@@ -31,7 +31,7 @@ func newNewAuditCmd() *newAuditCmd {
 	cmd.Flags().String("text", "", "Text description of the audit record.")
 	cmd.Flags().String("source", "", "An optional ManagedObject that the audit record originated from")
 	cmd.Flags().String("activity", "", "The activity that was carried out.")
-	cmd.Flags().String("activity", "", "The severity of action: critical, major, minor, warning or information.")
+	cmd.Flags().String("severity", "", "The severity of action: critical, major, minor, warning or information.")
 	cmd.Flags().String("user", "", "The user responsible for the audited action.")
 	cmd.Flags().String("application", "", "The application used to carry out the audited action.")
 	addDataFlag(cmd)
@@ -67,8 +67,8 @@ func (n *newAuditCmd) newAudit(cmd *cobra.Command, args []string) error {
 	if v, err := cmd.Flags().GetString("activity"); err == nil && v != "" {
 		body["activity"] = v
 	}
-	if v, err := cmd.Flags().GetString("activity"); err == nil && v != "" {
-		body["activity"] = v
+	if v, err := cmd.Flags().GetString("severity"); err == nil && v != "" {
+		body["severity"] = v
 	}
 	if v, err := cmd.Flags().GetString("user"); err == nil && v != "" {
 		body["user"] = v

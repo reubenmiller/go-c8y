@@ -13,15 +13,15 @@ func newIdentityRootCmd() *identityCmd {
 
 	cmd := &cobra.Command{
 		Use:   "identity",
-		Short: "Identity REST endpoint",
-		Long:  `REST endpoint to interact with Cumulocity identities (external ids)`,
+		Short: "Cumulocity identity",
+		Long:  `REST endpoint to interact with Cumulocity identity objects`,
 	}
 
 	// Subcommands
-	cmd.AddCommand(newGetExternalIDCmd().getCommand())
 	cmd.AddCommand(newGetExternalIDCollectionCmd().getCommand())
-	cmd.AddCommand(newNewExternalIDCmd().getCommand())
+	cmd.AddCommand(newGetExternalIDCmd().getCommand())
 	cmd.AddCommand(newDeleteExternalIDCmd().getCommand())
+	cmd.AddCommand(newNewExternalIDCmd().getCommand())
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
