@@ -18,7 +18,44 @@
     - createBinary
     - getBootstrapUser
 
+- retentionRules
+    - list
+    - create
+    - get
+    - delete
+    - update
 
+- systemOptions
+    - list
+    - get
+
+- tenants
+    - list
+    - create
+    - get
+    - delete
+    - update
+    - getCurrentTenant
+    - enableApplication
+    - disableApplication
+    - listApplicationReferences
+    -
+- tenantOptions
+    - list
+    - create
+    - get
+    - delete
+    - update
+    - updateBulk
+    - getForCategory
+    - updateEdit
+    - updateEdit
+    -
+
+- tenantStatistics
+    - list
+    - listSummaryAllTenants
+    - listSummaryForTenant
 
 - currentApplication
     - get

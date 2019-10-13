@@ -6,7 +6,7 @@
     "path": "/retention/retentions",
     "accept": "application/vnd.com.nsn.cumulocity.retentionRuleCollection+json",
     "alias": {
-      "go": "getRetentionRuleCollection",
+      "go": "list",
       "powershell": "Get-RetentionRuleCollection"
     }
   },
@@ -111,15 +111,15 @@
     "path": "/retention/retentions/{id}",
     "accept": "application/vnd.com.nsn.cumulocity.retentionRule+json",
     "alias": {
-      "go": "updateBinary",
-      "powershell": "Update-Binary"
+      "go": "update",
+      "powershell": "Update-RetentionRule"
     },
     "pathParameters": [
       {
         "name": "id",
         "type": "string",
         "required": true,
-        "description": "Inventory binary id"
+        "description": "Retention rule id"
       }
     ],
     "body": [

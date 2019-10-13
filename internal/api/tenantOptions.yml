@@ -1,0 +1,166 @@
+
+---
+
+#
+# tenant
+# https://cumulocity.com/guides/reference/tenants/#tenants
+#
+- name: getTenantOptionCollection
+  description: 'Get collection of tenant options'
+  method: GET
+  path: /tenant/options
+  accept: application/vnd.com.nsn.cumulocity.optionCollection+json
+  alias:
+      go: list
+      powershell: Get-TenantOptionCollection
+
+- name: newTenantOption
+  description: 'New tenant option'
+  method: POST
+  path: /tenant/options
+  accept: application/vnd.com.nsn.cumulocity.option+json
+  alias:
+      go: create
+      powershell: New-TenantOption
+
+  body:
+    - name: category
+      type: string
+      required: true
+      description: Category of option
+
+    - name: key
+      type: string
+      required: true
+      description: Key of option
+
+    - name: value
+      type: string
+      required: true
+      description: Value of option
+
+
+- name: getTenantOption
+  description: 'Get tenant option'
+  method: GET
+  path: /tenant/options/{category}/{key}
+  accept: application/vnd.com.nsn.cumulocity.option+json
+  alias:
+      go: get
+      powershell: Get-TenantOption
+  pathParameters:
+    - name: category
+      type: string
+      required: true
+      description: Tenant Option category
+
+    - name: key
+      type: string
+      required: true
+      description: Tenant Option key
+
+- name: deleteTenantOption
+  description: 'Delete tenant option'
+  method: DELETE
+  path: /tenant/options/{category}/{key}
+  alias:
+      go: delete
+      powershell: Remove-TenantOption
+  pathParameters:
+    - name: category
+      type: string
+      required: true
+      description: Tenant Option category
+
+    - name: key
+      type: string
+      required: true
+      description: Tenant Option key
+
+- name: updateTenantOption
+  description: 'Update tenant option'
+  method: PUT
+  path: /tenant/options/{category}/{key}
+  accept: application/vnd.com.nsn.cumulocity.option+json
+  alias:
+      go: update
+      powershell: Update-TenantOption
+  pathParameters:
+    - name: category
+      type: string
+      required: true
+      description: Tenant Option category
+
+    - name: key
+      type: string
+      required: true
+      description: Tenant Option key
+
+  body:
+    - name: value
+      type: string
+      required: true
+      description: New value
+
+- name: updateTenantOptionBulk
+  description: 'Update multiple tenant options in provided category'
+  method: PUT
+  path: /tenant/options/{category}
+  accept: application/vnd.com.nsn.cumulocity.option+json
+  alias:
+      go: updateBulk
+      powershell: Update-TenantOptionBulk
+  pathParameters:
+    - name: category
+      type: string
+      required: true
+      description: Tenant Option category
+
+  body:
+    - name: data
+      type: json
+      required: true
+      description: Key/value pairs
+
+- name: getTenantOptionsForCategory
+  description: 'Get tenant options for category'
+  method: GET
+  path: /tenant/options/{category}
+  accept: application/vnd.com.nsn.cumulocity.optionCollection+json
+  alias:
+      go: getForCategory
+      powershell: Get-TenantOptionForCategory
+  pathParameters:
+    - name: category
+      type: string
+      required: true
+      description: Tenant Option category
+
+- name: updateTenantOptionEditable
+  description: 'Update tenant option editibility'
+  descriptionLong: >
+    Required role:: ROLE_OPTION_MANAGEMENT_ADMIN, Required tenant management Example Request:: Update access.control.allow.origin option.
+  method: PUT
+  path: /tenant/options/{category}/{key}/editable
+  accept: application/vnd.com.nsn.cumulocity.option+json
+  alias:
+      go: updateEdit
+      powershell: Update-TenantOptionEditable
+  pathParameters:
+    - name: category
+      type: string
+      required: true
+      description: Tenant Option category
+
+    - name: key
+      type: string
+      required: true
+      description: Tenant Option key
+
+  body:
+    - name: editable
+      type: string
+      required: true
+      validateSet: ['true', 'false']
+      description: Whether the tenant option should be editable or not
+

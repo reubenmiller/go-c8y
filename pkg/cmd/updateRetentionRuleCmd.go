@@ -17,7 +17,7 @@ func newUpdateRetentionRuleCmd() *updateRetentionRuleCmd {
 	ccmd := &updateRetentionRuleCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "updateBinary",
+		Use:   "update",
 		Short: "Update retention rule",
 		Long:  ``,
 		Example: `
@@ -26,7 +26,7 @@ func newUpdateRetentionRuleCmd() *updateRetentionRuleCmd {
 		RunE: ccmd.updateRetentionRule,
 	}
 
-	cmd.Flags().String("id", "", "Inventory binary id")
+	cmd.Flags().String("id", "", "Retention rule id")
 	cmd.Flags().String("dataType", "", "RetentionRule will be applied to this type of documents, possible values [ALARM, AUDIT, EVENT, MEASUREMENT, OPERATION, *].")
 	cmd.Flags().String("fragmentType", "", "RetentionRule will be applied to documents with fragmentType.")
 	cmd.Flags().String("type", "", "RetentionRule will be applied to documents with type.")

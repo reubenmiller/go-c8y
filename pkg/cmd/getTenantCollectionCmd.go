@@ -9,21 +9,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type getRetentionRuleCollectionCmd struct {
+type getTenantCollectionCmd struct {
 	*baseCmd
 }
 
-func newGetRetentionRuleCollectionCmd() *getRetentionRuleCollectionCmd {
-	ccmd := &getRetentionRuleCollectionCmd{}
+func newGetTenantCollectionCmd() *getTenantCollectionCmd {
+	ccmd := &getTenantCollectionCmd{}
 
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "Get collection of retention rules",
+		Short: "Get collection of tenants",
 		Long:  ``,
 		Example: `
         
 		`,
-		RunE: ccmd.getRetentionRuleCollection,
+		RunE: ccmd.getTenantCollection,
 	}
 
 	ccmd.baseCmd = newBaseCmd(cmd)
@@ -31,7 +31,7 @@ func newGetRetentionRuleCollectionCmd() *getRetentionRuleCollectionCmd {
 	return ccmd
 }
 
-func (n *getRetentionRuleCollectionCmd) getRetentionRuleCollection(cmd *cobra.Command, args []string) error {
+func (n *getTenantCollectionCmd) getTenantCollection(cmd *cobra.Command, args []string) error {
 
 	// query parameters
 	queryValue := url.QueryEscape("")
@@ -42,12 +42,12 @@ func (n *getRetentionRuleCollectionCmd) getRetentionRuleCollection(cmd *cobra.Co
 	// path parameters
 	pathParameters := make(map[string]string)
 
-	path := replacePathParameters("/retention/retentions", pathParameters)
+	path := replacePathParameters("/tenant/tenants", pathParameters)
 
-	return n.doGetRetentionRuleCollection("GET", path, queryValue, body)
+	return n.doGetTenantCollection("GET", path, queryValue, body)
 }
 
-func (n *getRetentionRuleCollectionCmd) doGetRetentionRuleCollection(method string, path string, query string, body map[string]interface{}) error {
+func (n *getTenantCollectionCmd) doGetTenantCollection(method string, path string, query string, body map[string]interface{}) error {
 	resp, err := client.SendRequest(
 		context.Background(),
 		c8y.RequestOptions{

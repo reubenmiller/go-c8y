@@ -9,29 +9,31 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type getRetentionRuleCollectionCmd struct {
+type currentTenantCmd struct {
 	*baseCmd
 }
 
-func newGetRetentionRuleCollectionCmd() *getRetentionRuleCollectionCmd {
-	ccmd := &getRetentionRuleCollectionCmd{}
+func newCurrentTenantCmd() *currentTenantCmd {
+	ccmd := &currentTenantCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "Get collection of retention rules",
+		Use:   "getCurrentTenant",
+		Short: "Get current tenant",
 		Long:  ``,
 		Example: `
         
 		`,
-		RunE: ccmd.getRetentionRuleCollection,
+		RunE: ccmd.currentTenant,
 	}
+
+	cmd.Flags().String("id", "", "Tenant id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd
 }
 
-func (n *getRetentionRuleCollectionCmd) getRetentionRuleCollection(cmd *cobra.Command, args []string) error {
+func (n *currentTenantCmd) currentTenant(cmd *cobra.Command, args []string) error {
 
 	// query parameters
 	queryValue := url.QueryEscape("")
@@ -41,13 +43,18 @@ func (n *getRetentionRuleCollectionCmd) getRetentionRuleCollection(cmd *cobra.Co
 
 	// path parameters
 	pathParameters := make(map[string]string)
+	if v, err := cmd.Flags().GetString("id"); err == nil {
+		pathParameters["id"] = v
+	} else {
+		return newUserError("Flag does not exist")
+	}
 
-	path := replacePathParameters("/retention/retentions", pathParameters)
+	path := replacePathParameters("/tenant/currentTenant", pathParameters)
 
-	return n.doGetRetentionRuleCollection("GET", path, queryValue, body)
+	return n.doCurrentTenant("GET", path, queryValue, body)
 }
 
-func (n *getRetentionRuleCollectionCmd) doGetRetentionRuleCollection(method string, path string, query string, body map[string]interface{}) error {
+func (n *currentTenantCmd) doCurrentTenant(method string, path string, query string, body map[string]interface{}) error {
 	resp, err := client.SendRequest(
 		context.Background(),
 		c8y.RequestOptions{
