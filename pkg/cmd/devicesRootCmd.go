@@ -4,17 +4,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type deviceCmd struct {
+type deviceRootCmd struct {
 	*baseCmd
 }
 
-func newDeviceCmd() *deviceCmd {
-	ccmd := &deviceCmd{}
+func newDeviceRootCmd() *deviceRootCmd {
+	ccmd := &deviceRootCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "device",
-		Short: "Devices Endpoint",
-		Long:  `Devices Endpoint`,
+		Use:   "devices",
+		Short: "Cumulocity devices",
+		Long:  `Cumulocity devices`,
 	}
 
 	// Subcommands

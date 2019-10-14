@@ -55,7 +55,7 @@ func Execute() {
 	rootCmd.AddCommand(newVersionCmd().getCommand())
 
 	rootCmd.AddCommand(newInventoryCmd().getCommand())
-	rootCmd.AddCommand(newDeviceCmd().getCommand())
+	rootCmd.AddCommand(newDeviceRootCmd().getCommand())
 	rootCmd.AddCommand(newRealtimeCmd().getCommand())
 
 	// generic commands

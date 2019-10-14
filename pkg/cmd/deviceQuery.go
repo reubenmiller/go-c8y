@@ -21,11 +21,11 @@ func newQueryDeviceCmd() *queryDeviceCmd {
 	ccmd := &queryDeviceCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "query",
-		Short: "Get a list of devices",
-		Long:  `Get a list of devices`,
+		Use:   "find",
+		Short: "Find a collection of devices",
+		Long:  `Find a collection of devices`,
 		Example: `
-			TODO
+			c8y devices find --name myDevice
 		`,
 		RunE: ccmd.queryDevice,
 	}
