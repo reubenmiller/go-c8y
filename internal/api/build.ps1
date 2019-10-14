@@ -1,30 +1,35 @@
 [cmdletbinding()]
-Param()
+Param(
+    [switch] $SkipGenerate
+)
 
-# Convert the yaml specs to json
-if (!(Get-Command yaml2json -ErrorAction SilentlyContinue)) {
-    Write-Error "Missing yaml2json. Please install it using 'npm install -g yamljs'"
-    return
+if (!$SkipGenerate) {
+    # Convert the yaml specs to json
+    if (!(Get-Command yaml2json -ErrorAction SilentlyContinue)) {
+        Write-Error "Missing yaml2json. Please install it using 'npm install -g yamljs'"
+        return
+    }
+
+    Write-Host "Converting yaml specs to json" -ForegroundColor Gray
+    $WorkDir = Resolve-Path -Path "$PSScriptRoot/spec" -Relative
+    yaml2json -s -r -p $WorkDir
+
+    . $PSScriptRoot/New-C8yApi.ps1
+    . $PSScriptRoot/New-C8yApiGoCommand.ps1
+    . $PSScriptRoot/New-C8yApiGoRootCommand.ps1
+
+    $OutputDir = Resolve-path (Join-Path $PSScriptRoot -ChildPath "../../pkg/cmd")
+
+    $SpecFiles = Get-ChildItem -Path "$PSScriptRoot/spec" -Filter "*.json"
+
+    $ImportStatements = foreach ($iFile in $SpecFiles) {
+        Write-Host ("Generating go cli code [{0}]" -f $iFile.Name) -ForegroundColor Gray
+        New-C8yApi $iFile.FullName -OutputDir $OutputDir
+    }
+    Write-Host "`nUse the following import statements in the root cmd`n"
+    $ImportStatements
 }
 
-Write-Host "Converting yaml specs to json" -ForegroundColor Gray
-$WorkDir = Resolve-Path -Path "$PSScriptRoot/spec" -Relative
-yaml2json -s -r -p $WorkDir
-
-. $PSScriptRoot/New-C8yApi.ps1
-. $PSScriptRoot/New-C8yApiGoCommand.ps1
-. $PSScriptRoot/New-C8yApiGoRootCommand.ps1
-
-$OutputDir = Resolve-path (Join-Path $PSScriptRoot -ChildPath "../../pkg/cmd")
-
-$SpecFiles = Get-ChildItem -Path "$PSScriptRoot/spec" -Filter "*.json"
-
-$ImportStatements = foreach ($iFile in $SpecFiles) {
-    Write-Host ("Generating go cli code [{0}]" -f $iFile.Name) -ForegroundColor Gray
-    New-C8yApi $iFile.FullName -OutputDir $OutputDir
-}
-Write-Host "`nUse the following import statements in the root cmd`n"
-$ImportStatements
 
 #
 # Build project

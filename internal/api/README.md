@@ -7,6 +7,21 @@
 
 ```
 
+## Roadmap
+
+* [ ] Support common parameters
+  * [x] pageSize
+  * [x] withTotalPages
+  * [ ] --raw Option to display raw result, rather than a filtered data set?
+* [ ] Add required parameters
+* [ ] Piped arguments
+* [ ] Look over devices where []device type is used (parallel tasks?) Probably need a new template
+* [ ] Value formatter (for self link values), or is this like the device type?
+* [ ] Add examples
+* [ ] Generate tests automatically
+* [ ] Generate powershell commands from templates
+* [ ] Make options case insensitive
+
 ## Command layout
 
 - applications

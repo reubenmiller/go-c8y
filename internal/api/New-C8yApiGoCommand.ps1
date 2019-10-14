@@ -50,6 +50,7 @@ Function New-C8yApiGoCommand {
             OptionName = $iArg.alias
             Description = $iArg.description
             Default = $iArg.default
+            Required = $iArg.required
         }
         Get-C8yGoArgs @ArgParams
     }
@@ -192,6 +193,25 @@ Function New-C8yApiGoCommand {
             }
         }
 
+        #
+        # Add common options
+        #
+        $null = $RESTQueryBuilder.AppendLine(@"
+    if cmd.Flags().Changed("pageSize") {
+        if v, err := cmd.Flags().GetInt("pageSize"); err == nil && v > 0 {
+            query.Add("pageSize", fmt.Sprintf("%d", v))
+        }
+    }
+
+    if cmd.Flags().Changed("withTotalPages") {
+        if v, err := cmd.Flags().GetBool("withTotalPages"); err == nil && v {
+            query.Add("withTotalPages", "true")
+        }
+    }
+"@)
+        #
+        # Encode query parameters to a string
+        #
         $null = $RESTQueryBuilder.AppendLine(@"
     queryValue, err := url.QueryUnescape(query.Encode())
 
@@ -239,6 +259,9 @@ func new${NameCamel}Cmd() *${Name}Cmd {
     cmd.SilenceUsage = true
 
     $($CommandArgs.SetFlag -join "`n	")
+
+    // Required flags
+    $($CommandArgs.Required -join "`n	")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
@@ -313,6 +336,8 @@ Function Get-C8yGoArgs {
         )]
         [string] $Type,
 
+        [string] $Required,
+
         [string] $OptionName,
 
         [string] $Description,
@@ -322,7 +347,11 @@ Function Get-C8yGoArgs {
 
     $NameLocalVariable = $Name[0].ToString().ToLowerInvariant() + $Name.Substring(1) + "Value"
 
-    switch -Regex ($Type) {
+    if ($Required -match "true|yes") {
+        $Description = "${Description} (required)"
+    }
+
+    $Entry = switch -Regex ($Type) {
         "id" {
             @{
                 SetFlag = "addIDFlag(cmd)"
@@ -339,7 +368,7 @@ Function Get-C8yGoArgs {
 
         "date(from|to|time)" {
             $SetFlag = if ($UseOption) {
-                'cmd.Flags().StringP("{0}", "{1}", "{2}", "{3}")' -f $Name, $OptionName, $Default, $Description
+                'cmd.Flags().StringP("{0}", "{1}", "{2}", "{3}{4}")' -f $Name, $OptionName, $Default, $Description
             } else {
                 'cmd.Flags().String("{0}", "{1}", "{2}")' -f $Name, $Default, $Description
             }
@@ -437,5 +466,13 @@ Function Get-C8yGoArgs {
             }
         }
     }
+
+    # Set required flag
+    if ($Required -match "true|yes") {
+        $Entry | Add-Member -MemberType NoteProperty -Name "Required" -Value "cmd.MarkFlagRequired(`"${Name}`")"
+        # $Entry.Required = "cmd.MarkFlagRequired(`"${Name}`")"
+    }
+
+    $Entry
 }
 
