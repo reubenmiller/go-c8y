@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/pretty"
 )
 
 type updateAlarmCmd struct {
@@ -18,7 +20,7 @@ func newUpdateAlarmCmd() *updateAlarmCmd {
 
 	cmd := &cobra.Command{
 		Use:   "update",
-		Short: "",
+		Short: "Update alarm",
 		Long:  ``,
 		Example: `
         
@@ -26,7 +28,9 @@ func newUpdateAlarmCmd() *updateAlarmCmd {
 		RunE: ccmd.updateAlarm,
 	}
 
-	cmd.Flags().String("id", "", "")
+	cmd.SilenceUsage = true
+
+	cmd.Flags().String("id", "", "Alarm id")
 	cmd.Flags().String("status", "", "Comma separated alarm statuses, for example ACTIVE,CLEARED.")
 	cmd.Flags().String("severity", "", "Alarm severity, for example MINOR.")
 	cmd.Flags().String("text", "", "Text description of the alarm.")
@@ -78,9 +82,16 @@ func (n *updateAlarmCmd) doUpdateAlarm(method string, path string, query string,
 			Body:   body,
 		})
 
-	if resp != nil && resp.JSONData != nil {
-		fmt.Println(*resp.JSONData)
+	if err != nil {
+		color.Set(color.FgRed, color.Bold)
 	}
+
+	if resp != nil && resp.JSONData != nil {
+		fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+	}
+
+	color.Unset()
+
 	if err != nil {
 		return newSystemError("command failed", err)
 	}

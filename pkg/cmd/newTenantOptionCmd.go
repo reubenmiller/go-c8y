@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/pretty"
 )
 
 type newTenantOptionCmd struct {
@@ -25,6 +27,8 @@ func newNewTenantOptionCmd() *newTenantOptionCmd {
 		`,
 		RunE: ccmd.newTenantOption,
 	}
+
+	cmd.SilenceUsage = true
 
 	cmd.Flags().String("category", "", "Category of option")
 	cmd.Flags().String("key", "", "Key of option")
@@ -71,9 +75,16 @@ func (n *newTenantOptionCmd) doNewTenantOption(method string, path string, query
 			Body:   body,
 		})
 
-	if resp != nil && resp.JSONData != nil {
-		fmt.Println(*resp.JSONData)
+	if err != nil {
+		color.Set(color.FgRed, color.Bold)
 	}
+
+	if resp != nil && resp.JSONData != nil {
+		fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+	}
+
+	color.Unset()
+
 	if err != nil {
 		return newSystemError("command failed", err)
 	}

@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/pretty"
 )
 
 type getAlarmCollectionCmd struct {
@@ -17,7 +19,7 @@ func newGetAlarmCollectionCmd() *getAlarmCollectionCmd {
 	ccmd := &getAlarmCollectionCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "get",
+		Use:   "list",
 		Short: "Get a collection of alarms based on filter parameters",
 		Long:  `Get a collection of alarms based on filter parameters`,
 		Example: `
@@ -26,11 +28,13 @@ func newGetAlarmCollectionCmd() *getAlarmCollectionCmd {
 		RunE: ccmd.getAlarmCollection,
 	}
 
+	cmd.SilenceUsage = true
+
 	cmd.Flags().String("source", "", "Source device id.")
 	cmd.Flags().String("dateFrom", "", "Start date or date and time of alarm occurrence.")
 	cmd.Flags().String("dateTo", "", "End date or date and time of alarm occurrence.")
 	cmd.Flags().String("type", "", "Alarm type.")
-	cmd.Flags().String("fragmentType", "", "")
+	cmd.Flags().String("fragmentType", "", "Alarm fragment type.")
 	cmd.Flags().String("status", "", "Comma separated alarm statuses, for example ACTIVE,CLEARED.")
 	cmd.Flags().String("severity", "", "Alarm severity, for example MINOR.")
 	cmd.Flags().Bool("resolved", false, "When set to true only resolved alarms will be removed (the one with status CLEARED), false means alarms with status ACTIVE or ACKNOWLEDGED.")
@@ -144,9 +148,16 @@ func (n *getAlarmCollectionCmd) doGetAlarmCollection(method string, path string,
 			Body:   body,
 		})
 
-	if resp != nil && resp.JSONData != nil {
-		fmt.Println(*resp.JSONData)
+	if err != nil {
+		color.Set(color.FgRed, color.Bold)
 	}
+
+	if resp != nil && resp.JSONData != nil {
+		fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+	}
+
+	color.Unset()
+
 	if err != nil {
 		return newSystemError("command failed", err)
 	}

@@ -9,6 +9,7 @@ replace github.com/reubenmiller/go-c8y/test/c8y_microservice => ./test/c8y_micro
 require (
 	github.com/araddon/dateparse v0.0.0-20190329160016-74dc0e29b01f
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
+	github.com/fatih/color v1.7.0
 	github.com/gohugoio/hugo v0.58.3 // indirect
 	github.com/google/go-querystring v1.0.0
 	github.com/gorilla/websocket v1.4.0
@@ -25,6 +26,7 @@ require (
 	github.com/spf13/viper v1.4.0
 	github.com/tidwall/gjson v1.2.1
 	github.com/tidwall/match v1.0.1 // indirect
+	github.com/tidwall/pretty v1.0.0
 	github.com/valyala/fasttemplate v1.0.1 // indirect
 	go.uber.org/zap v1.10.0
 	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce // indirect

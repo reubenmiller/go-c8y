@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/pretty"
 )
 
 type newAlarmCmd struct {
@@ -25,6 +27,8 @@ func newNewAlarmCmd() *newAlarmCmd {
 		`,
 		RunE: ccmd.newAlarm,
 	}
+
+	cmd.SilenceUsage = true
 
 	cmd.Flags().String("source", "", "The ManagedObject that the alarm originated from")
 	cmd.Flags().String("type", "", "Identifies the type of this alarm, e.g. 'com_cumulocity_events_TamperEvent'.")
@@ -87,9 +91,16 @@ func (n *newAlarmCmd) doNewAlarm(method string, path string, query string, body 
 			Body:   body,
 		})
 
-	if resp != nil && resp.JSONData != nil {
-		fmt.Println(*resp.JSONData)
+	if err != nil {
+		color.Set(color.FgRed, color.Bold)
 	}
+
+	if resp != nil && resp.JSONData != nil {
+		fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+	}
+
+	color.Unset()
+
 	if err != nil {
 		return newSystemError("command failed", err)
 	}

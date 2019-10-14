@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/pretty"
 )
 
 type getMeasurementSeriesCmd struct {
@@ -29,6 +31,8 @@ measurement getSeries --source 12345 --series nx_WEA_29_Delta.MDL10FG001 --serie
 		`,
 		RunE: ccmd.getMeasurementSeries,
 	}
+
+	cmd.SilenceUsage = true
 
 	cmd.Flags().String("source", "", "Device ID")
 	cmd.Flags().StringArray("series", []string{""}, "measurement type and series name, e.g. c8y_AccelerationMeasurement.acceleration")
@@ -112,9 +116,16 @@ func (n *getMeasurementSeriesCmd) doGetMeasurementSeries(method string, path str
 			Body:   body,
 		})
 
-	if resp != nil && resp.JSONData != nil {
-		fmt.Println(*resp.JSONData)
+	if err != nil {
+		color.Set(color.FgRed, color.Bold)
 	}
+
+	if resp != nil && resp.JSONData != nil {
+		fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+	}
+
+	color.Unset()
+
 	if err != nil {
 		return newSystemError("command failed", err)
 	}

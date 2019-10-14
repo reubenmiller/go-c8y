@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/pretty"
 )
 
 type getAuditRecordCollectionCmd struct {
@@ -25,6 +27,8 @@ func newGetAuditRecordCollectionCmd() *getAuditRecordCollectionCmd {
 		`,
 		RunE: ccmd.getAuditRecordCollection,
 	}
+
+	cmd.SilenceUsage = true
 
 	cmd.Flags().String("source", "", "Source Id or object containing an .id property of the element that should be detected. i.e. AlarmID, or Operation ID. Note: Only one source can be provided")
 	cmd.Flags().String("type", "", "Type")
@@ -120,9 +124,16 @@ func (n *getAuditRecordCollectionCmd) doGetAuditRecordCollection(method string, 
 			Body:   body,
 		})
 
-	if resp != nil && resp.JSONData != nil {
-		fmt.Println(*resp.JSONData)
+	if err != nil {
+		color.Set(color.FgRed, color.Bold)
 	}
+
+	if resp != nil && resp.JSONData != nil {
+		fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+	}
+
+	color.Unset()
+
 	if err != nil {
 		return newSystemError("command failed", err)
 	}

@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/pretty"
 )
 
 type deleteOperationCollectionCmd struct {
@@ -26,10 +28,12 @@ func newDeleteOperationCollectionCmd() *deleteOperationCollectionCmd {
 		RunE: ccmd.deleteOperationCollection,
 	}
 
+	cmd.SilenceUsage = true
+
 	cmd.Flags().String("agentId", "", "Agent ID")
 	cmd.Flags().String("deviceId", "", "Device ID")
-	cmd.Flags().String("dateFrom", "", "")
-	cmd.Flags().String("dateTo", "", "")
+	cmd.Flags().String("dateFrom", "", "Start date or date and time of operation.")
+	cmd.Flags().String("dateTo", "", "End date or date and time of operation.")
 	cmd.Flags().String("status", "", "Operation status, can be one of SUCCESSFUL, FAILED, EXECUTING or PENDING.")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
@@ -104,9 +108,16 @@ func (n *deleteOperationCollectionCmd) doDeleteOperationCollection(method string
 			Body:   body,
 		})
 
-	if resp != nil && resp.JSONData != nil {
-		fmt.Println(*resp.JSONData)
+	if err != nil {
+		color.Set(color.FgRed, color.Bold)
 	}
+
+	if resp != nil && resp.JSONData != nil {
+		fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+	}
+
+	color.Unset()
+
 	if err != nil {
 		return newSystemError("command failed", err)
 	}

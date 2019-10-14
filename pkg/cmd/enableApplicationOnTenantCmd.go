@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/pretty"
 )
 
 type enableApplicationOnTenantCmd struct {
@@ -26,8 +28,10 @@ func newEnableApplicationOnTenantCmd() *enableApplicationOnTenantCmd {
 		RunE: ccmd.enableApplicationOnTenant,
 	}
 
+	cmd.SilenceUsage = true
+
 	cmd.Flags().String("id", "", "Tenant id")
-	cmd.Flags().String("application", "", "")
+	cmd.Flags().String("application", "", "Application id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
@@ -72,9 +76,16 @@ func (n *enableApplicationOnTenantCmd) doEnableApplicationOnTenant(method string
 			Body:   body,
 		})
 
-	if resp != nil && resp.JSONData != nil {
-		fmt.Println(*resp.JSONData)
+	if err != nil {
+		color.Set(color.FgRed, color.Bold)
 	}
+
+	if resp != nil && resp.JSONData != nil {
+		fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+	}
+
+	color.Unset()
+
 	if err != nil {
 		return newSystemError("command failed", err)
 	}

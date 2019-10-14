@@ -36,11 +36,11 @@ endpoints:
 
       - name: dateFrom
         type: datetime
-        description: ''
+        description: Start date or date and time of operation.
 
       - name: dateTo
         type: datetime
-        description: ''
+        description: End date or date and time of operation.
 
       - name: status
         type: string
@@ -93,6 +93,8 @@ endpoints:
 
 
   - name: updateOperation
+    description: Update operation
+    descriptionLong: Update operation
     method: PUT
     path: devicecontrol/operations/{id}
     accept: 'application/json'
@@ -153,11 +155,11 @@ endpoints:
 
       - name: dateFrom
         type: datetime
-        description: ''
+        description: Start date or date and time of operation.
 
       - name: dateTo
         type: datetime
-        description: ''
+        description: End date or date and time of operation.
 
       - name: status
         type: string

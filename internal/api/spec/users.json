@@ -1,8 +1,8 @@
 {
   "information": {
-    "name": "currentUser",
-    "description": "Cumulocity current user",
-    "descriptionLong": "REST endpoint to interact with Cumulocity current user",
+    "name": "users",
+    "description": "Cumulocity users",
+    "descriptionLong": "REST endpoint to interact with Cumulocity users",
     "link": "https://cumulocity.com/guides/reference/users/#user"
   },
   "endpoints": [

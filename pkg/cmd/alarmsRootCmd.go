@@ -21,6 +21,7 @@ func newAlarmsRootCmd() *alarmsCmd {
 	cmd.AddCommand(newGetAlarmCollectionCmd().getCommand())
 	cmd.AddCommand(newNewAlarmCmd().getCommand())
 	cmd.AddCommand(newUpdateAlarmCollectionCmd().getCommand())
+	cmd.AddCommand(newGetAlarmCmd().getCommand())
 	cmd.AddCommand(newUpdateAlarmCmd().getCommand())
 	cmd.AddCommand(newDeleteAlarmCmd().getCommand())
 	cmd.AddCommand(newDeleteAlarmCollectionCmd().getCommand())

@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/pretty"
 )
 
 type updateOperationCmd struct {
@@ -18,13 +20,15 @@ func newUpdateOperationCmd() *updateOperationCmd {
 
 	cmd := &cobra.Command{
 		Use:   "update",
-		Short: "",
-		Long:  ``,
+		Short: "Update operation",
+		Long:  `Update operation`,
 		Example: `
         
 		`,
 		RunE: ccmd.updateOperation,
 	}
+
+	cmd.SilenceUsage = true
 
 	cmd.Flags().String("id", "", "Operation id")
 	cmd.Flags().String("status", "", "Operation status, can be one of SUCCESSFUL, FAILED, EXECUTING or PENDING.")
@@ -74,9 +78,16 @@ func (n *updateOperationCmd) doUpdateOperation(method string, path string, query
 			Body:   body,
 		})
 
-	if resp != nil && resp.JSONData != nil {
-		fmt.Println(*resp.JSONData)
+	if err != nil {
+		color.Set(color.FgRed, color.Bold)
 	}
+
+	if resp != nil && resp.JSONData != nil {
+		fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+	}
+
+	color.Unset()
+
 	if err != nil {
 		return newSystemError("command failed", err)
 	}

@@ -29,6 +29,22 @@
     - list
     - get
 
+- binaries
+    - create
+    - delete
+    - download
+    - list
+    - update
+
+- alarms
+    - delete
+    - deleteCollection
+    - get
+    - list
+    - new
+    - update
+    - updateCollection
+
 - tenants
     - list
     - create

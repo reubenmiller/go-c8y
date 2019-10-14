@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/pretty"
 )
 
 type deleteUserFromGroupCmd struct {
@@ -25,6 +27,8 @@ func newDeleteUserFromGroupCmd() *deleteUserFromGroupCmd {
 		`,
 		RunE: ccmd.deleteUserFromGroup,
 	}
+
+	cmd.SilenceUsage = true
 
 	cmd.Flags().String("tenant", "", "Tenant")
 	cmd.Flags().String("groupId", "", "Group ID")
@@ -76,9 +80,16 @@ func (n *deleteUserFromGroupCmd) doDeleteUserFromGroup(method string, path strin
 			Body:   body,
 		})
 
-	if resp != nil && resp.JSONData != nil {
-		fmt.Println(*resp.JSONData)
+	if err != nil {
+		color.Set(color.FgRed, color.Bold)
 	}
+
+	if resp != nil && resp.JSONData != nil {
+		fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+	}
+
+	color.Unset()
+
 	if err != nil {
 		return newSystemError("command failed", err)
 	}

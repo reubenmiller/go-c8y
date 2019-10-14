@@ -23,7 +23,7 @@ endpoints:
     path: alarm/alarms
     accept: 'application/json'
     alias:
-        go: get
+        go: list
         powershell: Get-AlarmCollection
     queryParameters:
       - name: source
@@ -44,7 +44,7 @@ endpoints:
 
       - name: fragmentType
         type: string
-        description: ''
+        description: Alarm fragment type.
 
       - name: status
         type: string
@@ -117,10 +117,10 @@ endpoints:
   - name: updateAlarmCollection
     method: PUT
     path: alarm/alarms
-    description: The PUT method allows for updating alarms collections. Currently only the status of alarms can be changed
+    description: Update a collection of alarms. Currently only the status of alarms can be changed
     accept: 'application/json'
     alias:
-        go: update
+        go: updateCollection
         powershell: Update-AlarmCollection
     body:
       - name: newStatus
@@ -157,10 +157,25 @@ endpoints:
         type: datetime
         description: End date or date and time of alarm occurrence.
 
+  - name: getAlarm
+    description: 'Get alarm/s'
+    method: GET
+    path: alarm/alarms/{id}
+    accept: 'application/json'
+    alias:
+        go: get
+        powershell: Get-Alarm
+    pathParameters:
+      - name: id
+        type: string
+        required: true
+        description: Alarm id
+
   - name: updateAlarm
     method: PUT
     path: alarm/alarms/{id}
     accept: 'application/json'
+    description: Update alarm
     alias:
         go: update
         powershell: Update-Alarm
@@ -190,7 +205,7 @@ endpoints:
     pathParameters:
       - name: id
         type: string
-        description: ''
+        description: Alarm id
 
   - name: deleteAlarm
     description: 'Delete alarm/s'
@@ -212,7 +227,7 @@ endpoints:
     path: alarm/alarms
     accept: 'application/json'
     alias:
-        go: delete
+        go: deleteCollection
         powershell: Remove-AlarmCollection
     queryParameters:
       - name: source
@@ -233,7 +248,7 @@ endpoints:
 
       - name: fragmentType
         type: string
-        description: ''
+        description: Alarm fragment type.
 
       - name: status
         type: strings

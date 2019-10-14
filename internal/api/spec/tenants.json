@@ -222,6 +222,8 @@
           "name": "application",
           "type": "string",
           "property": "application.self",
+          "required": true,
+          "description": "Application id",
           "valueFormatter": "{url}/application/applications/{application}"
         }
       ]

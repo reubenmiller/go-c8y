@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/pretty"
 )
 
 type getEventCollectionCmd struct {
@@ -17,7 +19,7 @@ func newGetEventCollectionCmd() *getEventCollectionCmd {
 	ccmd := &getEventCollectionCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "getCollection",
+		Use:   "list",
 		Short: "Get a collection of events based on filter parameters",
 		Long:  `Get a collection of events based on filter parameters`,
 		Example: `
@@ -26,6 +28,8 @@ c8y event get
 		`,
 		RunE: ccmd.getEventCollection,
 	}
+
+	cmd.SilenceUsage = true
 
 	cmd.Flags().String("source", "", "Device ID")
 	cmd.Flags().String("type", "", "Event type.")
@@ -113,9 +117,16 @@ func (n *getEventCollectionCmd) doGetEventCollection(method string, path string,
 			Body:   body,
 		})
 
-	if resp != nil && resp.JSONData != nil {
-		fmt.Println(*resp.JSONData)
+	if err != nil {
+		color.Set(color.FgRed, color.Bold)
 	}
+
+	if resp != nil && resp.JSONData != nil {
+		fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+	}
+
+	color.Unset()
+
 	if err != nil {
 		return newSystemError("command failed", err)
 	}

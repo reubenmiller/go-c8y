@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/pretty"
 )
 
 type getBinaryCollectionCmd struct {
@@ -17,7 +19,7 @@ func newGetBinaryCollectionCmd() *getBinaryCollectionCmd {
 	ccmd := &getBinaryCollectionCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "getBinaryCollection",
+		Use:   "list",
 		Short: "Get collection of inventory binaries",
 		Long:  ``,
 		Example: `
@@ -25,6 +27,8 @@ func newGetBinaryCollectionCmd() *getBinaryCollectionCmd {
 		`,
 		RunE: ccmd.getBinaryCollection,
 	}
+
+	cmd.SilenceUsage = true
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
@@ -57,9 +61,16 @@ func (n *getBinaryCollectionCmd) doGetBinaryCollection(method string, path strin
 			Body:   body,
 		})
 
-	if resp != nil && resp.JSONData != nil {
-		fmt.Println(*resp.JSONData)
+	if err != nil {
+		color.Set(color.FgRed, color.Bold)
 	}
+
+	if resp != nil && resp.JSONData != nil {
+		fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+	}
+
+	color.Unset()
+
 	if err != nil {
 		return newSystemError("command failed", err)
 	}

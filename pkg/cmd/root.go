@@ -104,6 +104,9 @@ func Execute() {
 	// tenantStatistics commands
 	rootCmd.AddCommand(newTenantStatisticsRootCmd().getCommand())
 
+	// users commands
+	rootCmd.AddCommand(newUsersRootCmd().getCommand())
+
 	// userGroups commands
 	rootCmd.AddCommand(newUserGroupsRootCmd().getCommand())
 
@@ -112,9 +115,6 @@ func Execute() {
 
 	// userRoles commands
 	rootCmd.AddCommand(newUserRolesRootCmd().getCommand())
-
-	// currentUser commands
-	rootCmd.AddCommand(newCurrentUserRootCmd().getCommand())
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)

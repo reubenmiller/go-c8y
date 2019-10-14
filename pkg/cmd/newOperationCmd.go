@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/pretty"
 )
 
 type newOperationCmd struct {
@@ -25,6 +27,8 @@ func newNewOperationCmd() *newOperationCmd {
 		`,
 		RunE: ccmd.newOperation,
 	}
+
+	cmd.SilenceUsage = true
 
 	cmd.Flags().String("deviceId", "", "Identifies the target device on which this operation should be performed.")
 	cmd.Flags().String("status", "", "Operation status, can be one of SUCCESSFUL, FAILED, EXECUTING or PENDING.")
@@ -72,9 +76,16 @@ func (n *newOperationCmd) doNewOperation(method string, path string, query strin
 			Body:   body,
 		})
 
-	if resp != nil && resp.JSONData != nil {
-		fmt.Println(*resp.JSONData)
+	if err != nil {
+		color.Set(color.FgRed, color.Bold)
 	}
+
+	if resp != nil && resp.JSONData != nil {
+		fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+	}
+
+	color.Unset()
+
 	if err != nil {
 		return newSystemError("command failed", err)
 	}

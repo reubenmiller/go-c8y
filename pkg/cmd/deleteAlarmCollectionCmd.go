@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/pretty"
 )
 
 type deleteAlarmCollectionCmd struct {
@@ -17,7 +19,7 @@ func newDeleteAlarmCollectionCmd() *deleteAlarmCollectionCmd {
 	ccmd := &deleteAlarmCollectionCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "delete",
+		Use:   "deleteCollection",
 		Short: "Delete a collection of alarms",
 		Long:  ``,
 		Example: `
@@ -26,11 +28,13 @@ func newDeleteAlarmCollectionCmd() *deleteAlarmCollectionCmd {
 		RunE: ccmd.deleteAlarmCollection,
 	}
 
+	cmd.SilenceUsage = true
+
 	cmd.Flags().String("source", "", "Source device id.")
 	cmd.Flags().String("dateFrom", "", "Start date or date and time of alarm occurrence.")
 	cmd.Flags().String("dateTo", "", "End date or date and time of alarm occurrence.")
 	cmd.Flags().String("type", "", "Alarm type.")
-	cmd.Flags().String("fragmentType", "", "")
+	cmd.Flags().String("fragmentType", "", "Alarm fragment type.")
 	cmd.Flags().String("severity", "", "Alarm severity, for example MINOR.")
 	cmd.Flags().Bool("resolved", false, "When set to true only resolved alarms will be removed (the one with status CLEARED), false means alarms with status ACTIVE or ACKNOWLEDGED.")
 	cmd.Flags().Bool("withSourceAssets", false, "When set to true also alarms for related source assets will be removed. When this parameter is provided also source must be defined.")
@@ -143,9 +147,16 @@ func (n *deleteAlarmCollectionCmd) doDeleteAlarmCollection(method string, path s
 			Body:   body,
 		})
 
-	if resp != nil && resp.JSONData != nil {
-		fmt.Println(*resp.JSONData)
+	if err != nil {
+		color.Set(color.FgRed, color.Bold)
 	}
+
+	if resp != nil && resp.JSONData != nil {
+		fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+	}
+
+	color.Unset()
+
 	if err != nil {
 		return newSystemError("command failed", err)
 	}

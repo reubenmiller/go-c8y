@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/pretty"
 )
 
 type getTenantUsageStatisticsSummaryCollectionCmd struct {
@@ -25,6 +27,8 @@ func newGetTenantUsageStatisticsSummaryCollectionCmd() *getTenantUsageStatistics
 		`,
 		RunE: ccmd.getTenantUsageStatisticsSummaryCollection,
 	}
+
+	cmd.SilenceUsage = true
 
 	cmd.Flags().String("dateFrom", "", "Start date or date and time of the statistics.")
 	cmd.Flags().String("dateTo", "", "End date or date and time of the statistics.")
@@ -80,9 +84,16 @@ func (n *getTenantUsageStatisticsSummaryCollectionCmd) doGetTenantUsageStatistic
 			Body:   body,
 		})
 
-	if resp != nil && resp.JSONData != nil {
-		fmt.Println(*resp.JSONData)
+	if err != nil {
+		color.Set(color.FgRed, color.Bold)
 	}
+
+	if resp != nil && resp.JSONData != nil {
+		fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+	}
+
+	color.Unset()
+
 	if err != nil {
 		return newSystemError("command failed", err)
 	}

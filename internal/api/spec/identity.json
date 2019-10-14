@@ -107,7 +107,7 @@
           "name": "type",
           "type": "string",
           "required": true,
-          "description": "The type of the external identifier as string, e.g., 'com_cumulocity_model_idtype_SerialNumber'."
+          "description": "The type of the external identifier as string, e.g. 'com_cumulocity_model_idtype_SerialNumber'."
         },
         {
           "name": "name",

@@ -39,12 +39,12 @@
         {
           "name": "dateFrom",
           "type": "datetime",
-          "description": ""
+          "description": "Start date or date and time of operation."
         },
         {
           "name": "dateTo",
           "type": "datetime",
-          "description": ""
+          "description": "End date or date and time of operation."
         },
         {
           "name": "status",
@@ -123,6 +123,8 @@
     },
     {
       "name": "updateOperation",
+      "description": "Update operation",
+      "descriptionLong": "Update operation",
       "method": "PUT",
       "path": "devicecontrol/operations/{id}",
       "accept": "application/json",
@@ -206,12 +208,12 @@
         {
           "name": "dateFrom",
           "type": "datetime",
-          "description": ""
+          "description": "Start date or date and time of operation."
         },
         {
           "name": "dateTo",
           "type": "datetime",
-          "description": ""
+          "description": "End date or date and time of operation."
         },
         {
           "name": "status",

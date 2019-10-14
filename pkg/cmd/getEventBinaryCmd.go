@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/pretty"
 )
 
 type getEventBinaryCmd struct {
@@ -17,7 +19,7 @@ func newGetEventBinaryCmd() *getEventBinaryCmd {
 	ccmd := &getEventBinaryCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "getBinary",
+		Use:   "downloadBinary",
 		Short: "Get event binary",
 		Long:  ``,
 		Example: `
@@ -25,6 +27,8 @@ func newGetEventBinaryCmd() *getEventBinaryCmd {
 		`,
 		RunE: ccmd.getEventBinary,
 	}
+
+	cmd.SilenceUsage = true
 
 	cmd.Flags().String("id", "", "Event id")
 
@@ -51,7 +55,7 @@ func (n *getEventBinaryCmd) getEventBinary(cmd *cobra.Command, args []string) er
 
 	path := replacePathParameters("event/events/{id}/binaries", pathParameters)
 
-	return n.doGetEventBinary("PUT", path, queryValue, body)
+	return n.doGetEventBinary("GET", path, queryValue, body)
 }
 
 func (n *getEventBinaryCmd) doGetEventBinary(method string, path string, query string, body map[string]interface{}) error {
@@ -64,9 +68,16 @@ func (n *getEventBinaryCmd) doGetEventBinary(method string, path string, query s
 			Body:   body,
 		})
 
-	if resp != nil && resp.JSONData != nil {
-		fmt.Println(*resp.JSONData)
+	if err != nil {
+		color.Set(color.FgRed, color.Bold)
 	}
+
+	if resp != nil && resp.JSONData != nil {
+		fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+	}
+
+	color.Unset()
+
 	if err != nil {
 		return newSystemError("command failed", err)
 	}

@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/pretty"
 )
 
 type newUserCmd struct {
@@ -25,6 +27,8 @@ func newNewUserCmd() *newUserCmd {
 		`,
 		RunE: ccmd.newUser,
 	}
+
+	cmd.SilenceUsage = true
 
 	cmd.Flags().String("userName", "", "User name, unique for a given domain. Max: 1000 characters")
 	cmd.Flags().String("firstName", "", "User first name")
@@ -92,9 +96,16 @@ func (n *newUserCmd) doNewUser(method string, path string, query string, body ma
 			Body:   body,
 		})
 
-	if resp != nil && resp.JSONData != nil {
-		fmt.Println(*resp.JSONData)
+	if err != nil {
+		color.Set(color.FgRed, color.Bold)
 	}
+
+	if resp != nil && resp.JSONData != nil {
+		fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+	}
+
+	color.Unset()
+
 	if err != nil {
 		return newSystemError("command failed", err)
 	}

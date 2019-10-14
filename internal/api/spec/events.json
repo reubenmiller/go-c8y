@@ -22,7 +22,7 @@
       "path": "event/events",
       "accept": "application/json",
       "alias": {
-        "go": "getCollection",
+        "go": "list",
         "powershell": "Get-EventCollection"
       },
       "queryParameters": [
@@ -125,8 +125,8 @@
       "method": "POST",
       "path": "event/events",
       "accept": "application/json",
-      "description": "Create a new event",
-      "descriptionLong": "Create a new event",
+      "description": "Create event",
+      "descriptionLong": "Create event",
       "alias": {
         "go": "new",
         "powershell": "New-Event"
@@ -219,11 +219,11 @@
     {
       "name": "getEventBinary",
       "description": "Get event binary",
-      "method": "PUT",
+      "method": "GET",
       "path": "event/events/{id}/binaries",
       "accept": "application/json",
       "alias": {
-        "go": "getBinary",
+        "go": "downloadBinary",
         "powershell": "Get-EventBinary"
       },
       "pathParameters": [

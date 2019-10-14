@@ -30,6 +30,7 @@ endpoints:
       - name: userId
         type: string
         property: user.self
+        description: User id
         valueFormatter: "{url}/user/{tenant}/users/{userId}"
 
 

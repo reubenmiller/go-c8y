@@ -14,15 +14,15 @@ endpoints:
     path: /inventory/binaries
     accept: application/vnd.com.nsn.cumulocity.applicationCollection+json
     alias:
-        go: getBinaryCollection
+        go: list
         powershell: Get-BinaryCollection
 
-  - name: downloadBinary
+  - name: download
     description: 'Get binary'
     method: PUT
     path: /inventory/binaries/{id}
     alias:
-        go: downloadBinary
+        go: download
         powershell: Download-Binary
     pathParameters:
       - name: id
@@ -42,7 +42,7 @@ endpoints:
     path: /inventory/binaries
     accept: application/vnd.com.nsn.cumulocity.managedObject+json
     alias:
-        go: createBinary
+        go: create
         powershell: New-Binary
 
     body:
@@ -57,7 +57,7 @@ endpoints:
     path: /inventory/binaries/{id}
     accept: 'application/json'
     alias:
-        go: updateBinary
+        go: update
         powershell: Update-Binary
     pathParameters:
       - name: id

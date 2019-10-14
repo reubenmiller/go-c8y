@@ -42,8 +42,11 @@ func newGetGenericRestCmd() *getGenericRestCmd {
 
 func (n *getGenericRestCmd) getGenericRest(cmd *cobra.Command, args []string) error {
 	method := "get"
+
 	var uri string
-	if len(args) > 1 {
+	if len(args) == 1 {
+		uri = args[0]
+	} else if len(args) > 1 {
 		method = args[0]
 		uri = args[1]
 	}

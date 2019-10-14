@@ -25,3 +25,25 @@ $ImportStatements = foreach ($iFile in $SpecFiles) {
 }
 Write-Host "`nUse the following import statements in the root cmd`n"
 $ImportStatements
+
+#
+# Build project
+#
+$BinaryDir = Resolve-Path -Path "$PSScriptRoot/../../cmd/c8y"
+$OutputDir = "$PSScriptRoot/../../output"
+
+if (!(Test-Path $OutputDir)) {
+    $null = New-Item $OutputDir -ItemType Directory
+    $OutputDir = Resolve-Path $OutputDir
+}
+& go build -o "$OutputDir/c8y.exe" "$BinaryDir/main.go"
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Failed to build project"
+    return
+}
+
+# Create code completions
+& "$OutputDir/c8y.exe" completion powershell > "$OutputDir/c8y.ps1"
+
+Write-Host "Build successful! $OutputDir"

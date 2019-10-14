@@ -19,7 +19,7 @@ func newBinariesRootCmd() *binariesCmd {
 
 	// Subcommands
 	cmd.AddCommand(newGetBinaryCollectionCmd().getCommand())
-	cmd.AddCommand(newDownloadBinaryCmd().getCommand())
+	cmd.AddCommand(newDownloadCmd().getCommand())
 	cmd.AddCommand(newNewBinaryCmd().getCommand())
 	cmd.AddCommand(newUpdateBinaryCmd().getCommand())
 	cmd.AddCommand(newDeleteBinaryCmd().getCommand())

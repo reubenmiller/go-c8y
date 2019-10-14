@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/pretty"
 )
 
 type updateAlarmCollectionCmd struct {
@@ -17,14 +19,16 @@ func newUpdateAlarmCollectionCmd() *updateAlarmCollectionCmd {
 	ccmd := &updateAlarmCollectionCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "update",
-		Short: "The PUT method allows for updating alarms collections. Currently only the status of alarms can be changed",
+		Use:   "updateCollection",
+		Short: "Update a collection of alarms. Currently only the status of alarms can be changed",
 		Long:  ``,
 		Example: `
         
 		`,
 		RunE: ccmd.updateAlarmCollection,
 	}
+
+	cmd.SilenceUsage = true
 
 	cmd.Flags().String("source", "", "The ManagedObject that the alarm originated from")
 	cmd.Flags().String("status", "", "The status of the alarm: ACTIVE, ACKNOWLEDGED or CLEARED. If status was not appeared, new alarm will have status ACTIVE. Must be upper-case.")
@@ -117,9 +121,16 @@ func (n *updateAlarmCollectionCmd) doUpdateAlarmCollection(method string, path s
 			Body:   body,
 		})
 
-	if resp != nil && resp.JSONData != nil {
-		fmt.Println(*resp.JSONData)
+	if err != nil {
+		color.Set(color.FgRed, color.Bold)
 	}
+
+	if resp != nil && resp.JSONData != nil {
+		fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+	}
+
+	color.Unset()
+
 	if err != nil {
 		return newSystemError("command failed", err)
 	}

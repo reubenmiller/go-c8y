@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/pretty"
 )
 
 type getUserCollectionCmd struct {
@@ -26,6 +28,8 @@ c8y user getCollection --username js --groups 2,3,4 --owner admin
 		`,
 		RunE: ccmd.getUserCollection,
 	}
+
+	cmd.SilenceUsage = true
 
 	cmd.Flags().String("username", "", "prefix or full username")
 	cmd.Flags().String("groups", "", "numeric group identifiers separated by commas; result will contain only users which belong to at least one of specified groups")
@@ -110,9 +114,16 @@ func (n *getUserCollectionCmd) doGetUserCollection(method string, path string, q
 			Body:   body,
 		})
 
-	if resp != nil && resp.JSONData != nil {
-		fmt.Println(*resp.JSONData)
+	if err != nil {
+		color.Set(color.FgRed, color.Bold)
 	}
+
+	if resp != nil && resp.JSONData != nil {
+		fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+	}
+
+	color.Unset()
+
 	if err != nil {
 		return newSystemError("command failed", err)
 	}

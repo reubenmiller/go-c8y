@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/pretty"
 )
 
 type newRetentionRuleCmd struct {
@@ -25,6 +27,8 @@ func newNewRetentionRuleCmd() *newRetentionRuleCmd {
 		`,
 		RunE: ccmd.newRetentionRule,
 	}
+
+	cmd.SilenceUsage = true
 
 	cmd.Flags().String("dataType", "", "RetentionRule will be applied to this type of documents, possible values [ALARM, AUDIT, EVENT, MEASUREMENT, OPERATION, *].")
 	cmd.Flags().String("fragmentType", "", "RetentionRule will be applied to documents with fragmentType.")
@@ -82,9 +86,16 @@ func (n *newRetentionRuleCmd) doNewRetentionRule(method string, path string, que
 			Body:   body,
 		})
 
-	if resp != nil && resp.JSONData != nil {
-		fmt.Println(*resp.JSONData)
+	if err != nil {
+		color.Set(color.FgRed, color.Bold)
 	}
+
+	if resp != nil && resp.JSONData != nil {
+		fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+	}
+
+	color.Unset()
+
 	if err != nil {
 		return newSystemError("command failed", err)
 	}

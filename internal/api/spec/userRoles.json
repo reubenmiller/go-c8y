@@ -58,6 +58,7 @@
           "name": "role",
           "type": "string",
           "property": "role.self",
+          "description": "User role id",
           "valueFormatter": "{url}/user/roles/{role}"
         }
       ]
@@ -120,6 +121,7 @@
           "type": "string",
           "required": true,
           "property": "role.self",
+          "description": "User role id",
           "valueFormatter": "{url}/user/roles/{role}"
         }
       ]

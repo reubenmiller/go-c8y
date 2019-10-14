@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/pretty"
 )
 
 type newEventCmd struct {
@@ -18,13 +20,15 @@ func newNewEventCmd() *newEventCmd {
 
 	cmd := &cobra.Command{
 		Use:   "new",
-		Short: "Create a new event",
-		Long:  `Create a new event`,
+		Short: "Create event",
+		Long:  `Create event`,
 		Example: `
         
 		`,
 		RunE: ccmd.newEvent,
 	}
+
+	cmd.SilenceUsage = true
 
 	cmd.Flags().String("source", "", "The ManagedObject which is the source of this event.")
 	cmd.Flags().String("time", "", "Time of the event.")
@@ -79,9 +83,16 @@ func (n *newEventCmd) doNewEvent(method string, path string, query string, body 
 			Body:   body,
 		})
 
-	if resp != nil && resp.JSONData != nil {
-		fmt.Println(*resp.JSONData)
+	if err != nil {
+		color.Set(color.FgRed, color.Bold)
 	}
+
+	if resp != nil && resp.JSONData != nil {
+		fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+	}
+
+	color.Unset()
+
 	if err != nil {
 		return newSystemError("command failed", err)
 	}

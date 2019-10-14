@@ -49,6 +49,7 @@ endpoints:
       - name: role
         type: string
         property: role.self
+        description: User role id
         valueFormatter: "{url}/user/roles/{role}"
 
   - name: deleteRoleFromUser
@@ -96,6 +97,7 @@ endpoints:
         type: string
         required: true
         property: role.self
+        description: User role id
         valueFormatter: "{url}/user/roles/{role}"
 
   - name: deleteRoleFromGroup

@@ -196,8 +196,10 @@ import (
     "fmt"
     "net/url"
 
+    "github.com/fatih/color"
     "github.com/reubenmiller/go-c8y/pkg/c8y"
     "github.com/spf13/cobra"
+    "github.com/tidwall/pretty"
 )
 
 type ${Name}Cmd struct {
@@ -215,7 +217,9 @@ func new${NameCamel}Cmd() *${Name}Cmd {
         $($Examples -join "`n`n")
 		``,
 		RunE: ccmd.${Name},
-	}
+    }
+
+    cmd.SilenceUsage = true
 
     $($CommandArgs.SetFlag -join "`n	")
 
@@ -252,9 +256,16 @@ func (n *${Name}Cmd) do${NameCamel}(method string, path string, query string, bo
 			Body:         body,
 		})
 
-    if resp != nil && resp.JSONData != nil {
-        fmt.Println(*resp.JSONData)
+    if err != nil {
+        color.Set(color.FgRed, color.Bold)
     }
+
+    if resp != nil && resp.JSONData != nil {
+        fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+    }
+
+    color.Unset()
+
 	if err != nil {
 		return newSystemError("command failed", err)
 	}
