@@ -30,10 +30,15 @@ func newNewMeasurementCmd() *newMeasurementCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().StringSlice("device", []string{""}, "The ManagedObject which is the source of this measurement.")
-	cmd.Flags().String("time", "", "Time of the measurement.")
-	cmd.Flags().String("type", "", "The most specific type of this entire measurement.")
+	cmd.Flags().StringSlice("device", []string{""}, "The ManagedObject which is the source of this measurement. (required)")
+	cmd.Flags().String("time", "", "Time of the measurement. (required)")
+	cmd.Flags().String("type", "", "The most specific type of this entire measurement. (required)")
 	addDataFlag(cmd)
+
+	// Required flags
+	cmd.MarkFlagRequired("device")
+	cmd.MarkFlagRequired("time")
+	cmd.MarkFlagRequired("type")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

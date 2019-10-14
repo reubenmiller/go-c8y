@@ -30,7 +30,7 @@ func newUpdateCurrentApplicationCmd() *updateCurrentApplicationCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("id", "", "Application id")
+	cmd.Flags().String("id", "", "Application id (required)")
 	addDataFlag(cmd)
 	cmd.Flags().String("name", "", "Name of application")
 	cmd.Flags().String("key", "", "Shared secret of application")
@@ -40,6 +40,9 @@ func newUpdateCurrentApplicationCmd() *updateCurrentApplicationCmd {
 	cmd.Flags().String("resourcesUsername", "", "authorization username to access resourcesUrl")
 	cmd.Flags().String("resourcesPassword", "", "authorization password to access resourcesUrl")
 	cmd.Flags().String("externalUrl", "", "URL to the external application")
+
+	// Required flags
+	cmd.MarkFlagRequired("id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

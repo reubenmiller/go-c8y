@@ -37,6 +37,8 @@ c8y user getCollection --username js --groups 2,3,4 --owner admin
 	cmd.Flags().Bool("onlyDevices", false, "If set to 'true', result will contain only users created during bootstrap process (starting with 'device_'). If flag is absent (or false) the result will not contain 'device_' users.")
 	cmd.Flags().Bool("withSubusersCount", false, "if set to 'true', then each of returned users will contain additional field 'subusersCount' - number of direct subusers (users with corresponding 'owner').")
 
+	// Required flags
+
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd
@@ -81,6 +83,17 @@ func (n *getUserCollectionCmd) getUserCollection(cmd *cobra.Command, args []stri
 		}
 	} else {
 		return newUserError("Flag does not exist")
+	}
+	if cmd.Flags().Changed("pageSize") {
+		if v, err := cmd.Flags().GetInt("pageSize"); err == nil && v > 0 {
+			query.Add("pageSize", fmt.Sprintf("%d", v))
+		}
+	}
+
+	if cmd.Flags().Changed("withTotalPages") {
+		if v, err := cmd.Flags().GetBool("withTotalPages"); err == nil && v {
+			query.Add("withTotalPages", "true")
+		}
 	}
 	queryValue, err := url.QueryUnescape(query.Encode())
 

@@ -30,15 +30,19 @@ func newNewUserCmd() *newUserCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("userName", "", "User name, unique for a given domain. Max: 1000 characters")
+	cmd.Flags().String("userName", "", "User name, unique for a given domain. Max: 1000 characters (required)")
 	cmd.Flags().String("firstName", "", "User first name")
 	cmd.Flags().String("lastName", "", "User last name")
 	cmd.Flags().String("phone", "", "User phone number. Format: '+[country code][number]', has to be a valid MSISDN")
 	cmd.Flags().String("email", "", "User email address")
 	cmd.Flags().Bool("enabled", false, "User activation status (true/false)")
-	cmd.Flags().String("password", "", "User password. Min: 6, max: 32 characters. Only Latin1 chars allowed")
+	cmd.Flags().String("password", "", "User password. Min: 6, max: 32 characters. Only Latin1 chars allowed (required)")
 	cmd.Flags().Bool("sendPasswordResetEmail", false, "User activation status (true/false)")
 	addDataFlag(cmd)
+
+	// Required flags
+	cmd.MarkFlagRequired("userName")
+	cmd.MarkFlagRequired("password")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

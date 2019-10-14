@@ -31,9 +31,12 @@ func newUpdateOperationCmd() *updateOperationCmd {
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("id", "", "Operation id")
-	cmd.Flags().String("status", "", "Operation status, can be one of SUCCESSFUL, FAILED, EXECUTING or PENDING.")
+	cmd.Flags().String("status", "", "Operation status, can be one of SUCCESSFUL, FAILED, EXECUTING or PENDING. (required)")
 	cmd.Flags().String("failureReason", "", "Reason for the failure. Use whne setting status to FAILED")
 	addDataFlag(cmd)
+
+	// Required flags
+	cmd.MarkFlagRequired("status")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

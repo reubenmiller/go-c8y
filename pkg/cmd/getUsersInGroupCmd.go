@@ -33,6 +33,8 @@ func newGetUsersInGroupCmd() *getUsersInGroupCmd {
 	cmd.Flags().String("tenant", "", "Tenant")
 	cmd.Flags().String("groupId", "", "Group ID")
 
+	// Required flags
+
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd

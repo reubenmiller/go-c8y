@@ -31,7 +31,10 @@ func newGetRoleCollectionCmd() *getRoleCollectionCmd {
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("tenant", "", "Tenant")
-	cmd.Flags().String("username", "", "Username")
+	cmd.Flags().String("username", "", "Username (required)")
+
+	// Required flags
+	cmd.MarkFlagRequired("username")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

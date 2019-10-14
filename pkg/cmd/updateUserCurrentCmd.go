@@ -37,6 +37,8 @@ func newUpdateUserCurrentCmd() *updateUserCurrentCmd {
 	cmd.Flags().String("enabled", "", "User activation status (true/false)")
 	cmd.Flags().String("password", "", "User password. Min: 6, max: 32 characters. Only Latin1 chars allowed")
 
+	// Required flags
+
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd

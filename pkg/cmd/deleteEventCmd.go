@@ -30,7 +30,10 @@ func newDeleteEventCmd() *deleteEventCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("id", "", "Event id")
+	cmd.Flags().String("id", "", "Event id (required)")
+
+	// Required flags
+	cmd.MarkFlagRequired("id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

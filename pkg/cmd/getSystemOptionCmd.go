@@ -30,8 +30,12 @@ func newGetSystemOptionCmd() *getSystemOptionCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("category", "", "System Option category")
-	cmd.Flags().String("key", "", "System Option key")
+	cmd.Flags().String("category", "", "System Option category (required)")
+	cmd.Flags().String("key", "", "System Option key (required)")
+
+	// Required flags
+	cmd.MarkFlagRequired("category")
+	cmd.MarkFlagRequired("key")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

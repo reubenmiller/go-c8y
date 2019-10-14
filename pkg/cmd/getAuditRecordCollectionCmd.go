@@ -38,6 +38,8 @@ func newGetAuditRecordCollectionCmd() *getAuditRecordCollectionCmd {
 	cmd.Flags().String("dateTo", "", "End date or date and time of audit record occurrence.")
 	cmd.Flags().Bool("revert", false, "Return the newest instead of the oldest audit records. Must be used with dateFrom and dateTo parameters")
 
+	// Required flags
+
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd
@@ -96,6 +98,17 @@ func (n *getAuditRecordCollectionCmd) getAuditRecordCollection(cmd *cobra.Comman
 		}
 	} else {
 		return newUserError("Flag does not exist")
+	}
+	if cmd.Flags().Changed("pageSize") {
+		if v, err := cmd.Flags().GetInt("pageSize"); err == nil && v > 0 {
+			query.Add("pageSize", fmt.Sprintf("%d", v))
+		}
+	}
+
+	if cmd.Flags().Changed("withTotalPages") {
+		if v, err := cmd.Flags().GetBool("withTotalPages"); err == nil && v {
+			query.Add("withTotalPages", "true")
+		}
 	}
 	queryValue, err := url.QueryUnescape(query.Encode())
 

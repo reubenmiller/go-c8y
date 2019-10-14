@@ -30,7 +30,10 @@ func newDeleteMeasurementCmd() *deleteMeasurementCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("id", "", "Measurement id")
+	cmd.Flags().String("id", "", "Measurement id (required)")
+
+	// Required flags
+	cmd.MarkFlagRequired("id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

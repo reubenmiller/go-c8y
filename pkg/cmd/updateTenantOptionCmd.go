@@ -30,9 +30,14 @@ func newUpdateTenantOptionCmd() *updateTenantOptionCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("category", "", "Tenant Option category")
-	cmd.Flags().String("key", "", "Tenant Option key")
-	cmd.Flags().String("value", "", "New value")
+	cmd.Flags().String("category", "", "Tenant Option category (required)")
+	cmd.Flags().String("key", "", "Tenant Option key (required)")
+	cmd.Flags().String("value", "", "New value (required)")
+
+	// Required flags
+	cmd.MarkFlagRequired("category")
+	cmd.MarkFlagRequired("key")
+	cmd.MarkFlagRequired("value")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

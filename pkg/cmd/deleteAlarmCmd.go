@@ -30,7 +30,10 @@ func newDeleteAlarmCmd() *deleteAlarmCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("id", "", "Alarm id")
+	cmd.Flags().String("id", "", "Alarm id (required)")
+
+	// Required flags
+	cmd.MarkFlagRequired("id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

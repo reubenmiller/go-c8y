@@ -16,7 +16,7 @@
           "Get-AlarmCollection"
         ],
         "go": [
-          "c8y alarms get --type value --severity MAJOR"
+          "c8y alarms list --type value --severity MAJOR"
         ]
       },
       "path": "alarm/alarms",
@@ -65,7 +65,7 @@
         {
           "name": "severity",
           "type": "string",
-          "description": "Alarm severity, for example MINOR.",
+          "description": "Alarm severity, for example CRITICAL, MAJOR, MINOR or WARNING.",
           "validationSet": [
             "CRITICAL",
             "MAJOR",
@@ -258,7 +258,7 @@
         {
           "name": "status",
           "type": "string",
-          "required": true,
+          "required": false,
           "description": "Comma separated alarm statuses, for example ACTIVE,CLEARED.",
           "validationSet": [
             "ACTIVE",
@@ -269,8 +269,8 @@
         {
           "name": "severity",
           "type": "string",
-          "required": true,
-          "description": "Alarm severity, for example MINOR.",
+          "required": false,
+          "description": "Alarm severity, for example CRITICAL, MAJOR, MINOR or WARNING.",
           "validationSet": [
             "CRITICAL",
             "MAJOR",
@@ -281,7 +281,7 @@
         {
           "name": "text",
           "type": "string",
-          "required": true,
+          "required": false,
           "description": "Text description of the alarm.",
           "validationSet": [
             "CRITICAL",
@@ -300,7 +300,8 @@
         {
           "name": "id",
           "type": "string",
-          "description": "Alarm id"
+          "description": "Alarm id",
+          "required": true
         }
       ]
     },
@@ -373,7 +374,7 @@
         {
           "name": "severity",
           "type": "string",
-          "description": "Alarm severity, for example MINOR.",
+          "description": "Alarm severity, for example CRITICAL, MAJOR, MINOR or WARNING.",
           "validationSet": [
             "CRITICAL",
             "MAJOR",

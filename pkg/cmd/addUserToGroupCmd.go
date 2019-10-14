@@ -34,6 +34,8 @@ func newAddUserToGroupCmd() *addUserToGroupCmd {
 	cmd.Flags().String("groupId", "", "Group ID")
 	cmd.Flags().String("userId", "", "User id")
 
+	// Required flags
+
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd

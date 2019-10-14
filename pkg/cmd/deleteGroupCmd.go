@@ -31,7 +31,10 @@ func newDeleteGroupCmd() *deleteGroupCmd {
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("tenant", "", "Tenant")
-	cmd.Flags().String("id", "", "Group id")
+	cmd.Flags().String("id", "", "Group id (required)")
+
+	// Required flags
+	cmd.MarkFlagRequired("id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

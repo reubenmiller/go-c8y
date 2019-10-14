@@ -31,7 +31,10 @@ func newGetRoleReferenceCollectionFromGroupCmd() *getRoleReferenceCollectionFrom
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("tenant", "", "Tenant")
-	cmd.Flags().String("groupId", "", "Group id")
+	cmd.Flags().String("groupId", "", "Group id (required)")
+
+	// Required flags
+	cmd.MarkFlagRequired("groupId")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

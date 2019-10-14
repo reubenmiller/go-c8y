@@ -30,15 +30,23 @@ func newNewAuditCmd() *newAuditCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("type", "", "Identifies the type of this audit record.")
-	cmd.Flags().String("time", "", "Time of the audit record.")
-	cmd.Flags().String("text", "", "Text description of the audit record.")
-	cmd.Flags().String("source", "", "An optional ManagedObject that the audit record originated from")
-	cmd.Flags().String("activity", "", "The activity that was carried out.")
-	cmd.Flags().String("severity", "", "The severity of action: critical, major, minor, warning or information.")
+	cmd.Flags().String("type", "", "Identifies the type of this audit record. (required)")
+	cmd.Flags().String("time", "", "Time of the audit record. (required)")
+	cmd.Flags().String("text", "", "Text description of the audit record. (required)")
+	cmd.Flags().String("source", "", "An optional ManagedObject that the audit record originated from (required)")
+	cmd.Flags().String("activity", "", "The activity that was carried out. (required)")
+	cmd.Flags().String("severity", "", "The severity of action: critical, major, minor, warning or information. (required)")
 	cmd.Flags().String("user", "", "The user responsible for the audited action.")
 	cmd.Flags().String("application", "", "The application used to carry out the audited action.")
 	addDataFlag(cmd)
+
+	// Required flags
+	cmd.MarkFlagRequired("type")
+	cmd.MarkFlagRequired("time")
+	cmd.MarkFlagRequired("text")
+	cmd.MarkFlagRequired("source")
+	cmd.MarkFlagRequired("activity")
+	cmd.MarkFlagRequired("severity")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

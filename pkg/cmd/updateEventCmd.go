@@ -30,9 +30,13 @@ func newUpdateEventCmd() *updateEventCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("id", "", "Event id")
-	cmd.Flags().String("text", "", "Text description of the event.")
+	cmd.Flags().String("id", "", "Event id (required)")
+	cmd.Flags().String("text", "", "Text description of the event. (required)")
 	addDataFlag(cmd)
+
+	// Required flags
+	cmd.MarkFlagRequired("id")
+	cmd.MarkFlagRequired("text")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

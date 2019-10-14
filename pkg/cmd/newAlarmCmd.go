@@ -30,13 +30,20 @@ func newNewAlarmCmd() *newAlarmCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().StringSlice("device", []string{""}, "The ManagedObject that the alarm originated from")
-	cmd.Flags().String("type", "", "Identifies the type of this alarm, e.g. 'com_cumulocity_events_TamperEvent'.")
-	cmd.Flags().String("time", "", "Time of the alarm.")
-	cmd.Flags().String("text", "", "Text description of the alarm.")
-	cmd.Flags().String("severity", "", "The severity of the alarm: CRITICAL, MAJOR, MINOR or WARNING. Must be upper-case.")
+	cmd.Flags().StringSlice("device", []string{""}, "The ManagedObject that the alarm originated from (required)")
+	cmd.Flags().String("type", "", "Identifies the type of this alarm, e.g. 'com_cumulocity_events_TamperEvent'. (required)")
+	cmd.Flags().String("time", "", "Time of the alarm. (required)")
+	cmd.Flags().String("text", "", "Text description of the alarm. (required)")
+	cmd.Flags().String("severity", "", "The severity of the alarm: CRITICAL, MAJOR, MINOR or WARNING. Must be upper-case. (required)")
 	cmd.Flags().String("status", "", "The status of the alarm: ACTIVE, ACKNOWLEDGED or CLEARED. If status was not appeared, new alarm will have status ACTIVE. Must be upper-case.")
 	addDataFlag(cmd)
+
+	// Required flags
+	cmd.MarkFlagRequired("device")
+	cmd.MarkFlagRequired("type")
+	cmd.MarkFlagRequired("time")
+	cmd.MarkFlagRequired("text")
+	cmd.MarkFlagRequired("severity")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

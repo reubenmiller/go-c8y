@@ -30,6 +30,8 @@ func newGetUserCurrentCmd() *getUserCurrentCmd {
 
 	cmd.SilenceUsage = true
 
+	// Required flags
+
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd

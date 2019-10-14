@@ -30,7 +30,10 @@ func newGetTenantOptionsForCategoryCmd() *getTenantOptionsForCategoryCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("category", "", "Tenant Option category")
+	cmd.Flags().String("category", "", "Tenant Option category (required)")
+
+	// Required flags
+	cmd.MarkFlagRequired("category")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

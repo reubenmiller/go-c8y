@@ -37,8 +37,12 @@ measurement getSeries --source 12345 --series nx_WEA_29_Delta.MDL10FG001 --serie
 	cmd.Flags().StringSlice("device", []string{""}, "Device ID")
 	cmd.Flags().StringSlice("series", []string{""}, "measurement type and series name, e.g. c8y_AccelerationMeasurement.acceleration")
 	cmd.Flags().String("aggregationType", "", "Fragment name from measurement.")
-	cmd.Flags().String("dateFrom", "", "Start date or date and time of measurement occurrence.")
-	cmd.Flags().String("dateTo", "", "End date or date and time of measurement occurrence.")
+	cmd.Flags().String("dateFrom", "", "Start date or date and time of measurement occurrence. (required)")
+	cmd.Flags().String("dateTo", "", "End date or date and time of measurement occurrence. (required)")
+
+	// Required flags
+	cmd.MarkFlagRequired("dateFrom")
+	cmd.MarkFlagRequired("dateTo")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
@@ -89,6 +93,17 @@ func (n *getMeasurementSeriesCmd) getMeasurementSeries(cmd *cobra.Command, args 
 		}
 	} else {
 		return newUserError("Flag does not exist")
+	}
+	if cmd.Flags().Changed("pageSize") {
+		if v, err := cmd.Flags().GetInt("pageSize"); err == nil && v > 0 {
+			query.Add("pageSize", fmt.Sprintf("%d", v))
+		}
+	}
+
+	if cmd.Flags().Changed("withTotalPages") {
+		if v, err := cmd.Flags().GetBool("withTotalPages"); err == nil && v {
+			query.Add("withTotalPages", "true")
+		}
 	}
 	queryValue, err := url.QueryUnescape(query.Encode())
 

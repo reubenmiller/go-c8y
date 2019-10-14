@@ -30,14 +30,18 @@ func newNewTenantCmd() *newTenantCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("company", "", "Company name. Maximum 256 characters")
-	cmd.Flags().String("domain", "", "Domain name to be used for the tenant. Maximum 256 characters")
+	cmd.Flags().String("company", "", "Company name. Maximum 256 characters (required)")
+	cmd.Flags().String("domain", "", "Domain name to be used for the tenant. Maximum 256 characters (required)")
 	cmd.Flags().String("id", "", "The tenant ID. Will be auto-generated if not present.")
 	cmd.Flags().String("adminName", "", "Username of the tenant administrator")
 	cmd.Flags().String("adminPass", "", "Password of the tenant administrator")
 	cmd.Flags().String("contactName", "", "A contact name, for example an administrator, of the tenant")
 	cmd.Flags().String("contact_phone", "", "An international contact phone number")
 	addDataFlag(cmd)
+
+	// Required flags
+	cmd.MarkFlagRequired("company")
+	cmd.MarkFlagRequired("domain")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

@@ -30,10 +30,14 @@ func newNewOperationCmd() *newOperationCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().StringSlice("device", []string{""}, "Identifies the target device on which this operation should be performed.")
-	cmd.Flags().String("status", "", "Operation status, can be one of SUCCESSFUL, FAILED, EXECUTING or PENDING.")
+	cmd.Flags().StringSlice("device", []string{""}, "Identifies the target device on which this operation should be performed. (required)")
+	cmd.Flags().String("status", "", "Operation status, can be one of SUCCESSFUL, FAILED, EXECUTING or PENDING. (required)")
 	cmd.Flags().String("description", "", "Text description of the operation.")
 	addDataFlag(cmd)
+
+	// Required flags
+	cmd.MarkFlagRequired("device")
+	cmd.MarkFlagRequired("status")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

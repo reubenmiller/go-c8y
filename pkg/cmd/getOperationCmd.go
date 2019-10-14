@@ -30,7 +30,10 @@ func newGetOperationCmd() *getOperationCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("id", "", "Operation id")
+	cmd.Flags().String("id", "", "Operation id (required)")
+
+	// Required flags
+	cmd.MarkFlagRequired("id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

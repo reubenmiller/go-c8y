@@ -31,8 +31,12 @@ func newDeleteRoleFromUserCmd() *deleteRoleFromUserCmd {
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("tenant", "", "Tenant")
-	cmd.Flags().String("username", "", "Username")
-	cmd.Flags().String("role", "", "Role name")
+	cmd.Flags().String("username", "", "Username (required)")
+	cmd.Flags().String("role", "", "Role name (required)")
+
+	// Required flags
+	cmd.MarkFlagRequired("username")
+	cmd.MarkFlagRequired("role")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

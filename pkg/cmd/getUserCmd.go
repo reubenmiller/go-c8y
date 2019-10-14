@@ -31,7 +31,10 @@ func newGetUserCmd() *getUserCmd {
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("tenant", "", "Tenant")
-	cmd.Flags().String("id", "", "User id")
+	cmd.Flags().String("id", "", "User id (required)")
+
+	// Required flags
+	cmd.MarkFlagRequired("id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

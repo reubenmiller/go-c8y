@@ -30,8 +30,12 @@ func newUpdateTenantOptionBulkCmd() *updateTenantOptionBulkCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("category", "", "Tenant Option category")
+	cmd.Flags().String("category", "", "Tenant Option category (required)")
 	addDataFlag(cmd)
+
+	// Required flags
+	cmd.MarkFlagRequired("category")
+	cmd.MarkFlagRequired("data")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

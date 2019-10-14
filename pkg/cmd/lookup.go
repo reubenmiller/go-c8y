@@ -86,8 +86,14 @@ func getFormattedDeviceSlice(cmd *cobra.Command, args []string, name string) []s
 	f := newDeviceFetcher(client)
 
 	if !cmd.Flags().Changed(name) {
-		// Read from os.PIPE
-		log.Panic("Not implemented")
+		// TODO: Read from os.PIPE
+		pipedInput, err := getPipe()
+		if err != nil {
+			log.Printf("No pipeline input detected")
+		} else {
+			fmt.Printf("PIPED Input: %s\n", pipedInput)
+			return nil
+		}
 	}
 
 	values, err := cmd.Flags().GetStringSlice(name)
@@ -95,7 +101,7 @@ func getFormattedDeviceSlice(cmd *cobra.Command, args []string, name string) []s
 		log.Println("Flag is missing", err)
 	}
 
-	log.Printf("Splice values %s", strings.Join(values, ","))
+	// log.Printf("Splice values %s", strings.Join(values, ","))
 
 	values = ParseValues(append(values, args...))
 

@@ -31,8 +31,12 @@ func newDeleteRoleFromGroupCmd() *deleteRoleFromGroupCmd {
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("tenant", "", "Tenant")
-	cmd.Flags().String("groupId", "", "Group id")
-	cmd.Flags().String("role", "", "Role name, e.g. ROLE_TENANT_MANAGEMENT_ADMIN")
+	cmd.Flags().String("groupId", "", "Group id (required)")
+	cmd.Flags().String("role", "", "Role name, e.g. ROLE_TENANT_MANAGEMENT_ADMIN (required)")
+
+	// Required flags
+	cmd.MarkFlagRequired("groupId")
+	cmd.MarkFlagRequired("role")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

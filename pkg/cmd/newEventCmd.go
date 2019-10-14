@@ -30,11 +30,17 @@ func newNewEventCmd() *newEventCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().StringSlice("device", []string{""}, "The ManagedObject which is the source of this event.")
-	cmd.Flags().String("time", "", "Time of the event.")
-	cmd.Flags().String("type", "", "Identifies the type of this event.")
-	cmd.Flags().String("text", "", "Text description of the event.")
+	cmd.Flags().StringSlice("device", []string{""}, "The ManagedObject which is the source of this event. (required)")
+	cmd.Flags().String("time", "", "Time of the event. (required)")
+	cmd.Flags().String("type", "", "Identifies the type of this event. (required)")
+	cmd.Flags().String("text", "", "Text description of the event. (required)")
 	addDataFlag(cmd)
+
+	// Required flags
+	cmd.MarkFlagRequired("device")
+	cmd.MarkFlagRequired("time")
+	cmd.MarkFlagRequired("type")
+	cmd.MarkFlagRequired("text")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

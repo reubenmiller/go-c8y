@@ -31,8 +31,12 @@ func newAddRoleToGroupCmd() *addRoleToGroupCmd {
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("tenant", "", "Tenant")
-	cmd.Flags().String("groupId", "", "Group ID")
-	cmd.Flags().String("role", "", "User role id")
+	cmd.Flags().String("groupId", "", "Group ID (required)")
+	cmd.Flags().String("role", "", "User role id (required)")
+
+	// Required flags
+	cmd.MarkFlagRequired("groupId")
+	cmd.MarkFlagRequired("role")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

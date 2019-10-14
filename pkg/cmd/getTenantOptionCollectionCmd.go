@@ -30,6 +30,8 @@ func newGetTenantOptionCollectionCmd() *getTenantOptionCollectionCmd {
 
 	cmd.SilenceUsage = true
 
+	// Required flags
+
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd

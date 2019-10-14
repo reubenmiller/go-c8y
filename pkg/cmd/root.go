@@ -48,8 +48,8 @@ func Execute() {
 	rootCmd.PersistentFlags().IntVar(&globalFlagPageSize, "pageSize", 5, "Maximum results per page")
 	rootCmd.PersistentFlags().BoolVar(&globalFlagWithTotalPages, "withTotalPages", false, "Include all results")
 
-	// Make flags case-insensitive
-	rootCmd.PersistentFlags().SetNormalizeFunc(flagNormalizeFunc)
+	// TODO: Make flags case-insensitive
+	// rootCmd.PersistentFlags().SetNormalizeFunc(flagNormalizeFunc)
 
 	rootCmd.AddCommand(newCompletionsCmd().getCommand())
 	rootCmd.AddCommand(newVersionCmd().getCommand())

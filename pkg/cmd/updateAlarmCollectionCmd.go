@@ -36,7 +36,10 @@ func newUpdateAlarmCollectionCmd() *updateAlarmCollectionCmd {
 	cmd.Flags().Bool("resolved", false, "When set to true only resolved alarms will be removed (the one with status CLEARED), false means alarms with status ACTIVE or ACKNOWLEDGED.")
 	cmd.Flags().String("dateFrom", "", "Start date or date and time of alarm occurrence.")
 	cmd.Flags().String("dateTo", "", "End date or date and time of alarm occurrence.")
-	cmd.Flags().String("newStatus", "", "New status to be applied to all of the matching alarms")
+	cmd.Flags().String("newStatus", "", "New status to be applied to all of the matching alarms (required)")
+
+	// Required flags
+	cmd.MarkFlagRequired("newStatus")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
@@ -90,6 +93,17 @@ func (n *updateAlarmCollectionCmd) updateAlarmCollection(cmd *cobra.Command, arg
 		}
 	} else {
 		return newUserError("Flag does not exist")
+	}
+	if cmd.Flags().Changed("pageSize") {
+		if v, err := cmd.Flags().GetInt("pageSize"); err == nil && v > 0 {
+			query.Add("pageSize", fmt.Sprintf("%d", v))
+		}
+	}
+
+	if cmd.Flags().Changed("withTotalPages") {
+		if v, err := cmd.Flags().GetBool("withTotalPages"); err == nil && v {
+			query.Add("withTotalPages", "true")
+		}
 	}
 	queryValue, err := url.QueryUnescape(query.Encode())
 

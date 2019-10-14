@@ -30,6 +30,8 @@ func newGetApplicationCollectionCmd() *getApplicationCollectionCmd {
 
 	cmd.SilenceUsage = true
 
+	// Required flags
+
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd

@@ -31,9 +31,14 @@ func newUpdateTenantOptionEditableCmd() *updateTenantOptionEditableCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("category", "", "Tenant Option category")
-	cmd.Flags().String("key", "", "Tenant Option key")
-	cmd.Flags().String("editable", "", "Whether the tenant option should be editable or not")
+	cmd.Flags().String("category", "", "Tenant Option category (required)")
+	cmd.Flags().String("key", "", "Tenant Option key (required)")
+	cmd.Flags().String("editable", "", "Whether the tenant option should be editable or not (required)")
+
+	// Required flags
+	cmd.MarkFlagRequired("category")
+	cmd.MarkFlagRequired("key")
+	cmd.MarkFlagRequired("editable")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

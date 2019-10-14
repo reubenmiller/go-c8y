@@ -30,7 +30,10 @@ func newDeleteApplicationCmd() *deleteApplicationCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("id", "", "Application id")
+	cmd.Flags().String("id", "", "Application id (required)")
+
+	// Required flags
+	cmd.MarkFlagRequired("id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

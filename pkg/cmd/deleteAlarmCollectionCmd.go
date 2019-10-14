@@ -35,10 +35,12 @@ func newDeleteAlarmCollectionCmd() *deleteAlarmCollectionCmd {
 	cmd.Flags().String("dateTo", "", "End date or date and time of alarm occurrence.")
 	cmd.Flags().String("type", "", "Alarm type.")
 	cmd.Flags().String("fragmentType", "", "Alarm fragment type.")
-	cmd.Flags().String("severity", "", "Alarm severity, for example MINOR.")
+	cmd.Flags().String("severity", "", "Alarm severity, for example CRITICAL, MAJOR, MINOR or WARNING.")
 	cmd.Flags().Bool("resolved", false, "When set to true only resolved alarms will be removed (the one with status CLEARED), false means alarms with status ACTIVE or ACKNOWLEDGED.")
 	cmd.Flags().Bool("withSourceAssets", false, "When set to true also alarms for related source assets will be removed. When this parameter is provided also source must be defined.")
 	cmd.Flags().Bool("withSourceDevices", false, "When set to true also alarms for related source devices will be removed. When this parameter is provided also source must be defined.")
+
+	// Required flags
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
@@ -120,6 +122,17 @@ func (n *deleteAlarmCollectionCmd) deleteAlarmCollection(cmd *cobra.Command, arg
 		}
 	} else {
 		return newUserError("Flag does not exist")
+	}
+	if cmd.Flags().Changed("pageSize") {
+		if v, err := cmd.Flags().GetInt("pageSize"); err == nil && v > 0 {
+			query.Add("pageSize", fmt.Sprintf("%d", v))
+		}
+	}
+
+	if cmd.Flags().Changed("withTotalPages") {
+		if v, err := cmd.Flags().GetBool("withTotalPages"); err == nil && v {
+			query.Add("withTotalPages", "true")
+		}
 	}
 	queryValue, err := url.QueryUnescape(query.Encode())
 

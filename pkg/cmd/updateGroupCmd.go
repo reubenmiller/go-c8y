@@ -31,8 +31,11 @@ func newUpdateGroupCmd() *updateGroupCmd {
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("tenant", "", "Tenant")
-	cmd.Flags().String("id", "", "Group id")
+	cmd.Flags().String("id", "", "Group id (required)")
 	cmd.Flags().String("name", "", "name")
+
+	// Required flags
+	cmd.MarkFlagRequired("id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

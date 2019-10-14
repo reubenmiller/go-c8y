@@ -30,7 +30,10 @@ func newGetRetentionRuleCmd() *getRetentionRuleCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("id", "", "Retention rule id")
+	cmd.Flags().String("id", "", "Retention rule id (required)")
+
+	// Required flags
+	cmd.MarkFlagRequired("id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

@@ -30,6 +30,8 @@ func newGetBinaryCollectionCmd() *getBinaryCollectionCmd {
 
 	cmd.SilenceUsage = true
 
+	// Required flags
+
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd

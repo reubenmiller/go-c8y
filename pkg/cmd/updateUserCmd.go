@@ -39,6 +39,8 @@ func newUpdateUserCmd() *updateUserCmd {
 	cmd.Flags().Bool("sendPasswordResetEmail", false, "User activation status (true/false)")
 	addDataFlag(cmd)
 
+	// Required flags
+
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd

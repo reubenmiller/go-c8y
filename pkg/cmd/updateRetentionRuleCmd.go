@@ -30,13 +30,17 @@ func newUpdateRetentionRuleCmd() *updateRetentionRuleCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("id", "", "Retention rule id")
-	cmd.Flags().String("dataType", "", "RetentionRule will be applied to this type of documents, possible values [ALARM, AUDIT, EVENT, MEASUREMENT, OPERATION, *].")
+	cmd.Flags().String("id", "", "Retention rule id (required)")
+	cmd.Flags().String("dataType", "", "RetentionRule will be applied to this type of documents, possible values [ALARM, AUDIT, EVENT, MEASUREMENT, OPERATION, *]. (required)")
 	cmd.Flags().String("fragmentType", "", "RetentionRule will be applied to documents with fragmentType.")
 	cmd.Flags().String("type", "", "RetentionRule will be applied to documents with type.")
 	cmd.Flags().String("source", "", "RetentionRule will be applied to documents with source.")
 	cmd.Flags().Bool("editable", false, "Whether the rule is editable. Can be updated only by management tenant.")
 	addDataFlag(cmd)
+
+	// Required flags
+	cmd.MarkFlagRequired("id")
+	cmd.MarkFlagRequired("dataType")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

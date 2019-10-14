@@ -41,6 +41,8 @@ func newNewApplicationCmd() *newApplicationCmd {
 	cmd.Flags().String("resourcesPassword", "", "authorization password to access resourcesUrl")
 	cmd.Flags().String("externalUrl", "", "URL to the external application. Required when application type is EXTERNAL")
 
+	// Required flags
+
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd

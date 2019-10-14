@@ -33,6 +33,8 @@ func newNewGroupCmd() *newGroupCmd {
 	cmd.Flags().String("tenant", "", "Tenant")
 	cmd.Flags().String("name", "", "Group name")
 
+	// Required flags
+
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd

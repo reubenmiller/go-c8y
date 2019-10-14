@@ -33,6 +33,8 @@ c8y identity getCollection
 
 	cmd.Flags().StringSlice("device", []string{""}, "Device id")
 
+	// Required flags
+
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd

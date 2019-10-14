@@ -30,8 +30,12 @@ func newEnableApplicationOnTenantCmd() *enableApplicationOnTenantCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("id", "", "Tenant id")
-	cmd.Flags().String("application", "", "Application id")
+	cmd.Flags().String("id", "", "Tenant id (required)")
+	cmd.Flags().String("application", "", "Application id (required)")
+
+	// Required flags
+	cmd.MarkFlagRequired("id")
+	cmd.MarkFlagRequired("application")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

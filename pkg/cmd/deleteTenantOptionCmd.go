@@ -30,8 +30,12 @@ func newDeleteTenantOptionCmd() *deleteTenantOptionCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("category", "", "Tenant Option category")
-	cmd.Flags().String("key", "", "Tenant Option key")
+	cmd.Flags().String("category", "", "Tenant Option category (required)")
+	cmd.Flags().String("key", "", "Tenant Option key (required)")
+
+	// Required flags
+	cmd.MarkFlagRequired("category")
+	cmd.MarkFlagRequired("key")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

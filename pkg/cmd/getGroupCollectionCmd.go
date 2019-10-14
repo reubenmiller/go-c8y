@@ -32,6 +32,8 @@ func newGetGroupCollectionCmd() *getGroupCollectionCmd {
 
 	cmd.Flags().String("tenant", "", "Tenant")
 
+	// Required flags
+
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd

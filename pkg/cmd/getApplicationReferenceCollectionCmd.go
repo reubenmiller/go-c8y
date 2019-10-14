@@ -30,8 +30,11 @@ func newGetApplicationReferenceCollectionCmd() *getApplicationReferenceCollectio
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("tenant", "", "Tenant id")
+	cmd.Flags().String("tenant", "", "Tenant id (required)")
 	cmd.Flags().String("application", "", "Application id")
+
+	// Required flags
+	cmd.MarkFlagRequired("tenant")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

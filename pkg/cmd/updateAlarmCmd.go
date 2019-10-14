@@ -30,11 +30,14 @@ func newUpdateAlarmCmd() *updateAlarmCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("id", "", "Alarm id")
+	cmd.Flags().String("id", "", "Alarm id (required)")
 	cmd.Flags().String("status", "", "Comma separated alarm statuses, for example ACTIVE,CLEARED.")
-	cmd.Flags().String("severity", "", "Alarm severity, for example MINOR.")
+	cmd.Flags().String("severity", "", "Alarm severity, for example CRITICAL, MAJOR, MINOR or WARNING.")
 	cmd.Flags().String("text", "", "Text description of the alarm.")
 	addDataFlag(cmd)
+
+	// Required flags
+	cmd.MarkFlagRequired("id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

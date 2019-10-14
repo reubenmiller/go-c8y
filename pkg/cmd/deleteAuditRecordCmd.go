@@ -30,7 +30,10 @@ func newDeleteAuditRecordCmd() *deleteAuditRecordCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("id", "", "Audit record id")
+	cmd.Flags().String("id", "", "Audit record id (required)")
+
+	// Required flags
+	cmd.MarkFlagRequired("id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

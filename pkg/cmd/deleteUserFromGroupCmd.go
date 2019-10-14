@@ -34,6 +34,8 @@ func newDeleteUserFromGroupCmd() *deleteUserFromGroupCmd {
 	cmd.Flags().String("groupId", "", "Group ID")
 	cmd.Flags().String("userId", "", "User id/username")
 
+	// Required flags
+
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd

@@ -30,8 +30,12 @@ func newDeleteExternalIDCmd() *deleteExternalIDCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("type", "", "External identity type")
-	cmd.Flags().String("name", "", "External identity id/name")
+	cmd.Flags().String("type", "", "External identity type (required)")
+	cmd.Flags().String("name", "", "External identity id/name (required)")
+
+	// Required flags
+	cmd.MarkFlagRequired("type")
+	cmd.MarkFlagRequired("name")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

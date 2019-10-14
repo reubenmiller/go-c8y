@@ -30,7 +30,10 @@ func newUpdateBinaryCmd() *updateBinaryCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("id", "", "Inventory binary id")
+	cmd.Flags().String("id", "", "Inventory binary id (required)")
+
+	// Required flags
+	cmd.MarkFlagRequired("id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

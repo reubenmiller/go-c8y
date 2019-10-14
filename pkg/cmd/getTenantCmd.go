@@ -30,7 +30,10 @@ func newGetTenantCmd() *getTenantCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("id", "", "Tenant id")
+	cmd.Flags().String("id", "", "Tenant id (required)")
+
+	// Required flags
+	cmd.MarkFlagRequired("id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

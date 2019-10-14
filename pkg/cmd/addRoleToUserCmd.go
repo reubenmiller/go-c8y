@@ -31,8 +31,11 @@ func newAddRoleToUserCmd() *addRoleToUserCmd {
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("tenant", "", "Tenant")
-	cmd.Flags().String("username", "", "Username")
+	cmd.Flags().String("username", "", "Username (required)")
 	cmd.Flags().String("role", "", "User role id")
+
+	// Required flags
+	cmd.MarkFlagRequired("username")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

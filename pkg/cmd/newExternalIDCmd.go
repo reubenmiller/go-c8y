@@ -30,9 +30,14 @@ func newNewExternalIDCmd() *newExternalIDCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().StringSlice("device", []string{""}, "The ManagedObject linked to the external ID.")
-	cmd.Flags().String("type", "", "The type of the external identifier as string, e.g. 'com_cumulocity_model_idtype_SerialNumber'.")
-	cmd.Flags().String("name", "", "The identifier used in the external system that Cumulocity interfaces with.")
+	cmd.Flags().StringSlice("device", []string{""}, "The ManagedObject linked to the external ID. (required)")
+	cmd.Flags().String("type", "", "The type of the external identifier as string, e.g. 'com_cumulocity_model_idtype_SerialNumber'. (required)")
+	cmd.Flags().String("name", "", "The identifier used in the external system that Cumulocity interfaces with. (required)")
+
+	// Required flags
+	cmd.MarkFlagRequired("device")
+	cmd.MarkFlagRequired("type")
+	cmd.MarkFlagRequired("name")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
