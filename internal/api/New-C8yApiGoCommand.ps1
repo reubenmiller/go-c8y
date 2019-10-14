@@ -226,6 +226,7 @@ Function New-C8yApiGoCommand {
     # Template
     #
     $Template = @"
+// Code generated from specification version 1.0.0: DO NOT EDIT
 package cmd
 
 import (
