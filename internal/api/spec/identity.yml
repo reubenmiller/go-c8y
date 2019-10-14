@@ -20,15 +20,15 @@ endpoints:
         - Get a list of external ids
           c8y identity getCollection
 
-    path: identity/globalIds/{deviceId}/externalIds
+    path: identity/globalIds/{device}/externalIds
     accept: 'application/vnd.com.nsn.cumulocity.externalIdCollection+json'
     alias:
         go: getCollection
         powershell: Get-ExternalIDCollection
 
     pathParameters:
-      - name: deviceId
-        type: string
+      - name: device
+        type: '[]device'
         description: Device id
 
 
@@ -72,7 +72,7 @@ endpoints:
 
   - name: newExternalID
     method: POST
-    path: identity/globalIds/{deviceId}/externalIds
+    path: identity/globalIds/{device}/externalIds
     accept: 'application/json'
     description: 'Create a new external id'
     descriptionLong: 'Create a new external id'
@@ -80,8 +80,8 @@ endpoints:
         go: new
         powershell: New-ExternalID
     pathParameters:
-      - name: deviceId
-        type: string
+      - name: device
+        type: '[]device'
         required: true
         description: The ManagedObject linked to the external ID.
     body:

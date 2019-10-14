@@ -45,8 +45,9 @@ endpoints:
         validateSet: [imperial, metric]
 
     queryParameters:
-      - name: source
-        type: string
+      - name: device
+        type: '[]device'
+        property: source
         description: Device ID
 
       - name: type
@@ -100,8 +101,9 @@ endpoints:
         go: getSeries
         powershell: Get-MeasurementCollection
     queryParameters:
-      - name: source
-        type: string
+      - name: device
+        type: '[]device'
+        property: source
         description: Device ID
 
       - name: series
@@ -148,8 +150,8 @@ endpoints:
         go: new
         powershell: New-Measurement
     body:
-      - name: source
-        type: string
+      - name: device
+        type: '[]device'
         required: true
         property: source.id
         description: The ManagedObject which is the source of this measurement.
@@ -191,8 +193,9 @@ endpoints:
         go: deleteCollection
         powershell: Remove-MeasurementCollection
     queryParameters:
-      - name: source
-        type: string
+      - name: device
+        type: '[]device'
+        property: source
         description: Device ID
 
       - name: type

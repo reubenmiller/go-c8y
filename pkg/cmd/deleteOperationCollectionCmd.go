@@ -30,8 +30,8 @@ func newDeleteOperationCollectionCmd() *deleteOperationCollectionCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("agentId", "", "Agent ID")
-	cmd.Flags().String("deviceId", "", "Device ID")
+	cmd.Flags().StringSlice("agent", []string{""}, "Agent ID")
+	cmd.Flags().StringSlice("device", []string{""}, "Device ID")
 	cmd.Flags().String("dateFrom", "", "Start date or date and time of operation.")
 	cmd.Flags().String("dateTo", "", "End date or date and time of operation.")
 	cmd.Flags().String("status", "", "Operation status, can be one of SUCCESSFUL, FAILED, EXECUTING or PENDING.")
@@ -46,19 +46,21 @@ func (n *deleteOperationCollectionCmd) deleteOperationCollection(cmd *cobra.Comm
 	// query parameters
 	queryValue := url.QueryEscape("")
 	query := url.Values{}
-	if v, err := cmd.Flags().GetString("agentId"); err == nil {
-		if v != "" {
-			query.Add("agentId", url.QueryEscape(v))
+	agentValue := getFormattedDeviceSlice(cmd, args, "agent")
+	if len(agentValue) > 0 {
+		for _, item := range agentValue {
+			if item != "" {
+				query.Add("agentId", newIDValue(item).GetID())
+			}
 		}
-	} else {
-		return newUserError("Flag does not exist")
 	}
-	if v, err := cmd.Flags().GetString("deviceId"); err == nil {
-		if v != "" {
-			query.Add("deviceId", url.QueryEscape(v))
+	deviceValue := getFormattedDeviceSlice(cmd, args, "device")
+	if len(deviceValue) > 0 {
+		for _, item := range deviceValue {
+			if item != "" {
+				query.Add("deviceId", newIDValue(item).GetID())
+			}
 		}
-	} else {
-		return newUserError("Flag does not exist")
 	}
 	if v, err := cmd.Flags().GetString("dateFrom"); err == nil {
 		if v != "" {

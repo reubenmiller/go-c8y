@@ -30,7 +30,7 @@ func newUpdateAlarmCollectionCmd() *updateAlarmCollectionCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("source", "", "The ManagedObject that the alarm originated from")
+	cmd.Flags().StringSlice("device", []string{""}, "The ManagedObject that the alarm originated from")
 	cmd.Flags().String("status", "", "The status of the alarm: ACTIVE, ACKNOWLEDGED or CLEARED. If status was not appeared, new alarm will have status ACTIVE. Must be upper-case.")
 	cmd.Flags().String("severity", "", "The severity of the alarm: CRITICAL, MAJOR, MINOR or WARNING. Must be upper-case.")
 	cmd.Flags().Bool("resolved", false, "When set to true only resolved alarms will be removed (the one with status CLEARED), false means alarms with status ACTIVE or ACKNOWLEDGED.")
@@ -48,12 +48,13 @@ func (n *updateAlarmCollectionCmd) updateAlarmCollection(cmd *cobra.Command, arg
 	// query parameters
 	queryValue := url.QueryEscape("")
 	query := url.Values{}
-	if v, err := cmd.Flags().GetString("source"); err == nil {
-		if v != "" {
-			query.Add("source", url.QueryEscape(v))
+	deviceValue := getFormattedDeviceSlice(cmd, args, "device")
+	if len(deviceValue) > 0 {
+		for _, item := range deviceValue {
+			if item != "" {
+				query.Add("source", newIDValue(item).GetID())
+			}
 		}
-	} else {
-		return newUserError("Flag does not exist")
 	}
 	if v, err := cmd.Flags().GetString("status"); err == nil {
 		if v != "" {

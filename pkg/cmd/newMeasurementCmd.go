@@ -30,7 +30,7 @@ func newNewMeasurementCmd() *newMeasurementCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("source", "", "The ManagedObject which is the source of this measurement.")
+	cmd.Flags().StringSlice("device", []string{""}, "The ManagedObject which is the source of this measurement.")
 	cmd.Flags().String("time", "", "Time of the measurement.")
 	cmd.Flags().String("type", "", "The most specific type of this entire measurement.")
 	addDataFlag(cmd)
@@ -48,8 +48,8 @@ func (n *newMeasurementCmd) newMeasurement(cmd *cobra.Command, args []string) er
 	// body
 	var body map[string]interface{}
 	body = getDataFlag(cmd)
-	if v, err := cmd.Flags().GetString("source"); err == nil && v != "" {
-		if _, exists := body["source"]; !exists {
+	if v, err := cmd.Flags().GetString("device"); err == nil && v != "" {
+		if _, exists := body["device"]; !exists {
 			body["source"] = make(map[string]interface{})
 		}
 		body["source"].(map[string]interface{})["id"] = v

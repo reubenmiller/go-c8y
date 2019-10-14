@@ -27,8 +27,9 @@
       },
       "queryParameters": [
         {
-          "name": "source",
-          "type": "string",
+          "name": "device",
+          "type": "[]device",
+          "property": "source",
           "description": "Source device id."
         },
         {
@@ -102,8 +103,8 @@
       },
       "body": [
         {
-          "name": "source",
-          "type": "string",
+          "name": "device",
+          "type": "[]device",
           "required": true,
           "property": "source.id",
           "description": "The ManagedObject that the alarm originated from"
@@ -181,8 +182,9 @@
       ],
       "queryParameters": [
         {
-          "name": "source",
-          "type": "string",
+          "name": "device",
+          "type": "[]device",
+          "property": "source",
           "description": "The ManagedObject that the alarm originated from"
         },
         {
@@ -333,8 +335,9 @@
       },
       "queryParameters": [
         {
-          "name": "source",
-          "type": "string",
+          "name": "device",
+          "type": "[]device",
+          "property": "source",
           "description": "Source device id."
         },
         {

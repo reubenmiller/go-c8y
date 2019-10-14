@@ -31,7 +31,7 @@ c8y identity getCollection
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("deviceId", "", "Device id")
+	cmd.Flags().StringSlice("device", []string{""}, "Device id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
@@ -48,13 +48,13 @@ func (n *getExternalIDCollectionCmd) getExternalIDCollection(cmd *cobra.Command,
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v, err := cmd.Flags().GetString("deviceId"); err == nil {
-		pathParameters["deviceId"] = v
+	if v, err := cmd.Flags().GetString("device"); err == nil {
+		pathParameters["device"] = v
 	} else {
 		return newUserError("Flag does not exist")
 	}
 
-	path := replacePathParameters("identity/globalIds/{deviceId}/externalIds", pathParameters)
+	path := replacePathParameters("identity/globalIds/{device}/externalIds", pathParameters)
 
 	return n.doGetExternalIDCollection("GET", path, queryValue, body)
 }

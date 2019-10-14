@@ -26,12 +26,14 @@ endpoints:
         go: getCollection
         powershell: Get-OperationCollection
     queryParameters:
-      - name: agentId
-        type: string
+      - name: agent
+        type: '[]device'
+        property: agentId
         description: Agent ID
 
-      - name: deviceId
-        type: string
+      - name: device
+        type: '[]device'
+        property: deviceId
         description: Device ID
 
       - name: dateFrom
@@ -71,8 +73,9 @@ endpoints:
         go: new
         powershell: New-Operation
     body:
-      - name: deviceId
-        type: string
+      - name: device
+        type: '[]device'
+        property: deviceId
         required: true
         description: Identifies the target device on which this operation should be performed.
 
@@ -145,12 +148,14 @@ endpoints:
         go: deleteCollection
         powershell: Remove-OperationCollection
     queryParameters:
-      - name: agentId
-        type: string
+      - name: agent
+        type: '[]device'
+        property: agentId
         description: Agent ID
 
-      - name: deviceId
-        type: string
+      - name: device
+        type: '[]device'
+        property: deviceId
         description: Device ID
 
       - name: dateFrom

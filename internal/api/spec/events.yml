@@ -27,8 +27,9 @@ endpoints:
         powershell: Get-EventCollection
 
     queryParameters:
-      - name: source
-        type: string
+      - name: device
+        type: '[]device'
+        property: source
         description: Device ID
 
       - name: type
@@ -60,8 +61,9 @@ endpoints:
         go: deleteCollection
         powershell: Remove-EventCollection
     queryParameters:
-      - name: source
-        type: string
+      - name: device
+        type: '[]device'
+        property: source
         description: Device ID
 
       - name: type
@@ -109,8 +111,8 @@ endpoints:
         go: new
         powershell: New-Event
     body:
-      - name: source
-        type: string
+      - name: device
+        type: '[]device'
         required: true
         property: source.id
         description: The ManagedObject which is the source of this event.

@@ -30,7 +30,7 @@ func newNewAlarmCmd() *newAlarmCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("source", "", "The ManagedObject that the alarm originated from")
+	cmd.Flags().StringSlice("device", []string{""}, "The ManagedObject that the alarm originated from")
 	cmd.Flags().String("type", "", "Identifies the type of this alarm, e.g. 'com_cumulocity_events_TamperEvent'.")
 	cmd.Flags().String("time", "", "Time of the alarm.")
 	cmd.Flags().String("text", "", "Text description of the alarm.")
@@ -51,8 +51,8 @@ func (n *newAlarmCmd) newAlarm(cmd *cobra.Command, args []string) error {
 	// body
 	var body map[string]interface{}
 	body = getDataFlag(cmd)
-	if v, err := cmd.Flags().GetString("source"); err == nil && v != "" {
-		if _, exists := body["source"]; !exists {
+	if v, err := cmd.Flags().GetString("device"); err == nil && v != "" {
+		if _, exists := body["device"]; !exists {
 			body["source"] = make(map[string]interface{})
 		}
 		body["source"].(map[string]interface{})["id"] = v

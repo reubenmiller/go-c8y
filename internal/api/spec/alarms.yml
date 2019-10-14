@@ -26,8 +26,9 @@ endpoints:
         go: list
         powershell: Get-AlarmCollection
     queryParameters:
-      - name: source
-        type: string
+      - name: device
+        type: '[]device'
+        property: source
         description: Source device id.
 
       - name: dateFrom
@@ -78,8 +79,8 @@ endpoints:
         go: new
         powershell: New-Alarm
     body:
-      - name: source
-        type: string
+      - name: device
+        type: '[]device'
         required: true
         property: source.id
         description: The ManagedObject that the alarm originated from
@@ -131,8 +132,9 @@ endpoints:
         validationSet: [ACTIVE, ACKNOWLEDGED, CLEARED]
 
     queryParameters:
-      - name: source
-        type: string
+      - name: device
+        type: '[]device'
+        property: source
         description: The ManagedObject that the alarm originated from
 
       - name: status
@@ -230,8 +232,9 @@ endpoints:
         go: deleteCollection
         powershell: Remove-AlarmCollection
     queryParameters:
-      - name: source
-        type: string
+      - name: device
+        type: '[]device'
+        property: source
         description: 'Source device id.'
 
       - name: dateFrom

@@ -30,7 +30,7 @@ func newNewExternalIDCmd() *newExternalIDCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("deviceId", "", "The ManagedObject linked to the external ID.")
+	cmd.Flags().StringSlice("device", []string{""}, "The ManagedObject linked to the external ID.")
 	cmd.Flags().String("type", "", "The type of the external identifier as string, e.g. 'com_cumulocity_model_idtype_SerialNumber'.")
 	cmd.Flags().String("name", "", "The identifier used in the external system that Cumulocity interfaces with.")
 
@@ -56,13 +56,13 @@ func (n *newExternalIDCmd) newExternalID(cmd *cobra.Command, args []string) erro
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v, err := cmd.Flags().GetString("deviceId"); err == nil {
-		pathParameters["deviceId"] = v
+	if v, err := cmd.Flags().GetString("device"); err == nil {
+		pathParameters["device"] = v
 	} else {
 		return newUserError("Flag does not exist")
 	}
 
-	path := replacePathParameters("identity/globalIds/{deviceId}/externalIds", pathParameters)
+	path := replacePathParameters("identity/globalIds/{device}/externalIds", pathParameters)
 
 	return n.doNewExternalID("POST", path, queryValue, body)
 }

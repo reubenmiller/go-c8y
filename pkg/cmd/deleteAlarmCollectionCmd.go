@@ -30,7 +30,7 @@ func newDeleteAlarmCollectionCmd() *deleteAlarmCollectionCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("source", "", "Source device id.")
+	cmd.Flags().StringSlice("device", []string{""}, "Source device id.")
 	cmd.Flags().String("dateFrom", "", "Start date or date and time of alarm occurrence.")
 	cmd.Flags().String("dateTo", "", "End date or date and time of alarm occurrence.")
 	cmd.Flags().String("type", "", "Alarm type.")
@@ -50,12 +50,13 @@ func (n *deleteAlarmCollectionCmd) deleteAlarmCollection(cmd *cobra.Command, arg
 	// query parameters
 	queryValue := url.QueryEscape("")
 	query := url.Values{}
-	if v, err := cmd.Flags().GetString("source"); err == nil {
-		if v != "" {
-			query.Add("source", url.QueryEscape(v))
+	deviceValue := getFormattedDeviceSlice(cmd, args, "device")
+	if len(deviceValue) > 0 {
+		for _, item := range deviceValue {
+			if item != "" {
+				query.Add("source", newIDValue(item).GetID())
+			}
 		}
-	} else {
-		return newUserError("Flag does not exist")
 	}
 	if v, err := cmd.Flags().GetString("dateFrom"); err == nil {
 		if v != "" {

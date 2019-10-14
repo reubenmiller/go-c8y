@@ -34,8 +34,8 @@ measurement getSeries --source 12345 --series nx_WEA_29_Delta.MDL10FG001 --serie
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("source", "", "Device ID")
-	cmd.Flags().StringArray("series", []string{""}, "measurement type and series name, e.g. c8y_AccelerationMeasurement.acceleration")
+	cmd.Flags().StringSlice("device", []string{""}, "Device ID")
+	cmd.Flags().StringSlice("series", []string{""}, "measurement type and series name, e.g. c8y_AccelerationMeasurement.acceleration")
 	cmd.Flags().String("aggregationType", "", "Fragment name from measurement.")
 	cmd.Flags().String("dateFrom", "", "Start date or date and time of measurement occurrence.")
 	cmd.Flags().String("dateTo", "", "End date or date and time of measurement occurrence.")
@@ -50,14 +50,15 @@ func (n *getMeasurementSeriesCmd) getMeasurementSeries(cmd *cobra.Command, args 
 	// query parameters
 	queryValue := url.QueryEscape("")
 	query := url.Values{}
-	if v, err := cmd.Flags().GetString("source"); err == nil {
-		if v != "" {
-			query.Add("source", url.QueryEscape(v))
+	deviceValue := getFormattedDeviceSlice(cmd, args, "device")
+	if len(deviceValue) > 0 {
+		for _, item := range deviceValue {
+			if item != "" {
+				query.Add("source", newIDValue(item).GetID())
+			}
 		}
-	} else {
-		return newUserError("Flag does not exist")
 	}
-	if v, err := cmd.Flags().GetStringArray("series"); err == nil {
+	if v, err := cmd.Flags().GetStringSlice("series"); err == nil {
 		if len(v) > 0 {
 			for _, item := range v {
 				if item != "" {

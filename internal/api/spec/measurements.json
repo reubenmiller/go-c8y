@@ -53,8 +53,9 @@
       ],
       "queryParameters": [
         {
-          "name": "source",
-          "type": "string",
+          "name": "device",
+          "type": "[]device",
+          "property": "source",
           "description": "Device ID"
         },
         {
@@ -117,8 +118,9 @@
       },
       "queryParameters": [
         {
-          "name": "source",
-          "type": "string",
+          "name": "device",
+          "type": "[]device",
+          "property": "source",
           "description": "Device ID"
         },
         {
@@ -183,8 +185,8 @@
       },
       "body": [
         {
-          "name": "source",
-          "type": "string",
+          "name": "device",
+          "type": "[]device",
           "required": true,
           "property": "source.id",
           "description": "The ManagedObject which is the source of this measurement."
@@ -239,8 +241,9 @@
       },
       "queryParameters": [
         {
-          "name": "source",
-          "type": "string",
+          "name": "device",
+          "type": "[]device",
+          "property": "source",
           "description": "Device ID"
         },
         {

@@ -18,14 +18,33 @@ func GetIDs(cmd *cobra.Command, args []string) (ids []string) {
 	if values, err := cmd.Flags().GetStringArray("id"); err != nil {
 		log.Fatalf("Missing flag --id")
 	} else {
-		for _, value := range append(values, args...) {
-			parts := strings.Split(strings.ReplaceAll(value, " ", ","), ",")
+		ids = GetIDArray(append(values, args...))
+	}
+	return
+}
 
-			for _, part := range parts {
-				// Only add uint looking values
-				if _, err := strconv.ParseUint(part, 10, 64); part != "" && err == nil {
-					ids = append(ids, part)
-				}
+func GetIDArray(values []string) (ids []string) {
+	for _, value := range values {
+		parts := strings.Split(strings.ReplaceAll(value, " ", ","), ",")
+
+		for _, part := range parts {
+			// Only add uint looking values
+			if _, err := strconv.ParseUint(part, 10, 64); part != "" && err == nil {
+				ids = append(ids, part)
+			}
+		}
+	}
+	return
+}
+
+func ParseValues(values []string) (ids []string) {
+	for _, value := range values {
+		parts := strings.Split(strings.ReplaceAll(value, " ", ","), ",")
+
+		for _, part := range parts {
+			// Only add uint looking values
+			if part != "" {
+				ids = append(ids, part)
 			}
 		}
 	}

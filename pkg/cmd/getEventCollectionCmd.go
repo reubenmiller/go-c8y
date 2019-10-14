@@ -31,7 +31,7 @@ c8y event get
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("source", "", "Device ID")
+	cmd.Flags().StringSlice("device", []string{""}, "Device ID")
 	cmd.Flags().String("type", "", "Event type.")
 	cmd.Flags().String("fragmentType", "", "Fragment name from event.")
 	cmd.Flags().String("dateFrom", "", "Start date or date and time of event occurrence.")
@@ -48,12 +48,13 @@ func (n *getEventCollectionCmd) getEventCollection(cmd *cobra.Command, args []st
 	// query parameters
 	queryValue := url.QueryEscape("")
 	query := url.Values{}
-	if v, err := cmd.Flags().GetString("source"); err == nil {
-		if v != "" {
-			query.Add("source", url.QueryEscape(v))
+	deviceValue := getFormattedDeviceSlice(cmd, args, "device")
+	if len(deviceValue) > 0 {
+		for _, item := range deviceValue {
+			if item != "" {
+				query.Add("source", newIDValue(item).GetID())
+			}
 		}
-	} else {
-		return newUserError("Flag does not exist")
 	}
 	if v, err := cmd.Flags().GetString("type"); err == nil {
 		if v != "" {

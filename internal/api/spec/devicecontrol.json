@@ -27,13 +27,15 @@
       },
       "queryParameters": [
         {
-          "name": "agentId",
-          "type": "string",
+          "name": "agent",
+          "type": "[]device",
+          "property": "agentId",
           "description": "Agent ID"
         },
         {
-          "name": "deviceId",
-          "type": "string",
+          "name": "device",
+          "type": "[]device",
+          "property": "deviceId",
           "description": "Device ID"
         },
         {
@@ -91,8 +93,9 @@
       },
       "body": [
         {
-          "name": "deviceId",
-          "type": "string",
+          "name": "device",
+          "type": "[]device",
+          "property": "deviceId",
           "required": true,
           "description": "Identifies the target device on which this operation should be performed."
         },
@@ -196,13 +199,15 @@
       },
       "queryParameters": [
         {
-          "name": "agentId",
-          "type": "string",
+          "name": "agent",
+          "type": "[]device",
+          "property": "agentId",
           "description": "Agent ID"
         },
         {
-          "name": "deviceId",
-          "type": "string",
+          "name": "device",
+          "type": "[]device",
+          "property": "deviceId",
           "description": "Device ID"
         },
         {

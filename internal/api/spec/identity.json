@@ -19,7 +19,7 @@
           "Get a list of external ids\nc8y identity getCollection"
         ]
       },
-      "path": "identity/globalIds/{deviceId}/externalIds",
+      "path": "identity/globalIds/{device}/externalIds",
       "accept": "application/vnd.com.nsn.cumulocity.externalIdCollection+json",
       "alias": {
         "go": "getCollection",
@@ -27,8 +27,8 @@
       },
       "pathParameters": [
         {
-          "name": "deviceId",
-          "type": "string",
+          "name": "device",
+          "type": "[]device",
           "description": "Device id"
         }
       ]
@@ -86,7 +86,7 @@
     {
       "name": "newExternalID",
       "method": "POST",
-      "path": "identity/globalIds/{deviceId}/externalIds",
+      "path": "identity/globalIds/{device}/externalIds",
       "accept": "application/json",
       "description": "Create a new external id",
       "descriptionLong": "Create a new external id",
@@ -96,8 +96,8 @@
       },
       "pathParameters": [
         {
-          "name": "deviceId",
-          "type": "string",
+          "name": "device",
+          "type": "[]device",
           "required": true,
           "description": "The ManagedObject linked to the external ID."
         }

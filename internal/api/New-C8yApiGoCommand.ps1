@@ -130,13 +130,17 @@ Function New-C8yApiGoCommand {
         $null = $RESTQueryBuilder.AppendLine('query := url.Values{}')
         foreach ($iQueryParameter in $Specification.queryParameters) {
             $prop = $iQueryParameter.name
+            $queryParam = $iQueryParameter.property
+            if (!$queryParam) {
+                $queryParam = $iQueryParameter.name
+            }
 
             switch ($iQueryParameter.type) {
                 "boolean" {
                     $null = $RESTQueryBuilder.AppendLine(@"
     if v, err := cmd.Flags().GetBool("${prop}"); err == nil {
         if v {
-            query.Add("${prop}", "true")
+            query.Add("${queryParam}", "true")
         }
     } else {
         return newUserError("Flag does not exist")
@@ -144,14 +148,27 @@ Function New-C8yApiGoCommand {
 "@)
                 }
 
+                "[]device" {
+                    $null = $RESTQueryBuilder.AppendLine(@"
+    ${prop}Value := getFormattedDeviceSlice(cmd, args, "${prop}")
+    if len(${prop}Value) > 0 {
+        for _, item := range ${prop}Value {
+            if item != "" {
+                query.Add("${queryParam}", newIDValue(item).GetID())
+            }
+        }
+    }
+"@)
+                }
+
                 # Array of strings
                 "[]string" {
                     $null = $RESTQueryBuilder.AppendLine(@"
-    if v, err := cmd.Flags().GetStringArray("${prop}"); err == nil {
+    if v, err := cmd.Flags().GetStringSlice("${prop}"); err == nil {
         if len(v) > 0 {
             for _, item := range v {
                 if item != "" {
-                    query.Add("${prop}", item)
+                    query.Add("${queryParam}", item)
                 }
             }
         }
@@ -165,7 +182,7 @@ Function New-C8yApiGoCommand {
                     $null = $RESTQueryBuilder.AppendLine(@"
     if v, err := cmd.Flags().GetString("${prop}"); err == nil {
         if v != "" {
-            query.Add("${prop}", url.QueryEscape(v))
+            query.Add("${queryParam}", url.QueryEscape(v))
         }
     } else {
         return newUserError("Flag does not exist")
@@ -341,16 +358,33 @@ Function Get-C8yGoArgs {
 
         "\[\]string" {
             $SetFlag = if ($UseOption) {
-                "cmd.Flags().StringArray(`"${Name}`", `"${OptionName}`", []string{`"${Default}`"}, `"${Description}`")"
+                "cmd.Flags().StringSlice(`"${Name}`", `"${OptionName}`", []string{`"${Default}`"}, `"${Description}`")"
             } else {
-                "cmd.Flags().StringArray(`"${Name}`", []string{`"${Default}`"}, `"${Description}`")"
+                "cmd.Flags().StringSlice(`"${Name}`", []string{`"${Default}`"}, `"${Description}`")"
             }
 
             $GetFlag = @"
-    ${NameLocalVariable}, err := cmd.Flags().GetStringArray("$Name");
+    ${NameLocalVariable}, err := cmd.Flags().GetStringSlice("$Name");
     if  err != nil {
         return newUserError("Flag does not exist")
     }
+"@
+
+            @{
+                SetFlag = $SetFlag
+                GetFlag = $GetFlag
+            }
+        }
+
+        "\[\]device" {
+            $SetFlag = if ($UseOption) {
+                "cmd.Flags().StringSliceP(`"${Name}`", []string{`"${Default}`"}, `"${OptionName}`", `"${Description}`")"
+            } else {
+                "cmd.Flags().StringSlice(`"${Name}`", []string{`"${Default}`"}, `"${Description}`")"
+            }
+
+            $GetFlag = @"
+    ${NameLocalVariable} := getFormattedDeviceSlice(cmd, args, "$Name")
 "@
 
             @{

@@ -30,7 +30,7 @@ func newNewOperationCmd() *newOperationCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("deviceId", "", "Identifies the target device on which this operation should be performed.")
+	cmd.Flags().StringSlice("device", []string{""}, "Identifies the target device on which this operation should be performed.")
 	cmd.Flags().String("status", "", "Operation status, can be one of SUCCESSFUL, FAILED, EXECUTING or PENDING.")
 	cmd.Flags().String("description", "", "Text description of the operation.")
 	addDataFlag(cmd)
@@ -48,7 +48,7 @@ func (n *newOperationCmd) newOperation(cmd *cobra.Command, args []string) error 
 	// body
 	var body map[string]interface{}
 	body = getDataFlag(cmd)
-	if v, err := cmd.Flags().GetString("deviceId"); err == nil && v != "" {
+	if v, err := cmd.Flags().GetString("device"); err == nil && v != "" {
 		body["deviceId"] = v
 	}
 	if v, err := cmd.Flags().GetString("status"); err == nil && v != "" {

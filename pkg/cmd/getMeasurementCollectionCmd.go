@@ -31,7 +31,7 @@ c8y measurement get
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("source", "", "Device ID")
+	cmd.Flags().StringSlice("device", []string{""}, "Device ID")
 	cmd.Flags().String("type", "", "Measurement type.")
 	cmd.Flags().String("valueFragmentType", "", "value fragment type")
 	cmd.Flags().String("valueFragmentSeries", "", "value fragment series")
@@ -50,12 +50,13 @@ func (n *getMeasurementCollectionCmd) getMeasurementCollection(cmd *cobra.Comman
 	// query parameters
 	queryValue := url.QueryEscape("")
 	query := url.Values{}
-	if v, err := cmd.Flags().GetString("source"); err == nil {
-		if v != "" {
-			query.Add("source", url.QueryEscape(v))
+	deviceValue := getFormattedDeviceSlice(cmd, args, "device")
+	if len(deviceValue) > 0 {
+		for _, item := range deviceValue {
+			if item != "" {
+				query.Add("source", newIDValue(item).GetID())
+			}
 		}
-	} else {
-		return newUserError("Flag does not exist")
 	}
 	if v, err := cmd.Flags().GetString("type"); err == nil {
 		if v != "" {
