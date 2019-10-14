@@ -13,9 +13,14 @@
   * [x] pageSize
   * [x] withTotalPages
   * [ ] --raw Option to display raw result, rather than a filtered data set?
-* [ ] Add required parameters
+* [x] Add required parameters
 * [ ] Piped arguments
-* [ ] Look over devices where []device type is used (parallel tasks?) Probably need a new template
+* [ ] Look over devices where []device type is used (parallel tasks?) Probably need a new
+* [ ] Commands
+  * [ ] Devices list --type unitType
+* [ ] Expansion
+  * [ ] applications
+* [ ] template
 * [ ] Value formatter (for self link values), or is this like the device type?
 * [ ] Add examples
 * [ ] Generate tests automatically
