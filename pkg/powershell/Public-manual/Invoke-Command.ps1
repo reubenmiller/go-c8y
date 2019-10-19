@@ -11,7 +11,9 @@ Function Invoke-Command {
         )]
         [string] $Verb,
 
-        [hashtable] $Parameters
+        [hashtable] $Parameters,
+
+        [string] $Type = "c8y.item"
     )
 
     $BinaryArguments = New-Object System.Collections.ArrayList
@@ -29,7 +31,6 @@ Function Invoke-Command {
                 } else {
                     $null = $BinaryArguments.AddRange(@("--${key}=$Value"))
                 }
-
             }
         }
     }
@@ -38,5 +39,7 @@ Function Invoke-Command {
 
     Write-Verbose ("./c8y.exe {0}" -f $BinaryArguments -join " ")
 
-    & ./c8y.exe $BinaryArguments
+    & ./c8y.exe $BinaryArguments |
+        ConvertFrom-Json |
+        Add-PowershellType $Type
 }
