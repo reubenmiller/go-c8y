@@ -18,6 +18,7 @@ Function New-C8yApiPowershellCommand {
     $Name = $Specification.name
 	$NameCamel = $Name[0].ToString().ToUpperInvariant() + $Name.Substring(1)
     $File = Join-Path -Path $OutputDir -ChildPath ("{0}.ps1" -f $CmdletName)
+    $ResultType = $Specification.accept
 
     $Verb = $Specification.alias.go
 
@@ -96,6 +97,28 @@ Function New-C8yApiPowershellCommand {
         # Parameter doc string
         # $null = $CmdletDocStringBuilder.AppendLine((".PARAMETER {0}" -f $item.Name))
         # $null = $CmdletDocStringBuilder.AppendLine("{0}`n" -f $item.Description)
+    }
+
+    #
+    # Add common parameters
+    #
+    if ($ResultType -match "collection") {
+        $PageSizeParam = New-Object System.Text.StringBuilder
+        $null = $PageSizeParam.AppendLine('        # Maximum number of results')
+        $null = $PageSizeParam.AppendLine('        [Parameter()]')
+        $null = $PageSizeParam.AppendLine('        [AllowNull()]')
+        $null = $PageSizeParam.AppendLine('        [AllowEmptyString()]')
+        $null = $PageSizeParam.AppendLine('        [ValidateRange(1,2000)]')
+        $null = $PageSizeParam.AppendLine('        [int]')
+        $null = $PageSizeParam.Append('        $PageSize')
+        $null = $CmdletParameters.Add($PageSizeParam)
+
+        $WithTotalPagesParam = New-Object System.Text.StringBuilder
+        $null = $WithTotalPagesParam.AppendLine('        # Include total pages statistic')
+        $null = $WithTotalPagesParam.AppendLine('        [Parameter()]')
+        $null = $WithTotalPagesParam.AppendLine('        [switch]')
+        $null = $WithTotalPagesParam.Append('        $WithTotalPages')
+        $null = $CmdletParameters.Add($WithTotalPagesParam)
     }
 
     # Examples
@@ -277,7 +300,11 @@ $($CmdletParameters -join ",`n`n")
             }
         }
 
-        Invoke-Command -Noun $Noun -Verb $Verb -Parameters `$Parameters
+        Invoke-Command ``
+            -Noun $Noun ``
+            -Verb $Verb ``
+            -Parameters `$Parameters ``
+            -Type "$ResultType"
     }
 
     End {
