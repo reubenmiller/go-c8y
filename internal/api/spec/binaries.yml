@@ -19,11 +19,11 @@ endpoints:
 
   - name: download
     description: 'Get binary'
-    method: PUT
+    method: Get
     path: /inventory/binaries/{id}
     alias:
         go: download
-        powershell: Download-Binary
+        powershell: Save-Binary
     pathParameters:
       - name: id
         type: string
