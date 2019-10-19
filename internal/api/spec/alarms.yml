@@ -21,7 +21,8 @@ endpoints:
           c8y alarms list --type value --severity MAJOR
 
     path: alarm/alarms
-    accept: 'application/json'
+    accept: application/vnd.com.nsn.cumulocity.alarmCollection+json
+    collectionType: application/vnd.com.nsn.cumulocity.alarm+json
     alias:
         go: list
         powershell: Get-AlarmCollection
@@ -72,7 +73,7 @@ endpoints:
   - name: newAlarm
     method: POST
     path: alarm/alarms
-    accept: 'application/json'
+    accept: application/vnd.com.nsn.cumulocity.alarm+json
     description: 'Create a new alarm'
     descriptionLong: 'Create a new alarm'
     alias:
@@ -119,7 +120,8 @@ endpoints:
     method: PUT
     path: alarm/alarms
     description: Update a collection of alarms. Currently only the status of alarms can be changed
-    accept: 'application/json'
+    accept: application/vnd.com.nsn.cumulocity.alarmCollection+json
+    collectionType: application/vnd.com.nsn.cumulocity.alarm+json
     alias:
         go: updateCollection
         powershell: Update-AlarmCollection
@@ -163,7 +165,7 @@ endpoints:
     description: 'Get alarm/s'
     method: GET
     path: alarm/alarms/{id}
-    accept: 'application/json'
+    accept: application/vnd.com.nsn.cumulocity.alarm+json
     alias:
         go: get
         powershell: Get-Alarm
@@ -176,7 +178,7 @@ endpoints:
   - name: updateAlarm
     method: PUT
     path: alarm/alarms/{id}
-    accept: 'application/json'
+    accept: application/vnd.com.nsn.cumulocity.alarm+json
     description: Update alarm
     alias:
         go: update
@@ -214,7 +216,7 @@ endpoints:
     description: 'Delete alarm/s'
     method: DELETE
     path: alarm/alarms/{id}
-    accept: 'application/json'
+    accept: ''
     alias:
         go: delete
         powershell: Remove-Alarm
@@ -228,7 +230,7 @@ endpoints:
     description: 'Delete a collection of alarms'
     method: DELETE
     path: alarm/alarms
-    accept: 'application/json'
+    accept: ''
     alias:
         go: deleteCollection
         powershell: Remove-AlarmCollection
