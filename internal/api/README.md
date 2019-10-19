@@ -27,6 +27,21 @@
 * [ ] Generate powershell commands from templates
 * [ ] Make options case insensitive
 
+## Powershell
+
+* [ ] Support common parameters
+  * [ ] PageSize
+  * [ ] WithTotalPages
+* [x] Validate set
+* [ ] Add types (using cumulocity types)
+  * [ ] Set default columns
+* [ ] ?native multi-part upload?
+* [ ] Add tests
+  * [ ] How to automatic generate Pester tests
+* [ ] Return status codes
+
+
+
 ## Command layout
 
 - applications

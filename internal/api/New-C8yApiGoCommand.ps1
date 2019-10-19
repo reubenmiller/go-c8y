@@ -302,7 +302,11 @@ func (n *${Name}Cmd) do${NameCamel}(method string, path string, query string, bo
     }
 
     if resp != nil && resp.JSONData != nil {
-        fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+        if globalFlagPrettyPrint {
+            fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+        } else {
+            fmt.Printf("%s\n", *resp.JSONData)
+        }
     }
 
     color.Unset()
