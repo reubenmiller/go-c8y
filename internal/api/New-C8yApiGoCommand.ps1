@@ -127,8 +127,8 @@ Function New-C8yApiGoCommand {
     # Query parameters
     #
     $RESTQueryBuilder = New-Object System.Text.StringBuilder
+    $null = $RESTQueryBuilder.AppendLine('query := url.Values{}')
     if ($Specification.queryParameters) {
-        $null = $RESTQueryBuilder.AppendLine('query := url.Values{}')
         foreach ($iQueryParameter in $Specification.queryParameters) {
             $prop = $iQueryParameter.name
             $queryParam = $iQueryParameter.property
@@ -192,11 +192,12 @@ Function New-C8yApiGoCommand {
                 }
             }
         }
+    }
 
-        #
-        # Add common options
-        #
-        $null = $RESTQueryBuilder.AppendLine(@"
+    #
+    # Add common options
+    #
+    $null = $RESTQueryBuilder.AppendLine(@"
     if cmd.Flags().Changed("pageSize") {
         if v, err := cmd.Flags().GetInt("pageSize"); err == nil && v > 0 {
             query.Add("pageSize", fmt.Sprintf("%d", v))
@@ -209,17 +210,16 @@ Function New-C8yApiGoCommand {
         }
     }
 "@)
-        #
-        # Encode query parameters to a string
-        #
-        $null = $RESTQueryBuilder.AppendLine(@"
+    #
+    # Encode query parameters to a string
+    #
+    $null = $RESTQueryBuilder.AppendLine(@"
     queryValue, err := url.QueryUnescape(query.Encode())
 
     if err != nil {
         return newSystemError("Invalid query parameter")
     }
 "@)
-    }
 
 
     #
