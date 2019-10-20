@@ -67,7 +67,7 @@ Function Invoke-Command {
         $Parameters["WithTotalPages"]
     )
 
-    Write-Verbose ("Statistics: pageSize={0}, totalPages={1}, currentPage={2}" -f @(
+    Write-Verbose ("Statistics: currentPage={2}, pageSize={0}, totalPages={1}" -f @(
         $response.statistics.pageSize,
         $response.statistics.totalPages,
         $response.statistics.currentPage

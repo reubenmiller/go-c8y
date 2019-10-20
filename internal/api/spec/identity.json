@@ -16,7 +16,7 @@
           "Get a list of external ids\nGet-ExternalIdCollection"
         ],
         "go": [
-          "Get a list of external ids\nc8y identity getCollection"
+          "Get a list of external ids\nc8y identity list"
         ]
       },
       "path": "identity/globalIds/{device}/externalIds",
@@ -24,7 +24,7 @@
       "collectionType": "application/vnd.com.nsn.cumulocity.externalId+json",
       "listProperty": "externalIds",
       "alias": {
-        "go": "getCollection",
+        "go": "list",
         "powershell": "Get-ExternalIDCollection"
       },
       "pathParameters": [

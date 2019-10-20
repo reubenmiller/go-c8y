@@ -13,8 +13,8 @@
       "path": "/user/roles",
       "accept": "application/vnd.com.nsn.cumulocity.roleCollection+json",
       "alias": {
-        "go": "getCollection",
-        "powershell": "Get-GroupCollection"
+        "go": "list",
+        "powershell": "Get-RoleCollection"
       },
       "pathParameters": [
         {
@@ -161,6 +161,8 @@
       "method": "GET",
       "path": "/user/{tenant}/users/{username}/roles",
       "accept": "application/vnd.com.nsn.cumulocity.roleReferenceCollection+json",
+      "collectionType": "application/vnd.com.nsn.cumulocity.roleReference+json",
+      "listProperty": "references",
       "alias": {
         "go": "getRoleReferenceCollectionFromUser",
         "powershell": "Get-RoleReferenceCollectionFromUser"
@@ -185,6 +187,8 @@
       "method": "GET",
       "path": "/user/{tenant}/groups/{groupId}/roles",
       "accept": "application/vnd.com.nsn.cumulocity.roleReferenceCollection+json",
+      "collectionType": "application/vnd.com.nsn.cumulocity.roleReference+json",
+      "listProperty": "references",
       "alias": {
         "go": "getRoleReferenceCollectionFromGroup",
         "powershell": "Get-RoleReferenceCollectionFromGroup"

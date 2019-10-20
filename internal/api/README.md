@@ -29,34 +29,36 @@
 
 ## Powershell
 
-* [ ] Support common parameters
-  * [ ] PageSize
-  * [ ] WithTotalPages
+* [x] Support common parameters
+  * [x] PageSize
+  * [x] WithTotalPages
+  * [x] Raw
 * [x] Validate set
 * [ ] Add types (using cumulocity types) and default columns
   * [x] Get-AlarmCollection.ps1
   * [x] Get-ApplicationCollection.ps1
-  * [ ] Get-ApplicationReferenceCollection.ps1
-  * [ ] Get-AuditRecordCollection.ps1
+  * [x] Get-ApplicationReferenceCollection.ps1
+  * [x] Get-AuditRecordCollection.ps1
   * [ ] Get-BinaryCollection.ps1
   * [x] Get-EventCollection.ps1
   * [x] Get-ExternalIDCollection.ps1
-  * [ ] Get-GroupCollection.ps1
-  * [ ] Get-MeasurementCollection.ps1
+  * [x] Get-GroupCollection.ps1
+  * [x] Get-MeasurementCollection.ps1
   * [x] Get-OperationCollection.ps1
   * [x] Get-RetentionRuleCollection.ps1
-  * [ ] Get-RoleReferenceCollectionFromGroup.ps1
-  * [ ] Get-RoleReferenceCollectionFromUser.ps1
+  * [x] Get-RoleReferenceCollectionFromGroup.ps1
+  * [x] Get-RoleReferenceCollectionFromUser.ps1
   * [x] Get-SystemOptionCollection.ps1
-  * [ ] Get-TenantCollection.ps1
+  * [x] Get-TenantCollection.ps1
   * [x] Get-TenantOptionCollection.ps1
   * [ ] Get-TenantStatisticsCollection.ps1
-  * [ ] Get-UserCollection.ps1
+  * [x] Get-UserCollection.ps1
   * [x] Update-AlarmCollection.ps1
 * [ ] ?native multi-part upload?
 * [ ] Add tests
   * [ ] How to automatic generate Pester tests
 * [ ] Return status codes
+* [ ] Use session default values (C8Y_TENANT for tenant path/query variables)
 
 
 

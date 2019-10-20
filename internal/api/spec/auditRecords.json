@@ -86,6 +86,8 @@
       "method": "GET",
       "path": "/audit/auditRecords",
       "accept": "application/vnd.com.nsn.cumulocity.auditRecordCollection+json",
+      "collectionType": "application/vnd.com.nsn.cumulocity.auditRecord+json",
+      "listProperty": "auditRecords",
       "alias": {
         "go": "list",
         "powershell": "Get-AuditRecordCollection"

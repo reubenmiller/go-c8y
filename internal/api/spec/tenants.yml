@@ -13,6 +13,8 @@ endpoints:
     method: GET
     path: /tenant/tenants
     accept: application/vnd.com.nsn.cumulocity.tenantCollection+json
+    collectionType: application/vnd.com.nsn.cumulocity.tenant+json
+    listProperty: tenants
     alias:
         go: list
         powershell: Get-TenantCollection
@@ -203,7 +205,9 @@ endpoints:
     description: 'Enable application on tenant'
     method: GET
     path: /tenant/tenants/{tenant}/applications
-    accept: application/vnd.com.nsn.cumulocity.applicationReference+json
+    accept: application/vnd.com.nsn.cumulocity.applicationReferenceCollection+json
+    collectionType: application/vnd.com.nsn.cumulocity.applicationReference+json
+    listProperty: references
     alias:
         go: listReferences
         powershell: Get-ApplicationReferenceCollection
@@ -212,6 +216,3 @@ endpoints:
         type: string
         required: true
         description: Tenant id
-      - name: application
-        type: string
-        description: Application id

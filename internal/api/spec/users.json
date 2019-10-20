@@ -80,19 +80,21 @@
           "Get a list of users\nGet-UserCollection"
         ],
         "go": [
-          "retrieve users, where username starts with 'js', and every user belongs to one of the groups 2, 3 or 4, and the owner is 'admin', and is not a device user.\nc8y user getCollection --username js --groups 2,3,4 --owner admin"
+          "retrieve users, where username starts with 'js', and every user belongs to one of the groups 2, 3 or 4, and the owner is 'admin', and is not a device user.\nc8y user list --username js --groups 2,3,4 --owner admin"
         ]
       },
       "path": "/user/{tenant}/users",
       "accept": "application/vnd.com.nsn.cumulocity.userCollection+json",
+      "collectionType": "application/vnd.com.nsn.cumulocity.user+json",
+      "listProperty": "users",
       "alias": {
-        "go": "getCollection",
+        "go": "list",
         "powershell": "Get-UserCollection"
       },
       "pathParameters": [
         {
           "name": "tenant",
-          "type": "tenant",
+          "type": "string",
           "description": "Tenant"
         }
       ],

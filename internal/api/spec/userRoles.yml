@@ -14,8 +14,8 @@ endpoints:
     path: /user/roles
     accept: 'application/vnd.com.nsn.cumulocity.roleCollection+json'
     alias:
-        go: getCollection
-        powershell: Get-GroupCollection
+        go: list
+        powershell: Get-RoleCollection
     pathParameters:
       - name: tenant
         type: string
@@ -31,7 +31,7 @@ endpoints:
     description: Add role to a user
     method: POST
     path: /user/{tenant}/users/{username}/roles
-    accept: 'application/vnd.com.nsn.cumulocity.roleReference+json'
+    accept: application/vnd.com.nsn.cumulocity.roleReference+json
     alias:
         go: addRoleTouser
         powershell: Add-RoleToUser
@@ -78,7 +78,7 @@ endpoints:
     description: Add role to a group
     method: POST
     path: /user/{tenant}/groups/{groupId}/roles
-    accept: 'application/vnd.com.nsn.cumulocity.roleReference+json'
+    accept: application/vnd.com.nsn.cumulocity.roleReference+json
     alias:
         go: addRoleToGroup
         powershell: Add-RoleToGroup
@@ -128,6 +128,8 @@ endpoints:
     method: GET
     path: /user/{tenant}/users/{username}/roles
     accept: application/vnd.com.nsn.cumulocity.roleReferenceCollection+json
+    collectionType: application/vnd.com.nsn.cumulocity.roleReference+json
+    listProperty: references
     alias:
         go: getRoleReferenceCollectionFromUser
         powershell: Get-RoleReferenceCollectionFromUser
@@ -146,6 +148,8 @@ endpoints:
     method: GET
     path: /user/{tenant}/groups/{groupId}/roles
     accept: application/vnd.com.nsn.cumulocity.roleReferenceCollection+json
+    collectionType: application/vnd.com.nsn.cumulocity.roleReference+json
+    listProperty: references
     alias:
         go: getRoleReferenceCollectionFromGroup
         powershell: Get-RoleReferenceCollectionFromGroup

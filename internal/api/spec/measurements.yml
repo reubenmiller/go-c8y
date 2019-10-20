@@ -18,12 +18,14 @@ endpoints:
 
       go:
         - Get a list of measurements
-          c8y measurement get
+          c8y measurement list
 
     path: measurement/measurements
-    accept: 'application/json'
+    accept: application/vnd.com.nsn.cumulocity.measurementCollection+json
+    collectionType: application/vnd.com.nsn.cumulocity.measurement+json
+    listProperty: measurements
     alias:
-        go: getCollection
+        go: list
         powershell: Get-MeasurementCollection
     headerParameters:
       - name: csv
@@ -85,12 +87,12 @@ endpoints:
     descriptionLong: Get a collection of measurements based on filter parameters
     examples:
       powershell:
-        - Get a list of measurements
-          Get-MeasurementCollection
+        - Get measurement series
+          Get-MeasurementSeries
 
       go:
-        - Get a list of measurements
-          c8y measurement get
+        - Get a list of measurement series
+          c8y measurement getSeries
 
         - Get a list of series [nx_WEA_29_Delta.MDL10FG001] and [nx_WEA_29_Delta.ST9] for device 12345
           measurement getSeries --source 12345 --series nx_WEA_29_Delta.MDL10FG001 --series nx_WEA_29_Delta.ST9 --dateFrom (Get-C8yDate (last 10min)) --dateTo (Get-C8yDate (last 0min))
@@ -99,7 +101,7 @@ endpoints:
     accept: 'application/json'
     alias:
         go: getSeries
-        powershell: Get-MeasurementCollection
+        powershell: Get-MeasurementSeries
     queryParameters:
       - name: device
         type: '[]device'
@@ -130,7 +132,7 @@ endpoints:
     description: 'Get measurement/s'
     method: GET
     path: measurement/measurements/{id}
-    accept: 'application/json'
+    accept: application/vnd.com.nsn.cumulocity.measurement+json
     alias:
         go: get
         powershell: Get-Measurement
@@ -143,7 +145,7 @@ endpoints:
   - name: newMeasurement
     method: POST
     path: measurement/measurements
-    accept: 'application/json'
+    accept: application/vnd.com.nsn.cumulocity.measurement+json
     description: 'Create a new measurement'
     descriptionLong: 'Create a new measurement'
     alias:
@@ -174,7 +176,7 @@ endpoints:
     description: 'Delete measurement/s'
     method: DELETE
     path: measurement/measurements/{id}
-    accept: 'application/json'
+    accept: ''
     alias:
         go: delete
         powershell: Remove-Measurement
@@ -188,7 +190,7 @@ endpoints:
     description: 'Delete a collection of measurements'
     method: DELETE
     path: measurement/measurements
-    accept: 'application/json'
+    accept: ''
     alias:
         go: deleteCollection
         powershell: Remove-MeasurementCollection

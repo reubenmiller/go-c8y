@@ -12,9 +12,11 @@ endpoints:
     description: Get collection of (user) groups
     method: GET
     path: /user/{tenant}/groups
-    accept: 'application/vnd.com.nsn.cumulocity.groupCollection+json'
+    accept: application/vnd.com.nsn.cumulocity.groupCollection+json
+    collectionType: application/vnd.com.nsn.cumulocity.group+json
+    listProperty: groups
     alias:
-        go: getCollection
+        go: list
         powershell: Get-GroupCollection
     pathParameters:
       - name: tenant
@@ -122,9 +124,11 @@ endpoints:
     method: GET
     path: /user/{tenant}/users/{username}/groups
     accept: 'application/vnd.com.nsn.cumulocity.groupReferenceCollection+json'
+    collectionType: todo
+    listProperty: todo
     alias:
-        go: getCollection
-        powershell: Get-GroupCollection
+        go: listReferences
+        powershell: Get-GroupReferenceCollection
     pathParameters:
       - name: tenant
         type: string
