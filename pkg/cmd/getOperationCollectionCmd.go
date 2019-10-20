@@ -20,7 +20,7 @@ func newGetOperationCollectionCmd() *getOperationCollectionCmd {
 	ccmd := &getOperationCollectionCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "getCollection",
+		Use:   "list",
 		Short: "Get a collection of operations based on filter parameters",
 		Long:  `Get a collection of operations based on filter parameters`,
 		Example: `
@@ -130,7 +130,11 @@ func (n *getOperationCollectionCmd) doGetOperationCollection(method string, path
 	}
 
 	if resp != nil && resp.JSONData != nil {
-		fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+		if globalFlagPrettyPrint {
+			fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+		} else {
+			fmt.Printf("%s\n", *resp.JSONData)
+		}
 	}
 
 	color.Unset()

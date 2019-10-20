@@ -20,18 +20,19 @@ func newGetUserCollectionCmd() *getUserCollectionCmd {
 	ccmd := &getUserCollectionCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "getCollection",
+		Use:   "list",
 		Short: "Get a collection of users based on filter parameters",
 		Long:  `Get a collection of users based on filter parameters`,
 		Example: `
         retrieve users, where username starts with 'js', and every user belongs to one of the groups 2, 3 or 4, and the owner is 'admin', and is not a device user.
-c8y user getCollection --username js --groups 2,3,4 --owner admin
+c8y user list --username js --groups 2,3,4 --owner admin
 		`,
 		RunE: ccmd.getUserCollection,
 	}
 
 	cmd.SilenceUsage = true
 
+	cmd.Flags().String("tenant", "", "Tenant")
 	cmd.Flags().String("username", "", "prefix or full username")
 	cmd.Flags().String("groups", "", "numeric group identifiers separated by commas; result will contain only users which belong to at least one of specified groups")
 	cmd.Flags().String("owner", "", "exact username")
@@ -110,7 +111,7 @@ func (n *getUserCollectionCmd) getUserCollection(cmd *cobra.Command, args []stri
 	if v, err := cmd.Flags().GetString("tenant"); err == nil {
 		pathParameters["tenant"] = v
 	} else {
-		return newUserError("Flag does not exist")
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "tenant", err))
 	}
 
 	path := replacePathParameters("/user/{tenant}/users", pathParameters)
@@ -133,7 +134,11 @@ func (n *getUserCollectionCmd) doGetUserCollection(method string, path string, q
 	}
 
 	if resp != nil && resp.JSONData != nil {
-		fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+		if globalFlagPrettyPrint {
+			fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+		} else {
+			fmt.Printf("%s\n", *resp.JSONData)
+		}
 	}
 
 	color.Unset()

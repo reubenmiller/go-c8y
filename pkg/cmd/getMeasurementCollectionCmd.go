@@ -20,12 +20,12 @@ func newGetMeasurementCollectionCmd() *getMeasurementCollectionCmd {
 	ccmd := &getMeasurementCollectionCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "getCollection",
+		Use:   "list",
 		Short: "Get a collection of measurements based on filter parameters",
 		Long:  `Get a collection of measurements based on filter parameters`,
 		Example: `
         Get a list of measurements
-c8y measurement get
+c8y measurement list
 		`,
 		RunE: ccmd.getMeasurementCollection,
 	}
@@ -153,7 +153,11 @@ func (n *getMeasurementCollectionCmd) doGetMeasurementCollection(method string, 
 	}
 
 	if resp != nil && resp.JSONData != nil {
-		fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+		if globalFlagPrettyPrint {
+			fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+		} else {
+			fmt.Printf("%s\n", *resp.JSONData)
+		}
 	}
 
 	color.Unset()

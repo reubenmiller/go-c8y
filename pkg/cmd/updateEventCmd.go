@@ -48,6 +48,23 @@ func (n *updateEventCmd) updateEvent(cmd *cobra.Command, args []string) error {
 
 	// query parameters
 	queryValue := url.QueryEscape("")
+	query := url.Values{}
+	if cmd.Flags().Changed("pageSize") {
+		if v, err := cmd.Flags().GetInt("pageSize"); err == nil && v > 0 {
+			query.Add("pageSize", fmt.Sprintf("%d", v))
+		}
+	}
+
+	if cmd.Flags().Changed("withTotalPages") {
+		if v, err := cmd.Flags().GetBool("withTotalPages"); err == nil && v {
+			query.Add("withTotalPages", "true")
+		}
+	}
+	queryValue, err := url.QueryUnescape(query.Encode())
+
+	if err != nil {
+		return newSystemError("Invalid query parameter")
+	}
 
 	// body
 	var body map[string]interface{}
@@ -61,7 +78,7 @@ func (n *updateEventCmd) updateEvent(cmd *cobra.Command, args []string) error {
 	if v, err := cmd.Flags().GetString("id"); err == nil {
 		pathParameters["id"] = v
 	} else {
-		return newUserError("Flag does not exist")
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "id", err))
 	}
 
 	path := replacePathParameters("event/events/{id}", pathParameters)
@@ -84,7 +101,11 @@ func (n *updateEventCmd) doUpdateEvent(method string, path string, query string,
 	}
 
 	if resp != nil && resp.JSONData != nil {
-		fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+		if globalFlagPrettyPrint {
+			fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+		} else {
+			fmt.Printf("%s\n", *resp.JSONData)
+		}
 	}
 
 	color.Unset()

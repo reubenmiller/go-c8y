@@ -20,7 +20,7 @@ func newGetAuditRecordCollectionCmd() *getAuditRecordCollectionCmd {
 	ccmd := &getAuditRecordCollectionCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "getCollection",
+		Use:   "list",
 		Short: "Get collection of (user) audits",
 		Long:  ``,
 		Example: `
@@ -143,7 +143,11 @@ func (n *getAuditRecordCollectionCmd) doGetAuditRecordCollection(method string, 
 	}
 
 	if resp != nil && resp.JSONData != nil {
-		fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+		if globalFlagPrettyPrint {
+			fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+		} else {
+			fmt.Printf("%s\n", *resp.JSONData)
+		}
 	}
 
 	color.Unset()

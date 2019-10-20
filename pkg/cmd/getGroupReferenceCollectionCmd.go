@@ -20,7 +20,7 @@ func newGetGroupReferenceCollectionCmd() *getGroupReferenceCollectionCmd {
 	ccmd := &getGroupReferenceCollectionCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "getCollection",
+		Use:   "listReferences",
 		Short: "Get information about all groups of a user",
 		Long:  ``,
 		Example: `
@@ -46,6 +46,23 @@ func (n *getGroupReferenceCollectionCmd) getGroupReferenceCollection(cmd *cobra.
 
 	// query parameters
 	queryValue := url.QueryEscape("")
+	query := url.Values{}
+	if cmd.Flags().Changed("pageSize") {
+		if v, err := cmd.Flags().GetInt("pageSize"); err == nil && v > 0 {
+			query.Add("pageSize", fmt.Sprintf("%d", v))
+		}
+	}
+
+	if cmd.Flags().Changed("withTotalPages") {
+		if v, err := cmd.Flags().GetBool("withTotalPages"); err == nil && v {
+			query.Add("withTotalPages", "true")
+		}
+	}
+	queryValue, err := url.QueryUnescape(query.Encode())
+
+	if err != nil {
+		return newSystemError("Invalid query parameter")
+	}
 
 	// body
 	var body map[string]interface{}
@@ -55,12 +72,12 @@ func (n *getGroupReferenceCollectionCmd) getGroupReferenceCollection(cmd *cobra.
 	if v, err := cmd.Flags().GetString("tenant"); err == nil {
 		pathParameters["tenant"] = v
 	} else {
-		return newUserError("Flag does not exist")
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "tenant", err))
 	}
 	if v, err := cmd.Flags().GetString("username"); err == nil {
 		pathParameters["username"] = v
 	} else {
-		return newUserError("Flag does not exist")
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "username", err))
 	}
 
 	path := replacePathParameters("/user/{tenant}/users/{username}/groups", pathParameters)
@@ -83,7 +100,11 @@ func (n *getGroupReferenceCollectionCmd) doGetGroupReferenceCollection(method st
 	}
 
 	if resp != nil && resp.JSONData != nil {
-		fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+		if globalFlagPrettyPrint {
+			fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+		} else {
+			fmt.Printf("%s\n", *resp.JSONData)
+		}
 	}
 
 	color.Unset()

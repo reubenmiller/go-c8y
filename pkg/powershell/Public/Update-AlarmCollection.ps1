@@ -1,0 +1,122 @@
+# Code generated from specification version 1.0.0: DO NOT EDIT
+Function Update-AlarmCollection {
+<#
+.SYNOPSIS
+Update a collection of alarms. Currently only the status of alarms can be changed
+
+
+#>
+    [cmdletbinding(SupportsShouldProcess = $true,
+                   PositionalBinding=$true,
+                   HelpUri='',
+                   ConfirmImpact = 'High')]
+    [Alias()]
+    [OutputType([object])]
+    Param(
+        # The ManagedObject that the alarm originated from
+        [Parameter(ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true)]
+        [object[]]
+        $Device,
+
+        # The status of the alarm: ACTIVE, ACKNOWLEDGED or CLEARED. If status was not appeared, new alarm will have status ACTIVE. Must be upper-case.
+        [Parameter()]
+        [ValidateSet('ACTIVE','ACKNOWLEDGED','CLEARED')]
+        [string]
+        $Status,
+
+        # The severity of the alarm: CRITICAL, MAJOR, MINOR or WARNING. Must be upper-case.
+        [Parameter()]
+        [ValidateSet('CRITICAL','MAJOR','MINOR','WARNING')]
+        [string]
+        $Severity,
+
+        # When set to true only resolved alarms will be removed (the one with status CLEARED), false means alarms with status ACTIVE or ACKNOWLEDGED.
+        [Parameter()]
+        [switch]
+        $Resolved,
+
+        # Start date or date and time of alarm occurrence.
+        [Parameter()]
+        [datetime]
+        $DateFrom,
+
+        # End date or date and time of alarm occurrence.
+        [Parameter()]
+        [datetime]
+        $DateTo,
+
+        # New status to be applied to all of the matching alarms (required)
+        [Parameter(Mandatory = $true)]
+        [ValidateSet('ACTIVE','ACKNOWLEDGED','CLEARED')]
+        [string]
+        $NewStatus,
+
+        # Maximum number of results
+        [Parameter()]
+        [AllowNull()]
+        [AllowEmptyString()]
+        [ValidateRange(1,2000)]
+        [int]
+        $PageSize,
+
+        # Include total pages statistic
+        [Parameter()]
+        [switch]
+        $WithTotalPages,
+
+        # Include all results
+        [Parameter()]
+        [switch]
+        $IncludeAll,
+
+        # Include raw response including pagination information
+        [Parameter()]
+        [switch]
+        $Raw
+    )
+
+    Begin {
+        
+    }
+
+    Process {
+        # Get the command name
+        $CommandName = $PSCmdlet.MyInvocation.InvocationName;
+        # Get the list of parameters for the command
+        $ParameterList = (Get-Command -Name $CommandName).Parameters;
+
+        $Parameters = @{}
+
+        # Grab each parameter value, using Get-Variable
+        foreach ($Name in ($ParameterList.Keys -notmatch "^Raw$")) {
+            $iParam = Get-Variable -Name $Name -ErrorAction SilentlyContinue;
+
+            if ($iParam.Value -is [Switch]) {
+                if ($iParam.Value.IsPresent -and $iParam) {
+                    $Parameters[$Name] = $true
+                }
+            } elseif ($iParam.Value -is [datetime]) {
+                $Parameters[$Name] = Format-Date $iParam.Value
+            } else {
+                if ("$iParam" -notmatch "^$") {
+                    $Parameters[$Name] = $iParam.Value
+                }
+            }
+        }
+
+        Invoke-Command `
+            -Noun alarms `
+            -Verb updateCollection `
+            -Parameters $Parameters `
+            -Type "application/vnd.com.nsn.cumulocity.alarmCollection+json" `
+            -ItemType "application/vnd.com.nsn.cumulocity.alarm+json" `
+            -ResultProperty "alarms" `
+            -Raw:$Raw `
+            -IncludeAll:$IncludeAll
+    }
+
+    End {
+        
+    }
+}

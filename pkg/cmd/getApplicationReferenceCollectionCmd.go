@@ -32,7 +32,6 @@ func newGetApplicationReferenceCollectionCmd() *getApplicationReferenceCollectio
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("tenant", "", "Tenant id (required)")
-	cmd.Flags().String("application", "", "Application id")
 
 	// Required flags
 	cmd.MarkFlagRequired("tenant")
@@ -46,6 +45,23 @@ func (n *getApplicationReferenceCollectionCmd) getApplicationReferenceCollection
 
 	// query parameters
 	queryValue := url.QueryEscape("")
+	query := url.Values{}
+	if cmd.Flags().Changed("pageSize") {
+		if v, err := cmd.Flags().GetInt("pageSize"); err == nil && v > 0 {
+			query.Add("pageSize", fmt.Sprintf("%d", v))
+		}
+	}
+
+	if cmd.Flags().Changed("withTotalPages") {
+		if v, err := cmd.Flags().GetBool("withTotalPages"); err == nil && v {
+			query.Add("withTotalPages", "true")
+		}
+	}
+	queryValue, err := url.QueryUnescape(query.Encode())
+
+	if err != nil {
+		return newSystemError("Invalid query parameter")
+	}
 
 	// body
 	var body map[string]interface{}
@@ -55,12 +71,7 @@ func (n *getApplicationReferenceCollectionCmd) getApplicationReferenceCollection
 	if v, err := cmd.Flags().GetString("tenant"); err == nil {
 		pathParameters["tenant"] = v
 	} else {
-		return newUserError("Flag does not exist")
-	}
-	if v, err := cmd.Flags().GetString("application"); err == nil {
-		pathParameters["application"] = v
-	} else {
-		return newUserError("Flag does not exist")
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "tenant", err))
 	}
 
 	path := replacePathParameters("/tenant/tenants/{tenant}/applications", pathParameters)
@@ -83,7 +94,11 @@ func (n *getApplicationReferenceCollectionCmd) doGetApplicationReferenceCollecti
 	}
 
 	if resp != nil && resp.JSONData != nil {
-		fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+		if globalFlagPrettyPrint {
+			fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+		} else {
+			fmt.Printf("%s\n", *resp.JSONData)
+		}
 	}
 
 	color.Unset()

@@ -47,6 +47,23 @@ func (n *updateTenantOptionBulkCmd) updateTenantOptionBulk(cmd *cobra.Command, a
 
 	// query parameters
 	queryValue := url.QueryEscape("")
+	query := url.Values{}
+	if cmd.Flags().Changed("pageSize") {
+		if v, err := cmd.Flags().GetInt("pageSize"); err == nil && v > 0 {
+			query.Add("pageSize", fmt.Sprintf("%d", v))
+		}
+	}
+
+	if cmd.Flags().Changed("withTotalPages") {
+		if v, err := cmd.Flags().GetBool("withTotalPages"); err == nil && v {
+			query.Add("withTotalPages", "true")
+		}
+	}
+	queryValue, err := url.QueryUnescape(query.Encode())
+
+	if err != nil {
+		return newSystemError("Invalid query parameter")
+	}
 
 	// body
 	var body map[string]interface{}
@@ -57,7 +74,7 @@ func (n *updateTenantOptionBulkCmd) updateTenantOptionBulk(cmd *cobra.Command, a
 	if v, err := cmd.Flags().GetString("category"); err == nil {
 		pathParameters["category"] = v
 	} else {
-		return newUserError("Flag does not exist")
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "category", err))
 	}
 
 	path := replacePathParameters("/tenant/options/{category}", pathParameters)
@@ -80,7 +97,11 @@ func (n *updateTenantOptionBulkCmd) doUpdateTenantOptionBulk(method string, path
 	}
 
 	if resp != nil && resp.JSONData != nil {
-		fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+		if globalFlagPrettyPrint {
+			fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+		} else {
+			fmt.Printf("%s\n", *resp.JSONData)
+		}
 	}
 
 	color.Unset()
