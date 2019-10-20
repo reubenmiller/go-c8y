@@ -114,13 +114,29 @@ Function New-C8yApiGoCommand {
     $RESTPathBuilder = New-Object System.Text.StringBuilder
     foreach ($iPathParameter in $Specification.pathParameters) {
         $prop = $iPathParameter.name
-        $null = $RESTPathBuilder.AppendLine(@"
+
+        switch ($iPathParameter.type) {
+            "[]device" {
+                $null = $RESTPathBuilder.AppendLine(@"
+    if v, err := cmd.Flags().GetStringSlice("${prop}"); err == nil {
+        for _, iValue := range v {
+            pathParameters["${prop}"] = iValue
+        }
+    } else {
+        return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "${prop}", err))
+    }
+"@)
+            }
+            default {
+                $null = $RESTPathBuilder.AppendLine(@"
     if v, err := cmd.Flags().GetString("${prop}"); err == nil {
         pathParameters["${prop}"] = v
     } else {
-        return newUserError("Flag does not exist")
+        return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "${prop}", err))
     }
 "@)
+            }
+        }
     }
 
     #
@@ -381,7 +397,7 @@ Function Get-C8yGoArgs {
             $GetFlag = @"
     ${NameLocalVariable}, err := cmd.Flags().GetString("$Name");
     if  err != nil {
-        return newUserError("Flag does not exist")
+        return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "$Name", err))
     }
 "@
             @{
@@ -400,7 +416,7 @@ Function Get-C8yGoArgs {
             $GetFlag = @"
     ${NameLocalVariable}, err := cmd.Flags().GetStringSlice("$Name");
     if  err != nil {
-        return newUserError("Flag does not exist")
+        return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "$Name", err))
     }
 "@
 

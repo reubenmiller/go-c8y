@@ -19,6 +19,8 @@ Function New-C8yApiPowershellCommand {
 	$NameCamel = $Name[0].ToString().ToUpperInvariant() + $Name.Substring(1)
     $File = Join-Path -Path $OutputDir -ChildPath ("{0}.ps1" -f $CmdletName)
     $ResultType = $Specification.accept
+    $ResultItemType = $Specification.collectionType
+    $ResultSelectProperty = $Specification.listProperty
 
     $Verb = $Specification.alias.go
 
@@ -113,13 +115,31 @@ Function New-C8yApiPowershellCommand {
         $null = $PageSizeParam.Append('        $PageSize')
         $null = $CmdletParameters.Add($PageSizeParam)
 
+        # If included, then the original data set will be returned
         $WithTotalPagesParam = New-Object System.Text.StringBuilder
         $null = $WithTotalPagesParam.AppendLine('        # Include total pages statistic')
         $null = $WithTotalPagesParam.AppendLine('        [Parameter()]')
         $null = $WithTotalPagesParam.AppendLine('        [switch]')
         $null = $WithTotalPagesParam.Append('        $WithTotalPages')
         $null = $CmdletParameters.Add($WithTotalPagesParam)
+
+        #
+        # Include option to expand pagination results
+        #
+        $IncludeAllParam = New-Object System.Text.StringBuilder
+        $null = $IncludeAllParam.AppendLine('        # Include all results')
+        $null = $IncludeAllParam.AppendLine('        [Parameter()]')
+        $null = $IncludeAllParam.AppendLine('        [switch]')
+        $null = $IncludeAllParam.Append('        $IncludeAll')
+        $null = $CmdletParameters.Add($IncludeAllParam)
     }
+
+    $RawParam = New-Object System.Text.StringBuilder
+    $null = $RawParam.AppendLine('        # Include raw response including pagination information')
+    $null = $RawParam.AppendLine('        [Parameter()]')
+    $null = $RawParam.AppendLine('        [switch]')
+    $null = $RawParam.Append('        $Raw')
+    $null = $CmdletParameters.Add($RawParam)
 
     # Examples
     foreach ($iExample in $Examples) {
@@ -284,7 +304,7 @@ $($CmdletParameters -join ",`n`n")
         `$Parameters = @{}
 
         # Grab each parameter value, using Get-Variable
-        foreach (`$Name in `$ParameterList.Keys) {
+        foreach (`$Name in (`$ParameterList.Keys -notmatch "^Raw$")) {
             `$iParam = Get-Variable -Name `$Name -ErrorAction SilentlyContinue;
 
             if (`$iParam.Value -is [Switch]) {
@@ -304,7 +324,11 @@ $($CmdletParameters -join ",`n`n")
             -Noun $Noun ``
             -Verb $Verb ``
             -Parameters `$Parameters ``
-            -Type "$ResultType"
+            -Type "$ResultType" ``
+            -ItemType "$ResultItemType" ``
+            -ResultProperty "$ResultSelectProperty" ``
+            -Raw:`$Raw ``
+            -IncludeAll:`$IncludeAll
     }
 
     End {
