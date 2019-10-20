@@ -13,7 +13,15 @@ Function Invoke-Command {
 
         [hashtable] $Parameters,
 
-        [string] $Type = "c8y.item"
+        [string] $Type = "c8y.item",
+
+        [string] $ItemType,
+
+        [string] $ResultProperty,
+
+        [switch] $IncludeAll,
+
+        [switch] $Raw
     )
 
     $BinaryArguments = New-Object System.Collections.ArrayList
@@ -37,9 +45,45 @@ Function Invoke-Command {
 
     $null = $BinaryArguments.Add("--pretty=false")
 
+    # Include all pagination results
+    if ($IncludeAll) {
+        $null = $BinaryArguments.Add("--all")
+    }
+
     Write-Verbose ("./c8y.exe {0}" -f $BinaryArguments -join " ")
 
-    & ./c8y.exe $BinaryArguments |
-        ConvertFrom-Json |
-        Add-PowershellType $Type
+    $response = & ./c8y.exe $BinaryArguments | ConvertFrom-Json
+
+    if ($ResultProperty -and $ItemType) {
+        $null = $response.$ResultProperty | Add-PowershellType $ItemType
+    }
+
+    if ($response -and $Type) {
+        $null = $response | Add-PowershellType $Type
+    }
+
+    $ReturnRawData = $Raw -or (
+        $Parameters.ContainsKey("WithTotalPages") -and
+        $Parameters["WithTotalPages"]
+    )
+
+    Write-Verbose ("Statistics: pageSize={0}, totalPages={1}, currentPage={2}" -f @(
+        $response.statistics.pageSize,
+        $response.statistics.totalPages,
+        $response.statistics.currentPage
+    ))
+
+    if ($response.$ResultProperty) {
+        $null = Add-Member -InputObject $response.$ResultProperty -MemberType NoteProperty -Name "PSStatistics" -Value @{
+            pageSize = $response.statistics.pageSize
+            totalPages = $response.statistics.totalPages
+            currentPage = $response.statistics.currentPage
+        }
+    }
+
+    if ($ReturnRawData -or ($null -eq $response.$ResultProperty)) {
+        $response
+    } else {
+        $response.$ResultProperty
+    }
 }
