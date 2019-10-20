@@ -64,7 +64,16 @@ PowerShellVersion = '5.0'
 # TypesToProcess = @()
 
 # Format files (.ps1xml) to be loaded when importing this module
-FormatsToProcess = 'PSc8y.ps1xml'
+FormatsToProcess = @(
+    # 'PSc8y.ps1xml'
+    'format-data/alarms.ps1xml',
+    'format-data/applications.ps1xml',
+    'format-data/events.ps1xml',
+    'format-data/identity.ps1xml',
+    'format-data/retentionRules.ps1xml',
+    'format-data/operations.ps1xml',
+    'format-data/options.ps1xml'
+)
 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
 # NestedModules = @()

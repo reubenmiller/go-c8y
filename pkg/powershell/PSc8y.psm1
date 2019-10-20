@@ -8,8 +8,7 @@ if ($PSVersionTable["PSVersion"].Major -le 2) {
 
 $PublicManual  = @( Get-ChildItem -Path $RootFolder\Public-manual\ -Filter *.ps1 -Recurse -ErrorAction SilentlyContinue )
 $Public  = @( Get-ChildItem -Path $RootFolder\Public\ -Filter *.ps1 -Recurse -ErrorAction SilentlyContinue )
-# $Private = @( Get-ChildItem -Path $RootFolder\Private\ -Filter *.ps1 -Recurse -ErrorAction SilentlyContinue )
-$Private = @()
+$Private = @( Get-ChildItem -Path $RootFolder\Private\ -Filter *.ps1 -Recurse -ErrorAction SilentlyContinue )
 
 
 Foreach($import in @($PublicManual + $Public + $Private))
