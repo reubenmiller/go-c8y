@@ -21,7 +21,9 @@ endpoints:
           c8y event get
 
     path: event/events
-    accept: 'application/json'
+    accept: application/vnd.com.nsn.cumulocity.eventCollection+json
+    collectionType: application/vnd.com.nsn.cumulocity.event+json
+    listProperty: events
     alias:
         go: list
         powershell: Get-EventCollection
@@ -56,7 +58,7 @@ endpoints:
     description: 'Delete a collection of events'
     method: DELETE
     path: event/events
-    accept: 'application/json'
+    accept: ''
     alias:
         go: deleteCollection
         powershell: Remove-EventCollection
@@ -91,7 +93,7 @@ endpoints:
     description: 'Get event/s'
     method: GET
     path: event/events/{id}
-    accept: 'application/json'
+    accept: application/vnd.com.nsn.cumulocity.event+json
     alias:
         go: get
         powershell: Get-Event
@@ -104,7 +106,7 @@ endpoints:
   - name: newEvent
     method: POST
     path: event/events
-    accept: 'application/json'
+    accept: application/vnd.com.nsn.cumulocity.event+json
     description: Create event
     descriptionLong: Create event
     alias:
@@ -139,7 +141,7 @@ endpoints:
   - name: updateEvent
     method: PUT
     path: event/events/{id}
-    accept: 'application/json'
+    accept: application/vnd.com.nsn.cumulocity.event+json
     description: 'Update an event'
     descriptionLong: 'Update an event'
     alias:
@@ -164,7 +166,7 @@ endpoints:
     description: 'Delete event/s'
     method: DELETE
     path: event/events/{id}
-    accept: 'application/json'
+    accept: ''
     alias:
         go: delete
         powershell: Remove-Event
@@ -181,7 +183,7 @@ endpoints:
     description: 'Get event binary'
     method: GET
     path: event/events/{id}/binaries
-    accept: 'application/json'
+    accept: ''
     alias:
         go: downloadBinary
         powershell: Get-EventBinary
@@ -201,7 +203,7 @@ endpoints:
     description: 'New event binary'
     method: POST
     path: event/events/{id}/binaries
-    accept: 'application/json'
+    accept: application/vnd.com.nsn.cumulocity.event+json
     alias:
         go: createBinary
         powershell: New-EventBinary
@@ -221,7 +223,7 @@ endpoints:
     description: 'Update event binary'
     method: PUT
     path: event/events/{id}/binaries
-    accept: 'application/json'
+    accept: application/vnd.com.nsn.cumulocity.event+json
     alias:
         go: updateBinary
         powershell: Update-EventBinary
@@ -241,7 +243,7 @@ endpoints:
     description: 'Delete event binary'
     method: DELETE
     path: event/events/{id}/binaries
-    accept: 'application/json'
+    accept: ''
     alias:
         go: deleteBinary
         powershell: Remove-EventBinary

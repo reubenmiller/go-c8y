@@ -77,7 +77,7 @@ endpoints:
     path: /audit/auditRecords
     accept: application/vnd.com.nsn.cumulocity.auditRecordCollection+json
     alias:
-        go: getCollection
+        go: list
         powershell: Get-AuditRecordCollection
     queryParameters:
 

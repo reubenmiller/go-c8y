@@ -21,7 +21,9 @@ endpoints:
           c8y identity getCollection
 
     path: identity/globalIds/{device}/externalIds
-    accept: 'application/vnd.com.nsn.cumulocity.externalIdCollection+json'
+    accept: application/vnd.com.nsn.cumulocity.externalIdCollection+json
+    collectionType: application/vnd.com.nsn.cumulocity.externalId+json
+    listProperty: externalIds
     alias:
         go: getCollection
         powershell: Get-ExternalIDCollection
@@ -36,7 +38,7 @@ endpoints:
     description: Get external id
     method: GET
     path: /identity/externalIds/{type}/{name}
-    accept: 'application/vnd.com.nsn.cumulocity.externalId+json'
+    accept: application/vnd.com.nsn.cumulocity.externalId+json
     alias:
         go: get
         powershell: Get-ExternalId
@@ -55,7 +57,7 @@ endpoints:
     description: Delete external id
     method: DELETE
     path: /identity/externalIds/{type}/{name}
-    accept: 'application/json'
+    accept: ''
     alias:
         go: delete
         powershell: Remove-ExternalId
@@ -73,7 +75,7 @@ endpoints:
   - name: newExternalID
     method: POST
     path: identity/globalIds/{device}/externalIds
-    accept: 'application/json'
+    accept: application/vnd.com.nsn.cumulocity.externalId+json
     description: 'Create a new external id'
     descriptionLong: 'Create a new external id'
     alias:

@@ -12,6 +12,8 @@
       "method": "GET",
       "path": "/application/applications",
       "accept": "application/vnd.com.nsn.cumulocity.applicationCollection+json",
+      "collectionType": "application/vnd.com.nsn.cumulocity.application+json",
+      "listProperty": "applications",
       "alias": {
         "go": "list",
         "powershell": "Get-ApplicationCollection"

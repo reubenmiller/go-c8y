@@ -21,9 +21,11 @@ endpoints:
           c8y operation get --status PENDING
 
     path: devicecontrol/operations
-    accept: 'application/json'
+    accept: application/vnd.com.nsn.cumulocity.operationCollection+json
+    collectionType: application/vnd.com.nsn.cumulocity.operation+json
+    listProperty: operations
     alias:
-        go: getCollection
+        go: list
         powershell: Get-OperationCollection
     queryParameters:
       - name: agent
@@ -53,7 +55,7 @@ endpoints:
     description: 'Get operation/s'
     method: GET
     path: devicecontrol/operations/{id}
-    accept: 'application/json'
+    accept: application/vnd.com.nsn.cumulocity.operation+json
     alias:
         go: get
         powershell: Get-Operation
@@ -66,7 +68,7 @@ endpoints:
   - name: newOperation
     method: POST
     path: devicecontrol/operations
-    accept: 'application/json'
+    accept: application/vnd.com.nsn.cumulocity.operation+json
     description: 'Create a new operation'
     descriptionLong: 'Create a new operation'
     alias:
@@ -100,7 +102,7 @@ endpoints:
     descriptionLong: Update operation
     method: PUT
     path: devicecontrol/operations/{id}
-    accept: 'application/json'
+    accept: application/vnd.com.nsn.cumulocity.operation+json
     alias:
         go: update
         powershell: Update-Operation
@@ -129,7 +131,7 @@ endpoints:
     description: 'Delete operation/s'
     method: DELETE
     path: devicecontrol/operations/{id}
-    accept: 'application/json'
+    accept: ''
     alias:
         go: delete
         powershell: Remove-Operation
@@ -143,7 +145,7 @@ endpoints:
     description: 'Delete a collection of operations'
     method: DELETE
     path: devicecontrol/operations
-    accept: 'application/json'
+    accept: ''
     alias:
         go: deleteCollection
         powershell: Remove-OperationCollection

@@ -22,6 +22,7 @@
       "path": "alarm/alarms",
       "accept": "application/vnd.com.nsn.cumulocity.alarmCollection+json",
       "collectionType": "application/vnd.com.nsn.cumulocity.alarm+json",
+      "listProperty": "alarms",
       "alias": {
         "go": "list",
         "powershell": "Get-AlarmCollection"
@@ -164,6 +165,7 @@
       "description": "Update a collection of alarms. Currently only the status of alarms can be changed",
       "accept": "application/vnd.com.nsn.cumulocity.alarmCollection+json",
       "collectionType": "application/vnd.com.nsn.cumulocity.alarm+json",
+      "listProperty": "alarms",
       "alias": {
         "go": "updateCollection",
         "powershell": "Update-AlarmCollection"

@@ -12,6 +12,8 @@
       "method": "GET",
       "path": "/tenant/options",
       "accept": "application/vnd.com.nsn.cumulocity.optionCollection+json",
+      "collectionType": "application/vnd.com.nsn.cumulocity.option+json",
+      "listProperty": "options",
       "alias": {
         "go": "list",
         "powershell": "Get-TenantOptionCollection"
