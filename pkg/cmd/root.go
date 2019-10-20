@@ -36,10 +36,11 @@ var (
 	globalFlagPageSize       int
 	globalFlagVerbose        bool
 	globalFlagWithTotalPages bool
+	globalFlagPrettyPrint    bool
 )
 
 func init() {
-	client = c8y.NewClientFromEnvironment(nil, false)
+	client = c8y.NewClientFromEnvironment(nil, true)
 }
 
 func Execute() {
@@ -47,6 +48,7 @@ func Execute() {
 	rootCmd.PersistentFlags().BoolVarP(&globalFlagVerbose, "verbose", "v", false, "Verbose logging")
 	rootCmd.PersistentFlags().IntVar(&globalFlagPageSize, "pageSize", 5, "Maximum results per page")
 	rootCmd.PersistentFlags().BoolVar(&globalFlagWithTotalPages, "withTotalPages", false, "Include all results")
+	rootCmd.PersistentFlags().BoolVar(&globalFlagPrettyPrint, "pretty", true, "Pretty print the json responses")
 
 	// TODO: Make flags case-insensitive
 	// rootCmd.PersistentFlags().SetNormalizeFunc(flagNormalizeFunc)
