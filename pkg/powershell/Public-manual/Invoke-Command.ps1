@@ -52,7 +52,24 @@ Function Invoke-Command {
 
     Write-Verbose ("./c8y.exe {0}" -f $BinaryArguments -join " ")
 
-    $response = & ./c8y.exe $BinaryArguments | ConvertFrom-Json
+    $RawResponse = & ./c8y.exe $BinaryArguments
+
+    $ExitCode = $LASTEXITCODE
+    if ($ExitCode -ne 0) {
+
+        try {
+            $errormessage = $RawResponse | Select-Object -First 1 | ConvertFrom-Json
+            Write-Error ("{0}: {1}" -f @(
+                $errormessage.error,
+                $errormessage.message
+            ))
+        } catch {
+            Write-Error "c8y command failed for an unknown reason. $RawResponse"
+        }
+        return
+    }
+
+    $response = $RawResponse | ConvertFrom-Json
 
     if ($ResultProperty -and $ItemType) {
         $null = $response.$ResultProperty | Add-PowershellType $ItemType
