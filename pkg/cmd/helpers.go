@@ -61,10 +61,15 @@ func isUserError(err error) bool {
 
 func newErrorSummary(message string, errorsCh <-chan error) error {
 	errorSummary := errors.New(message)
+	hasError := false
 	for err := range errorsCh {
 		if err != nil {
 			errorSummary = errors.WithStack(err)
+			hasError = true
 		}
+	}
+	if !hasError {
+		return nil
 	}
 	return errorSummary
 }
