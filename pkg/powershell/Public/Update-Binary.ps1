@@ -62,7 +62,7 @@ Update inventory binary
             -Noun binaries `
             -Verb update `
             -Parameters $Parameters `
-            -Type "application/json" `
+            -Type "application/vnd.com.nsn.cumulocity.managedObject+json" `
             -ItemType "" `
             -ResultProperty "" `
             -Raw:$Raw `

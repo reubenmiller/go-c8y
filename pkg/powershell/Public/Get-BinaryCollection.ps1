@@ -70,9 +70,9 @@ Get collection of inventory binaries
             -Noun binaries `
             -Verb list `
             -Parameters $Parameters `
-            -Type "application/vnd.com.nsn.cumulocity.applicationCollection+json" `
-            -ItemType "" `
-            -ResultProperty "" `
+            -Type "application/vnd.com.nsn.cumulocity.managedObjectCollection+json" `
+            -ItemType "application/vnd.com.nsn.cumulocity.managedObject+json" `
+            -ResultProperty "managedObjects" `
             -Raw:$Raw `
             -IncludeAll:$IncludeAll
     }

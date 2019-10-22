@@ -34,12 +34,12 @@
   * [x] WithTotalPages
   * [x] Raw
 * [x] Validate set
-* [ ] Add types (using cumulocity types) and default columns
+* [x] Add types (using cumulocity types) and default columns
   * [x] Get-AlarmCollection.ps1
   * [x] Get-ApplicationCollection.ps1
   * [x] Get-ApplicationReferenceCollection.ps1
   * [x] Get-AuditRecordCollection.ps1
-  * [ ] Get-BinaryCollection.ps1
+  * [x] Get-BinaryCollection.ps1
   * [x] Get-EventCollection.ps1
   * [x] Get-ExternalIDCollection.ps1
   * [x] Get-GroupCollection.ps1
@@ -51,9 +51,10 @@
   * [x] Get-SystemOptionCollection.ps1
   * [x] Get-TenantCollection.ps1
   * [x] Get-TenantOptionCollection.ps1
-  * [ ] Get-TenantStatisticsCollection.ps1
+  * [x] Get-TenantStatisticsCollection.ps1
   * [x] Get-UserCollection.ps1
   * [x] Update-AlarmCollection.ps1
+* [ ] Support for ShouldProcess prompt
 * [ ] ?native multi-part upload?
 * [ ] Add tests
   * [ ] How to automatic generate Pester tests

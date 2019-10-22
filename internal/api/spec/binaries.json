@@ -11,7 +11,9 @@
       "description": "Get collection of inventory binaries",
       "method": "GET",
       "path": "/inventory/binaries",
-      "accept": "application/vnd.com.nsn.cumulocity.applicationCollection+json",
+      "accept": "application/vnd.com.nsn.cumulocity.managedObjectCollection+json",
+      "collectionType": "application/vnd.com.nsn.cumulocity.managedObject+json",
+      "listProperty": "managedObjects",
       "alias": {
         "go": "list",
         "powershell": "Get-BinaryCollection"
@@ -67,7 +69,7 @@
       "description": "Update inventory binary",
       "method": "PUT",
       "path": "/inventory/binaries/{id}",
-      "accept": "application/json",
+      "accept": "application/vnd.com.nsn.cumulocity.managedObject+json",
       "alias": {
         "go": "update",
         "powershell": "Update-Binary"

@@ -81,8 +81,8 @@ Get collection of tenant usage statistics
             -Verb list `
             -Parameters $Parameters `
             -Type "application/vnd.com.nsn.cumulocity.tenantUsageStatisticsCollection+json" `
-            -ItemType "" `
-            -ResultProperty "" `
+            -ItemType "application/vnd.com.nsn.cumulocity.tenantUsageStatisticsSummary+json" `
+            -ResultProperty "usageStatistics" `
             -Raw:$Raw `
             -IncludeAll:$IncludeAll
     }

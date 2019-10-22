@@ -62,7 +62,7 @@ Function Invoke-Command {
         $null = $response | Add-PowershellType $Type
     }
 
-    $ReturnRawData = $Raw -or (
+    $ReturnRawData = $Raw -or [string]::IsNullOrEmpty($ResultProperty) -or (
         $Parameters.ContainsKey("WithTotalPages") -and
         $Parameters["WithTotalPages"]
     )

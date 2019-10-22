@@ -72,12 +72,14 @@ FormatsToProcess = @(
     'format-data/auditRecords.ps1xml',
     'format-data/events.ps1xml',
     'format-data/identity.ps1xml',
+    'format-data/managedObjects.ps1xml',
     'format-data/measurements.ps1xml',
     'format-data/operations.ps1xml',
     'format-data/options.ps1xml',
     'format-data/retentionRules.ps1xml',
     'format-data/roleReferences.ps1xml',
     'format-data/tenants.ps1xml',
+    'format-data/tenantStatistics.ps1xml',
     'format-data/userGroups.ps1xml',
     'format-data/users.ps1xml'
 )

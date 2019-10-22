@@ -65,7 +65,7 @@ Get summary of requests and database usage from the start of this month until no
             -Noun tenantStatistics `
             -Verb listSummaryForTenant `
             -Parameters $Parameters `
-            -Type "application/json" `
+            -Type "application/vnd.com.nsn.cumulocity.tenantUsageStatisticsSummary+json" `
             -ItemType "" `
             -ResultProperty "" `
             -Raw:$Raw `

@@ -13,6 +13,8 @@ endpoints:
     method: GET
     path: /tenant/statistics
     accept: application/vnd.com.nsn.cumulocity.tenantUsageStatisticsCollection+json
+    collectionType: application/vnd.com.nsn.cumulocity.tenantUsageStatisticsSummary+json
+    listProperty: usageStatistics
     alias:
         go: list
         powershell: Get-TenantStatisticsCollection
@@ -47,7 +49,7 @@ endpoints:
     descriptionLong: 'Get summary of requests and database usage from the start of this month until now'
     method: GET
     path: /tenant/statistics/summary
-    accept: application/json
+    accept: application/vnd.com.nsn.cumulocity.tenantUsageStatisticsSummary+json
     alias:
         go: listSummaryForTenant
         powershell: Get-TenantUsageSummaryStatistics
