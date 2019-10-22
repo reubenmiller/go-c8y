@@ -79,8 +79,11 @@ func (n *downloadBinaryManagedObjectCmd) doDownloadBinaryManagedObject(ids []str
 				if err := os.Rename(tempfile, outputFile); err != nil {
 					errorsCh <- errors.Wrap(err, "failed to rename file")
 				}
-
-				fmt.Println(outputFile)
+				if v, err := filepath.Abs(outputFile); err != nil {
+					errorsCh <- errors.Wrap(err, "failed to resolve path")
+				} else {
+					fmt.Println(v)
+				}
 			}
 			wg.Done()
 		}(i)
