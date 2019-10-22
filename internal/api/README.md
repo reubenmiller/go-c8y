@@ -33,6 +33,7 @@
   * [x] PageSize
   * [x] WithTotalPages
   * [x] Raw
+  * [ ] Without Accept header (for performance improvements)
 * [x] Validate set
 * [x] Add types (using cumulocity types) and default columns
   * [x] Get-AlarmCollection.ps1
@@ -54,7 +55,13 @@
   * [x] Get-TenantStatisticsCollection.ps1
   * [x] Get-UserCollection.ps1
   * [x] Update-AlarmCollection.ps1
+* [ ] Parameter types
+  * [ ] File
+  * [ ] Data (parse either using hashtable, manual json or json shortform)
+  * [ ] device expansion (if given an id, don't do a lookup)
+  * [ ] application
 * [ ] Support for ShouldProcess prompt
+  * [ ] Support device name lookup in the message?
 * [ ] ?native multi-part upload?
 * [ ] Add tests
   * [ ] How to automatic generate Pester tests

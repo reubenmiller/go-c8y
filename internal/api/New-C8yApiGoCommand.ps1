@@ -82,7 +82,25 @@ Function New-C8yApiGoCommand {
                         Write-Warning "TODO: handle nested properties with depth > 2"
                         continue
                     }
-                    $null = $RESTBodyBuilder.AppendLine(@"
+
+                    switch ($type) {
+                        "[]device" {
+                            $null = $RESTBodyBuilder.AppendLine(@"
+    if v, err := cmd.Flags().GetStringSlice("${argname}"); err == nil {
+        for _, iValue := range v {
+            if _, exists := body["$($propParts[0])"]; !exists {
+                body["$($propParts[0])"] = make(map[string]interface{})
+            }
+            body["$($propParts[0])"].(map[string]interface{})["$($propParts[1])"] = iValue
+        }
+    } else {
+        return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "${argname}", err))
+    }
+"@)
+                        }
+
+                        default {
+                            $null = $RESTBodyBuilder.AppendLine(@"
     if v, err := cmd.Flags().GetString("${argname}") ; err == nil && v != "" {
         if _, exists := body["${argname}"]; !exists {
             body["$($propParts[0])"] = make(map[string]interface{})
@@ -90,6 +108,9 @@ Function New-C8yApiGoCommand {
         body["$($propParts[0])"].(map[string]interface{})["$($propParts[1])"] = v
     }
 "@)
+                        }
+                    }
+
                 } else {
                     switch ($type) {
                         "json" {
@@ -310,7 +331,8 @@ func (n *${Name}Cmd) do${NameCamel}(method string, path string, query string, bo
 			Method:       method,
             Path:         path,
             Query:        query,
-			Body:         body,
+            Body:         body,
+            IgnoreAccept: false,
 		})
 
     if err != nil {

@@ -159,7 +159,7 @@ endpoints:
         description: The ManagedObject which is the source of this measurement.
 
       - name: time
-        type: string
+        type: datetime
         required: true
         description: Time of the measurement.
 

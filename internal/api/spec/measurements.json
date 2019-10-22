@@ -195,7 +195,7 @@
         },
         {
           "name": "time",
-          "type": "string",
+          "type": "datetime",
           "required": true,
           "description": "Time of the measurement."
         },
