@@ -34,5 +34,5 @@ func getDataFlag(cmd *cobra.Command) map[string]interface{} {
 	if value, err := cmd.Flags().GetString(FlagDataName); err == nil {
 		return MustParseJSON(value)
 	}
-	return nil
+	return make(map[string]interface{})
 }
