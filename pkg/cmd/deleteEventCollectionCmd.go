@@ -130,6 +130,7 @@ func (n *deleteEventCollectionCmd) doDeleteEventCollection(method string, path s
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

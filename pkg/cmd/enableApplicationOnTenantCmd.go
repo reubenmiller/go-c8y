@@ -32,7 +32,7 @@ func newEnableApplicationOnTenantCmd() *enableApplicationOnTenantCmd {
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("tenant", "", "Tenant id (required)")
-	cmd.Flags().String("application", "", "Application id (required)")
+	addApplicationFlag(cmd)
 
 	// Required flags
 	cmd.MarkFlagRequired("tenant")
@@ -68,11 +68,15 @@ func (n *enableApplicationOnTenantCmd) enableApplicationOnTenant(cmd *cobra.Comm
 	// body
 	var body map[string]interface{}
 	body = getDataFlag(cmd)
-	if v, err := cmd.Flags().GetString("application"); err == nil && v != "" {
-		if _, exists := body["application"]; !exists {
-			body["application"] = make(map[string]interface{})
+	if v, err := cmd.Flags().GetStringSlice("application"); err == nil {
+		for _, iValue := range v {
+			if _, exists := body["application"]; !exists {
+				body["application"] = make(map[string]interface{})
+			}
+			body["application"].(map[string]interface{})["id"] = iValue
 		}
-		body["application"].(map[string]interface{})["id"] = v
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "application", err))
 	}
 
 	// path parameters
@@ -97,6 +101,7 @@ func (n *enableApplicationOnTenantCmd) doEnableApplicationOnTenant(method string
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

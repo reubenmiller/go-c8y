@@ -88,6 +88,7 @@ func (n *deleteAlarmCmd) doDeleteAlarm(method string, path string, query string,
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

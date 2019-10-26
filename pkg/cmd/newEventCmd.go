@@ -20,7 +20,7 @@ func newNewEventCmd() *newEventCmd {
 	ccmd := &newEventCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "new",
+		Use:   "create",
 		Short: "Create event",
 		Long:  `Create event`,
 		Example: `
@@ -110,6 +110,7 @@ func (n *newEventCmd) doNewEvent(method string, path string, query string, body 
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

@@ -128,6 +128,7 @@ func (n *getUserCollectionCmd) doGetUserCollection(method string, path string, q
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

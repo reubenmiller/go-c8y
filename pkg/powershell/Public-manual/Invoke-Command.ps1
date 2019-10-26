@@ -50,6 +50,10 @@ Function Invoke-Command {
 
     $null = $BinaryArguments.Add("--pretty=false")
 
+    if ($WhatIfPreference) {
+        $null = $BinaryArguments.Add("--dry")
+    }
+
     # Include all pagination results
     if ($IncludeAll) {
         $null = $BinaryArguments.Add("--all")
@@ -78,11 +82,15 @@ Function Invoke-Command {
     $response = $RawResponse | ConvertFrom-Json
 
     if ($ResultProperty -and $ItemType) {
-        $null = $response.$ResultProperty | Add-PowershellType $ItemType
+        $null = $response.$ResultProperty `
+            | Select-Object `
+            | Add-PowershellType $ItemType
     }
 
     if ($response -and $Type) {
-        $null = $response | Add-PowershellType $Type
+        $null = $response `
+            | Select-Object `
+            | Add-PowershellType $Type
     }
 
     $ReturnRawData = $Raw -or [string]::IsNullOrEmpty($ResultProperty) -or (
@@ -90,11 +98,13 @@ Function Invoke-Command {
         $Parameters["WithTotalPages"]
     )
 
-    Write-Verbose ("Statistics: currentPage={2}, pageSize={0}, totalPages={1}" -f @(
-        $response.statistics.pageSize,
-        $response.statistics.totalPages,
-        $response.statistics.currentPage
-    ))
+    if ($response.statistics.pageSize) {
+        Write-Verbose ("Statistics: currentPage={2}, pageSize={0}, totalPages={1}" -f @(
+            $response.statistics.pageSize,
+            $response.statistics.totalPages,
+            $response.statistics.currentPage
+        ))
+    }
 
     if ($response.$ResultProperty) {
         $null = Add-Member -InputObject $response.$ResultProperty -MemberType NoteProperty -Name "PSStatistics" -Value @{

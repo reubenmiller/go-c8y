@@ -73,48 +73,54 @@ Get collection of (user) audits
     )
 
     Begin {
-        
+        $Parameters = @{}
+        if ($PSBoundParameters.ContainsKey("Source")) {
+            $Parameters["source"] = $Source
+        }
+        if ($PSBoundParameters.ContainsKey("Type")) {
+            $Parameters["type"] = $Type
+        }
+        if ($PSBoundParameters.ContainsKey("User")) {
+            $Parameters["user"] = $User
+        }
+        if ($PSBoundParameters.ContainsKey("Application")) {
+            $Parameters["application"] = $Application
+        }
+        if ($PSBoundParameters.ContainsKey("DateFrom")) {
+            $Parameters["dateFrom"] = PSC8y\Format-Date $DateFrom
+        }
+        if ($PSBoundParameters.ContainsKey("DateTo")) {
+            $Parameters["dateTo"] = PSC8y\Format-Date $DateTo
+        }
+        if ($PSBoundParameters.ContainsKey("Revert")) {
+            $Parameters["revert"] = $Revert
+        }
+
     }
 
     Process {
-        # Get the command name
-        $CommandName = $PSCmdlet.MyInvocation.InvocationName;
-        # Get the list of parameters for the command
-        $ParameterList = (Get-Command -Name $CommandName).Parameters;
+        foreach ($item in @("")) {
 
-        $Parameters = @{}
-
-        # Grab each parameter value, using Get-Variable
-        foreach ($Name in ($ParameterList.Keys -notmatch "^Raw$")) {
-            $iParam = Get-Variable -Name $Name -ErrorAction SilentlyContinue;
-
-            if ($iParam.Value -is [Switch]) {
-                if ($iParam.Value.IsPresent -and $iParam) {
-                    $Parameters[$Name] = $true
-                }
-            } elseif ($iParam.Value -is [hashtable]) {
-                $Parameters[$Name] = "{0}" -f ((ConvertTo-Json $iParam.Value -Compress) -replace '"', '\"')
-            } elseif ($iParam.Value -is [datetime]) {
-                $Parameters[$Name] = Format-Date $iParam.Value
-            } else {
-                if ("$iParam" -notmatch "^$") {
-                    $Parameters[$Name] = $iParam.Value
-                }
+            if (!$Force -and
+                !$WhatIfPreference -and
+                !$PSCmdlet.ShouldProcess(
+                    (Get-C8ySessionProperty -Name "tenant"),
+                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
+                )) {
+                continue
             }
+
+            Invoke-Command `
+                -Noun "auditRecords" `
+                -Verb "list" `
+                -Parameters $Parameters `
+                -Type "application/vnd.com.nsn.cumulocity.auditRecordCollection+json" `
+                -ItemType "application/vnd.com.nsn.cumulocity.auditRecord+json" `
+                -ResultProperty "auditRecords" `
+                -Raw:$Raw `
+                -IncludeAll:$IncludeAll
         }
-
-        Invoke-Command `
-            -Noun auditRecords `
-            -Verb list `
-            -Parameters $Parameters `
-            -Type "application/vnd.com.nsn.cumulocity.auditRecordCollection+json" `
-            -ItemType "application/vnd.com.nsn.cumulocity.auditRecord+json" `
-            -ResultProperty "auditRecords" `
-            -Raw:$Raw `
-            -IncludeAll:$IncludeAll
     }
 
-    End {
-        
-    }
+    End {}
 }

@@ -161,6 +161,7 @@ func (n *deleteAlarmCollectionCmd) doDeleteAlarmCollection(method string, path s
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

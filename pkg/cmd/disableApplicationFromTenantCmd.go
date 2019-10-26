@@ -32,7 +32,7 @@ func newDisableApplicationFromTenantCmd() *disableApplicationFromTenantCmd {
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("tenant", "", "Tenant id (required)")
-	cmd.Flags().String("application", "", "Application id (required)")
+	addApplicationFlag(cmd)
 
 	// Required flags
 	cmd.MarkFlagRequired("tenant")
@@ -75,8 +75,10 @@ func (n *disableApplicationFromTenantCmd) disableApplicationFromTenant(cmd *cobr
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "tenant", err))
 	}
-	if v, err := cmd.Flags().GetString("application"); err == nil {
-		pathParameters["application"] = v
+	if v, err := cmd.Flags().GetStringSlice("application"); err == nil {
+		for _, iValue := range v {
+			pathParameters["application"] = iValue
+		}
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "application", err))
 	}
@@ -95,6 +97,7 @@ func (n *disableApplicationFromTenantCmd) doDisableApplicationFromTenant(method 
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

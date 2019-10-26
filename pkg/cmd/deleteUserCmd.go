@@ -94,6 +94,7 @@ func (n *deleteUserCmd) doDeleteUser(method string, path string, query string, b
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

@@ -88,6 +88,7 @@ func (n *getOperationCmd) doGetOperation(method string, path string, query strin
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

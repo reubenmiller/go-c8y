@@ -162,6 +162,7 @@ func (n *getAlarmCollectionCmd) doGetAlarmCollection(method string, path string,
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

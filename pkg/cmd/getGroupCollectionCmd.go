@@ -87,6 +87,7 @@ func (n *getGroupCollectionCmd) doGetGroupCollection(method string, path string,
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

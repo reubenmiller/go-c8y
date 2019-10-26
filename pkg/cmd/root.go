@@ -37,6 +37,7 @@ var (
 	globalFlagVerbose        bool
 	globalFlagWithTotalPages bool
 	globalFlagPrettyPrint    bool
+	globalFlagDryRun         bool
 )
 
 func init() {
@@ -49,6 +50,7 @@ func Execute() {
 	rootCmd.PersistentFlags().IntVar(&globalFlagPageSize, "pageSize", 5, "Maximum results per page")
 	rootCmd.PersistentFlags().BoolVar(&globalFlagWithTotalPages, "withTotalPages", false, "Include all results")
 	rootCmd.PersistentFlags().BoolVar(&globalFlagPrettyPrint, "pretty", true, "Pretty print the json responses")
+	rootCmd.PersistentFlags().BoolVar(&globalFlagDryRun, "dry", false, "Dry run. Don't send any data to the server")
 
 	// TODO: Make flags case-insensitive
 	// rootCmd.PersistentFlags().SetNormalizeFunc(flagNormalizeFunc)

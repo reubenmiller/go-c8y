@@ -90,6 +90,7 @@ func (n *getExternalIDCollectionCmd) doGetExternalIDCollection(method string, pa
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

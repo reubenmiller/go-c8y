@@ -70,7 +70,17 @@ Function New-C8yApiPowershellCommand {
 
     $CmdletParameters = New-Object System.Collections.ArrayList
 
+    $BeginParameterBuilder = New-Object System.Text.StringBuilder
+    $ProcessParameterBuilder = New-Object System.Text.StringBuilder
+
+    $null = $BeginParameterBuilder.AppendLine('        $Parameters = @{}')
+
+    # Set iterator type
+    $IteratorType = ""
+    $IteratorVariable = ""
+
     foreach ($iArg in $ArgumentSources) {
+        $ReadFromPipeline = $iArg.pipeline -or $iArg.name -eq "id" -or $iArg.alias -eq "id"
         $ArgParams = @{
             Name = $iArg.name
             Type = $iArg.type
@@ -78,18 +88,56 @@ Function New-C8yApiPowershellCommand {
             Description = $iArg.description
             Default = $iArg.default
             Required = $iArg.required
-            ReadFromPipeline = $iArg.name -eq "id" -or $iArg.alias -eq "id"
+            ReadFromPipeline = $ReadFromPipeline
         }
         $item = New-C8yPowershellArguments @ArgParams
+
+        if ($ReadFromPipeline) {
+            $IteratorVariable = "`${0}" -f $item.Name
+            $IteratorType = $iArg.type
+        }
+
+        # Set parameters
+        if ($iArg.pipeline) {
+            $null = $ProcessParameterBuilder.AppendLine("            if (`$item) {")
+            $null = $ProcessParameterBuilder.AppendLine("                `$Parameters[`"$($iArg.Name)`"] = if (`$item.id) { `$item.id } else { `$item }")
+            $null = $ProcessParameterBuilder.AppendLine("            }")
+        } else {
+
+            $ItemValue = switch ($iArg.Type) {
+                "switch" {
+                    $true
+                }
+
+                "hashtable" {
+                    "`"{0}`" -f ((ConvertTo-Json `$$($item.Name) -Compress) -replace '`"', '\`"')"
+                }
+
+                "json" {
+                    "`"{0}`" -f ((ConvertTo-Json `$$($item.Name) -Compress) -replace '`"', '\`"')"
+                }
+
+                "datetime" {
+                    "PSC8y\Format-Date `${0}" -f $item.Name
+                }
+
+                default {
+                    "`${0}" -f $item.Name
+                }
+            }
+            $null = $BeginParameterBuilder.AppendLine("        if (`$PSBoundParameters.ContainsKey(`"$($item.Name)`")) {")
+            $null = $BeginParameterBuilder.AppendLine("            `$Parameters[`"$($iArg.Name)`"] = $ItemValue")
+            $null = $BeginParameterBuilder.AppendLine("        }")
+        }
 
         # Parameter definition
         $CurrentParam = New-Object System.Text.StringBuilder
         $null = $CurrentParam.AppendLine("        # {0}" -f ($item.Description))
         $null = $CurrentParam.AppendLine("        [Parameter({0})]" -f ($item.Definition -join ",`n                   "))
 
-        if ($iArg.alias) {
-            $null = $CurrentParam.AppendLine("        [Alias(`"{0}`")]" -f $iArg.alias)
-        }
+        # if ($iArg.alias) {
+        #     $null = $CurrentParam.AppendLine("        [Alias(`"{0}`")]" -f $iArg.alias)
+        # }
 
         # Validate set
         if ($null -ne $iArg.validationSet) {
@@ -100,10 +148,6 @@ Function New-C8yApiPowershellCommand {
         $null = $CurrentParam.AppendLine('        [{0}]' -f $item.Type)
         $null = $CurrentParam.Append('        ${0}' -f $item.Name)
         $null = $CmdletParameters.Add($CurrentParam)
-
-        # Parameter doc string
-        # $null = $CmdletDocStringBuilder.AppendLine((".PARAMETER {0}" -f $item.Name))
-        # $null = $CmdletDocStringBuilder.AppendLine("{0}`n" -f $item.Description)
     }
 
     #
@@ -245,41 +289,11 @@ Function New-C8yApiPowershellCommand {
                 }
             }
         }
-
-        #
-        # Add common options
-        #
-
-        $null = $RESTQueryBuilder.AppendLine(@"
-    if cmd.Flags().Changed("pageSize") {
-        if v, err := cmd.Flags().GetInt("pageSize"); err == nil && v > 0 {
-            query.Add("pageSize", fmt.Sprintf("%d", v))
-        }
     }
-
-    if cmd.Flags().Changed("withTotalPages") {
-        if v, err := cmd.Flags().GetBool("withTotalPages"); err == nil && v {
-            query.Add("withTotalPages", "true")
-        }
-    }
-"@)
-        #
-        # Encode query parameters to a string
-        #
-        $null = $RESTQueryBuilder.AppendLine(@"
-    queryValue, err := url.QueryUnescape(query.Encode())
-
-    if err != nil {
-        return newSystemError("Invalid query parameter")
-    }
-"@)
-    }
-
 
     #
     # Template
     #
-
     $Template = @"
 # Code generated from specification version 1.0.0: DO NOT EDIT
 Function $CmdletName {
@@ -297,50 +311,14 @@ $($CmdletParameters -join ",`n`n")
     )
 
     Begin {
-        $CmdletBeginBlock
+$($BeginParameterBuilder -join "`n")
     }
 
     Process {
-        # Get the command name
-        `$CommandName = `$PSCmdlet.MyInvocation.InvocationName;
-        # Get the list of parameters for the command
-        `$ParameterList = (Get-Command -Name `$CommandName).Parameters;
-
-        `$Parameters = @{}
-
-        # Grab each parameter value, using Get-Variable
-        foreach (`$Name in (`$ParameterList.Keys -notmatch "^Raw$")) {
-            `$iParam = Get-Variable -Name `$Name -ErrorAction SilentlyContinue;
-
-            if (`$iParam.Value -is [Switch]) {
-                if (`$iParam.Value.IsPresent -and `$iParam) {
-                    `$Parameters[`$Name] = `$true
-                }
-            } elseif (`$iParam.Value -is [hashtable]) {
-                `$Parameters[`$Name] = "{0}" -f ((ConvertTo-Json `$iParam.Value -Compress) -replace '"', '\"')
-            } elseif (`$iParam.Value -is [datetime]) {
-                `$Parameters[`$Name] = Format-Date `$iParam.Value
-            } else {
-                if ("`$iParam" -notmatch "^$") {
-                    `$Parameters[`$Name] = `$iParam.Value
-                }
-            }
-        }
-
-        Invoke-Command ``
-            -Noun $Noun ``
-            -Verb $Verb ``
-            -Parameters `$Parameters ``
-            -Type "$ResultType" ``
-            -ItemType "$ResultItemType" ``
-            -ResultProperty "$ResultSelectProperty" ``
-            -Raw:`$Raw ``
-            -IncludeAll:`$IncludeAll
+$(New-Body2 -Noun $Noun -IteratorVariable $IteratorVariable -SetParameters $ProcessParameterBuilder -Verb $Verb -IteratorType $IteratorType -ResultType $ResultType -ResultItemType $ResultItemType -ResultSelectProperty $ResultSelectProperty)
     }
 
-    End {
-        $CmdletEndBlock
-    }
+    End {}
 }
 "@
 
@@ -391,49 +369,39 @@ Function New-Body {
 }
 
 Function New-Body2 {
+    Param(
+        [string] $Noun,
+        [string] $Verb,
+        [string] $SetParameters,
+        [string] $ResultType,
+        [string] $ResultItemType,
+        [string] $ResultSelectProperty,
+        [string] $IteratorType,
+        [string] $IteratorVariable
+    )
 
-    $Target = "Get-C8yTenant"
-    $Message = "(`"Enable application [{0} ({1})]`" -f `$item.name, `$item.id)"
-    $Iterator = "`$Application"
+    $Target = "(Get-C8ySessionProperty -Name `"tenant`")"
+    $Message = "(Format-ConfirmationMessage -Name `$PSCmdlet.MyInvocation.InvocationName -InputObject `$item)"
 
     $ExpandFunction = switch ($IteratorType) {
-        "application" { "Expand-Application" }
-        "device" { "Expand-Device" }
-        "application" { "Expand-Application" }
-        "managedObject" { "Expand-ManagedObject" }
-        "event" { "Expand-Application" }
-    }
-    $ExpandFunction = "PSC8y\Expand-Application"
-
-    @"
-        foreach (`$item in (PSC8y\$ExpandFunction $Iterator)) {
-
-            # Get the command name
-            `$CommandName = `$PSCmdlet.MyInvocation.InvocationName;
-            # Get the list of parameters for the command
-            `$ParameterList = (Get-Command -Name `$CommandName).Parameters;
-
-            `$Parameters = @{}
-
-            # Grab each parameter value, using Get-Variable
-            foreach (`$Name in (`$ParameterList.Keys -notmatch "^Raw$")) {
-                `$iParam = Get-Variable -Name `$Name -ErrorAction SilentlyContinue;
-
-                if (`$iParam.Value -is [Switch]) {
-                    if (`$iParam.Value.IsPresent -and `$iParam) {
-                        `$Parameters[`$Name] = `$true
-                    }
-                } elseif (`$iParam.Value -is [hashtable]) {
-                    `$Parameters[`$Name] = "{0}" -f ((ConvertTo-Json `$iParam.Value -Compress) -replace '"', '\"')
-                } elseif (`$iParam.Value -is [datetime]) {
-                    `$Parameters[`$Name] = Format-Date `$iParam.Value
-                } else {
-                    if ("`$iParam" -notmatch "^$") {
-                        `$Parameters[`$Name] = `$iParam.Value
-                    }
-                }
+        "application" { "(PSC8y\Expand-Application $IteratorVariable)" }
+        "[]device" { "(PSC8y\Expand-Device $IteratorVariable)" }
+        "device" { "(PSC8y\Expand-Device $IteratorVariable)" }
+        "managedObject" { "(PSC8y\Expand-ManagedObject $IteratorVariable)" }
+        "event" { "(PSC8y\Expand-Event $IteratorVariable)" }
+        default {
+            if ($IteratorVariable -eq "") {
+                "@(`"`")"
+            } else {
+                "@($IteratorVariable)"
             }
 
+        }
+    }
+
+    @"
+        foreach (`$item in $ExpandFunction) {
+$SetParameters
             if (!`$Force -and
                 !`$WhatIfPreference -and
                 !`$PSCmdlet.ShouldProcess(
@@ -444,8 +412,8 @@ Function New-Body2 {
             }
 
             Invoke-Command ``
-                -Noun $Noun ``
-                -Verb $Verb ``
+                -Noun "$Noun" ``
+                -Verb "$Verb" ``
                 -Parameters `$Parameters ``
                 -Type "$ResultType" ``
                 -ItemType "$ResultItemType" ``

@@ -56,6 +56,7 @@ Function New-C8yPowershellArguments {
         "\[\]device" { "object[]" }
         "^string$" { "string" }
         "boolean" { "switch" }
+        "application" { "object[]" }
         "integer" { "long" }
         "tenant" { "object[]" }
         "strings" { "string" }

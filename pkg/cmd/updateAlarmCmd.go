@@ -102,6 +102,7 @@ func (n *updateAlarmCmd) doUpdateAlarm(method string, path string, query string,
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

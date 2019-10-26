@@ -33,6 +33,7 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/robfig/cron.v2 v2.0.0-20150107220207-be2e0b0deed5
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
+	moul.io/http2curl v1.0.0
 )
 
 go 1.13

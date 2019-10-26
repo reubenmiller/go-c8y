@@ -102,6 +102,7 @@ func (n *updateTenantOptionEditableCmd) doUpdateTenantOptionEditable(method stri
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

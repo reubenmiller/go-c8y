@@ -83,8 +83,8 @@ Function New-C8yApiGoCommand {
                         continue
                     }
 
-                    switch ($type) {
-                        "[]device" {
+                    switch -Regex ($type) {
+                        "(\[\]device|application)" {
                             $null = $RESTBodyBuilder.AppendLine(@"
     if v, err := cmd.Flags().GetStringSlice("${argname}"); err == nil {
         for _, iValue := range v {
@@ -112,9 +112,18 @@ Function New-C8yApiGoCommand {
                     }
 
                 } else {
-                    switch ($type) {
+                    switch -Regex ($type) {
                         "json" {
                             # Do nothing as it is already covered by getDataFlag
+                        }
+                        "application" {
+                            $null = $RESTBodyBuilder.AppendLine(@"
+    if v, err := cmd.Flags().GetStringSlice("${argname}") ; err == nil && v != "" {
+        if len(v) > 0 {
+            body["${prop}"] = v[0]
+        }
+    }
+"@)
                         }
                         default {
                             $null = $RESTBodyBuilder.AppendLine(@"
@@ -136,8 +145,8 @@ Function New-C8yApiGoCommand {
     foreach ($iPathParameter in $Specification.pathParameters) {
         $prop = $iPathParameter.name
 
-        switch ($iPathParameter.type) {
-            "[]device" {
+        switch -Regex ($iPathParameter.type) {
+            "(\[\]device|application)" {
                 $null = $RESTPathBuilder.AppendLine(@"
     if v, err := cmd.Flags().GetStringSlice("${prop}"); err == nil {
         for _, iValue := range v {
@@ -333,6 +342,7 @@ func (n *${Name}Cmd) do${NameCamel}(method string, path string, query string, bo
             Query:        query,
             Body:         body,
             IgnoreAccept: false,
+            DryRun:       globalFlagDryRun,
 		})
 
     if err != nil {
@@ -399,6 +409,13 @@ Function Get-C8yGoArgs {
             @{
                 SetFlag = "addIDFlag(cmd)"
                 GetFlag = "GetIDs(cmd, args)"
+            }
+        }
+
+        "application" {
+            @{
+                SetFlag = "addApplicationFlag(cmd)"
+                # GetFlag = "GetIDs(cmd, args)"
             }
         }
 

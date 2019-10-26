@@ -91,6 +91,7 @@ func (n *updateTenantOptionBulkCmd) doUpdateTenantOptionBulk(method string, path
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

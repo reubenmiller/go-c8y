@@ -1,0 +1,16 @@
+Function Get-C8ySessionProperty {
+    [cmdletbinding()]
+    Param(
+        [Parameter(
+            Mandatory = $true,
+            Position = 0
+        )]
+        [string] $Name
+    )
+
+    switch ($Name) {
+        "Tenant" {
+            $env:C8Y_TENANT
+        }
+    }
+}

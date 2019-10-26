@@ -95,6 +95,7 @@ func (n *deleteTenantOptionCmd) doDeleteTenantOption(method string, path string,
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

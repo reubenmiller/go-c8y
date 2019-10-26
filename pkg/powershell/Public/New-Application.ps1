@@ -72,48 +72,63 @@ New application
     )
 
     Begin {
-        
+        $Parameters = @{}
+        if ($PSBoundParameters.ContainsKey("Data")) {
+            $Parameters["data"] = "{0}" -f ((ConvertTo-Json $Data -Compress) -replace '"', '\"')
+        }
+        if ($PSBoundParameters.ContainsKey("Name")) {
+            $Parameters["name"] = $Name
+        }
+        if ($PSBoundParameters.ContainsKey("Key")) {
+            $Parameters["key"] = $Key
+        }
+        if ($PSBoundParameters.ContainsKey("Type")) {
+            $Parameters["type"] = $Type
+        }
+        if ($PSBoundParameters.ContainsKey("Availability")) {
+            $Parameters["availability"] = $Availability
+        }
+        if ($PSBoundParameters.ContainsKey("ContextPath")) {
+            $Parameters["contextPath"] = $ContextPath
+        }
+        if ($PSBoundParameters.ContainsKey("ResourcesUrl")) {
+            $Parameters["resourcesUrl"] = $ResourcesUrl
+        }
+        if ($PSBoundParameters.ContainsKey("ResourcesUsername")) {
+            $Parameters["resourcesUsername"] = $ResourcesUsername
+        }
+        if ($PSBoundParameters.ContainsKey("ResourcesPassword")) {
+            $Parameters["resourcesPassword"] = $ResourcesPassword
+        }
+        if ($PSBoundParameters.ContainsKey("ExternalUrl")) {
+            $Parameters["externalUrl"] = $ExternalUrl
+        }
+
     }
 
     Process {
-        # Get the command name
-        $CommandName = $PSCmdlet.MyInvocation.InvocationName;
-        # Get the list of parameters for the command
-        $ParameterList = (Get-Command -Name $CommandName).Parameters;
+        foreach ($item in @("")) {
 
-        $Parameters = @{}
-
-        # Grab each parameter value, using Get-Variable
-        foreach ($Name in ($ParameterList.Keys -notmatch "^Raw$")) {
-            $iParam = Get-Variable -Name $Name -ErrorAction SilentlyContinue;
-
-            if ($iParam.Value -is [Switch]) {
-                if ($iParam.Value.IsPresent -and $iParam) {
-                    $Parameters[$Name] = $true
-                }
-            } elseif ($iParam.Value -is [hashtable]) {
-                $Parameters[$Name] = "{0}" -f ((ConvertTo-Json $iParam.Value -Compress) -replace '"', '\"')
-            } elseif ($iParam.Value -is [datetime]) {
-                $Parameters[$Name] = Format-Date $iParam.Value
-            } else {
-                if ("$iParam" -notmatch "^$") {
-                    $Parameters[$Name] = $iParam.Value
-                }
+            if (!$Force -and
+                !$WhatIfPreference -and
+                !$PSCmdlet.ShouldProcess(
+                    (Get-C8ySessionProperty -Name "tenant"),
+                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
+                )) {
+                continue
             }
+
+            Invoke-Command `
+                -Noun "applications" `
+                -Verb "create" `
+                -Parameters $Parameters `
+                -Type "application/vnd.com.nsn.cumulocity.application+json" `
+                -ItemType "" `
+                -ResultProperty "" `
+                -Raw:$Raw `
+                -IncludeAll:$IncludeAll
         }
-
-        Invoke-Command `
-            -Noun applications `
-            -Verb create `
-            -Parameters $Parameters `
-            -Type "application/vnd.com.nsn.cumulocity.application+json" `
-            -ItemType "" `
-            -ResultProperty "" `
-            -Raw:$Raw `
-            -IncludeAll:$IncludeAll
     }
 
-    End {
-        
-    }
+    End {}
 }

@@ -97,6 +97,7 @@ func (n *getTenantUsageStatisticsSummaryCollectionCmd) doGetTenantUsageStatistic
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

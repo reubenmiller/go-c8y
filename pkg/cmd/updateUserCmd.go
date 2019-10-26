@@ -111,6 +111,7 @@ func (n *updateUserCmd) doUpdateUser(method string, path string, query string, b
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

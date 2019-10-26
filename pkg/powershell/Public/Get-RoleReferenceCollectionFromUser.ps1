@@ -48,48 +48,39 @@ Get collection of user role references from a user
     )
 
     Begin {
-        
+        $Parameters = @{}
+        if ($PSBoundParameters.ContainsKey("Tenant")) {
+            $Parameters["tenant"] = $Tenant
+        }
+        if ($PSBoundParameters.ContainsKey("Username")) {
+            $Parameters["username"] = $Username
+        }
+
     }
 
     Process {
-        # Get the command name
-        $CommandName = $PSCmdlet.MyInvocation.InvocationName;
-        # Get the list of parameters for the command
-        $ParameterList = (Get-Command -Name $CommandName).Parameters;
+        foreach ($item in @("")) {
 
-        $Parameters = @{}
-
-        # Grab each parameter value, using Get-Variable
-        foreach ($Name in ($ParameterList.Keys -notmatch "^Raw$")) {
-            $iParam = Get-Variable -Name $Name -ErrorAction SilentlyContinue;
-
-            if ($iParam.Value -is [Switch]) {
-                if ($iParam.Value.IsPresent -and $iParam) {
-                    $Parameters[$Name] = $true
-                }
-            } elseif ($iParam.Value -is [hashtable]) {
-                $Parameters[$Name] = "{0}" -f ((ConvertTo-Json $iParam.Value -Compress) -replace '"', '\"')
-            } elseif ($iParam.Value -is [datetime]) {
-                $Parameters[$Name] = Format-Date $iParam.Value
-            } else {
-                if ("$iParam" -notmatch "^$") {
-                    $Parameters[$Name] = $iParam.Value
-                }
+            if (!$Force -and
+                !$WhatIfPreference -and
+                !$PSCmdlet.ShouldProcess(
+                    (Get-C8ySessionProperty -Name "tenant"),
+                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
+                )) {
+                continue
             }
+
+            Invoke-Command `
+                -Noun "userRoles" `
+                -Verb "getRoleReferenceCollectionFromUser" `
+                -Parameters $Parameters `
+                -Type "application/vnd.com.nsn.cumulocity.roleReferenceCollection+json" `
+                -ItemType "application/vnd.com.nsn.cumulocity.roleReference+json" `
+                -ResultProperty "references" `
+                -Raw:$Raw `
+                -IncludeAll:$IncludeAll
         }
-
-        Invoke-Command `
-            -Noun userRoles `
-            -Verb getRoleReferenceCollectionFromUser `
-            -Parameters $Parameters `
-            -Type "application/vnd.com.nsn.cumulocity.roleReferenceCollection+json" `
-            -ItemType "application/vnd.com.nsn.cumulocity.roleReference+json" `
-            -ResultProperty "references" `
-            -Raw:$Raw `
-            -IncludeAll:$IncludeAll
     }
 
-    End {
-        
-    }
+    End {}
 }

@@ -36,10 +36,10 @@ Required role ROLE_APPLICATION_MANAGMENT_ADMIN
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("id", "", "Application id (required)")
+	addApplicationFlag(cmd)
 
 	// Required flags
-	cmd.MarkFlagRequired("id")
+	cmd.MarkFlagRequired("application")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
@@ -73,13 +73,15 @@ func (n *copyApplicationCmd) copyApplication(cmd *cobra.Command, args []string) 
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v, err := cmd.Flags().GetString("id"); err == nil {
-		pathParameters["id"] = v
+	if v, err := cmd.Flags().GetStringSlice("application"); err == nil {
+		for _, iValue := range v {
+			pathParameters["application"] = iValue
+		}
 	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "id", err))
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "application", err))
 	}
 
-	path := replacePathParameters("/application/applications/{id}/clone", pathParameters)
+	path := replacePathParameters("/application/applications/{application}/clone", pathParameters)
 
 	return n.doCopyApplication("POST", path, queryValue, body)
 }
@@ -93,6 +95,7 @@ func (n *copyApplicationCmd) doCopyApplication(method string, path string, query
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

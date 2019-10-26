@@ -84,6 +84,7 @@ func (n *newBinaryCmd) doNewBinary(method string, path string, query string, bod
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

@@ -60,48 +60,57 @@ Update user
     )
 
     Begin {
-        
+        $Parameters = @{}
+        if ($PSBoundParameters.ContainsKey("FirstName")) {
+            $Parameters["firstName"] = $FirstName
+        }
+        if ($PSBoundParameters.ContainsKey("LastName")) {
+            $Parameters["lastName"] = $LastName
+        }
+        if ($PSBoundParameters.ContainsKey("Phone")) {
+            $Parameters["phone"] = $Phone
+        }
+        if ($PSBoundParameters.ContainsKey("Email")) {
+            $Parameters["email"] = $Email
+        }
+        if ($PSBoundParameters.ContainsKey("Enabled")) {
+            $Parameters["enabled"] = $Enabled
+        }
+        if ($PSBoundParameters.ContainsKey("Password")) {
+            $Parameters["password"] = $Password
+        }
+        if ($PSBoundParameters.ContainsKey("SendPasswordResetEmail")) {
+            $Parameters["sendPasswordResetEmail"] = $SendPasswordResetEmail
+        }
+        if ($PSBoundParameters.ContainsKey("CustomProperties")) {
+            $Parameters["customProperties"] = "{0}" -f ((ConvertTo-Json $CustomProperties -Compress) -replace '"', '\"')
+        }
+
     }
 
     Process {
-        # Get the command name
-        $CommandName = $PSCmdlet.MyInvocation.InvocationName;
-        # Get the list of parameters for the command
-        $ParameterList = (Get-Command -Name $CommandName).Parameters;
+        foreach ($item in @("")) {
 
-        $Parameters = @{}
-
-        # Grab each parameter value, using Get-Variable
-        foreach ($Name in ($ParameterList.Keys -notmatch "^Raw$")) {
-            $iParam = Get-Variable -Name $Name -ErrorAction SilentlyContinue;
-
-            if ($iParam.Value -is [Switch]) {
-                if ($iParam.Value.IsPresent -and $iParam) {
-                    $Parameters[$Name] = $true
-                }
-            } elseif ($iParam.Value -is [hashtable]) {
-                $Parameters[$Name] = "{0}" -f ((ConvertTo-Json $iParam.Value -Compress) -replace '"', '\"')
-            } elseif ($iParam.Value -is [datetime]) {
-                $Parameters[$Name] = Format-Date $iParam.Value
-            } else {
-                if ("$iParam" -notmatch "^$") {
-                    $Parameters[$Name] = $iParam.Value
-                }
+            if (!$Force -and
+                !$WhatIfPreference -and
+                !$PSCmdlet.ShouldProcess(
+                    (Get-C8ySessionProperty -Name "tenant"),
+                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
+                )) {
+                continue
             }
+
+            Invoke-Command `
+                -Noun "users" `
+                -Verb "update" `
+                -Parameters $Parameters `
+                -Type "application/vnd.com.nsn.cumulocity.user+json" `
+                -ItemType "" `
+                -ResultProperty "" `
+                -Raw:$Raw `
+                -IncludeAll:$IncludeAll
         }
-
-        Invoke-Command `
-            -Noun users `
-            -Verb update `
-            -Parameters $Parameters `
-            -Type "application/vnd.com.nsn.cumulocity.user+json" `
-            -ItemType "" `
-            -ResultProperty "" `
-            -Raw:$Raw `
-            -IncludeAll:$IncludeAll
     }
 
-    End {
-        
-    }
+    End {}
 }

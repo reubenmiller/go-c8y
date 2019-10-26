@@ -62,48 +62,54 @@ Create a new alarm
     )
 
     Begin {
-        
+        $Parameters = @{}
+        if ($PSBoundParameters.ContainsKey("Device")) {
+            $Parameters["device"] = $Device
+        }
+        if ($PSBoundParameters.ContainsKey("Type")) {
+            $Parameters["type"] = $Type
+        }
+        if ($PSBoundParameters.ContainsKey("Time")) {
+            $Parameters["time"] = PSC8y\Format-Date $Time
+        }
+        if ($PSBoundParameters.ContainsKey("Text")) {
+            $Parameters["text"] = $Text
+        }
+        if ($PSBoundParameters.ContainsKey("Severity")) {
+            $Parameters["severity"] = $Severity
+        }
+        if ($PSBoundParameters.ContainsKey("Status")) {
+            $Parameters["status"] = $Status
+        }
+        if ($PSBoundParameters.ContainsKey("Data")) {
+            $Parameters["data"] = "{0}" -f ((ConvertTo-Json $Data -Compress) -replace '"', '\"')
+        }
+
     }
 
     Process {
-        # Get the command name
-        $CommandName = $PSCmdlet.MyInvocation.InvocationName;
-        # Get the list of parameters for the command
-        $ParameterList = (Get-Command -Name $CommandName).Parameters;
+        foreach ($item in @("")) {
 
-        $Parameters = @{}
-
-        # Grab each parameter value, using Get-Variable
-        foreach ($Name in ($ParameterList.Keys -notmatch "^Raw$")) {
-            $iParam = Get-Variable -Name $Name -ErrorAction SilentlyContinue;
-
-            if ($iParam.Value -is [Switch]) {
-                if ($iParam.Value.IsPresent -and $iParam) {
-                    $Parameters[$Name] = $true
-                }
-            } elseif ($iParam.Value -is [hashtable]) {
-                $Parameters[$Name] = "{0}" -f ((ConvertTo-Json $iParam.Value -Compress) -replace '"', '\"')
-            } elseif ($iParam.Value -is [datetime]) {
-                $Parameters[$Name] = Format-Date $iParam.Value
-            } else {
-                if ("$iParam" -notmatch "^$") {
-                    $Parameters[$Name] = $iParam.Value
-                }
+            if (!$Force -and
+                !$WhatIfPreference -and
+                !$PSCmdlet.ShouldProcess(
+                    (Get-C8ySessionProperty -Name "tenant"),
+                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
+                )) {
+                continue
             }
+
+            Invoke-Command `
+                -Noun "alarms" `
+                -Verb "create" `
+                -Parameters $Parameters `
+                -Type "application/vnd.com.nsn.cumulocity.alarm+json" `
+                -ItemType "" `
+                -ResultProperty "" `
+                -Raw:$Raw `
+                -IncludeAll:$IncludeAll
         }
-
-        Invoke-Command `
-            -Noun alarms `
-            -Verb new `
-            -Parameters $Parameters `
-            -Type "application/vnd.com.nsn.cumulocity.alarm+json" `
-            -ItemType "" `
-            -ResultProperty "" `
-            -Raw:$Raw `
-            -IncludeAll:$IncludeAll
     }
 
-    End {
-        
-    }
+    End {}
 }

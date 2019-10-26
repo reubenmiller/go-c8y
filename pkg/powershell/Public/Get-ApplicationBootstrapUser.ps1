@@ -17,7 +17,7 @@ Get application bootstrap user
         [Parameter(Mandatory = $true,
                    ValueFromPipeline=$true,
                    ValueFromPipelineByPropertyName=$true)]
-        [string]
+        [object[]]
         $Id,
 
         # Include raw response including pagination information
@@ -27,48 +27,36 @@ Get application bootstrap user
     )
 
     Begin {
-        
+        $Parameters = @{}
+
     }
 
     Process {
-        # Get the command name
-        $CommandName = $PSCmdlet.MyInvocation.InvocationName;
-        # Get the list of parameters for the command
-        $ParameterList = (Get-Command -Name $CommandName).Parameters;
-
-        $Parameters = @{}
-
-        # Grab each parameter value, using Get-Variable
-        foreach ($Name in ($ParameterList.Keys -notmatch "^Raw$")) {
-            $iParam = Get-Variable -Name $Name -ErrorAction SilentlyContinue;
-
-            if ($iParam.Value -is [Switch]) {
-                if ($iParam.Value.IsPresent -and $iParam) {
-                    $Parameters[$Name] = $true
-                }
-            } elseif ($iParam.Value -is [hashtable]) {
-                $Parameters[$Name] = "{0}" -f ((ConvertTo-Json $iParam.Value -Compress) -replace '"', '\"')
-            } elseif ($iParam.Value -is [datetime]) {
-                $Parameters[$Name] = Format-Date $iParam.Value
-            } else {
-                if ("$iParam" -notmatch "^$") {
-                    $Parameters[$Name] = $iParam.Value
-                }
+        foreach ($item in (PSC8y\Expand-Application $Id)) {
+            if ($item) {
+                $Parameters["id"] = if ($item.id) { $item.id } else { $item }
             }
+
+            if (!$Force -and
+                !$WhatIfPreference -and
+                !$PSCmdlet.ShouldProcess(
+                    (Get-C8ySessionProperty -Name "tenant"),
+                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
+                )) {
+                continue
+            }
+
+            Invoke-Command `
+                -Noun "applications" `
+                -Verb "getBootstrapUser" `
+                -Parameters $Parameters `
+                -Type "application/vnd.com.nsn.cumulocity.user+json" `
+                -ItemType "" `
+                -ResultProperty "" `
+                -Raw:$Raw `
+                -IncludeAll:$IncludeAll
         }
-
-        Invoke-Command `
-            -Noun applications `
-            -Verb getBootstrapUser `
-            -Parameters $Parameters `
-            -Type "application/vnd.com.nsn.cumulocity.user+json" `
-            -ItemType "" `
-            -ResultProperty "" `
-            -Raw:$Raw `
-            -IncludeAll:$IncludeAll
     }
 
-    End {
-        
-    }
+    End {}
 }

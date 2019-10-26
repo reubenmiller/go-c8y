@@ -92,6 +92,7 @@ func (n *newEventBinaryCmd) doNewEventBinary(method string, path string, query s
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

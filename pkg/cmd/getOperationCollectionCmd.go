@@ -124,6 +124,7 @@ func (n *getOperationCollectionCmd) doGetOperationCollection(method string, path
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

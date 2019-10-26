@@ -20,7 +20,7 @@ func newNewAlarmCmd() *newAlarmCmd {
 	ccmd := &newAlarmCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "new",
+		Use:   "create",
 		Short: "Create a new alarm",
 		Long:  `Create a new alarm`,
 		Example: `
@@ -119,6 +119,7 @@ func (n *newAlarmCmd) doNewAlarm(method string, path string, query string, body 
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

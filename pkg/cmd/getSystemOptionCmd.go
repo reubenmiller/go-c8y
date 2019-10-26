@@ -95,6 +95,7 @@ func (n *getSystemOptionCmd) doGetSystemOption(method string, path string, query
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

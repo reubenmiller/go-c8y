@@ -20,7 +20,7 @@ func newNewMeasurementCmd() *newMeasurementCmd {
 	ccmd := &newMeasurementCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "new",
+		Use:   "create",
 		Short: "Create a new measurement",
 		Long:  `Create a new measurement`,
 		Example: `
@@ -105,6 +105,7 @@ func (n *newMeasurementCmd) doNewMeasurement(method string, path string, query s
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

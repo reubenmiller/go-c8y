@@ -132,6 +132,7 @@ func (n *getMeasurementSeriesCmd) doGetMeasurementSeries(method string, path str
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

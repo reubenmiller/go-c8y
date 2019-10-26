@@ -26,6 +26,11 @@ func addIDFlag(cmd *cobra.Command) {
 	cmd.MarkFlagRequired(inventoryFlagID)
 }
 
+func addApplicationFlag(cmd *cobra.Command) {
+	cmd.Flags().StringSliceP("application", "i", []string{}, "Application")
+	cmd.MarkFlagRequired(inventoryFlagID)
+}
+
 func addDataFlag(cmd *cobra.Command) {
 	cmd.Flags().StringP(FlagDataName, "d", "", "json")
 }

@@ -122,6 +122,7 @@ func (n *updateCurrentApplicationCmd) doUpdateCurrentApplication(method string, 
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

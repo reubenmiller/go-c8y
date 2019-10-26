@@ -31,7 +31,7 @@ func newGetApplicationBootstrapUserCmd() *getApplicationBootstrapUserCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("id", "", "Application id (required)")
+	addApplicationFlag(cmd)
 
 	// Required flags
 	cmd.MarkFlagRequired("id")
@@ -68,13 +68,15 @@ func (n *getApplicationBootstrapUserCmd) getApplicationBootstrapUser(cmd *cobra.
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v, err := cmd.Flags().GetString("id"); err == nil {
-		pathParameters["id"] = v
+	if v, err := cmd.Flags().GetStringSlice("id"); err == nil {
+		for _, iValue := range v {
+			pathParameters["id"] = iValue
+		}
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "id", err))
 	}
 
-	path := replacePathParameters("/application/applications/{id}/bootstrapUser", pathParameters)
+	path := replacePathParameters("/application/applications/{application}/bootstrapUser", pathParameters)
 
 	return n.doGetApplicationBootstrapUser("GET", path, queryValue, body)
 }
@@ -88,6 +90,7 @@ func (n *getApplicationBootstrapUserCmd) doGetApplicationBootstrapUser(method st
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

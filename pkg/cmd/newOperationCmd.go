@@ -20,7 +20,7 @@ func newNewOperationCmd() *newOperationCmd {
 	ccmd := &newOperationCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "new",
+		Use:   "create",
 		Short: "Create a new operation",
 		Long:  `Create a new operation`,
 		Example: `
@@ -97,6 +97,7 @@ func (n *newOperationCmd) doNewOperation(method string, path string, query strin
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

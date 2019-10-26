@@ -88,6 +88,7 @@ func (n *deleteAuditRecordCmd) doDeleteAuditRecord(method string, path string, q
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

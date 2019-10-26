@@ -31,10 +31,10 @@ func newGetApplicationCmd() *getApplicationCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("id", "", "Application id (required)")
+	addApplicationFlag(cmd)
 
 	// Required flags
-	cmd.MarkFlagRequired("id")
+	cmd.MarkFlagRequired("application")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
@@ -68,13 +68,15 @@ func (n *getApplicationCmd) getApplication(cmd *cobra.Command, args []string) er
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v, err := cmd.Flags().GetString("id"); err == nil {
-		pathParameters["id"] = v
+	if v, err := cmd.Flags().GetStringSlice("application"); err == nil {
+		for _, iValue := range v {
+			pathParameters["application"] = iValue
+		}
 	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "id", err))
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "application", err))
 	}
 
-	path := replacePathParameters("/application/applications/{id}", pathParameters)
+	path := replacePathParameters("/application/applications/{application}", pathParameters)
 
 	return n.doGetApplication("GET", path, queryValue, body)
 }
@@ -88,6 +90,7 @@ func (n *getApplicationCmd) doGetApplication(method string, path string, query s
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

@@ -138,6 +138,7 @@ func (n *deleteMeasurementCollectionCmd) doDeleteMeasurementCollection(method st
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

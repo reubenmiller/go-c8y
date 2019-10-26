@@ -80,6 +80,7 @@ func (n *getSystemOptionCollectionCmd) doGetSystemOptionCollection(method string
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

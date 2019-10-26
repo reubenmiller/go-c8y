@@ -106,6 +106,7 @@ func (n *newRetentionRuleCmd) doNewRetentionRule(method string, path string, que
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

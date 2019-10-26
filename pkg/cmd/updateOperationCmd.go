@@ -98,6 +98,7 @@ func (n *updateOperationCmd) doUpdateOperation(method string, path string, query
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

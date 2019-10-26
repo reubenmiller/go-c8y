@@ -99,6 +99,7 @@ func (n *deleteUserFromGroupCmd) doDeleteUserFromGroup(method string, path strin
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

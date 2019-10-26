@@ -117,6 +117,7 @@ func (n *newUserCmd) doNewUser(method string, path string, query string, body ma
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

@@ -95,6 +95,7 @@ func (n *getExternalIDCmd) doGetExternalID(method string, path string, query str
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

@@ -137,6 +137,7 @@ func (n *getAuditRecordCollectionCmd) doGetAuditRecordCollection(method string, 
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

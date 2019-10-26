@@ -94,6 +94,7 @@ func (n *getGroupReferenceCollectionCmd) doGetGroupReferenceCollection(method st
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {

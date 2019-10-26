@@ -147,6 +147,7 @@ func (n *getMeasurementCollectionCmd) doGetMeasurementCollection(method string, 
 			Query:        query,
 			Body:         body,
 			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
 		})
 
 	if err != nil {
