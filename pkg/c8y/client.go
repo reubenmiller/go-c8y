@@ -19,6 +19,7 @@ import (
 
 	"github.com/google/go-querystring/query"
 	"github.com/tidwall/gjson"
+	"moul.io/http2curl"
 )
 
 // ContextAuthTokenKey todo
@@ -290,6 +291,7 @@ type RequestOptions struct {
 	Query        interface{} // Use string if you want
 	Body         interface{}
 	ResponseData interface{}
+	DryRun       bool
 }
 
 // SendRequest creates and sends a request
@@ -333,6 +335,33 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 
 	if err != nil {
 		return nil, err
+	}
+
+	if options.DryRun {
+		// Show infromation about the request i.e. url, headers, body etc.
+		message := fmt.Sprintf("What If: Sending [%s] request to [%s]\n", req.Method, req.URL)
+
+		if len(req.Header) > 0 {
+			message += "\nHeaders:\n"
+		}
+
+		for key, val := range req.Header {
+			if len(val) > 0 {
+				message += fmt.Sprintf("%s: %s\n", key, val[0])
+			}
+		}
+
+		if v, err := json.MarshalIndent(options.Body, " ", "  "); err == nil && !bytes.Equal(v, []byte("null")) {
+			message += fmt.Sprintf("\nBody:\n%s", v)
+		}
+
+		log.Println(message)
+
+		if command, err := http2curl.GetCurlCommand(req); err == nil {
+			_ = command
+			// log.Printf("curl: %s\n", strings.ReplaceAll(command.String(), "\"", "\\\""))
+		}
+		return nil, nil
 	}
 
 	resp, err := c.Do(ctx, req, options.ResponseData)
