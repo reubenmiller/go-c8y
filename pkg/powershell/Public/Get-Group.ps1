@@ -19,7 +19,8 @@ Create a new group by id
         $Tenant,
 
         # Group id
-        [Parameter()]
+        [Parameter(ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true)]
         [string]
         $Id,
 
@@ -49,6 +50,8 @@ Create a new group by id
                 if ($iParam.Value.IsPresent -and $iParam) {
                     $Parameters[$Name] = $true
                 }
+            } elseif ($iParam.Value -is [hashtable]) {
+                $Parameters[$Name] = "{0}" -f ((ConvertTo-Json $iParam.Value -Compress) -replace '"', '\"')
             } elseif ($iParam.Value -is [datetime]) {
                 $Parameters[$Name] = Format-Date $iParam.Value
             } else {

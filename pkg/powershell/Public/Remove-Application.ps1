@@ -17,7 +17,9 @@ Info: The application can only be removed when its availability is PRIVATE or in
     [OutputType([object])]
     Param(
         # Application id (required)
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $true,
+                   ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true)]
         [string]
         $Id,
 
@@ -47,6 +49,8 @@ Info: The application can only be removed when its availability is PRIVATE or in
                 if ($iParam.Value.IsPresent -and $iParam) {
                     $Parameters[$Name] = $true
                 }
+            } elseif ($iParam.Value -is [hashtable]) {
+                $Parameters[$Name] = "{0}" -f ((ConvertTo-Json $iParam.Value -Compress) -replace '"', '\"')
             } elseif ($iParam.Value -is [datetime]) {
                 $Parameters[$Name] = Format-Date $iParam.Value
             } else {

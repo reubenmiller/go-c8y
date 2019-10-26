@@ -155,30 +155,27 @@ endpoints:
     accept: application/vnd.com.nsn.cumulocity.currentTenant+json
     alias:
         go: getCurrentTenant
-        powershell: Get-Tenant
-    pathParameters:
-      - name: id
-        type: string
-        required: true
-        description: Tenant id
+        powershell: Get-CurrentTenant
 
   - name: enableApplicationOnTenant
     description: 'Enable application on tenant'
     method: POST
-    path: /tenant/tenants/{id}/applications
+    path: /tenant/tenants/{tenant}/applications
     accept: application/vnd.com.nsn.cumulocity.applicationReference+json
     alias:
         go: enableApplication
         powershell: Enable-Application
     pathParameters:
-      - name: id
+      - name: tenant
         type: string
         required: true
         description: Tenant id
     body:
       - name: application
+        alias: id
+        pipeline: true
         type: string
-        property: application.self
+        property: application.id
         required: true
         description: Application id
         valueFormatter: "{url}/application/applications/{application}"
@@ -197,6 +194,8 @@ endpoints:
         description: Tenant id
 
       - name: application
+        alias: id
+        pipeline: true
         type: string
         required: true
         description: Application id

@@ -57,9 +57,16 @@
   * [x] Update-AlarmCollection.ps1
 * [ ] Parameter types
   * [ ] File
-  * [ ] Data (parse either using hashtable, manual json or json shortform)
+  * [ ] Data
+    * [x] hashtable
+    * [ ] manual json or json shortform
   * [ ] device expansion (if given an id, don't do a lookup)
   * [ ] application
+* [ ] Client side filtering of results for those that don't support server side filters
+  * [ ] Application
+    * [ ] Name
+    * [ ] type
+  * [ ]
 * [ ] Support for ShouldProcess prompt
   * [ ] Support device name lookup in the message?
 * [ ] ?native multi-part upload?
@@ -69,7 +76,11 @@
 * [ ] Use session default values (C8Y_TENANT for tenant path/query variables)
 
 
+Manual commands
 
+* [ ] applications
+  * [ ] New-Microservice
+  * [ ]
 
 
 ## Command layout

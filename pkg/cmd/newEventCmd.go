@@ -73,11 +73,15 @@ func (n *newEventCmd) newEvent(cmd *cobra.Command, args []string) error {
 	// body
 	var body map[string]interface{}
 	body = getDataFlag(cmd)
-	if v, err := cmd.Flags().GetString("device"); err == nil && v != "" {
-		if _, exists := body["device"]; !exists {
-			body["source"] = make(map[string]interface{})
+	if v, err := cmd.Flags().GetStringSlice("device"); err == nil {
+		for _, iValue := range v {
+			if _, exists := body["source"]; !exists {
+				body["source"] = make(map[string]interface{})
+			}
+			body["source"].(map[string]interface{})["id"] = iValue
 		}
-		body["source"].(map[string]interface{})["id"] = v
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "device", err))
 	}
 	if v, err := cmd.Flags().GetString("time"); err == nil && v != "" {
 		body["time"] = v
@@ -101,10 +105,11 @@ func (n *newEventCmd) doNewEvent(method string, path string, query string, body 
 	resp, err := client.SendRequest(
 		context.Background(),
 		c8y.RequestOptions{
-			Method: method,
-			Path:   path,
-			Query:  query,
-			Body:   body,
+			Method:       method,
+			Path:         path,
+			Query:        query,
+			Body:         body,
+			IgnoreAccept: false,
 		})
 
 	if err != nil {

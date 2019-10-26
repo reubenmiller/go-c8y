@@ -60,6 +60,8 @@ This endpoint provides a set of read-only properties pre-defined in platform con
                 if ($iParam.Value.IsPresent -and $iParam) {
                     $Parameters[$Name] = $true
                 }
+            } elseif ($iParam.Value -is [hashtable]) {
+                $Parameters[$Name] = "{0}" -f ((ConvertTo-Json $iParam.Value -Compress) -replace '"', '\"')
             } elseif ($iParam.Value -is [datetime]) {
                 $Parameters[$Name] = Format-Date $iParam.Value
             } else {

@@ -24,7 +24,8 @@ New tenant
         $Domain,
 
         # The tenant ID. Will be auto-generated if not present.
-        [Parameter()]
+        [Parameter(ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true)]
         [string]
         $Id,
 
@@ -79,6 +80,8 @@ New tenant
                 if ($iParam.Value.IsPresent -and $iParam) {
                     $Parameters[$Name] = $true
                 }
+            } elseif ($iParam.Value -is [hashtable]) {
+                $Parameters[$Name] = "{0}" -f ((ConvertTo-Json $iParam.Value -Compress) -replace '"', '\"')
             } elseif ($iParam.Value -is [datetime]) {
                 $Parameters[$Name] = Format-Date $iParam.Value
             } else {

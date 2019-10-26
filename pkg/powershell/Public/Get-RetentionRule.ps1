@@ -14,7 +14,9 @@ Get retention rule
     [OutputType([object])]
     Param(
         # Retention rule id (required)
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $true,
+                   ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true)]
         [string]
         $Id,
 
@@ -44,6 +46,8 @@ Get retention rule
                 if ($iParam.Value.IsPresent -and $iParam) {
                     $Parameters[$Name] = $true
                 }
+            } elseif ($iParam.Value -is [hashtable]) {
+                $Parameters[$Name] = "{0}" -f ((ConvertTo-Json $iParam.Value -Compress) -replace '"', '\"')
             } elseif ($iParam.Value -is [datetime]) {
                 $Parameters[$Name] = Format-Date $iParam.Value
             } else {

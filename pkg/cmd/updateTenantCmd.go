@@ -111,10 +111,11 @@ func (n *updateTenantCmd) doUpdateTenant(method string, path string, query strin
 	resp, err := client.SendRequest(
 		context.Background(),
 		c8y.RequestOptions{
-			Method: method,
-			Path:   path,
-			Query:  query,
-			Body:   body,
+			Method:       method,
+			Path:         path,
+			Query:        query,
+			Body:         body,
+			IgnoreAccept: false,
 		})
 
 	if err != nil {

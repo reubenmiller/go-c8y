@@ -31,11 +31,11 @@ func newEnableApplicationOnTenantCmd() *enableApplicationOnTenantCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("id", "", "Tenant id (required)")
+	cmd.Flags().String("tenant", "", "Tenant id (required)")
 	cmd.Flags().String("application", "", "Application id (required)")
 
 	// Required flags
-	cmd.MarkFlagRequired("id")
+	cmd.MarkFlagRequired("tenant")
 	cmd.MarkFlagRequired("application")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
@@ -72,18 +72,18 @@ func (n *enableApplicationOnTenantCmd) enableApplicationOnTenant(cmd *cobra.Comm
 		if _, exists := body["application"]; !exists {
 			body["application"] = make(map[string]interface{})
 		}
-		body["application"].(map[string]interface{})["self"] = v
+		body["application"].(map[string]interface{})["id"] = v
 	}
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v, err := cmd.Flags().GetString("id"); err == nil {
-		pathParameters["id"] = v
+	if v, err := cmd.Flags().GetString("tenant"); err == nil {
+		pathParameters["tenant"] = v
 	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "id", err))
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "tenant", err))
 	}
 
-	path := replacePathParameters("/tenant/tenants/{id}/applications", pathParameters)
+	path := replacePathParameters("/tenant/tenants/{tenant}/applications", pathParameters)
 
 	return n.doEnableApplicationOnTenant("POST", path, queryValue, body)
 }
@@ -92,10 +92,11 @@ func (n *enableApplicationOnTenantCmd) doEnableApplicationOnTenant(method string
 	resp, err := client.SendRequest(
 		context.Background(),
 		c8y.RequestOptions{
-			Method: method,
-			Path:   path,
-			Query:  query,
-			Body:   body,
+			Method:       method,
+			Path:         path,
+			Query:        query,
+			Body:         body,
+			IgnoreAccept: false,
 		})
 
 	if err != nil {

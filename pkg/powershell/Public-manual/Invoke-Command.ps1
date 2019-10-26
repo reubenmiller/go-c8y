@@ -37,7 +37,12 @@ Function Invoke-Command {
                 if ($Value -is [bool] -and $Value) {
                     $null = $BinaryArguments.AddRange(@("--${key}"))
                 } else {
-                    $null = $BinaryArguments.AddRange(@("--${key}=$Value"))
+                    if ($key -eq "data") {
+                        # due to cli parsing, data needs to be sent using "="
+                        $null = $BinaryArguments.AddRange(@("--${key}", $Value))
+                    } else {
+                        $null = $BinaryArguments.Add("--${key}=$Value")
+                    }
                 }
             }
         }
@@ -50,9 +55,10 @@ Function Invoke-Command {
         $null = $BinaryArguments.Add("--all")
     }
 
-    Write-Verbose ("./c8y.exe {0}" -f $BinaryArguments -join " ")
+    $Binary = Resolve-Path "$PSScriptRoot/../c8y.exe"
+    Write-Verbose ("$Binary {0}" -f $BinaryArguments -join " ")
 
-    $RawResponse = & ./c8y.exe $BinaryArguments
+    $RawResponse = & $Binary $BinaryArguments
 
     $ExitCode = $LASTEXITCODE
     if ($ExitCode -ne 0) {

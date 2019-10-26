@@ -31,10 +31,7 @@ func newCurrentTenantCmd() *currentTenantCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("id", "", "Tenant id (required)")
-
 	// Required flags
-	cmd.MarkFlagRequired("id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
@@ -68,11 +65,6 @@ func (n *currentTenantCmd) currentTenant(cmd *cobra.Command, args []string) erro
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v, err := cmd.Flags().GetString("id"); err == nil {
-		pathParameters["id"] = v
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "id", err))
-	}
 
 	path := replacePathParameters("/tenant/currentTenant", pathParameters)
 
@@ -83,10 +75,11 @@ func (n *currentTenantCmd) doCurrentTenant(method string, path string, query str
 	resp, err := client.SendRequest(
 		context.Background(),
 		c8y.RequestOptions{
-			Method: method,
-			Path:   path,
-			Query:  query,
-			Body:   body,
+			Method:       method,
+			Path:         path,
+			Query:        query,
+			Body:         body,
+			IgnoreAccept: false,
 		})
 
 	if err != nil {

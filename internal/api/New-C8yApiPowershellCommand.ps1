@@ -78,6 +78,7 @@ Function New-C8yApiPowershellCommand {
             Description = $iArg.description
             Default = $iArg.default
             Required = $iArg.required
+            ReadFromPipeline = $iArg.name -eq "id" -or $iArg.alias -eq "id"
         }
         $item = New-C8yPowershellArguments @ArgParams
 
@@ -85,6 +86,10 @@ Function New-C8yApiPowershellCommand {
         $CurrentParam = New-Object System.Text.StringBuilder
         $null = $CurrentParam.AppendLine("        # {0}" -f ($item.Description))
         $null = $CurrentParam.AppendLine("        [Parameter({0})]" -f ($item.Definition -join ",`n                   "))
+
+        if ($iArg.alias) {
+            $null = $CurrentParam.AppendLine("        [Alias(`"{0}`")]" -f $iArg.alias)
+        }
 
         # Validate set
         if ($null -ne $iArg.validationSet) {
@@ -312,7 +317,7 @@ $($CmdletParameters -join ",`n`n")
                     `$Parameters[`$Name] = `$true
                 }
             } elseif (`$iParam.Value -is [hashtable]) {
-                `$Parameters[`$Name] = "'{0}'" -f ((ConvertTo-Json `$iParam.Value -Compress) -replace '"', '\"')
+                `$Parameters[`$Name] = "{0}" -f ((ConvertTo-Json `$iParam.Value -Compress) -replace '"', '\"')
             } elseif (`$iParam.Value -is [datetime]) {
                 `$Parameters[`$Name] = Format-Date `$iParam.Value
             } else {
@@ -344,65 +349,109 @@ $($CmdletParameters -join ",`n`n")
 	[System.IO.File]::WriteAllLines($File, $Template, $Utf8NoBomEncoding)
 }
 
-Function New-C8yApiPowershellProcessBlock {
-    [cmdletbinding()]
-    Param()
+Function New-Body {
 
-@"
-        `$Parameters = @{}
-
+    @"
         # Get the command name
         `$CommandName = `$PSCmdlet.MyInvocation.InvocationName;
         # Get the list of parameters for the command
         `$ParameterList = (Get-Command -Name `$CommandName).Parameters;
 
-        # Grab each parameter value, using Get-Variable
-        foreach (`$Parameter in `$ParameterList) {
-            `$Name = `$Parameter.Values.Name
-            `$Value = Get-Variable -Name `$Parameter.Values.Name -ErrorAction SilentlyContinue;
+        `$Parameters = @{}
 
-            # Allow for
-            if (`$Value -is [Switch]) {
-                if (`$Value.IsPresent) {
-                    `$Parameter[`$Name] = "`$Value".ToLowerInvariant()
+        # Grab each parameter value, using Get-Variable
+        foreach (`$Name in (`$ParameterList.Keys -notmatch "^Raw$")) {
+            `$iParam = Get-Variable -Name `$Name -ErrorAction SilentlyContinue;
+
+            if (`$iParam.Value -is [Switch]) {
+                if (`$iParam.Value.IsPresent -and `$iParam) {
+                    `$Parameters[`$Name] = `$true
                 }
+            } elseif (`$iParam.Value -is [hashtable]) {
+                `$Parameters[`$Name] = "{0}" -f ((ConvertTo-Json `$iParam.Value -Compress) -replace '"', '\"')
+            } elseif (`$iParam.Value -is [datetime]) {
+                `$Parameters[`$Name] = Format-Date `$iParam.Value
             } else {
-                if ("`$Value" -notmatch "^$") {
-                    `$Parameter[`$Name] = `$Value
+                if ("`$iParam" -notmatch "^$") {
+                    `$Parameters[`$Name] = `$iParam.Value
                 }
             }
-
         }
 
-        Invoke-Command -Noun `$Noun -Verb `$Verb -Parameters
-
+        Invoke-Command ``
+            -Noun $Noun ``
+            -Verb $Verb ``
+            -Parameters `$Parameters ``
+            -Type "$ResultType" ``
+            -ItemType "$ResultItemType" ``
+            -ResultProperty "$ResultSelectProperty" ``
+            -Raw:`$Raw ``
+            -IncludeAll:`$IncludeAll
 "@
 }
 
-Function New-C8yApiPowershellTest {
-    [cmdletbinding()]
-    Param()
+Function New-Body2 {
+
+    $Target = "Get-C8yTenant"
+    $Message = "(`"Enable application [{0} ({1})]`" -f `$item.name, `$item.id)"
+    $Iterator = "`$Application"
+
+    $ExpandFunction = switch ($IteratorType) {
+        "application" { "Expand-Application" }
+        "device" { "Expand-Device" }
+        "application" { "Expand-Application" }
+        "managedObject" { "Expand-ManagedObject" }
+        "event" { "Expand-Application" }
+    }
+    $ExpandFunction = "PSC8y\Expand-Application"
 
     @"
-`$BinaryArguments = New-Object arraylist
-`$null = `$BinaryArguments.Add("alarms")
-`$null = `$BinaryArguments.Add("list")
+        foreach (`$item in (PSC8y\$ExpandFunction $Iterator)) {
 
-# Get the command name
-`$CommandName = `$PSCmdlet.MyInvocation.InvocationName;
-# Get the list of parameters for the command
-`$ParameterList = (Get-Command -Name `$CommandName).Parameters;
+            # Get the command name
+            `$CommandName = `$PSCmdlet.MyInvocation.InvocationName;
+            # Get the list of parameters for the command
+            `$ParameterList = (Get-Command -Name `$CommandName).Parameters;
 
-# Grab each parameter value, using Get-Variable
-foreach (`$Parameter in `$ParameterList) {
-    `$Name = `$Parameter.Values.Name
-    `$Value = Get-Variable -Name `$Parameter.Values.Name -ErrorAction SilentlyContinue;
+            `$Parameters = @{}
 
-    # Allow for
-    if ("`$Value" -notmatch "^$") {
-        `$argName = `$Name[0].ToLowerInvariant() + `$Name.SubString(1)
-        `$null = `$BinaryArguments.AddRange(@("--`$Name", `$Value))
-    }
-}
+            # Grab each parameter value, using Get-Variable
+            foreach (`$Name in (`$ParameterList.Keys -notmatch "^Raw$")) {
+                `$iParam = Get-Variable -Name `$Name -ErrorAction SilentlyContinue;
+
+                if (`$iParam.Value -is [Switch]) {
+                    if (`$iParam.Value.IsPresent -and `$iParam) {
+                        `$Parameters[`$Name] = `$true
+                    }
+                } elseif (`$iParam.Value -is [hashtable]) {
+                    `$Parameters[`$Name] = "{0}" -f ((ConvertTo-Json `$iParam.Value -Compress) -replace '"', '\"')
+                } elseif (`$iParam.Value -is [datetime]) {
+                    `$Parameters[`$Name] = Format-Date `$iParam.Value
+                } else {
+                    if ("`$iParam" -notmatch "^$") {
+                        `$Parameters[`$Name] = `$iParam.Value
+                    }
+                }
+            }
+
+            if (!`$Force -and
+                !`$WhatIfPreference -and
+                !`$PSCmdlet.ShouldProcess(
+                    $Target,
+                    $Message
+                )) {
+                continue
+            }
+
+            Invoke-Command ``
+                -Noun $Noun ``
+                -Verb $Verb ``
+                -Parameters `$Parameters ``
+                -Type "$ResultType" ``
+                -ItemType "$ResultItemType" ``
+                -ResultProperty "$ResultSelectProperty" ``
+                -Raw:`$Raw ``
+                -IncludeAll:`$IncludeAll
+        }
 "@
 }

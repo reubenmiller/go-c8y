@@ -243,6 +243,7 @@
         {
           "name": "id",
           "type": "string",
+          "pipeline": true,
           "required": true,
           "description": "Alarm id"
         }
@@ -304,6 +305,7 @@
         {
           "name": "id",
           "type": "string",
+          "pipeline": true,
           "description": "Alarm id",
           "required": true
         }
@@ -323,6 +325,7 @@
         {
           "name": "id",
           "type": "string",
+          "pipeline": true,
           "required": true,
           "description": "Alarm id"
         }

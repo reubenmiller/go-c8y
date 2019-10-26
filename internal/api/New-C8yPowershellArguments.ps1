@@ -19,7 +19,9 @@ Function New-C8yPowershellArguments {
 
         [string] $Description,
 
-        [string] $Default
+        [string] $Default,
+
+        [switch] $ReadFromPipeline
     )
 
     # Format variable name
@@ -40,7 +42,7 @@ Function New-C8yPowershellArguments {
     }
 
     # Add Piped argument
-    if ($Type -match "(device|source|id)") {
+    if ($Type -match "(device|source|id)" -or $ReadFromPipeline) {
         $null = $ParameterDefinition.Add("ValueFromPipeline=`$true")
         $null = $ParameterDefinition.Add("ValueFromPipelineByPropertyName=`$true")
     }

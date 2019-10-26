@@ -16,10 +16,13 @@ Enable application on tenant
         # Tenant id (required)
         [Parameter(Mandatory = $true)]
         [string]
-        $Id,
+        $Tenant,
 
         # Application id (required)
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $true,
+                   ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true)]
+        [Alias("id")]
         [string]
         $Application,
 
@@ -30,7 +33,7 @@ Enable application on tenant
     )
 
     Begin {
-        
+
     }
 
     Process {
@@ -49,6 +52,8 @@ Enable application on tenant
                 if ($iParam.Value.IsPresent -and $iParam) {
                     $Parameters[$Name] = $true
                 }
+            } elseif ($iParam.Value -is [hashtable]) {
+                $Parameters[$Name] = "{0}" -f ((ConvertTo-Json $iParam.Value -Compress) -replace '"', '\"')
             } elseif ($iParam.Value -is [datetime]) {
                 $Parameters[$Name] = Format-Date $iParam.Value
             } else {
@@ -56,6 +61,15 @@ Enable application on tenant
                     $Parameters[$Name] = $iParam.Value
                 }
             }
+        }
+
+        if (!$Force -and
+            !$WhatIfPreference -and
+            !$PSCmdlet.ShouldProcess(
+                $Tenant,
+                ("Enable application [{0} ({1})]" -f $Application, $Application)
+            )) {
+            continue
         }
 
         Invoke-Command `
@@ -70,6 +84,6 @@ Enable application on tenant
     }
 
     End {
-        
+
     }
 }

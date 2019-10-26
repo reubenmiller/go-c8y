@@ -131,10 +131,11 @@ func (n *updateAlarmCollectionCmd) doUpdateAlarmCollection(method string, path s
 	resp, err := client.SendRequest(
 		context.Background(),
 		c8y.RequestOptions{
-			Method: method,
-			Path:   path,
-			Query:  query,
-			Body:   body,
+			Method:       method,
+			Path:         path,
+			Query:        query,
+			Body:         body,
+			IgnoreAccept: false,
 		})
 
 	if err != nil {
