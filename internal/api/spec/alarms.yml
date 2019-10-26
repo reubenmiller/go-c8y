@@ -78,7 +78,7 @@ endpoints:
     description: 'Create a new alarm'
     descriptionLong: 'Create a new alarm'
     alias:
-        go: new
+        go: create
         powershell: New-Alarm
     body:
       - name: device

@@ -110,7 +110,7 @@ endpoints:
     description: Create event
     descriptionLong: Create event
     alias:
-        go: new
+        go: create
         powershell: New-Event
     body:
       - name: device

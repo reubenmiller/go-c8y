@@ -105,7 +105,7 @@
       "description": "Copy application",
       "descriptionLong": "A POST request to the 'clone' resource creates a new application based on an already existing one.\nThe properties are copied to the newly created application. For name, key and context path a 'clone' prefix is added in order to be unique.\nIf the target application is hosted and has an active version, the new application will have the active version with the same content.\nThe response contains a representation of the newly created application.\nRequired role ROLE_APPLICATION_MANAGMENT_ADMIN\n",
       "method": "POST",
-      "path": "/application/applications/{id}/clone",
+      "path": "/application/applications/{application}/clone",
       "accept": "application/vnd.com.nsn.cumulocity.application+json",
       "alias": {
         "go": "copy",
@@ -113,8 +113,9 @@
       },
       "pathParameters": [
         {
-          "name": "id",
-          "type": "string",
+          "name": "application",
+          "type": "application",
+          "pipeline": true,
           "required": true,
           "description": "Application id"
         }
@@ -124,7 +125,7 @@
       "name": "getApplication",
       "description": "Get application",
       "method": "GET",
-      "path": "/application/applications/{id}",
+      "path": "/application/applications/{application}",
       "accept": "application/vnd.com.nsn.cumulocity.application+json",
       "alias": {
         "go": "get",
@@ -132,8 +133,9 @@
       },
       "pathParameters": [
         {
-          "name": "id",
-          "type": "string",
+          "name": "application",
+          "type": "application",
+          "pipeline": true,
           "required": true,
           "description": "Application id"
         }
@@ -144,15 +146,16 @@
       "description": "Delete application",
       "descriptionLong": "Info: The application can only be removed when its availability is PRIVATE or in other case when it has no subscriptions.",
       "method": "DELETE",
-      "path": "/application/applications/{id}",
+      "path": "/application/applications/{application}",
       "alias": {
         "go": "delete",
         "powershell": "Remove-Application"
       },
       "pathParameters": [
         {
-          "name": "id",
-          "type": "string",
+          "name": "application",
+          "type": "application",
+          "pipeline": true,
           "required": true,
           "description": "Application id"
         }
@@ -162,7 +165,7 @@
       "name": "updateApplication",
       "description": "Update application",
       "method": "PUT",
-      "path": "/application/applications/{id}",
+      "path": "/application/applications/{application}",
       "accept": "application/vnd.com.nsn.cumulocity.application+json",
       "alias": {
         "go": "updateBinary",
@@ -170,8 +173,9 @@
       },
       "pathParameters": [
         {
-          "name": "id",
-          "type": "string",
+          "name": "application",
+          "type": "application",
+          "pipeline": true,
           "required": true,
           "description": "Application id"
         }
@@ -240,7 +244,7 @@
       "name": "newApplicationBinary",
       "description": "New application binary",
       "method": "POST",
-      "path": "/application/applications/{id}/binaries",
+      "path": "/application/applications/{application}/binaries",
       "accept": "application/vnd.com.nsn.cumulocity.application+json",
       "alias": {
         "go": "createBinary",
@@ -248,8 +252,9 @@
       },
       "pathParameters": [
         {
-          "name": "id",
-          "type": "string",
+          "name": "application",
+          "type": "application",
+          "pipeline": true,
           "required": true,
           "description": "Application id"
         }
@@ -267,7 +272,7 @@
       "name": "getApplicationBootstrapUser",
       "description": "Get application bootstrap user",
       "method": "GET",
-      "path": "/application/applications/{id}/bootstrapUser",
+      "path": "/application/applications/{application}/bootstrapUser",
       "accept": "application/vnd.com.nsn.cumulocity.user+json",
       "alias": {
         "go": "getBootstrapUser",
@@ -276,7 +281,8 @@
       "pathParameters": [
         {
           "name": "id",
-          "type": "string",
+          "type": "application",
+          "pipeline": true,
           "required": true,
           "description": "Application id"
         }

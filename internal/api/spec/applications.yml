@@ -93,28 +93,30 @@ endpoints:
 
       Required role ROLE_APPLICATION_MANAGMENT_ADMIN
     method: POST
-    path: /application/applications/{id}/clone
+    path: /application/applications/{application}/clone
     accept: application/vnd.com.nsn.cumulocity.application+json
     alias:
         go: copy
         powershell: Copy-Application
     pathParameters:
-      - name: id
-        type: string
+      - name: application
+        type: application
+        pipeline: true
         required: true
         description: Application id
 
   - name: getApplication
     description: 'Get application'
     method: GET
-    path: /application/applications/{id}
+    path: /application/applications/{application}
     accept: application/vnd.com.nsn.cumulocity.application+json
     alias:
         go: get
         powershell: Get-Application
     pathParameters:
-      - name: id
-        type: string
+      - name: application
+        type: application
+        pipeline: true
         required: true
         description: Application id
 
@@ -122,27 +124,29 @@ endpoints:
     description: 'Delete application'
     descriptionLong: 'Info: The application can only be removed when its availability is PRIVATE or in other case when it has no subscriptions.'
     method: DELETE
-    path: /application/applications/{id}
+    path: /application/applications/{application}
     alias:
         go: delete
         powershell: Remove-Application
     pathParameters:
-      - name: id
-        type: string
+      - name: application
+        type: application
+        pipeline: true
         required: true
         description: Application id
 
   - name: updateApplication
     description: 'Update application'
     method: PUT
-    path: /application/applications/{id}
+    path: /application/applications/{application}
     accept: application/vnd.com.nsn.cumulocity.application+json
     alias:
         go: updateBinary
         powershell: Update-Binary
     pathParameters:
-      - name: id
-        type: string
+      - name: application
+        type: application
+        pipeline: true
         required: true
         description: Application id
 
@@ -205,14 +209,15 @@ endpoints:
       For the web application, the zip file must include index.html in the root directory.
 
     method: POST
-    path: /application/applications/{id}/binaries
+    path: /application/applications/{application}/binaries
     accept: application/vnd.com.nsn.cumulocity.application+json
     alias:
         go: createBinary
         powershell: New-ApplicationBinary
     pathParameters:
-      - name: id
-        type: string
+      - name: application
+        type: application
+        pipeline: true
         required: true
         description: Application id
     body:
@@ -224,13 +229,14 @@ endpoints:
   - name: getApplicationBootstrapUser
     description: 'Get application bootstrap user'
     method: GET
-    path: /application/applications/{id}/bootstrapUser
+    path: /application/applications/{application}/bootstrapUser
     accept: application/vnd.com.nsn.cumulocity.user+json
     alias:
         go: getBootstrapUser
         powershell: Get-ApplicationBootstrapUser
     pathParameters:
       - name: id
-        type: string
+        type: application
+        pipeline: true
         required: true
         description: Application id

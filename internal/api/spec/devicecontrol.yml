@@ -72,7 +72,7 @@ endpoints:
     description: 'Create a new operation'
     descriptionLong: 'Create a new operation'
     alias:
-        go: new
+        go: create
         powershell: New-Operation
     body:
       - name: device

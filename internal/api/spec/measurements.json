@@ -182,13 +182,14 @@
       "description": "Create a new measurement",
       "descriptionLong": "Create a new measurement",
       "alias": {
-        "go": "new",
+        "go": "create",
         "powershell": "New-Measurement"
       },
       "body": [
         {
           "name": "device",
           "type": "[]device",
+          "pipeline": true,
           "required": true,
           "property": "source.id",
           "description": "The ManagedObject which is the source of this measurement."

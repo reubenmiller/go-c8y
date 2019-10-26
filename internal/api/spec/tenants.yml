@@ -172,9 +172,8 @@ endpoints:
         description: Tenant id
     body:
       - name: application
-        alias: id
         pipeline: true
-        type: string
+        type: application
         property: application.id
         required: true
         description: Application id
@@ -194,9 +193,8 @@ endpoints:
         description: Tenant id
 
       - name: application
-        alias: id
+        type: application
         pipeline: true
-        type: string
         required: true
         description: Application id
 

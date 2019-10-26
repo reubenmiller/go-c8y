@@ -79,7 +79,7 @@ endpoints:
     description: 'Create a new external id'
     descriptionLong: 'Create a new external id'
     alias:
-        go: new
+        go: create
         powershell: New-ExternalID
     pathParameters:
       - name: device
