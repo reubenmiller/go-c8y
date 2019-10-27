@@ -82,7 +82,8 @@ func (f *deviceFetcher) getByID(id string) ([]fetcherResultSet, error) {
 }
 
 // getFormattedDeviceSlice returns the device id and name
-func getFormattedDeviceSlice(cmd *cobra.Command, args []string, name string) []string {
+// returns raw strings, lookuped values, and errors
+func getFormattedDeviceSlice(cmd *cobra.Command, args []string, name string) ([]string, []string, error) {
 	f := newDeviceFetcher(client)
 
 	if !cmd.Flags().Changed(name) {
@@ -92,7 +93,7 @@ func getFormattedDeviceSlice(cmd *cobra.Command, args []string, name string) []s
 			log.Printf("No pipeline input detected")
 		} else {
 			fmt.Printf("PIPED Input: %s\n", pipedInput)
-			return nil
+			return nil, nil, nil
 		}
 	}
 
@@ -101,18 +102,18 @@ func getFormattedDeviceSlice(cmd *cobra.Command, args []string, name string) []s
 		log.Println("Flag is missing", err)
 	}
 
-	// log.Printf("Splice values %s", strings.Join(values, ","))
-
 	values = ParseValues(append(values, args...))
 
 	formattedValues, err := lookupEntity(f, values, true)
 
 	if err != nil {
 		log.Printf("Failed to fetch entities. %s", err)
+		return values, nil, err
 	}
 
 	results := []string{}
 
+	invalidLookups := []string{}
 	for _, item := range formattedValues {
 		if item.ID != "" {
 			if item.Name != "" {
@@ -120,10 +121,20 @@ func getFormattedDeviceSlice(cmd *cobra.Command, args []string, name string) []s
 			} else {
 				results = append(results, item.ID)
 			}
+		} else {
+			if item.Name != "" {
+				invalidLookups = append(invalidLookups, item.Name)
+			}
 		}
 	}
 
-	return results
+	var errors error
+
+	if len(invalidLookups) > 0 {
+		errors = fmt.Errorf("no results %v", invalidLookups)
+	}
+
+	return values, results, errors
 }
 
 type idValue struct {
