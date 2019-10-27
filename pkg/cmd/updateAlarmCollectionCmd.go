@@ -52,8 +52,17 @@ func (n *updateAlarmCollectionCmd) updateAlarmCollection(cmd *cobra.Command, arg
 	// query parameters
 	queryValue := url.QueryEscape("")
 	query := url.Values{}
-	deviceValue := getFormattedDeviceSlice(cmd, args, "device")
-	if len(deviceValue) > 0 {
+	if cmd.Flags().Changed("device") {
+		deviceInputValues, deviceValue, err := getFormattedDeviceSlice(cmd, args, "device")
+
+		if err != nil {
+			return newUserError("no matching devices found", deviceInputValues, err)
+		}
+
+		if len(deviceValue) == 0 {
+			return newUserError("no matching devices found", deviceInputValues)
+		}
+
 		for _, item := range deviceValue {
 			if item != "" {
 				query.Add("source", newIDValue(item).GetID())

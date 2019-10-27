@@ -190,6 +190,16 @@ Function New-C8yApiPowershellCommand {
     $null = $RawParam.Append('        $Raw')
     $null = $CmdletParameters.Add($RawParam)
 
+    # Force parameter
+    if ($Specification.method -match "(POST|PUT|DELETE)") {
+        $ForceParam = New-Object System.Text.StringBuilder
+        $null = $ForceParam.AppendLine("        # Don't prompt for confirmation")
+        $null = $ForceParam.AppendLine('        [Parameter()]')
+        $null = $ForceParam.AppendLine('        [switch]')
+        $null = $ForceParam.Append('        $Force')
+        $null = $CmdletParameters.Add($ForceParam)
+    }
+
     # Examples
     foreach ($iExample in $Examples) {
         $null = $CmdletDocStringBuilder.AppendLine(".EXAMPLE")

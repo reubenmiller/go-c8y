@@ -72,7 +72,12 @@ Required authentication with bootstrap user
         # Include raw response including pagination information
         [Parameter()]
         [switch]
-        $Raw
+        $Raw,
+
+        # Don't prompt for confirmation
+        [Parameter()]
+        [switch]
+        $Force
     )
 
     Begin {

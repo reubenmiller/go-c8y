@@ -36,7 +36,12 @@ Update an event
         # Include raw response including pagination information
         [Parameter()]
         [switch]
-        $Raw
+        $Raw,
+
+        # Don't prompt for confirmation
+        [Parameter()]
+        [switch]
+        $Force
     )
 
     Begin {

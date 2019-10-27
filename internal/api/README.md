@@ -33,6 +33,7 @@
   * [x] PageSize
   * [x] WithTotalPages
   * [x] Raw
+  * [x] Force
   * [ ] Without Accept header (for performance improvements)
 * [x] Validate set
 * [x] Add types (using cumulocity types) and default columns
@@ -61,7 +62,7 @@
     * [x] hashtable
     * [ ] manual json or json shortform
   * [ ] device expansion (if given an id, don't do a lookup)
-  * [ ] application
+  * [x] application
 * [ ] Client side filtering of results for those that don't support server side filters
   * [ ] Application
     * [ ] Name

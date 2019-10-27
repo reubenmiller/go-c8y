@@ -66,7 +66,12 @@ Create a new audit record
         # Include raw response including pagination information
         [Parameter()]
         [switch]
-        $Raw
+        $Raw,
+
+        # Don't prompt for confirmation
+        [Parameter()]
+        [switch]
+        $Force
     )
 
     Begin {

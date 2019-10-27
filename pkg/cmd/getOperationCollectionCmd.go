@@ -50,16 +50,34 @@ func (n *getOperationCollectionCmd) getOperationCollection(cmd *cobra.Command, a
 	// query parameters
 	queryValue := url.QueryEscape("")
 	query := url.Values{}
-	agentValue := getFormattedDeviceSlice(cmd, args, "agent")
-	if len(agentValue) > 0 {
+	if cmd.Flags().Changed("agent") {
+		agentInputValues, agentValue, err := getFormattedDeviceSlice(cmd, args, "agent")
+
+		if err != nil {
+			return newUserError("no matching devices found", agentInputValues, err)
+		}
+
+		if len(agentValue) == 0 {
+			return newUserError("no matching devices found", agentInputValues)
+		}
+
 		for _, item := range agentValue {
 			if item != "" {
 				query.Add("agentId", newIDValue(item).GetID())
 			}
 		}
 	}
-	deviceValue := getFormattedDeviceSlice(cmd, args, "device")
-	if len(deviceValue) > 0 {
+	if cmd.Flags().Changed("device") {
+		deviceInputValues, deviceValue, err := getFormattedDeviceSlice(cmd, args, "device")
+
+		if err != nil {
+			return newUserError("no matching devices found", deviceInputValues, err)
+		}
+
+		if len(deviceValue) == 0 {
+			return newUserError("no matching devices found", deviceInputValues)
+		}
+
 		for _, item := range deviceValue {
 			if item != "" {
 				query.Add("deviceId", newIDValue(item).GetID())

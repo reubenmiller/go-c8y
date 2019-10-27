@@ -197,8 +197,17 @@ Function New-C8yApiGoCommand {
 
                 "[]device" {
                     $null = $RESTQueryBuilder.AppendLine(@"
-    ${prop}Value := getFormattedDeviceSlice(cmd, args, "${prop}")
-    if len(${prop}Value) > 0 {
+    if cmd.Flags().Changed("${prop}") {
+        ${prop}InputValues, ${prop}Value, err := getFormattedDeviceSlice(cmd, args, "${prop}")
+
+        if err != nil {
+            return newUserError("no matching devices found", ${prop}InputValues, err)
+        }
+
+        if len(${prop}Value) == 0 {
+            return newUserError("no matching devices found", ${prop}InputValues)
+        }
+
         for _, item := range ${prop}Value {
             if item != "" {
                 query.Add("${queryParam}", newIDValue(item).GetID())
