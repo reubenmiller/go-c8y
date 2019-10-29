@@ -146,7 +146,30 @@ Function New-C8yApiGoCommand {
         $prop = $iPathParameter.name
 
         switch -Regex ($iPathParameter.type) {
-            "(\[\]device|application)" {
+            "^application$" {
+                $null = $RESTPathBuilder.AppendLine(@"
+    if cmd.Flags().Changed("${prop}") {
+        ${prop}InputValues, ${prop}Value, err := getApplicationSlice(cmd, args, "${prop}")
+
+        if err != nil {
+            return newUserError("no matching devices found", ${prop}InputValues, err)
+        }
+
+        if len(${prop}Value) == 0 {
+            return newUserError("no matching devices found", ${prop}InputValues)
+        }
+
+        for _, item := range ${prop}Value {
+            if item != "" {
+                pathParameters["${prop}"] = newIDValue(item).GetID()
+                break;
+            }
+        }
+    }
+"@)
+            }
+
+            "(\[\]device)" {
                 $null = $RESTPathBuilder.AppendLine(@"
     if v, err := cmd.Flags().GetStringSlice("${prop}"); err == nil {
         for _, iValue := range v {
@@ -191,6 +214,28 @@ Function New-C8yApiGoCommand {
         }
     } else {
         return newUserError("Flag does not exist")
+    }
+"@)
+                }
+
+                "application" {
+                    $null = $RESTQueryBuilder.AppendLine(@"
+    if cmd.Flags().Changed("${prop}") {
+        ${prop}InputValues, ${prop}Value, err := getApplicationSlice(cmd, args, "${prop}")
+
+        if err != nil {
+            return newUserError("no matching devices found", ${prop}InputValues, err)
+        }
+
+        if len(${prop}Value) == 0 {
+            return newUserError("no matching devices found", ${prop}InputValues)
+        }
+
+        for _, item := range ${prop}Value {
+            if item != "" {
+                query.Add("${queryParam}", newIDValue(item).GetID())
+            }
+        }
     }
 "@)
                 }
@@ -417,21 +462,12 @@ Function Get-C8yGoArgs {
         "id" {
             @{
                 SetFlag = "addIDFlag(cmd)"
-                GetFlag = "GetIDs(cmd, args)"
-            }
-        }
-
-        "application" {
-            @{
-                SetFlag = "addApplicationFlag(cmd)"
-                # GetFlag = "GetIDs(cmd, args)"
             }
         }
 
         "json" {
             @{
                 SetFlag = "addDataFlag(cmd)"
-                GetFlag = "getDataFlag(cmd)"
             }
         }
 
@@ -441,16 +477,8 @@ Function Get-C8yGoArgs {
             } else {
                 'cmd.Flags().String("{0}", "{1}", "{2}")' -f $Name, $Default, $Description
             }
-
-            $GetFlag = @"
-    ${NameLocalVariable}, err := cmd.Flags().GetString("$Name");
-    if  err != nil {
-        return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "$Name", err))
-    }
-"@
             @{
                 SetFlag = $SetFlag
-                GetFlag = $GetFlag
             }
         }
 
@@ -460,17 +488,8 @@ Function Get-C8yGoArgs {
             } else {
                 "cmd.Flags().StringSlice(`"${Name}`", []string{`"${Default}`"}, `"${Description}`")"
             }
-
-            $GetFlag = @"
-    ${NameLocalVariable}, err := cmd.Flags().GetStringSlice("$Name");
-    if  err != nil {
-        return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "$Name", err))
-    }
-"@
-
             @{
                 SetFlag = $SetFlag
-                GetFlag = $GetFlag
             }
         }
 
@@ -481,13 +500,19 @@ Function Get-C8yGoArgs {
                 "cmd.Flags().StringSlice(`"${Name}`", []string{`"${Default}`"}, `"${Description}`")"
             }
 
-            $GetFlag = @"
-    ${NameLocalVariable} := getFormattedDeviceSlice(cmd, args, "$Name")
-"@
-
             @{
                 SetFlag = $SetFlag
-                GetFlag = $GetFlag
+            }
+        }
+
+        "^application$" {
+            $SetFlag = if ($UseOption) {
+                'cmd.Flags().StringP("{0}", "{1}", "{2}", "{3}")' -f $Name, $OptionName, $Default, $Description
+            } else {
+                'cmd.Flags().String("{0}", "{1}", "{2}")' -f $Name, $Default, $Description
+            }
+            @{
+                SetFlag = $SetFlag
             }
         }
 
@@ -498,17 +523,8 @@ Function Get-C8yGoArgs {
                 'cmd.Flags().String("{0}", "{1}", "{2}")' -f $Name, $Default, $Description
             }
 
-            $GetFlag = @"
-    ${NameLocalVariable}, err := cmd.Flags().GetString("$Name");
-    if  err != nil {
-        return newUserError("Flag does not exist")
-    }
-"@
-
-
             @{
                 SetFlag = $SetFlag
-                GetFlag = $GetFlag
             }
         }
 
@@ -522,16 +538,8 @@ Function Get-C8yGoArgs {
                 'cmd.Flags().Bool("{0}", {1}, "{2}")' -f $Name, $Default, $Description
             }
 
-            $GetFlag = @"
-    ${NameLocalVariable}, err := cmd.Flags().GetBool("$Name");
-    if  err != nil {
-        return newUserError("Flag does not exist")
-    }
-"@
-
             @{
                 SetFlag = $SetFlag
-                GetFlag = $GetFlag
             }
         }
     }

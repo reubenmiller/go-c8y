@@ -32,7 +32,7 @@ func newDisableApplicationFromTenantCmd() *disableApplicationFromTenantCmd {
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("tenant", "", "Tenant id (required)")
-	addApplicationFlag(cmd)
+	cmd.Flags().String("application", "", "Application id (required)")
 
 	// Required flags
 	cmd.MarkFlagRequired("tenant")
@@ -75,12 +75,23 @@ func (n *disableApplicationFromTenantCmd) disableApplicationFromTenant(cmd *cobr
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "tenant", err))
 	}
-	if v, err := cmd.Flags().GetStringSlice("application"); err == nil {
-		for _, iValue := range v {
-			pathParameters["application"] = iValue
+	if cmd.Flags().Changed("application") {
+		applicationInputValues, applicationValue, err := getApplicationSlice(cmd, args, "application")
+
+		if err != nil {
+			return newUserError("no matching devices found", applicationInputValues, err)
 		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "application", err))
+
+		if len(applicationValue) == 0 {
+			return newUserError("no matching devices found", applicationInputValues)
+		}
+
+		for _, item := range applicationValue {
+			if item != "" {
+				pathParameters["application"] = newIDValue(item).GetID()
+				break
+			}
+		}
 	}
 
 	path := replacePathParameters("/tenant/tenants/{tenant}/applications/{application}", pathParameters)

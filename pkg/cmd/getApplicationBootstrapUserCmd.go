@@ -31,7 +31,7 @@ func newGetApplicationBootstrapUserCmd() *getApplicationBootstrapUserCmd {
 
 	cmd.SilenceUsage = true
 
-	addApplicationFlag(cmd)
+	cmd.Flags().String("id", "", "Application id (required)")
 
 	// Required flags
 	cmd.MarkFlagRequired("id")
@@ -68,12 +68,23 @@ func (n *getApplicationBootstrapUserCmd) getApplicationBootstrapUser(cmd *cobra.
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v, err := cmd.Flags().GetStringSlice("id"); err == nil {
-		for _, iValue := range v {
-			pathParameters["id"] = iValue
+	if cmd.Flags().Changed("id") {
+		idInputValues, idValue, err := getApplicationSlice(cmd, args, "id")
+
+		if err != nil {
+			return newUserError("no matching devices found", idInputValues, err)
 		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "id", err))
+
+		if len(idValue) == 0 {
+			return newUserError("no matching devices found", idInputValues)
+		}
+
+		for _, item := range idValue {
+			if item != "" {
+				pathParameters["id"] = newIDValue(item).GetID()
+				break
+			}
+		}
 	}
 
 	path := replacePathParameters("/application/applications/{application}/bootstrapUser", pathParameters)

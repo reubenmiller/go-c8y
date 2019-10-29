@@ -36,7 +36,7 @@ Required role ROLE_APPLICATION_MANAGMENT_ADMIN
 
 	cmd.SilenceUsage = true
 
-	addApplicationFlag(cmd)
+	cmd.Flags().String("application", "", "Application id (required)")
 
 	// Required flags
 	cmd.MarkFlagRequired("application")
@@ -73,12 +73,23 @@ func (n *copyApplicationCmd) copyApplication(cmd *cobra.Command, args []string) 
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v, err := cmd.Flags().GetStringSlice("application"); err == nil {
-		for _, iValue := range v {
-			pathParameters["application"] = iValue
+	if cmd.Flags().Changed("application") {
+		applicationInputValues, applicationValue, err := getApplicationSlice(cmd, args, "application")
+
+		if err != nil {
+			return newUserError("no matching devices found", applicationInputValues, err)
 		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "application", err))
+
+		if len(applicationValue) == 0 {
+			return newUserError("no matching devices found", applicationInputValues)
+		}
+
+		for _, item := range applicationValue {
+			if item != "" {
+				pathParameters["application"] = newIDValue(item).GetID()
+				break
+			}
+		}
 	}
 
 	path := replacePathParameters("/application/applications/{application}/clone", pathParameters)
