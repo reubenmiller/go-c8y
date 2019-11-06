@@ -2,10 +2,14 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"path"
 
+	homedir "github.com/mitchellh/go-homedir"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 type baseCmd struct {
@@ -38,13 +42,15 @@ var (
 	globalFlagWithTotalPages bool
 	globalFlagPrettyPrint    bool
 	globalFlagDryRun         bool
+	globalFlagSessionFile    string
 )
 
-func init() {
-	client = c8y.NewClientFromEnvironment(nil, true)
-}
-
 func Execute() {
+	// config file
+	cobra.OnInitialize(initConfig)
+
+	rootCmd.PersistentFlags().StringVar(&globalFlagSessionFile, "session", "", "Session configuration")
+
 	// Global flags
 	rootCmd.PersistentFlags().BoolVarP(&globalFlagVerbose, "verbose", "v", false, "Verbose logging")
 	rootCmd.PersistentFlags().IntVar(&globalFlagPageSize, "pageSize", 5, "Maximum results per page")
@@ -61,6 +67,7 @@ func Execute() {
 	rootCmd.AddCommand(newInventoryCmd().getCommand())
 	rootCmd.AddCommand(newDeviceRootCmd().getCommand())
 	rootCmd.AddCommand(newRealtimeCmd().getCommand())
+	rootCmd.AddCommand(newSessionsRootCmd().getCommand())
 
 	// generic commands
 	rootCmd.AddCommand(newGetGenericRestCmd().getCommand())
@@ -124,4 +131,52 @@ func Execute() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+}
+
+func initConfig() {
+
+	if os.Getenv("C8Y_SESSION") != "" {
+		globalFlagSessionFile = os.Getenv("C8Y_SESSION")
+	}
+
+	if _, err := os.Stat(globalFlagSessionFile); os.IsExist(err) {
+		// Use config file from the flag.
+		viper.SetConfigFile(globalFlagSessionFile)
+	} else {
+		// Find home directory.
+		home, err := homedir.Dir()
+		if err != nil {
+			log.Panic(err)
+		}
+
+		// Search config in home directory with name ".cobra" (without extension).
+		viper.AddConfigPath(".")
+		viper.AddConfigPath(path.Join(home, ".cumulocity"))
+
+		if globalFlagSessionFile != "" {
+			viper.SetConfigName(globalFlagSessionFile)
+		} else {
+			viper.SetConfigName("session")
+		}
+
+		// only parse env variables if no explict config file is done
+		viper.SetEnvPrefix("C8Y")
+		viper.AutomaticEnv()
+	}
+
+	if err := viper.ReadInConfig(); err == nil {
+		log.Println("Using config file:", viper.ConfigFileUsed())
+		client = c8y.NewClient(
+			nil,
+			viper.GetString("host"),
+			viper.GetString("tenant"),
+			viper.GetString("username"),
+			viper.GetString("password"),
+			true,
+		)
+		return
+	}
+
+	// get session from environment variables
+	client = c8y.NewClientFromEnvironment(nil, true)
 }
