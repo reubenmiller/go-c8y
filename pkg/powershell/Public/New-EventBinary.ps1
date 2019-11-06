@@ -30,6 +30,11 @@ New event binary
         [switch]
         $Raw,
 
+        # Session path
+        [Parameter()]
+        [string]
+        $Session,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -43,6 +48,9 @@ New event binary
         }
         if ($PSBoundParameters.ContainsKey("File")) {
             $Parameters["file"] = $File
+        }
+        if ($PSBoundParameters.ContainsKey("Session")) {
+            $Parameters["session"] = $Session
         }
 
     }

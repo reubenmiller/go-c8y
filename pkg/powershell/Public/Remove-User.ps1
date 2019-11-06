@@ -30,6 +30,11 @@ Delete user
         [switch]
         $Raw,
 
+        # Session path
+        [Parameter()]
+        [string]
+        $Session,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -43,6 +48,9 @@ Delete user
         }
         if ($PSBoundParameters.ContainsKey("Id")) {
             $Parameters["id"] = $Id
+        }
+        if ($PSBoundParameters.ContainsKey("Session")) {
+            $Parameters["session"] = $Session
         }
 
     }

@@ -49,6 +49,11 @@ New retention rule
         [switch]
         $Raw,
 
+        # Session path
+        [Parameter()]
+        [string]
+        $Session,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -74,6 +79,9 @@ New retention rule
         }
         if ($PSBoundParameters.ContainsKey("Editable")) {
             $Parameters["editable"] = $Editable
+        }
+        if ($PSBoundParameters.ContainsKey("Session")) {
+            $Parameters["session"] = $Session
         }
 
     }

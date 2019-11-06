@@ -37,6 +37,11 @@ Required role:: ROLE_OPTION_MANAGEMENT_ADMIN, Required tenant management Example
         [switch]
         $Raw,
 
+        # Session path
+        [Parameter()]
+        [string]
+        $Session,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -53,6 +58,9 @@ Required role:: ROLE_OPTION_MANAGEMENT_ADMIN, Required tenant management Example
         }
         if ($PSBoundParameters.ContainsKey("Editable")) {
             $Parameters["editable"] = $Editable
+        }
+        if ($PSBoundParameters.ContainsKey("Session")) {
+            $Parameters["session"] = $Session
         }
 
     }

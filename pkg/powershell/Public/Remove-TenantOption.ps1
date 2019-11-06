@@ -28,6 +28,11 @@ Delete tenant option
         [switch]
         $Raw,
 
+        # Session path
+        [Parameter()]
+        [string]
+        $Session,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -41,6 +46,9 @@ Delete tenant option
         }
         if ($PSBoundParameters.ContainsKey("Key")) {
             $Parameters["key"] = $Key
+        }
+        if ($PSBoundParameters.ContainsKey("Session")) {
+            $Parameters["session"] = $Session
         }
 
     }

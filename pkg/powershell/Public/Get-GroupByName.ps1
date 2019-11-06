@@ -26,7 +26,12 @@ Get a group by name
         # Include raw response including pagination information
         [Parameter()]
         [switch]
-        $Raw
+        $Raw,
+
+        # Session path
+        [Parameter()]
+        [string]
+        $Session
     )
 
     Begin {
@@ -36,6 +41,9 @@ Get a group by name
         }
         if ($PSBoundParameters.ContainsKey("Name")) {
             $Parameters["name"] = $Name
+        }
+        if ($PSBoundParameters.ContainsKey("Session")) {
+            $Parameters["session"] = $Session
         }
 
     }

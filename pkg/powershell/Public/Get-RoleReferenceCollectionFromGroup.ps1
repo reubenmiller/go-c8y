@@ -44,7 +44,12 @@ Get collection of user role references from a group
         # Include raw response including pagination information
         [Parameter()]
         [switch]
-        $Raw
+        $Raw,
+
+        # Session path
+        [Parameter()]
+        [string]
+        $Session
     )
 
     Begin {
@@ -54,6 +59,15 @@ Get collection of user role references from a group
         }
         if ($PSBoundParameters.ContainsKey("GroupId")) {
             $Parameters["groupId"] = $GroupId
+        }
+        if ($PSBoundParameters.ContainsKey("PageSize")) {
+            $Parameters["pageSize"] = $PageSize
+        }
+        if ($PSBoundParameters.ContainsKey("WithTotalPages") -and $WithTotalPages) {
+            $Parameters["withTotalPages"] = $WithTotalPages
+        }
+        if ($PSBoundParameters.ContainsKey("Session")) {
+            $Parameters["session"] = $Session
         }
 
     }

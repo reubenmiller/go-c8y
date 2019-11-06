@@ -54,6 +54,11 @@ Delete a collection of measurements
         [switch]
         $Raw,
 
+        # Session path
+        [Parameter()]
+        [string]
+        $Session,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -82,6 +87,9 @@ Delete a collection of measurements
         }
         if ($PSBoundParameters.ContainsKey("DateTo")) {
             $Parameters["dateTo"] = $DateTo
+        }
+        if ($PSBoundParameters.ContainsKey("Session")) {
+            $Parameters["session"] = $Session
         }
 
     }

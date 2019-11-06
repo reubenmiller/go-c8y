@@ -164,6 +164,10 @@ Function New-C8yApiPowershellCommand {
         $null = $PageSizeParam.Append('        $PageSize')
         $null = $CmdletParameters.Add($PageSizeParam)
 
+        $null = $BeginParameterBuilder.AppendLine("        if (`$PSBoundParameters.ContainsKey(`"PageSize`")) {")
+        $null = $BeginParameterBuilder.AppendLine("            `$Parameters[`"pageSize`"] = `$PageSize")
+        $null = $BeginParameterBuilder.AppendLine("        }")
+
         # If included, then the original data set will be returned
         $WithTotalPagesParam = New-Object System.Text.StringBuilder
         $null = $WithTotalPagesParam.AppendLine('        # Include total pages statistic')
@@ -171,6 +175,10 @@ Function New-C8yApiPowershellCommand {
         $null = $WithTotalPagesParam.AppendLine('        [switch]')
         $null = $WithTotalPagesParam.Append('        $WithTotalPages')
         $null = $CmdletParameters.Add($WithTotalPagesParam)
+
+        $null = $BeginParameterBuilder.AppendLine("        if (`$PSBoundParameters.ContainsKey(`"WithTotalPages`") -and `$WithTotalPages) {")
+        $null = $BeginParameterBuilder.AppendLine("            `$Parameters[`"withTotalPages`"] = `$WithTotalPages")
+        $null = $BeginParameterBuilder.AppendLine("        }")
 
         #
         # Include option to expand pagination results
@@ -189,6 +197,17 @@ Function New-C8yApiPowershellCommand {
     $null = $RawParam.AppendLine('        [switch]')
     $null = $RawParam.Append('        $Raw')
     $null = $CmdletParameters.Add($RawParam)
+
+    $SessionParam = New-Object System.Text.StringBuilder
+    $null = $SessionParam.AppendLine('        # Session path')
+    $null = $SessionParam.AppendLine('        [Parameter()]')
+    $null = $SessionParam.AppendLine('        [string]')
+    $null = $SessionParam.Append('        $Session')
+    $null = $CmdletParameters.Add($SessionParam)
+
+    $null = $BeginParameterBuilder.AppendLine("        if (`$PSBoundParameters.ContainsKey(`"Session`")) {")
+    $null = $BeginParameterBuilder.AppendLine("            `$Parameters[`"session`"] = `$Session")
+    $null = $BeginParameterBuilder.AppendLine("        }")
 
     # Force parameter
     if ($Specification.method -match "(POST|PUT|DELETE)") {

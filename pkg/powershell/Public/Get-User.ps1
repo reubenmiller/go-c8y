@@ -28,7 +28,12 @@ Get user
         # Include raw response including pagination information
         [Parameter()]
         [switch]
-        $Raw
+        $Raw,
+
+        # Session path
+        [Parameter()]
+        [string]
+        $Session
     )
 
     Begin {
@@ -38,6 +43,9 @@ Get user
         }
         if ($PSBoundParameters.ContainsKey("Id")) {
             $Parameters["id"] = $Id
+        }
+        if ($PSBoundParameters.ContainsKey("Session")) {
+            $Parameters["session"] = $Session
         }
 
     }

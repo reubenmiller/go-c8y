@@ -26,7 +26,12 @@ Get collection of tenant usage statistics summary
         # Include raw response including pagination information
         [Parameter()]
         [switch]
-        $Raw
+        $Raw,
+
+        # Session path
+        [Parameter()]
+        [string]
+        $Session
     )
 
     Begin {
@@ -36,6 +41,9 @@ Get collection of tenant usage statistics summary
         }
         if ($PSBoundParameters.ContainsKey("DateTo")) {
             $Parameters["dateTo"] = $DateTo
+        }
+        if ($PSBoundParameters.ContainsKey("Session")) {
+            $Parameters["session"] = $Session
         }
 
     }

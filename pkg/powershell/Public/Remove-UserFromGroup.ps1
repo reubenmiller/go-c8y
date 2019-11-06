@@ -33,6 +33,11 @@ Delete a user from a group
         [switch]
         $Raw,
 
+        # Session path
+        [Parameter()]
+        [string]
+        $Session,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -49,6 +54,9 @@ Delete a user from a group
         }
         if ($PSBoundParameters.ContainsKey("UserId")) {
             $Parameters["userId"] = $UserId
+        }
+        if ($PSBoundParameters.ContainsKey("Session")) {
+            $Parameters["session"] = $Session
         }
 
     }

@@ -28,6 +28,11 @@ Info: The application can only be removed when its availability is PRIVATE or in
         [switch]
         $Raw,
 
+        # Session path
+        [Parameter()]
+        [string]
+        $Session,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -36,6 +41,9 @@ Info: The application can only be removed when its availability is PRIVATE or in
 
     Begin {
         $Parameters = @{}
+        if ($PSBoundParameters.ContainsKey("Session")) {
+            $Parameters["session"] = $Session
+        }
 
     }
 

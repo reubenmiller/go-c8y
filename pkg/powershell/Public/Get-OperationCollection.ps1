@@ -69,7 +69,12 @@ Get-OperationCollection -Status PENDING
         # Include raw response including pagination information
         [Parameter()]
         [switch]
-        $Raw
+        $Raw,
+
+        # Session path
+        [Parameter()]
+        [string]
+        $Session
     )
 
     Begin {
@@ -88,6 +93,15 @@ Get-OperationCollection -Status PENDING
         }
         if ($PSBoundParameters.ContainsKey("Status")) {
             $Parameters["status"] = $Status
+        }
+        if ($PSBoundParameters.ContainsKey("PageSize")) {
+            $Parameters["pageSize"] = $PageSize
+        }
+        if ($PSBoundParameters.ContainsKey("WithTotalPages") -and $WithTotalPages) {
+            $Parameters["withTotalPages"] = $WithTotalPages
+        }
+        if ($PSBoundParameters.ContainsKey("Session")) {
+            $Parameters["session"] = $Session
         }
 
     }

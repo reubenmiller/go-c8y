@@ -33,6 +33,11 @@ Update tenant option
         [switch]
         $Raw,
 
+        # Session path
+        [Parameter()]
+        [string]
+        $Session,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -49,6 +54,9 @@ Update tenant option
         }
         if ($PSBoundParameters.ContainsKey("Value")) {
             $Parameters["value"] = $Value
+        }
+        if ($PSBoundParameters.ContainsKey("Session")) {
+            $Parameters["session"] = $Session
         }
 
     }

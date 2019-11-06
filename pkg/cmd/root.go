@@ -135,7 +135,7 @@ func Execute() {
 
 func initConfig() {
 
-	if os.Getenv("C8Y_SESSION") != "" {
+	if globalFlagSessionFile == "" && os.Getenv("C8Y_SESSION") != "" {
 		globalFlagSessionFile = os.Getenv("C8Y_SESSION")
 	}
 

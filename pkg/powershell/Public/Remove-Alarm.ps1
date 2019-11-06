@@ -25,6 +25,11 @@ Delete alarm/s
         [switch]
         $Raw,
 
+        # Session path
+        [Parameter()]
+        [string]
+        $Session,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -33,6 +38,9 @@ Delete alarm/s
 
     Begin {
         $Parameters = @{}
+        if ($PSBoundParameters.ContainsKey("Session")) {
+            $Parameters["session"] = $Session
+        }
 
     }
 

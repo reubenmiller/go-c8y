@@ -23,11 +23,19 @@ Get application bootstrap user
         # Include raw response including pagination information
         [Parameter()]
         [switch]
-        $Raw
+        $Raw,
+
+        # Session path
+        [Parameter()]
+        [string]
+        $Session
     )
 
     Begin {
         $Parameters = @{}
+        if ($PSBoundParameters.ContainsKey("Session")) {
+            $Parameters["session"] = $Session
+        }
 
     }
 

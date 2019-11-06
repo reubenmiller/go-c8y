@@ -33,6 +33,11 @@ Required role ROLE_APPLICATION_MANAGMENT_ADMIN
         [switch]
         $Raw,
 
+        # Session path
+        [Parameter()]
+        [string]
+        $Session,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -41,6 +46,9 @@ Required role ROLE_APPLICATION_MANAGMENT_ADMIN
 
     Begin {
         $Parameters = @{}
+        if ($PSBoundParameters.ContainsKey("Session")) {
+            $Parameters["session"] = $Session
+        }
 
     }
 

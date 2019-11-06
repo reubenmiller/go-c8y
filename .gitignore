@@ -12,3 +12,4 @@ c8y.env
 output
 pkg/powershell/powershell.todo.txt
 pkg/powershell/c8y.exe
+cmd/c8y/c8y.exe

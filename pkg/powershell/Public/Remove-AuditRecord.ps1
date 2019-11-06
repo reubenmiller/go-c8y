@@ -25,6 +25,11 @@ Delete an audit record
         [switch]
         $Raw,
 
+        # Session path
+        [Parameter()]
+        [string]
+        $Session,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -35,6 +40,9 @@ Delete an audit record
         $Parameters = @{}
         if ($PSBoundParameters.ContainsKey("Id")) {
             $Parameters["id"] = $Id
+        }
+        if ($PSBoundParameters.ContainsKey("Session")) {
+            $Parameters["session"] = $Session
         }
 
     }

@@ -48,6 +48,11 @@ Update the current user
         [switch]
         $Raw,
 
+        # Session path
+        [Parameter()]
+        [string]
+        $Session,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -73,6 +78,9 @@ Update the current user
         }
         if ($PSBoundParameters.ContainsKey("Password")) {
             $Parameters["password"] = $Password
+        }
+        if ($PSBoundParameters.ContainsKey("Session")) {
+            $Parameters["session"] = $Session
         }
 
     }

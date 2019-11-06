@@ -26,7 +26,12 @@ Get tenant option
         # Include raw response including pagination information
         [Parameter()]
         [switch]
-        $Raw
+        $Raw,
+
+        # Session path
+        [Parameter()]
+        [string]
+        $Session
     )
 
     Begin {
@@ -36,6 +41,9 @@ Get tenant option
         }
         if ($PSBoundParameters.ContainsKey("Key")) {
             $Parameters["key"] = $Key
+        }
+        if ($PSBoundParameters.ContainsKey("Session")) {
+            $Parameters["session"] = $Session
         }
 
     }

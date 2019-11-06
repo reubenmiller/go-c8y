@@ -75,6 +75,11 @@ Update a collection of alarms. Currently only the status of alarms can be change
         [switch]
         $Raw,
 
+        # Session path
+        [Parameter()]
+        [string]
+        $Session,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -103,6 +108,15 @@ Update a collection of alarms. Currently only the status of alarms can be change
         }
         if ($PSBoundParameters.ContainsKey("NewStatus")) {
             $Parameters["newStatus"] = $NewStatus
+        }
+        if ($PSBoundParameters.ContainsKey("PageSize")) {
+            $Parameters["pageSize"] = $PageSize
+        }
+        if ($PSBoundParameters.ContainsKey("WithTotalPages") -and $WithTotalPages) {
+            $Parameters["withTotalPages"] = $WithTotalPages
+        }
+        if ($PSBoundParameters.ContainsKey("Session")) {
+            $Parameters["session"] = $Session
         }
 
     }

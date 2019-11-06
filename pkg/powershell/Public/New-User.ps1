@@ -63,6 +63,11 @@ Create a new user within the collection
         [switch]
         $Raw,
 
+        # Session path
+        [Parameter()]
+        [string]
+        $Session,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -97,6 +102,9 @@ Create a new user within the collection
         }
         if ($PSBoundParameters.ContainsKey("CustomProperties")) {
             $Parameters["customProperties"] = "{0}" -f ((ConvertTo-Json $CustomProperties -Compress) -replace '"', '\"')
+        }
+        if ($PSBoundParameters.ContainsKey("Session")) {
+            $Parameters["session"] = $Session
         }
 
     }

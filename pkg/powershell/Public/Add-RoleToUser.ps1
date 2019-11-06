@@ -33,6 +33,11 @@ Add role to a user
         [switch]
         $Raw,
 
+        # Session path
+        [Parameter()]
+        [string]
+        $Session,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -49,6 +54,9 @@ Add role to a user
         }
         if ($PSBoundParameters.ContainsKey("Role")) {
             $Parameters["role"] = $Role
+        }
+        if ($PSBoundParameters.ContainsKey("Session")) {
+            $Parameters["session"] = $Session
         }
 
     }

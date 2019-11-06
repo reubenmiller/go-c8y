@@ -71,6 +71,11 @@ Delete a collection of alarms
         [switch]
         $Raw,
 
+        # Session path
+        [Parameter()]
+        [string]
+        $Session,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -108,6 +113,9 @@ Delete a collection of alarms
         }
         if ($PSBoundParameters.ContainsKey("WithSourceDevices")) {
             $Parameters["withSourceDevices"] = $WithSourceDevices
+        }
+        if ($PSBoundParameters.ContainsKey("Session")) {
+            $Parameters["session"] = $Session
         }
 
     }

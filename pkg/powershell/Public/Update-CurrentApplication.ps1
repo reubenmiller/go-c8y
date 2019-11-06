@@ -74,6 +74,11 @@ Required authentication with bootstrap user
         [switch]
         $Raw,
 
+        # Session path
+        [Parameter()]
+        [string]
+        $Session,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -111,6 +116,9 @@ Required authentication with bootstrap user
         }
         if ($PSBoundParameters.ContainsKey("ExternalUrl")) {
             $Parameters["externalUrl"] = $ExternalUrl
+        }
+        if ($PSBoundParameters.ContainsKey("Session")) {
+            $Parameters["session"] = $Session
         }
 
     }
