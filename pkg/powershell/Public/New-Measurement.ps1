@@ -25,7 +25,7 @@ Create a new measurement
 
         # Time of the measurement. (required)
         [Parameter(Mandatory = $true)]
-        [datetime]
+        [string]
         $Time,
 
         # The most specific type of this entire measurement. (required)
@@ -52,7 +52,7 @@ Create a new measurement
     Begin {
         $Parameters = @{}
         if ($PSBoundParameters.ContainsKey("Time")) {
-            $Parameters["time"] = PSC8y\Format-Date $Time
+            $Parameters["time"] = $Time
         }
         if ($PSBoundParameters.ContainsKey("Type")) {
             $Parameters["type"] = $Type

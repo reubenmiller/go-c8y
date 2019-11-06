@@ -18,12 +18,12 @@ Get summary of requests and database usage from the start of this month until no
     Param(
         # Start date or date and time of the statistics.
         [Parameter()]
-        [datetime]
+        [string]
         $DateFrom,
 
         # End date or date and time of the statistics.
         [Parameter()]
-        [datetime]
+        [string]
         $DateTo,
 
         # Include raw response including pagination information
@@ -35,10 +35,10 @@ Get summary of requests and database usage from the start of this month until no
     Begin {
         $Parameters = @{}
         if ($PSBoundParameters.ContainsKey("DateFrom")) {
-            $Parameters["dateFrom"] = PSC8y\Format-Date $DateFrom
+            $Parameters["dateFrom"] = $DateFrom
         }
         if ($PSBoundParameters.ContainsKey("DateTo")) {
-            $Parameters["dateTo"] = PSC8y\Format-Date $DateTo
+            $Parameters["dateTo"] = $DateTo
         }
 
     }

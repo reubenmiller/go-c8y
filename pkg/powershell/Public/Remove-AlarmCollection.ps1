@@ -21,12 +21,12 @@ Delete a collection of alarms
 
         # Start date or date and time of alarm occurrence.
         [Parameter()]
-        [datetime]
+        [string]
         $DateFrom,
 
         # End date or date and time of alarm occurrence.
         [Parameter()]
-        [datetime]
+        [string]
         $DateTo,
 
         # Alarm type.
@@ -83,10 +83,10 @@ Delete a collection of alarms
             $Parameters["device"] = $Device
         }
         if ($PSBoundParameters.ContainsKey("DateFrom")) {
-            $Parameters["dateFrom"] = PSC8y\Format-Date $DateFrom
+            $Parameters["dateFrom"] = $DateFrom
         }
         if ($PSBoundParameters.ContainsKey("DateTo")) {
-            $Parameters["dateTo"] = PSC8y\Format-Date $DateTo
+            $Parameters["dateTo"] = $DateTo
         }
         if ($PSBoundParameters.ContainsKey("Type")) {
             $Parameters["type"] = $Type

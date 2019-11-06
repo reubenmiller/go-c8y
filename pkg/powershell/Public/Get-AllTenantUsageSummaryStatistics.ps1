@@ -15,12 +15,12 @@ Get collection of tenant usage statistics summary
     Param(
         # Start date or date and time of the statistics.
         [Parameter()]
-        [datetime]
+        [string]
         $DateFrom,
 
         # End date or date and time of the statistics.
         [Parameter()]
-        [datetime]
+        [string]
         $DateTo,
 
         # Include raw response including pagination information
@@ -32,10 +32,10 @@ Get collection of tenant usage statistics summary
     Begin {
         $Parameters = @{}
         if ($PSBoundParameters.ContainsKey("DateFrom")) {
-            $Parameters["dateFrom"] = PSC8y\Format-Date $DateFrom
+            $Parameters["dateFrom"] = $DateFrom
         }
         if ($PSBoundParameters.ContainsKey("DateTo")) {
-            $Parameters["dateTo"] = PSC8y\Format-Date $DateTo
+            $Parameters["dateTo"] = $DateTo
         }
 
     }

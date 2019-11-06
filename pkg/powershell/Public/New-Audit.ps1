@@ -20,7 +20,7 @@ Create a new audit record
 
         # Time of the audit record. (required)
         [Parameter(Mandatory = $true)]
-        [datetime]
+        [string]
         $Time,
 
         # Text description of the audit record. (required)
@@ -80,7 +80,7 @@ Create a new audit record
             $Parameters["type"] = $Type
         }
         if ($PSBoundParameters.ContainsKey("Time")) {
-            $Parameters["time"] = PSC8y\Format-Date $Time
+            $Parameters["time"] = $Time
         }
         if ($PSBoundParameters.ContainsKey("Text")) {
             $Parameters["text"] = $Text

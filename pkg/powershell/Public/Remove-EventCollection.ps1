@@ -31,12 +31,12 @@ Delete a collection of events
 
         # Start date or date and time of event occurrence.
         [Parameter()]
-        [datetime]
+        [string]
         $DateFrom,
 
         # End date or date and time of event occurrence.
         [Parameter()]
-        [datetime]
+        [string]
         $DateTo,
 
         # Return the newest instead of the oldest events. Must be used with dateFrom and dateTo parameters
@@ -67,10 +67,10 @@ Delete a collection of events
             $Parameters["fragmentType"] = $FragmentType
         }
         if ($PSBoundParameters.ContainsKey("DateFrom")) {
-            $Parameters["dateFrom"] = PSC8y\Format-Date $DateFrom
+            $Parameters["dateFrom"] = $DateFrom
         }
         if ($PSBoundParameters.ContainsKey("DateTo")) {
-            $Parameters["dateTo"] = PSC8y\Format-Date $DateTo
+            $Parameters["dateTo"] = $DateTo
         }
         if ($PSBoundParameters.ContainsKey("Revert")) {
             $Parameters["revert"] = $Revert

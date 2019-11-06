@@ -38,12 +38,12 @@ Update a collection of alarms. Currently only the status of alarms can be change
 
         # Start date or date and time of alarm occurrence.
         [Parameter()]
-        [datetime]
+        [string]
         $DateFrom,
 
         # End date or date and time of alarm occurrence.
         [Parameter()]
-        [datetime]
+        [string]
         $DateTo,
 
         # New status to be applied to all of the matching alarms (required)
@@ -96,10 +96,10 @@ Update a collection of alarms. Currently only the status of alarms can be change
             $Parameters["resolved"] = $Resolved
         }
         if ($PSBoundParameters.ContainsKey("DateFrom")) {
-            $Parameters["dateFrom"] = PSC8y\Format-Date $DateFrom
+            $Parameters["dateFrom"] = $DateFrom
         }
         if ($PSBoundParameters.ContainsKey("DateTo")) {
-            $Parameters["dateTo"] = PSC8y\Format-Date $DateTo
+            $Parameters["dateTo"] = $DateTo
         }
         if ($PSBoundParameters.ContainsKey("NewStatus")) {
             $Parameters["newStatus"] = $NewStatus

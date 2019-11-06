@@ -30,7 +30,7 @@ Create a new alarm
 
         # Time of the alarm. (required)
         [Parameter(Mandatory = $true)]
-        [datetime]
+        [string]
         $Time,
 
         # Text description of the alarm. (required)
@@ -75,7 +75,7 @@ Create a new alarm
             $Parameters["type"] = $Type
         }
         if ($PSBoundParameters.ContainsKey("Time")) {
-            $Parameters["time"] = PSC8y\Format-Date $Time
+            $Parameters["time"] = $Time
         }
         if ($PSBoundParameters.ContainsKey("Text")) {
             $Parameters["text"] = $Text

@@ -51,7 +51,7 @@ Function New-C8yPowershellArguments {
     $DataType = switch -Regex ($Type) {
         "id" { "string" }
         "json" { "hashtable" }
-        "date(from|to|time)" { "datetime" }
+        "date(from|to|time)" { "string" }
         "\[\]string" { "string[]" }
         "\[\]device" { "object[]" }
         "^string$" { "string" }

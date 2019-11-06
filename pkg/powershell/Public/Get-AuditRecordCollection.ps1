@@ -35,12 +35,12 @@ Get collection of (user) audits
 
         # Start date or date and time of audit record occurrence.
         [Parameter()]
-        [datetime]
+        [string]
         $DateFrom,
 
         # End date or date and time of audit record occurrence.
         [Parameter()]
-        [datetime]
+        [string]
         $DateTo,
 
         # Return the newest instead of the oldest audit records. Must be used with dateFrom and dateTo parameters
@@ -87,10 +87,10 @@ Get collection of (user) audits
             $Parameters["application"] = $Application
         }
         if ($PSBoundParameters.ContainsKey("DateFrom")) {
-            $Parameters["dateFrom"] = PSC8y\Format-Date $DateFrom
+            $Parameters["dateFrom"] = $DateFrom
         }
         if ($PSBoundParameters.ContainsKey("DateTo")) {
-            $Parameters["dateTo"] = PSC8y\Format-Date $DateTo
+            $Parameters["dateTo"] = $DateTo
         }
         if ($PSBoundParameters.ContainsKey("Revert")) {
             $Parameters["revert"] = $Revert

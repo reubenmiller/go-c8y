@@ -41,12 +41,12 @@ Delete a collection of measurements
 
         # Start date or date and time of measurement occurrence.
         [Parameter()]
-        [datetime]
+        [string]
         $DateFrom,
 
         # End date or date and time of measurement occurrence.
         [Parameter()]
-        [datetime]
+        [string]
         $DateTo,
 
         # Include raw response including pagination information
@@ -78,10 +78,10 @@ Delete a collection of measurements
             $Parameters["fragmentType"] = $FragmentType
         }
         if ($PSBoundParameters.ContainsKey("DateFrom")) {
-            $Parameters["dateFrom"] = PSC8y\Format-Date $DateFrom
+            $Parameters["dateFrom"] = $DateFrom
         }
         if ($PSBoundParameters.ContainsKey("DateTo")) {
-            $Parameters["dateTo"] = PSC8y\Format-Date $DateTo
+            $Parameters["dateTo"] = $DateTo
         }
 
     }

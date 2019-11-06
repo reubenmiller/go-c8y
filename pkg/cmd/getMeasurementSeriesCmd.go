@@ -90,19 +90,19 @@ func (n *getMeasurementSeriesCmd) getMeasurementSeries(cmd *cobra.Command, args 
 	} else {
 		return newUserError("Flag does not exist")
 	}
-	if v, err := cmd.Flags().GetString("dateFrom"); err == nil {
-		if v != "" {
-			query.Add("dateFrom", url.QueryEscape(v))
+	if cmd.Flags().Changed("dateFrom") {
+		if v, err := tryGetTimestampFlag(cmd, "dateFrom"); err == nil && v != "" {
+			query.Add("dateFrom", v)
+		} else {
+			return newUserError("invalid date format", err)
 		}
-	} else {
-		return newUserError("Flag does not exist")
 	}
-	if v, err := cmd.Flags().GetString("dateTo"); err == nil {
-		if v != "" {
-			query.Add("dateTo", url.QueryEscape(v))
+	if cmd.Flags().Changed("dateTo") {
+		if v, err := tryGetTimestampFlag(cmd, "dateTo"); err == nil && v != "" {
+			query.Add("dateTo", v)
+		} else {
+			return newUserError("invalid date format", err)
 		}
-	} else {
-		return newUserError("Flag does not exist")
 	}
 	if cmd.Flags().Changed("pageSize") {
 		if v, err := cmd.Flags().GetInt("pageSize"); err == nil && v > 0 {

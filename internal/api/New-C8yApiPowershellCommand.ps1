@@ -118,7 +118,7 @@ Function New-C8yApiPowershellCommand {
                 }
 
                 "datetime" {
-                    "PSC8y\Format-Date `${0}" -f $item.Name
+                    "`${0}" -f $item.Name
                 }
 
                 default {
@@ -358,7 +358,8 @@ Function New-Body {
             } elseif (`$iParam.Value -is [hashtable]) {
                 `$Parameters[`$Name] = "{0}" -f ((ConvertTo-Json `$iParam.Value -Compress) -replace '"', '\"')
             } elseif (`$iParam.Value -is [datetime]) {
-                `$Parameters[`$Name] = Format-Date `$iParam.Value
+                `$Parameters[`$Name] = `$iParam.Value
+                # `$Parameters[`$Name] = Format-Date `$iParam.Value
             } else {
                 if ("`$iParam" -notmatch "^$") {
                     `$Parameters[`$Name] = `$iParam.Value

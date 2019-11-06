@@ -10,3 +10,5 @@ test/c8y_test/application.setup.properties
 c8y.env
 *.log
 output
+pkg/powershell/powershell.todo.txt
+pkg/powershell/c8y.exe

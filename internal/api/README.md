@@ -12,20 +12,34 @@
 * [ ] Support common parameters
   * [x] pageSize
   * [x] withTotalPages
-  * [ ] --raw Option to display raw result, rather than a filtered data set?
 * [x] Add required parameters
 * [ ] Piped arguments
 * [ ] Look over devices where []device type is used (parallel tasks?) Probably need a new
 * [ ] Commands
   * [ ] Devices list --type unitType
 * [ ] Expansion
-  * [ ] applications
+  * [x] applications
+  * [ ] devices
+  * [ ] agents
+* [ ] Result parsing
+  * [ ] client side filtering. e.g. c8y applications list --filter "name=*test*"
+* [ ] New / Import / export cumulocity sessions
+  * [ ] Generate secure password and encrypt it
+  * [ ] Set credentials from a microservice subscription
+  * [ ] encrypt/decrypt password
+* [ ] Create new session
+* [x] Flag parsing
+  * [x] Datetime (relative and fixed)
 * [ ] template
-* [ ] Value formatter (for self link values), or is this like the device type?
 * [ ] Add examples
 * [ ] Generate tests automatically
-* [ ] Generate powershell commands from templates
+* [x] Generate powershell commands from templates
 * [ ] Make options case insensitive
+
+# encryption process
+
+1. Generate a unique token, store it in an environment variable
+2.
 
 ## Powershell
 
@@ -155,4 +169,28 @@ Manual commands
     - update
     - listSubscriptions
 
--
+
+
+## Controlling the active session
+
+## Option 1: Setting the C8Y_HOST, C8Y_USER, C8Y_PASSWORD, C8Y_TENANT env variables
+
+**Disadvantsges**
+* Use must set these every time, this is very tedious
+* Setting the variables is different for each OS
+
+**Advantages**
+* Simple
+* If these env variables are already set, then there is nothing else to do
+* The user is reponsible for setting these themselves
+
+## Option 2: Multiple session files
+
+* Keep one session per file, and set one environment variable which points to the "active" session?
+* autocomplete with files?
+
+Example: **c8y.myfilter.session**
+* One file stores the default sessions
+*
+
+## Option 2:

@@ -81,7 +81,7 @@ func (n *newMeasurementCmd) newMeasurement(cmd *cobra.Command, args []string) er
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "device", err))
 	}
-	if v, err := cmd.Flags().GetString("time"); err == nil && v != "" {
+	if v, err := tryGetTimestampFlag(cmd, "time"); err == nil && v != "" {
 		body["time"] = v
 	}
 	if v, err := cmd.Flags().GetString("type"); err == nil && v != "" {

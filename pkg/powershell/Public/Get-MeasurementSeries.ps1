@@ -38,12 +38,12 @@ Get-MeasurementSeries
 
         # Start date or date and time of measurement occurrence. (required)
         [Parameter(Mandatory = $true)]
-        [datetime]
+        [string]
         $DateFrom,
 
         # End date or date and time of measurement occurrence. (required)
         [Parameter(Mandatory = $true)]
-        [datetime]
+        [string]
         $DateTo,
 
         # Include raw response including pagination information
@@ -64,10 +64,10 @@ Get-MeasurementSeries
             $Parameters["aggregationType"] = $AggregationType
         }
         if ($PSBoundParameters.ContainsKey("DateFrom")) {
-            $Parameters["dateFrom"] = PSC8y\Format-Date $DateFrom
+            $Parameters["dateFrom"] = $DateFrom
         }
         if ($PSBoundParameters.ContainsKey("DateTo")) {
-            $Parameters["dateTo"] = PSC8y\Format-Date $DateTo
+            $Parameters["dateTo"] = $DateTo
         }
 
     }

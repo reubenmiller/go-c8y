@@ -116,6 +116,14 @@ Function New-C8yApiGoCommand {
                         "json" {
                             # Do nothing as it is already covered by getDataFlag
                         }
+                        "datetime" {
+
+                            $null = $RESTBodyBuilder.AppendLine(@"
+    if v, err := tryGetTimestampFlag(cmd, "${argname}"); err == nil && v != "" {
+        body["${prop}"] = v
+    }
+"@)
+                        }
                         "application" {
                             $null = $RESTBodyBuilder.AppendLine(@"
     if v, err := cmd.Flags().GetStringSlice("${argname}") ; err == nil && v != "" {
@@ -214,6 +222,18 @@ Function New-C8yApiGoCommand {
         }
     } else {
         return newUserError("Flag does not exist")
+    }
+"@)
+                }
+
+                "datetime" {
+                    $null = $RESTQueryBuilder.AppendLine(@"
+    if cmd.Flags().Changed("${prop}") {
+        if v, err := tryGetTimestampFlag(cmd, "${prop}"); err == nil && v != "" {
+            query.Add("${queryParam}", v)
+        } else {
+            return newUserError("invalid date format", err)
+        }
     }
 "@)
                 }

@@ -82,7 +82,7 @@ func (n *newAuditCmd) newAudit(cmd *cobra.Command, args []string) error {
 	if v, err := cmd.Flags().GetString("type"); err == nil && v != "" {
 		body["type"] = v
 	}
-	if v, err := cmd.Flags().GetString("time"); err == nil && v != "" {
+	if v, err := tryGetTimestampFlag(cmd, "time"); err == nil && v != "" {
 		body["time"] = v
 	}
 	if v, err := cmd.Flags().GetString("text"); err == nil && v != "" {

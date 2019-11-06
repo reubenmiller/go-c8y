@@ -34,12 +34,12 @@ Get-OperationCollection -Status PENDING
 
         # Start date or date and time of operation.
         [Parameter()]
-        [datetime]
+        [string]
         $DateFrom,
 
         # End date or date and time of operation.
         [Parameter()]
-        [datetime]
+        [string]
         $DateTo,
 
         # Operation status, can be one of SUCCESSFUL, FAILED, EXECUTING or PENDING.
@@ -81,10 +81,10 @@ Get-OperationCollection -Status PENDING
             $Parameters["device"] = $Device
         }
         if ($PSBoundParameters.ContainsKey("DateFrom")) {
-            $Parameters["dateFrom"] = PSC8y\Format-Date $DateFrom
+            $Parameters["dateFrom"] = $DateFrom
         }
         if ($PSBoundParameters.ContainsKey("DateTo")) {
-            $Parameters["dateTo"] = PSC8y\Format-Date $DateTo
+            $Parameters["dateTo"] = $DateTo
         }
         if ($PSBoundParameters.ContainsKey("Status")) {
             $Parameters["status"] = $Status
