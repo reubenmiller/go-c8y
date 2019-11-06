@@ -82,8 +82,8 @@
     * [ ] Name
     * [ ] type
   * [ ]
-* [ ] Support for ShouldProcess prompt
-  * [ ] Support device name lookup in the message?
+* [x] Support for ShouldProcess prompt
+  * [x] Support device name lookup in the message?
 * [ ] ?native multi-part upload?
 * [ ] Add tests
   * [ ] How to automatic generate Pester tests

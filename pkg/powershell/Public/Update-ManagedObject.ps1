@@ -1,24 +1,34 @@
 # Code generated from specification version 1.0.0: DO NOT EDIT
-Function Save-Binary {
+Function Update-ManagedObject {
 <#
 .SYNOPSIS
-Get binary
+Update inventory
 
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
                    PositionalBinding=$true,
                    HelpUri='',
-                   ConfirmImpact = 'None')]
+                   ConfirmImpact = 'High')]
     [Alias()]
     [OutputType([object])]
     Param(
-        # Inventory binary id (required)
+        # ManagedObject id (required)
         [Parameter(Mandatory = $true,
                    ValueFromPipeline=$true,
                    ValueFromPipelineByPropertyName=$true)]
         [string]
         $Id,
+
+        # name
+        [Parameter()]
+        [string]
+        $Name,
+
+        # Additional properties of the inventory.
+        [Parameter()]
+        [hashtable]
+        $Data,
 
         # Include raw response including pagination information
         [Parameter()]
@@ -28,13 +38,21 @@ Get binary
         # Session path
         [Parameter()]
         [string]
-        $Session
+        $Session,
+
+        # Don't prompt for confirmation
+        [Parameter()]
+        [switch]
+        $Force
     )
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("Id")) {
-            $Parameters["id"] = $Id
+        if ($PSBoundParameters.ContainsKey("Name")) {
+            $Parameters["name"] = $Name
+        }
+        if ($PSBoundParameters.ContainsKey("Data")) {
+            $Parameters["data"] = "{0}" -f ((ConvertTo-Json $Data -Compress) -replace '"', '\"')
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
@@ -44,6 +62,9 @@ Get binary
 
     Process {
         foreach ($item in @($Id)) {
+            if ($item) {
+                $Parameters["id"] = if ($item.id) { $item.id } else { $item }
+            }
 
             if (!$Force -and
                 !$WhatIfPreference -and
@@ -55,10 +76,10 @@ Get binary
             }
 
             Invoke-Command `
-                -Noun "binaries" `
-                -Verb "download" `
+                -Noun "inventory" `
+                -Verb "update" `
                 -Parameters $Parameters `
-                -Type "" `
+                -Type "application/vnd.com.nsn.cumulocity.inventory+json" `
                 -ItemType "" `
                 -ResultProperty "" `
                 -Raw:$Raw `

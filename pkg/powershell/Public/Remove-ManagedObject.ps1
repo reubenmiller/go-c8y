@@ -1,24 +1,29 @@
 # Code generated from specification version 1.0.0: DO NOT EDIT
-Function Save-Binary {
+Function Remove-ManagedObject {
 <#
 .SYNOPSIS
-Get binary
+Delete inventory/s
 
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
                    PositionalBinding=$true,
                    HelpUri='',
-                   ConfirmImpact = 'None')]
+                   ConfirmImpact = 'High')]
     [Alias()]
     [OutputType([object])]
     Param(
-        # Inventory binary id (required)
+        # ManagedObject id (required)
         [Parameter(Mandatory = $true,
                    ValueFromPipeline=$true,
                    ValueFromPipelineByPropertyName=$true)]
         [string]
         $Id,
+
+        # Remove all child devices and child assets will be deleted recursively. By default, the delete operation is propagated to the subgroups only if the deleted object is a group
+        [Parameter()]
+        [switch]
+        $Cascade,
 
         # Include raw response including pagination information
         [Parameter()]
@@ -28,13 +33,18 @@ Get binary
         # Session path
         [Parameter()]
         [string]
-        $Session
+        $Session,
+
+        # Don't prompt for confirmation
+        [Parameter()]
+        [switch]
+        $Force
     )
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("Id")) {
-            $Parameters["id"] = $Id
+        if ($PSBoundParameters.ContainsKey("Cascade")) {
+            $Parameters["cascade"] = $Cascade
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
@@ -44,6 +54,9 @@ Get binary
 
     Process {
         foreach ($item in @($Id)) {
+            if ($item) {
+                $Parameters["id"] = if ($item.id) { $item.id } else { $item }
+            }
 
             if (!$Force -and
                 !$WhatIfPreference -and
@@ -55,8 +68,8 @@ Get binary
             }
 
             Invoke-Command `
-                -Noun "binaries" `
-                -Verb "download" `
+                -Noun "inventory" `
+                -Verb "delete" `
                 -Parameters $Parameters `
                 -Type "" `
                 -ItemType "" `

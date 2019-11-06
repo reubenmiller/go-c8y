@@ -8,22 +8,22 @@ type inventoryCmd struct {
 	*baseCmd
 }
 
-func newInventoryCmd() *inventoryCmd {
+func newInventoryRootCmd() *inventoryCmd {
 	ccmd := &inventoryCmd{}
 
 	cmd := &cobra.Command{
 		Use:   "inventory",
-		Short: "Inventory rest endpoint",
-		Long:  `Inventory rest endpoint to interact with Cumulocity managed objects`,
+		Short: "Cumulocity managed objects",
+		Long:  `REST endpoint to interact with Cumulocity managed objects`,
 	}
 
 	// Subcommands
-	cmd.AddCommand(newQueryManagedObjectCmd().getCommand())
-	cmd.AddCommand(newGetManagedObjectCmd().getCommand())
+	cmd.AddCommand(newGetManagedObjectCollectionCmd().getCommand())
+	cmd.AddCommand(newQueryManagedObjectCollectionCmd().getCommand())
 	cmd.AddCommand(newNewManagedObjectCmd().getCommand())
+	cmd.AddCommand(newGetManagedObjectCmd().getCommand())
 	cmd.AddCommand(newUpdateManagedObjectCmd().getCommand())
 	cmd.AddCommand(newDeleteManagedObjectCmd().getCommand())
-	cmd.AddCommand(newBinaryGetManagedObjectCmd().getCommand())
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

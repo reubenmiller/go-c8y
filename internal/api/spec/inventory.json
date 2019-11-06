@@ -1,0 +1,247 @@
+{
+  "information": {
+    "name": "inventory",
+    "description": "Cumulocity managed objects",
+    "descriptionLong": "REST endpoint to interact with Cumulocity managed objects",
+    "link": "https://cumulocity.com/guides/reference/inventory/"
+  },
+  "endpoints": [
+    {
+      "name": "getManagedObjectCollection",
+      "method": "GET",
+      "description": "Get a collection of managedObjects based on filter parameters",
+      "descriptionLong": "Get a collection of managedObjects based on filter parameters",
+      "examples": {
+        "powershell": [
+          "Get-ManagedobjectCollection"
+        ],
+        "go": [
+          "c8y managedObjects list --type value --severity MAJOR"
+        ]
+      },
+      "path": "inventory/managedObjects",
+      "accept": "application/vnd.com.nsn.cumulocity.managedObjectCollection+json",
+      "collectionType": "application/vnd.com.nsn.cumulocity.managedObject+json",
+      "listProperty": "managedObjects",
+      "alias": {
+        "go": "list",
+        "powershell": "Get-ManagedObjectCollection"
+      },
+      "queryParameters": [
+        {
+          "name": "device",
+          "type": "[]device",
+          "property": "source",
+          "description": "Source device id."
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "description": "ManagedObject type."
+        },
+        {
+          "name": "fragmentType",
+          "type": "string",
+          "description": "ManagedObject fragment type."
+        },
+        {
+          "name": "text",
+          "type": "string",
+          "description": "managed objects containing a text value starting with the given text (placeholder {text}). Text value is any alphanumeric string starting with a latin letter (A-Z or a-z)."
+        },
+        {
+          "name": "withParents",
+          "type": "boolean",
+          "description": "include a flat list of all parents and grandparents of the given object"
+        }
+      ]
+    },
+    {
+      "name": "queryManagedObjectCollection",
+      "method": "GET",
+      "description": "Get a collection of managedObjects based on Cumulocity query language",
+      "descriptionLong": "Get a collection of managedObjects based on Cumulocity query language",
+      "examples": {
+        "powershell": [
+          "Find-ManagedobjectCollection"
+        ],
+        "go": [
+          "c8y managedObjects query --type value --severity MAJOR"
+        ]
+      },
+      "path": "inventory/managedObjects",
+      "accept": "application/vnd.com.nsn.cumulocity.managedObjectCollection+json",
+      "collectionType": "application/vnd.com.nsn.cumulocity.managedObject+json",
+      "listProperty": "managedObjects",
+      "alias": {
+        "go": "query",
+        "powershell": "Find-ManagedObjectCollection"
+      },
+      "queryParameters": [
+        {
+          "name": "query",
+          "type": "string",
+          "description": "ManagedObject query."
+        },
+        {
+          "name": "withParents",
+          "type": "boolean",
+          "description": "include a flat list of all parents and grandparents of the given object"
+        }
+      ]
+    },
+    {
+      "name": "newManagedObject",
+      "method": "POST",
+      "path": "inventory/managedObjects",
+      "accept": "application/vnd.com.nsn.cumulocity.inventory+json",
+      "description": "Create a new inventory",
+      "descriptionLong": "Create a new inventory",
+      "alias": {
+        "go": "create",
+        "powershell": "New-ManagedObject"
+      },
+      "body": [
+        {
+          "name": "device",
+          "type": "[]device",
+          "required": true,
+          "property": "source.id",
+          "description": "The ManagedObject that the inventory originated from"
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "required": true,
+          "description": "Identifies the type of this inventory, e.g. 'com_cumulocity_events_TamperEvent'."
+        },
+        {
+          "name": "time",
+          "type": "datetime",
+          "required": true,
+          "description": "Time of the inventory."
+        },
+        {
+          "name": "text",
+          "type": "string",
+          "required": true,
+          "description": "Text description of the inventory."
+        },
+        {
+          "name": "severity",
+          "type": "string",
+          "required": true,
+          "description": "The severity of the inventory: CRITICAL, MAJOR, MINOR or WARNING. Must be upper-case.",
+          "validationSet": [
+            "CRITICAL",
+            "MAJOR",
+            "MINOR",
+            "WARNING"
+          ]
+        },
+        {
+          "name": "status",
+          "type": "string",
+          "description": "The status of the inventory: ACTIVE, ACKNOWLEDGED or CLEARED. If status was not appeared, new inventory will have status ACTIVE. Must be upper-case.",
+          "validationSet": [
+            "ACTIVE",
+            "ACKNOWLEDGED",
+            "CLEARED"
+          ]
+        },
+        {
+          "name": "data",
+          "type": "json",
+          "description": "Additional properties of the inventory."
+        }
+      ]
+    },
+    {
+      "name": "getManagedObject",
+      "description": "Get inventory/s",
+      "method": "GET",
+      "path": "inventory/managedObjects/{id}",
+      "accept": "application/vnd.com.nsn.cumulocity.inventory+json",
+      "alias": {
+        "go": "get",
+        "powershell": "Get-ManagedObject"
+      },
+      "pathParameters": [
+        {
+          "name": "id",
+          "type": "string",
+          "pipeline": true,
+          "required": true,
+          "description": "ManagedObject id"
+        }
+      ],
+      "queryParameters": [
+        {
+          "name": "withParents",
+          "type": "boolean",
+          "description": "include a flat list of all parents and grandparents of the given object"
+        }
+      ]
+    },
+    {
+      "name": "updateManagedObject",
+      "method": "PUT",
+      "path": "inventory/managedObjects/{id}",
+      "accept": "application/vnd.com.nsn.cumulocity.inventory+json",
+      "description": "Update inventory",
+      "alias": {
+        "go": "update",
+        "powershell": "Update-ManagedObject"
+      },
+      "body": [
+        {
+          "name": "name",
+          "type": "string",
+          "required": false,
+          "description": "name"
+        },
+        {
+          "name": "data",
+          "type": "json",
+          "description": "Additional properties of the inventory."
+        }
+      ],
+      "pathParameters": [
+        {
+          "name": "id",
+          "type": "string",
+          "pipeline": true,
+          "description": "ManagedObject id",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "deleteManagedObject",
+      "description": "Delete inventory/s",
+      "method": "DELETE",
+      "path": "inventory/managedObjects/{id}",
+      "accept": "",
+      "alias": {
+        "go": "delete",
+        "powershell": "Remove-ManagedObject"
+      },
+      "pathParameters": [
+        {
+          "name": "id",
+          "type": "string",
+          "pipeline": true,
+          "required": true,
+          "description": "ManagedObject id"
+        }
+      ],
+      "queryParameters": [
+        {
+          "name": "cascade",
+          "type": "boolean",
+          "description": "Remove all child devices and child assets will be deleted recursively. By default, the delete operation is propagated to the subgroups only if the deleted object is a group"
+        }
+      ]
+    }
+  ]
+}

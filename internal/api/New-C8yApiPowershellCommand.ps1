@@ -26,7 +26,7 @@ Function New-C8yApiPowershellCommand {
 
     # Powershell Confirm impact
     $CmdletConfirmImpact = "None";
-    if ($CmdletName -notlike "Get*") {
+    if ($CmdletName -notmatch "^(Get|Find|Save)") {
         $CmdletConfirmImpact = "High"
     }
 

@@ -64,7 +64,7 @@ func Execute() {
 	rootCmd.AddCommand(newCompletionsCmd().getCommand())
 	rootCmd.AddCommand(newVersionCmd().getCommand())
 
-	rootCmd.AddCommand(newInventoryCmd().getCommand())
+	// rootCmd.AddCommand(newInventoryCmd().getCommand())
 	rootCmd.AddCommand(newDeviceRootCmd().getCommand())
 	rootCmd.AddCommand(newRealtimeCmd().getCommand())
 	rootCmd.AddCommand(newSessionsRootCmd().getCommand())
@@ -96,6 +96,9 @@ func Execute() {
 
 	// identity commands
 	rootCmd.AddCommand(newIdentityRootCmd().getCommand())
+
+	// inventory commands
+	rootCmd.AddCommand(newInventoryRootCmd().getCommand())
 
 	// measurements commands
 	rootCmd.AddCommand(newMeasurementsRootCmd().getCommand())

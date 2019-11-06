@@ -1,0 +1,155 @@
+// Code generated from specification version 1.0.0: DO NOT EDIT
+package cmd
+
+import (
+	"context"
+	"fmt"
+	"net/url"
+
+	"github.com/fatih/color"
+	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/spf13/cobra"
+	"github.com/tidwall/pretty"
+)
+
+type getManagedObjectCollectionCmd struct {
+	*baseCmd
+}
+
+func newGetManagedObjectCollectionCmd() *getManagedObjectCollectionCmd {
+	ccmd := &getManagedObjectCollectionCmd{}
+
+	cmd := &cobra.Command{
+		Use:   "list",
+		Short: "Get a collection of managedObjects based on filter parameters",
+		Long:  `Get a collection of managedObjects based on filter parameters`,
+		Example: `
+        c8y managedObjects list --type value --severity MAJOR
+		`,
+		RunE: ccmd.getManagedObjectCollection,
+	}
+
+	cmd.SilenceUsage = true
+
+	cmd.Flags().StringSlice("device", []string{""}, "Source device id.")
+	cmd.Flags().String("type", "", "ManagedObject type.")
+	cmd.Flags().String("fragmentType", "", "ManagedObject fragment type.")
+	cmd.Flags().String("text", "", "managed objects containing a text value starting with the given text (placeholder {text}). Text value is any alphanumeric string starting with a latin letter (A-Z or a-z).")
+	cmd.Flags().Bool("withParents", false, "include a flat list of all parents and grandparents of the given object")
+
+	// Required flags
+
+	ccmd.baseCmd = newBaseCmd(cmd)
+
+	return ccmd
+}
+
+func (n *getManagedObjectCollectionCmd) getManagedObjectCollection(cmd *cobra.Command, args []string) error {
+
+	// query parameters
+	queryValue := url.QueryEscape("")
+	query := url.Values{}
+	if cmd.Flags().Changed("device") {
+		deviceInputValues, deviceValue, err := getFormattedDeviceSlice(cmd, args, "device")
+
+		if err != nil {
+			return newUserError("no matching devices found", deviceInputValues, err)
+		}
+
+		if len(deviceValue) == 0 {
+			return newUserError("no matching devices found", deviceInputValues)
+		}
+
+		for _, item := range deviceValue {
+			if item != "" {
+				query.Add("source", newIDValue(item).GetID())
+			}
+		}
+	}
+	if v, err := cmd.Flags().GetString("type"); err == nil {
+		if v != "" {
+			query.Add("type", url.QueryEscape(v))
+		}
+	} else {
+		return newUserError("Flag does not exist")
+	}
+	if v, err := cmd.Flags().GetString("fragmentType"); err == nil {
+		if v != "" {
+			query.Add("fragmentType", url.QueryEscape(v))
+		}
+	} else {
+		return newUserError("Flag does not exist")
+	}
+	if v, err := cmd.Flags().GetString("text"); err == nil {
+		if v != "" {
+			query.Add("text", url.QueryEscape(v))
+		}
+	} else {
+		return newUserError("Flag does not exist")
+	}
+	if v, err := cmd.Flags().GetBool("withParents"); err == nil {
+		if v {
+			query.Add("withParents", "true")
+		}
+	} else {
+		return newUserError("Flag does not exist")
+	}
+	if cmd.Flags().Changed("pageSize") {
+		if v, err := cmd.Flags().GetInt("pageSize"); err == nil && v > 0 {
+			query.Add("pageSize", fmt.Sprintf("%d", v))
+		}
+	}
+
+	if cmd.Flags().Changed("withTotalPages") {
+		if v, err := cmd.Flags().GetBool("withTotalPages"); err == nil && v {
+			query.Add("withTotalPages", "true")
+		}
+	}
+	queryValue, err := url.QueryUnescape(query.Encode())
+
+	if err != nil {
+		return newSystemError("Invalid query parameter")
+	}
+
+	// body
+	var body map[string]interface{}
+
+	// path parameters
+	pathParameters := make(map[string]string)
+
+	path := replacePathParameters("inventory/managedObjects", pathParameters)
+
+	return n.doGetManagedObjectCollection("GET", path, queryValue, body)
+}
+
+func (n *getManagedObjectCollectionCmd) doGetManagedObjectCollection(method string, path string, query string, body map[string]interface{}) error {
+	resp, err := client.SendRequest(
+		context.Background(),
+		c8y.RequestOptions{
+			Method:       method,
+			Path:         path,
+			Query:        query,
+			Body:         body,
+			IgnoreAccept: false,
+			DryRun:       globalFlagDryRun,
+		})
+
+	if err != nil {
+		color.Set(color.FgRed, color.Bold)
+	}
+
+	if resp != nil && resp.JSONData != nil {
+		if globalFlagPrettyPrint {
+			fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+		} else {
+			fmt.Printf("%s\n", *resp.JSONData)
+		}
+	}
+
+	color.Unset()
+
+	if err != nil {
+		return newSystemError("command failed", err)
+	}
+	return nil
+}

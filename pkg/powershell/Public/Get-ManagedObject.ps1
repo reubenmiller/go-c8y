@@ -1,8 +1,8 @@
 # Code generated from specification version 1.0.0: DO NOT EDIT
-Function Save-Binary {
+Function Get-ManagedObject {
 <#
 .SYNOPSIS
-Get binary
+Get inventory/s
 
 
 #>
@@ -13,12 +13,17 @@ Get binary
     [Alias()]
     [OutputType([object])]
     Param(
-        # Inventory binary id (required)
+        # ManagedObject id (required)
         [Parameter(Mandatory = $true,
                    ValueFromPipeline=$true,
                    ValueFromPipelineByPropertyName=$true)]
         [string]
         $Id,
+
+        # include a flat list of all parents and grandparents of the given object
+        [Parameter()]
+        [switch]
+        $WithParents,
 
         # Include raw response including pagination information
         [Parameter()]
@@ -33,8 +38,8 @@ Get binary
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("Id")) {
-            $Parameters["id"] = $Id
+        if ($PSBoundParameters.ContainsKey("WithParents")) {
+            $Parameters["withParents"] = $WithParents
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
@@ -44,6 +49,9 @@ Get binary
 
     Process {
         foreach ($item in @($Id)) {
+            if ($item) {
+                $Parameters["id"] = if ($item.id) { $item.id } else { $item }
+            }
 
             if (!$Force -and
                 !$WhatIfPreference -and
@@ -55,10 +63,10 @@ Get binary
             }
 
             Invoke-Command `
-                -Noun "binaries" `
-                -Verb "download" `
+                -Noun "inventory" `
+                -Verb "get" `
                 -Parameters $Parameters `
-                -Type "" `
+                -Type "application/vnd.com.nsn.cumulocity.inventory+json" `
                 -ItemType "" `
                 -ResultProperty "" `
                 -Raw:$Raw `
