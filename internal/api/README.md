@@ -194,3 +194,30 @@ Example: **c8y.myfilter.session**
 *
 
 ## Option 2:
+
+# Troubleshooting
+
+## bash completion does not work
+
+**Description**
+
+After generating the bash completions
+
+```sh
+c8y completions bash > .c8y.sh
+source .c8y.sh
+```
+The following error is displayed:
+
+```sh
+bash: _get_comp_words_by_ref: command not found warning
+```
+
+**Fix**
+Install bash-completions
+
+```sh
+yum install bash-completion bash-completion-extras
+```
+
+Note: You need to start a new bash session before the bash add-ons are activated

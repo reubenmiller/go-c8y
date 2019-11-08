@@ -78,6 +78,7 @@ FormatsToProcess = @(
     'format-data/options.ps1xml',
     'format-data/retentionRules.ps1xml',
     'format-data/roleReferences.ps1xml',
+    'format-data/session.ps1xml',
     'format-data/tenants.ps1xml',
     'format-data/tenantStatistics.ps1xml',
     'format-data/userGroups.ps1xml',

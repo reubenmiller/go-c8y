@@ -19,11 +19,11 @@ require (
 	github.com/karrick/tparse/v2 v2.7.1
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/gommon v0.2.8 // indirect
-	github.com/mattn/go-colorable v0.1.1 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/obeattie/ohmyglob v0.0.0-20150811221449-290764208a0d
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v0.9.3
+	github.com/reubenmiller/promptui v0.3.3-0.20191108115601-2f95ff728c78
 	github.com/simplereach/timeutils v1.2.0 // indirect
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.3
@@ -40,5 +40,7 @@ require (
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 	moul.io/http2curl v1.0.0
 )
+
+replace github.com/manifoldco/promptui => github.com/reubenmiller/promptui v0.3.3-0.20191108135340-17a79c13fae0
 
 go 1.13

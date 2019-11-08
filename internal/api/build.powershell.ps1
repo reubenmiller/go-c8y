@@ -26,8 +26,14 @@ if (!$SkipGenerate) {
     $OutputDir = Resolve-path $OutputDir
 
     Write-Host "Building the c8y.exe"
+    $env:GOARCH = "amd64"
+    $env:GOOS = "windows"
     $c8yBinary = Resolve-Path "$PSScriptRoot/../../cmd/c8y/main.go"
     & go build -o "$OutputDir/../c8y.exe" "$c8yBinary"
+
+    $env:GOARCH = "amd64"
+    $env:GOOS = "linux"
+    & go build -o "$OutputDir/../c8y" "$c8yBinary"
 
     $SpecFiles = Get-ChildItem -Path "$PSScriptRoot/spec" -Filter "*.json"
 

@@ -140,9 +140,10 @@ func initConfig() {
 
 	if globalFlagSessionFile == "" && os.Getenv("C8Y_SESSION") != "" {
 		globalFlagSessionFile = os.Getenv("C8Y_SESSION")
+		log.Printf("Using session environment variable: %s\n", globalFlagSessionFile)
 	}
 
-	if _, err := os.Stat(globalFlagSessionFile); os.IsExist(err) {
+	if _, err := os.Stat(globalFlagSessionFile); err == nil {
 		// Use config file from the flag.
 		viper.SetConfigFile(globalFlagSessionFile)
 	} else {
@@ -162,16 +163,16 @@ func initConfig() {
 			viper.SetConfigName("session")
 		}
 
-		// only parse env variables if no explict config file is done
-		viper.SetEnvPrefix("C8Y")
-		viper.AutomaticEnv()
+		// only parse env variables if no explict config file is given
+		// viper.SetEnvPrefix("C8Y")
+		// viper.AutomaticEnv()
 	}
 
 	if err := viper.ReadInConfig(); err == nil {
 		log.Println("Using config file:", viper.ConfigFileUsed())
 		client = c8y.NewClient(
 			nil,
-			viper.GetString("host"),
+			formatHost(viper.GetString("host")),
 			viper.GetString("tenant"),
 			viper.GetString("username"),
 			viper.GetString("password"),

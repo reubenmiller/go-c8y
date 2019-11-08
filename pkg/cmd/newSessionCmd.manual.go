@@ -1,17 +1,20 @@
-// Code generated from specification version 1.0.0: DO NOT EDIT
 package cmd
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
-	"os"
+	"path"
+	"path/filepath"
+	"strings"
 
 	"github.com/fatih/color"
 	"github.com/howeyc/gopass"
+	homedir "github.com/mitchellh/go-homedir"
+	"github.com/pkg/errors"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
-	"github.com/reubenmiller/go-c8y/pkg/encrypt"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -21,7 +24,7 @@ type CumulocitySessions struct {
 }
 
 type CumulocitySession struct {
-	ID          string `json:"id"`
+	// ID          string `json:"id"`
 	Host        string `json:"host"`
 	Tenant      string `json:"tenant"`
 	Username    string `json:"username"`
@@ -29,14 +32,53 @@ type CumulocitySession struct {
 	Description string `json:"description"`
 
 	MicroserviceAliases map[string]string `json:"microserviceAliases"`
+
+	Path string `json:"-"`
+	Name string `json:"-"`
+}
+
+func NewCumulocitySessionFromFile(filePath string) (*CumulocitySession, error) {
+	session := &CumulocitySession{}
+	data, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(data, &session); err != nil {
+		return nil, err
+	}
+
+	session.Path = filePath
+
+	basename := filepath.Base(filePath)
+	extension := filepath.Ext(basename)
+	session.Name = strings.TrimSuffix(basename, extension)
+	return session, nil
 }
 
 func (s *CumulocitySession) SetPassword(password string) {
-	s.Password = encrypt.EncryptString(password, "fixed-token")
+	s.Password = password
+	// s.Password = encrypt.EncryptString(password, "fixed-token")
+}
+
+func (s *CumulocitySession) SetHost(host string) {
+	s.Host = formatHost(host)
+}
+
+func formatHost(host string) string {
+	if !strings.HasPrefix(host, "http://") && !strings.HasPrefix(host, "https://") {
+		host = "https://" + host
+	}
+	return host
+}
+
+func (s CumulocitySession) GetHost() string {
+	return formatHost(s.Host)
 }
 
 func (s CumulocitySession) GetPassword() string {
-	return encrypt.DecryptString(s.Password, "fixed-token")
+	return s.Password
+	// return encrypt.DecryptString(s.password, "fixed-token")
 }
 
 type newSessionCmd struct {
@@ -60,14 +102,16 @@ func newNewSessionCmd() *newSessionCmd {
 
 	cmd.Flags().String("host", "", "Host. .e.g. test.cumulocity.com. (required)")
 	cmd.Flags().String("tenant", "", "Tenant. (required)")
-	cmd.Flags().String("user", "", "User (without tenant). (required)")
+	cmd.Flags().String("username", "", "Username (without tenant). (required)")
 	cmd.Flags().String("password", "", "Password. (required)")
 	cmd.Flags().String("description", "", "Description about the session")
+	cmd.Flags().String("name", "", "Name of the session")
+	cmd.Flags().String("microserviceAliases", "", "Name of the session")
 
 	// Required flags
 	cmd.MarkFlagRequired("host")
 	cmd.MarkFlagRequired("tenant")
-	cmd.MarkFlagRequired("user")
+	cmd.MarkFlagRequired("username")
 	// cmd.MarkFlagRequired("password")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
@@ -78,9 +122,14 @@ func newNewSessionCmd() *newSessionCmd {
 func (n *newSessionCmd) newSession(cmd *cobra.Command, args []string) error {
 
 	session := &CumulocitySession{}
+	session.MicroserviceAliases = make(map[string]string)
 
+	sessionName := ""
+	if v, err := cmd.Flags().GetString("name"); err == nil && v != "" {
+		sessionName = v
+	}
 	if v, err := cmd.Flags().GetString("host"); err == nil && v != "" {
-		session.Host = v
+		session.SetHost(v)
 	}
 	if v, err := cmd.Flags().GetString("tenant"); err == nil && v != "" {
 		session.Tenant = v
@@ -91,28 +140,30 @@ func (n *newSessionCmd) newSession(cmd *cobra.Command, args []string) error {
 			session.SetPassword(v)
 		}
 	} else {
-		fmt.Printf("Enter password: ")
+		cmd.Printf("Enter password: ")
 		password, _ := gopass.GetPasswd() // Silent
 		session.SetPassword(string(password))
 	}
-	if v, err := cmd.Flags().GetString("user"); err == nil && v != "" {
+	if v, err := cmd.Flags().GetString("username"); err == nil && v != "" {
 		session.Username = v
 	}
 	if v, err := cmd.Flags().GetString("description"); err == nil && v != "" {
 		session.Description = v
 	}
 
-	log.Printf("Setting env: %s", session.Host)
-	os.Setenv("C8Y_HOST_TEST", session.Host)
+	outputDir := n.getHomeDir("")
+	outputFile := n.formatFilename(sessionName)
 
-	log.Printf("Getting env: %s", os.Getenv("C8Y_HOST_TEST"))
-
-	if str, err := json.Marshal(session); err == nil {
-		fmt.Printf("%s", str)
+	if err := n.writeSessionFile(outputDir, outputFile, *session); err != nil {
+		return err
 	}
 
+	fmt.Println(path.Join(outputDir, outputFile))
+	// if str, err := json.Marshal(session); err == nil {
+	// 	fmt.Printf("%s\n", str)
+	// }
+
 	return nil
-	// return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "device", err))
 }
 
 func (n *newSessionCmd) doNewSession(method string, path string, query string, body map[string]interface{}) error {
@@ -143,6 +194,39 @@ func (n *newSessionCmd) doNewSession(method string, path string, query string, b
 
 	if err != nil {
 		return newSystemError("command failed", err)
+	}
+	return nil
+}
+
+func (n *newSessionCmd) formatFilename(name string) string {
+	if !strings.HasSuffix(name, ".json") {
+		name = fmt.Sprintf("%s.json", name)
+	}
+	return name
+}
+
+func (n *newSessionCmd) getHomeDir(defaultPath string) string {
+	if defaultPath == "" {
+		if homeDir, err := homedir.Dir(); err == nil {
+			defaultPath = path.Join(homeDir, ".cumulocity")
+		}
+	}
+	return defaultPath
+}
+
+func (n *newSessionCmd) writeSessionFile(outputDir, outputFile string, session CumulocitySession) error {
+	data, err := json.MarshalIndent(session, "", "  ")
+
+	if err != nil {
+		return errors.Wrap(err, "failed to convert session to json")
+	}
+
+	outputPath := path.Join(outputDir, outputFile)
+
+	log.Printf("output file: %s", outputPath)
+
+	if err := ioutil.WriteFile(path.Join(outputDir, outputFile), data, 0644); err != nil {
+		return errors.Wrap(err, "failed to write to file")
 	}
 	return nil
 }

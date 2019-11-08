@@ -13,3 +13,5 @@ output
 pkg/powershell/powershell.todo.txt
 pkg/powershell/c8y.exe
 cmd/c8y/c8y.exe
+pkg/powershell/c8y
+pkg/powershell/c8y.exe~
