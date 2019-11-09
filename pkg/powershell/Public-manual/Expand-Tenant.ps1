@@ -28,10 +28,7 @@ Get all the tenant object (with app in their name). Note the Expand cmdlet won't
             ValueFromPipeline=$true,
             Position=0
         )]
-        [object[]] $InputObject,
-
-        [ValidateSet("MICROSERVICE", "EXTERNAL", "HOSTED")]
-        [string] $Type
+        [object[]] $InputObject
     )
 
     Process {
