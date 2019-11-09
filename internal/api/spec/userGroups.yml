@@ -20,7 +20,7 @@ endpoints:
         powershell: Get-GroupCollection
     pathParameters:
       - name: tenant
-        type: string
+        type: tenant
         description: Tenant
 
 
@@ -35,7 +35,7 @@ endpoints:
         powershell: New-Group
     pathParameters:
       - name: tenant
-        type: string
+        type: tenant
         description: Tenant
 
     body:
@@ -53,7 +53,7 @@ endpoints:
         powershell: Get-Group
     pathParameters:
       - name: tenant
-        type: string
+        type: tenant
         description: Tenant
 
       - name: id
@@ -70,7 +70,7 @@ endpoints:
         powershell: Get-GroupByName
     pathParameters:
       - name: tenant
-        type: string
+        type: tenant
         description: Tenant
 
       - name: name
@@ -86,7 +86,7 @@ endpoints:
         powershell: Remove-Group
     pathParameters:
       - name: tenant
-        type: string
+        type: tenant
         description: Tenant
 
       - name: id
@@ -103,7 +103,7 @@ endpoints:
         powershell: Update-Group
     pathParameters:
       - name: tenant
-        type: string
+        type: tenant
         description: Tenant
 
       - name: id
@@ -131,7 +131,7 @@ endpoints:
         powershell: Get-GroupReferenceCollection
     pathParameters:
       - name: tenant
-        type: string
+        type: tenant
         description: Tenant
 
       - name: username

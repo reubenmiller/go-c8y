@@ -80,7 +80,7 @@ endpoints:
 
     pathParameters:
       - name: tenant
-        type: string
+        type: tenant
         description: Tenant
 
     queryParameters:
@@ -173,7 +173,7 @@ endpoints:
         powershell: Get-User
     pathParameters:
       - name: tenant
-        type: string
+        type: tenant
         required: false
         description: Tenant
 
@@ -192,7 +192,7 @@ endpoints:
         powershell: Get-UserByName
     pathParameters:
       - name: tenant
-        type: string
+        type: tenant
         required: false
         description: Tenant
 
@@ -211,7 +211,7 @@ endpoints:
         powershell: Remove-User
     pathParameters:
       - name: tenant
-        type: string
+        type: tenant
         required: false
         description: Tenant
 

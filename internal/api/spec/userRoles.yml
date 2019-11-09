@@ -18,7 +18,7 @@ endpoints:
         powershell: Get-RoleCollection
     pathParameters:
       - name: tenant
-        type: string
+        type: tenant
         description: Tenant
 
       - name: username
@@ -37,7 +37,7 @@ endpoints:
         powershell: Add-RoleToUser
     pathParameters:
       - name: tenant
-        type: string
+        type: tenant
         description: Tenant
 
       - name: username
@@ -61,7 +61,7 @@ endpoints:
         powershell: Remove-RoleFromUser
     pathParameters:
       - name: tenant
-        type: string
+        type: tenant
         description: Tenant
 
       - name: username
@@ -84,7 +84,7 @@ endpoints:
         powershell: Add-RoleToGroup
     pathParameters:
       - name: tenant
-        type: string
+        type: tenant
         description: Tenant
 
       - name: groupId
@@ -109,7 +109,7 @@ endpoints:
         powershell: Remove-RoleFromGroup
     pathParameters:
       - name: tenant
-        type: string
+        type: tenant
         description: Tenant
 
       - name: groupId
@@ -135,7 +135,7 @@ endpoints:
         powershell: Get-RoleReferenceCollectionFromUser
     pathParameters:
       - name: tenant
-        type: string
+        type: tenant
         description: Tenant
 
       - name: username
@@ -155,7 +155,7 @@ endpoints:
         powershell: Get-RoleReferenceCollectionFromGroup
     pathParameters:
       - name: tenant
-        type: string
+        type: tenant
         description: Tenant
 
       - name: groupId

@@ -73,42 +73,42 @@ endpoints:
   - name: getTenant
     description: 'Get tenant'
     method: GET
-    path: /tenant/tenants/{id}
+    path: /tenant/tenants/{tenant}
     accept: application/vnd.com.nsn.cumulocity.tenant+json
     alias:
         go: get
         powershell: Get-Tenant
     pathParameters:
-      - name: id
-        type: string
-        required: true
+      - name: tenant
+        type: tenant
+        required: false
         description: Tenant id
 
   - name: deleteTenant
     description: 'Delete tenant'
     method: DELETE
-    path: /tenant/tenants/{id}
+    path: /tenant/tenants/{tenant}
     alias:
         go: delete
         powershell: Remove-Tenant
     pathParameters:
-      - name: id
-        type: string
-        required: true
+      - name: tenant
+        type: tenant
+        required: false
         description: Tenant id
 
   - name: updateTenant
     description: 'Update tenant'
     method: PUT
-    path: /tenant/tenants/{id}
+    path: /tenant/tenants/{tenant}
     accept: application/vnd.com.nsn.cumulocity.tenant+json
     alias:
         go: update
         powershell: Update-Tenant
     pathParameters:
-      - name: id
-        type: string
-        required: true
+      - name: tenant
+        type: tenant
+        required: false
         description: Tenant id
 
     body:
@@ -167,8 +167,8 @@ endpoints:
         powershell: Enable-Application
     pathParameters:
       - name: tenant
-        type: string
-        required: true
+        type: tenant
+        required: false
         description: Tenant id
     body:
       - name: application
@@ -188,8 +188,8 @@ endpoints:
         powershell: Disable-Application
     pathParameters:
       - name: tenant
-        type: string
-        required: true
+        type: tenant
+        required: false
         description: Tenant id
 
       - name: application
@@ -210,6 +210,6 @@ endpoints:
         powershell: Get-ApplicationReferenceCollection
     pathParameters:
       - name: tenant
-        type: string
-        required: true
+        type: tenant
+        required: false
         description: Tenant id

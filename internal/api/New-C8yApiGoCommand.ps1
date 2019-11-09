@@ -188,6 +188,14 @@ Function New-C8yApiGoCommand {
     }
 "@)
             }
+            "^tenant$" {
+                $null = $RESTPathBuilder.AppendLine(@"
+    if v := getTenantWithDefaultFlag(cmd, "${prop}", client.TenantName); v != `"`" {
+        pathParameters["${prop}"] = v
+    }
+"@)
+            }
+
             default {
                 $null = $RESTPathBuilder.AppendLine(@"
     if v, err := cmd.Flags().GetString("${prop}"); err == nil {
@@ -537,6 +545,18 @@ Function Get-C8yGoArgs {
         }
 
         "^string$" {
+            $SetFlag = if ($UseOption) {
+                'cmd.Flags().StringP("{0}", "{1}", "{2}", "{3}")' -f $Name, $OptionName, $Default, $Description
+            } else {
+                'cmd.Flags().String("{0}", "{1}", "{2}")' -f $Name, $Default, $Description
+            }
+
+            @{
+                SetFlag = $SetFlag
+            }
+        }
+
+        "^tenant$" {
             $SetFlag = if ($UseOption) {
                 'cmd.Flags().StringP("{0}", "{1}", "{2}", "{3}")' -f $Name, $OptionName, $Default, $Description
             } else {

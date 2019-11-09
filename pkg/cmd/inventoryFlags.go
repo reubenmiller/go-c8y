@@ -43,3 +43,13 @@ func getDataFlag(cmd *cobra.Command) map[string]interface{} {
 	}
 	return make(map[string]interface{})
 }
+
+func getTenantWithDefaultFlag(cmd *cobra.Command, flagName string, defaultTenant string) string {
+	if cmd.Flags().Changed(flagName) {
+		if value, err := cmd.Flags().GetString(flagName); err == nil {
+			return value
+		}
+	}
+
+	return defaultTenant
+}

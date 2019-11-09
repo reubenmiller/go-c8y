@@ -18,7 +18,7 @@ endpoints:
         powershell: Add-UserToGroup
     pathParameters:
       - name: tenant
-        type: string
+        type: tenant
         description: Tenant
 
       - name: groupId
@@ -44,7 +44,7 @@ endpoints:
         powershell: Remove-UserFromGroup
     pathParameters:
       - name: tenant
-        type: string
+        type: tenant
         description: Tenant
 
       - name: groupId
@@ -65,7 +65,7 @@ endpoints:
         powershell: Get-GroupMembership
     pathParameters:
       - name: tenant
-        type: string
+        type: tenant
         description: Tenant
 
       - name: groupId

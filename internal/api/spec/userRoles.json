@@ -19,7 +19,7 @@
       "pathParameters": [
         {
           "name": "tenant",
-          "type": "string",
+          "type": "tenant",
           "description": "Tenant"
         },
         {
@@ -43,7 +43,7 @@
       "pathParameters": [
         {
           "name": "tenant",
-          "type": "string",
+          "type": "tenant",
           "description": "Tenant"
         },
         {
@@ -75,7 +75,7 @@
       "pathParameters": [
         {
           "name": "tenant",
-          "type": "string",
+          "type": "tenant",
           "description": "Tenant"
         },
         {
@@ -105,7 +105,7 @@
       "pathParameters": [
         {
           "name": "tenant",
-          "type": "string",
+          "type": "tenant",
           "description": "Tenant"
         },
         {
@@ -138,7 +138,7 @@
       "pathParameters": [
         {
           "name": "tenant",
-          "type": "string",
+          "type": "tenant",
           "description": "Tenant"
         },
         {
@@ -170,7 +170,7 @@
       "pathParameters": [
         {
           "name": "tenant",
-          "type": "string",
+          "type": "tenant",
           "description": "Tenant"
         },
         {
@@ -196,7 +196,7 @@
       "pathParameters": [
         {
           "name": "tenant",
-          "type": "string",
+          "type": "tenant",
           "description": "Tenant"
         },
         {
