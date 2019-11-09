@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -64,11 +65,8 @@ func (n *newApplicationBinaryCmd) newApplicationBinary(cmd *cobra.Command, args 
 	}
 
 	// body
-	var body map[string]interface{}
-	body = getDataFlag(cmd)
-	if v, err := cmd.Flags().GetString("file"); err == nil && v != "" {
-		body["file"] = v
-	}
+	body := mapbuilder.NewMapBuilder()
+	body.SetMap(getDataFlag(cmd))
 
 	// path parameters
 	pathParameters := make(map[string]string)
@@ -76,24 +74,23 @@ func (n *newApplicationBinaryCmd) newApplicationBinary(cmd *cobra.Command, args 
 		applicationInputValues, applicationValue, err := getApplicationSlice(cmd, args, "application")
 
 		if err != nil {
-			return newUserError("no matching devices found", applicationInputValues, err)
+			return newUserError("no matching applications found", applicationInputValues, err)
 		}
 
 		if len(applicationValue) == 0 {
-			return newUserError("no matching devices found", applicationInputValues)
+			return newUserError("no matching applications found", applicationInputValues)
 		}
 
 		for _, item := range applicationValue {
 			if item != "" {
 				pathParameters["application"] = newIDValue(item).GetID()
-				break
 			}
 		}
 	}
 
 	path := replacePathParameters("/application/applications/{application}/binaries", pathParameters)
 
-	return n.doNewApplicationBinary("POST", path, queryValue, body)
+	return n.doNewApplicationBinary("POST", path, queryValue, body.GetMap())
 }
 
 func (n *newApplicationBinaryCmd) doNewApplicationBinary(method string, path string, query string, body map[string]interface{}) error {

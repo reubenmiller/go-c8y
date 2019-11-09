@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -64,7 +65,7 @@ func (n *getApplicationBootstrapUserCmd) getApplicationBootstrapUser(cmd *cobra.
 	}
 
 	// body
-	var body map[string]interface{}
+	body := mapbuilder.NewMapBuilder()
 
 	// path parameters
 	pathParameters := make(map[string]string)
@@ -72,24 +73,23 @@ func (n *getApplicationBootstrapUserCmd) getApplicationBootstrapUser(cmd *cobra.
 		idInputValues, idValue, err := getApplicationSlice(cmd, args, "id")
 
 		if err != nil {
-			return newUserError("no matching devices found", idInputValues, err)
+			return newUserError("no matching applications found", idInputValues, err)
 		}
 
 		if len(idValue) == 0 {
-			return newUserError("no matching devices found", idInputValues)
+			return newUserError("no matching applications found", idInputValues)
 		}
 
 		for _, item := range idValue {
 			if item != "" {
 				pathParameters["id"] = newIDValue(item).GetID()
-				break
 			}
 		}
 	}
 
 	path := replacePathParameters("/application/applications/{application}/bootstrapUser", pathParameters)
 
-	return n.doGetApplicationBootstrapUser("GET", path, queryValue, body)
+	return n.doGetApplicationBootstrapUser("GET", path, queryValue, body.GetMap())
 }
 
 func (n *getApplicationBootstrapUserCmd) doGetApplicationBootstrapUser(method string, path string, query string, body map[string]interface{}) error {

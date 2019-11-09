@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -61,14 +62,14 @@ func (n *currentTenantCmd) currentTenant(cmd *cobra.Command, args []string) erro
 	}
 
 	// body
-	var body map[string]interface{}
+	body := mapbuilder.NewMapBuilder()
 
 	// path parameters
 	pathParameters := make(map[string]string)
 
 	path := replacePathParameters("/tenant/currentTenant", pathParameters)
 
-	return n.doCurrentTenant("GET", path, queryValue, body)
+	return n.doCurrentTenant("GET", path, queryValue, body.GetMap())
 }
 
 func (n *currentTenantCmd) doCurrentTenant(method string, path string, query string, body map[string]interface{}) error {

@@ -13,12 +13,11 @@ Delete tenant
     [Alias()]
     [OutputType([object])]
     Param(
-        # Tenant id (required)
-        [Parameter(Mandatory = $true,
-                   ValueFromPipeline=$true,
+        # Tenant id
+        [Parameter(ValueFromPipeline=$true,
                    ValueFromPipelineByPropertyName=$true)]
-        [string]
-        $Id,
+        [object]
+        $Tenant,
 
         # Include raw response including pagination information
         [Parameter()]
@@ -38,9 +37,6 @@ Delete tenant
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("Id")) {
-            $Parameters["id"] = $Id
-        }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
         }
@@ -48,7 +44,10 @@ Delete tenant
     }
 
     Process {
-        foreach ($item in @($Id)) {
+        foreach ($item in @($Tenant)) {
+            if ($item) {
+                $Parameters["tenant"] = if ($item.id) { $item.id } else { $item }
+            }
 
             if (!$Force -and
                 !$WhatIfPreference -and

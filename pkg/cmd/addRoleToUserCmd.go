@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -66,31 +67,32 @@ func (n *addRoleToUserCmd) addRoleToUser(cmd *cobra.Command, args []string) erro
 	}
 
 	// body
-	var body map[string]interface{}
-	body = getDataFlag(cmd)
-	if v, err := cmd.Flags().GetString("role"); err == nil && v != "" {
-		if _, exists := body["role"]; !exists {
-			body["role"] = make(map[string]interface{})
+	body := mapbuilder.NewMapBuilder()
+	body.SetMap(getDataFlag(cmd))
+	if v, err := cmd.Flags().GetString("role"); err == nil {
+		if v != "" {
+			body.Set("role.self", v)
 		}
-		body["role"].(map[string]interface{})["self"] = v
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "role", err))
 	}
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v, err := cmd.Flags().GetString("tenant"); err == nil {
+	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
 		pathParameters["tenant"] = v
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "tenant", err))
 	}
 	if v, err := cmd.Flags().GetString("username"); err == nil {
-		pathParameters["username"] = v
+		if v != "" {
+			pathParameters["username"] = v
+		}
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "username", err))
 	}
 
 	path := replacePathParameters("/user/{tenant}/users/{username}/roles", pathParameters)
 
-	return n.doAddRoleToUser("POST", path, queryValue, body)
+	return n.doAddRoleToUser("POST", path, queryValue, body.GetMap())
 }
 
 func (n *addRoleToUserCmd) doAddRoleToUser(method string, path string, query string, body map[string]interface{}) error {

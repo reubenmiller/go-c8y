@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -72,11 +73,11 @@ func (n *getMeasurementSeriesCmd) getMeasurementSeries(cmd *cobra.Command, args 
 			}
 		}
 	}
-	if v, err := cmd.Flags().GetStringSlice("series"); err == nil {
-		if len(v) > 0 {
-			for _, item := range v {
-				if item != "" {
-					query.Add("series", item)
+	if items, err := cmd.Flags().GetStringSlice("series"); err == nil {
+		if len(items) > 0 {
+			for _, v := range items {
+				if v != "" {
+					query.Add("series", url.QueryEscape(v))
 				}
 			}
 		}
@@ -88,7 +89,7 @@ func (n *getMeasurementSeriesCmd) getMeasurementSeries(cmd *cobra.Command, args 
 			query.Add("aggregationType", url.QueryEscape(v))
 		}
 	} else {
-		return newUserError("Flag does not exist")
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "aggregationType", err))
 	}
 	if cmd.Flags().Changed("dateFrom") {
 		if v, err := tryGetTimestampFlag(cmd, "dateFrom"); err == nil && v != "" {
@@ -122,14 +123,14 @@ func (n *getMeasurementSeriesCmd) getMeasurementSeries(cmd *cobra.Command, args 
 	}
 
 	// body
-	var body map[string]interface{}
+	body := mapbuilder.NewMapBuilder()
 
 	// path parameters
 	pathParameters := make(map[string]string)
 
 	path := replacePathParameters("measurement/measurements/series", pathParameters)
 
-	return n.doGetMeasurementSeries("GET", path, queryValue, body)
+	return n.doGetMeasurementSeries("GET", path, queryValue, body.GetMap())
 }
 
 func (n *getMeasurementSeriesCmd) doGetMeasurementSeries(method string, path string, query string, body map[string]interface{}) error {

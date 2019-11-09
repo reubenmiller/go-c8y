@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -61,14 +62,14 @@ func (n *getBinaryCollectionCmd) getBinaryCollection(cmd *cobra.Command, args []
 	}
 
 	// body
-	var body map[string]interface{}
+	body := mapbuilder.NewMapBuilder()
 
 	// path parameters
 	pathParameters := make(map[string]string)
 
 	path := replacePathParameters("/inventory/binaries", pathParameters)
 
-	return n.doGetBinaryCollection("GET", path, queryValue, body)
+	return n.doGetBinaryCollection("GET", path, queryValue, body.GetMap())
 }
 
 func (n *getBinaryCollectionCmd) doGetBinaryCollection(method string, path string, query string, body map[string]interface{}) error {

@@ -15,7 +15,7 @@ Unassign/Remove role from a group
     Param(
         # Tenant
         [Parameter()]
-        [string]
+        [object]
         $Tenant,
 
         # Group id (required)

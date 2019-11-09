@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -68,29 +69,43 @@ func (n *updateAlarmCmd) updateAlarm(cmd *cobra.Command, args []string) error {
 	}
 
 	// body
-	var body map[string]interface{}
-	body = getDataFlag(cmd)
-	if v, err := cmd.Flags().GetString("status"); err == nil && v != "" {
-		body["status"] = v
+	body := mapbuilder.NewMapBuilder()
+	body.SetMap(getDataFlag(cmd))
+	if v, err := cmd.Flags().GetString("status"); err == nil {
+		if v != "" {
+			body.Set("status", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "status", err))
 	}
-	if v, err := cmd.Flags().GetString("severity"); err == nil && v != "" {
-		body["severity"] = v
+	if v, err := cmd.Flags().GetString("severity"); err == nil {
+		if v != "" {
+			body.Set("severity", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "severity", err))
 	}
-	if v, err := cmd.Flags().GetString("text"); err == nil && v != "" {
-		body["text"] = v
+	if v, err := cmd.Flags().GetString("text"); err == nil {
+		if v != "" {
+			body.Set("text", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "text", err))
 	}
 
 	// path parameters
 	pathParameters := make(map[string]string)
 	if v, err := cmd.Flags().GetString("id"); err == nil {
-		pathParameters["id"] = v
+		if v != "" {
+			pathParameters["id"] = v
+		}
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "id", err))
 	}
 
 	path := replacePathParameters("alarm/alarms/{id}", pathParameters)
 
-	return n.doUpdateAlarm("PUT", path, queryValue, body)
+	return n.doUpdateAlarm("PUT", path, queryValue, body.GetMap())
 }
 
 func (n *updateAlarmCmd) doUpdateAlarm(method string, path string, query string, body map[string]interface{}) error {

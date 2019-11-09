@@ -15,7 +15,7 @@ Delete user
     Param(
         # Tenant
         [Parameter()]
-        [string]
+        [object]
         $Tenant,
 
         # User id (required)

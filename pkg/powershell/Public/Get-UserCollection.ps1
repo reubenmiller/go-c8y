@@ -22,7 +22,7 @@ Get-UserCollection
     Param(
         # Tenant
         [Parameter()]
-        [string]
+        [object]
         $Tenant,
 
         # prefix or full username

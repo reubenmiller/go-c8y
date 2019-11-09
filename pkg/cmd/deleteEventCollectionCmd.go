@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -72,14 +73,14 @@ func (n *deleteEventCollectionCmd) deleteEventCollection(cmd *cobra.Command, arg
 			query.Add("type", url.QueryEscape(v))
 		}
 	} else {
-		return newUserError("Flag does not exist")
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "type", err))
 	}
 	if v, err := cmd.Flags().GetString("fragmentType"); err == nil {
 		if v != "" {
 			query.Add("fragmentType", url.QueryEscape(v))
 		}
 	} else {
-		return newUserError("Flag does not exist")
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "fragmentType", err))
 	}
 	if cmd.Flags().Changed("dateFrom") {
 		if v, err := tryGetTimestampFlag(cmd, "dateFrom"); err == nil && v != "" {
@@ -120,14 +121,14 @@ func (n *deleteEventCollectionCmd) deleteEventCollection(cmd *cobra.Command, arg
 	}
 
 	// body
-	var body map[string]interface{}
+	body := mapbuilder.NewMapBuilder()
 
 	// path parameters
 	pathParameters := make(map[string]string)
 
 	path := replacePathParameters("event/events", pathParameters)
 
-	return n.doDeleteEventCollection("DELETE", path, queryValue, body)
+	return n.doDeleteEventCollection("DELETE", path, queryValue, body.GetMap())
 }
 
 func (n *deleteEventCollectionCmd) doDeleteEventCollection(method string, path string, query string, body map[string]interface{}) error {

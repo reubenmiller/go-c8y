@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -56,21 +57,21 @@ func (n *getUserCollectionCmd) getUserCollection(cmd *cobra.Command, args []stri
 			query.Add("username", url.QueryEscape(v))
 		}
 	} else {
-		return newUserError("Flag does not exist")
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "username", err))
 	}
 	if v, err := cmd.Flags().GetString("groups"); err == nil {
 		if v != "" {
 			query.Add("groups", url.QueryEscape(v))
 		}
 	} else {
-		return newUserError("Flag does not exist")
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "groups", err))
 	}
 	if v, err := cmd.Flags().GetString("owner"); err == nil {
 		if v != "" {
 			query.Add("owner", url.QueryEscape(v))
 		}
 	} else {
-		return newUserError("Flag does not exist")
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "owner", err))
 	}
 	if v, err := cmd.Flags().GetBool("onlyDevices"); err == nil {
 		if v {
@@ -104,19 +105,17 @@ func (n *getUserCollectionCmd) getUserCollection(cmd *cobra.Command, args []stri
 	}
 
 	// body
-	var body map[string]interface{}
+	body := mapbuilder.NewMapBuilder()
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v, err := cmd.Flags().GetString("tenant"); err == nil {
+	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
 		pathParameters["tenant"] = v
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "tenant", err))
 	}
 
 	path := replacePathParameters("/user/{tenant}/users", pathParameters)
 
-	return n.doGetUserCollection("GET", path, queryValue, body)
+	return n.doGetUserCollection("GET", path, queryValue, body.GetMap())
 }
 
 func (n *getUserCollectionCmd) doGetUserCollection(method string, path string, query string, body map[string]interface{}) error {

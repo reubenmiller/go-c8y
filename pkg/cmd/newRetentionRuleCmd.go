@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -68,25 +69,42 @@ func (n *newRetentionRuleCmd) newRetentionRule(cmd *cobra.Command, args []string
 	}
 
 	// body
-	var body map[string]interface{}
-	body = getDataFlag(cmd)
-	if v, err := cmd.Flags().GetString("dataType"); err == nil && v != "" {
-		body["dataType"] = v
+	body := mapbuilder.NewMapBuilder()
+	body.SetMap(getDataFlag(cmd))
+	if v, err := cmd.Flags().GetString("dataType"); err == nil {
+		if v != "" {
+			body.Set("dataType", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "dataType", err))
 	}
-	if v, err := cmd.Flags().GetString("fragmentType"); err == nil && v != "" {
-		body["fragmentType"] = v
+	if v, err := cmd.Flags().GetString("fragmentType"); err == nil {
+		if v != "" {
+			body.Set("fragmentType", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "fragmentType", err))
 	}
-	if v, err := cmd.Flags().GetString("type"); err == nil && v != "" {
-		body["type"] = v
+	if v, err := cmd.Flags().GetString("type"); err == nil {
+		if v != "" {
+			body.Set("type", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "type", err))
 	}
-	if v, err := cmd.Flags().GetString("source"); err == nil && v != "" {
-		body["source"] = v
+	if v, err := cmd.Flags().GetString("source"); err == nil {
+		if v != "" {
+			body.Set("source", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "source", err))
 	}
-	if v, err := cmd.Flags().GetString("maximumAge"); err == nil && v != "" {
-		body["maximumAge"] = v
-	}
-	if v, err := cmd.Flags().GetString("editable"); err == nil && v != "" {
-		body["editable"] = v
+	if v, err := cmd.Flags().GetBool("editable"); err == nil {
+		if v {
+			body.Set("editable", "true")
+		}
+	} else {
+		return newUserError("Flag does not exist")
 	}
 
 	// path parameters
@@ -94,7 +112,7 @@ func (n *newRetentionRuleCmd) newRetentionRule(cmd *cobra.Command, args []string
 
 	path := replacePathParameters("/retention/retentions", pathParameters)
 
-	return n.doNewRetentionRule("POST", path, queryValue, body)
+	return n.doNewRetentionRule("POST", path, queryValue, body.GetMap())
 }
 
 func (n *newRetentionRuleCmd) doNewRetentionRule(method string, path string, query string, body map[string]interface{}) error {

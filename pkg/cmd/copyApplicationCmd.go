@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -69,7 +70,7 @@ func (n *copyApplicationCmd) copyApplication(cmd *cobra.Command, args []string) 
 	}
 
 	// body
-	var body map[string]interface{}
+	body := mapbuilder.NewMapBuilder()
 
 	// path parameters
 	pathParameters := make(map[string]string)
@@ -77,24 +78,23 @@ func (n *copyApplicationCmd) copyApplication(cmd *cobra.Command, args []string) 
 		applicationInputValues, applicationValue, err := getApplicationSlice(cmd, args, "application")
 
 		if err != nil {
-			return newUserError("no matching devices found", applicationInputValues, err)
+			return newUserError("no matching applications found", applicationInputValues, err)
 		}
 
 		if len(applicationValue) == 0 {
-			return newUserError("no matching devices found", applicationInputValues)
+			return newUserError("no matching applications found", applicationInputValues)
 		}
 
 		for _, item := range applicationValue {
 			if item != "" {
 				pathParameters["application"] = newIDValue(item).GetID()
-				break
 			}
 		}
 	}
 
 	path := replacePathParameters("/application/applications/{application}/clone", pathParameters)
 
-	return n.doCopyApplication("POST", path, queryValue, body)
+	return n.doCopyApplication("POST", path, queryValue, body.GetMap())
 }
 
 func (n *copyApplicationCmd) doCopyApplication(method string, path string, query string, body map[string]interface{}) error {

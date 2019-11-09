@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -65,24 +66,24 @@ func (n *getRoleCollectionCmd) getRoleCollection(cmd *cobra.Command, args []stri
 	}
 
 	// body
-	var body map[string]interface{}
+	body := mapbuilder.NewMapBuilder()
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v, err := cmd.Flags().GetString("tenant"); err == nil {
+	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
 		pathParameters["tenant"] = v
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "tenant", err))
 	}
 	if v, err := cmd.Flags().GetString("username"); err == nil {
-		pathParameters["username"] = v
+		if v != "" {
+			pathParameters["username"] = v
+		}
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "username", err))
 	}
 
 	path := replacePathParameters("/user/roles", pathParameters)
 
-	return n.doGetRoleCollection("GET", path, queryValue, body)
+	return n.doGetRoleCollection("GET", path, queryValue, body.GetMap())
 }
 
 func (n *getRoleCollectionCmd) doGetRoleCollection(method string, path string, query string, body map[string]interface{}) error {

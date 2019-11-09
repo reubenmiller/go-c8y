@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -64,21 +65,31 @@ func (n *getExternalIDCollectionCmd) getExternalIDCollection(cmd *cobra.Command,
 	}
 
 	// body
-	var body map[string]interface{}
+	body := mapbuilder.NewMapBuilder()
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v, err := cmd.Flags().GetStringSlice("device"); err == nil {
-		for _, iValue := range v {
-			pathParameters["device"] = iValue
+	if cmd.Flags().Changed("device") {
+		deviceInputValues, deviceValue, err := getFormattedDeviceSlice(cmd, args, "device")
+
+		if err != nil {
+			return newUserError("no matching devices found", deviceInputValues, err)
 		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "device", err))
+
+		if len(deviceValue) == 0 {
+			return newUserError("no matching devices found", deviceInputValues)
+		}
+
+		for _, item := range deviceValue {
+			if item != "" {
+				pathParameters["device"] = newIDValue(item).GetID()
+			}
+		}
 	}
 
 	path := replacePathParameters("identity/globalIds/{device}/externalIds", pathParameters)
 
-	return n.doGetExternalIDCollection("GET", path, queryValue, body)
+	return n.doGetExternalIDCollection("GET", path, queryValue, body.GetMap())
 }
 
 func (n *getExternalIDCollectionCmd) doGetExternalIDCollection(method string, path string, query string, body map[string]interface{}) error {

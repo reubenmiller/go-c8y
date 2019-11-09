@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -68,16 +69,38 @@ func (n *newOperationCmd) newOperation(cmd *cobra.Command, args []string) error 
 	}
 
 	// body
-	var body map[string]interface{}
-	body = getDataFlag(cmd)
-	if v, err := cmd.Flags().GetString("device"); err == nil && v != "" {
-		body["deviceId"] = v
+	body := mapbuilder.NewMapBuilder()
+	body.SetMap(getDataFlag(cmd))
+	if cmd.Flags().Changed("device") {
+		deviceInputValues, deviceValue, err := getFormattedDeviceSlice(cmd, args, "device")
+
+		if err != nil {
+			return newUserError("no matching devices found", deviceInputValues, err)
+		}
+
+		if len(deviceValue) == 0 {
+			return newUserError("no matching devices found", deviceInputValues)
+		}
+
+		for _, item := range deviceValue {
+			if item != "" {
+				body.Set("deviceId", newIDValue(item).GetID())
+			}
+		}
 	}
-	if v, err := cmd.Flags().GetString("status"); err == nil && v != "" {
-		body["status"] = v
+	if v, err := cmd.Flags().GetString("status"); err == nil {
+		if v != "" {
+			body.Set("status", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "status", err))
 	}
-	if v, err := cmd.Flags().GetString("description"); err == nil && v != "" {
-		body["description"] = v
+	if v, err := cmd.Flags().GetString("description"); err == nil {
+		if v != "" {
+			body.Set("description", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "description", err))
 	}
 
 	// path parameters
@@ -85,7 +108,7 @@ func (n *newOperationCmd) newOperation(cmd *cobra.Command, args []string) error 
 
 	path := replacePathParameters("devicecontrol/operations", pathParameters)
 
-	return n.doNewOperation("POST", path, queryValue, body)
+	return n.doNewOperation("POST", path, queryValue, body.GetMap())
 }
 
 func (n *newOperationCmd) doNewOperation(method string, path string, query string, body map[string]interface{}) error {

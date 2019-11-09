@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -68,25 +69,49 @@ func (n *updateUserCurrentCmd) updateUserCurrent(cmd *cobra.Command, args []stri
 	}
 
 	// body
-	var body map[string]interface{}
-	body = getDataFlag(cmd)
-	if v, err := cmd.Flags().GetString("firstName"); err == nil && v != "" {
-		body["firstName"] = v
+	body := mapbuilder.NewMapBuilder()
+	body.SetMap(getDataFlag(cmd))
+	if v, err := cmd.Flags().GetString("firstName"); err == nil {
+		if v != "" {
+			body.Set("firstName", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "firstName", err))
 	}
-	if v, err := cmd.Flags().GetString("lastName"); err == nil && v != "" {
-		body["lastName"] = v
+	if v, err := cmd.Flags().GetString("lastName"); err == nil {
+		if v != "" {
+			body.Set("lastName", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "lastName", err))
 	}
-	if v, err := cmd.Flags().GetString("phone"); err == nil && v != "" {
-		body["phone"] = v
+	if v, err := cmd.Flags().GetString("phone"); err == nil {
+		if v != "" {
+			body.Set("phone", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "phone", err))
 	}
-	if v, err := cmd.Flags().GetString("email"); err == nil && v != "" {
-		body["email"] = v
+	if v, err := cmd.Flags().GetString("email"); err == nil {
+		if v != "" {
+			body.Set("email", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "email", err))
 	}
-	if v, err := cmd.Flags().GetString("enabled"); err == nil && v != "" {
-		body["enabled"] = v
+	if v, err := cmd.Flags().GetString("enabled"); err == nil {
+		if v != "" {
+			body.Set("enabled", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "enabled", err))
 	}
-	if v, err := cmd.Flags().GetString("password"); err == nil && v != "" {
-		body["password"] = v
+	if v, err := cmd.Flags().GetString("password"); err == nil {
+		if v != "" {
+			body.Set("password", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "password", err))
 	}
 
 	// path parameters
@@ -94,7 +119,7 @@ func (n *updateUserCurrentCmd) updateUserCurrent(cmd *cobra.Command, args []stri
 
 	path := replacePathParameters("/user/currentUser", pathParameters)
 
-	return n.doUpdateUserCurrent("PUT", path, queryValue, body)
+	return n.doUpdateUserCurrent("PUT", path, queryValue, body.GetMap())
 }
 
 func (n *updateUserCurrentCmd) doUpdateUserCurrent(method string, path string, query string, body map[string]interface{}) error {

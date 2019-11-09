@@ -15,7 +15,7 @@ Get information about all groups of a user
     Param(
         # Tenant
         [Parameter()]
-        [string]
+        [object]
         $Tenant,
 
         # Username (required)

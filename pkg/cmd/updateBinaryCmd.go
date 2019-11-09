@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -64,23 +65,22 @@ func (n *updateBinaryCmd) updateBinary(cmd *cobra.Command, args []string) error 
 	}
 
 	// body
-	var body map[string]interface{}
-	body = getDataFlag(cmd)
-	if v, err := cmd.Flags().GetString("file"); err == nil && v != "" {
-		body["file"] = v
-	}
+	body := mapbuilder.NewMapBuilder()
+	body.SetMap(getDataFlag(cmd))
 
 	// path parameters
 	pathParameters := make(map[string]string)
 	if v, err := cmd.Flags().GetString("id"); err == nil {
-		pathParameters["id"] = v
+		if v != "" {
+			pathParameters["id"] = v
+		}
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "id", err))
 	}
 
 	path := replacePathParameters("/inventory/binaries/{id}", pathParameters)
 
-	return n.doUpdateBinary("PUT", path, queryValue, body)
+	return n.doUpdateBinary("PUT", path, queryValue, body.GetMap())
 }
 
 func (n *updateBinaryCmd) doUpdateBinary(method string, path string, query string, body map[string]interface{}) error {

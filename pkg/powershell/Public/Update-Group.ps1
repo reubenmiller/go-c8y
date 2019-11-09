@@ -15,7 +15,7 @@ Update a new group
     Param(
         # Tenant
         [Parameter()]
-        [string]
+        [object]
         $Tenant,
 
         # Group id (required)

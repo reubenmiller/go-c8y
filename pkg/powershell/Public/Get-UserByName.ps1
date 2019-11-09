@@ -15,7 +15,7 @@ Get user by username
     Param(
         # Tenant
         [Parameter()]
-        [string]
+        [object]
         $Tenant,
 
         # Username (required)

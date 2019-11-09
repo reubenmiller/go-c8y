@@ -15,7 +15,7 @@ Delete a user from a group
     Param(
         # Tenant
         [Parameter()]
-        [string]
+        [object]
         $Tenant,
 
         # Group ID

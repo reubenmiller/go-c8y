@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -64,24 +65,24 @@ func (n *getGroupByNameCmd) getGroupByName(cmd *cobra.Command, args []string) er
 	}
 
 	// body
-	var body map[string]interface{}
+	body := mapbuilder.NewMapBuilder()
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v, err := cmd.Flags().GetString("tenant"); err == nil {
+	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
 		pathParameters["tenant"] = v
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "tenant", err))
 	}
 	if v, err := cmd.Flags().GetString("name"); err == nil {
-		pathParameters["name"] = v
+		if v != "" {
+			pathParameters["name"] = v
+		}
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "name", err))
 	}
 
 	path := replacePathParameters("/user/{tenant}/groupByName/{name}", pathParameters)
 
-	return n.doGetGroupByName("GET", path, queryValue, body)
+	return n.doGetGroupByName("GET", path, queryValue, body.GetMap())
 }
 
 func (n *getGroupByNameCmd) doGetGroupByName(method string, path string, query string, body map[string]interface{}) error {

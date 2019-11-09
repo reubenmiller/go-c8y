@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -31,11 +32,10 @@ func newEnableApplicationOnTenantCmd() *enableApplicationOnTenantCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("tenant", "", "Tenant id (required)")
+	cmd.Flags().String("tenant", "", "Tenant id")
 	cmd.Flags().String("application", "", "Application id (required)")
 
 	// Required flags
-	cmd.MarkFlagRequired("tenant")
 	cmd.MarkFlagRequired("application")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
@@ -66,30 +66,35 @@ func (n *enableApplicationOnTenantCmd) enableApplicationOnTenant(cmd *cobra.Comm
 	}
 
 	// body
-	var body map[string]interface{}
-	body = getDataFlag(cmd)
-	if v, err := cmd.Flags().GetStringSlice("application"); err == nil {
-		for _, iValue := range v {
-			if _, exists := body["application"]; !exists {
-				body["application"] = make(map[string]interface{})
-			}
-			body["application"].(map[string]interface{})["id"] = iValue
+	body := mapbuilder.NewMapBuilder()
+	body.SetMap(getDataFlag(cmd))
+	if cmd.Flags().Changed("application") {
+		applicationInputValues, applicationValue, err := getApplicationSlice(cmd, args, "application")
+
+		if err != nil {
+			return newUserError("no matching applications found", applicationInputValues, err)
 		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "application", err))
+
+		if len(applicationValue) == 0 {
+			return newUserError("no matching applications found", applicationInputValues)
+		}
+
+		for _, item := range applicationValue {
+			if item != "" {
+				body.Set("application.id", newIDValue(item).GetID())
+			}
+		}
 	}
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v, err := cmd.Flags().GetString("tenant"); err == nil {
+	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
 		pathParameters["tenant"] = v
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "tenant", err))
 	}
 
 	path := replacePathParameters("/tenant/tenants/{tenant}/applications", pathParameters)
 
-	return n.doEnableApplicationOnTenant("POST", path, queryValue, body)
+	return n.doEnableApplicationOnTenant("POST", path, queryValue, body.GetMap())
 }
 
 func (n *enableApplicationOnTenantCmd) doEnableApplicationOnTenant(method string, path string, query string, body map[string]interface{}) error {

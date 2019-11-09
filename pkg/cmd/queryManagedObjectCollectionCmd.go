@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -51,7 +52,7 @@ func (n *queryManagedObjectCollectionCmd) queryManagedObjectCollection(cmd *cobr
 			query.Add("query", url.QueryEscape(v))
 		}
 	} else {
-		return newUserError("Flag does not exist")
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "query", err))
 	}
 	if v, err := cmd.Flags().GetBool("withParents"); err == nil {
 		if v {
@@ -78,14 +79,14 @@ func (n *queryManagedObjectCollectionCmd) queryManagedObjectCollection(cmd *cobr
 	}
 
 	// body
-	var body map[string]interface{}
+	body := mapbuilder.NewMapBuilder()
 
 	// path parameters
 	pathParameters := make(map[string]string)
 
 	path := replacePathParameters("inventory/managedObjects", pathParameters)
 
-	return n.doQueryManagedObjectCollection("GET", path, queryValue, body)
+	return n.doQueryManagedObjectCollection("GET", path, queryValue, body.GetMap())
 }
 
 func (n *queryManagedObjectCollectionCmd) doQueryManagedObjectCollection(method string, path string, query string, body map[string]interface{}) error {

@@ -15,7 +15,7 @@ Get all users in a group
     Param(
         # Tenant
         [Parameter()]
-        [string]
+        [object]
         $Tenant,
 
         # Group ID

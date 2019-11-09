@@ -111,7 +111,7 @@ func (n *listSessionCmd) listSession(cmd *cobra.Command, args []string) error {
 		Label:             "Select a Cumulocity Session",
 		Items:             config.Sessions,
 		Templates:         templates,
-		Size:              4,
+		Size:              10,
 		Searcher:          searcher,
 	}
 

@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -103,7 +104,7 @@ func (n *getOperationCollectionCmd) getOperationCollection(cmd *cobra.Command, a
 			query.Add("status", url.QueryEscape(v))
 		}
 	} else {
-		return newUserError("Flag does not exist")
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "status", err))
 	}
 	if cmd.Flags().Changed("pageSize") {
 		if v, err := cmd.Flags().GetInt("pageSize"); err == nil && v > 0 {
@@ -123,14 +124,14 @@ func (n *getOperationCollectionCmd) getOperationCollection(cmd *cobra.Command, a
 	}
 
 	// body
-	var body map[string]interface{}
+	body := mapbuilder.NewMapBuilder()
 
 	// path parameters
 	pathParameters := make(map[string]string)
 
 	path := replacePathParameters("devicecontrol/operations", pathParameters)
 
-	return n.doGetOperationCollection("GET", path, queryValue, body)
+	return n.doGetOperationCollection("GET", path, queryValue, body.GetMap())
 }
 
 func (n *getOperationCollectionCmd) doGetOperationCollection(method string, path string, query string, body map[string]interface{}) error {

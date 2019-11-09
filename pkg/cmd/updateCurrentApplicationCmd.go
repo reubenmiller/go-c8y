@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -73,44 +74,78 @@ func (n *updateCurrentApplicationCmd) updateCurrentApplication(cmd *cobra.Comman
 	}
 
 	// body
-	var body map[string]interface{}
-	body = getDataFlag(cmd)
-	if v, err := cmd.Flags().GetString("name"); err == nil && v != "" {
-		body["name"] = v
+	body := mapbuilder.NewMapBuilder()
+	body.SetMap(getDataFlag(cmd))
+	if v, err := cmd.Flags().GetString("name"); err == nil {
+		if v != "" {
+			body.Set("name", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "name", err))
 	}
-	if v, err := cmd.Flags().GetString("key"); err == nil && v != "" {
-		body["key"] = v
+	if v, err := cmd.Flags().GetString("key"); err == nil {
+		if v != "" {
+			body.Set("key", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "key", err))
 	}
-	if v, err := cmd.Flags().GetString("availability"); err == nil && v != "" {
-		body["availability"] = v
+	if v, err := cmd.Flags().GetString("availability"); err == nil {
+		if v != "" {
+			body.Set("availability", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "availability", err))
 	}
-	if v, err := cmd.Flags().GetString("contextPath"); err == nil && v != "" {
-		body["contextPath"] = v
+	if v, err := cmd.Flags().GetString("contextPath"); err == nil {
+		if v != "" {
+			body.Set("contextPath", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "contextPath", err))
 	}
-	if v, err := cmd.Flags().GetString("resourcesUrl"); err == nil && v != "" {
-		body["resourcesUrl"] = v
+	if v, err := cmd.Flags().GetString("resourcesUrl"); err == nil {
+		if v != "" {
+			body.Set("resourcesUrl", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "resourcesUrl", err))
 	}
-	if v, err := cmd.Flags().GetString("resourcesUsername"); err == nil && v != "" {
-		body["resourcesUsername"] = v
+	if v, err := cmd.Flags().GetString("resourcesUsername"); err == nil {
+		if v != "" {
+			body.Set("resourcesUsername", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "resourcesUsername", err))
 	}
-	if v, err := cmd.Flags().GetString("resourcesPassword"); err == nil && v != "" {
-		body["resourcesPassword"] = v
+	if v, err := cmd.Flags().GetString("resourcesPassword"); err == nil {
+		if v != "" {
+			body.Set("resourcesPassword", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "resourcesPassword", err))
 	}
-	if v, err := cmd.Flags().GetString("externalUrl"); err == nil && v != "" {
-		body["externalUrl"] = v
+	if v, err := cmd.Flags().GetString("externalUrl"); err == nil {
+		if v != "" {
+			body.Set("externalUrl", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "externalUrl", err))
 	}
 
 	// path parameters
 	pathParameters := make(map[string]string)
 	if v, err := cmd.Flags().GetString("id"); err == nil {
-		pathParameters["id"] = v
+		if v != "" {
+			pathParameters["id"] = v
+		}
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "id", err))
 	}
 
 	path := replacePathParameters("/application/currentApplication", pathParameters)
 
-	return n.doUpdateCurrentApplication("PUT", path, queryValue, body)
+	return n.doUpdateCurrentApplication("PUT", path, queryValue, body.GetMap())
 }
 
 func (n *updateCurrentApplicationCmd) doUpdateCurrentApplication(method string, path string, query string, body map[string]interface{}) error {

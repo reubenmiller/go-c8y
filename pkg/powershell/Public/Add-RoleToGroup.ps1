@@ -15,7 +15,7 @@ Add role to a group
     Param(
         # Tenant
         [Parameter()]
-        [string]
+        [object]
         $Tenant,
 
         # Group ID (required)

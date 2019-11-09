@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -73,28 +74,28 @@ func (n *deleteMeasurementCollectionCmd) deleteMeasurementCollection(cmd *cobra.
 			query.Add("type", url.QueryEscape(v))
 		}
 	} else {
-		return newUserError("Flag does not exist")
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "type", err))
 	}
 	if v, err := cmd.Flags().GetString("valueFragmentType"); err == nil {
 		if v != "" {
 			query.Add("valueFragmentType", url.QueryEscape(v))
 		}
 	} else {
-		return newUserError("Flag does not exist")
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "valueFragmentType", err))
 	}
 	if v, err := cmd.Flags().GetString("valueFragmentSeries"); err == nil {
 		if v != "" {
 			query.Add("valueFragmentSeries", url.QueryEscape(v))
 		}
 	} else {
-		return newUserError("Flag does not exist")
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "valueFragmentSeries", err))
 	}
 	if v, err := cmd.Flags().GetString("fragmentType"); err == nil {
 		if v != "" {
 			query.Add("fragmentType", url.QueryEscape(v))
 		}
 	} else {
-		return newUserError("Flag does not exist")
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "fragmentType", err))
 	}
 	if cmd.Flags().Changed("dateFrom") {
 		if v, err := tryGetTimestampFlag(cmd, "dateFrom"); err == nil && v != "" {
@@ -128,14 +129,14 @@ func (n *deleteMeasurementCollectionCmd) deleteMeasurementCollection(cmd *cobra.
 	}
 
 	// body
-	var body map[string]interface{}
+	body := mapbuilder.NewMapBuilder()
 
 	// path parameters
 	pathParameters := make(map[string]string)
 
 	path := replacePathParameters("measurement/measurements", pathParameters)
 
-	return n.doDeleteMeasurementCollection("DELETE", path, queryValue, body)
+	return n.doDeleteMeasurementCollection("DELETE", path, queryValue, body.GetMap())
 }
 
 func (n *deleteMeasurementCollectionCmd) doDeleteMeasurementCollection(method string, path string, query string, body map[string]interface{}) error {

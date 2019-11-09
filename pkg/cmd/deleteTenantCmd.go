@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -31,10 +32,9 @@ func newDeleteTenantCmd() *deleteTenantCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("id", "", "Tenant id (required)")
+	cmd.Flags().String("tenant", "", "Tenant id")
 
 	// Required flags
-	cmd.MarkFlagRequired("id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
@@ -64,19 +64,17 @@ func (n *deleteTenantCmd) deleteTenant(cmd *cobra.Command, args []string) error 
 	}
 
 	// body
-	var body map[string]interface{}
+	body := mapbuilder.NewMapBuilder()
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v, err := cmd.Flags().GetString("id"); err == nil {
-		pathParameters["id"] = v
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "id", err))
+	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
+		pathParameters["tenant"] = v
 	}
 
-	path := replacePathParameters("/tenant/tenants/{id}", pathParameters)
+	path := replacePathParameters("/tenant/tenants/{tenant}", pathParameters)
 
-	return n.doDeleteTenant("DELETE", path, queryValue, body)
+	return n.doDeleteTenant("DELETE", path, queryValue, body.GetMap())
 }
 
 func (n *deleteTenantCmd) doDeleteTenant(method string, path string, query string, body map[string]interface{}) error {

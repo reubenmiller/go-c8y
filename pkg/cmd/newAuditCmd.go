@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -77,37 +78,63 @@ func (n *newAuditCmd) newAudit(cmd *cobra.Command, args []string) error {
 	}
 
 	// body
-	var body map[string]interface{}
-	body = getDataFlag(cmd)
-	if v, err := cmd.Flags().GetString("type"); err == nil && v != "" {
-		body["type"] = v
-	}
-	if v, err := tryGetTimestampFlag(cmd, "time"); err == nil && v != "" {
-		body["time"] = v
-	}
-	if v, err := cmd.Flags().GetString("text"); err == nil && v != "" {
-		body["text"] = v
-	}
-	if v, err := cmd.Flags().GetString("source"); err == nil && v != "" {
-		if _, exists := body["source"]; !exists {
-			body["source"] = make(map[string]interface{})
+	body := mapbuilder.NewMapBuilder()
+	body.SetMap(getDataFlag(cmd))
+	if v, err := cmd.Flags().GetString("type"); err == nil {
+		if v != "" {
+			body.Set("type", v)
 		}
-		body["source"].(map[string]interface{})["id"] = v
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "type", err))
 	}
-	if v, err := cmd.Flags().GetString("activity"); err == nil && v != "" {
-		body["activity"] = v
+	if cmd.Flags().Changed("time") {
+		if v, err := tryGetTimestampFlag(cmd, "time"); err == nil && v != "" {
+			body.Set("time", decodeC8yTimestamp(v))
+		} else {
+			return newUserError("invalid date format", err)
+		}
 	}
-	if v, err := cmd.Flags().GetString("severity"); err == nil && v != "" {
-		body["severity"] = v
+	if v, err := cmd.Flags().GetString("text"); err == nil {
+		if v != "" {
+			body.Set("text", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "text", err))
 	}
-	if v, err := cmd.Flags().GetString("user"); err == nil && v != "" {
-		body["user"] = v
+	if v, err := cmd.Flags().GetString("source"); err == nil {
+		if v != "" {
+			body.Set("source.id", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "source", err))
 	}
-	if v, err := cmd.Flags().GetString("application"); err == nil && v != "" {
-		body["application"] = v
+	if v, err := cmd.Flags().GetString("activity"); err == nil {
+		if v != "" {
+			body.Set("activity", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "activity", err))
 	}
-	if v, err := cmd.Flags().GetString("changes"); err == nil && v != "" {
-		body["changes"] = v
+	if v, err := cmd.Flags().GetString("severity"); err == nil {
+		if v != "" {
+			body.Set("severity", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "severity", err))
+	}
+	if v, err := cmd.Flags().GetString("user"); err == nil {
+		if v != "" {
+			body.Set("user", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "user", err))
+	}
+	if v, err := cmd.Flags().GetString("application"); err == nil {
+		if v != "" {
+			body.Set("application", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "application", err))
 	}
 
 	// path parameters
@@ -115,7 +142,7 @@ func (n *newAuditCmd) newAudit(cmd *cobra.Command, args []string) error {
 
 	path := replacePathParameters("/audit/auditRecords", pathParameters)
 
-	return n.doNewAudit("POST", path, queryValue, body)
+	return n.doNewAudit("POST", path, queryValue, body.GetMap())
 }
 
 func (n *newAuditCmd) doNewAudit(method string, path string, query string, body map[string]interface{}) error {

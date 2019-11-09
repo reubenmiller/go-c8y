@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -56,28 +57,28 @@ func (n *getAuditRecordCollectionCmd) getAuditRecordCollection(cmd *cobra.Comman
 			query.Add("source", url.QueryEscape(v))
 		}
 	} else {
-		return newUserError("Flag does not exist")
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "source", err))
 	}
 	if v, err := cmd.Flags().GetString("type"); err == nil {
 		if v != "" {
 			query.Add("type", url.QueryEscape(v))
 		}
 	} else {
-		return newUserError("Flag does not exist")
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "type", err))
 	}
 	if v, err := cmd.Flags().GetString("user"); err == nil {
 		if v != "" {
 			query.Add("user", url.QueryEscape(v))
 		}
 	} else {
-		return newUserError("Flag does not exist")
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "user", err))
 	}
 	if v, err := cmd.Flags().GetString("application"); err == nil {
 		if v != "" {
 			query.Add("application", url.QueryEscape(v))
 		}
 	} else {
-		return newUserError("Flag does not exist")
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "application", err))
 	}
 	if cmd.Flags().Changed("dateFrom") {
 		if v, err := tryGetTimestampFlag(cmd, "dateFrom"); err == nil && v != "" {
@@ -118,14 +119,14 @@ func (n *getAuditRecordCollectionCmd) getAuditRecordCollection(cmd *cobra.Comman
 	}
 
 	// body
-	var body map[string]interface{}
+	body := mapbuilder.NewMapBuilder()
 
 	// path parameters
 	pathParameters := make(map[string]string)
 
 	path := replacePathParameters("/audit/auditRecords", pathParameters)
 
-	return n.doGetAuditRecordCollection("GET", path, queryValue, body)
+	return n.doGetAuditRecordCollection("GET", path, queryValue, body.GetMap())
 }
 
 func (n *getAuditRecordCollectionCmd) doGetAuditRecordCollection(method string, path string, query string, body map[string]interface{}) error {

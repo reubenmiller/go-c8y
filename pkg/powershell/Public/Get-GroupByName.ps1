@@ -15,7 +15,7 @@ Get a group by name
     Param(
         # Tenant
         [Parameter()]
-        [string]
+        [object]
         $Tenant,
 
         # Group name

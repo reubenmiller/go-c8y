@@ -15,7 +15,7 @@ Get collection of (user) groups
     Param(
         # Tenant
         [Parameter()]
-        [string]
+        [object]
         $Tenant,
 
         # Maximum number of results

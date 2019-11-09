@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -64,7 +65,7 @@ func (n *deleteApplicationCmd) deleteApplication(cmd *cobra.Command, args []stri
 	}
 
 	// body
-	var body map[string]interface{}
+	body := mapbuilder.NewMapBuilder()
 
 	// path parameters
 	pathParameters := make(map[string]string)
@@ -72,24 +73,23 @@ func (n *deleteApplicationCmd) deleteApplication(cmd *cobra.Command, args []stri
 		applicationInputValues, applicationValue, err := getApplicationSlice(cmd, args, "application")
 
 		if err != nil {
-			return newUserError("no matching devices found", applicationInputValues, err)
+			return newUserError("no matching applications found", applicationInputValues, err)
 		}
 
 		if len(applicationValue) == 0 {
-			return newUserError("no matching devices found", applicationInputValues)
+			return newUserError("no matching applications found", applicationInputValues)
 		}
 
 		for _, item := range applicationValue {
 			if item != "" {
 				pathParameters["application"] = newIDValue(item).GetID()
-				break
 			}
 		}
 	}
 
 	path := replacePathParameters("/application/applications/{application}", pathParameters)
 
-	return n.doDeleteApplication("DELETE", path, queryValue, body)
+	return n.doDeleteApplication("DELETE", path, queryValue, body.GetMap())
 }
 
 func (n *deleteApplicationCmd) doDeleteApplication(method string, path string, query string, body map[string]interface{}) error {

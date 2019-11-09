@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -31,11 +32,10 @@ func newDisableApplicationFromTenantCmd() *disableApplicationFromTenantCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("tenant", "", "Tenant id (required)")
+	cmd.Flags().String("tenant", "", "Tenant id")
 	cmd.Flags().String("application", "", "Application id (required)")
 
 	// Required flags
-	cmd.MarkFlagRequired("tenant")
 	cmd.MarkFlagRequired("application")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
@@ -66,37 +66,34 @@ func (n *disableApplicationFromTenantCmd) disableApplicationFromTenant(cmd *cobr
 	}
 
 	// body
-	var body map[string]interface{}
+	body := mapbuilder.NewMapBuilder()
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v, err := cmd.Flags().GetString("tenant"); err == nil {
+	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
 		pathParameters["tenant"] = v
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "tenant", err))
 	}
 	if cmd.Flags().Changed("application") {
 		applicationInputValues, applicationValue, err := getApplicationSlice(cmd, args, "application")
 
 		if err != nil {
-			return newUserError("no matching devices found", applicationInputValues, err)
+			return newUserError("no matching applications found", applicationInputValues, err)
 		}
 
 		if len(applicationValue) == 0 {
-			return newUserError("no matching devices found", applicationInputValues)
+			return newUserError("no matching applications found", applicationInputValues)
 		}
 
 		for _, item := range applicationValue {
 			if item != "" {
 				pathParameters["application"] = newIDValue(item).GetID()
-				break
 			}
 		}
 	}
 
 	path := replacePathParameters("/tenant/tenants/{tenant}/applications/{application}", pathParameters)
 
-	return n.doDisableApplicationFromTenant("DELETE", path, queryValue, body)
+	return n.doDisableApplicationFromTenant("DELETE", path, queryValue, body.GetMap())
 }
 
 func (n *disableApplicationFromTenantCmd) doDisableApplicationFromTenant(method string, path string, query string, body map[string]interface{}) error {

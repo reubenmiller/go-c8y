@@ -15,7 +15,7 @@ Get collection of user role references from a user
     Param(
         # Tenant
         [Parameter()]
-        [string]
+        [object]
         $Tenant,
 
         # Username (required)

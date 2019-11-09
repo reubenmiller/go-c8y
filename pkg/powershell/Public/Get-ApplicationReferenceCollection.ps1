@@ -13,9 +13,10 @@ Enable application on tenant
     [Alias()]
     [OutputType([object])]
     Param(
-        # Tenant id (required)
-        [Parameter(Mandatory = $true)]
-        [string]
+        # Tenant id
+        [Parameter(ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true)]
+        [object]
         $Tenant,
 
         # Maximum number of results
@@ -49,9 +50,6 @@ Enable application on tenant
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("Tenant")) {
-            $Parameters["tenant"] = $Tenant
-        }
         if ($PSBoundParameters.ContainsKey("PageSize")) {
             $Parameters["pageSize"] = $PageSize
         }
@@ -65,7 +63,10 @@ Enable application on tenant
     }
 
     Process {
-        foreach ($item in @("")) {
+        foreach ($item in @($Tenant)) {
+            if ($item) {
+                $Parameters["tenant"] = if ($item.id) { $item.id } else { $item }
+            }
 
             if (!$Force -and
                 !$WhatIfPreference -and

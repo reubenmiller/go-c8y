@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -68,16 +69,28 @@ func (n *newTenantOptionCmd) newTenantOption(cmd *cobra.Command, args []string) 
 	}
 
 	// body
-	var body map[string]interface{}
-	body = getDataFlag(cmd)
-	if v, err := cmd.Flags().GetString("category"); err == nil && v != "" {
-		body["category"] = v
+	body := mapbuilder.NewMapBuilder()
+	body.SetMap(getDataFlag(cmd))
+	if v, err := cmd.Flags().GetString("category"); err == nil {
+		if v != "" {
+			body.Set("category", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "category", err))
 	}
-	if v, err := cmd.Flags().GetString("key"); err == nil && v != "" {
-		body["key"] = v
+	if v, err := cmd.Flags().GetString("key"); err == nil {
+		if v != "" {
+			body.Set("key", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "key", err))
 	}
-	if v, err := cmd.Flags().GetString("value"); err == nil && v != "" {
-		body["value"] = v
+	if v, err := cmd.Flags().GetString("value"); err == nil {
+		if v != "" {
+			body.Set("value", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "value", err))
 	}
 
 	// path parameters
@@ -85,7 +98,7 @@ func (n *newTenantOptionCmd) newTenantOption(cmd *cobra.Command, args []string) 
 
 	path := replacePathParameters("/tenant/options", pathParameters)
 
-	return n.doNewTenantOption("POST", path, queryValue, body)
+	return n.doNewTenantOption("POST", path, queryValue, body.GetMap())
 }
 
 func (n *newTenantOptionCmd) doNewTenantOption(method string, path string, query string, body map[string]interface{}) error {

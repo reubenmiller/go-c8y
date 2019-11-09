@@ -13,9 +13,9 @@ Disable application on tenant
     [Alias()]
     [OutputType([object])]
     Param(
-        # Tenant id (required)
-        [Parameter(Mandatory = $true)]
-        [string]
+        # Tenant id
+        [Parameter()]
+        [object]
         $Tenant,
 
         # Application id (required)

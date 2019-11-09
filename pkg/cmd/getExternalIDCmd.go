@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -66,24 +67,28 @@ func (n *getExternalIDCmd) getExternalID(cmd *cobra.Command, args []string) erro
 	}
 
 	// body
-	var body map[string]interface{}
+	body := mapbuilder.NewMapBuilder()
 
 	// path parameters
 	pathParameters := make(map[string]string)
 	if v, err := cmd.Flags().GetString("type"); err == nil {
-		pathParameters["type"] = v
+		if v != "" {
+			pathParameters["type"] = v
+		}
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "type", err))
 	}
 	if v, err := cmd.Flags().GetString("name"); err == nil {
-		pathParameters["name"] = v
+		if v != "" {
+			pathParameters["name"] = v
+		}
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "name", err))
 	}
 
 	path := replacePathParameters("/identity/externalIds/{type}/{name}", pathParameters)
 
-	return n.doGetExternalID("GET", path, queryValue, body)
+	return n.doGetExternalID("GET", path, queryValue, body.GetMap())
 }
 
 func (n *getExternalIDCmd) doGetExternalID(method string, path string, query string, body map[string]interface{}) error {

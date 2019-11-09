@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -66,24 +67,28 @@ func (n *getTenantOptionCmd) getTenantOption(cmd *cobra.Command, args []string) 
 	}
 
 	// body
-	var body map[string]interface{}
+	body := mapbuilder.NewMapBuilder()
 
 	// path parameters
 	pathParameters := make(map[string]string)
 	if v, err := cmd.Flags().GetString("category"); err == nil {
-		pathParameters["category"] = v
+		if v != "" {
+			pathParameters["category"] = v
+		}
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "category", err))
 	}
 	if v, err := cmd.Flags().GetString("key"); err == nil {
-		pathParameters["key"] = v
+		if v != "" {
+			pathParameters["key"] = v
+		}
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "key", err))
 	}
 
 	path := replacePathParameters("/tenant/options/{category}/{key}", pathParameters)
 
-	return n.doGetTenantOption("GET", path, queryValue, body)
+	return n.doGetTenantOption("GET", path, queryValue, body.GetMap())
 }
 
 func (n *getTenantOptionCmd) doGetTenantOption(method string, path string, query string, body map[string]interface{}) error {

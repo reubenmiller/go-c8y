@@ -15,7 +15,7 @@ Get collection of user roles
     Param(
         # Tenant
         [Parameter()]
-        [string]
+        [object]
         $Tenant,
 
         # Username (required)

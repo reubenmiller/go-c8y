@@ -15,7 +15,7 @@ Add role to a user
     Param(
         # Tenant
         [Parameter()]
-        [string]
+        [object]
         $Tenant,
 
         # Username (required)

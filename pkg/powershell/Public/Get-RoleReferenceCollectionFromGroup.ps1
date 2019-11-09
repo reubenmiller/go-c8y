@@ -15,7 +15,7 @@ Get collection of user role references from a group
     Param(
         # Tenant
         [Parameter()]
-        [string]
+        [object]
         $Tenant,
 
         # Group id (required)

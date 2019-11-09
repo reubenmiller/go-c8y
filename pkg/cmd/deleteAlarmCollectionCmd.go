@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 )
@@ -89,28 +90,21 @@ func (n *deleteAlarmCollectionCmd) deleteAlarmCollection(cmd *cobra.Command, arg
 			query.Add("type", url.QueryEscape(v))
 		}
 	} else {
-		return newUserError("Flag does not exist")
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "type", err))
 	}
 	if v, err := cmd.Flags().GetString("fragmentType"); err == nil {
 		if v != "" {
 			query.Add("fragmentType", url.QueryEscape(v))
 		}
 	} else {
-		return newUserError("Flag does not exist")
-	}
-	if v, err := cmd.Flags().GetString("status"); err == nil {
-		if v != "" {
-			query.Add("status", url.QueryEscape(v))
-		}
-	} else {
-		return newUserError("Flag does not exist")
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "fragmentType", err))
 	}
 	if v, err := cmd.Flags().GetString("severity"); err == nil {
 		if v != "" {
 			query.Add("severity", url.QueryEscape(v))
 		}
 	} else {
-		return newUserError("Flag does not exist")
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "severity", err))
 	}
 	if v, err := cmd.Flags().GetBool("resolved"); err == nil {
 		if v {
@@ -151,14 +145,14 @@ func (n *deleteAlarmCollectionCmd) deleteAlarmCollection(cmd *cobra.Command, arg
 	}
 
 	// body
-	var body map[string]interface{}
+	body := mapbuilder.NewMapBuilder()
 
 	// path parameters
 	pathParameters := make(map[string]string)
 
 	path := replacePathParameters("alarm/alarms", pathParameters)
 
-	return n.doDeleteAlarmCollection("DELETE", path, queryValue, body)
+	return n.doDeleteAlarmCollection("DELETE", path, queryValue, body.GetMap())
 }
 
 func (n *deleteAlarmCollectionCmd) doDeleteAlarmCollection(method string, path string, query string, body map[string]interface{}) error {

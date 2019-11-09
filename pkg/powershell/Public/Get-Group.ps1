@@ -15,7 +15,7 @@ Create a new group by id
     Param(
         # Tenant
         [Parameter()]
-        [string]
+        [object]
         $Tenant,
 
         # Group id
