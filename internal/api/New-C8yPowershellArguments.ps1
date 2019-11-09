@@ -58,7 +58,8 @@ Function New-C8yPowershellArguments {
         "boolean" { "switch" }
         "application" { "object[]" }
         "integer" { "long" }
-        "tenant" { "object[]" }
+        "tenant" { "object" }
+        "\[\]tenant" { "object[]" }
         "strings" { "string" }
         "file" { "string" }
         "set" { "object[]" }

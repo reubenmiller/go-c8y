@@ -417,8 +417,9 @@ Function New-Body2 {
         "application" { "(PSC8y\Expand-Application $IteratorVariable)" }
         "[]device" { "(PSC8y\Expand-Device $IteratorVariable)" }
         "device" { "(PSC8y\Expand-Device $IteratorVariable)" }
-        "managedObject" { "(PSC8y\Expand-ManagedObject $IteratorVariable)" }
         "event" { "(PSC8y\Expand-Event $IteratorVariable)" }
+        "managedObject" { "(PSC8y\Expand-ManagedObject $IteratorVariable)" }
+        "[]tenant" { "(PSC8y\Expand-Tenant $IteratorVariable)" }
         default {
             if ($IteratorVariable -eq "") {
                 "@(`"`")"
