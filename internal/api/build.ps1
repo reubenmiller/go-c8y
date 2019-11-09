@@ -17,6 +17,7 @@ if (!$SkipGenerate) {
     . $PSScriptRoot/New-C8yApi.ps1
     . $PSScriptRoot/New-C8yApiGoCommand.ps1
     . $PSScriptRoot/New-C8yApiGoRootCommand.ps1
+    . $PSScriptRoot/New-C8yApiGoGetValueFromFlag.ps1
 
     $OutputDir = Resolve-path (Join-Path $PSScriptRoot -ChildPath "../../pkg/cmd")
 
@@ -41,6 +42,8 @@ if (!(Test-Path $OutputDir)) {
     $null = New-Item $OutputDir -ItemType Directory
     $OutputDir = Resolve-Path $OutputDir
 }
+$env:GOARCH = "amd64"
+$env:GOOS = "windows"
 & go build -o "$OutputDir/c8y.exe" "$BinaryDir/main.go"
 
 if ($LASTEXITCODE -ne 0) {

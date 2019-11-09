@@ -44,7 +44,7 @@
                         <Width>40</Width>
                     </TableColumnHeader>
                     <TableColumnHeader>
-                        <Label>application.name</Label>
+                        <Label>application.type</Label>
                         <Width>40</Width>
                     </TableColumnHeader>
                     <TableColumnHeader>

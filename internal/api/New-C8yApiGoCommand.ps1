@@ -63,85 +63,12 @@ Function New-C8yApiGoCommand {
     #
     $RESTBodyBuilder = New-Object System.Text.StringBuilder
     if ($Specification.body) {
-        $null = $RESTBodyBuilder.AppendLine('body = getDataFlag(cmd)')
+        $null = $RESTBodyBuilder.AppendLine('body.SetMap(getDataFlag(cmd))')
 
         foreach ($iArg in $Specification.body) {
-            $argname = $iArg.name
-            $prop = $iArg.property
-            $type = $iArg.type
-
-            if (!$prop) {
-                $prop = $iArg.name
-            }
-
-            if ($prop) {
-                if ($prop.Contains(".")) {
-                    [array] $propParts = $prop -split "\."
-
-                    if ($propParts.Count -gt 2) {
-                        Write-Warning "TODO: handle nested properties with depth > 2"
-                        continue
-                    }
-
-                    switch -Regex ($type) {
-                        "(\[\]device|application)" {
-                            $null = $RESTBodyBuilder.AppendLine(@"
-    if v, err := cmd.Flags().GetStringSlice("${argname}"); err == nil {
-        for _, iValue := range v {
-            if _, exists := body["$($propParts[0])"]; !exists {
-                body["$($propParts[0])"] = make(map[string]interface{})
-            }
-            body["$($propParts[0])"].(map[string]interface{})["$($propParts[1])"] = iValue
-        }
-    } else {
-        return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "${argname}", err))
-    }
-"@)
-                        }
-
-                        default {
-                            $null = $RESTBodyBuilder.AppendLine(@"
-    if v, err := cmd.Flags().GetString("${argname}") ; err == nil && v != "" {
-        if _, exists := body["${argname}"]; !exists {
-            body["$($propParts[0])"] = make(map[string]interface{})
-        }
-        body["$($propParts[0])"].(map[string]interface{})["$($propParts[1])"] = v
-    }
-"@)
-                        }
-                    }
-
-                } else {
-                    switch -Regex ($type) {
-                        "json" {
-                            # Do nothing as it is already covered by getDataFlag
-                        }
-                        "datetime" {
-
-                            $null = $RESTBodyBuilder.AppendLine(@"
-    if v, err := tryGetTimestampFlag(cmd, "${argname}"); err == nil && v != "" {
-        body["${prop}"] = v
-    }
-"@)
-                        }
-                        "application" {
-                            $null = $RESTBodyBuilder.AppendLine(@"
-    if v, err := cmd.Flags().GetStringSlice("${argname}") ; err == nil && v != "" {
-        if len(v) > 0 {
-            body["${prop}"] = v[0]
-        }
-    }
-"@)
-                        }
-                        default {
-                            $null = $RESTBodyBuilder.AppendLine(@"
-    if v, err := cmd.Flags().GetString("${argname}") ; err == nil && v != "" {
-        body["${prop}"] = v
-    }
-"@)
-                        }
-                    }
-                }
+            $code = New-C8yApiGoGetValueFromFlag -Parameters $iArg -SetterType "body"
+            if ($code) {
+                $null = $RESTBodyBuilder.AppendLine($code)
             }
         }
     }
@@ -150,61 +77,10 @@ Function New-C8yApiGoCommand {
     # Path Parameters
     #
     $RESTPathBuilder = New-Object System.Text.StringBuilder
-    foreach ($iPathParameter in $Specification.pathParameters) {
-        $prop = $iPathParameter.name
-
-        switch -Regex ($iPathParameter.type) {
-            "^application$" {
-                $null = $RESTPathBuilder.AppendLine(@"
-    if cmd.Flags().Changed("${prop}") {
-        ${prop}InputValues, ${prop}Value, err := getApplicationSlice(cmd, args, "${prop}")
-
-        if err != nil {
-            return newUserError("no matching devices found", ${prop}InputValues, err)
-        }
-
-        if len(${prop}Value) == 0 {
-            return newUserError("no matching devices found", ${prop}InputValues)
-        }
-
-        for _, item := range ${prop}Value {
-            if item != "" {
-                pathParameters["${prop}"] = newIDValue(item).GetID()
-                break;
-            }
-        }
-    }
-"@)
-            }
-
-            "(\[\]device)" {
-                $null = $RESTPathBuilder.AppendLine(@"
-    if v, err := cmd.Flags().GetStringSlice("${prop}"); err == nil {
-        for _, iValue := range v {
-            pathParameters["${prop}"] = iValue
-        }
-    } else {
-        return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "${prop}", err))
-    }
-"@)
-            }
-            "^tenant$" {
-                $null = $RESTPathBuilder.AppendLine(@"
-    if v := getTenantWithDefaultFlag(cmd, "${prop}", client.TenantName); v != `"`" {
-        pathParameters["${prop}"] = v
-    }
-"@)
-            }
-
-            default {
-                $null = $RESTPathBuilder.AppendLine(@"
-    if v, err := cmd.Flags().GetString("${prop}"); err == nil {
-        pathParameters["${prop}"] = v
-    } else {
-        return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "${prop}", err))
-    }
-"@)
-            }
+    foreach ($Properties in $Specification.pathParameters) {
+        $code = New-C8yApiGoGetValueFromFlag -Parameters $Properties -SetterType "path"
+        if ($code) {
+            $null = $RESTPathBuilder.AppendLine($code)
         }
     }
 
@@ -214,110 +90,10 @@ Function New-C8yApiGoCommand {
     $RESTQueryBuilder = New-Object System.Text.StringBuilder
     $null = $RESTQueryBuilder.AppendLine('query := url.Values{}')
     if ($Specification.queryParameters) {
-        foreach ($iQueryParameter in $Specification.queryParameters) {
-            $prop = $iQueryParameter.name
-            $queryParam = $iQueryParameter.property
-            if (!$queryParam) {
-                $queryParam = $iQueryParameter.name
-            }
-
-            switch ($iQueryParameter.type) {
-                "boolean" {
-                    $null = $RESTQueryBuilder.AppendLine(@"
-    if v, err := cmd.Flags().GetBool("${prop}"); err == nil {
-        if v {
-            query.Add("${queryParam}", "true")
-        }
-    } else {
-        return newUserError("Flag does not exist")
-    }
-"@)
-                }
-
-                "datetime" {
-                    $null = $RESTQueryBuilder.AppendLine(@"
-    if cmd.Flags().Changed("${prop}") {
-        if v, err := tryGetTimestampFlag(cmd, "${prop}"); err == nil && v != "" {
-            query.Add("${queryParam}", v)
-        } else {
-            return newUserError("invalid date format", err)
-        }
-    }
-"@)
-                }
-
-                "application" {
-                    $null = $RESTQueryBuilder.AppendLine(@"
-    if cmd.Flags().Changed("${prop}") {
-        ${prop}InputValues, ${prop}Value, err := getApplicationSlice(cmd, args, "${prop}")
-
-        if err != nil {
-            return newUserError("no matching devices found", ${prop}InputValues, err)
-        }
-
-        if len(${prop}Value) == 0 {
-            return newUserError("no matching devices found", ${prop}InputValues)
-        }
-
-        for _, item := range ${prop}Value {
-            if item != "" {
-                query.Add("${queryParam}", newIDValue(item).GetID())
-            }
-        }
-    }
-"@)
-                }
-
-                "[]device" {
-                    $null = $RESTQueryBuilder.AppendLine(@"
-    if cmd.Flags().Changed("${prop}") {
-        ${prop}InputValues, ${prop}Value, err := getFormattedDeviceSlice(cmd, args, "${prop}")
-
-        if err != nil {
-            return newUserError("no matching devices found", ${prop}InputValues, err)
-        }
-
-        if len(${prop}Value) == 0 {
-            return newUserError("no matching devices found", ${prop}InputValues)
-        }
-
-        for _, item := range ${prop}Value {
-            if item != "" {
-                query.Add("${queryParam}", newIDValue(item).GetID())
-            }
-        }
-    }
-"@)
-                }
-
-                # Array of strings
-                "[]string" {
-                    $null = $RESTQueryBuilder.AppendLine(@"
-    if v, err := cmd.Flags().GetStringSlice("${prop}"); err == nil {
-        if len(v) > 0 {
-            for _, item := range v {
-                if item != "" {
-                    query.Add("${queryParam}", item)
-                }
-            }
-        }
-    } else {
-        return newUserError("Flag does not exist")
-    }
-"@)
-                }
-
-                default {
-                    $null = $RESTQueryBuilder.AppendLine(@"
-    if v, err := cmd.Flags().GetString("${prop}"); err == nil {
-        if v != "" {
-            query.Add("${queryParam}", url.QueryEscape(v))
-        }
-    } else {
-        return newUserError("Flag does not exist")
-    }
-"@)
-                }
+        foreach ($Properties in $Specification.queryParameters) {
+            $code = New-C8yApiGoGetValueFromFlag -Parameters $Properties -SetterType "query"
+            if ($code) {
+                $null = $RESTQueryBuilder.AppendLine($code)
             }
         }
     }
@@ -363,6 +139,7 @@ import (
     "net/url"
 
     "github.com/fatih/color"
+    "github.com/reubenmiller/go-c8y/pkg/mapbuilder"
     "github.com/reubenmiller/go-c8y/pkg/c8y"
     "github.com/spf13/cobra"
     "github.com/tidwall/pretty"
@@ -404,7 +181,7 @@ func (n *${Name}Cmd) ${Name}(cmd *cobra.Command, args []string) error {
     $RESTQueryBuilder
 
     // body
-    var body map[string]interface{}
+    body := mapbuilder.NewMapBuilder()
     $RESTBodyBuilder
 
     // path parameters
@@ -412,7 +189,7 @@ func (n *${Name}Cmd) ${Name}(cmd *cobra.Command, args []string) error {
     $RESTPathBuilder
     path := replacePathParameters("${RESTPath}", pathParameters)
 
-    return n.do${NameCamel}("${RESTMethod}", path, queryValue, body)
+    return n.do${NameCamel}("${RESTMethod}", path, queryValue, body.GetMap())
 }
 
 func (n *${Name}Cmd) do${NameCamel}(method string, path string, query string, body map[string]interface{}) error {
@@ -479,8 +256,6 @@ Function Get-C8yGoArgs {
 
         [string] $Default
     )
-
-    $NameLocalVariable = $Name[0].ToString().ToLowerInvariant() + $Name.Substring(1) + "Value"
 
     if ($Required -match "true|yes") {
         $Description = "${Description} (required)"
