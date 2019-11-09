@@ -9,32 +9,33 @@
 
 ## Roadmap
 
-* [ ] Support common parameters
+* [x] Support common parameters
   * [x] pageSize
   * [x] withTotalPages
 * [x] Add required parameters
-* [ ] Piped arguments
-* [ ] Look over devices where []device type is used (parallel tasks?) Probably need a new
-* [ ] Commands
-  * [ ] Devices list --type unitType
-* [ ] Expansion
+* [x] Piped arguments
+* [x] Set defaults for certain variables. i.e. Tenant
+* [x] Commands
+  * [x] Devices list --type unitType
+* [x] Expansion
   * [x] applications
-  * [ ] devices
-  * [ ] agents
+  * [x] devices
+* [x] Flag parsing
+* [x] Suppress logging when not in verbose mode
+  * [x] Datetime (relative and fixed)
 * [ ] Result parsing
   * [ ] client side filtering. e.g. c8y applications list --filter "name=*test*"
 * [ ] New / Import / export cumulocity sessions
-  * [ ] Generate secure password and encrypt it
+  * [x] Create new session
+  * [x] Import a session from file
+  * [ ] Store session credentials securely
   * [ ] Set credentials from a microservice subscription
-  * [ ] encrypt/decrypt password
-* [ ] Create new session
-* [x] Flag parsing
-  * [x] Datetime (relative and fixed)
-* [ ] template
 * [ ] Add examples
 * [ ] Generate tests automatically
 * [x] Generate powershell commands from templates
 * [ ] Make options case insensitive
+* [ ] Microservice aliases using my-app://health
+* [ ] Look over devices where []device type is used (parallel tasks?) Probably need a new template
 
 # encryption process
 
