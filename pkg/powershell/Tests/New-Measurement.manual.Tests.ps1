@@ -2,10 +2,20 @@
 . $PSScriptRoot/imports.ps1
 
 Describe -Name "New Measurement" {
+    BeforeEach {
+        $TestDevice = PSC8y\New-ManagedObject `
+            -Name "testdevice001" `
+            -Data @{
+                c8y_IsDevice = @{}
+            } `
+            -Force
+
+        $TestDevice.id | Should -Not -BeNullOrEmpty
+    }
     It "Data" {
-        $DeviceID = "testdevice01"
+        $TestDevice.id | Should -Not -BeNullOrEmpty
         $Response = PSC8y\New-Measurement `
-            -Device:$DeviceID `
+            -Device $TestDevice.id `
             -Time "0d" `
             -Type "ciSeria1" `
             -Verbose `
@@ -16,9 +26,15 @@ Describe -Name "New Measurement" {
                         unit = "°"
                     }
                 }
-            }
+            } `
+            -Force
         $Response | Should -Not -BeNullOrEmpty
         $Response.test1.signal1.value | Should -BeExactly 1.234
         $Response.test1.signal1.unit | Should -BeExactly "°"
+    }
+
+    AfterEach {
+        $TestDevice.id | Should -Not -BeNullOrEmpty
+        $TestDevice.id | PSC8y\Remove-ManagedObject -Force
     }
 }
