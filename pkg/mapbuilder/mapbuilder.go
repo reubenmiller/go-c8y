@@ -2,6 +2,7 @@ package mapbuilder
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 )
 
@@ -10,9 +11,7 @@ const (
 )
 
 func NewMapBuilder() *MapBuilder {
-	return &MapBuilder{
-		body: make(map[string]interface{}),
-	}
+	return &MapBuilder{}
 }
 
 func NewMapBuilderWithInit(body map[string]interface{}) *MapBuilder {
@@ -38,11 +37,17 @@ func (b MapBuilder) GetMap() map[string]interface{} {
 
 // MarshalJSON returns the body as json
 func (b MapBuilder) MarshalJSON() ([]byte, error) {
+	if b.body == nil {
+		return nil, errors.New("body is uninitialized")
+	}
 	return json.Marshal(b.body)
 }
 
 // Set sets a value to a give dot notation path
 func (b *MapBuilder) Set(path string, value interface{}) error {
+	if b.body == nil {
+		b.body = make(map[string]interface{})
+	}
 	keys := strings.Split(path, Separator)
 
 	currentMap := b.body
