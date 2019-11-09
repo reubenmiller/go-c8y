@@ -13,6 +13,7 @@ Format the confirmation message from a cmdlet name and input object
         [Parameter(
             Mandatory = $true,
             Position = 1)]
+        [AllowNull()]
         [object] $inputObject,
 
         [string] $IgnorePrefix = ""
