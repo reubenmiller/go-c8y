@@ -19,6 +19,7 @@ func newDeviceRootCmd() *deviceRootCmd {
 
 	// Subcommands
 	cmd.AddCommand(newQueryDeviceCmd().getCommand())
+	cmd.AddCommand(newGetDeviceCollectionCmd().getCommand())
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
