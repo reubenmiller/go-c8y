@@ -138,7 +138,7 @@ func Execute() {
 }
 
 func initConfig() {
-	if globalFlagVerbose {
+	if globalFlagVerbose || globalFlagDryRun {
 		log.SetPrefix("VERBOSE: ")
 	} else {
 		// Disable log messages
