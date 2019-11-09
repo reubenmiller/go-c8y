@@ -103,51 +103,16 @@
       },
       "body": [
         {
-          "name": "device",
-          "type": "[]device",
-          "required": true,
-          "property": "source.id",
-          "description": "The ManagedObject that the inventory originated from"
+          "name": "name",
+          "type": "string",
+          "required": false,
+          "description": "name"
         },
         {
           "name": "type",
           "type": "string",
-          "required": true,
-          "description": "Identifies the type of this inventory, e.g. 'com_cumulocity_events_TamperEvent'."
-        },
-        {
-          "name": "time",
-          "type": "datetime",
-          "required": true,
-          "description": "Time of the inventory."
-        },
-        {
-          "name": "text",
-          "type": "string",
-          "required": true,
-          "description": "Text description of the inventory."
-        },
-        {
-          "name": "severity",
-          "type": "string",
-          "required": true,
-          "description": "The severity of the inventory: CRITICAL, MAJOR, MINOR or WARNING. Must be upper-case.",
-          "validationSet": [
-            "CRITICAL",
-            "MAJOR",
-            "MINOR",
-            "WARNING"
-          ]
-        },
-        {
-          "name": "status",
-          "type": "string",
-          "description": "The status of the inventory: ACTIVE, ACKNOWLEDGED or CLEARED. If status was not appeared, new inventory will have status ACTIVE. Must be upper-case.",
-          "validationSet": [
-            "ACTIVE",
-            "ACKNOWLEDGED",
-            "CLEARED"
-          ]
+          "required": false,
+          "description": "type"
         },
         {
           "name": "data",

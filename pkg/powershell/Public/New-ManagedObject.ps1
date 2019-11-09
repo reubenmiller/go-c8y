@@ -16,39 +16,15 @@ Create a new inventory
     [Alias()]
     [OutputType([object])]
     Param(
-        # The ManagedObject that the inventory originated from (required)
-        [Parameter(Mandatory = $true,
-                   ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true)]
-        [object[]]
-        $Device,
+        # name
+        [Parameter()]
+        [string]
+        $Name,
 
-        # Identifies the type of this inventory, e.g. 'com_cumulocity_events_TamperEvent'. (required)
-        [Parameter(Mandatory = $true)]
+        # type
+        [Parameter()]
         [string]
         $Type,
-
-        # Time of the inventory. (required)
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Time,
-
-        # Text description of the inventory. (required)
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Text,
-
-        # The severity of the inventory: CRITICAL, MAJOR, MINOR or WARNING. Must be upper-case. (required)
-        [Parameter(Mandatory = $true)]
-        [ValidateSet('CRITICAL','MAJOR','MINOR','WARNING')]
-        [string]
-        $Severity,
-
-        # The status of the inventory: ACTIVE, ACKNOWLEDGED or CLEARED. If status was not appeared, new inventory will have status ACTIVE. Must be upper-case.
-        [Parameter()]
-        [ValidateSet('ACTIVE','ACKNOWLEDGED','CLEARED')]
-        [string]
-        $Status,
 
         # Additional properties of the inventory.
         [Parameter()]
@@ -73,23 +49,11 @@ Create a new inventory
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("Device")) {
-            $Parameters["device"] = $Device
+        if ($PSBoundParameters.ContainsKey("Name")) {
+            $Parameters["name"] = $Name
         }
         if ($PSBoundParameters.ContainsKey("Type")) {
             $Parameters["type"] = $Type
-        }
-        if ($PSBoundParameters.ContainsKey("Time")) {
-            $Parameters["time"] = $Time
-        }
-        if ($PSBoundParameters.ContainsKey("Text")) {
-            $Parameters["text"] = $Text
-        }
-        if ($PSBoundParameters.ContainsKey("Severity")) {
-            $Parameters["severity"] = $Severity
-        }
-        if ($PSBoundParameters.ContainsKey("Status")) {
-            $Parameters["status"] = $Status
         }
         if ($PSBoundParameters.ContainsKey("Data")) {
             $Parameters["data"] = "{0}" -f ((ConvertTo-Json $Data -Compress) -replace '"', '\"')
