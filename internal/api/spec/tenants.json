@@ -95,6 +95,7 @@
         {
           "name": "tenant",
           "type": "tenant",
+          "pipeline": true,
           "required": false,
           "description": "Tenant id"
         }
@@ -113,6 +114,7 @@
         {
           "name": "tenant",
           "type": "tenant",
+          "pipeline": true,
           "required": false,
           "description": "Tenant id"
         }
@@ -132,6 +134,7 @@
         {
           "name": "tenant",
           "type": "tenant",
+          "pipeline": true,
           "required": false,
           "description": "Tenant id"
         }
@@ -264,6 +267,7 @@
         {
           "name": "tenant",
           "type": "tenant",
+          "pipeline": true,
           "required": false,
           "description": "Tenant id"
         }

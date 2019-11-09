@@ -81,6 +81,7 @@ endpoints:
     pathParameters:
       - name: tenant
         type: tenant
+        pipeline: true
         required: false
         description: Tenant id
 
@@ -94,6 +95,7 @@ endpoints:
     pathParameters:
       - name: tenant
         type: tenant
+        pipeline: true
         required: false
         description: Tenant id
 
@@ -108,6 +110,7 @@ endpoints:
     pathParameters:
       - name: tenant
         type: tenant
+        pipeline: true
         required: false
         description: Tenant id
 
@@ -211,5 +214,6 @@ endpoints:
     pathParameters:
       - name: tenant
         type: tenant
+        pipeline: true
         required: false
         description: Tenant id
