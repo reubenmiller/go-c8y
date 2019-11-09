@@ -44,6 +44,7 @@ var (
 	globalFlagPrettyPrint    bool
 	globalFlagDryRun         bool
 	globalFlagSessionFile    string
+	globalFlagUseEnv         bool
 )
 
 func Execute() {
@@ -58,6 +59,7 @@ func Execute() {
 	rootCmd.PersistentFlags().BoolVar(&globalFlagWithTotalPages, "withTotalPages", false, "Include all results")
 	rootCmd.PersistentFlags().BoolVar(&globalFlagPrettyPrint, "pretty", true, "Pretty print the json responses")
 	rootCmd.PersistentFlags().BoolVar(&globalFlagDryRun, "dry", false, "Dry run. Don't send any data to the server")
+	rootCmd.PersistentFlags().BoolVar(&globalFlagUseEnv, "useEnv", false, "Allow loading Cumulocity session setting from environment variables")
 
 	// TODO: Make flags case-insensitive
 	// rootCmd.PersistentFlags().SetNormalizeFunc(flagNormalizeFunc)
@@ -150,6 +152,17 @@ func initConfig() {
 		log.Printf("Using session environment variable: %s\n", globalFlagSessionFile)
 	}
 
+	if os.Getenv("C8Y_USE_ENVIRONMENT") != "" {
+		globalFlagUseEnv = true
+	}
+
+	// only parse env variables if no explict config file is given
+	if globalFlagUseEnv {
+		log.Println("C8Y_USE_ENVIRONMENT is set. Environment variables can be used to override config settings")
+		viper.SetEnvPrefix("C8Y")
+		viper.AutomaticEnv()
+	}
+
 	if _, err := os.Stat(globalFlagSessionFile); err == nil {
 		// Use config file from the flag.
 		viper.SetConfigFile(globalFlagSessionFile)
@@ -169,10 +182,6 @@ func initConfig() {
 		} else {
 			viper.SetConfigName("session")
 		}
-
-		// only parse env variables if no explict config file is given
-		// viper.SetEnvPrefix("C8Y")
-		// viper.AutomaticEnv()
 	}
 
 	if err := viper.ReadInConfig(); err == nil {

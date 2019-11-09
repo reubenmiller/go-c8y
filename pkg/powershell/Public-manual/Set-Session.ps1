@@ -23,7 +23,10 @@ String
                    ValueFromPipeline=$true,
                    ValueFromPipelineByPropertyName=$true)]
         [Alias("FullName")]
-        [string] $File
+        [string] $File,
+
+        # Allow loading Cumulocity session setting from environment variables
+        [switch] $UseEnvironment
     )
 
     Process {
@@ -35,7 +38,13 @@ String
 
             default {
                 $Binary = Get-CumulocityBinary
-                $Path = & $Binary sessions list
+                $args = New-Object System.Collections.ArrayList
+                $null = $args.AddRange(@("sessions", "list"))
+
+                if ($UseEnvironment) {
+                    $null = $args.Add("--useEnv")
+                }
+                $Path = & $Binary $args
             }
         }
 
