@@ -54,6 +54,10 @@ Function Invoke-Command {
         $null = $BinaryArguments.Add("--dry")
     }
 
+    if ($VerbosePreference) {
+        $null = $BinaryArguments.Add("--verbose")
+    }
+
     # Include all pagination results
     if ($IncludeAll) {
         $null = $BinaryArguments.Add("--all")
@@ -112,6 +116,13 @@ Function Invoke-Command {
             totalPages = $response.statistics.totalPages
             currentPage = $response.statistics.currentPage
         }
+    }
+
+    # Save last value for easier recall on command line
+    $global:_rawdata = $response
+    $global:_data = $null
+    if ($null -ne $response.$ResultProperty) {
+        $global:_data = $response.$ResultProperty
     }
 
     if ($ReturnRawData -or ($null -eq $response.$ResultProperty)) {

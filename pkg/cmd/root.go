@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -137,6 +138,12 @@ func Execute() {
 }
 
 func initConfig() {
+	if globalFlagVerbose {
+		log.SetPrefix("VERBOSE: ")
+	} else {
+		// Disable log messages
+		log.SetOutput(ioutil.Discard)
+	}
 
 	if globalFlagSessionFile == "" && os.Getenv("C8Y_SESSION") != "" {
 		globalFlagSessionFile = os.Getenv("C8Y_SESSION")
