@@ -3,10 +3,10 @@
 
 Describe -Name "New Measurement" {
     It "Data" {
-        $DeviceID = ""
+        $DeviceID = "testdevice01"
         $Response = PSC8y\New-Measurement `
             -Device:$DeviceID `
-            -Time (Get-Date) `
+            -Time "0d" `
             -Type "ciSeria1" `
             -Verbose `
             -Data @{

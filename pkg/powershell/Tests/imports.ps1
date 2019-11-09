@@ -6,9 +6,13 @@ Import-Module Pester -MinimumVersion "4.0.0"
 Import-Module $PSScriptRoot/../PSC8y.psd1 -Prefix ""
 
 # Get credentials from the environment
-$Session = Get-C8yActiveSession -ErrorAction SilentlyContinue
+$env:C8Y_USE_ENVIRONMENT = "on"
 
-if (!$Session.id) {
-    New-C8ySessionFromEnvironment;
+$TenantInfo = Get-CurrentTenant
+
+$User = Get-CurrentUser
+
+if (!$User) {
+    Write-Error 'No Cumulocity Session found. Please set $env:C8Y_SESSION or $env:C8Y_HOST, $env:C8Y_TENANT, $env:C8Y_USERNAME, $env:C8Y_PASSWORD and try again'
 }
-Write-Host ("Session: {0}/{1} on {2}" -f $Session.Tenant, $Session.Username, $Session.Uri)
+Write-Host ("Session: {0}/{1} on {2}" -f $TenantInfo.name, $User.id, $TenantInfo.domainName)
