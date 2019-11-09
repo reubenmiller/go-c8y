@@ -20,6 +20,10 @@ Format the confirmation message from a cmdlet name and input object
     )
 
     $parts = New-Object System.Collections.ArrayList;
+
+    # Remove fully qualified module name
+    $Name = $Name -replace "^\w+\\", ""
+
     foreach ($item in ($Name -csplit '(?=[A-Z\-])')) {
         if ($item -eq "-" -or $item -eq "" -or $item -eq $IgnorePrefix) {
             continue;
