@@ -17,6 +17,10 @@ func encodeC8yTimestamp(value string) string {
 	return strings.ReplaceAll(value, "+", "%2B")
 }
 
+func decodeC8yTimestamp(value string) string {
+	return strings.ReplaceAll(value, "%2B", "+")
+}
+
 // tryGetTimestampFlag try to return the date time as either a relative time duration to now
 //
 // 1. Try parsing a relative time string
