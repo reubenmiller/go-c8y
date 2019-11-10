@@ -3,6 +3,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 
@@ -108,10 +109,13 @@ func (n *newExternalIDCmd) newExternalID(cmd *cobra.Command, args []string) erro
 
 	path := replacePathParameters("identity/globalIds/{device}/externalIds", pathParameters)
 
-	return n.doNewExternalID("POST", path, queryValue, body.GetMap())
+	// filter and selectors
+	filters := getFilterFlag(cmd, "filter")
+
+	return n.doNewExternalID("POST", path, queryValue, body.GetMap(), filters)
 }
 
-func (n *newExternalIDCmd) doNewExternalID(method string, path string, query string, body map[string]interface{}) error {
+func (n *newExternalIDCmd) doNewExternalID(method string, path string, query string, body map[string]interface{}, filters *JSONFilters) error {
 	resp, err := client.SendRequest(
 		context.Background(),
 		c8y.RequestOptions{
@@ -128,10 +132,19 @@ func (n *newExternalIDCmd) doNewExternalID(method string, path string, query str
 	}
 
 	if resp != nil && resp.JSONData != nil {
-		if globalFlagPrettyPrint {
-			fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+
+		var responseText []byte
+
+		if filters != nil && !globalFlagRaw {
+			responseText = filters.Apply(*resp.JSONData, "")
 		} else {
-			fmt.Printf("%s\n", *resp.JSONData)
+			responseText = []byte(*resp.JSONData)
+		}
+
+		if globalFlagPrettyPrint && json.Valid(responseText) {
+			fmt.Printf("%s", pretty.Pretty(responseText))
+		} else {
+			fmt.Printf("%s", responseText)
 		}
 	}
 

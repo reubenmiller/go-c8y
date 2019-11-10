@@ -8,7 +8,7 @@ Get a collection of managedObjects based on filter parameters
 Get a collection of managedObjects based on filter parameters
 
 .EXAMPLE
-Get-ManagedobjectCollection
+Get-ManagedObjectCollection
 
 
 #>

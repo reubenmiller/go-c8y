@@ -23,19 +23,23 @@
 * [x] Flag parsing
 * [x] Suppress logging when not in verbose mode
   * [x] Datetime (relative and fixed)
-* [ ] Result parsing
-  * [ ] client side filtering. e.g. c8y applications list --filter "name=*test*"
-* [ ] New / Import / export cumulocity sessions
+* [x] New / Import / export cumulocity sessions
   * [x] Create new session
   * [x] Import a session from file
-  * [ ] Store session credentials securely
-  * [ ] Set credentials from a microservice subscription
+* [x] Generate powershell commands from templates
+* [x] Result parsing
+  * [x] client side filtering. e.g. c8y applications list --filter "name=*test*"
 * [ ] Add examples
 * [ ] Generate tests automatically
-* [x] Generate powershell commands from templates
 * [ ] Make options case insensitive
 * [ ] Microservice aliases using my-app://health
+
+### Phase 2
+
 * [ ] Look over devices where []device type is used (parallel tasks?) Probably need a new template
+* [ ] New / Import / export cumulocity sessions
+  * [ ] Store session credentials securely
+  * [ ] Set credentials from a microservice subscription
 
 # encryption process
 
@@ -89,8 +93,9 @@
 * [ ] Add tests
   * [ ] How to automatic generate Pester tests
 * [ ] Return status codes
-* [ ] Use session default values (C8Y_TENANT for tenant path/query variables)
+* [x] Use session default values (C8Y_TENANT for tenant path/query variables)
 
+* [ ] Remove child devices and child references by wildcard. Only delete matching children
 
 Manual commands
 

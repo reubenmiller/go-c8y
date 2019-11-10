@@ -3,6 +3,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 
@@ -130,10 +131,13 @@ func (n *getMeasurementSeriesCmd) getMeasurementSeries(cmd *cobra.Command, args 
 
 	path := replacePathParameters("measurement/measurements/series", pathParameters)
 
-	return n.doGetMeasurementSeries("GET", path, queryValue, body.GetMap())
+	// filter and selectors
+	filters := getFilterFlag(cmd, "filter")
+
+	return n.doGetMeasurementSeries("GET", path, queryValue, body.GetMap(), filters)
 }
 
-func (n *getMeasurementSeriesCmd) doGetMeasurementSeries(method string, path string, query string, body map[string]interface{}) error {
+func (n *getMeasurementSeriesCmd) doGetMeasurementSeries(method string, path string, query string, body map[string]interface{}, filters *JSONFilters) error {
 	resp, err := client.SendRequest(
 		context.Background(),
 		c8y.RequestOptions{
@@ -150,10 +154,19 @@ func (n *getMeasurementSeriesCmd) doGetMeasurementSeries(method string, path str
 	}
 
 	if resp != nil && resp.JSONData != nil {
-		if globalFlagPrettyPrint {
-			fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+
+		var responseText []byte
+
+		if filters != nil && !globalFlagRaw {
+			responseText = filters.Apply(*resp.JSONData, "")
 		} else {
-			fmt.Printf("%s\n", *resp.JSONData)
+			responseText = []byte(*resp.JSONData)
+		}
+
+		if globalFlagPrettyPrint && json.Valid(responseText) {
+			fmt.Printf("%s", pretty.Pretty(responseText))
+		} else {
+			fmt.Printf("%s", responseText)
 		}
 	}
 

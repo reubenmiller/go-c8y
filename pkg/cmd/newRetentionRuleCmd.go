@@ -3,6 +3,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 
@@ -112,10 +113,13 @@ func (n *newRetentionRuleCmd) newRetentionRule(cmd *cobra.Command, args []string
 
 	path := replacePathParameters("/retention/retentions", pathParameters)
 
-	return n.doNewRetentionRule("POST", path, queryValue, body.GetMap())
+	// filter and selectors
+	filters := getFilterFlag(cmd, "filter")
+
+	return n.doNewRetentionRule("POST", path, queryValue, body.GetMap(), filters)
 }
 
-func (n *newRetentionRuleCmd) doNewRetentionRule(method string, path string, query string, body map[string]interface{}) error {
+func (n *newRetentionRuleCmd) doNewRetentionRule(method string, path string, query string, body map[string]interface{}, filters *JSONFilters) error {
 	resp, err := client.SendRequest(
 		context.Background(),
 		c8y.RequestOptions{
@@ -132,10 +136,19 @@ func (n *newRetentionRuleCmd) doNewRetentionRule(method string, path string, que
 	}
 
 	if resp != nil && resp.JSONData != nil {
-		if globalFlagPrettyPrint {
-			fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+
+		var responseText []byte
+
+		if filters != nil && !globalFlagRaw {
+			responseText = filters.Apply(*resp.JSONData, "")
 		} else {
-			fmt.Printf("%s\n", *resp.JSONData)
+			responseText = []byte(*resp.JSONData)
+		}
+
+		if globalFlagPrettyPrint && json.Valid(responseText) {
+			fmt.Printf("%s", pretty.Pretty(responseText))
+		} else {
+			fmt.Printf("%s", responseText)
 		}
 	}
 

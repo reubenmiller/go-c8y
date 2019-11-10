@@ -3,6 +3,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 
@@ -89,10 +90,13 @@ func (n *deleteApplicationCmd) deleteApplication(cmd *cobra.Command, args []stri
 
 	path := replacePathParameters("/application/applications/{application}", pathParameters)
 
-	return n.doDeleteApplication("DELETE", path, queryValue, body.GetMap())
+	// filter and selectors
+	filters := getFilterFlag(cmd, "filter")
+
+	return n.doDeleteApplication("DELETE", path, queryValue, body.GetMap(), filters)
 }
 
-func (n *deleteApplicationCmd) doDeleteApplication(method string, path string, query string, body map[string]interface{}) error {
+func (n *deleteApplicationCmd) doDeleteApplication(method string, path string, query string, body map[string]interface{}, filters *JSONFilters) error {
 	resp, err := client.SendRequest(
 		context.Background(),
 		c8y.RequestOptions{
@@ -109,10 +113,19 @@ func (n *deleteApplicationCmd) doDeleteApplication(method string, path string, q
 	}
 
 	if resp != nil && resp.JSONData != nil {
-		if globalFlagPrettyPrint {
-			fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+
+		var responseText []byte
+
+		if filters != nil && !globalFlagRaw {
+			responseText = filters.Apply(*resp.JSONData, "")
 		} else {
-			fmt.Printf("%s\n", *resp.JSONData)
+			responseText = []byte(*resp.JSONData)
+		}
+
+		if globalFlagPrettyPrint && json.Valid(responseText) {
+			fmt.Printf("%s", pretty.Pretty(responseText))
+		} else {
+			fmt.Printf("%s", responseText)
 		}
 	}
 
