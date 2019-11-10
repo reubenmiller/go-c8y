@@ -76,10 +76,15 @@ func (n *listSessionCmd) listSession(cmd *cobra.Command, args []string) error {
 		cmd.PrintErrf("Failed to walk directory. %s", err)
 	}
 
+	// Add index numbers
+	for i := range config.Sessions {
+		config.Sessions[i].Index = i + 1
+	}
+
 	templates := &promptui.SelectTemplates{
 		// Label:    "{{ .Host }}?",
-		Active:   `-> {{ printf "%-25s" .Name | cyan }} {{ .Host | magenta }} {{ printf "(%s/" .Tenant | red }}{{ printf "%s)" .Username | red }}`,
-		Inactive: `   {{ printf "%-25s" .Name | cyan }} {{ .Host | magenta }} {{ printf "(%s/" .Tenant | red }}{{ printf "%s)" .Username | red }}`,
+		Active:   `-> {{ printf "#%02d: %-25s" .Index .Name | cyan }} {{ .Host | magenta }} {{ printf "(%s/" .Tenant | red }}{{ printf "%s)" .Username | red }}`,
+		Inactive: `   {{ printf "#%02d: %-25s" .Index .Name | cyan }} {{ .Host | magenta }} {{ printf "(%s/" .Tenant | red }}{{ printf "%s)" .Username | red }}`,
 		Selected: "{{ .Path }}",
 		Details: `
 --------- Details ----------
@@ -93,7 +98,8 @@ func (n *listSessionCmd) listSession(cmd *cobra.Command, args []string) error {
 	searcher := func(input string, index int) bool {
 		session := config.Sessions[index]
 
-		name := strings.ToLower(fmt.Sprintf("%s %s %s %s",
+		name := strings.ToLower(fmt.Sprintf("#%02d %s %s %s %s",
+			session.Index,
 			filepath.Base(session.Path),
 			session.Host,
 			session.Tenant,
@@ -106,7 +112,7 @@ func (n *listSessionCmd) listSession(cmd *cobra.Command, args []string) error {
 	prompt := promptui.Select{
 		Stdout:            cmd.OutOrStderr(),
 		HideSelected:      false,
-		IsVimMode:         true,
+		IsVimMode:         false,
 		StartInSearchMode: false,
 		Label:             "Select a Cumulocity Session",
 		Items:             config.Sessions,

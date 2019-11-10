@@ -33,8 +33,9 @@ type CumulocitySession struct {
 
 	MicroserviceAliases map[string]string `json:"microserviceAliases"`
 
-	Path string `json:"-"`
-	Name string `json:"-"`
+	Index int    `json:"-"`
+	Path  string `json:"-"`
+	Name  string `json:"-"`
 }
 
 func NewCumulocitySessionFromFile(filePath string) (*CumulocitySession, error) {
