@@ -1,0 +1,253 @@
+{
+  "information": {
+    "name": "inventoryReferences",
+    "description": "Cumulocity managed objects",
+    "descriptionLong": "REST endpoint to interact with Cumulocity managed objects",
+    "link": "https://cumulocity.com/guides/reference/inventory/"
+  },
+  "endpoints": [
+    {
+      "name": "getManagedObjectChildDeviceCollection",
+      "method": "GET",
+      "description": "Get a collection of managedObjects child references",
+      "descriptionLong": "Get a collection of managedObjects child references",
+      "examples": {
+        "powershell": [
+          "Get-ChildDeviceCollection"
+        ],
+        "go": [
+          "c8y inventoryReferences listChildDevices --device 12345"
+        ]
+      },
+      "path": "inventory/managedObjects/{device}/childDevices",
+      "accept": "application/vnd.com.nsn.cumulocity.managedObjectReferenceCollection+json",
+      "collectionType": "application/vnd.com.nsn.cumulocity.managedObjectReference+json",
+      "listProperty": "references.managedObject",
+      "alias": {
+        "go": "listChildDevices",
+        "powershell": "Get-ChildDeviceCollection"
+      },
+      "pathParameters": [
+        {
+          "name": "device",
+          "type": "[]device",
+          "description": "Device."
+        }
+      ]
+    },
+    {
+      "name": "getManagedObjectChildAssetCollection",
+      "method": "GET",
+      "description": "Get a collection of managedObjects child references",
+      "descriptionLong": "Get a collection of managedObjects child references",
+      "examples": {
+        "powershell": [
+          "Get-ChildAssetCollection"
+        ],
+        "go": [
+          "c8y inventoryReferences listChildAssets --device 12345"
+        ]
+      },
+      "path": "inventory/managedObjects/{id}/childAssets",
+      "accept": "application/vnd.com.nsn.cumulocity.managedObjectReferenceCollection+json",
+      "collectionType": "application/vnd.com.nsn.cumulocity.managedObjectReference+json",
+      "listProperty": "references.managedObject",
+      "alias": {
+        "go": "listChildAssets",
+        "powershell": "Get-ChildAssetCollection"
+      },
+      "pathParameters": [
+        {
+          "name": "device",
+          "type": "[]device",
+          "property": "id",
+          "description": "Device."
+        },
+        {
+          "name": "group",
+          "type": "[]devicegroup",
+          "property": "id",
+          "description": "Group."
+        }
+      ]
+    },
+    {
+      "name": "newManagedObjectChildDevice",
+      "method": "POST",
+      "path": "inventory/managedObjects/{device}/childDevices",
+      "accept": "application/vnd.com.nsn.cumulocity.managedObjectReference+json",
+      "description": "Create a child device reference",
+      "descriptionLong": "Create a child device reference",
+      "alias": {
+        "go": "createChildDevice",
+        "powershell": "New-ChildDeviceReference"
+      },
+      "pathParameters": [
+        {
+          "name": "device",
+          "type": "[]device",
+          "pipeline": true,
+          "required": true,
+          "description": "ManagedObject id"
+        }
+      ],
+      "body": [
+        {
+          "name": "child",
+          "type": "[]device",
+          "required": false,
+          "property": "managedObject.id",
+          "description": "new child device"
+        }
+      ]
+    },
+    {
+      "name": "newManagedObjectChildAsset",
+      "method": "POST",
+      "path": "inventory/managedObjects/{id}/childAssets",
+      "accept": "application/vnd.com.nsn.cumulocity.managedObjectReference+json",
+      "description": "Create a child asset (device or devicegroup) reference",
+      "descriptionLong": "Create a child asset (device or devicegroup) reference",
+      "alias": {
+        "go": "createChildAsset",
+        "powershell": "New-ChildAssetReference"
+      },
+      "pathParameters": [
+        {
+          "name": "group",
+          "type": "[]devicegroup",
+          "property": "id",
+          "pipeline": true,
+          "required": true,
+          "description": "Group id"
+        }
+      ],
+      "body": [
+        {
+          "name": "newChildDevice",
+          "type": "[]device",
+          "required": false,
+          "property": "managedObject.id",
+          "description": "new child device asset"
+        },
+        {
+          "name": "newChildGroup",
+          "type": "[]devicegroup",
+          "required": false,
+          "property": "managedObject.id",
+          "description": "new child device group asset"
+        }
+      ]
+    },
+    {
+      "name": "getManagedObjectChildDeviceReference",
+      "description": "Get managed object child device reference",
+      "method": "GET",
+      "path": "inventory/managedObjects/{device}/childDevices/{reference}",
+      "accept": "application/vnd.com.nsn.cumulocity.managedObjectReference+json",
+      "alias": {
+        "go": "getChildDevice",
+        "powershell": "Get-ChildDeviceReference"
+      },
+      "pathParameters": [
+        {
+          "name": "device",
+          "type": "[]device",
+          "pipeline": true,
+          "required": true,
+          "description": "ManagedObject id"
+        },
+        {
+          "name": "reference",
+          "type": "[]device",
+          "required": true,
+          "description": "Device reference id"
+        }
+      ]
+    },
+    {
+      "name": "getManagedObjectChildAssetReference",
+      "description": "Get managed object child asset reference",
+      "method": "GET",
+      "path": "inventory/managedObjects/{asset}/childAssets/{reference}",
+      "accept": "application/vnd.com.nsn.cumulocity.managedObjectReference+json",
+      "alias": {
+        "go": "getChildAsset",
+        "powershell": "Get-ChildAssetReference"
+      },
+      "pathParameters": [
+        {
+          "name": "asset",
+          "type": "[]device",
+          "pipeline": true,
+          "required": true,
+          "description": "Asset id"
+        },
+        {
+          "name": "reference",
+          "type": "[]device",
+          "required": true,
+          "description": "Asset reference id"
+        }
+      ]
+    },
+    {
+      "name": "deleteManagedObjectChildDeviceReference",
+      "description": "Delete child device reference",
+      "method": "DELETE",
+      "path": "inventory/managedObjects/{device}/childDevices/{childDevice}",
+      "accept": "",
+      "alias": {
+        "go": "deleteChildDevice",
+        "powershell": "Remove-ChildDeviceReference"
+      },
+      "pathParameters": [
+        {
+          "name": "device",
+          "type": "[]device",
+          "pipeline": true,
+          "required": true,
+          "description": "ManagedObject id"
+        },
+        {
+          "name": "childDevice",
+          "type": "[]device",
+          "required": true,
+          "description": "Child device reference"
+        }
+      ]
+    },
+    {
+      "name": "deleteManagedObjectChildAssetReference",
+      "description": "Delete child asset reference",
+      "method": "DELETE",
+      "path": "inventory/managedObjects/{asset}/childAssets/{reference}",
+      "accept": "",
+      "alias": {
+        "go": "deleteChildAsset",
+        "powershell": "Remove-ChildAssetReference"
+      },
+      "pathParameters": [
+        {
+          "name": "asset",
+          "type": "[]device",
+          "pipeline": true,
+          "required": true,
+          "description": "Asset id"
+        },
+        {
+          "name": "childDevice",
+          "type": "[]device",
+          "required": false,
+          "description": "Child device"
+        },
+        {
+          "name": "childGroup",
+          "type": "[]devicegroup",
+          "required": false,
+          "description": "Child device group"
+        }
+      ]
+    }
+  ]
+}

@@ -14,7 +14,7 @@ endpoints:
     examples:
       powershell:
         -
-          Get-ManagedobjectCollection
+          Get-ManagedObjectCollection
 
       go:
         -
