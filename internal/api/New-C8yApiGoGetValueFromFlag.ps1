@@ -28,6 +28,7 @@ Function New-C8yApiGoGetValueFromFlag {
         "[]string" = @{}
         "application" = @{}
         "[]device" = @{}
+        "[]devicegroup" = @{}
         "string" = @{}
         "tenant" = @{}
     }
@@ -121,6 +122,30 @@ Function New-C8yApiGoGetValueFromFlag {
         for _, item := range ${prop}Value {
             if item != "" {
                 $($Setters."[]device".$SetterType)
+            }
+        }
+    }
+"@
+
+    # devicegroup array
+    $Setters."[]devicegroup"."query" = "query.Add(`"${queryParam}`", newIDValue(item).GetID())"
+    $Setters."[]devicegroup"."path" = "pathParameters[`"${queryParam}`"] = newIDValue(item).GetID()"
+    $Setters."[]devicegroup"."body" = "body.Set(`"${queryParam}`", newIDValue(item).GetID())"
+    $Definitions."[]devicegroup" = @"
+    if cmd.Flags().Changed("${prop}") {
+        ${prop}InputValues, ${prop}Value, err := getFormattedDeviceGroupSlice(cmd, args, "${prop}")
+
+        if err != nil {
+            return newUserError("no matching device groups found", ${prop}InputValues, err)
+        }
+
+        if len(${prop}Value) == 0 {
+            return newUserError("no matching device groups found", ${prop}InputValues)
+        }
+
+        for _, item := range ${prop}Value {
+            if item != "" {
+                $($Setters."[]devicegroup".$SetterType)
             }
         }
     }

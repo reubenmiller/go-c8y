@@ -135,6 +135,7 @@ package cmd
 
 import (
     "context"
+    "encoding/json"
     "fmt"
     "net/url"
 
@@ -189,10 +190,13 @@ func (n *${Name}Cmd) ${Name}(cmd *cobra.Command, args []string) error {
     $RESTPathBuilder
     path := replacePathParameters("${RESTPath}", pathParameters)
 
-    return n.do${NameCamel}("${RESTMethod}", path, queryValue, body.GetMap())
+    // filter and selectors
+    filters := getFilterFlag(cmd, "filter")
+
+    return n.do${NameCamel}("${RESTMethod}", path, queryValue, body.GetMap(), filters)
 }
 
-func (n *${Name}Cmd) do${NameCamel}(method string, path string, query string, body map[string]interface{}) error {
+func (n *${Name}Cmd) do${NameCamel}(method string, path string, query string, body map[string]interface{}, filters *JSONFilters) error {
     resp, err := client.SendRequest(
 		context.Background(),
 		c8y.RequestOptions{
@@ -209,10 +213,19 @@ func (n *${Name}Cmd) do${NameCamel}(method string, path string, query string, bo
     }
 
     if resp != nil && resp.JSONData != nil {
-        if globalFlagPrettyPrint {
-            fmt.Printf("%s\n", pretty.Pretty([]byte(*resp.JSONData)))
+
+        var responseText []byte
+
+        if filters != nil && !globalFlagRaw {
+			responseText = filters.Apply(*resp.JSONData, "$($Specification.listProperty)")
+		} else {
+			responseText = []byte(*resp.JSONData)
+		}
+
+        if globalFlagPrettyPrint && json.Valid(responseText) {
+            fmt.Printf("%s", pretty.Pretty(responseText))
         } else {
-            fmt.Printf("%s\n", *resp.JSONData)
+            fmt.Printf("%s", responseText)
         }
     }
 

@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/thedevsaddam/gojsonq"
+	"github.com/tidwall/gjson"
 )
 
 type JSONFilters struct {
@@ -44,16 +45,50 @@ type JSONFilter struct {
 	Value     string
 }
 
+func isJSONArrayString(jsonValue string) bool {
+	trimmed := strings.TrimSpace(jsonValue)
+	log.Printf("checking string: %s, first=%v, last=%v", trimmed, trimmed[0], trimmed[len(trimmed)-1])
+	return strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]")
+}
+
+func isJSONArrayBytes(jsonValue []byte) bool {
+	trimmed := bytes.TrimSpace(jsonValue)
+	return bytes.HasPrefix(trimmed, []byte("[")) && bytes.HasSuffix(trimmed, []byte("]"))
+}
+
+func removeJSONArrayValues(jsonValue []byte) []byte {
+	v := gjson.ParseBytes(jsonValue)
+	if !v.IsArray() {
+		return jsonValue
+	}
+	if len(v.Array()) > 0 {
+		return []byte(v.Array()[0].String())
+	}
+	return []byte("")
+}
+
 func filterJSON(jsonValue string, property string, filters JSONFilters, selectors []string, pluck string) []byte {
 	var b bytes.Buffer
 
-	jq := gojsonq.New().FromString(jsonValue)
+	var jq *gojsonq.JSONQ
+	convertBackFromArray := false
+
+	v := gjson.Parse(jsonValue)
 
 	if property != "" {
-		jq.From(property)
+		v = v.Get(property)
+	}
+
+	if v.IsObject() {
+		log.Printf("Converting json object to array")
+		jq = gojsonq.New().FromString("[" + v.String() + "]")
+		convertBackFromArray = true
+	} else {
+		jq = gojsonq.New().FromString(v.String())
 	}
 
 	for _, query := range filters.Filters {
+		log.Printf("filtering data: %s %s %s", query.Property, query.Operation, query.Value)
 		jq.Where(query.Property, query.Operation, query.Value)
 	}
 
@@ -61,25 +96,34 @@ func filterJSON(jsonValue string, property string, filters JSONFilters, selector
 		jq.Select(selectors...)
 	}
 
-	// format values
+	// format values (using gjson)
 	if pluck != "" {
-		if result, err := jq.PluckR(pluck); err == nil {
-			if values, err := result.StringSlice(); err == nil {
-				log.Printf("plucking values")
-				output := strings.Join(values, "\n")
-				return []byte(output)
-				// for _, item := range values {
-				// 	b.WriteString(item + "\n")
-				// }
+		var bsub bytes.Buffer
+		jq.Writer(&bsub)
+		formattedJSON := gjson.ParseBytes(bsub.Bytes())
+
+		if formattedJSON.IsArray() {
+			outputValues := make([]string, 0)
+			for _, myval := range formattedJSON.Array() {
+				if v := myval.Get(pluck); v.Exists() {
+					outputValues = append(outputValues, v.String())
+				}
 			}
-			log.Printf("ERROR: %s", err)
-			return b.Bytes()
-		} else {
-			log.Printf("ERROR: %s", err)
+			return []byte(strings.Join(outputValues, "\n"))
 		}
+		if v := formattedJSON.Get(pluck); v.Exists() {
+			return []byte(strings.TrimRight(v.String(), "\n"))
+		}
+		log.Printf("ERROR: gjson path does not exist. %s", pluck)
+		return []byte("")
 	}
 
 	jq.Writer(&b)
+
+	// Convert back to an object if it
+	if convertBackFromArray {
+		return removeJSONArrayValues(b.Bytes())
+	}
 	return b.Bytes()
 }
 

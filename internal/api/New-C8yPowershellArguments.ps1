@@ -54,6 +54,7 @@ Function New-C8yPowershellArguments {
         "date(from|to|time)" { "string" }
         "\[\]string" { "string[]" }
         "\[\]device" { "object[]" }
+        "\[\]devicegroup" { "object[]" }
         "^string$" { "string" }
         "boolean" { "switch" }
         "application" { "object[]" }

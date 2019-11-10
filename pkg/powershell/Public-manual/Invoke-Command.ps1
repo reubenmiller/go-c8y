@@ -63,6 +63,8 @@ Function Invoke-Command {
         $null = $BinaryArguments.Add("--all")
     }
 
+    $null = $BinaryArguments.Add("--raw")
+
     $Binary = Resolve-Path "$PSScriptRoot/../c8y.exe"
     Write-Verbose ("$Binary {0}" -f $BinaryArguments -join " ")
 

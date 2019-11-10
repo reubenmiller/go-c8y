@@ -45,6 +45,7 @@ var (
 	globalFlagDryRun         bool
 	globalFlagSessionFile    string
 	globalFlagUseEnv         bool
+	globalFlagRaw            bool
 )
 
 func Execute() {
@@ -60,6 +61,11 @@ func Execute() {
 	rootCmd.PersistentFlags().BoolVar(&globalFlagPrettyPrint, "pretty", true, "Pretty print the json responses")
 	rootCmd.PersistentFlags().BoolVar(&globalFlagDryRun, "dry", false, "Dry run. Don't send any data to the server")
 	rootCmd.PersistentFlags().BoolVar(&globalFlagUseEnv, "useEnv", false, "Allow loading Cumulocity session setting from environment variables")
+	rootCmd.PersistentFlags().BoolVar(&globalFlagRaw, "raw", false, "Raw values")
+
+	rootCmd.PersistentFlags().StringSlice("filter", nil, "filter")
+	rootCmd.PersistentFlags().StringSlice("select", nil, "select")
+	rootCmd.PersistentFlags().String("format", "", "format")
 
 	// TODO: Make flags case-insensitive
 	// rootCmd.PersistentFlags().SetNormalizeFunc(flagNormalizeFunc)
@@ -103,6 +109,9 @@ func Execute() {
 	// inventory commands
 	rootCmd.AddCommand(newInventoryRootCmd().getCommand())
 
+	// inventoryReferences commands
+	rootCmd.AddCommand(newInventoryReferencesRootCmd().getCommand())
+
 	// measurements commands
 	rootCmd.AddCommand(newMeasurementsRootCmd().getCommand())
 
@@ -140,6 +149,8 @@ func Execute() {
 }
 
 func initConfig() {
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
+
 	if globalFlagVerbose || globalFlagDryRun {
 		log.SetPrefix("VERBOSE: ")
 	} else {
