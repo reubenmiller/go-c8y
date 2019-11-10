@@ -73,6 +73,7 @@ FormatsToProcess = @(
     'format-data/events.ps1xml',
     'format-data/identity.ps1xml',
     'format-data/managedObjects.ps1xml',
+    'format-data/managedObjectReferences.ps1xml',
     'format-data/measurements.ps1xml',
     'format-data/operations.ps1xml',
     'format-data/options.ps1xml',

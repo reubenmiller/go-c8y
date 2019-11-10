@@ -85,8 +85,10 @@ Function Invoke-Command {
 
     $response = $RawResponse | ConvertFrom-Json
 
+    $NestedData = Get-NestedProperty -InputObject $response -Name $ResultProperty
+
     if ($ResultProperty -and $ItemType) {
-        $null = $response.$ResultProperty `
+        $null = $NestedData `
             | Select-Object `
             | Add-PowershellType $ItemType
     }
@@ -110,8 +112,8 @@ Function Invoke-Command {
         ))
     }
 
-    if ($response.$ResultProperty) {
-        $null = Add-Member -InputObject $response.$ResultProperty -MemberType NoteProperty -Name "PSStatistics" -Value @{
+    if ($NestedData) {
+        $null = Add-Member -InputObject $NestedData -MemberType NoteProperty -Name "PSStatistics" -Value @{
             pageSize = $response.statistics.pageSize
             totalPages = $response.statistics.totalPages
             currentPage = $response.statistics.currentPage
@@ -121,13 +123,15 @@ Function Invoke-Command {
     # Save last value for easier recall on command line
     $global:_rawdata = $response
     $global:_data = $null
-    if ($null -ne $response.$ResultProperty) {
-        $global:_data = $response.$ResultProperty
+
+
+    if ($null -ne $NestedData) {
+        $global:_data = $NestedData
     }
 
-    if ($ReturnRawData -or ($null -eq $response.$ResultProperty)) {
+    if ($ReturnRawData -or ($null -eq $NestedData)) {
         $response
     } else {
-        $response.$ResultProperty
+        $NestedData
     }
 }
