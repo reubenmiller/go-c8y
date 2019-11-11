@@ -291,6 +291,7 @@ type RequestOptions struct {
 	Query        interface{} // Use string if you want
 	Body         interface{}
 	ResponseData interface{}
+	Header       http.Header
 	DryRun       bool
 }
 
@@ -322,10 +323,24 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 			}
 			req.Header.Set("Accept", acceptType)
 		}
+	} else {
+		req.Header.Del("Accept")
 	}
 
 	if options.ContentType != "" {
 		req.Header.Set("Content-Type", options.ContentType)
+	}
+
+	if options.Header != nil {
+		for name, values := range options.Header {
+			// Delete any existing header
+			req.Header.Del(name)
+
+			// Transfer the values
+			for _, value := range values {
+				req.Header.Add(name, value)
+			}
+		}
 	}
 
 	if options.Host != "" {
@@ -466,7 +481,9 @@ func (c *Client) NewRequest(method, path string, query string, body interface{})
 		return nil, err
 	}
 	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
+		if strings.ToUpper(method) != "GET" {
+			req.Header.Set("Content-Type", "application/json")
+		}
 	}
 
 	c.SetAuthorization(req)
