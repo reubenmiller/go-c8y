@@ -12,6 +12,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/gjson"
 	"github.com/tidwall/pretty"
 )
 
@@ -96,7 +97,7 @@ func (n *getGenericRestCmd) getGenericRest(cmd *cobra.Command, args []string) er
 
 	method = strings.ToUpper(method)
 
-	if method == "GET" || method == "POST" || method == "PUT" || method == "DELETE" {
+	if !(method == "GET" || method == "POST" || method == "PUT" || method == "DELETE") {
 		return newUserError("Invalid method. Only GET, PUT, POST and DELETE are accepted")
 	}
 
@@ -142,7 +143,23 @@ func (n *getGenericRestCmd) doDataGenericRest(method string, path string, header
 		var responseText []byte
 
 		if filters != nil && !globalFlagRaw {
-			responseText = filters.Apply(*resp.JSONData, "")
+			dataKey := ""
+			if v := resp.JSON.Get("id"); !v.Exists() {
+				// Find the property which is an array
+				resp.JSON.ForEach(func(key, value gjson.Result) bool {
+					if value.IsArray() {
+						dataKey = key.String()
+						return false
+					}
+					return true
+				})
+			}
+
+			if dataKey != "" {
+				log.Printf("data property: %s", dataKey)
+			}
+
+			responseText = filters.Apply(*resp.JSONData, dataKey)
 		} else {
 			responseText = []byte(*resp.JSONData)
 		}
@@ -159,7 +176,5 @@ func (n *getGenericRestCmd) doDataGenericRest(method string, path string, header
 	if err != nil {
 		return newSystemError("command failed", err)
 	}
-	return nil
-
 	return nil
 }
