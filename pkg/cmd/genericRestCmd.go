@@ -2,12 +2,17 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"log"
+	"net/http"
 	"net/url"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/pretty"
 )
 
 type getGenericRestCmd struct {
@@ -34,6 +39,10 @@ func newGetGenericRestCmd() *getGenericRestCmd {
 	}
 
 	addDataFlag(cmd)
+	cmd.Flags().StringSliceP("header", "H", nil, "headers. i.e. --header \"Accept: value\"")
+	cmd.Flags().String("accept", "", "accept (header)")
+	cmd.Flags().String("contentType", "", "content type (header)")
+	cmd.Flags().Bool("ignoreAcceptHeader", false, "Without the accept header")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
@@ -42,6 +51,40 @@ func newGetGenericRestCmd() *getGenericRestCmd {
 
 func (n *getGenericRestCmd) getGenericRest(cmd *cobra.Command, args []string) error {
 	method := "get"
+
+	header := http.Header{}
+
+	ignoreAcceptHeader := false
+	if cmd.Flags().Changed("ignoreAcceptHeader") {
+		if v, err := cmd.Flags().GetBool("ignoreAcceptHeader"); err == nil {
+			ignoreAcceptHeader = v
+		}
+	}
+
+	if v, err := cmd.Flags().GetString("accept"); err == nil && v != "" {
+		if !ignoreAcceptHeader {
+			header.Set("Accept", v)
+		}
+	}
+
+	if v, err := cmd.Flags().GetString("contentType"); err == nil && v != "" {
+		header.Set("Content-Type", v)
+	}
+
+	if values, err := cmd.Flags().GetStringSlice("header"); err == nil && len(values) > 0 {
+		for _, v := range values {
+			parts := strings.SplitN(v, ":", 2)
+			if len(parts) != 2 {
+				log.Printf("Invalid header. %s", v)
+				continue
+			}
+			log.Printf("Setting header: name=%s, value=%s", parts[0], parts[1])
+			header.Add(parts[0], strings.TrimSpace(parts[1]))
+		}
+	}
+
+	// filter and selectors
+	filters := getFilterFlag(cmd, "filter")
 
 	var uri string
 	if len(args) == 1 {
@@ -53,57 +96,70 @@ func (n *getGenericRestCmd) getGenericRest(cmd *cobra.Command, args []string) er
 
 	method = strings.ToUpper(method)
 
+	if method == "GET" || method == "POST" || method == "PUT" || method == "DELETE" {
+		return newUserError("Invalid method. Only GET, PUT, POST and DELETE are accepted")
+	}
+
 	if method == "GET" || method == "DELETE" {
-		return n.doGetGenericRest(method, uri)
-	} else if method == "PUT" || method == "POST" {
+		return n.doDataGenericRest(method, uri, header, nil, ignoreAcceptHeader, globalFlagDryRun, filters)
+	}
+
+	if method == "PUT" || method == "POST" {
 		data := getDataFlag(cmd)
 		if !cmd.Flags().Changed(FlagDataName) {
 			return newUserError("Missing --data argument")
 		}
 		// Hide usage for system errors
 		cmd.SilenceUsage = true
-		return n.doDataGenericRest(method, uri, data)
-	} else {
-		return newUserError("Invalid method. Only GET, PUT, POST and DELETE are accepted")
+		return n.doDataGenericRest(method, uri, header, data, ignoreAcceptHeader, globalFlagDryRun, filters)
 	}
 	return nil
 }
 
-func (n *getGenericRestCmd) doGetGenericRest(method string, path string) error {
+func (n *getGenericRestCmd) doDataGenericRest(method string, path string, header http.Header, data map[string]interface{}, ignoreAcceptHeader, dryRun bool, filters *JSONFilters) error {
 	baseURL, _ := url.Parse(path)
-	req, err := client.NewRequest(method, baseURL.Path, baseURL.RawQuery, nil)
 
-	if err != nil {
-		return newSystemError(err)
-	}
-
-	resp, err := client.Do(context.Background(), req, nil)
-
-	if err != nil {
-		return newSystemError(err)
-	}
-
-	fmt.Println(*resp.JSONData)
-	return nil
-}
-
-func (n *getGenericRestCmd) doDataGenericRest(method string, path string, data map[string]interface{}) error {
 	resp, err := client.SendRequest(
 		context.Background(),
 		c8y.RequestOptions{
 			Method:       method,
-			Path:         path,
+			Host:         baseURL.Host,
+			Path:         baseURL.Path,
+			Query:        baseURL.RawQuery,
 			Body:         data,
+			Header:       header,
+			DryRun:       dryRun,
+			IgnoreAccept: ignoreAcceptHeader,
 			ResponseData: nil,
 		})
 
 	if err != nil {
-		if resp.JSONData != nil {
-			fmt.Println(*resp.JSONData)
-		}
-		return newSystemError(err)
+		color.Set(color.FgRed, color.Bold)
 	}
 
-	fmt.Println(*resp.JSONData)
+	if resp != nil && resp.JSONData != nil {
+
+		var responseText []byte
+
+		if filters != nil && !globalFlagRaw {
+			responseText = filters.Apply(*resp.JSONData, "")
+		} else {
+			responseText = []byte(*resp.JSONData)
+		}
+
+		if globalFlagPrettyPrint && json.Valid(responseText) {
+			fmt.Printf("%s", pretty.Pretty(responseText))
+		} else {
+			fmt.Printf("%s", responseText)
+		}
+	}
+
+	color.Unset()
+
+	if err != nil {
+		return newSystemError("command failed", err)
+	}
+	return nil
+
 	return nil
 }
