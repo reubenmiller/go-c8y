@@ -137,6 +137,7 @@ import (
     "context"
     "encoding/json"
     "fmt"
+    "log"
     "net/url"
 
     "github.com/fatih/color"
