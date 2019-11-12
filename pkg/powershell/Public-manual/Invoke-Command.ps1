@@ -24,9 +24,9 @@ Function Invoke-Command {
         [switch] $Raw
     )
 
-    $BinaryArguments = New-Object System.Collections.ArrayList
-    $null = $BinaryArguments.Add($Noun)
-    $null = $BinaryArguments.Add($Verb)
+    $args = New-Object System.Collections.ArrayList
+    $null = $args.Add($Noun)
+    $null = $args.Add($Verb)
 
     foreach ($iKey in $Parameters.Keys) {
         $Value = $Parameters[$iKey]
@@ -35,40 +35,40 @@ Function Invoke-Command {
             if ("$Value" -notmatch "^$") {
                 $key = $iKey[0].ToString().ToLowerInvariant() + $iKey.SubString(1)
                 if ($Value -is [bool] -and $Value) {
-                    $null = $BinaryArguments.AddRange(@("--${key}"))
+                    $null = $args.AddRange(@("--${key}"))
                 } else {
                     if ($key -eq "data") {
                         # due to cli parsing, data needs to be sent using "="
-                        $null = $BinaryArguments.AddRange(@("--${key}", $Value))
+                        $null = $args.AddRange(@("--${key}", $Value))
                     } else {
-                        $null = $BinaryArguments.Add("--${key}=$Value")
+                        $null = $args.Add("--${key}=$Value")
                     }
                 }
             }
         }
     }
 
-    $null = $BinaryArguments.Add("--pretty=false")
+    $null = $args.Add("--pretty=false")
 
     if ($WhatIfPreference) {
-        $null = $BinaryArguments.Add("--dry")
+        $null = $args.Add("--dry")
     }
 
     if ($VerbosePreference) {
-        $null = $BinaryArguments.Add("--verbose")
+        $null = $args.Add("--verbose")
     }
 
     # Include all pagination results
     if ($IncludeAll) {
-        $null = $BinaryArguments.Add("--all")
+        $null = $args.Add("--all")
     }
 
-    $null = $BinaryArguments.Add("--raw")
+    $null = $args.Add("--raw")
 
-    $Binary = Resolve-Path "$PSScriptRoot/../c8y.exe"
-    Write-Verbose ("$Binary {0}" -f $BinaryArguments -join " ")
+    $c8ycli = Get-CumulocityBinary
+    Write-Verbose ("$c8ycli {0}" -f $args -join " ")
 
-    $RawResponse = & $Binary $BinaryArguments
+    $RawResponse = & $c8ycli $args
 
     $ExitCode = $LASTEXITCODE
     if ($ExitCode -ne 0) {
@@ -80,7 +80,7 @@ Function Invoke-Command {
                 $errormessage.message
             ))
         } catch {
-            Write-Error "c8y command failed for an unknown reason. $RawResponse"
+            Write-Error "c8y command failed. $RawResponse"
         }
         return
     }
