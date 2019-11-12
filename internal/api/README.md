@@ -29,22 +29,27 @@
 * [x] Generate powershell commands from templates
 * [x] Result parsing
   * [x] client side filtering. e.g. c8y applications list --filter "name=*test*"
+* [x] Add response size to log
+* [x] Support more filtering possibilities
+  * [x] Wildcard
+  * [x] Regex
+* [ ] Adding timeout argument
+* [ ] Add request response time to log
 * [ ] Add examples
 * [ ] Generate tests automatically
-* [ ] Make options case insensitive
 * [ ] Microservice aliases using my-app://health
+* [ ] Generic download file cmd
+* [ ] Generic upload file cmd
 
 ### Phase 2
 
+* [ ] Make options case insensitive
 * [ ] Look over devices where []device type is used (parallel tasks?) Probably need a new template
 * [ ] New / Import / export cumulocity sessions
   * [ ] Store session credentials securely
   * [ ] Set credentials from a microservice subscription
 
-# encryption process
 
-1. Generate a unique token, store it in an environment variable
-2.
 
 ## Powershell
 
@@ -181,14 +186,14 @@ Manual commands
 
 ## Option 1: Setting the C8Y_HOST, C8Y_USER, C8Y_PASSWORD, C8Y_TENANT env variables
 
-**Disadvantsges**
+**Disadvantages**
 * Use must set these every time, this is very tedious
 * Setting the variables is different for each OS
 
 **Advantages**
 * Simple
 * If these env variables are already set, then there is nothing else to do
-* The user is reponsible for setting these themselves
+* The user is responsible for setting these themselves
 
 ## Option 2: Multiple session files
 
