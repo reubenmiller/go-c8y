@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"bytes"
+	"fmt"
 	"log"
+	"regexp"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -87,6 +89,10 @@ func filterJSON(jsonValue string, property string, filters JSONFilters, selector
 		jq = gojsonq.New().FromString(v.String())
 	}
 
+	// Add custom filters
+	jq.Macro("like", matchWithWildcards)
+	jq.Macro("match", matchWithRegex)
+
 	for _, query := range filters.Filters {
 		log.Printf("filtering data: %s %s %s", query.Property, query.Operation, query.Value)
 		jq.Where(query.Property, query.Operation, query.Value)
@@ -127,6 +133,52 @@ func filterJSON(jsonValue string, property string, filters JSONFilters, selector
 	return b.Bytes()
 }
 
+func matchWithWildcards(x, y interface{}) (bool, error) {
+	xs, okx := x.(string)
+	pattern, oky := y.(string)
+	if !okx || !oky {
+		return false, fmt.Errorf("wildcard matching only supports strings")
+	}
+
+	pattern = strings.ReplaceAll(pattern, "\\", "\\\\")
+	pattern = strings.ReplaceAll(pattern, ".", "\\.")
+
+	// convert wildcards to a regex
+	pattern = strings.ReplaceAll(pattern, "*", ".*")
+
+	// case insensitive matching and whole string matching
+	pattern = "(?i)^" + pattern + "$"
+
+	r, err := regexp.Compile(pattern)
+
+	if err != nil {
+		return false, fmt.Errorf("invalid regex patter")
+	}
+
+	log.Printf("Wildcard=>regex: ", pattern)
+
+	return r.MatchString(xs), nil
+}
+
+func matchWithRegex(x, y interface{}) (bool, error) {
+	xs, okx := x.(string)
+	pattern, oky := y.(string)
+	if !okx || !oky {
+		return false, fmt.Errorf("wildcard matching only supports strings")
+	}
+
+	// case-insensitive matching
+	pattern = "(?i)" + pattern
+
+	r, err := regexp.Compile(pattern)
+
+	if err != nil {
+		return false, fmt.Errorf("invalid regex patter")
+	}
+
+	return r.MatchString(xs), nil
+}
+
 func addFilterFlag(cmd *cobra.Command, name string) {
 	if name == "" {
 		name = "filter"
@@ -154,11 +206,21 @@ func getFilterFlag(cmd *cobra.Command, flagName string) *JSONFilters {
 	if cmd.Flags().Changed(flagName) {
 		if rawFilters, err := cmd.Flags().GetStringSlice(flagName); err == nil {
 			for _, item := range rawFilters {
-				parts := strings.SplitN(item, "=", 2)
+				sepPattern := regexp.MustCompile("(\\s+(like|match|eq|neq|lt|lte|gt|gte|notIn|in|startsWith|endsWth|contains|len[n]?eq|lengt[e]?|lenlt[e]?)\\s+|(!?=|[<>]=?))")
+
+				parts := sepPattern.Split(item, 2)
+
 				if len(parts) != 2 {
 					continue
 				}
-				filters.Add(parts[0], "contains", parts[1])
+				operator := sepPattern.FindString(item)
+
+				if operator == "" {
+					operator = "contains"
+				}
+				operator = strings.TrimSpace(operator)
+				operator = strings.ReplaceAll(operator, " ", "")
+				filters.Add(strings.TrimSpace(parts[0]), operator, strings.TrimSpace(parts[1]))
 			}
 		}
 	}
