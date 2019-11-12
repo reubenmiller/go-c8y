@@ -163,7 +163,8 @@ func initConfig() {
 		log.Printf("Using session environment variable: %s\n", globalFlagSessionFile)
 	}
 
-	if os.Getenv("C8Y_USE_ENVIRONMENT") != "" {
+	// global session flag has precendence over use environment
+	if globalFlagSessionFile != "" && os.Getenv("C8Y_USE_ENVIRONMENT") != "" {
 		globalFlagUseEnv = true
 	}
 
