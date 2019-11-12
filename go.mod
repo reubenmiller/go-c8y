@@ -8,6 +8,7 @@ replace github.com/reubenmiller/go-c8y/test/c8y_microservice => ./test/c8y_micro
 
 require (
 	github.com/araddon/dateparse v0.0.0-20190329160016-74dc0e29b01f
+	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
 	github.com/fatih/color v1.7.0
 	github.com/gohugoio/hugo v0.58.3 // indirect
@@ -28,6 +29,7 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.3
 	github.com/spf13/viper v1.5.0
+	github.com/thedevsaddam/gojsonq v2.3.0+incompatible
 	github.com/tidwall/gjson v1.2.1
 	github.com/tidwall/match v1.0.1 // indirect
 	github.com/tidwall/pretty v1.0.0
