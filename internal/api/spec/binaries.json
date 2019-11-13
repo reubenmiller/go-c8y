@@ -33,6 +33,7 @@
           "name": "id",
           "type": "string",
           "required": true,
+          "pipeline": true,
           "description": "Inventory binary id"
         }
       ],
@@ -79,6 +80,7 @@
           "name": "id",
           "type": "string",
           "required": true,
+          "pipeline": true,
           "description": "Inventory binary id"
         }
       ],
@@ -105,6 +107,7 @@
           "name": "id",
           "type": "string",
           "required": true,
+          "pipeline": true,
           "description": "Inventory binary id"
         }
       ]

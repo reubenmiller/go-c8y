@@ -91,6 +91,7 @@
           "name": "id",
           "type": "string",
           "required": true,
+          "pipeline": true,
           "description": "Retention rule id"
         }
       ]
@@ -109,6 +110,7 @@
           "name": "id",
           "type": "string",
           "required": true,
+          "pipeline": true,
           "description": "Retention rule id"
         }
       ]
@@ -128,6 +130,7 @@
           "name": "id",
           "type": "string",
           "required": true,
+          "pipeline": true,
           "description": "Retention rule id"
         }
       ],

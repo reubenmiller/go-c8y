@@ -180,6 +180,7 @@ endpoints:
       - name: id
         type: string
         required: true
+        pipeline: true
         description: User id
 
   - name: getUserByName
@@ -204,7 +205,7 @@ endpoints:
   - name: deleteUser
     description: Delete user
     method: DELETE
-    path: user/{tenant}/users/{id}}
+    path: user/{tenant}/users/{id}
     accept: 'application/json'
     alias:
         go: delete
@@ -218,6 +219,7 @@ endpoints:
       - name: id
         type: string
         required: true
+        pipeline: true
         description: User id
 
   - name: updateUser

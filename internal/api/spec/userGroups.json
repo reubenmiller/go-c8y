@@ -70,6 +70,7 @@
         {
           "name": "id",
           "type": "string",
+          "pipeline": true,
           "description": "Group id"
         }
       ]
@@ -116,6 +117,7 @@
           "name": "id",
           "type": "string",
           "required": true,
+          "pipeline": true,
           "description": "Group id"
         }
       ]
@@ -139,6 +141,7 @@
           "name": "id",
           "type": "string",
           "required": true,
+          "pipeline": true,
           "description": "Group id"
         }
       ],

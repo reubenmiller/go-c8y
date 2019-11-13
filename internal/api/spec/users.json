@@ -218,6 +218,7 @@
           "name": "id",
           "type": "string",
           "required": true,
+          "pipeline": true,
           "description": "User id"
         }
       ]
@@ -251,7 +252,7 @@
       "name": "deleteUser",
       "description": "Delete user",
       "method": "DELETE",
-      "path": "user/{tenant}/users/{id}}",
+      "path": "user/{tenant}/users/{id}",
       "accept": "application/json",
       "alias": {
         "go": "delete",
@@ -268,6 +269,7 @@
           "name": "id",
           "type": "string",
           "required": true,
+          "pipeline": true,
           "description": "User id"
         }
       ]

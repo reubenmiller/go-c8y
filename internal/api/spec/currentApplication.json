@@ -29,14 +29,6 @@
         "go": "update",
         "powershell": "Update-CurrentApplication"
       },
-      "pathParameters": [
-        {
-          "name": "id",
-          "type": "string",
-          "required": true,
-          "description": "Application id"
-        }
-      ],
       "body": [
         {
           "name": "data",

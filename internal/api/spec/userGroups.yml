@@ -58,6 +58,7 @@ endpoints:
 
       - name: id
         type: string
+        pipeline: true
         description: Group id
 
   - name: getGroupByName
@@ -92,6 +93,7 @@ endpoints:
       - name: id
         type: string
         required: true
+        pipeline: true
         description: Group id
 
   - name: updateGroup
@@ -109,6 +111,7 @@ endpoints:
       - name: id
         type: string
         required: true
+        pipeline: true
         description: Group id
     body:
       - name: name
