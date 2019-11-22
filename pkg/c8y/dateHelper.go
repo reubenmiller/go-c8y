@@ -1,7 +1,6 @@
 package c8y
 
 import (
-	"log"
 	"regexp"
 	"strconv"
 	"time"
@@ -14,7 +13,7 @@ func GetDateRange(dateInterval string) (string, string) {
 	result := pattern.FindStringSubmatch(dateInterval)
 
 	if len(result) == 0 {
-		log.Println("Invalid date interval. Using default '1d'")
+		Logger.Println("Invalid date interval. Using default '1d'")
 		result = []string{"-", "1", "d"}
 	}
 

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -425,7 +424,7 @@ func (s *InventoryService) CreateBinary(ctx context.Context, filename string, pr
 func (s *InventoryService) UpdateBinary(ctx context.Context, ID, filename string) (*ManagedObject, *Response, error) {
 	binarydata, err := os.Open(filename)
 	if err != nil {
-		log.Fatal(err)
+		Logger.Fatal(err)
 	}
 	defer binarydata.Close()
 
@@ -469,7 +468,7 @@ func (s *InventoryService) ExpandCollection(ctx context.Context, col *ManagedObj
 		if out.Next == nil {
 			return
 		}
-		log.Printf("Requesting page (index=%d, max=%d): %s", i, maxPages, *out.Next)
+		Logger.Printf("Requesting page (index=%d, max=%d): %s", i, maxPages, *out.Next)
 
 		urlObj, err := url.Parse(*out.Next)
 
@@ -490,7 +489,7 @@ func (s *InventoryService) ExpandCollection(ctx context.Context, col *ManagedObj
 			return
 		}
 
-		log.Printf("Adding pagination results - %d managed objects found", len(data.ManagedObjects))
+		Logger.Printf("Adding pagination results - %d managed objects found", len(data.ManagedObjects))
 
 		out.Items = append(out.Items, data.Items...)
 		out.ManagedObjects = append(out.ManagedObjects, data.ManagedObjects...)
@@ -498,7 +497,7 @@ func (s *InventoryService) ExpandCollection(ctx context.Context, col *ManagedObj
 		out.Statistics = data.Statistics
 
 		if len(data.ManagedObjects) < *data.Statistics.PageSize {
-			log.Printf("No more results in pagination result. total=%d, pages=%d", len(data.ManagedObjects), *data.Statistics.PageSize)
+			Logger.Printf("No more results in pagination result. total=%d, pages=%d", len(data.ManagedObjects), *data.Statistics.PageSize)
 			return
 		}
 

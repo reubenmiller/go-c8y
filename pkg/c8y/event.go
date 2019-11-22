@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -225,7 +224,7 @@ type EventBinary struct {
 func (s *EventService) UpdateBinary(ctx context.Context, ID, filename string) (*EventBinary, *Response, error) {
 	binarydata, err := os.Open(filename)
 	if err != nil {
-		log.Fatal(err)
+		Logger.Fatal(err)
 	}
 	defer binarydata.Close()
 

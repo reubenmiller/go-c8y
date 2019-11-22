@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -125,7 +124,7 @@ func DecodeJSONReader(r io.Reader, dst interface{}) error {
 // If no service user is found for the set tenant, then nil is returned
 func (c *Client) NewRealtimeClientFromServiceUser(tenant string) *RealtimeClient {
 	if len(c.ServiceUsers) == 0 {
-		log.Panic("No service users found")
+		Logger.Panic("No service users found")
 	}
 	for _, user := range c.ServiceUsers {
 		if tenant == user.Tenant || tenant == "" {
@@ -193,7 +192,7 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 
 	var realtimeClient *RealtimeClient
 	if !skipRealtimeClient {
-		log.Printf("Creating realtime client %s\n", fmtURL)
+		Logger.Printf("Creating realtime client %s\n", fmtURL)
 		realtimeClient = NewRealtimeClient(fmtURL, nil, tenant, username, password)
 	}
 
@@ -307,7 +306,7 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 			if v, err := addOptions("", options.Query); err == nil {
 				queryParams = v
 			} else {
-				log.Printf("ERROR: Could not convert query parameter interface{} to a string. %s", err)
+				Logger.Printf("ERROR: Could not convert query parameter interface{} to a string. %s", err)
 				return nil, err
 			}
 		}
@@ -344,7 +343,7 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 	}
 
 	if options.Host != "" {
-		log.Printf("Using alternative host %s", options.Host)
+		Logger.Printf("Using alternative host %s", options.Host)
 		req.Host = options.Host
 	}
 
@@ -370,11 +369,11 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 			message += fmt.Sprintf("\nBody:\n%s", v)
 		}
 
-		log.Println(message)
+		Logger.Println(message)
 
 		if command, err := http2curl.GetCurlCommand(req); err == nil {
 			_ = command
-			// log.Printf("curl: %s\n", strings.ReplaceAll(command.String(), "\"", "\\\""))
+			// Logger.Printf("curl: %s\n", strings.ReplaceAll(command.String(), "\"", "\\\""))
 		}
 		return nil, nil
 	}
@@ -580,18 +579,18 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 
 	// Check if an authorization key is provided in the context, if so then override the c8y authentication
 	if authToken := ctx.Value(GetContextAuthTokenKey()); authToken != nil {
-		log.Printf("Overriding basic auth provided in the context\n")
+		Logger.Printf("Overriding basic auth provided in the context\n")
 		req.Header.Set("Authorization", authToken.(string))
 	}
 
-	log.Printf("Sending request: %s %s", req.Method, req.URL.String())
+	Logger.Printf("Sending request: %s %s", req.Method, req.URL.String())
 
 	// Log the body (if applicable)
 	if req != nil && req.Body != nil {
 		switch v := req.Body.(type) {
 		case *os.File:
 			// Only log the file name
-			log.Printf("Body (file): %s", v.Name())
+			Logger.Printf("Body (file): %s", v.Name())
 		default:
 			// Don't print out multie part forms, but everything else is fine.
 			if !strings.Contains(req.Header.Get("Content-Type"), "multipart/form-data") {
@@ -599,7 +598,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 				bodyBytes, _ := ioutil.ReadAll(v)
 				req.Body.Close() //  must close
 				req.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-				log.Printf("Body: %s", bodyBytes)
+				Logger.Printf("Body: %s", bodyBytes)
 			}
 		}
 	}
@@ -608,7 +607,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 	if err != nil {
 		// If we got an error, and the context has been canceled,
 		// the context's error is probably more useful.
-		log.Printf("ERROR: Request failed. %s", err)
+		Logger.Printf("ERROR: Request failed. %s", err)
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
@@ -634,7 +633,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 	if err != nil {
 		// even though there was an error, we still return the response
 		// in case the caller wants to inspect it further
-		log.Printf("Invalid response received from server. %s", err)
+		Logger.Printf("Invalid response received from server. %s", err)
 		return response, err
 	}
 
@@ -645,13 +644,13 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 			err = DecodeJSONReader(resp.Body, v)
 
 			if err == io.EOF {
-				log.Printf("Error decoding body. %s", err)
+				Logger.Printf("Error decoding body. %s", err)
 				err = nil // ignore EOF errors caused by empty response body
 			}
 		}
 	}
 
-	log.Println(fmt.Sprintf("Status code: %v", response.StatusCode))
+	Logger.Println(fmt.Sprintf("Status code: %v", response.StatusCode))
 
 	return response, err
 }
