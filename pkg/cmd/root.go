@@ -2,16 +2,25 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
-	"log"
 	"os"
 	"path"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
+
+var Logger *logger.Logger
+
+const (
+	module = "c8yapi"
+)
+
+func init() {
+	Logger = logger.NewDummyLogger(module)
+}
 
 type baseCmd struct {
 	cmd *cobra.Command
@@ -73,7 +82,6 @@ func Execute() {
 	rootCmd.AddCommand(newCompletionsCmd().getCommand())
 	rootCmd.AddCommand(newVersionCmd().getCommand())
 
-	// rootCmd.AddCommand(newInventoryCmd().getCommand())
 	rootCmd.AddCommand(newDeviceRootCmd().getCommand())
 	rootCmd.AddCommand(newRealtimeCmd().getCommand())
 	rootCmd.AddCommand(newSessionsRootCmd().getCommand())
@@ -149,18 +157,18 @@ func Execute() {
 }
 
 func initConfig() {
-	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
-
+	// Set logging
 	if globalFlagVerbose || globalFlagDryRun {
-		log.SetPrefix("VERBOSE: ")
+		Logger = logger.NewLogger(module)
 	} else {
 		// Disable log messages
-		log.SetOutput(ioutil.Discard)
+		Logger = logger.NewDummyLogger(module)
+		c8y.SilenceLogger()
 	}
 
 	if globalFlagSessionFile == "" && os.Getenv("C8Y_SESSION") != "" {
 		globalFlagSessionFile = os.Getenv("C8Y_SESSION")
-		log.Printf("Using session environment variable: %s\n", globalFlagSessionFile)
+		Logger.Printf("Using session environment variable: %s\n", globalFlagSessionFile)
 	}
 
 	// global session flag has precendence over use environment
@@ -170,7 +178,7 @@ func initConfig() {
 
 	// only parse env variables if no explict config file is given
 	if globalFlagUseEnv {
-		log.Println("C8Y_USE_ENVIRONMENT is set. Environment variables can be used to override config settings")
+		Logger.Println("C8Y_USE_ENVIRONMENT is set. Environment variables can be used to override config settings")
 		viper.SetEnvPrefix("C8Y")
 		viper.AutomaticEnv()
 	}
@@ -182,7 +190,7 @@ func initConfig() {
 		// Find home directory.
 		home, err := homedir.Dir()
 		if err != nil {
-			log.Panic(err)
+			Logger.Panic(err)
 		}
 
 		// Search config in home directory with name ".cobra" (without extension).
@@ -196,8 +204,9 @@ func initConfig() {
 		}
 	}
 
+	// Try reading session from file
 	if err := viper.ReadInConfig(); err == nil {
-		log.Println("Using config file:", viper.ConfigFileUsed())
+		Logger.Println("Using config file:", viper.ConfigFileUsed())
 		client = c8y.NewClient(
 			nil,
 			formatHost(viper.GetString("host")),
@@ -209,6 +218,6 @@ func initConfig() {
 		return
 	}
 
-	// get session from environment variables
+	// Fallback to reading session from environment variables
 	client = c8y.NewClientFromEnvironment(nil, true)
 }
