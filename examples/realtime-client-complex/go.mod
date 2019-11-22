@@ -1,5 +1,7 @@
 module github.com/reubenmiller/go-c8y/examples/realtime-client-complex
 
-require github.com/reubenmiller/go-c8y v0.3.0 // indirect
+require github.com/reubenmiller/go-c8y v0.7.0
 
-replace github.com/reubenmiller/go-c8y/pkg/c8y => ../../pkg/c8y
+replace github.com/reubenmiller/go-c8y => ../../
+
+go 1.13
