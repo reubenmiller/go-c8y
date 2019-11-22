@@ -116,3 +116,18 @@ release:
 update-vendor:
 	GO111MODULE=on $(GOMOD) download
 	GO111MODULE=on $(GOMOD) vendor
+
+cpu-trace:
+	$(GOCMD) test -bench=. -cpuprofile cpu.prof github.com/reubenmiller/go-c8y/pkg/cmd
+	$(GOCMD) tool pprof -svg cpu.prof > cpu.svg
+
+trace:
+	GO111MODULE=on $(GOCMD) test -trace trace.out github.com/reubenmiller/go-c8y/pkg/cmd
+
+view-trace:
+	$(GOCMD) tool trace trace.out
+
+
+
+profile:
+	GO111MODULE=on $(GOCMD) test -bench=Div_SSA -cpuprofile=cpu.pb.gz github.com/reubenmiller/go-c8y/pkg/cmd
