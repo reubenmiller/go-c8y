@@ -8,6 +8,7 @@ test/c8y_test/application.properties
 test/c8y_test/debug.test
 test/c8y_test/application.setup.properties
 c8y.env
+main.exe
 *.log
 output
 pkg/powershell/powershell.todo.txt
@@ -15,3 +16,6 @@ pkg/powershell/c8y.exe
 cmd/c8y/c8y.exe
 pkg/powershell/c8y
 pkg/powershell/c8y.exe~
+pkg/powershell/.c8y.ps1
+pkg/powershell/.c8y.sh
+trace.out
