@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/url"
 
 	"github.com/fatih/color"
@@ -34,7 +33,6 @@ func newUpdateCurrentApplicationCmd() *updateCurrentApplicationCmd {
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("id", "", "Application id (required)")
 	addDataFlag(cmd)
 	cmd.Flags().String("name", "", "Name of application")
 	cmd.Flags().String("key", "", "Shared secret of application")
@@ -46,7 +44,6 @@ func newUpdateCurrentApplicationCmd() *updateCurrentApplicationCmd {
 	cmd.Flags().String("externalUrl", "", "URL to the external application")
 
 	// Required flags
-	cmd.MarkFlagRequired("id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
@@ -137,13 +134,6 @@ func (n *updateCurrentApplicationCmd) updateCurrentApplication(cmd *cobra.Comman
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v, err := cmd.Flags().GetString("id"); err == nil {
-		if v != "" {
-			pathParameters["id"] = v
-		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "id", err))
-	}
 
 	path := replacePathParameters("/application/currentApplication", pathParameters)
 
@@ -171,7 +161,7 @@ func (n *updateCurrentApplicationCmd) doUpdateCurrentApplication(method string, 
 
 	if resp != nil && resp.JSONData != nil {
 		// estimate size based on utf8 encoding. 1 char is 1 byte
-		log.Printf("Response Length: %0.1fKB", float64(len(*resp.JSONData)*1)/1024)
+		Logger.Printf("Response Length: %0.1fKB", float64(len(*resp.JSONData)*1)/1024)
 
 		var responseText []byte
 

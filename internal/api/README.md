@@ -38,6 +38,10 @@
 * [ ] Add examples
 * [ ] Generate tests automatically
 * [ ] Microservice aliases using my-app://health
+* [ ] Add outFile flag
+  * [ ] Update all download files
+* [ ] Add upload flag
+  * [ ] Update all upload files
 * [ ] Generic download file cmd
 * [ ] Generic upload file cmd
 

@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/url"
 
 	"github.com/fatih/color"
@@ -124,7 +123,7 @@ func (n *newTenantOptionCmd) doNewTenantOption(method string, path string, query
 
 	if resp != nil && resp.JSONData != nil {
 		// estimate size based on utf8 encoding. 1 char is 1 byte
-		log.Printf("Response Length: %0.1fKB", float64(len(*resp.JSONData)*1)/1024)
+		Logger.Printf("Response Length: %0.1fKB", float64(len(*resp.JSONData)*1)/1024)
 
 		var responseText []byte
 
