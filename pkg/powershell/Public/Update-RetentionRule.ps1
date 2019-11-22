@@ -74,9 +74,6 @@ Update retention rule
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("Id")) {
-            $Parameters["id"] = $Id
-        }
         if ($PSBoundParameters.ContainsKey("DataType")) {
             $Parameters["dataType"] = $DataType
         }
@@ -106,6 +103,9 @@ Update retention rule
 
     Process {
         foreach ($item in @($Id)) {
+            if ($item) {
+                $Parameters["id"] = if ($item.id) { $item.id } else { $item }
+            }
 
             if (!$Force -and
                 !$WhatIfPreference -and

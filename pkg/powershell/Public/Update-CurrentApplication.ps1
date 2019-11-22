@@ -16,13 +16,6 @@ Required authentication with bootstrap user
     [Alias()]
     [OutputType([object])]
     Param(
-        # Application id (required)
-        [Parameter(Mandatory = $true,
-                   ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true)]
-        [string]
-        $Id,
-
         # data
         [Parameter()]
         [hashtable]
@@ -87,9 +80,6 @@ Required authentication with bootstrap user
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("Id")) {
-            $Parameters["id"] = $Id
-        }
         if ($PSBoundParameters.ContainsKey("Data")) {
             $Parameters["data"] = "{0}" -f ((ConvertTo-Json $Data -Compress) -replace '"', '\"')
         }
@@ -124,7 +114,7 @@ Required authentication with bootstrap user
     }
 
     Process {
-        foreach ($item in @($Id)) {
+        foreach ($item in @("")) {
 
             if (!$Force -and
                 !$WhatIfPreference -and
