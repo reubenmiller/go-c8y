@@ -155,7 +155,7 @@ func matchWithWildcards(x, y interface{}) (bool, error) {
 		return false, fmt.Errorf("invalid regex patter")
 	}
 
-	log.Printf("Wildcard=>regex: ", pattern)
+	log.Printf("Wildcard=>regex: %s", pattern)
 
 	return r.MatchString(xs), nil
 }
