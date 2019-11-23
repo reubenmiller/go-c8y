@@ -31,13 +31,44 @@ Function New-C8yApiPowershellCommand {
     }
 
     #
+    # Create test
+    #
+    if ($Specification.examples.powershell) {
+
+        $TestCaseVariables = foreach ($iExample in $Specification.examples.powershell) {
+            if (!$iExample.command) {
+                continue
+            }
+            @{
+                Command = $iExample.command
+                Description = $iExample.description
+            }
+        }
+
+        if ($TestCaseVariables) {
+            New-C8yApiPowershellTest `
+                -Name $CmdletName `
+                -TestCaseVariables $TestCaseVariables `
+                -OutFolder "$OutputDir/../Tests" `
+                -TestCaseTemplateFile "$PSScriptRoot/powershell/templates/testcase.template.ps1" `
+                -TemplateFile "$PSScriptRoot/powershell/templates/test.template.ps1"
+        }
+    }
+
+
+    #
     # Meta information
     #
     $Synopsis = $Specification.description
     $DescriptionLong = $Specification.descriptionLong
     $DocumentationLink = $Specification.link
     $Examples = foreach ($iExample in $Specification.examples.powershell) {
-        $iExample
+        if ($iExample.command) {
+            $ExampleText = "`PS> {0}`n{1}" -f $iExample.command, $iExample.description
+        } else {
+            $ExampleText = $iExample
+        }
+        $ExampleText
     }
 
     $CmdletDocStringBuilder = New-Object System.Text.StringBuilder

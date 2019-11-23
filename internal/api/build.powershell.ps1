@@ -17,6 +17,7 @@ if (!$SkipGenerate) {
     . $PSScriptRoot/New-C8yPowershellApi.ps1
     . $PSScriptRoot/New-C8yPowershellArguments.ps1
     . $PSScriptRoot/New-C8yApiPowershellCommand.ps1
+    . $PSScriptRoot/New-C8yApiPowershellTest.ps1
 
     $OutputDir = Join-Path $PSScriptRoot -ChildPath "../../pkg/powershell/public"
     if (!(Test-Path $OutputDir)) {

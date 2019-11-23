@@ -13,10 +13,24 @@
       "descriptionLong": "Get a collection of events based on filter parameters",
       "examples": {
         "powershell": [
-          "Get a list of events\nGet-EventCollection"
+          {
+            "description": "Get events with type 'my_CustomType' that were created in the last 10 days",
+            "command": "Get-EventCollection -Type my_CustomType -DateFrom \"-10d\""
+          },
+          {
+            "description": "Get events from a device named mydevice",
+            "command": "Get-EventCollection -Device mydevice"
+          }
         ],
         "go": [
-          "Get a list of events\nc8y event get"
+          {
+            "description": "Get events with type 'my_CustomType' that were created in the last 10 days",
+            "command": "c8y events list --type my_CustomType --dateFrom \"-10d\""
+          },
+          {
+            "description": "Get events from a device named mydevice",
+            "command": "c8y events list --device mydevice"
+          }
         ]
       },
       "path": "event/events",
@@ -67,6 +81,28 @@
       "method": "DELETE",
       "path": "event/events",
       "accept": "",
+      "examples": {
+        "powershell": [
+          {
+            "description": "Remove events with type 'my_CustomType' that were created in the last 10 days",
+            "command": "Remove-EventCollection -Type my_CustomType -DateFrom \"-10d\""
+          },
+          {
+            "description": "Remove events from a device named mydevice",
+            "command": "Remove-EventCollection -Device mydevice"
+          }
+        ],
+        "go": [
+          {
+            "description": "Remove events with type 'my_CustomType' that were created in the last 10 days",
+            "command": "c8y events deleteCollection --type my_CustomType --dateFrom \"-10d\""
+          },
+          {
+            "description": "Remove events from a device named mydevice",
+            "command": "c8y events deleteCollection --device mydevice"
+          }
+        ]
+      },
       "alias": {
         "go": "deleteCollection",
         "powershell": "Remove-EventCollection"
@@ -111,6 +147,20 @@
       "method": "GET",
       "path": "event/events/{id}",
       "accept": "application/vnd.com.nsn.cumulocity.event+json",
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get event",
+            "command": "Get-Event -Id 12345"
+          }
+        ],
+        "go": [
+          {
+            "description": "Get event",
+            "command": "c8y events get --id 12345"
+          }
+        ]
+      },
       "alias": {
         "go": "get",
         "powershell": "Get-Event"
@@ -175,6 +225,28 @@
       "accept": "application/vnd.com.nsn.cumulocity.event+json",
       "description": "Update an event",
       "descriptionLong": "Update an event",
+      "examples": {
+        "powershell": [
+          {
+            "description": "Update the text field of an existing event",
+            "command": "Update-Event -Id 12345 -Text \"example text 1\""
+          },
+          {
+            "description": "Update custom properties of an existing event",
+            "command": "Update-Event -Id 12345 -Data @{ my_event = @{ active = true } }"
+          }
+        ],
+        "go": [
+          {
+            "description": "Update the text field of an existing event",
+            "command": "c8y events update --id 12345 --text \"example text 1\""
+          },
+          {
+            "description": "Update custom properties of an existing event",
+            "command": "c8y events update --id 12345 --data \"{\\\"my_event\\\":{\\\"active\\\": true }}\""
+          }
+        ]
+      },
       "alias": {
         "go": "update",
         "powershell": "Update-Event"
@@ -204,6 +276,20 @@
     {
       "name": "deleteEvent",
       "description": "Delete event/s",
+      "examples": {
+        "powershell": [
+          {
+            "description": "Delete an event",
+            "command": "Remove-Event -Id 12345"
+          }
+        ],
+        "go": [
+          {
+            "description": "Delete an event",
+            "command": "c8y events delete --id 12345"
+          }
+        ]
+      },
       "method": "DELETE",
       "path": "event/events/{id}",
       "accept": "",

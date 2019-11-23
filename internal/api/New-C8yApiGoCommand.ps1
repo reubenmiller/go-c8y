@@ -24,7 +24,12 @@ Function New-C8yApiGoCommand {
     $Description = $Specification.description
     $DescriptionLong = $Specification.descriptionLong
     $Examples = foreach ($iExample in $Specification.examples.go) {
-        $iExample
+        if ($iExample.command) {
+            $ExampleText = "`$ {0}`n{1}" -f $iExample.command, $iExample.description
+        } else {
+            $ExampleText = $iExample
+        }
+        $ExampleText
     }
 
     #
@@ -158,7 +163,7 @@ func new${NameCamel}Cmd() *${Name}Cmd {
 		Short: "$Description",
 		Long:  ``$DescriptionLong``,
         Example: ``
-        $($Examples -join "`n`n")
+$($Examples -join "`n`n")
 		``,
 		RunE: ccmd.${Name},
     }

@@ -13,10 +13,24 @@
       "descriptionLong": "Get a collection of alarms based on filter parameters",
       "examples": {
         "powershell": [
-          "Get-AlarmCollection"
+          {
+            "description": "Get alarms with the severity set to MAJOR",
+            "command": "Get-AlarmCollection -Severity MAJOR -PageSize 100"
+          },
+          {
+            "description": "Get active alarms which occurred in the last 10 minutes",
+            "command": "Get-AlarmCollection -DateFrom \"-10m\" -Status ACTIVE"
+          }
         ],
         "go": [
-          "c8y alarms list --type value --severity MAJOR"
+          {
+            "description": "Get alarms with the severity set to MAJOR",
+            "command": "c8y alarms list --severity MAJOR --pageSize 100"
+          },
+          {
+            "description": "Get collection of active alarms which occurred in the last 10 minutes",
+            "command": "c8y alarms list --dateFrom \"-10m\" --status ACTIVE"
+          }
         ]
       },
       "path": "alarm/alarms",
@@ -99,6 +113,20 @@
       "accept": "application/vnd.com.nsn.cumulocity.alarm+json",
       "description": "Create a new alarm",
       "descriptionLong": "Create a new alarm",
+      "examples": {
+        "powershell": [
+          {
+            "description": "Create a new alarm for device called mydevice",
+            "command": "New-Alarm -Device mydevice -Type c8y_TestAlarm -Time \"-0s\" -Text \"Test alarm\" -Severity MAJOR"
+          }
+        ],
+        "go": [
+          {
+            "description": "Create a new alarm for device called mydevice",
+            "command": "c8y alarms create --device mydevice --type c8y_TestAlarm --time \"-0s\" --text \"Test alarm\" --severity MAJOR"
+          }
+        ]
+      },
       "alias": {
         "go": "create",
         "powershell": "New-Alarm"
@@ -163,6 +191,20 @@
       "method": "PUT",
       "path": "alarm/alarms",
       "description": "Update a collection of alarms. Currently only the status of alarms can be changed",
+      "examples": {
+        "powershell": [
+          {
+            "description": "Update the status of all active alarms on a device named \"mydevice\" to ACKNOWLEDGED",
+            "command": "Update-AlarmCollection -Device mydevice -Status ACTIVE -NewStatus ACKNOWLEDGED"
+          }
+        ],
+        "go": [
+          {
+            "description": "Update the status of all active alarms on a device named \"mydevice\" to ACKNOWLEDGED",
+            "command": "c8y alarms updateCollection --device mydevice --status ACTIVE --newStatus ACKNOWLEDGED"
+          }
+        ]
+      },
       "accept": "application/vnd.com.nsn.cumulocity.alarmCollection+json",
       "collectionType": "application/vnd.com.nsn.cumulocity.alarm+json",
       "listProperty": "alarms",
@@ -232,6 +274,20 @@
     {
       "name": "getAlarm",
       "description": "Get alarm/s",
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get alarm",
+            "command": "Get-Alarm -Id 12345"
+          }
+        ],
+        "go": [
+          {
+            "description": "Get alarm",
+            "command": "c8y alarms get --id 12345"
+          }
+        ]
+      },
       "method": "GET",
       "path": "alarm/alarms/{id}",
       "accept": "application/vnd.com.nsn.cumulocity.alarm+json",
@@ -251,10 +307,32 @@
     },
     {
       "name": "updateAlarm",
+      "description": "Update an alarm",
+      "examples": {
+        "powershell": [
+          {
+            "description": "Acknowledge an existing alarm",
+            "command": "Update-Alarm -Id 12345 -Status ACKNOWLEDGED"
+          },
+          {
+            "description": "Update severity of an existing alarm to CRITICAL",
+            "command": "Update-Alarm -Id 12345 -Severity CRITICAL"
+          }
+        ],
+        "go": [
+          {
+            "description": "Acknowledge an existing alarm",
+            "command": "c8y alarms update --id 12345 --status ACKNOWLEDGED"
+          },
+          {
+            "description": "Update severity of an existing alarm to CRITICAL",
+            "command": "c8y alarms update --id 12345 --severity CRITICAL"
+          }
+        ]
+      },
       "method": "PUT",
       "path": "alarm/alarms/{id}",
       "accept": "application/vnd.com.nsn.cumulocity.alarm+json",
-      "description": "Update alarm",
       "alias": {
         "go": "update",
         "powershell": "Update-Alarm"
@@ -287,13 +365,7 @@
           "name": "text",
           "type": "string",
           "required": false,
-          "description": "Text description of the alarm.",
-          "validationSet": [
-            "CRITICAL",
-            "MAJOR",
-            "MINOR",
-            "WARNING"
-          ]
+          "description": "Text description of the alarm."
         },
         {
           "name": "data",
@@ -314,6 +386,20 @@
     {
       "name": "deleteAlarm",
       "description": "Delete alarm/s",
+      "examples": {
+        "powershell": [
+          {
+            "description": "Delete an alarm",
+            "command": "Remove-Alarm -Id 12345"
+          }
+        ],
+        "go": [
+          {
+            "description": "Delete an alarm",
+            "command": "c8y alarms delete --id 12345"
+          }
+        ]
+      },
       "method": "DELETE",
       "path": "alarm/alarms/{id}",
       "accept": "",
@@ -334,6 +420,28 @@
     {
       "name": "deleteAlarmCollection",
       "description": "Delete a collection of alarms",
+      "examples": {
+        "powershell": [
+          {
+            "description": "Remove alarms on the device called \"mydevice\" with the severity set to MAJOR",
+            "command": "Remove-AlarmCollection -Device mydevice -Severity MAJOR"
+          },
+          {
+            "description": "Remove alarms on the device called \"mydevice\" which are active and created in the last 10 minutes",
+            "command": "Remove-AlarmCollection -Device mydevice -DateFrom \"-10m\" -Status ACTIVE"
+          }
+        ],
+        "go": [
+          {
+            "description": "Remove alarms on the device called \"mydevice\" with the severity set to MAJOR",
+            "command": "c8y alarms deleteCollection --device mydevice --severity MAJOR"
+          },
+          {
+            "description": "Remove alarms on the device called \"mydevice\" which are active and created in the last 10 minutes",
+            "command": "c8y alarms deleteCollection --device mydevice --dateFrom \"-10m\" --status ACTIVE"
+          }
+        ]
+      },
       "method": "DELETE",
       "path": "alarm/alarms",
       "accept": "",
