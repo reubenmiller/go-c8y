@@ -441,7 +441,7 @@ Function New-Body2 {
         [string] $IteratorVariable
     )
 
-    $Target = "(Get-C8ySessionProperty -Name `"tenant`")"
+    $Target = "(PSC8y\Get-C8ySessionProperty -Name `"tenant`")"
     $Message = "(Format-ConfirmationMessage -Name `$PSCmdlet.MyInvocation.InvocationName -InputObject `$item)"
 
     $ExpandFunction = switch ($IteratorType) {
@@ -455,7 +455,7 @@ Function New-Body2 {
             if ($IteratorVariable -eq "") {
                 "@(`"`")"
             } else {
-                "@($IteratorVariable)"
+                "(PSC8y\Expand-Id $IteratorVariable)"
             }
 
         }

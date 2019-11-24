@@ -2,12 +2,12 @@
 
 Describe -Name "{{ CmdletName }}" {
     BeforeEach {
-        {{ BeforeEach }}
+{{ BeforeEach }}
     }
 
 {{ TestCases }}
 
     AfterEach {
-        {{ AfterEach }}
+{{ AfterEach }}
     }
 }

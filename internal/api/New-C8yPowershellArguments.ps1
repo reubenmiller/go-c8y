@@ -42,7 +42,7 @@ Function New-C8yPowershellArguments {
     }
 
     # Add Piped argument
-    if ($Type -match "(device|source|id)" -or $ReadFromPipeline) {
+    if ($Type -match "(source|id)" -or $ReadFromPipeline) {
         $null = $ParameterDefinition.Add("ValueFromPipeline=`$true")
         $null = $ParameterDefinition.Add("ValueFromPipelineByPropertyName=`$true")
     }

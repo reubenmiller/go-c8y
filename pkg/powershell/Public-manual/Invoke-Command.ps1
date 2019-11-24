@@ -127,11 +127,12 @@ Function Invoke-Command {
     $global:_data = $null
 
 
-    if ($null -ne $NestedData) {
+    if ($null -ne $NestedData -or $NestedData.Count -ge 0) {
         $global:_data = $NestedData
     }
 
-    if ($ReturnRawData -or ($null -eq $NestedData)) {
+    if ($ReturnRawData -or
+        ($null -eq $NestedData -and $null -eq $NestedData.Count)) {
         $response
     } else {
         $NestedData
