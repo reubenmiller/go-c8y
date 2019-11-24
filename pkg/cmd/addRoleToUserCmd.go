@@ -26,7 +26,7 @@ func newAddRoleToUserCmd() *addRoleToUserCmd {
 		Short: "Add role to a user",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.addRoleToUser,
 	}

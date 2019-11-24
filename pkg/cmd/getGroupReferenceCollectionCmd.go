@@ -26,7 +26,7 @@ func newGetGroupReferenceCollectionCmd() *getGroupReferenceCollectionCmd {
 		Short: "Get information about all groups of a user",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getGroupReferenceCollection,
 	}

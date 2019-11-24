@@ -26,7 +26,8 @@ func newDeleteOperationCollectionCmd() *deleteOperationCollectionCmd {
 		Short: "Delete a collection of operations",
 		Long:  ``,
 		Example: `
-        
+$ c8y operations deleteCollection --device mydevice --status PENDING
+Remove all pending operations for a given device
 		`,
 		RunE: ccmd.deleteOperationCollection,
 	}

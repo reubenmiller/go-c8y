@@ -26,8 +26,11 @@ func newGetEventCollectionCmd() *getEventCollectionCmd {
 		Short: "Get a collection of events based on filter parameters",
 		Long:  `Get a collection of events based on filter parameters`,
 		Example: `
-        Get a list of events
-c8y event get
+$ c8y events list --type my_CustomType --dateFrom "-10d"
+Get events with type 'my_CustomType' that were created in the last 10 days
+
+$ c8y events list --device mydevice
+Get events from a device
 		`,
 		RunE: ccmd.getEventCollection,
 	}

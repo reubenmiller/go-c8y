@@ -26,7 +26,7 @@ func newNewApplicationCmd() *newApplicationCmd {
 		Short: "New application",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.newApplication,
 	}

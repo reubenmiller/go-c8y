@@ -31,7 +31,7 @@ The response contains a representation of the newly created application.
 Required role ROLE_APPLICATION_MANAGMENT_ADMIN
 `,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.copyApplication,
 	}

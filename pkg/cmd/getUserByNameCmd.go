@@ -26,7 +26,7 @@ func newGetUserByNameCmd() *getUserByNameCmd {
 		Short: "Get user by username",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getUserByName,
 	}

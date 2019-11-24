@@ -26,7 +26,7 @@ func newGetApplicationCollectionCmd() *getApplicationCollectionCmd {
 		Short: "Get collection of applications",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getApplicationCollection,
 	}

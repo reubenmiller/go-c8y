@@ -26,7 +26,7 @@ func newNewEventBinaryCmd() *newEventBinaryCmd {
 		Short: "New event binary",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.newEventBinary,
 	}

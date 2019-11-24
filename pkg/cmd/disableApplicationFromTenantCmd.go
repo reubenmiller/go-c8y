@@ -26,7 +26,7 @@ func newDisableApplicationFromTenantCmd() *disableApplicationFromTenantCmd {
 		Short: "Disable application on tenant",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.disableApplicationFromTenant,
 	}

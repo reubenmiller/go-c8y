@@ -26,7 +26,7 @@ func newEnableApplicationOnTenantCmd() *enableApplicationOnTenantCmd {
 		Short: "Enable application on tenant",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.enableApplicationOnTenant,
 	}

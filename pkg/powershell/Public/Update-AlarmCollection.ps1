@@ -4,6 +4,10 @@ Function Update-AlarmCollection {
 .SYNOPSIS
 Update a collection of alarms. Currently only the status of alarms can be changed
 
+.EXAMPLE
+PS> Update-AlarmCollection -Device "{{ randomdevice }}" -Status ACTIVE -NewStatus ACKNOWLEDGED
+Update the status of all active alarms on a device to ACKNOWLEDGED
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -14,8 +18,7 @@ Update a collection of alarms. Currently only the status of alarms can be change
     [OutputType([object])]
     Param(
         # The ManagedObject that the alarm originated from
-        [Parameter(ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true)]
+        [Parameter()]
         [object[]]
         $Device,
 
@@ -127,7 +130,7 @@ Update a collection of alarms. Currently only the status of alarms can be change
             if (!$Force -and
                 !$WhatIfPreference -and
                 !$PSCmdlet.ShouldProcess(
-                    (Get-C8ySessionProperty -Name "tenant"),
+                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
                     (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
                 )) {
                 continue

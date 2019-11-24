@@ -26,7 +26,7 @@ func newNewMeasurementCmd() *newMeasurementCmd {
 		Short: "Create a new measurement",
 		Long:  `Create a new measurement`,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.newMeasurement,
 	}

@@ -26,7 +26,7 @@ func newGetUsersInGroupCmd() *getUsersInGroupCmd {
 		Short: "Get all users in a group",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getUsersInGroup,
 	}

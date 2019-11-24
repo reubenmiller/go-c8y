@@ -26,8 +26,14 @@ func newGetOperationCollectionCmd() *getOperationCollectionCmd {
 		Short: "Get a collection of operations based on filter parameters",
 		Long:  `Get a collection of operations based on filter parameters`,
 		Example: `
-        Get a list of pending operations
-c8y operation get --status PENDING
+$ c8y operations list --status PENDING
+Get a list of pending operations
+
+$ c8y operations list --agent myagent --status PENDING
+Get a list of pending operations for a given agent and all of its child devices
+
+$ c8y operations list --device mydevice --status PENDING
+Get a list of pending operations for a device
 		`,
 		RunE: ccmd.getOperationCollection,
 	}

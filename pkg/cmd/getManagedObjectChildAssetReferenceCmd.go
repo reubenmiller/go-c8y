@@ -26,7 +26,7 @@ func newGetManagedObjectChildAssetReferenceCmd() *getManagedObjectChildAssetRefe
 		Short: "Get managed object child asset reference",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getManagedObjectChildAssetReference,
 	}

@@ -26,7 +26,7 @@ func newDeleteBinaryCmd() *deleteBinaryCmd {
 		Short: "Delete event binary",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.deleteBinary,
 	}

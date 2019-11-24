@@ -26,7 +26,7 @@ func newNewManagedObjectChildAssetCmd() *newManagedObjectChildAssetCmd {
 		Short: "Create a child asset (device or devicegroup) reference",
 		Long:  `Create a child asset (device or devicegroup) reference`,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.newManagedObjectChildAsset,
 	}

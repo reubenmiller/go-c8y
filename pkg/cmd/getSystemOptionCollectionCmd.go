@@ -26,7 +26,7 @@ func newGetSystemOptionCollectionCmd() *getSystemOptionCollectionCmd {
 		Short: "Get collection of system options",
 		Long:  `This endpoint provides a set of read-only properties pre-defined in platform configuration. The response format is exactly the same as for OptionCollection.`,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getSystemOptionCollection,
 	}

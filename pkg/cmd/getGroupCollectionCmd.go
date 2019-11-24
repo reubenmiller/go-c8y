@@ -26,7 +26,7 @@ func newGetGroupCollectionCmd() *getGroupCollectionCmd {
 		Short: "Get collection of (user) groups",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getGroupCollection,
 	}

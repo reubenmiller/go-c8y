@@ -26,7 +26,7 @@ func newDeleteManagedObjectChildDeviceReferenceCmd() *deleteManagedObjectChildDe
 		Short: "Delete child device reference",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.deleteManagedObjectChildDeviceReference,
 	}

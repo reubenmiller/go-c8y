@@ -26,7 +26,7 @@ func newUpdateApplicationCmd() *updateApplicationCmd {
 		Short: "Update application",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.updateApplication,
 	}

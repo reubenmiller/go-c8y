@@ -24,8 +24,7 @@ Create a child device reference
         $Device,
 
         # new child device
-        [Parameter(ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true)]
+        [Parameter()]
         [object[]]
         $Child,
 
@@ -65,7 +64,7 @@ Create a child device reference
             if (!$Force -and
                 !$WhatIfPreference -and
                 !$PSCmdlet.ShouldProcess(
-                    (Get-C8ySessionProperty -Name "tenant"),
+                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
                     (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
                 )) {
                 continue

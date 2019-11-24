@@ -2,7 +2,15 @@
 Function Update-Alarm {
 <#
 .SYNOPSIS
-Update alarm
+Update an alarm
+
+.EXAMPLE
+PS> Update-Alarm -Id {{ NewAlarm }} -Status ACKNOWLEDGED
+Acknowledge an existing alarm
+
+.EXAMPLE
+PS> Update-Alarm -Id {{ NewAlarm }} -Severity CRITICAL
+Update severity of an existing alarm to CRITICAL
 
 
 #>
@@ -34,7 +42,6 @@ Update alarm
 
         # Text description of the alarm.
         [Parameter()]
-        [ValidateSet('CRITICAL','MAJOR','MINOR','WARNING')]
         [string]
         $Text,
 
@@ -80,7 +87,7 @@ Update alarm
     }
 
     Process {
-        foreach ($item in @($Id)) {
+        foreach ($item in (PSC8y\Expand-Id $Id)) {
             if ($item) {
                 $Parameters["id"] = if ($item.id) { $item.id } else { $item }
             }
@@ -88,7 +95,7 @@ Update alarm
             if (!$Force -and
                 !$WhatIfPreference -and
                 !$PSCmdlet.ShouldProcess(
-                    (Get-C8ySessionProperty -Name "tenant"),
+                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
                     (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
                 )) {
                 continue

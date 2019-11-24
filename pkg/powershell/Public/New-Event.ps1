@@ -7,6 +7,10 @@ Create event
 .DESCRIPTION
 Create event
 
+.EXAMPLE
+PS> New-Event -Device "{{ randomdevice }}" -Type c8y_TestAlarm -Time "-0s" -Text "Test event"
+Create a new event for a device
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -17,9 +21,7 @@ Create event
     [OutputType([object])]
     Param(
         # The ManagedObject which is the source of this event. (required)
-        [Parameter(Mandatory = $true,
-                   ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true)]
+        [Parameter(Mandatory = $true)]
         [object[]]
         $Device,
 
@@ -88,7 +90,7 @@ Create event
             if (!$Force -and
                 !$WhatIfPreference -and
                 !$PSCmdlet.ShouldProcess(
-                    (Get-C8ySessionProperty -Name "tenant"),
+                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
                     (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
                 )) {
                 continue

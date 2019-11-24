@@ -27,7 +27,7 @@ func newUpdateTenantOptionEditableCmd() *updateTenantOptionEditableCmd {
 		Long: `Required role:: ROLE_OPTION_MANAGEMENT_ADMIN, Required tenant management Example Request:: Update access.control.allow.origin option.
 `,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.updateTenantOptionEditable,
 	}

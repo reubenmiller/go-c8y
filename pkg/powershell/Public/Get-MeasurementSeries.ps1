@@ -21,8 +21,7 @@ Get-MeasurementSeries
     [OutputType([object])]
     Param(
         # Device ID
-        [Parameter(ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true)]
+        [Parameter()]
         [object[]]
         $Device,
 
@@ -86,7 +85,7 @@ Get-MeasurementSeries
             if (!$Force -and
                 !$WhatIfPreference -and
                 !$PSCmdlet.ShouldProcess(
-                    (Get-C8ySessionProperty -Name "tenant"),
+                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
                     (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
                 )) {
                 continue

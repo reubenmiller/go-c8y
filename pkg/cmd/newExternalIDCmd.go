@@ -26,7 +26,7 @@ func newNewExternalIDCmd() *newExternalIDCmd {
 		Short: "Create a new external id",
 		Long:  `Create a new external id`,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.newExternalID,
 	}

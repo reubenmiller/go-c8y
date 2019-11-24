@@ -26,7 +26,7 @@ func newDeleteExternalIDCmd() *deleteExternalIDCmd {
 		Short: "Delete external id",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.deleteExternalID,
 	}

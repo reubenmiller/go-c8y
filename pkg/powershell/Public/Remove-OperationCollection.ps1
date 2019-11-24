@@ -4,6 +4,10 @@ Function Remove-OperationCollection {
 .SYNOPSIS
 Delete a collection of operations
 
+.EXAMPLE
+PS> Remove-OperationCollection -Device "{{ randomdevice }}" -Status PENDING
+Remove all pending operations for a given device
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -14,14 +18,12 @@ Delete a collection of operations
     [OutputType([object])]
     Param(
         # Agent ID
-        [Parameter(ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true)]
+        [Parameter()]
         [object[]]
         $Agent,
 
         # Device ID
-        [Parameter(ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true)]
+        [Parameter()]
         [object[]]
         $Device,
 
@@ -86,7 +88,7 @@ Delete a collection of operations
             if (!$Force -and
                 !$WhatIfPreference -and
                 !$PSCmdlet.ShouldProcess(
-                    (Get-C8ySessionProperty -Name "tenant"),
+                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
                     (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
                 )) {
                 continue

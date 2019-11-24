@@ -26,7 +26,7 @@ func newDeleteTenantCmd() *deleteTenantCmd {
 		Short: "Delete tenant",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.deleteTenant,
 	}

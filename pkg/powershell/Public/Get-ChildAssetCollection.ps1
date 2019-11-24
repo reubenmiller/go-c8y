@@ -20,14 +20,12 @@ Get-ChildAssetCollection
     [OutputType([object])]
     Param(
         # Device.
-        [Parameter(ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true)]
+        [Parameter()]
         [object[]]
         $Device,
 
         # Group.
-        [Parameter(ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true)]
+        [Parameter()]
         [object[]]
         $Group,
 
@@ -86,7 +84,7 @@ Get-ChildAssetCollection
             if (!$Force -and
                 !$WhatIfPreference -and
                 !$PSCmdlet.ShouldProcess(
-                    (Get-C8ySessionProperty -Name "tenant"),
+                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
                     (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
                 )) {
                 continue

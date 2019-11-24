@@ -45,7 +45,7 @@ Delete retention rule
     }
 
     Process {
-        foreach ($item in @($Id)) {
+        foreach ($item in (PSC8y\Expand-Id $Id)) {
             if ($item) {
                 $Parameters["id"] = if ($item.id) { $item.id } else { $item }
             }
@@ -53,7 +53,7 @@ Delete retention rule
             if (!$Force -and
                 !$WhatIfPreference -and
                 !$PSCmdlet.ShouldProcess(
-                    (Get-C8ySessionProperty -Name "tenant"),
+                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
                     (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
                 )) {
                 continue

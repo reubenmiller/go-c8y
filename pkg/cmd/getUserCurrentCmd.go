@@ -26,7 +26,7 @@ func newGetUserCurrentCmd() *getUserCurrentCmd {
 		Short: "Get user",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getUserCurrent,
 	}

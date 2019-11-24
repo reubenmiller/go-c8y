@@ -7,6 +7,14 @@ Update an event
 .DESCRIPTION
 Update an event
 
+.EXAMPLE
+PS> Update-Event -Id {{ NewEvent }} -Text "example text 1"
+Update the text field of an existing event
+
+.EXAMPLE
+PS> Update-Event -Id {{ NewEvent }} -Data @{ my_event = @{ active = true } }
+Update custom properties of an existing event
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -67,12 +75,12 @@ Update an event
     }
 
     Process {
-        foreach ($item in @($Id)) {
+        foreach ($item in (PSC8y\Expand-Id $Id)) {
 
             if (!$Force -and
                 !$WhatIfPreference -and
                 !$PSCmdlet.ShouldProcess(
-                    (Get-C8ySessionProperty -Name "tenant"),
+                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
                     (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
                 )) {
                 continue

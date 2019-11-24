@@ -26,7 +26,11 @@ func newGetAlarmCollectionCmd() *getAlarmCollectionCmd {
 		Short: "Get a collection of alarms based on filter parameters",
 		Long:  `Get a collection of alarms based on filter parameters`,
 		Example: `
-        c8y alarms list --type value --severity MAJOR
+$ c8y alarms list --severity MAJOR --pageSize 100
+Get alarms with the severity set to MAJOR
+
+$ c8y alarms list --dateFrom "-10m" --status ACTIVE
+Get collection of active alarms which occurred in the last 10 minutes
 		`,
 		RunE: ccmd.getAlarmCollection,
 	}

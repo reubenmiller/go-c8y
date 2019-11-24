@@ -26,7 +26,7 @@ func newGetMeasurementSeriesCmd() *getMeasurementSeriesCmd {
 		Short: "Get a collection of measurements based on filter parameters",
 		Long:  `Get a collection of measurements based on filter parameters`,
 		Example: `
-        Get a list of measurement series
+Get a list of measurement series
 c8y measurement getSeries
 
 Get a list of series [nx_WEA_29_Delta.MDL10FG001] and [nx_WEA_29_Delta.ST9] for device 12345

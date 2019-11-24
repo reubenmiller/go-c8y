@@ -26,7 +26,7 @@ func newGetApplicationBootstrapUserCmd() *getApplicationBootstrapUserCmd {
 		Short: "Get application bootstrap user",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getApplicationBootstrapUser,
 	}

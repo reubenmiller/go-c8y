@@ -26,7 +26,7 @@ func newGetMeasurementCollectionCmd() *getMeasurementCollectionCmd {
 		Short: "Get a collection of measurements based on filter parameters",
 		Long:  `Get a collection of measurements based on filter parameters`,
 		Example: `
-        Get a list of measurements
+Get a list of measurements
 c8y measurement list
 		`,
 		RunE: ccmd.getMeasurementCollection,

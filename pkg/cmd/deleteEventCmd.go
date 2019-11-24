@@ -26,7 +26,8 @@ func newDeleteEventCmd() *deleteEventCmd {
 		Short: "Delete event/s",
 		Long:  ``,
 		Example: `
-        
+$ c8y events delete --id 12345
+Delete an event
 		`,
 		RunE: ccmd.deleteEvent,
 	}

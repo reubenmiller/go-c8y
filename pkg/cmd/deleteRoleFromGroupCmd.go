@@ -26,7 +26,7 @@ func newDeleteRoleFromGroupCmd() *deleteRoleFromGroupCmd {
 		Short: "Unassign/Remove role from a group",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.deleteRoleFromGroup,
 	}

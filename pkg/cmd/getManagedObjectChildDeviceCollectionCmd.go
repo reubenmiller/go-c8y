@@ -26,7 +26,7 @@ func newGetManagedObjectChildDeviceCollectionCmd() *getManagedObjectChildDeviceC
 		Short: "Get a collection of managedObjects child references",
 		Long:  `Get a collection of managedObjects child references`,
 		Example: `
-        c8y inventoryReferences listChildDevices --device 12345
+c8y inventoryReferences listChildDevices --device 12345
 		`,
 		RunE: ccmd.getManagedObjectChildDeviceCollection,
 	}

@@ -26,7 +26,11 @@ func newUpdateEventCmd() *updateEventCmd {
 		Short: "Update an event",
 		Long:  `Update an event`,
 		Example: `
-        
+$ c8y events update --id 12345 --text "example text 1"
+Update the text field of an existing event
+
+$ c8y events update --id 12345 --data "{\"my_event\":{\"active\": true }}"
+Update custom properties of an existing event
 		`,
 		RunE: ccmd.updateEvent,
 	}

@@ -26,7 +26,7 @@ func newDeleteGroupCmd() *deleteGroupCmd {
 		Short: "Delete a new group",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.deleteGroup,
 	}

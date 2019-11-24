@@ -26,7 +26,7 @@ func newGetUserCollectionCmd() *getUserCollectionCmd {
 		Short: "Get a collection of users based on filter parameters",
 		Long:  `Get a collection of users based on filter parameters`,
 		Example: `
-        retrieve users, where username starts with 'js', and every user belongs to one of the groups 2, 3 or 4, and the owner is 'admin', and is not a device user.
+retrieve users, where username starts with 'js', and every user belongs to one of the groups 2, 3 or 4, and the owner is 'admin', and is not a device user.
 c8y user list --username js --groups 2,3,4 --owner admin
 		`,
 		RunE: ccmd.getUserCollection,

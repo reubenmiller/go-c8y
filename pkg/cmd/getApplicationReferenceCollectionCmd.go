@@ -26,7 +26,7 @@ func newGetApplicationReferenceCollectionCmd() *getApplicationReferenceCollectio
 		Short: "Enable application on tenant",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getApplicationReferenceCollection,
 	}

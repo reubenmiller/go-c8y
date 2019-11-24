@@ -7,6 +7,14 @@ Update operation
 .DESCRIPTION
 Update operation
 
+.EXAMPLE
+PS> Update-Operation -Id {{ NewOperation }} -Status EXECUTING
+Update an operation
+
+.EXAMPLE
+PS> Get-OperationCollection -Device "{{ randomdevice }}" -Status EXECUTING | Update-Operation -Status FAILED -FailureReason "manually cancelled"
+Update multiple operations
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -28,7 +36,7 @@ Update operation
         [string]
         $Status,
 
-        # Reason for the failure. Use whne setting status to FAILED
+        # Reason for the failure. Use when setting status to FAILED
         [Parameter()]
         [string]
         $FailureReason,
@@ -56,9 +64,6 @@ Update operation
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("Id")) {
-            $Parameters["id"] = $Id
-        }
         if ($PSBoundParameters.ContainsKey("Status")) {
             $Parameters["status"] = $Status
         }
@@ -75,12 +80,15 @@ Update operation
     }
 
     Process {
-        foreach ($item in @($Id)) {
+        foreach ($item in (PSC8y\Expand-Id $Id)) {
+            if ($item) {
+                $Parameters["id"] = if ($item.id) { $item.id } else { $item }
+            }
 
             if (!$Force -and
                 !$WhatIfPreference -and
                 !$PSCmdlet.ShouldProcess(
-                    (Get-C8ySessionProperty -Name "tenant"),
+                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
                     (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
                 )) {
                 continue

@@ -26,7 +26,7 @@ func newGetTenantCollectionCmd() *getTenantCollectionCmd {
 		Short: "Get collection of tenants",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getTenantCollection,
 	}

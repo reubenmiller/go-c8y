@@ -26,7 +26,8 @@ func newGetOperationCmd() *getOperationCmd {
 		Short: "Get operation/s",
 		Long:  ``,
 		Example: `
-        
+$ c8y operations get --id 12345
+Get operation by id
 		`,
 		RunE: ccmd.getOperation,
 	}

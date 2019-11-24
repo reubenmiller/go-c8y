@@ -26,7 +26,7 @@ func newGetMeasurementCmd() *getMeasurementCmd {
 		Short: "Get measurement/s",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getMeasurement,
 	}

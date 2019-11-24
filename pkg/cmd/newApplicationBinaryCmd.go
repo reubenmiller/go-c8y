@@ -26,7 +26,7 @@ func newNewApplicationBinaryCmd() *newApplicationBinaryCmd {
 		Short: "New application binary",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.newApplicationBinary,
 	}

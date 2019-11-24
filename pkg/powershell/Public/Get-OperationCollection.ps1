@@ -8,8 +8,16 @@ Get a collection of operations based on filter parameters
 Get a collection of operations based on filter parameters
 
 .EXAMPLE
+PS> Get-OperationCollection -Status PENDING
 Get a list of pending operations
-Get-OperationCollection -Status PENDING
+
+.EXAMPLE
+PS> Get-OperationCollection -Agent "{{ randomagent }}" -Status PENDING
+Get a list of pending operations for a given agent and all of its child devices
+
+.EXAMPLE
+PS> Get-OperationCollection -Device "{{ randomdevice }}" -Status PENDING
+Get a list of pending operations for a device
 
 
 #>
@@ -21,14 +29,12 @@ Get-OperationCollection -Status PENDING
     [OutputType([object])]
     Param(
         # Agent ID
-        [Parameter(ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true)]
+        [Parameter()]
         [object[]]
         $Agent,
 
         # Device ID
-        [Parameter(ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true)]
+        [Parameter()]
         [object[]]
         $Device,
 
@@ -112,7 +118,7 @@ Get-OperationCollection -Status PENDING
             if (!$Force -and
                 !$WhatIfPreference -and
                 !$PSCmdlet.ShouldProcess(
-                    (Get-C8ySessionProperty -Name "tenant"),
+                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
                     (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
                 )) {
                 continue

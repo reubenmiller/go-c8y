@@ -26,7 +26,7 @@ func newGetRoleReferenceCollectionFromUserCmd() *getRoleReferenceCollectionFromU
 		Short: "Get collection of user role references from a user",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getRoleReferenceCollectionFromUser,
 	}

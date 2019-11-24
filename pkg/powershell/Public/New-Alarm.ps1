@@ -7,6 +7,10 @@ Create a new alarm
 .DESCRIPTION
 Create a new alarm
 
+.EXAMPLE
+PS> New-Alarm -Device "{{ randomdevice }}" -Type c8y_TestAlarm -Time "-0s" -Text "Test alarm" -Severity MAJOR
+Create a new alarm for device
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -17,9 +21,7 @@ Create a new alarm
     [OutputType([object])]
     Param(
         # The ManagedObject that the alarm originated from (required)
-        [Parameter(Mandatory = $true,
-                   ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true)]
+        [Parameter(Mandatory = $true)]
         [object[]]
         $Device,
 
@@ -106,7 +108,7 @@ Create a new alarm
             if (!$Force -and
                 !$WhatIfPreference -and
                 !$PSCmdlet.ShouldProcess(
-                    (Get-C8ySessionProperty -Name "tenant"),
+                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
                     (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
                 )) {
                 continue

@@ -26,7 +26,7 @@ func newGetTenantOptionCollectionCmd() *getTenantOptionCollectionCmd {
 		Short: "Get collection of tenant options",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getTenantOptionCollection,
 	}

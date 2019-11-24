@@ -26,7 +26,7 @@ func newGetTenantUsageStatisticsCollectionCmd() *getTenantUsageStatisticsCollect
 		Short: "Get collection of tenant usage statistics",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getTenantUsageStatisticsCollection,
 	}

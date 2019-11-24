@@ -8,7 +8,12 @@ Get a collection of alarms based on filter parameters
 Get a collection of alarms based on filter parameters
 
 .EXAMPLE
-Get-AlarmCollection
+PS> Get-AlarmCollection -Severity MAJOR -PageSize 100
+Get alarms with the severity set to MAJOR
+
+.EXAMPLE
+PS> Get-AlarmCollection -DateFrom "-10m" -Status ACTIVE
+Get active alarms which occurred in the last 10 minutes
 
 
 #>
@@ -20,8 +25,7 @@ Get-AlarmCollection
     [OutputType([object])]
     Param(
         # Source device id.
-        [Parameter(ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true)]
+        [Parameter()]
         [object[]]
         $Device,
 
@@ -151,7 +155,7 @@ Get-AlarmCollection
             if (!$Force -and
                 !$WhatIfPreference -and
                 !$PSCmdlet.ShouldProcess(
-                    (Get-C8ySessionProperty -Name "tenant"),
+                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
                     (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
                 )) {
                 continue

@@ -21,9 +21,7 @@ Get managed object child device reference
         $Device,
 
         # Device reference id (required)
-        [Parameter(Mandatory = $true,
-                   ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true)]
+        [Parameter(Mandatory = $true)]
         [object[]]
         $Reference,
 
@@ -58,7 +56,7 @@ Get managed object child device reference
             if (!$Force -and
                 !$WhatIfPreference -and
                 !$PSCmdlet.ShouldProcess(
-                    (Get-C8ySessionProperty -Name "tenant"),
+                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
                     (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
                 )) {
                 continue

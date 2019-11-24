@@ -4,6 +4,14 @@ Function Remove-AlarmCollection {
 .SYNOPSIS
 Delete a collection of alarms
 
+.EXAMPLE
+PS> Remove-AlarmCollection -Device "{{ randomdevice }}" -Severity MAJOR
+Remove alarms on the device with the severity set to MAJOR
+
+.EXAMPLE
+PS> Remove-AlarmCollection -Device "{{ randomdevice }}" -DateFrom "-10m" -Status ACTIVE
+Remove alarms on the device which are active and created in the last 10 minutes
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -14,8 +22,7 @@ Delete a collection of alarms
     [OutputType([object])]
     Param(
         # Source device id.
-        [Parameter(ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true)]
+        [Parameter()]
         [object[]]
         $Device,
 
@@ -126,7 +133,7 @@ Delete a collection of alarms
             if (!$Force -and
                 !$WhatIfPreference -and
                 !$PSCmdlet.ShouldProcess(
-                    (Get-C8ySessionProperty -Name "tenant"),
+                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
                     (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
                 )) {
                 continue

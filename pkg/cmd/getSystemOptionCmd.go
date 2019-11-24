@@ -26,7 +26,7 @@ func newGetSystemOptionCmd() *getSystemOptionCmd {
 		Short: "Get system option",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getSystemOption,
 	}

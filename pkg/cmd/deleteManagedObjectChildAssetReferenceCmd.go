@@ -26,7 +26,7 @@ func newDeleteManagedObjectChildAssetReferenceCmd() *deleteManagedObjectChildAss
 		Short: "Delete child asset reference",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.deleteManagedObjectChildAssetReference,
 	}

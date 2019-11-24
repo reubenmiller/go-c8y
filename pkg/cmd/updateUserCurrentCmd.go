@@ -26,7 +26,7 @@ func newUpdateUserCurrentCmd() *updateUserCurrentCmd {
 		Short: "Update the current user",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.updateUserCurrent,
 	}

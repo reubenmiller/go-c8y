@@ -26,7 +26,7 @@ func newUpdateBinaryCmd() *updateBinaryCmd {
 		Short: "Update inventory binary",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.updateBinary,
 	}

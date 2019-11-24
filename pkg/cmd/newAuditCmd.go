@@ -26,7 +26,7 @@ func newNewAuditCmd() *newAuditCmd {
 		Short: "Create a new audit record",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.newAudit,
 	}

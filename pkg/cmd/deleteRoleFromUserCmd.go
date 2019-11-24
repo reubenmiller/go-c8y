@@ -26,7 +26,7 @@ func newDeleteRoleFromUserCmd() *deleteRoleFromUserCmd {
 		Short: "Unassign/Remove role from a user",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.deleteRoleFromUser,
 	}

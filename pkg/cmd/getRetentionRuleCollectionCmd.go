@@ -26,7 +26,7 @@ func newGetRetentionRuleCollectionCmd() *getRetentionRuleCollectionCmd {
 		Short: "Get collection of retention rules",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getRetentionRuleCollection,
 	}

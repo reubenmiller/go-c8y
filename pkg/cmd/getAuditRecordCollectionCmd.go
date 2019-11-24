@@ -26,7 +26,7 @@ func newGetAuditRecordCollectionCmd() *getAuditRecordCollectionCmd {
 		Short: "Get collection of (user) audits",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getAuditRecordCollection,
 	}

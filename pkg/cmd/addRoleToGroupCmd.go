@@ -26,7 +26,7 @@ func newAddRoleToGroupCmd() *addRoleToGroupCmd {
 		Short: "Add role to a group",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.addRoleToGroup,
 	}

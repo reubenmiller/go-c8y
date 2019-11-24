@@ -7,6 +7,10 @@ Create a new operation
 .DESCRIPTION
 Create a new operation
 
+.EXAMPLE
+PS> New-Operation -Device "{{ randomagent }}" -Description "Restart device" -Data @{ c8y_Restart = @{} }
+Create operation for a device
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -17,17 +21,9 @@ Create a new operation
     [OutputType([object])]
     Param(
         # Identifies the target device on which this operation should be performed. (required)
-        [Parameter(Mandatory = $true,
-                   ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true)]
+        [Parameter(Mandatory = $true)]
         [object[]]
         $Device,
-
-        # Operation status, can be one of SUCCESSFUL, FAILED, EXECUTING or PENDING. (required)
-        [Parameter(Mandatory = $true)]
-        [ValidateSet('PENDING','EXECUTING','SUCCESSFUL','FAILED')]
-        [string]
-        $Status,
 
         # Text description of the operation.
         [Parameter()]
@@ -60,9 +56,6 @@ Create a new operation
         if ($PSBoundParameters.ContainsKey("Device")) {
             $Parameters["device"] = $Device
         }
-        if ($PSBoundParameters.ContainsKey("Status")) {
-            $Parameters["status"] = $Status
-        }
         if ($PSBoundParameters.ContainsKey("Description")) {
             $Parameters["description"] = $Description
         }
@@ -81,7 +74,7 @@ Create a new operation
             if (!$Force -and
                 !$WhatIfPreference -and
                 !$PSCmdlet.ShouldProcess(
-                    (Get-C8ySessionProperty -Name "tenant"),
+                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
                     (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
                 )) {
                 continue

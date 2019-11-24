@@ -26,7 +26,7 @@ func newDeleteRetentionRuleCmd() *deleteRetentionRuleCmd {
 		Short: "Delete retention rule",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.deleteRetentionRule,
 	}

@@ -26,7 +26,8 @@ func newNewOperationCmd() *newOperationCmd {
 		Short: "Create a new operation",
 		Long:  `Create a new operation`,
 		Example: `
-        
+$ c8y operations create --device mydevice --data "{c8y_Restart:{}}"
+Create operation for a device
 		`,
 		RunE: ccmd.newOperation,
 	}
@@ -34,13 +35,11 @@ func newNewOperationCmd() *newOperationCmd {
 	cmd.SilenceUsage = true
 
 	cmd.Flags().StringSlice("device", []string{""}, "Identifies the target device on which this operation should be performed. (required)")
-	cmd.Flags().String("status", "", "Operation status, can be one of SUCCESSFUL, FAILED, EXECUTING or PENDING. (required)")
 	cmd.Flags().String("description", "", "Text description of the operation.")
 	addDataFlag(cmd)
 
 	// Required flags
 	cmd.MarkFlagRequired("device")
-	cmd.MarkFlagRequired("status")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
@@ -88,13 +87,6 @@ func (n *newOperationCmd) newOperation(cmd *cobra.Command, args []string) error 
 				body.Set("deviceId", newIDValue(item).GetID())
 			}
 		}
-	}
-	if v, err := cmd.Flags().GetString("status"); err == nil {
-		if v != "" {
-			body.Set("status", v)
-		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "status", err))
 	}
 	if v, err := cmd.Flags().GetString("description"); err == nil {
 		if v != "" {

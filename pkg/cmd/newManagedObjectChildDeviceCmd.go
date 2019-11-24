@@ -26,7 +26,7 @@ func newNewManagedObjectChildDeviceCmd() *newManagedObjectChildDeviceCmd {
 		Short: "Create a child device reference",
 		Long:  `Create a child device reference`,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.newManagedObjectChildDevice,
 	}

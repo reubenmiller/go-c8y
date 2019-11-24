@@ -26,7 +26,7 @@ func newGetGroupCmd() *getGroupCmd {
 		Short: "Create a new group by id",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getGroup,
 	}

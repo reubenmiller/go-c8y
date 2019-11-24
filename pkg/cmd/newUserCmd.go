@@ -26,7 +26,7 @@ func newNewUserCmd() *newUserCmd {
 		Short: "Create a new user within the collection",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.newUser,
 	}

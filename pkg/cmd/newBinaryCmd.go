@@ -26,7 +26,7 @@ func newNewBinaryCmd() *newBinaryCmd {
 		Short: "New inventory binary",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.newBinary,
 	}

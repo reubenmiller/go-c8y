@@ -26,7 +26,7 @@ func newDeleteUserCmd() *deleteUserCmd {
 		Short: "Delete user",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.deleteUser,
 	}

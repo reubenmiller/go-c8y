@@ -26,7 +26,7 @@ func newGetTenantOptionsForCategoryCmd() *getTenantOptionsForCategoryCmd {
 		Short: "Get tenant options for category",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getTenantOptionsForCategory,
 	}

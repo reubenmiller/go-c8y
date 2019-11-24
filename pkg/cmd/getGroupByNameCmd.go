@@ -26,7 +26,7 @@ func newGetGroupByNameCmd() *getGroupByNameCmd {
 		Short: "Get a group by name",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getGroupByName,
 	}

@@ -26,7 +26,7 @@ func newGetRoleCollectionCmd() *getRoleCollectionCmd {
 		Short: "Get collection of user roles",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getRoleCollection,
 	}

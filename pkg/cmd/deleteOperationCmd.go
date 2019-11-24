@@ -26,7 +26,8 @@ func newDeleteOperationCmd() *deleteOperationCmd {
 		Short: "Delete operation/s",
 		Long:  ``,
 		Example: `
-        
+$ c8y operations delete --id 12345
+Remove an operation
 		`,
 		RunE: ccmd.deleteOperation,
 	}

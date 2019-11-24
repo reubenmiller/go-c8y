@@ -26,7 +26,7 @@ func newGetTenantCmd() *getTenantCmd {
 		Short: "Get tenant",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getTenant,
 	}

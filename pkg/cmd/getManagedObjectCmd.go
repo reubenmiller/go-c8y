@@ -26,7 +26,7 @@ func newGetManagedObjectCmd() *getManagedObjectCmd {
 		Short: "Get inventory/s",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getManagedObject,
 	}

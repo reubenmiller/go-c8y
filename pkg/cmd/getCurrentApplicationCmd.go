@@ -26,7 +26,7 @@ func newGetCurrentApplicationCmd() *getCurrentApplicationCmd {
 		Short: "Get current application",
 		Long:  `Required authentication with bootstrap user`,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getCurrentApplication,
 	}

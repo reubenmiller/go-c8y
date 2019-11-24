@@ -26,7 +26,7 @@ func newGetExternalIDCmd() *getExternalIDCmd {
 		Short: "Get external id",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getExternalID,
 	}

@@ -26,7 +26,7 @@ func newGetBinaryCollectionCmd() *getBinaryCollectionCmd {
 		Short: "Get collection of inventory binaries",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getBinaryCollection,
 	}

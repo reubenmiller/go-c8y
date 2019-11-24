@@ -26,7 +26,7 @@ func newDownloadCmd() *downloadCmd {
 		Short: "Get binary",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.download,
 	}

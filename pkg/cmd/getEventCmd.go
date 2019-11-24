@@ -26,7 +26,8 @@ func newGetEventCmd() *getEventCmd {
 		Short: "Get event/s",
 		Long:  ``,
 		Example: `
-        
+$ c8y events get --id 12345
+Get event
 		`,
 		RunE: ccmd.getEvent,
 	}

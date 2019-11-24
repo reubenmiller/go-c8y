@@ -26,7 +26,7 @@ func newGetAuditRecordCmd() *getAuditRecordCmd {
 		Short: "Get an audit record",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getAuditRecord,
 	}

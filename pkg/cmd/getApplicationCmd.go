@@ -26,7 +26,7 @@ func newGetApplicationCmd() *getApplicationCmd {
 		Short: "Get application",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getApplication,
 	}

@@ -26,7 +26,8 @@ func newNewEventCmd() *newEventCmd {
 		Short: "Create event",
 		Long:  `Create event`,
 		Example: `
-        
+$ c8y events create --device mydevice --type c8y_TestAlarm --time "-0s" --text "Test alarm" --severity MAJOR
+Create a new event for a device
 		`,
 		RunE: ccmd.newEvent,
 	}
@@ -92,12 +93,12 @@ func (n *newEventCmd) newEvent(cmd *cobra.Command, args []string) error {
 			}
 		}
 	}
-	if v, err := cmd.Flags().GetString("time"); err == nil {
-		if v != "" {
-			body.Set("time", v)
+	if cmd.Flags().Changed("time") {
+		if v, err := tryGetTimestampFlag(cmd, "time"); err == nil && v != "" {
+			body.Set("time", decodeC8yTimestamp(v))
+		} else {
+			return newUserError("invalid date format", err)
 		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "time", err))
 	}
 	if v, err := cmd.Flags().GetString("type"); err == nil {
 		if v != "" {

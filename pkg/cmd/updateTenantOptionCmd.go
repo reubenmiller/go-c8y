@@ -26,7 +26,7 @@ func newUpdateTenantOptionCmd() *updateTenantOptionCmd {
 		Short: "Update tenant option",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.updateTenantOption,
 	}

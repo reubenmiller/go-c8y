@@ -26,7 +26,7 @@ func newGetEventBinaryCmd() *getEventBinaryCmd {
 		Short: "Get event binary",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getEventBinary,
 	}

@@ -26,7 +26,7 @@ func newUpdateCurrentApplicationCmd() *updateCurrentApplicationCmd {
 		Short: "Update current application",
 		Long:  `Required authentication with bootstrap user`,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.updateCurrentApplication,
 	}

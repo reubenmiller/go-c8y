@@ -26,7 +26,8 @@ func newUpdateOperationCmd() *updateOperationCmd {
 		Short: "Update operation",
 		Long:  `Update operation`,
 		Example: `
-        
+$ c8y operations update --id 12345 --status EXECUTING
+Update an operation
 		`,
 		RunE: ccmd.updateOperation,
 	}

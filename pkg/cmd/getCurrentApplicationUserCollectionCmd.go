@@ -26,7 +26,7 @@ func newGetCurrentApplicationUserCollectionCmd() *getCurrentApplicationUserColle
 		Short: "Get current application subscriptions",
 		Long:  `Required authentication with bootstrap user`,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getCurrentApplicationUserCollection,
 	}

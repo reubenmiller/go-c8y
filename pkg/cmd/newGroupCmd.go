@@ -26,7 +26,7 @@ func newNewGroupCmd() *newGroupCmd {
 		Short: "Create a new group",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.newGroup,
 	}

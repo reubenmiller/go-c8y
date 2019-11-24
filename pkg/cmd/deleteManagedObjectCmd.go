@@ -26,7 +26,7 @@ func newDeleteManagedObjectCmd() *deleteManagedObjectCmd {
 		Short: "Delete inventory/s",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.deleteManagedObject,
 	}

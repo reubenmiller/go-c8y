@@ -26,7 +26,7 @@ func newQueryManagedObjectCollectionCmd() *queryManagedObjectCollectionCmd {
 		Short: "Get a collection of managedObjects based on Cumulocity query language",
 		Long:  `Get a collection of managedObjects based on Cumulocity query language`,
 		Example: `
-        c8y managedObjects query --type value --severity MAJOR
+c8y managedObjects query --type value --severity MAJOR
 		`,
 		RunE: ccmd.queryManagedObjectCollection,
 	}

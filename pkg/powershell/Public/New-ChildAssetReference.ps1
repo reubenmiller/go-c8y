@@ -24,14 +24,12 @@ Create a child asset (device or devicegroup) reference
         $Group,
 
         # new child device asset
-        [Parameter(ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true)]
+        [Parameter()]
         [object[]]
         $NewChildDevice,
 
         # new child device group asset
-        [Parameter(ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true)]
+        [Parameter()]
         [object[]]
         $NewChildGroup,
 
@@ -66,7 +64,7 @@ Create a child asset (device or devicegroup) reference
     }
 
     Process {
-        foreach ($item in @($Group)) {
+        foreach ($item in (PSC8y\Expand-Id $Group)) {
             if ($item) {
                 $Parameters["group"] = if ($item.id) { $item.id } else { $item }
             }
@@ -74,7 +72,7 @@ Create a child asset (device or devicegroup) reference
             if (!$Force -and
                 !$WhatIfPreference -and
                 !$PSCmdlet.ShouldProcess(
-                    (Get-C8ySessionProperty -Name "tenant"),
+                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
                     (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
                 )) {
                 continue

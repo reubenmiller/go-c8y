@@ -26,7 +26,7 @@ func newUpdateGroupCmd() *updateGroupCmd {
 		Short: "Update a new group",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.updateGroup,
 	}

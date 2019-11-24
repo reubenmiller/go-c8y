@@ -26,7 +26,7 @@ func newUpdateManagedObjectCmd() *updateManagedObjectCmd {
 		Short: "Update inventory",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.updateManagedObject,
 	}

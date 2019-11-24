@@ -26,7 +26,7 @@ func newDeleteMeasurementCmd() *deleteMeasurementCmd {
 		Short: "Delete measurement/s",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.deleteMeasurement,
 	}

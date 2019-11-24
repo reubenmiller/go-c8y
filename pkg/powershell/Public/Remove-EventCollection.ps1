@@ -4,6 +4,14 @@ Function Remove-EventCollection {
 .SYNOPSIS
 Delete a collection of events
 
+.EXAMPLE
+PS> Remove-EventCollection -Type my_CustomType -DateFrom "-10d"
+Remove events with type 'my_CustomType' that were created in the last 10 days
+
+.EXAMPLE
+PS> Remove-EventCollection -Device "{{ randomdevice }}"
+Remove events from a device
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -14,8 +22,7 @@ Delete a collection of events
     [OutputType([object])]
     Param(
         # Device ID
-        [Parameter(ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true)]
+        [Parameter()]
         [object[]]
         $Device,
 
@@ -92,7 +99,7 @@ Delete a collection of events
             if (!$Force -and
                 !$WhatIfPreference -and
                 !$PSCmdlet.ShouldProcess(
-                    (Get-C8ySessionProperty -Name "tenant"),
+                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
                     (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
                 )) {
                 continue

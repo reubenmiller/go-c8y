@@ -26,7 +26,7 @@ func newDeleteAuditRecordCmd() *deleteAuditRecordCmd {
 		Short: "Delete an audit record",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.deleteAuditRecord,
 	}

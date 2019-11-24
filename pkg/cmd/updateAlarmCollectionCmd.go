@@ -26,7 +26,8 @@ func newUpdateAlarmCollectionCmd() *updateAlarmCollectionCmd {
 		Short: "Update a collection of alarms. Currently only the status of alarms can be changed",
 		Long:  ``,
 		Example: `
-        
+$ c8y alarms updateCollection --device mydevice --status ACTIVE --newStatus ACKNOWLEDGED
+Update the status of all active alarms on a device to ACKNOWLEDGED
 		`,
 		RunE: ccmd.updateAlarmCollection,
 	}

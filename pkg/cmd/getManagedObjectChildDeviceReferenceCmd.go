@@ -26,7 +26,7 @@ func newGetManagedObjectChildDeviceReferenceCmd() *getManagedObjectChildDeviceRe
 		Short: "Get managed object child device reference",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.getManagedObjectChildDeviceReference,
 	}

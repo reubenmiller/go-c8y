@@ -26,7 +26,7 @@ func newNewManagedObjectCmd() *newManagedObjectCmd {
 		Short: "Create a new inventory",
 		Long:  `Create a new inventory`,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.newManagedObject,
 	}

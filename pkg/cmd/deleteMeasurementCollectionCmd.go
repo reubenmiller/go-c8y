@@ -26,7 +26,7 @@ func newDeleteMeasurementCollectionCmd() *deleteMeasurementCollectionCmd {
 		Short: "Delete a collection of measurements",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.deleteMeasurementCollection,
 	}

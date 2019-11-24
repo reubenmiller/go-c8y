@@ -26,7 +26,11 @@ func newDeleteAlarmCollectionCmd() *deleteAlarmCollectionCmd {
 		Short: "Delete a collection of alarms",
 		Long:  ``,
 		Example: `
-        
+$ c8y alarms deleteCollection --device mydevice --severity MAJOR
+Remove alarms on the device with the severity set to MAJOR
+
+$ c8y alarms deleteCollection --device mydevice --dateFrom "-10m" --status ACTIVE
+Remove alarms on the device which are active and created in the last 10 minutes
 		`,
 		RunE: ccmd.deleteAlarmCollection,
 	}
@@ -38,6 +42,7 @@ func newDeleteAlarmCollectionCmd() *deleteAlarmCollectionCmd {
 	cmd.Flags().String("dateTo", "", "End date or date and time of alarm occurrence.")
 	cmd.Flags().String("type", "", "Alarm type.")
 	cmd.Flags().String("fragmentType", "", "Alarm fragment type.")
+	cmd.Flags().String("status", "", "Comma separated alarm statuses, for example ACTIVE,CLEARED.")
 	cmd.Flags().String("severity", "", "Alarm severity, for example CRITICAL, MAJOR, MINOR or WARNING.")
 	cmd.Flags().Bool("resolved", false, "When set to true only resolved alarms will be removed (the one with status CLEARED), false means alarms with status ACTIVE or ACKNOWLEDGED.")
 	cmd.Flags().Bool("withSourceAssets", false, "When set to true also alarms for related source assets will be removed. When this parameter is provided also source must be defined.")
@@ -99,6 +104,13 @@ func (n *deleteAlarmCollectionCmd) deleteAlarmCollection(cmd *cobra.Command, arg
 		}
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "fragmentType", err))
+	}
+	if v, err := cmd.Flags().GetString("status"); err == nil {
+		if v != "" {
+			query.Add("status", url.QueryEscape(v))
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "status", err))
 	}
 	if v, err := cmd.Flags().GetString("severity"); err == nil {
 		if v != "" {

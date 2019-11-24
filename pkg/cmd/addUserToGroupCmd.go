@@ -26,7 +26,7 @@ func newAddUserToGroupCmd() *addUserToGroupCmd {
 		Short: "Get user",
 		Long:  ``,
 		Example: `
-        
+
 		`,
 		RunE: ccmd.addUserToGroup,
 	}

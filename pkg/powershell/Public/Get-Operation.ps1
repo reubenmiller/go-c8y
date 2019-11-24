@@ -4,6 +4,10 @@ Function Get-Operation {
 .SYNOPSIS
 Get operation/s
 
+.EXAMPLE
+PS> Get-Operation -Id {{ NewOperation }}
+Get operation by id
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -40,7 +44,7 @@ Get operation/s
     }
 
     Process {
-        foreach ($item in @($Id)) {
+        foreach ($item in (PSC8y\Expand-Id $Id)) {
             if ($item) {
                 $Parameters["id"] = if ($item.id) { $item.id } else { $item }
             }
@@ -48,7 +52,7 @@ Get operation/s
             if (!$Force -and
                 !$WhatIfPreference -and
                 !$PSCmdlet.ShouldProcess(
-                    (Get-C8ySessionProperty -Name "tenant"),
+                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
                     (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
                 )) {
                 continue

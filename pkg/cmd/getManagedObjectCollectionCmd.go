@@ -26,7 +26,7 @@ func newGetManagedObjectCollectionCmd() *getManagedObjectCollectionCmd {
 		Short: "Get a collection of managedObjects based on filter parameters",
 		Long:  `Get a collection of managedObjects based on filter parameters`,
 		Example: `
-        c8y managedObjects list --type value --severity MAJOR
+c8y managedObjects list --type value --severity MAJOR
 		`,
 		RunE: ccmd.getManagedObjectCollection,
 	}
