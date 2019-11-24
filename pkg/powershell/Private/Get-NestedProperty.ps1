@@ -25,7 +25,7 @@ Function Get-NestedProperty {
     $Output = $InputObject
 
     foreach ($part in ($Name -split "\.")) {
-        if ($null -eq $Output.$part) {
+        if ($null -eq $Output.$part -and $null -eq $Output.$part.Count) {
             $Output = $null
             break;
         }
