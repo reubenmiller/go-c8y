@@ -16,14 +16,14 @@ endpoints:
         - description: Get events with type 'my_CustomType' that were created in the last 10 days
           command: Get-EventCollection -Type my_CustomType -DateFrom "-10d"
 
-        - description: Get events from a device named mydevice
-          command: Get-EventCollection -Device mydevice
+        - description: Get events from a device
+          command: Get-EventCollection -Device "{{ randomdevice }}"
 
       go:
         - description: Get events with type 'my_CustomType' that were created in the last 10 days
           command: c8y events list --type my_CustomType --dateFrom "-10d"
 
-        - description: Get events from a device named mydevice
+        - description: Get events from a device
           command: c8y events list --device mydevice
     path: event/events
     accept: application/vnd.com.nsn.cumulocity.eventCollection+json
@@ -69,14 +69,14 @@ endpoints:
         - description: Remove events with type 'my_CustomType' that were created in the last 10 days
           command: Remove-EventCollection -Type my_CustomType -DateFrom "-10d"
 
-        - description: Remove events from a device named mydevice
-          command: Remove-EventCollection -Device mydevice
+        - description: Remove events from a device
+          command: Remove-EventCollection -Device "{{ randomdevice }}"
 
       go:
         - description: Remove events with type 'my_CustomType' that were created in the last 10 days
           command: c8y events deleteCollection --type my_CustomType --dateFrom "-10d"
 
-        - description: Remove events from a device named mydevice
+        - description: Remove events from a device
           command: c8y events deleteCollection --device mydevice
     alias:
         go: deleteCollection
@@ -115,7 +115,7 @@ endpoints:
     examples:
       powershell:
         - description: Get event
-          command: Get-Event -Id 12345
+          command: Get-Event -Id {{ NewEvent }}
 
       go:
         - description: Get event
@@ -137,11 +137,11 @@ endpoints:
     descriptionLong: Create event
     examples:
       powershell:
-        - description: Create a new event for device called mydevice
-          command: New-Event -Device mydevice -Type c8y_TestAlarm -Time "-0s" -Text "Test event"
+        - description: Create a new event for a device
+          command: New-Event -Device "{{ randomdevice }}" -Type c8y_TestAlarm -Time "-0s" -Text "Test event"
 
       go:
-        - description: Create a new event for device called mydevice
+        - description: Create a new event for a device
           command: c8y events create --device mydevice --type c8y_TestAlarm --time "-0s" --text "Test alarm" --severity MAJOR
     alias:
         go: create
@@ -154,7 +154,7 @@ endpoints:
         description: The ManagedObject which is the source of this event.
 
       - name: time
-        type: string
+        type: datetime
         required: true
         description: Time of the event.
 
@@ -181,10 +181,10 @@ endpoints:
     examples:
       powershell:
         - description: Update the text field of an existing event
-          command: Update-Event -Id 12345 -Text "example text 1"
+          command: Update-Event -Id {{ NewEvent }} -Text "example text 1"
 
         - description: Update custom properties of an existing event
-          command: Update-Event -Id 12345 -Data @{ my_event = @{ active = true } }
+          command: Update-Event -Id {{ NewEvent }} -Data @{ my_event = @{ active = true } }
 
       go:
         - description: Update the text field of an existing event
@@ -215,7 +215,7 @@ endpoints:
     examples:
       powershell:
         - description: Delete an event
-          command: Remove-Event -Id 12345
+          command: Remove-Event -Id {{ NewEvent }}
 
       go:
         - description: Delete an event
@@ -303,7 +303,7 @@ endpoints:
     examples:
       powershell:
         - description: Delete an binary attached to an event
-          command: Remove-Event -Id 12345
+          command: Remove-EventBinary -Id 12345
 
       go:
         - description: Delete an binary attached to an event

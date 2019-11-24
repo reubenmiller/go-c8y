@@ -18,8 +18,8 @@
             "command": "Get-EventCollection -Type my_CustomType -DateFrom \"-10d\""
           },
           {
-            "description": "Get events from a device named mydevice",
-            "command": "Get-EventCollection -Device mydevice"
+            "description": "Get events from a device",
+            "command": "Get-EventCollection -Device \"{{ randomdevice }}\""
           }
         ],
         "go": [
@@ -28,7 +28,7 @@
             "command": "c8y events list --type my_CustomType --dateFrom \"-10d\""
           },
           {
-            "description": "Get events from a device named mydevice",
+            "description": "Get events from a device",
             "command": "c8y events list --device mydevice"
           }
         ]
@@ -88,8 +88,8 @@
             "command": "Remove-EventCollection -Type my_CustomType -DateFrom \"-10d\""
           },
           {
-            "description": "Remove events from a device named mydevice",
-            "command": "Remove-EventCollection -Device mydevice"
+            "description": "Remove events from a device",
+            "command": "Remove-EventCollection -Device \"{{ randomdevice }}\""
           }
         ],
         "go": [
@@ -98,7 +98,7 @@
             "command": "c8y events deleteCollection --type my_CustomType --dateFrom \"-10d\""
           },
           {
-            "description": "Remove events from a device named mydevice",
+            "description": "Remove events from a device",
             "command": "c8y events deleteCollection --device mydevice"
           }
         ]
@@ -151,7 +151,7 @@
         "powershell": [
           {
             "description": "Get event",
-            "command": "Get-Event -Id 12345"
+            "command": "Get-Event -Id {{ NewEvent }}"
           }
         ],
         "go": [
@@ -181,6 +181,20 @@
       "accept": "application/vnd.com.nsn.cumulocity.event+json",
       "description": "Create event",
       "descriptionLong": "Create event",
+      "examples": {
+        "powershell": [
+          {
+            "description": "Create a new event for a device",
+            "command": "New-Event -Device \"{{ randomdevice }}\" -Type c8y_TestAlarm -Time \"-0s\" -Text \"Test event\""
+          }
+        ],
+        "go": [
+          {
+            "description": "Create a new event for a device",
+            "command": "c8y events create --device mydevice --type c8y_TestAlarm --time \"-0s\" --text \"Test alarm\" --severity MAJOR"
+          }
+        ]
+      },
       "alias": {
         "go": "create",
         "powershell": "New-Event"
@@ -195,7 +209,7 @@
         },
         {
           "name": "time",
-          "type": "string",
+          "type": "datetime",
           "required": true,
           "description": "Time of the event."
         },
@@ -229,11 +243,11 @@
         "powershell": [
           {
             "description": "Update the text field of an existing event",
-            "command": "Update-Event -Id 12345 -Text \"example text 1\""
+            "command": "Update-Event -Id {{ NewEvent }} -Text \"example text 1\""
           },
           {
             "description": "Update custom properties of an existing event",
-            "command": "Update-Event -Id 12345 -Data @{ my_event = @{ active = true } }"
+            "command": "Update-Event -Id {{ NewEvent }} -Data @{ my_event = @{ active = true } }"
           }
         ],
         "go": [
@@ -280,7 +294,7 @@
         "powershell": [
           {
             "description": "Delete an event",
-            "command": "Remove-Event -Id 12345"
+            "command": "Remove-Event -Id {{ NewEvent }}"
           }
         ],
         "go": [
@@ -393,6 +407,20 @@
       "method": "DELETE",
       "path": "event/events/{id}/binaries",
       "accept": "",
+      "examples": {
+        "powershell": [
+          {
+            "description": "Delete an binary attached to an event",
+            "command": "Remove-EventBinary -Id 12345"
+          }
+        ],
+        "go": [
+          {
+            "description": "Delete an binary attached to an event",
+            "command": "c8y events deleteBinary --id 12345"
+          }
+        ]
+      },
       "alias": {
         "go": "deleteBinary",
         "powershell": "Remove-EventBinary"
