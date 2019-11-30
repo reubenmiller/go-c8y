@@ -12,7 +12,7 @@ PS> Update-Event -Id {{ NewEvent }} -Text "example text 1"
 Update the text field of an existing event
 
 .EXAMPLE
-PS> Update-Event -Id {{ NewEvent }} -Data @{ my_event = @{ active = true } }
+PS> Update-Event -Id {{ NewEvent }} -Data @{ my_event = @{ active = $true } }
 Update custom properties of an existing event
 
 
@@ -31,8 +31,8 @@ Update custom properties of an existing event
         [string]
         $Id,
 
-        # Text description of the event. (required)
-        [Parameter(Mandatory = $true)]
+        # Text description of the event.
+        [Parameter()]
         [string]
         $Text,
 

@@ -231,43 +231,6 @@
       ]
     },
     {
-      "name": "deleteOperation",
-      "description": "Delete operation/s",
-      "examples": {
-        "powershell": [
-          {
-            "description": "Remove an operation",
-            "command": "Remove-Operation -Id {{ NewOperation }}"
-          },
-          {
-            "description": "Remove multiple operations",
-            "command": "Get-OperationCollection -Device \"{{ randomdevice }}\" -Status EXECUTING | Remove-Operation"
-          }
-        ],
-        "go": [
-          {
-            "description": "Remove an operation",
-            "command": "c8y operations delete --id 12345"
-          }
-        ]
-      },
-      "method": "DELETE",
-      "path": "devicecontrol/operations/{id}",
-      "accept": "",
-      "alias": {
-        "go": "delete",
-        "powershell": "Remove-Operation"
-      },
-      "pathParameters": [
-        {
-          "name": "id",
-          "type": "string",
-          "required": true,
-          "description": "Operation id"
-        }
-      ]
-    },
-    {
       "name": "deleteOperationCollection",
       "description": "Delete a collection of operations",
       "examples": {

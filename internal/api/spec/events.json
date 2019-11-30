@@ -247,7 +247,7 @@
           },
           {
             "description": "Update custom properties of an existing event",
-            "command": "Update-Event -Id {{ NewEvent }} -Data @{ my_event = @{ active = true } }"
+            "command": "Update-Event -Id {{ NewEvent }} -Data @{ my_event = @{ active = $true } }"
           }
         ],
         "go": [
@@ -277,7 +277,7 @@
         {
           "name": "text",
           "type": "string",
-          "required": true,
+          "required": false,
           "description": "Text description of the event."
         },
         {
@@ -411,7 +411,10 @@
         "powershell": [
           {
             "description": "Delete an binary attached to an event",
-            "command": "Remove-EventBinary -Id 12345"
+            "beforeEach": [
+              "$Event = New-TestEvent -WithBinary"
+            ],
+            "command": "Remove-EventBinary -Id $Event.id"
           }
         ],
         "go": [

@@ -5,7 +5,7 @@ Function Update-AlarmCollection {
 Update a collection of alarms. Currently only the status of alarms can be changed
 
 .EXAMPLE
-PS> Update-AlarmCollection -Device "{{ randomdevice }}" -Status ACTIVE -NewStatus ACKNOWLEDGED
+PS> Update-AlarmCollection -Device $Device.id -Status ACTIVE -NewStatus ACKNOWLEDGED
 Update the status of all active alarms on a device to ACKNOWLEDGED
 
 
@@ -55,24 +55,6 @@ Update the status of all active alarms on a device to ACKNOWLEDGED
         [string]
         $NewStatus,
 
-        # Maximum number of results
-        [Parameter()]
-        [AllowNull()]
-        [AllowEmptyString()]
-        [ValidateRange(1,2000)]
-        [int]
-        $PageSize,
-
-        # Include total pages statistic
-        [Parameter()]
-        [switch]
-        $WithTotalPages,
-
-        # Include all results
-        [Parameter()]
-        [switch]
-        $IncludeAll,
-
         # Include raw response including pagination information
         [Parameter()]
         [switch]
@@ -112,12 +94,6 @@ Update the status of all active alarms on a device to ACKNOWLEDGED
         if ($PSBoundParameters.ContainsKey("NewStatus")) {
             $Parameters["newStatus"] = $NewStatus
         }
-        if ($PSBoundParameters.ContainsKey("PageSize")) {
-            $Parameters["pageSize"] = $PageSize
-        }
-        if ($PSBoundParameters.ContainsKey("WithTotalPages") -and $WithTotalPages) {
-            $Parameters["withTotalPages"] = $WithTotalPages
-        }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
         }
@@ -140,8 +116,8 @@ Update the status of all active alarms on a device to ACKNOWLEDGED
                 -Noun "alarms" `
                 -Verb "updateCollection" `
                 -Parameters $Parameters `
-                -Type "application/vnd.com.nsn.cumulocity.alarmCollection+json" `
-                -ItemType "application/vnd.com.nsn.cumulocity.alarm+json" `
+                -Type "" `
+                -ItemType "" `
                 -ResultProperty "alarms" `
                 -Raw:$Raw `
                 -IncludeAll:$IncludeAll

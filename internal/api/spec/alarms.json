@@ -195,7 +195,14 @@
         "powershell": [
           {
             "description": "Update the status of all active alarms on a device to ACKNOWLEDGED",
-            "command": "Update-AlarmCollection -Device \"{{ randomdevice }}\" -Status ACTIVE -NewStatus ACKNOWLEDGED"
+            "command": "Update-AlarmCollection -Device $Device.id -Status ACTIVE -NewStatus ACKNOWLEDGED",
+            "beforeEach": [
+              "$Device = PSC8y\\New-TestDevice",
+              "$Alarm = PSC8y\\New-Alarm -Device $Device.id -Type c8y_TestAlarm -Time \"-0s\" -Text \"Test alarm\" -Severity MAJOR"
+            ],
+            "afterEach": [
+              "PSC8y\\Remove-ManagedObject -Id $Device.id"
+            ]
           }
         ],
         "go": [
@@ -205,8 +212,12 @@
           }
         ]
       },
-      "accept": "application/vnd.com.nsn.cumulocity.alarmCollection+json",
-      "collectionType": "application/vnd.com.nsn.cumulocity.alarm+json",
+      "accept": "",
+      "collectionType": "",
+      "statusCodes": {
+        "200": "if the process has completed, all alarms have been updated",
+        "202": "if process continues in background"
+      },
       "listProperty": "alarms",
       "alias": {
         "go": "updateCollection",

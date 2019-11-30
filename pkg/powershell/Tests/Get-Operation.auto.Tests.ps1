@@ -8,7 +8,7 @@ Describe -Name "Get-Operation" {
 
     It "Get operation by id" {
         $Response = PSC8y\Get-Operation -Id $TestOperation.id
-        $Response | Should -Not -BeNullOrEmpty
+        $LASTEXITCODE | Should -Be 0
     }
 
     AfterEach {

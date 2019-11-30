@@ -8,7 +8,7 @@ Describe -Name "Remove-OperationCollection" {
 
     It "Remove all pending operations for a given device" {
         $Response = PSC8y\Remove-OperationCollection -Device $TestDevice.id -Status PENDING
-        $Response | Should -Not -BeNullOrEmpty
+        $LASTEXITCODE | Should -Be 0
     }
 
     AfterEach {

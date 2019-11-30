@@ -9,15 +9,15 @@ Describe -Name "Get-OperationCollection" {
 
     It "Get a list of pending operations" {
         $Response = PSC8y\Get-OperationCollection -Status PENDING
-        $Response | Should -Not -BeNullOrEmpty
+        $LASTEXITCODE | Should -Be 0
     }
     It "Get a list of pending operations for a given agent and all of its child devices" {
         $Response = PSC8y\Get-OperationCollection -Agent $TestAgent.id -Status PENDING
-        $Response | Should -Not -BeNullOrEmpty
+        $LASTEXITCODE | Should -Be 0
     }
     It "Get a list of pending operations for a device" {
         $Response = PSC8y\Get-OperationCollection -Device $TestDevice.id -Status PENDING
-        $Response | Should -Not -BeNullOrEmpty
+        $LASTEXITCODE | Should -Be 0
     }
 
     AfterEach {

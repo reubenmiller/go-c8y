@@ -8,7 +8,7 @@ Describe -Name "Get-Event" {
 
     It "Get event" {
         $Response = PSC8y\Get-Event -Id $TestEvent.id
-        $Response | Should -Not -BeNullOrEmpty
+        $LASTEXITCODE | Should -Be 0
     }
 
     AfterEach {

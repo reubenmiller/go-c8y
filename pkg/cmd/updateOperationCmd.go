@@ -36,7 +36,7 @@ Update an operation
 
 	cmd.Flags().String("id", "", "Operation id")
 	cmd.Flags().String("status", "", "Operation status, can be one of SUCCESSFUL, FAILED, EXECUTING or PENDING. (required)")
-	cmd.Flags().String("failureReason", "", "Reason for the failure. Use whne setting status to FAILED")
+	cmd.Flags().String("failureReason", "", "Reason for the failure. Use when setting status to FAILED")
 	addDataFlag(cmd)
 
 	// Required flags

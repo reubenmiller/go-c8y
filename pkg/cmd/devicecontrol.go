@@ -31,7 +31,6 @@ func newDeviceControlCmd() *deviceControlCmd {
 	cmd.AddCommand(newGetOperationCmd().getCommand())
 	cmd.AddCommand(newGetOperationCollectionCmd().getCommand())
 	cmd.AddCommand(newNewOperationCmd().getCommand())
-	cmd.AddCommand(newDeleteOperationCmd().getCommand())
 	cmd.AddCommand(newDeleteOperationCollectionCmd().getCommand())
 	cmd.AddCommand(newUpdateOperationCmd().getCommand())
 

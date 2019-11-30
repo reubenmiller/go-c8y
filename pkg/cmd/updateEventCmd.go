@@ -38,12 +38,11 @@ Update custom properties of an existing event
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("id", "", "Event id (required)")
-	cmd.Flags().String("text", "", "Text description of the event. (required)")
+	cmd.Flags().String("text", "", "Text description of the event.")
 	addDataFlag(cmd)
 
 	// Required flags
 	cmd.MarkFlagRequired("id")
-	cmd.MarkFlagRequired("text")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

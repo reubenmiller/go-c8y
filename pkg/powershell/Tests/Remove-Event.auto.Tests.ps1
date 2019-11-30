@@ -8,7 +8,7 @@ Describe -Name "Remove-Event" {
 
     It "Delete an event" {
         $Response = PSC8y\Remove-Event -Id $TestEvent.id
-        $Response | Should -Not -BeNullOrEmpty
+        $LASTEXITCODE | Should -Be 0
     }
 
     AfterEach {

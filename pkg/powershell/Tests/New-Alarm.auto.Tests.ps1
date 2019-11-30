@@ -8,7 +8,7 @@ Describe -Name "New-Alarm" {
 
     It "Create a new alarm for device" {
         $Response = PSC8y\New-Alarm -Device $TestDevice.id -Type c8y_TestAlarm -Time "-0s" -Text "Test alarm" -Severity MAJOR
-        $Response | Should -Not -BeNullOrEmpty
+        $LASTEXITCODE | Should -Be 0
     }
 
     AfterEach {

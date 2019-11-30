@@ -5,7 +5,7 @@ Function Remove-EventBinary {
 Delete event binary
 
 .EXAMPLE
-PS> Remove-EventBinary -Id 12345
+PS> Remove-EventBinary -Id $Event.id
 Delete an binary attached to an event
 
 

@@ -9,11 +9,11 @@ Describe -Name "Remove-AlarmCollection" {
 
     It "Remove alarms on the device with the severity set to MAJOR" {
         $Response = PSC8y\Remove-AlarmCollection -Device $TestDevice.id -Severity MAJOR
-        $Response | Should -Not -BeNullOrEmpty
+        $LASTEXITCODE | Should -Be 0
     }
     It "Remove alarms on the device which are active and created in the last 10 minutes" {
         $Response = PSC8y\Remove-AlarmCollection -Device $TestDevice.id -DateFrom "-10m" -Status ACTIVE
-        $Response | Should -Not -BeNullOrEmpty
+        $LASTEXITCODE | Should -Be 0
     }
 
     AfterEach {
