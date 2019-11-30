@@ -7,6 +7,10 @@ Create a new external id
 .DESCRIPTION
 Create a new external id
 
+.EXAMPLE
+PS> New-ExternalID -Device {{ randomdevice }} -Type "my_SerialNumber" -Name "myserialnumber"
+Get external identity
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

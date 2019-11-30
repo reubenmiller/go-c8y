@@ -4,6 +4,10 @@ Function Get-ExternalId {
 .SYNOPSIS
 Get external id
 
+.EXAMPLE
+PS> Get-ExternalId -Type "my_SerialNumber" -Name "myserialnumber"
+Get external identity
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

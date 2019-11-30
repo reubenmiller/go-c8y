@@ -4,6 +4,10 @@ Function Remove-ExternalId {
 .SYNOPSIS
 Delete external id
 
+.EXAMPLE
+PS> Remove-ExternalId -Type "my_SerialNumber" -Name "myserialnumber2"
+Delete external identity
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

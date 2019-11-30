@@ -11,14 +11,6 @@
       "method": "GET",
       "description": "Get a collection of external ids based on filter parameters",
       "descriptionLong": "Get a collection of external ids based on filter parameters",
-      "examples": {
-        "powershell": [
-          "Get a list of external ids\nGet-ExternalIdCollection"
-        ],
-        "go": [
-          "Get a list of external ids\nc8y identity list"
-        ]
-      },
       "path": "identity/globalIds/{device}/externalIds",
       "accept": "application/vnd.com.nsn.cumulocity.externalIdCollection+json",
       "collectionType": "application/vnd.com.nsn.cumulocity.externalId+json",
@@ -26,6 +18,20 @@
       "alias": {
         "go": "list",
         "powershell": "Get-ExternalIDCollection"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get a list of external ids",
+            "command": "Get-ExternalIdCollection"
+          }
+        ],
+        "go": [
+          {
+            "description": "Get a list of external ids",
+            "command": "c8y identity list"
+          }
+        ]
       },
       "pathParameters": [
         {
@@ -44,6 +50,27 @@
       "alias": {
         "go": "get",
         "powershell": "Get-ExternalId"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get external identity",
+            "beforeEach": [
+              "$Device = PSC8y\\New-TestDevice",
+              "$ExternalID = PSC8y\\New-ExternalID -Device $Device.id -Type \"my_SerialNumber\" -Name \"myserialnumber\""
+            ],
+            "afterEach": [
+              "Remove-ManagedObject -Id $Device.id"
+            ],
+            "command": "Get-ExternalId -Type \"my_SerialNumber\" -Name \"myserialnumber\""
+          }
+        ],
+        "go": [
+          {
+            "description": "Get external identity",
+            "command": "c8y identity get --type test --name myserialnumber"
+          }
+        ]
       },
       "pathParameters": [
         {
@@ -70,6 +97,27 @@
         "go": "delete",
         "powershell": "Remove-ExternalId"
       },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Delete external identity",
+            "beforeEach": [
+              "$Device = PSC8y\\New-TestDevice",
+              "$ExternalID = PSC8y\\New-ExternalID -Device $Device.id -Type \"my_SerialNumber\" -Name \"myserialnumber2\""
+            ],
+            "afterEach": [
+              "Remove-ManagedObject -Id $Device.id"
+            ],
+            "command": "Remove-ExternalId -Type \"my_SerialNumber\" -Name \"myserialnumber2\""
+          }
+        ],
+        "go": [
+          {
+            "description": "Delete external identity",
+            "command": "c8y identity delete --type test --name myserialnumber"
+          }
+        ]
+      },
       "pathParameters": [
         {
           "name": "type",
@@ -95,6 +143,20 @@
       "alias": {
         "go": "create",
         "powershell": "New-ExternalID"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get external identity",
+            "command": "New-ExternalID -Device {{ randomdevice }} -Type \"my_SerialNumber\" -Name \"myserialnumber\""
+          }
+        ],
+        "go": [
+          {
+            "description": "Create external identity",
+            "command": "c8y identity create --device 1234 --type test --name myserialnumber"
+          }
+        ]
       },
       "pathParameters": [
         {

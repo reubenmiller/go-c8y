@@ -8,8 +8,8 @@ Get a collection of external ids based on filter parameters
 Get a collection of external ids based on filter parameters
 
 .EXAMPLE
+PS> Get-ExternalIdCollection
 Get a list of external ids
-Get-ExternalIdCollection
 
 
 #>
