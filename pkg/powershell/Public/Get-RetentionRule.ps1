@@ -4,6 +4,10 @@ Function Get-RetentionRule {
 .SYNOPSIS
 Get retention rule
 
+.EXAMPLE
+PS> Get-RetentionRule -Id $RetentionRule.id
+Get a retention rule
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

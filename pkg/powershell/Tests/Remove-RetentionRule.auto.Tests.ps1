@@ -1,0 +1,18 @@
+. $PSScriptRoot/imports.ps1
+
+Describe -Name "Remove-RetentionRule" {
+    BeforeEach {
+        $RetentionRule = New-RetentionRule -DataType ALARM -MaximumAge 200
+
+    }
+
+    It "Delete a retention rule" {
+        $Response = PSC8y\Remove-RetentionRule -Id $RetentionRule.id
+        $LASTEXITCODE | Should -Be 0
+    }
+
+    AfterEach {
+
+    }
+}
+

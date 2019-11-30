@@ -4,6 +4,10 @@ Function Remove-RetentionRule {
 .SYNOPSIS
 Delete retention rule
 
+.EXAMPLE
+PS> Remove-RetentionRule -Id $RetentionRule.id
+Delete a retention rule
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

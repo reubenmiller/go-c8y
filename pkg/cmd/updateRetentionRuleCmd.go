@@ -26,7 +26,8 @@ func newUpdateRetentionRuleCmd() *updateRetentionRuleCmd {
 		Short: "Update retention rule",
 		Long:  ``,
 		Example: `
-
+$ c8y retentionRules get --id 12345
+Update a retention rule
 		`,
 		RunE: ccmd.updateRetentionRule,
 	}
@@ -38,6 +39,7 @@ func newUpdateRetentionRuleCmd() *updateRetentionRuleCmd {
 	cmd.Flags().String("fragmentType", "", "RetentionRule will be applied to documents with fragmentType.")
 	cmd.Flags().String("type", "", "RetentionRule will be applied to documents with type.")
 	cmd.Flags().String("source", "", "RetentionRule will be applied to documents with source.")
+	cmd.Flags().Int("maximumAge", 0, "Maximum age of document in days.")
 	cmd.Flags().Bool("editable", false, "Whether the rule is editable. Can be updated only by management tenant.")
 	addDataFlag(cmd)
 
@@ -102,6 +104,11 @@ func (n *updateRetentionRuleCmd) updateRetentionRule(cmd *cobra.Command, args []
 		}
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "source", err))
+	}
+	if v, err := cmd.Flags().GetInt("maximumAge"); err == nil {
+		body.Set("maximumAge", v)
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "maximumAge", err))
 	}
 	if v, err := cmd.Flags().GetBool("editable"); err == nil {
 		if v {

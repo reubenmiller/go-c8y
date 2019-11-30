@@ -4,6 +4,10 @@ Function New-RetentionRule {
 .SYNOPSIS
 New retention rule
 
+.EXAMPLE
+PS> New-RetentionRule -DataType ALARM -MaximumAge 180
+Create a retention rule to delete all alarms after 180 days
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -34,8 +38,8 @@ New retention rule
         [string]
         $Source,
 
-        # Maximum age of document in days.
-        [Parameter()]
+        # Maximum age of document in days. (required)
+        [Parameter(Mandatory = $true)]
         [long]
         $MaximumAge,
 

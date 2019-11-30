@@ -4,6 +4,10 @@ Function Get-RetentionRuleCollection {
 .SYNOPSIS
 Get collection of retention rules
 
+.EXAMPLE
+PS> Get-RetentionRuleCollection
+Get a list of retention rules
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

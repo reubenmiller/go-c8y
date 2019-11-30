@@ -4,6 +4,10 @@ Function Update-RetentionRule {
 .SYNOPSIS
 Update retention rule
 
+.EXAMPLE
+PS> Update-RetentionRule -Id $RetentionRule.id -DataType MEASUREMENT -FragmentType "custom_FragmentType"
+Update a retention rule
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
