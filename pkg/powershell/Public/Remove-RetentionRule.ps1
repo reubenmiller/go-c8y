@@ -8,6 +8,10 @@ Delete retention rule
 PS> Remove-RetentionRule -Id $RetentionRule.id
 Delete a retention rule
 
+.EXAMPLE
+PS> Get-RetentionRule -Id $RetentionRule.id | Remove-RetentionRule
+Delete a retention rule (using pipeline)
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

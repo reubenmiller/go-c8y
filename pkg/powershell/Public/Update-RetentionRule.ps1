@@ -8,6 +8,10 @@ Update retention rule
 PS> Update-RetentionRule -Id $RetentionRule.id -DataType MEASUREMENT -FragmentType "custom_FragmentType"
 Update a retention rule
 
+.EXAMPLE
+PS> Get-RetentionRule -Id $RetentionRule.id | Update-RetentionRule -DataType MEASUREMENT -FragmentType "custom_FragmentType"
+Update a retention rule (using pipeline)
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

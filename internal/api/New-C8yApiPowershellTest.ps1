@@ -35,14 +35,18 @@ Function New-C8yApiPowershellTest {
         # Add any explicit before blocks
         if ($null -ne $TestCase.BeforeEach) {
             foreach ($statement in $TestCase.BeforeEach) {
-                $null = $BeforeBlock.AppendLine("        $statement")
+                if (!$BeforeBlock.ToString().Contains("$statement")) {
+                    $null = $BeforeBlock.AppendLine("        $statement")
+                }
             }
         }
 
         # Add any explicit before blocks
         if ($null -ne $TestCase.AfterEach) {
             foreach ($statement in $TestCase.AfterEach) {
-                $null = $AfterBlock.AppendLine("        $statement")
+                if (!$AfterBlock.ToString().Contains("$statement")) {
+                    $null = $AfterBlock.AppendLine("        $statement")
+                }
             }
         }
 
@@ -50,13 +54,19 @@ Function New-C8yApiPowershellTest {
         # TODO: Check if a test device has already been created already in the before block
         #       then the  -ErrorAction silentlycontinue can be removed.
         if ($TestCase.Command -match "{{\s*randomdevice\s*}}") {
-            $null = $BeforeBlock.AppendLine("        `$TestDevice = PSC8y\New-TestDevice")
+            $BeforeStatement = '$TestDevice = PSC8y\New-TestDevice'
+            if (!$BeforeBlock.ToString().Contains($BeforeStatement)) {
+                $null = $BeforeBlock.AppendLine("        $BeforeStatement")
+            }
 
             $TestCase.Command = $TestCase.Command -replace "`"?{{\s*randomdevice\s*}}`"?", "`$TestDevice.id"
 
-            $null = $AfterBlock.AppendLine("        if (`$TestDevice.id) {")
-            $null = $AfterBlock.AppendLine("            PSC8y\Remove-ManagedObject -Id `$TestDevice.id -ErrorAction SilentlyContinue")
-            $null = $AfterBlock.AppendLine("        }")
+            $AfterStatement = 'if ($TestDevice.id) {'
+            if (!$AfterBlock.ToString().Contains($AfterStatement)) {
+                $null = $AfterBlock.AppendLine("        $AfterStatement")
+                $null = $AfterBlock.AppendLine("            PSC8y\Remove-ManagedObject -Id `$TestDevice.id -ErrorAction SilentlyContinue")
+                $null = $AfterBlock.AppendLine("        }")
+            }
         }
 
         if ($TestCase.Command -match "{{\s*randomagent\s*}}") {

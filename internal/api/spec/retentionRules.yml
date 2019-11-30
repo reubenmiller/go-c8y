@@ -116,6 +116,11 @@ endpoints:
             - $RetentionRule = New-RetentionRule -DataType ALARM -MaximumAge 200
           command: Remove-RetentionRule -Id $RetentionRule.id
 
+        - description: Delete a retention rule (using pipeline)
+          beforeEach:
+            - $RetentionRule = New-RetentionRule -DataType ALARM -MaximumAge 200
+          command: Get-RetentionRule -Id $RetentionRule.id | Remove-RetentionRule
+
       go:
         - description: Delete a retention rule
           command: c8y retentionRules delete --id 12345
@@ -140,6 +145,13 @@ endpoints:
           beforeEach:
             - $RetentionRule = New-RetentionRule -DataType ALARM -MaximumAge 365
           command: Update-RetentionRule -Id $RetentionRule.id -DataType MEASUREMENT -FragmentType "custom_FragmentType"
+          afterEach:
+            - Remove-RetentionRule -Id $RetentionRule.id
+
+        - description: Update a retention rule (using pipeline)
+          beforeEach:
+            - $RetentionRule = New-RetentionRule -DataType ALARM -MaximumAge 365
+          command: Get-RetentionRule -Id $RetentionRule.id | Update-RetentionRule -DataType MEASUREMENT -FragmentType "custom_FragmentType"
           afterEach:
             - Remove-RetentionRule -Id $RetentionRule.id
 

@@ -10,6 +10,10 @@ Describe -Name "Update-RetentionRule" {
         $Response = PSC8y\Update-RetentionRule -Id $RetentionRule.id -DataType MEASUREMENT -FragmentType "custom_FragmentType"
         $LASTEXITCODE | Should -Be 0
     }
+    It "Update a retention rule (using pipeline)" {
+        $Response = PSC8y\Get-RetentionRule -Id $RetentionRule.id | Update-RetentionRule -DataType MEASUREMENT -FragmentType "custom_FragmentType"
+        $LASTEXITCODE | Should -Be 0
+    }
 
     AfterEach {
         Remove-RetentionRule -Id $RetentionRule.id
