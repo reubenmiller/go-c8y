@@ -26,8 +26,8 @@ func newGetExternalIDCollectionCmd() *getExternalIDCollectionCmd {
 		Short: "Get a collection of external ids based on filter parameters",
 		Long:  `Get a collection of external ids based on filter parameters`,
 		Example: `
+$ c8y identity list
 Get a list of external ids
-c8y identity list
 		`,
 		RunE: ccmd.getExternalIDCollection,
 	}

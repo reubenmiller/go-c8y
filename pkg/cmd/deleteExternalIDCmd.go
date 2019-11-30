@@ -26,7 +26,8 @@ func newDeleteExternalIDCmd() *deleteExternalIDCmd {
 		Short: "Delete external id",
 		Long:  ``,
 		Example: `
-
+$ c8y identity delete --type test --name myserialnumber
+Delete external identity
 		`,
 		RunE: ccmd.deleteExternalID,
 	}

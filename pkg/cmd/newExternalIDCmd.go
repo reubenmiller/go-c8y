@@ -26,7 +26,8 @@ func newNewExternalIDCmd() *newExternalIDCmd {
 		Short: "Create a new external id",
 		Long:  `Create a new external id`,
 		Example: `
-
+$ c8y identity create --device 1234 --type test --name myserialnumber
+Create external identity
 		`,
 		RunE: ccmd.newExternalID,
 	}
