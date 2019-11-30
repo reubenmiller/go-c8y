@@ -4,6 +4,10 @@ Function Get-Measurement {
 .SYNOPSIS
 Get measurement/s
 
+.EXAMPLE
+PS> Get-Measurement -Id $Measurement.id
+Get measurement
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

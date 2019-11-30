@@ -26,8 +26,8 @@ func newGetMeasurementCollectionCmd() *getMeasurementCollectionCmd {
 		Short: "Get a collection of measurements based on filter parameters",
 		Long:  `Get a collection of measurements based on filter parameters`,
 		Example: `
+$ c8y measurements list
 Get a list of measurements
-c8y measurement list
 		`,
 		RunE: ccmd.getMeasurementCollection,
 	}
@@ -38,7 +38,7 @@ c8y measurement list
 	cmd.Flags().String("type", "", "Measurement type.")
 	cmd.Flags().String("valueFragmentType", "", "value fragment type")
 	cmd.Flags().String("valueFragmentSeries", "", "value fragment series")
-	cmd.Flags().String("fragmentType", "", "Fragment name from measurement.")
+	cmd.Flags().String("fragmentType", "", "Fragment name from measurement (deprecated).")
 	cmd.Flags().String("dateFrom", "", "Start date or date and time of measurement occurrence.")
 	cmd.Flags().String("dateTo", "", "End date or date and time of measurement occurrence.")
 	cmd.Flags().Bool("revert", false, "Return the newest instead of the oldest measurements. Must be used with dateFrom and dateTo parameters")

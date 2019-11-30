@@ -26,11 +26,8 @@ func newGetMeasurementSeriesCmd() *getMeasurementSeriesCmd {
 		Short: "Get a collection of measurements based on filter parameters",
 		Long:  `Get a collection of measurements based on filter parameters`,
 		Example: `
-Get a list of measurement series
-c8y measurement getSeries
-
+$ c8y measurements getSeries -source 12345 --series nx_WEA_29_Delta.MDL10FG001 --series nx_WEA_29_Delta.ST9 --dateFrom "-10min"
 Get a list of series [nx_WEA_29_Delta.MDL10FG001] and [nx_WEA_29_Delta.ST9] for device 12345
-measurement getSeries --source 12345 --series nx_WEA_29_Delta.MDL10FG001 --series nx_WEA_29_Delta.ST9 --dateFrom (Get-C8yDate (last 10min)) --dateTo (Get-C8yDate (last 0min))
 		`,
 		RunE: ccmd.getMeasurementSeries,
 	}
@@ -41,11 +38,10 @@ measurement getSeries --source 12345 --series nx_WEA_29_Delta.MDL10FG001 --serie
 	cmd.Flags().StringSlice("series", []string{""}, "measurement type and series name, e.g. c8y_AccelerationMeasurement.acceleration")
 	cmd.Flags().String("aggregationType", "", "Fragment name from measurement.")
 	cmd.Flags().String("dateFrom", "", "Start date or date and time of measurement occurrence. (required)")
-	cmd.Flags().String("dateTo", "", "End date or date and time of measurement occurrence. (required)")
+	cmd.Flags().String("dateTo", "0s", "End date or date and time of measurement occurrence.")
 
 	// Required flags
 	cmd.MarkFlagRequired("dateFrom")
-	cmd.MarkFlagRequired("dateTo")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

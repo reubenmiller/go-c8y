@@ -4,6 +4,10 @@ Function Remove-MeasurementCollection {
 .SYNOPSIS
 Delete a collection of measurements
 
+.EXAMPLE
+PS> Remove-MeasurementCollection -Device $Measurement.source.id
+Delete measurement collection for a device
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -33,7 +37,7 @@ Delete a collection of measurements
         [string]
         $ValueFragmentSeries,
 
-        # Fragment name from measurement.
+        # Fragment name from measurement (deprecated).
         [Parameter()]
         [string]
         $FragmentType,

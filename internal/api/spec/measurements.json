@@ -11,14 +11,6 @@
       "method": "GET",
       "description": "Get a collection of measurements based on filter parameters",
       "descriptionLong": "Get a collection of measurements based on filter parameters",
-      "examples": {
-        "powershell": [
-          "Get a list of measurements\nGet-MeasurementCollection"
-        ],
-        "go": [
-          "Get a list of measurements\nc8y measurement list"
-        ]
-      },
       "path": "measurement/measurements",
       "accept": "application/vnd.com.nsn.cumulocity.measurementCollection+json",
       "collectionType": "application/vnd.com.nsn.cumulocity.measurement+json",
@@ -26,6 +18,31 @@
       "alias": {
         "go": "list",
         "powershell": "Get-MeasurementCollection"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get a list of measurements",
+            "command": "Get-MeasurementCollection"
+          },
+          {
+            "description": "Get a list of measurements for a particular device",
+            "beforeEach": [
+              "$Device = PSC8y\\New-TestDevice",
+              "$Measurement = New-TestMeasurement -Device $Device.id -Type \"TempReading\""
+            ],
+            "command": "Get-MeasurementCollection -Device $Device.id -Type \"TempReading\"",
+            "afterEach": [
+              "PSC8y\\Remove-ManagedObject -Id $Device.id"
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Get a list of measurements",
+            "command": "c8y measurements list"
+          }
+        ]
       },
       "headerParameters": [
         {
@@ -79,7 +96,7 @@
           "name": "fragmentType",
           "type": "string",
           "deprecated": true,
-          "description": "Fragment name from measurement."
+          "description": "Fragment name from measurement (deprecated)."
         },
         {
           "name": "dateFrom",
@@ -103,20 +120,42 @@
       "method": "GET",
       "description": "Get a collection of measurements based on filter parameters",
       "descriptionLong": "Get a collection of measurements based on filter parameters",
-      "examples": {
-        "powershell": [
-          "Get measurement series\nGet-MeasurementSeries"
-        ],
-        "go": [
-          "Get a list of measurement series\nc8y measurement getSeries",
-          "Get a list of series [nx_WEA_29_Delta.MDL10FG001] and [nx_WEA_29_Delta.ST9] for device 12345\nmeasurement getSeries --source 12345 --series nx_WEA_29_Delta.MDL10FG001 --series nx_WEA_29_Delta.ST9 --dateFrom (Get-C8yDate (last 10min)) --dateTo (Get-C8yDate (last 0min))"
-        ]
-      },
       "path": "measurement/measurements/series",
       "accept": "application/json",
       "alias": {
         "go": "getSeries",
         "powershell": "Get-MeasurementSeries"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get a list of measurements for a particular device",
+            "beforeEach": [
+              "$Device = PSC8y\\New-TestDevice",
+              "$Measurement = New-TestMeasurement -Device $Device.id -Type \"TempReading\" -ValueFragmentType \"c8y_Temperature\" -ValueFragmentSeries \"T\""
+            ],
+            "command": "Get-MeasurementSeries -Device $Device.id -Series \"c8y_Temperature.T\" -DateFrom \"1970-01-01\" -DateTo \"0s\"",
+            "afterEach": [
+              "PSC8y\\Remove-ManagedObject -Id $Device.id"
+            ]
+          },
+          {
+            "description": "Get measurement series c8y_Temperature.T on a device",
+            "beforeEach": [
+              "$Measurement2 = New-TestMeasurement -Type \"TempReading\" -ValueFragmentType \"c8y_Temperature\" -ValueFragmentSeries \"T\""
+            ],
+            "command": "Get-MeasurementSeries -Device $Measurement2.source.id -Series \"c8y_Temperature.T\" -DateFrom \"1970-01-01\" -DateTo \"0s\"",
+            "afterEach": [
+              "PSC8y\\Remove-ManagedObject -Id $Measurement2.source.id"
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Get a list of series [nx_WEA_29_Delta.MDL10FG001] and [nx_WEA_29_Delta.ST9] for device 12345",
+            "command": "c8y measurements getSeries -source 12345 --series nx_WEA_29_Delta.MDL10FG001 --series nx_WEA_29_Delta.ST9 --dateFrom \"-10min\" --dateTo \"0s\""
+          }
+        ]
       },
       "queryParameters": [
         {
@@ -133,7 +172,6 @@
         {
           "name": "aggregationType",
           "type": "string",
-          "deprecated": true,
           "description": "Fragment name from measurement.",
           "validateSet": [
             "DAILY",
@@ -150,7 +188,8 @@
         {
           "name": "dateTo",
           "type": "datetime",
-          "required": true,
+          "required": false,
+          "default": "0s",
           "description": "End date or date and time of measurement occurrence."
         }
       ]
@@ -164,6 +203,26 @@
       "alias": {
         "go": "get",
         "powershell": "Get-Measurement"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get measurement",
+            "beforeEach": [
+              "$Measurement = New-TestMeasurement"
+            ],
+            "command": "Get-Measurement -Id $Measurement.id",
+            "afterEach": [
+              "PSC8y\\Remove-ManagedObject -Id $Measurement.source.id"
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Get measurement",
+            "command": "c8y measurements get --id 12345"
+          }
+        ]
       },
       "pathParameters": [
         {
@@ -184,6 +243,20 @@
       "alias": {
         "go": "create",
         "powershell": "New-Measurement"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Create measurement",
+            "command": "New-Measurement -Device {{ randomdevice }} -Time \"0s\" -Type \"myType\" -Data @{ c8y_Winding = @{ temperature = @{ value = 1.2345; unit = \"°C\" } } }"
+          }
+        ],
+        "go": [
+          {
+            "description": "Create measurement",
+            "command": "c8y measurements create --id 12345 --time \"0s\" --type \"myType\" --data \"{\\\"c8y_Winding\\\":{ \\\"temperature\\\":{\\\"value\\\": 1.2345,\\\"unit\\\":\\\"°C\\\"}}}\""
+          }
+        ]
       },
       "body": [
         {
@@ -223,6 +296,26 @@
         "go": "delete",
         "powershell": "Remove-Measurement"
       },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Delete measurement",
+            "beforeEach": [
+              "$Measurement = New-TestMeasurement"
+            ],
+            "command": "Remove-Measurement -id $Measurement.id",
+            "afterEach": [
+              "PSC8y\\Remove-ManagedObject -Id $Measurement.source.id"
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Delete measurement",
+            "command": "c8y measurements delete --id 12345"
+          }
+        ]
+      },
       "pathParameters": [
         {
           "name": "id",
@@ -242,6 +335,26 @@
       "alias": {
         "go": "deleteCollection",
         "powershell": "Remove-MeasurementCollection"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Delete measurement collection for a device",
+            "beforeEach": [
+              "$Measurement = New-TestMeasurement"
+            ],
+            "command": "Remove-MeasurementCollection -Device $Measurement.source.id",
+            "afterEach": [
+              "PSC8y\\Remove-ManagedObject -Id $Measurement.source.id"
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Delete measurement collection for a device",
+            "command": "c8y measurements deleteCollection --device $Measurement.source.id"
+          }
+        ]
       },
       "queryParameters": [
         {
@@ -269,7 +382,7 @@
           "name": "fragmentType",
           "type": "string",
           "deprecated": true,
-          "description": "Fragment name from measurement."
+          "description": "Fragment name from measurement (deprecated)."
         },
         {
           "name": "dateFrom",

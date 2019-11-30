@@ -26,7 +26,8 @@ func newDeleteMeasurementCollectionCmd() *deleteMeasurementCollectionCmd {
 		Short: "Delete a collection of measurements",
 		Long:  ``,
 		Example: `
-
+$ c8y measurements deleteCollection --device $Measurement.source.id
+Delete measurement collection for a device
 		`,
 		RunE: ccmd.deleteMeasurementCollection,
 	}
@@ -37,7 +38,7 @@ func newDeleteMeasurementCollectionCmd() *deleteMeasurementCollectionCmd {
 	cmd.Flags().String("type", "", "Measurement type.")
 	cmd.Flags().String("valueFragmentType", "", "value fragment type")
 	cmd.Flags().String("valueFragmentSeries", "", "value fragment series")
-	cmd.Flags().String("fragmentType", "", "Fragment name from measurement.")
+	cmd.Flags().String("fragmentType", "", "Fragment name from measurement (deprecated).")
 	cmd.Flags().String("dateFrom", "", "Start date or date and time of measurement occurrence.")
 	cmd.Flags().String("dateTo", "", "End date or date and time of measurement occurrence.")
 

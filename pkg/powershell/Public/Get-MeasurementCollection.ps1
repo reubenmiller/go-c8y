@@ -8,8 +8,12 @@ Get a collection of measurements based on filter parameters
 Get a collection of measurements based on filter parameters
 
 .EXAMPLE
+PS> Get-MeasurementCollection
 Get a list of measurements
-Get-MeasurementCollection
+
+.EXAMPLE
+PS> Get-MeasurementCollection -Device $Device.id -Type "TempReading"
+Get a list of measurements for a particular device
 
 
 #>
@@ -40,7 +44,7 @@ Get-MeasurementCollection
         [string]
         $ValueFragmentSeries,
 
-        # Fragment name from measurement.
+        # Fragment name from measurement (deprecated).
         [Parameter()]
         [string]
         $FragmentType,

@@ -4,6 +4,10 @@ Function Remove-Measurement {
 .SYNOPSIS
 Delete measurement/s
 
+.EXAMPLE
+PS> Remove-Measurement -id $Measurement.id
+Delete measurement
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

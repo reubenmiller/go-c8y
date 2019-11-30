@@ -8,8 +8,12 @@ Get a collection of measurements based on filter parameters
 Get a collection of measurements based on filter parameters
 
 .EXAMPLE
-Get measurement series
-Get-MeasurementSeries
+PS> Get-MeasurementSeries -Device $Device.id -Series "c8y_Temperature.T" -DateFrom "1970-01-01" -DateTo "0s"
+Get a list of measurements for a particular device
+
+.EXAMPLE
+PS> Get-MeasurementSeries -Device $Measurement2.source.id -Series "c8y_Temperature.T" -DateFrom "1970-01-01" -DateTo "0s"
+Get measurement series c8y_Temperature.T on a device
 
 
 #>
@@ -40,8 +44,8 @@ Get-MeasurementSeries
         [string]
         $DateFrom,
 
-        # End date or date and time of measurement occurrence. (required)
-        [Parameter(Mandatory = $true)]
+        # End date or date and time of measurement occurrence.
+        [Parameter()]
         [string]
         $DateTo,
 
