@@ -4,6 +4,14 @@ Function Remove-Group {
 .SYNOPSIS
 Delete a new group
 
+.EXAMPLE
+PS> Remove-Group -Id $Group.id
+Delete a user group
+
+.EXAMPLE
+PS> Get-GroupByName -Name $Group.name | Remove-Group
+Delete a user group (using pipeline)
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

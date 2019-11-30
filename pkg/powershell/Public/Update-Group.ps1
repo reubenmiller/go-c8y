@@ -4,6 +4,14 @@ Function Update-Group {
 .SYNOPSIS
 Update a new group
 
+.EXAMPLE
+PS> Update-Group -Id $Group -Name "customGroup2"
+Update a user group
+
+.EXAMPLE
+PS> Get-GroupByName -Name $Group.name | Update-Group -Name "customGroup2"
+Update a user group (using pipeline)
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

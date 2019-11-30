@@ -4,6 +4,10 @@ Function Get-Group {
 .SYNOPSIS
 Create a new group by id
 
+.EXAMPLE
+PS> Get-Group -Id $Group.id
+Get a user group
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

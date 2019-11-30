@@ -26,7 +26,8 @@ func newGetGroupReferenceCollectionCmd() *getGroupReferenceCollectionCmd {
 		Short: "Get information about all groups of a user",
 		Long:  ``,
 		Example: `
-
+$ c8y userGroups listReferences --username "myuser"
+Get a list of groups that a user belongs to
 		`,
 		RunE: ccmd.getGroupReferenceCollection,
 	}
@@ -113,7 +114,7 @@ func (n *getGroupReferenceCollectionCmd) doGetGroupReferenceCollection(method st
 		var responseText []byte
 
 		if filters != nil && !globalFlagRaw {
-			responseText = filters.Apply(*resp.JSONData, "todo")
+			responseText = filters.Apply(*resp.JSONData, "references.group")
 		} else {
 			responseText = []byte(*resp.JSONData)
 		}

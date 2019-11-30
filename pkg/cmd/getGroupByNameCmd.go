@@ -26,7 +26,8 @@ func newGetGroupByNameCmd() *getGroupByNameCmd {
 		Short: "Get a group by name",
 		Long:  ``,
 		Example: `
-
+$ c8y userGroups getByName --name customGroup1
+Get user group by its name
 		`,
 		RunE: ccmd.getGroupByName,
 	}

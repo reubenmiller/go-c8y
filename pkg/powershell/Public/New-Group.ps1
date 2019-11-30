@@ -4,6 +4,10 @@ Function New-Group {
 .SYNOPSIS
 Create a new group
 
+.EXAMPLE
+PS> New-Group -Name "customGroup1"
+Create a user group
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

@@ -26,7 +26,8 @@ func newGetGroupCmd() *getGroupCmd {
 		Short: "Create a new group by id",
 		Long:  ``,
 		Example: `
-
+$ c8y userGroups get --id 12345
+Get a user group
 		`,
 		RunE: ccmd.getGroup,
 	}

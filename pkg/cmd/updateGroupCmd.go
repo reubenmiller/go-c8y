@@ -26,7 +26,8 @@ func newUpdateGroupCmd() *updateGroupCmd {
 		Short: "Update a new group",
 		Long:  ``,
 		Example: `
-
+$ c8y userGroups update --id 12345 --name "customGroup2"
+Update a user group
 		`,
 		RunE: ccmd.updateGroup,
 	}

@@ -26,7 +26,8 @@ func newDeleteGroupCmd() *deleteGroupCmd {
 		Short: "Delete a new group",
 		Long:  ``,
 		Example: `
-
+$ c8y userGroups delete --id 12345
+Delete a user group
 		`,
 		RunE: ccmd.deleteGroup,
 	}

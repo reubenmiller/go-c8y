@@ -4,6 +4,10 @@ Function Get-GroupByName {
 .SYNOPSIS
 Get a group by name
 
+.EXAMPLE
+PS> Get-GroupByName -Name $Group.name
+Get user group by its name
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

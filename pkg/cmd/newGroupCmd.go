@@ -26,7 +26,8 @@ func newNewGroupCmd() *newGroupCmd {
 		Short: "Create a new group",
 		Long:  ``,
 		Example: `
-
+$ c8y userGroups create --name customGroup1
+Create a user group
 		`,
 		RunE: ccmd.newGroup,
 	}

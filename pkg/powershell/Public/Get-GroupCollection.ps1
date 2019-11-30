@@ -4,6 +4,10 @@ Function Get-GroupCollection {
 .SYNOPSIS
 Get collection of (user) groups
 
+.EXAMPLE
+PS> Get-GroupCollection
+Get a list of user groups for the current tenant
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

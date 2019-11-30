@@ -18,11 +18,17 @@ endpoints:
     alias:
         go: list
         powershell: Get-GroupCollection
+    examples:
+      powershell:
+        - description: Get a list of user groups for the current tenant
+          command: Get-GroupCollection
+      go:
+        - description: Get a list of user groups for the current tenant
+          command: c8y userGroups list
     pathParameters:
       - name: tenant
         type: tenant
         description: Tenant
-
 
 
   - name: newGroup
@@ -33,6 +39,16 @@ endpoints:
     alias:
         go: create
         powershell: New-Group
+    examples:
+      powershell:
+        - description: Create a user group
+          command: New-Group -Name "customGroup1"
+          afterEach:
+            - Get-GroupByName -Name "customGroup1" | Remove-Group
+
+      go:
+        - description: Create a user group
+          command: c8y userGroups create --name customGroup1
     pathParameters:
       - name: tenant
         type: tenant
@@ -51,6 +67,18 @@ endpoints:
     alias:
         go: get
         powershell: Get-Group
+    examples:
+      powershell:
+        - description: Get a user group
+          beforeEach:
+            - $Group = New-TestGroup
+          command: Get-Group -Id $Group.id
+          afterEach:
+            - Remove-Group -Id $Group.id
+
+      go:
+        - description: Get a user group
+          command: c8y userGroups get --id 12345
     pathParameters:
       - name: tenant
         type: tenant
@@ -69,6 +97,18 @@ endpoints:
     alias:
         go: getByName
         powershell: Get-GroupByName
+    examples:
+      powershell:
+        - description: Get user group by its name
+          beforeEach:
+            - $Group = New-TestGroup
+          command: Get-GroupByName -Name $Group.name
+          afterEach:
+            - Remove-Group -Id $Group.id
+
+      go:
+        - description: Get user group by its name
+          command: c8y userGroups getByName --name customGroup1
     pathParameters:
       - name: tenant
         type: tenant
@@ -85,6 +125,21 @@ endpoints:
     alias:
         go: delete
         powershell: Remove-Group
+    examples:
+      powershell:
+        - description: Delete a user group
+          beforeEach:
+            - $Group = New-TestGroup
+          command: Remove-Group -Id $Group.id
+
+        - description: Delete a user group (using pipeline)
+          beforeEach:
+            - $Group = New-TestGroup
+          command: Get-GroupByName -Name $Group.name | Remove-Group
+
+      go:
+        - description: Delete a user group
+          command: c8y userGroups delete --id 12345
     pathParameters:
       - name: tenant
         type: tenant
@@ -103,6 +158,24 @@ endpoints:
     alias:
         go: update
         powershell: Update-Group
+    examples:
+      powershell:
+        - description: Update a user group
+          beforeEach:
+            - $Group = New-TestGroup
+          command: Update-Group -Id $Group -Name "customGroup2"
+          afterEach:
+            - Remove-Group -Id $Group.id
+
+        - description: Update a user group (using pipeline)
+          beforeEach:
+            - $Group = New-TestGroup
+          command: Get-GroupByName -Name $Group.name | Update-Group -Name "customGroup2"
+          afterEach:
+            - Remove-Group -Id $Group.id
+      go:
+        - description: Update a user group
+          command: c8y userGroups update --id 12345 --name "customGroup2"
     pathParameters:
       - name: tenant
         type: tenant
@@ -127,11 +200,20 @@ endpoints:
     method: GET
     path: /user/{tenant}/users/{username}/groups
     accept: 'application/vnd.com.nsn.cumulocity.groupReferenceCollection+json'
-    collectionType: todo
-    listProperty: todo
+    collectionType: application/vnd.com.nsn.cumulocity.groupReference+json
+    listProperty: references.group
     alias:
         go: listReferences
         powershell: Get-GroupReferenceCollection
+    examples:
+      powershell:
+        - description: Get a list of groups that a user belongs to
+          beforeEach:
+            - $User = PSC8y\Get-CurrentUser
+          command: Get-GroupReferenceCollection -Username $User.id
+      go:
+        - description: Get a list of groups that a user belongs to
+          command: c8y userGroups listReferences --username "myuser"
     pathParameters:
       - name: tenant
         type: tenant

@@ -4,6 +4,10 @@ Function Get-GroupReferenceCollection {
 .SYNOPSIS
 Get information about all groups of a user
 
+.EXAMPLE
+PS> Get-GroupReferenceCollection -Username $User.id
+Get a list of groups that a user belongs to
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -89,8 +93,8 @@ Get information about all groups of a user
                 -Verb "listReferences" `
                 -Parameters $Parameters `
                 -Type "application/vnd.com.nsn.cumulocity.groupReferenceCollection+json" `
-                -ItemType "todo" `
-                -ResultProperty "todo" `
+                -ItemType "application/vnd.com.nsn.cumulocity.groupReference+json" `
+                -ResultProperty "references.group" `
                 -Raw:$Raw `
                 -IncludeAll:$IncludeAll
         }
