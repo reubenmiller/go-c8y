@@ -3,7 +3,6 @@
 Describe -Name "Remove-AlarmCollection" {
     BeforeEach {
         $TestDevice = PSC8y\New-TestDevice
-        $TestDevice = PSC8y\New-TestDevice
 
     }
 
@@ -17,9 +16,6 @@ Describe -Name "Remove-AlarmCollection" {
     }
 
     AfterEach {
-        if ($TestDevice.id) {
-            PSC8y\Remove-ManagedObject -Id $TestDevice.id -ErrorAction SilentlyContinue
-        }
         if ($TestDevice.id) {
             PSC8y\Remove-ManagedObject -Id $TestDevice.id -ErrorAction SilentlyContinue
         }
