@@ -113,6 +113,10 @@ endpoints:
     alias:
         go: create
         powershell: New-User
+    pathParameters:
+      - name: tenant
+        type: tenant
+        description: Tenant
     body:
       - name: userName
         type: string
