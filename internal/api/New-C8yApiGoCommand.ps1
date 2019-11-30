@@ -351,6 +351,24 @@ Function Get-C8yGoArgs {
             }
         }
 
+        "^integer$" {
+            try {
+                $DefaultInt = [convert]::ToInt64($Default)
+            } catch {
+                $DefaultInt = 0
+            }
+
+            $SetFlag = if ($UseOption) {
+                'cmd.Flags().IntP("{0}", "{1}", {2}, "{3}")' -f $Name, $OptionName, $DefaultInt, $Description
+            } else {
+                'cmd.Flags().Int("{0}", {1}, "{2}")' -f $Name, $DefaultInt, $Description
+            }
+
+            @{
+                SetFlag = $SetFlag
+            }
+        }
+
         "^tenant$" {
             $SetFlag = if ($UseOption) {
                 'cmd.Flags().StringP("{0}", "{1}", "{2}", "{3}")' -f $Name, $OptionName, $Default, $Description

@@ -30,6 +30,7 @@ Function New-C8yApiGoGetValueFromFlag {
         "[]device" = @{}
         "[]devicegroup" = @{}
         "string" = @{}
+        "integer" = @{}
         "tenant" = @{}
     }
 
@@ -170,6 +171,18 @@ Function New-C8yApiGoGetValueFromFlag {
         if v != "" {
             $($Setters.string.$SetterType)
         }
+    } else {
+        return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "${prop}", err))
+    }
+"@
+
+    # integer
+    $Setters."integer"."query" = "query.Add(`"${queryParam}`", v)"
+    $Setters."integer"."path" = "pathParameters[`"${queryParam}`"] = v"
+    $Setters."integer"."body" = "body.Set(`"${queryParam}`", v)"
+    $Definitions."integer" = @"
+    if v, err := cmd.Flags().GetInt("${prop}"); err == nil {
+        $($Setters.integer.$SetterType)
     } else {
         return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "${prop}", err))
     }
