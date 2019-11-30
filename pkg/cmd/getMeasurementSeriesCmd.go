@@ -26,7 +26,7 @@ func newGetMeasurementSeriesCmd() *getMeasurementSeriesCmd {
 		Short: "Get a collection of measurements based on filter parameters",
 		Long:  `Get a collection of measurements based on filter parameters`,
 		Example: `
-$ c8y measurements getSeries -source 12345 --series nx_WEA_29_Delta.MDL10FG001 --series nx_WEA_29_Delta.ST9 --dateFrom "-10min"
+$ c8y measurements getSeries -source 12345 --series nx_WEA_29_Delta.MDL10FG001 --series nx_WEA_29_Delta.ST9 --dateFrom "-10min" --dateTo "0s"
 Get a list of series [nx_WEA_29_Delta.MDL10FG001] and [nx_WEA_29_Delta.ST9] for device 12345
 		`,
 		RunE: ccmd.getMeasurementSeries,
