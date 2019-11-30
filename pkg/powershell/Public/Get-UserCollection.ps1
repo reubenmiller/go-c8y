@@ -8,8 +8,8 @@ Get a collection of users based on filter parameters
 Get a collection of users based on filter parameters
 
 .EXAMPLE
+PS> Get-UserCollection
 Get a list of users
-Get-UserCollection
 
 
 #>

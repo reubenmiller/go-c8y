@@ -4,6 +4,10 @@ Function Get-User {
 .SYNOPSIS
 Get user
 
+.EXAMPLE
+PS> Get-User -Id $User.id
+Get a user
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

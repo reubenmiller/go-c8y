@@ -2,7 +2,11 @@
 Function Get-CurrentUser {
 <#
 .SYNOPSIS
-Update the current user
+Get user
+
+.EXAMPLE
+PS> Get-CurrentUser
+Get the current user
 
 
 #>
@@ -13,36 +17,6 @@ Update the current user
     [Alias()]
     [OutputType([object])]
     Param(
-        # User first name
-        [Parameter()]
-        [string]
-        $FirstName,
-
-        # User last name
-        [Parameter()]
-        [string]
-        $LastName,
-
-        # User phone number. Format: '+[country code][number]', has to be a valid MSISDN
-        [Parameter()]
-        [string]
-        $Phone,
-
-        # User email address
-        [Parameter()]
-        [string]
-        $Email,
-
-        # User activation status (true/false)
-        [Parameter()]
-        [string]
-        $Enabled,
-
-        # User password. Min: 6, max: 32 characters. Only Latin1 chars allowed
-        [Parameter()]
-        [string]
-        $Password,
-
         # Include raw response including pagination information
         [Parameter()]
         [switch]
@@ -51,34 +25,11 @@ Update the current user
         # Session path
         [Parameter()]
         [string]
-        $Session,
-
-        # Don't prompt for confirmation
-        [Parameter()]
-        [switch]
-        $Force
+        $Session
     )
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("FirstName")) {
-            $Parameters["firstName"] = $FirstName
-        }
-        if ($PSBoundParameters.ContainsKey("LastName")) {
-            $Parameters["lastName"] = $LastName
-        }
-        if ($PSBoundParameters.ContainsKey("Phone")) {
-            $Parameters["phone"] = $Phone
-        }
-        if ($PSBoundParameters.ContainsKey("Email")) {
-            $Parameters["email"] = $Email
-        }
-        if ($PSBoundParameters.ContainsKey("Enabled")) {
-            $Parameters["enabled"] = $Enabled
-        }
-        if ($PSBoundParameters.ContainsKey("Password")) {
-            $Parameters["password"] = $Password
-        }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
         }

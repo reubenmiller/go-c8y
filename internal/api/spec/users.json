@@ -15,6 +15,20 @@
       "alias": {
         "go": "getCurrentUser",
         "powershell": "Get-CurrentUser"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get the current user",
+            "command": "Get-CurrentUser"
+          }
+        ],
+        "go": [
+          {
+            "description": "Get the current user",
+            "command": "c8y users getCurrentUser"
+          }
+        ]
       }
     },
     {
@@ -24,8 +38,8 @@
       "path": "/user/currentUser",
       "accept": "application/vnd.com.nsn.cumulocity.currentUser+json",
       "alias": {
-        "go": "getCurrentUser",
-        "powershell": "Get-CurrentUser"
+        "go": "updateCurrentUser",
+        "powershell": "Update-CurrentUser"
       },
       "body": [
         {
@@ -75,14 +89,6 @@
       "method": "GET",
       "description": "Get a collection of users based on filter parameters",
       "descriptionLong": "Get a collection of users based on filter parameters",
-      "examples": {
-        "powershell": [
-          "Get a list of users\nGet-UserCollection"
-        ],
-        "go": [
-          "retrieve users, where username starts with 'js', and every user belongs to one of the groups 2, 3 or 4, and the owner is 'admin', and is not a device user.\nc8y user list --username js --groups 2,3,4 --owner admin"
-        ]
-      },
       "path": "/user/{tenant}/users",
       "accept": "application/vnd.com.nsn.cumulocity.userCollection+json",
       "collectionType": "application/vnd.com.nsn.cumulocity.user+json",
@@ -90,6 +96,20 @@
       "alias": {
         "go": "list",
         "powershell": "Get-UserCollection"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get a list of users",
+            "command": "Get-UserCollection"
+          }
+        ],
+        "go": [
+          {
+            "description": "Get a list of users",
+            "command": "c8y users list"
+          }
+        ]
       },
       "pathParameters": [
         {
@@ -135,6 +155,26 @@
       "alias": {
         "go": "create",
         "powershell": "New-User"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Create a user",
+            "beforeEach": [
+              "$NewPassword = [guid]::NewGuid().Guid.Substring(1,10)"
+            ],
+            "command": "New-user -Username \"testuser1\" -Password \"$NewPassword\"",
+            "afterEach": [
+              "Get-UserByName -Name \"testuser1\" | Remove-User"
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Create a user",
+            "command": "c8y users create --userName \"testuser1\" --password \"a0)8k2kld9lm,!\""
+          }
+        ]
       },
       "pathParameters": [
         {
@@ -214,6 +254,26 @@
         "go": "get",
         "powershell": "Get-User"
       },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get a user",
+            "beforeEach": [
+              "$User = PSC8y\\New-TestUser"
+            ],
+            "command": "Get-User -Id $User.id",
+            "afterEach": [
+              "Remove-User -Id $User.id"
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Get a user",
+            "command": "c8y users get --id \"myuser\""
+          }
+        ]
+      },
       "pathParameters": [
         {
           "name": "tenant",
@@ -237,8 +297,28 @@
       "path": "user/{tenant}/userByName/{name}",
       "accept": "application/vnd.com.nsn.cumulocity.user+json",
       "alias": {
-        "go": "get",
+        "go": "getUserByName",
         "powershell": "Get-UserByName"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get a user by name",
+            "beforeEach": [
+              "$User = PSC8y\\New-TestUser"
+            ],
+            "command": "Get-UserByName -Name $User.userName",
+            "afterEach": [
+              "Remove-User -Id $User.id"
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Get a user by name",
+            "command": "c8y users getUserByName --name \"myuser\""
+          }
+        ]
       },
       "pathParameters": [
         {
@@ -264,6 +344,23 @@
       "alias": {
         "go": "delete",
         "powershell": "Remove-User"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Delete a user",
+            "beforeEach": [
+              "$User = PSC8y\\New-TestUser"
+            ],
+            "command": "Remove-User -Id $User.id"
+          }
+        ],
+        "go": [
+          {
+            "description": "Delete a user",
+            "command": "c8y users delete --id \"myuser\""
+          }
+        ]
       },
       "pathParameters": [
         {
@@ -291,6 +388,38 @@
         "go": "update",
         "powershell": "Update-User"
       },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Update a user",
+            "beforeEach": [
+              "$User = PSC8y\\New-TestUser"
+            ],
+            "command": "Update-User -Id $User.id -FirstName \"Simon\""
+          }
+        ],
+        "go": [
+          {
+            "description": "Update a user",
+            "command": "c8y users update --id \"myuser\" --firstName \"Simon\""
+          }
+        ]
+      },
+      "pathParameters": [
+        {
+          "name": "tenant",
+          "type": "tenant",
+          "required": false,
+          "description": "Tenant"
+        },
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "pipeline": true,
+          "description": "User id"
+        }
+      ],
       "body": [
         {
           "name": "firstName",

@@ -26,13 +26,16 @@ func newUpdateUserCmd() *updateUserCmd {
 		Short: "Update user",
 		Long:  ``,
 		Example: `
-
+$ c8y users update --id "myuser" --firstName "Simon"
+Update a user
 		`,
 		RunE: ccmd.updateUser,
 	}
 
 	cmd.SilenceUsage = true
 
+	cmd.Flags().String("tenant", "", "Tenant")
+	cmd.Flags().String("id", "", "User id (required)")
 	cmd.Flags().String("firstName", "", "User first name")
 	cmd.Flags().String("lastName", "", "User last name")
 	cmd.Flags().String("phone", "", "User phone number. Format: '+[country code][number]', has to be a valid MSISDN")
@@ -43,6 +46,7 @@ func newUpdateUserCmd() *updateUserCmd {
 	addDataFlag(cmd)
 
 	// Required flags
+	cmd.MarkFlagRequired("id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
@@ -126,6 +130,16 @@ func (n *updateUserCmd) updateUser(cmd *cobra.Command, args []string) error {
 
 	// path parameters
 	pathParameters := make(map[string]string)
+	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
+		pathParameters["tenant"] = v
+	}
+	if v, err := cmd.Flags().GetString("id"); err == nil {
+		if v != "" {
+			pathParameters["id"] = v
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "id", err))
+	}
 
 	path := replacePathParameters("user/{tenant}/users/{id}", pathParameters)
 

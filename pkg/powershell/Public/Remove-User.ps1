@@ -4,6 +4,10 @@ Function Remove-User {
 .SYNOPSIS
 Delete user
 
+.EXAMPLE
+PS> Remove-User -Id $User.id
+Delete a user
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

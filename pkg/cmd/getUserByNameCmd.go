@@ -22,11 +22,12 @@ func newGetUserByNameCmd() *getUserByNameCmd {
 	ccmd := &getUserByNameCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "get",
+		Use:   "getUserByName",
 		Short: "Get user by username",
 		Long:  ``,
 		Example: `
-
+$ c8y users getUserByName --name "myuser"
+Get a user by name
 		`,
 		RunE: ccmd.getUserByName,
 	}

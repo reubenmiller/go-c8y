@@ -4,6 +4,10 @@ Function Update-User {
 .SYNOPSIS
 Update user
 
+.EXAMPLE
+PS> Update-User -Id $User.id -FirstName "Simon"
+Update a user
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -13,6 +17,18 @@ Update user
     [Alias()]
     [OutputType([object])]
     Param(
+        # Tenant
+        [Parameter()]
+        [object]
+        $Tenant,
+
+        # User id (required)
+        [Parameter(Mandatory = $true,
+                   ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true)]
+        [string]
+        $Id,
+
         # User first name
         [Parameter()]
         [string]
@@ -71,6 +87,9 @@ Update user
 
     Begin {
         $Parameters = @{}
+        if ($PSBoundParameters.ContainsKey("Tenant")) {
+            $Parameters["tenant"] = $Tenant
+        }
         if ($PSBoundParameters.ContainsKey("FirstName")) {
             $Parameters["firstName"] = $FirstName
         }
@@ -102,7 +121,10 @@ Update user
     }
 
     Process {
-        foreach ($item in @("")) {
+        foreach ($item in (PSC8y\Expand-Id $Id)) {
+            if ($item) {
+                $Parameters["id"] = if ($item.id) { $item.id } else { $item }
+            }
 
             if (!$Force -and
                 !$WhatIfPreference -and

@@ -4,6 +4,10 @@ Function Get-UserByName {
 .SYNOPSIS
 Get user by username
 
+.EXAMPLE
+PS> Get-UserByName -Name $User.userName
+Get a user by name
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -62,7 +66,7 @@ Get user by username
 
             Invoke-Command `
                 -Noun "users" `
-                -Verb "get" `
+                -Verb "getUserByName" `
                 -Parameters $Parameters `
                 -Type "application/vnd.com.nsn.cumulocity.user+json" `
                 -ItemType "" `

@@ -26,7 +26,8 @@ func newGetUserCmd() *getUserCmd {
 		Short: "Get user",
 		Long:  ``,
 		Example: `
-
+$ c8y users get --id "myuser"
+Get a user
 		`,
 		RunE: ccmd.getUser,
 	}

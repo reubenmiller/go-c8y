@@ -26,7 +26,8 @@ func newDeleteUserCmd() *deleteUserCmd {
 		Short: "Delete user",
 		Long:  ``,
 		Example: `
-
+$ c8y users delete --id "myuser"
+Delete a user
 		`,
 		RunE: ccmd.deleteUser,
 	}
