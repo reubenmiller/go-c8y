@@ -4,6 +4,10 @@ Function Get-RoleCollection {
 .SYNOPSIS
 Get collection of user roles
 
+.EXAMPLE
+PS> Get-RoleCollection -PageSize 100
+Get a list of roles
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -13,16 +17,6 @@ Get collection of user roles
     [Alias()]
     [OutputType([object])]
     Param(
-        # Tenant
-        [Parameter()]
-        [object]
-        $Tenant,
-
-        # Username (required)
-        [Parameter(Mandatory = $true)]
-        [string]
-        $Username,
-
         # Maximum number of results
         [Parameter()]
         [AllowNull()]
@@ -54,12 +48,6 @@ Get collection of user roles
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("Tenant")) {
-            $Parameters["tenant"] = $Tenant
-        }
-        if ($PSBoundParameters.ContainsKey("Username")) {
-            $Parameters["username"] = $Username
-        }
         if ($PSBoundParameters.ContainsKey("PageSize")) {
             $Parameters["pageSize"] = $PageSize
         }
@@ -89,8 +77,8 @@ Get collection of user roles
                 -Verb "list" `
                 -Parameters $Parameters `
                 -Type "application/vnd.com.nsn.cumulocity.roleCollection+json" `
-                -ItemType "" `
-                -ResultProperty "" `
+                -ItemType "application/vnd.com.nsn.cumulocity.role+json" `
+                -ResultProperty "roles" `
                 -Raw:$Raw `
                 -IncludeAll:$IncludeAll
         }

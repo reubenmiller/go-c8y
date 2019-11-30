@@ -26,7 +26,8 @@ func newAddRoleToUserCmd() *addRoleToUserCmd {
 		Short: "Add role to a user",
 		Long:  ``,
 		Example: `
-
+$ c8y userRoles addRoleTouser --username "myuser" --role "ROLE_ALARM_READ"
+Get a role (ROLE_ALARM_READ) to a user
 		`,
 		RunE: ccmd.addRoleToUser,
 	}

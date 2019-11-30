@@ -4,6 +4,10 @@ Function Add-RoleToUser {
 .SYNOPSIS
 Add role to a user
 
+.EXAMPLE
+PS> Add-RoleToUser -Username $User.id -Role "ROLE_ALARM_READ"
+Get a role (ROLE_ALARM_READ) to a user
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

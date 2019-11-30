@@ -13,6 +13,11 @@ Create a new user within the collection
     [Alias()]
     [OutputType([object])]
     Param(
+        # Tenant
+        [Parameter()]
+        [object]
+        $Tenant,
+
         # User name, unique for a given domain. Max: 1000 characters (required)
         [Parameter(Mandatory = $true)]
         [string]
@@ -76,6 +81,9 @@ Create a new user within the collection
 
     Begin {
         $Parameters = @{}
+        if ($PSBoundParameters.ContainsKey("Tenant")) {
+            $Parameters["tenant"] = $Tenant
+        }
         if ($PSBoundParameters.ContainsKey("UserName")) {
             $Parameters["userName"] = $UserName
         }

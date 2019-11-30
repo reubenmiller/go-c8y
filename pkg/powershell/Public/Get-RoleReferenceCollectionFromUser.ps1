@@ -4,6 +4,10 @@ Function Get-RoleReferenceCollectionFromUser {
 .SYNOPSIS
 Get collection of user role references from a user
 
+.EXAMPLE
+PS> Get-RoleReferenceCollectionFromUser -Username $User.id
+Get a list of role references for a user
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

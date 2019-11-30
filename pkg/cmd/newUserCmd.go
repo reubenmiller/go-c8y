@@ -33,6 +33,7 @@ func newNewUserCmd() *newUserCmd {
 
 	cmd.SilenceUsage = true
 
+	cmd.Flags().String("tenant", "", "Tenant")
 	cmd.Flags().String("userName", "", "User name, unique for a given domain. Max: 1000 characters (required)")
 	cmd.Flags().String("firstName", "", "User first name")
 	cmd.Flags().String("lastName", "", "User last name")
@@ -136,6 +137,9 @@ func (n *newUserCmd) newUser(cmd *cobra.Command, args []string) error {
 
 	// path parameters
 	pathParameters := make(map[string]string)
+	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
+		pathParameters["tenant"] = v
+	}
 
 	path := replacePathParameters("user/{tenant}/users", pathParameters)
 

@@ -12,23 +12,26 @@
       "method": "GET",
       "path": "/user/roles",
       "accept": "application/vnd.com.nsn.cumulocity.roleCollection+json",
+      "collectionType": "application/vnd.com.nsn.cumulocity.role+json",
+      "listProperty": "roles",
       "alias": {
         "go": "list",
         "powershell": "Get-RoleCollection"
       },
-      "pathParameters": [
-        {
-          "name": "tenant",
-          "type": "tenant",
-          "description": "Tenant"
-        },
-        {
-          "name": "username",
-          "type": "string",
-          "required": true,
-          "description": "Username"
-        }
-      ]
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get a list of roles",
+            "command": "Get-RoleCollection -PageSize 100"
+          }
+        ],
+        "go": [
+          {
+            "description": "Get a list of roles",
+            "command": "c8y userRoles list --pageSize 100"
+          }
+        ]
+      }
     },
     {
       "name": "addRoleToUser",
@@ -39,6 +42,26 @@
       "alias": {
         "go": "addRoleTouser",
         "powershell": "Add-RoleToUser"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get a role (ROLE_ALARM_READ) to a user",
+            "beforeEach": [
+              "$User = PSC8y\\New-TestUser"
+            ],
+            "command": "Add-RoleToUser -Username $User.id -Role \"ROLE_ALARM_READ\"",
+            "afterEach": [
+              "PSC8y\\Remove-User -Id $User.id"
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Get a role (ROLE_ALARM_READ) to a user",
+            "command": "c8y userRoles addRoleTouser --username \"myuser\" --role \"ROLE_ALARM_READ\""
+          }
+        ]
       },
       "pathParameters": [
         {
@@ -167,6 +190,23 @@
         "go": "getRoleReferenceCollectionFromUser",
         "powershell": "Get-RoleReferenceCollectionFromUser"
       },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get a list of role references for a user",
+            "beforeEach": [
+              "$User = Get-CurrentUser"
+            ],
+            "command": "Get-RoleReferenceCollectionFromUser -Username $User.id"
+          }
+        ],
+        "go": [
+          {
+            "description": "Get a list of role references for a user",
+            "command": "c8y userRoles getRoleReferenceCollectionFromUser --username \"myuser\""
+          }
+        ]
+      },
       "pathParameters": [
         {
           "name": "tenant",
@@ -192,6 +232,23 @@
       "alias": {
         "go": "getRoleReferenceCollectionFromGroup",
         "powershell": "Get-RoleReferenceCollectionFromGroup"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get a list of role references for a user group",
+            "beforeEach": [
+              "$Group = Get-GroupByName -Name \"business\""
+            ],
+            "command": "Get-RoleReferenceCollectionFromGroup -GroupId $Group.id"
+          }
+        ],
+        "go": [
+          {
+            "description": "Get a list of role references for a user group",
+            "command": "c8y userRoles getRoleReferenceCollectionFromGroup --groupId \"12345\""
+          }
+        ]
       },
       "pathParameters": [
         {

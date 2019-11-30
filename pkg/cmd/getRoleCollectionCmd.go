@@ -26,18 +26,15 @@ func newGetRoleCollectionCmd() *getRoleCollectionCmd {
 		Short: "Get collection of user roles",
 		Long:  ``,
 		Example: `
-
+$ c8y userRoles list --pageSize 100
+Get a list of roles
 		`,
 		RunE: ccmd.getRoleCollection,
 	}
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("tenant", "", "Tenant")
-	cmd.Flags().String("username", "", "Username (required)")
-
 	// Required flags
-	cmd.MarkFlagRequired("username")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
@@ -71,16 +68,6 @@ func (n *getRoleCollectionCmd) getRoleCollection(cmd *cobra.Command, args []stri
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
-		pathParameters["tenant"] = v
-	}
-	if v, err := cmd.Flags().GetString("username"); err == nil {
-		if v != "" {
-			pathParameters["username"] = v
-		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "username", err))
-	}
 
 	path := replacePathParameters("/user/roles", pathParameters)
 
@@ -113,7 +100,7 @@ func (n *getRoleCollectionCmd) doGetRoleCollection(method string, path string, q
 		var responseText []byte
 
 		if filters != nil && !globalFlagRaw {
-			responseText = filters.Apply(*resp.JSONData, "")
+			responseText = filters.Apply(*resp.JSONData, "roles")
 		} else {
 			responseText = []byte(*resp.JSONData)
 		}
