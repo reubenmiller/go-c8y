@@ -42,15 +42,24 @@ Function New-C8yApiPowershellCommand {
             @{
                 Command = $iExample.command
                 Description = $iExample.description
+                BeforeEach = $iExample.beforeEach
+                AfterEach = $iExample.afterEach
             }
         }
 
         if ($TestCaseVariables) {
+
+            # Adjust test case template depending if a response is expected or not
+            $TestCaseTemplate = "$PSScriptRoot/powershell/templates/testcase.template.ps1"
+            if ([string]::IsNullOrWhiteSpace($iExample.Accept)) {
+                $TestCaseTemplate = "$PSScriptRoot/powershell/templates/testcase.emptyresponse.template.ps1"
+            }
+
             New-C8yApiPowershellTest `
                 -Name $CmdletName `
                 -TestCaseVariables $TestCaseVariables `
                 -OutFolder "$OutputDir/../Tests" `
-                -TestCaseTemplateFile "$PSScriptRoot/powershell/templates/testcase.template.ps1" `
+                -TestCaseTemplateFile $TestCaseTemplate `
                 -TemplateFile "$PSScriptRoot/powershell/templates/test.template.ps1"
         }
     }

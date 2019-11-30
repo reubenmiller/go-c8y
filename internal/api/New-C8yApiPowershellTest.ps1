@@ -32,6 +32,20 @@ Function New-C8yApiPowershellTest {
     $TestCases = foreach ($TestCase in $TestCaseVariables) {
         $iTestCaseTemplate = "$TestCaseTemplate"
 
+        # Add any explicit before blocks
+        if ($null -ne $TestCase.BeforeEach) {
+            foreach ($statement in $TestCase.BeforeEach) {
+                $null = $BeforeBlock.AppendLine("        $statement")
+            }
+        }
+
+        # Add any explicit before blocks
+        if ($null -ne $TestCase.AfterEach) {
+            foreach ($statement in $TestCase.AfterEach) {
+                $null = $AfterBlock.AppendLine("        $statement")
+            }
+        }
+
         # Replace any random variables
         # TODO: Check if a test device has already been created already in the before block
         #       then the  -ErrorAction silentlycontinue can be removed.
