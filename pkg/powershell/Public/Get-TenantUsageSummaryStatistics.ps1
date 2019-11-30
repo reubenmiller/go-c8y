@@ -7,6 +7,18 @@ Get collection of tenant usage statistics summary
 .DESCRIPTION
 Get summary of requests and database usage from the start of this month until now
 
+.EXAMPLE
+PS> Get-TenantUsageSummaryStatistics
+Get tenant summary statistics for the current tenant
+
+.EXAMPLE
+PS> Get-TenantUsageSummaryStatistics -DateFrom "-30d"
+Get tenant summary statistics collection for the last 30 days
+
+.EXAMPLE
+PS> Get-TenantUsageSummaryStatistics -DateFrom "-10d" -DateTo "-9d"
+Get tenant summary statistics collection for the last 10 days, only return until the last 9 days
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

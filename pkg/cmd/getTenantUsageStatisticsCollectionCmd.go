@@ -26,7 +26,14 @@ func newGetTenantUsageStatisticsCollectionCmd() *getTenantUsageStatisticsCollect
 		Short: "Get collection of tenant usage statistics",
 		Long:  ``,
 		Example: `
+$ c8y tenantStatistics list
+Get tenant statistics collection
 
+$ c8y tenantStatistics list --dateFrom "-30d" --pageSize 30
+Get tenant statistics collection for the last 30 days
+
+$ c8y tenantStatistics list --dateFrom "-10d" --pageSize 30 --dateTo "-9d"
+Get tenant statistics collection for the last 10 days, only return until the last 9 days
 		`,
 		RunE: ccmd.getTenantUsageStatisticsCollection,
 	}

@@ -4,6 +4,18 @@ Function Get-AllTenantUsageSummaryStatistics {
 .SYNOPSIS
 Get collection of tenant usage statistics summary
 
+.EXAMPLE
+PS> Get-AllTenantUsageSummaryStatistics
+Get tenant summary statistics for all tenants
+
+.EXAMPLE
+PS> Get-AllTenantUsageSummaryStatistics -DateFrom "-30d" -PageSize 30
+Get tenant summary statistics collection for the last 30 days
+
+.EXAMPLE
+PS> Get-AllTenantUsageSummaryStatistics -DateFrom "-10d" -DateTo "-9d"
+Get tenant summary statistics collection for the last 10 days, only return until the last 9 days
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
