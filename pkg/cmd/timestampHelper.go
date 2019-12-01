@@ -16,6 +16,7 @@ func parseDurationRelativeToNow(offsetDuration string) (*time.Time, error) {
 
 // getTimestampUsingOffset returns a timestamp relative to a base timestamp
 // example: +1d3w4mo-7y6h4m
+// TODO: an offsetDuration of "30" throws a panic!
 func getTimestampUsingOffset(now time.Time, offsetDuration string) (*time.Time, error) {
 	another, err := tparse.AddDuration(now, offsetDuration)
 	if err != nil {
