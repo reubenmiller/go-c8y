@@ -4,6 +4,10 @@ Function Get-SystemOption {
 .SYNOPSIS
 Get system option
 
+.EXAMPLE
+PS> Get-SystemOption -Category "system" -Key "version"
+Get system option value
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

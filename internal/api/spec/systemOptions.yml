@@ -19,6 +19,14 @@ endpoints:
     alias:
         go: list
         powershell: Get-SystemOptionCollection
+    examples:
+      powershell:
+        - description: Get a list of system options
+          command: Get-SystemOptionCollection
+
+      go:
+        - description: Get a list of system options
+          command: c8y systemOptions list
 
   - name: getSystemOption
     description: 'Get system option'
@@ -28,6 +36,14 @@ endpoints:
     alias:
         go: get
         powershell: Get-SystemOption
+    examples:
+      powershell:
+        - description: Get system option value
+          command: Get-SystemOption -Category "system" -Key "version"
+
+      go:
+        - description: Get a list of system options
+          command: c8y systemOptions get --category "system" --key "version"
     pathParameters:
       - name: category
         type: string
@@ -38,4 +54,3 @@ endpoints:
         type: string
         required: true
         description: System Option key
-

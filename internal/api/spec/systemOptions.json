@@ -18,6 +18,20 @@
       "alias": {
         "go": "list",
         "powershell": "Get-SystemOptionCollection"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get a list of system options",
+            "command": "Get-SystemOptionCollection"
+          }
+        ],
+        "go": [
+          {
+            "description": "Get a list of system options",
+            "command": "c8y systemOptions list"
+          }
+        ]
       }
     },
     {
@@ -29,6 +43,20 @@
       "alias": {
         "go": "get",
         "powershell": "Get-SystemOption"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get system option value",
+            "command": "Get-SystemOption -Category \"system\" -Key \"version\""
+          }
+        ],
+        "go": [
+          {
+            "description": "Get a list of system options",
+            "command": "c8y systemOptions get --category \"system\" --key \"version\""
+          }
+        ]
       },
       "pathParameters": [
         {

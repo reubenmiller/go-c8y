@@ -26,7 +26,8 @@ func newGetSystemOptionCmd() *getSystemOptionCmd {
 		Short: "Get system option",
 		Long:  ``,
 		Example: `
-
+$ c8y systemOptions get --category "system" --key "version"
+Get a list of system options
 		`,
 		RunE: ccmd.getSystemOption,
 	}

@@ -7,6 +7,10 @@ Get collection of system options
 .DESCRIPTION
 This endpoint provides a set of read-only properties pre-defined in platform configuration. The response format is exactly the same as for OptionCollection.
 
+.EXAMPLE
+PS> Get-SystemOptionCollection
+Get a list of system options
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
