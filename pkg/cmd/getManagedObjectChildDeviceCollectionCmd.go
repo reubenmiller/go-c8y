@@ -26,16 +26,18 @@ func newGetManagedObjectChildDeviceCollectionCmd() *getManagedObjectChildDeviceC
 		Short: "Get a collection of managedObjects child references",
 		Long:  `Get a collection of managedObjects child references`,
 		Example: `
-c8y inventoryReferences listChildDevices --device 12345
+$ c8y inventoryReferences listChildDevices --device 12345
+Get a list of the child devices of an existing device
 		`,
 		RunE: ccmd.getManagedObjectChildDeviceCollection,
 	}
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().StringSlice("device", []string{""}, "Device.")
+	cmd.Flags().StringSlice("device", []string{""}, "Device. (required)")
 
 	// Required flags
+	cmd.MarkFlagRequired("device")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

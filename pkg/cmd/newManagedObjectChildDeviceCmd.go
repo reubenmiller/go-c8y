@@ -26,7 +26,8 @@ func newNewManagedObjectChildDeviceCmd() *newManagedObjectChildDeviceCmd {
 		Short: "Create a child device reference",
 		Long:  `Create a child device reference`,
 		Example: `
-
+$ c8y inventoryReferences createChildDevice --device 12345 --newChild 44235
+Assign a device as a child device to an existing device
 		`,
 		RunE: ccmd.newManagedObjectChildDevice,
 	}
@@ -34,10 +35,11 @@ func newNewManagedObjectChildDeviceCmd() *newManagedObjectChildDeviceCmd {
 	cmd.SilenceUsage = true
 
 	cmd.Flags().StringSlice("device", []string{""}, "ManagedObject id (required)")
-	cmd.Flags().StringSlice("child", []string{""}, "new child device")
+	cmd.Flags().StringSlice("newChild", []string{""}, "new child device (required)")
 
 	// Required flags
 	cmd.MarkFlagRequired("device")
+	cmd.MarkFlagRequired("newChild")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
@@ -69,18 +71,18 @@ func (n *newManagedObjectChildDeviceCmd) newManagedObjectChildDevice(cmd *cobra.
 	// body
 	body := mapbuilder.NewMapBuilder()
 	body.SetMap(getDataFlag(cmd))
-	if cmd.Flags().Changed("child") {
-		childInputValues, childValue, err := getFormattedDeviceSlice(cmd, args, "child")
+	if cmd.Flags().Changed("newChild") {
+		newChildInputValues, newChildValue, err := getFormattedDeviceSlice(cmd, args, "newChild")
 
 		if err != nil {
-			return newUserError("no matching devices found", childInputValues, err)
+			return newUserError("no matching devices found", newChildInputValues, err)
 		}
 
-		if len(childValue) == 0 {
-			return newUserError("no matching devices found", childInputValues)
+		if len(newChildValue) == 0 {
+			return newUserError("no matching devices found", newChildInputValues)
 		}
 
-		for _, item := range childValue {
+		for _, item := range newChildValue {
 			if item != "" {
 				body.Set("managedObject.id", newIDValue(item).GetID())
 			}
@@ -138,7 +140,7 @@ func (n *newManagedObjectChildDeviceCmd) doNewManagedObjectChildDevice(method st
 		var responseText []byte
 
 		if filters != nil && !globalFlagRaw {
-			responseText = filters.Apply(*resp.JSONData, "")
+			responseText = filters.Apply(*resp.JSONData, "managedObject")
 		} else {
 			responseText = []byte(*resp.JSONData)
 		}

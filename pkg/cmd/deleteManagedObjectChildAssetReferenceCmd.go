@@ -26,7 +26,8 @@ func newDeleteManagedObjectChildAssetReferenceCmd() *deleteManagedObjectChildAss
 		Short: "Delete child asset reference",
 		Long:  ``,
 		Example: `
-
+$ c8y inventoryReferences deleteChildDevice --device 12345 --childDevice 22553
+Unassign a child device from its parent device
 		`,
 		RunE: ccmd.deleteManagedObjectChildAssetReference,
 	}
@@ -102,7 +103,7 @@ func (n *deleteManagedObjectChildAssetReferenceCmd) deleteManagedObjectChildAsse
 
 		for _, item := range childDeviceValue {
 			if item != "" {
-				pathParameters["childDevice"] = newIDValue(item).GetID()
+				pathParameters["reference"] = newIDValue(item).GetID()
 			}
 		}
 	}
@@ -119,7 +120,7 @@ func (n *deleteManagedObjectChildAssetReferenceCmd) deleteManagedObjectChildAsse
 
 		for _, item := range childGroupValue {
 			if item != "" {
-				pathParameters["childGroup"] = newIDValue(item).GetID()
+				pathParameters["reference"] = newIDValue(item).GetID()
 			}
 		}
 	}

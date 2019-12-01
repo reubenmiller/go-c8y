@@ -26,7 +26,8 @@ func newDeleteManagedObjectChildDeviceReferenceCmd() *deleteManagedObjectChildDe
 		Short: "Delete child device reference",
 		Long:  ``,
 		Example: `
-
+$ c8y inventoryReferences deleteChildDevice --device 12345 --childDevice 22553
+Unassign a child device from its parent device
 		`,
 		RunE: ccmd.deleteManagedObjectChildDeviceReference,
 	}

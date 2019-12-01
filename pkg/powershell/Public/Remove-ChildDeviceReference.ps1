@@ -4,6 +4,10 @@ Function Remove-ChildDeviceReference {
 .SYNOPSIS
 Delete child device reference
 
+.EXAMPLE
+PS> Remove-ChildDeviceReference -Device $Device.id -ChildDevice $ChildDevice.id
+Unassign a child device from its parent device
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

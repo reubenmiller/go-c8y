@@ -8,7 +8,12 @@ Get a collection of managedObjects child references
 Get a collection of managedObjects child references
 
 .EXAMPLE
-Get-ChildDeviceCollection
+PS> Get-ChildDeviceCollection -Device $Device.id
+Get a list of the child devices of an existing device
+
+.EXAMPLE
+PS> Get-ManagedObject -Id $Device.id | Get-ChildDeviceCollection
+Get a list of the child devices of an existing device (using pipeline)
 
 
 #>
@@ -19,8 +24,10 @@ Get-ChildDeviceCollection
     [Alias()]
     [OutputType([object])]
     Param(
-        # Device.
-        [Parameter()]
+        # Device. (required)
+        [Parameter(Mandatory = $true,
+                   ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true)]
         [object[]]
         $Device,
 
@@ -55,9 +62,6 @@ Get-ChildDeviceCollection
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("Device")) {
-            $Parameters["device"] = $Device
-        }
         if ($PSBoundParameters.ContainsKey("PageSize")) {
             $Parameters["pageSize"] = $PageSize
         }
@@ -71,7 +75,10 @@ Get-ChildDeviceCollection
     }
 
     Process {
-        foreach ($item in @("")) {
+        foreach ($item in (PSC8y\Expand-Device $Device)) {
+            if ($item) {
+                $Parameters["device"] = if ($item.id) { $item.id } else { $item }
+            }
 
             if (!$Force -and
                 !$WhatIfPreference -and
@@ -87,7 +94,7 @@ Get-ChildDeviceCollection
                 -Verb "listChildDevices" `
                 -Parameters $Parameters `
                 -Type "application/vnd.com.nsn.cumulocity.managedObjectReferenceCollection+json" `
-                -ItemType "application/vnd.com.nsn.cumulocity.managedObjectReference+json" `
+                -ItemType "application/vnd.com.nsn.cumulocity.managedObject+json" `
                 -ResultProperty "references.managedObject" `
                 -Raw:$Raw `
                 -IncludeAll:$IncludeAll

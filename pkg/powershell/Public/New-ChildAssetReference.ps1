@@ -83,8 +83,8 @@ Create a child asset (device or devicegroup) reference
                 -Verb "createChildAsset" `
                 -Parameters $Parameters `
                 -Type "application/vnd.com.nsn.cumulocity.managedObjectReference+json" `
-                -ItemType "" `
-                -ResultProperty "" `
+                -ItemType "application/vnd.com.nsn.cumulocity.managedObject+json" `
+                -ResultProperty "managedObject" `
                 -Raw:$Raw `
                 -IncludeAll:$IncludeAll
         }

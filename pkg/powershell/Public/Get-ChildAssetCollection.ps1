@@ -8,7 +8,12 @@ Get a collection of managedObjects child references
 Get a collection of managedObjects child references
 
 .EXAMPLE
-Get-ChildAssetCollection
+PS> Get-ChildAssetCollection -Group $Group.id
+Get a list of the child assets of an existing device
+
+.EXAMPLE
+PS> Get-ChildAssetCollection -Group $Group.id
+Get a list of the child assets of an existing group
 
 
 #>
@@ -95,7 +100,7 @@ Get-ChildAssetCollection
                 -Verb "listChildAssets" `
                 -Parameters $Parameters `
                 -Type "application/vnd.com.nsn.cumulocity.managedObjectReferenceCollection+json" `
-                -ItemType "application/vnd.com.nsn.cumulocity.managedObjectReference+json" `
+                -ItemType "application/vnd.com.nsn.cumulocity.managedObject+json" `
                 -ResultProperty "references.managedObject" `
                 -Raw:$Raw `
                 -IncludeAll:$IncludeAll

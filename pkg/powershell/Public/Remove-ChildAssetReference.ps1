@@ -4,6 +4,10 @@ Function Remove-ChildAssetReference {
 .SYNOPSIS
 Delete child asset reference
 
+.EXAMPLE
+PS> Remove-ChildAssetReference -Asset $Group.id -ChildDevice $ChildDevice.id
+Unassign a child device from its parent asset
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

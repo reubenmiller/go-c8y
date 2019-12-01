@@ -156,7 +156,7 @@ func (n *newManagedObjectChildAssetCmd) doNewManagedObjectChildAsset(method stri
 		var responseText []byte
 
 		if filters != nil && !globalFlagRaw {
-			responseText = filters.Apply(*resp.JSONData, "")
+			responseText = filters.Apply(*resp.JSONData, "managedObject")
 		} else {
 			responseText = []byte(*resp.JSONData)
 		}

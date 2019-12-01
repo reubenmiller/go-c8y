@@ -7,6 +7,14 @@ Create a child device reference
 .DESCRIPTION
 Create a child device reference
 
+.EXAMPLE
+PS> New-ChildDeviceReference -Device $Device.id -NewChild $ChildDevice.id
+Assign a device as a child device to an existing device
+
+.EXAMPLE
+PS> Get-ManagedObject -Id $ChildDevice.id | New-ChildDeviceReference -Device $Device.id
+Assign a device as a child device to an existing device (using pipeline)
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -17,16 +25,16 @@ Create a child device reference
     [OutputType([object])]
     Param(
         # ManagedObject id (required)
+        [Parameter(Mandatory = $true)]
+        [object[]]
+        $Device,
+
+        # new child device (required)
         [Parameter(Mandatory = $true,
                    ValueFromPipeline=$true,
                    ValueFromPipelineByPropertyName=$true)]
         [object[]]
-        $Device,
-
-        # new child device
-        [Parameter()]
-        [object[]]
-        $Child,
+        $NewChild,
 
         # Include raw response including pagination information
         [Parameter()]
@@ -46,8 +54,8 @@ Create a child device reference
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("Child")) {
-            $Parameters["child"] = $Child
+        if ($PSBoundParameters.ContainsKey("Device")) {
+            $Parameters["device"] = $Device
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
@@ -56,9 +64,9 @@ Create a child device reference
     }
 
     Process {
-        foreach ($item in (PSC8y\Expand-Device $Device)) {
+        foreach ($item in (PSC8y\Expand-Device $NewChild)) {
             if ($item) {
-                $Parameters["device"] = if ($item.id) { $item.id } else { $item }
+                $Parameters["newChild"] = if ($item.id) { $item.id } else { $item }
             }
 
             if (!$Force -and
@@ -75,8 +83,8 @@ Create a child device reference
                 -Verb "createChildDevice" `
                 -Parameters $Parameters `
                 -Type "application/vnd.com.nsn.cumulocity.managedObjectReference+json" `
-                -ItemType "" `
-                -ResultProperty "" `
+                -ItemType "application/vnd.com.nsn.cumulocity.managedObject+json" `
+                -ResultProperty "managedObject" `
                 -Raw:$Raw `
                 -IncludeAll:$IncludeAll
         }

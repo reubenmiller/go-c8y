@@ -36,25 +36,10 @@
             <TableControl>
                 <TableHeaders>
                     <TableColumnHeader>
-                        <Width>15</Width>
+                        <Width>120</Width>
                     </TableColumnHeader>
                     <TableColumnHeader>
-                        <Width>30</Width>
-                    </TableColumnHeader>
-                    <TableColumnHeader>
-                        <Width>35</Width>
-                    </TableColumnHeader>
-                    <TableColumnHeader>
-                        <Width>30</Width>
-                    </TableColumnHeader>
-                    <TableColumnHeader>
-                        <Width>15</Width>
-                    </TableColumnHeader>
-                    <TableColumnHeader>
-                        <Width>35</Width>
-                    </TableColumnHeader>
-                    <TableColumnHeader>
-                        <Width>30</Width>
+                        <Width>120</Width>
                     </TableColumnHeader>
                 </TableHeaders>
                 <TableRowEntries>
@@ -62,25 +47,10 @@
                         <!-- <Wrap /> -->
                         <TableColumnItems>
                             <TableColumnItem>
-                                <PropertyName>id</PropertyName>
+                                <PropertyName>self</PropertyName>
                             </TableColumnItem>
                             <TableColumnItem>
-                                <PropertyName>name</PropertyName>
-                            </TableColumnItem>
-                            <TableColumnItem>
-                                <PropertyName>type</PropertyName>
-                            </TableColumnItem>
-                            <TableColumnItem>
-                                <PropertyName>contentType</PropertyName>
-                            </TableColumnItem>
-                            <TableColumnItem>
-                                <PropertyName>length</PropertyName>
-                            </TableColumnItem>
-                            <TableColumnItem>
-                                <PropertyName>owner</PropertyName>
-                            </TableColumnItem>
-                            <TableColumnItem>
-                                <PropertyName>lastUpdated</PropertyName>
+                                <PropertyName>managedObject</PropertyName>
                             </TableColumnItem>
                         </TableColumnItems>
                     </TableRowEntry>
