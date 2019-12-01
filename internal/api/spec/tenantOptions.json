@@ -2,7 +2,7 @@
   "information": {
     "name": "tenantOptions",
     "description": "Cumulocity tenantOptions",
-    "descriptionLong": "REST endpoint to interact with Cumulocity tenantOptions",
+    "descriptionLong": "<\nREST endpoint to interact with Cumulocity tenantOptions\nOptions are category-key-value tuples, storing tenant configuration. Some categories of options allow creation of new one, other are limited to predefined set of keys.\n\nAny option of any tenant can be defined as \"non-editable\" by \"management\" tenant. Afterwards, any PUT or DELETE requests made on that option by the owner tenant, will result in 403 error (Unauthorized).",
     "link": "https://cumulocity.com/guides/reference/tenants/#tenants"
   },
   "endpoints": [
@@ -17,6 +17,20 @@
       "alias": {
         "go": "list",
         "powershell": "Get-TenantOptionCollection"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get a list of tenant options",
+            "command": "Get-TenantOptionCollection"
+          }
+        ],
+        "go": [
+          {
+            "description": "Get a list of tenant options",
+            "command": "c8y tenantOptions list"
+          }
+        ]
       }
     },
     {
@@ -28,6 +42,23 @@
       "alias": {
         "go": "create",
         "powershell": "New-TenantOption"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Create a tenant option",
+            "command": "New-TenantOption -Category \"c8y_cli_tests\" -Key \"option1\" -Value \"1\"",
+            "afterEach": [
+              "Remove-TenantOption -Category \"c8y_cli_tests\" -Key \"option1\""
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Create a tenant option",
+            "command": "c8y tenantOptions create --category \"c8y_cli_tests\" --key \"option1\" --value \"1\""
+          }
+        ]
       },
       "body": [
         {
@@ -60,6 +91,26 @@
         "go": "get",
         "powershell": "Get-TenantOption"
       },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get a tenant option",
+            "beforeEach": [
+              "New-TenantOption -Category \"c8y_cli_tests\" -Key \"option2\" -Value \"2\""
+            ],
+            "command": "Get-TenantOption -Category \"c8y_cli_tests\" -Key \"option2\"",
+            "afterEach": [
+              "Remove-TenantOption -Category \"c8y_cli_tests\" -Key \"option2\""
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Get a tenant option",
+            "command": "c8y tenantOptions get --category \"c8y_cli_tests\" --key \"option2\""
+          }
+        ]
+      },
       "pathParameters": [
         {
           "name": "category",
@@ -83,6 +134,23 @@
       "alias": {
         "go": "delete",
         "powershell": "Remove-TenantOption"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Delete a tenant option",
+            "beforeEach": [
+              "New-TenantOption -Category \"c8y_cli_tests\" -Key \"option3\" -Value \"3\""
+            ],
+            "command": "Remove-TenantOption -Category \"c8y_cli_tests\" -Key \"option3\""
+          }
+        ],
+        "go": [
+          {
+            "description": "Get a tenant option",
+            "command": "c8y tenantOptions delete --category \"c8y_cli_tests\" --key \"option3\""
+          }
+        ]
       },
       "pathParameters": [
         {
@@ -108,6 +176,26 @@
       "alias": {
         "go": "update",
         "powershell": "Update-TenantOption"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Update a tenant option",
+            "beforeEach": [
+              "New-TenantOption -Category \"c8y_cli_tests\" -Key \"option4\" -Value \"4\""
+            ],
+            "command": "Update-TenantOption -Category \"c8y_cli_tests\" -Key \"option4\" -Value \"0\"",
+            "afterEach": [
+              "Remove-TenantOption -Category \"c8y_cli_tests\" -Key \"option4\""
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Update a tenant option",
+            "command": "c8y tenantOptions update --category \"c8y_cli_tests\" --key \"option4\" --value \"0\""
+          }
+        ]
       },
       "pathParameters": [
         {
@@ -142,6 +230,28 @@
         "go": "updateBulk",
         "powershell": "Update-TenantOptionBulk"
       },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Update multiple tenant options",
+            "beforeEach": [
+              "New-TenantOption -Category \"c8y_cli_tests\" -Key \"option5\" -Value \"5\"",
+              "New-TenantOption -Category \"c8y_cli_tests\" -Key \"option6\" -Value \"6\""
+            ],
+            "command": "Update-TenantOptionBulk -Category \"c8y_cli_tests\" -Data @{ option5 = 0; option6 = 1 }",
+            "afterEach": [
+              "Remove-TenantOption -Category \"c8y_cli_tests\" -Key \"option5\"",
+              "Remove-TenantOption -Category \"c8y_cli_tests\" -Key \"option6\""
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Update multiple tenant options",
+            "command": "c8y tenantOptions updateBulk --category \"c8y_cli_tests\" --data \"{\\\"option5\\\":0,\\\"option6\\\":1\"}\""
+          }
+        ]
+      },
       "pathParameters": [
         {
           "name": "category",
@@ -169,6 +279,26 @@
         "go": "getForCategory",
         "powershell": "Get-TenantOptionForCategory"
       },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get a list of options for a category",
+            "beforeEach": [
+              "New-TenantOption -Category \"c8y_cli_tests\" -Key \"option7\" -Value \"7\""
+            ],
+            "command": "Get-TenantOptionForCategory -Category \"c8y_cli_tests\"",
+            "afterEach": [
+              "Remove-TenantOption -Category \"c8y_cli_tests\" -Key \"option7\""
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Get a list of options for a category",
+            "command": "c8y tenantOptions getForCategory --category \"c8y_cli_tests\""
+          }
+        ]
+      },
       "pathParameters": [
         {
           "name": "category",
@@ -185,9 +315,32 @@
       "method": "PUT",
       "path": "/tenant/options/{category}/{key}/editable",
       "accept": "application/vnd.com.nsn.cumulocity.option+json",
+      "permissions": [
+        "managementTenant"
+      ],
       "alias": {
         "go": "updateEdit",
         "powershell": "Update-TenantOptionEditable"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Update editable property for an existing tenant option",
+            "beforeEach": [
+              "New-TenantOption -Category \"c8y_cli_tests\" -Key \"option8\" -Value \"8\""
+            ],
+            "command": "Update-TenantOptionEditable -Category \"c8y_cli_tests\" -Key \"option8\" -Editable \"true\"",
+            "afterEach": [
+              "Remove-TenantOption -Category \"c8y_cli_tests\" -Key \"option8\""
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Update editable property for an existing tenant option",
+            "command": "c8y tenantOptions updateEdit --category \"c8y_cli_tests\" --key \"option8\" --editable \"true\""
+          }
+        ]
       },
       "pathParameters": [
         {

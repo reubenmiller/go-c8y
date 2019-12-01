@@ -4,6 +4,10 @@ Function Get-TenantOptionForCategory {
 .SYNOPSIS
 Get tenant options for category
 
+.EXAMPLE
+PS> Get-TenantOptionForCategory -Category "c8y_cli_tests"
+Get a list of options for a category
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

@@ -26,7 +26,8 @@ func newGetTenantOptionCmd() *getTenantOptionCmd {
 		Short: "Get tenant option",
 		Long:  ``,
 		Example: `
-
+$ c8y tenantOptions get --category "c8y_cli_tests" --key "option2"
+Get a tenant option
 		`,
 		RunE: ccmd.getTenantOption,
 	}

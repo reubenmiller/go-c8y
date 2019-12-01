@@ -4,6 +4,10 @@ Function Update-TenantOption {
 .SYNOPSIS
 Update tenant option
 
+.EXAMPLE
+PS> Update-TenantOption -Category "c8y_cli_tests" -Key "option4" -Value "0"
+Update a tenant option
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

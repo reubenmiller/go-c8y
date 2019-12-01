@@ -26,7 +26,8 @@ func newUpdateTenantOptionBulkCmd() *updateTenantOptionBulkCmd {
 		Short: "Update multiple tenant options in provided category",
 		Long:  ``,
 		Example: `
-
+$ c8y tenantOptions updateBulk --category "c8y_cli_tests" --data "{\"option5\":0,\"option6\":1"}"
+Update multiple tenant options
 		`,
 		RunE: ccmd.updateTenantOptionBulk,
 	}

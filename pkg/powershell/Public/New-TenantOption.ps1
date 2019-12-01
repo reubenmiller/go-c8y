@@ -4,6 +4,10 @@ Function New-TenantOption {
 .SYNOPSIS
 New tenant option
 
+.EXAMPLE
+PS> New-TenantOption -Category "c8y_cli_tests" -Key "option1" -Value "1"
+Create a tenant option
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

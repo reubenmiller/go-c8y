@@ -1,0 +1,19 @@
+. $PSScriptRoot/imports.ps1
+
+Describe -Name "Update-TenantOptionEditable" {
+    BeforeEach {
+        New-TenantOption -Category "c8y_cli_tests" -Key "option8" -Value "8"
+
+    }
+
+    It "Update editable property for an existing tenant option" {
+        $Response = PSC8y\Update-TenantOptionEditable -Category "c8y_cli_tests" -Key "option8" -Editable "true"
+        $LASTEXITCODE | Should -Be 0
+    }
+
+    AfterEach {
+        Remove-TenantOption -Category "c8y_cli_tests" -Key "option8"
+
+    }
+}
+

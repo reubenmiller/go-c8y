@@ -26,7 +26,8 @@ func newNewTenantOptionCmd() *newTenantOptionCmd {
 		Short: "New tenant option",
 		Long:  ``,
 		Example: `
-
+$ c8y tenantOptions create --category "c8y_cli_tests" --key "option1" --value "1"
+Create a tenant option
 		`,
 		RunE: ccmd.newTenantOption,
 	}

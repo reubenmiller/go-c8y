@@ -4,6 +4,10 @@ Function Get-TenantOptionCollection {
 .SYNOPSIS
 Get collection of tenant options
 
+.EXAMPLE
+PS> Get-TenantOptionCollection
+Get a list of tenant options
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

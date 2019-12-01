@@ -26,7 +26,8 @@ func newDeleteTenantOptionCmd() *deleteTenantOptionCmd {
 		Short: "Delete tenant option",
 		Long:  ``,
 		Example: `
-
+$ c8y tenantOptions delete --category "c8y_cli_tests" --key "option3"
+Get a tenant option
 		`,
 		RunE: ccmd.deleteTenantOption,
 	}

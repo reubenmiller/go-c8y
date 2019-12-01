@@ -4,6 +4,10 @@ Function Get-TenantOption {
 .SYNOPSIS
 Get tenant option
 
+.EXAMPLE
+PS> Get-TenantOption -Category "c8y_cli_tests" -Key "option2"
+Get a tenant option
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
