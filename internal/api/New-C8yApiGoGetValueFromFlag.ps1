@@ -31,6 +31,11 @@ Function New-C8yApiGoGetValueFromFlag {
         "[]devicegroup" = @{}
         "string" = @{}
         "integer" = @{}
+        "[]role" = @{}
+        "[]roleself" = @{}
+        "[]user" = @{}
+        "[]userself" = @{}
+        "[]usergroup" = @{}
         "tenant" = @{}
     }
 
@@ -147,6 +152,125 @@ Function New-C8yApiGoGetValueFromFlag {
         for _, item := range ${prop}Value {
             if item != "" {
                 $($Setters."[]devicegroup".$SetterType)
+            }
+        }
+    }
+"@
+
+    # user array
+    $Setters."[]user"."query" = "query.Add(`"${queryParam}`", newIDValue(item).GetID())"
+    $Setters."[]user"."path" = "pathParameters[`"${queryParam}`"] = newIDValue(item).GetID()"
+    $Setters."[]user"."body" = "body.Set(`"${queryParam}`", newIDValue(item).GetID())"
+    $Definitions."[]user" = @"
+    if cmd.Flags().Changed("${prop}") {
+        ${prop}InputValues, ${prop}Value, err := getFormattedUserSlice(cmd, args, "${prop}")
+
+        if err != nil {
+            return newUserError("no matching users found", ${prop}InputValues, err)
+        }
+
+        if len(${prop}Value) == 0 {
+            return newUserError("no matching users found", ${prop}InputValues)
+        }
+
+        for _, item := range ${prop}Value {
+            if item != "" {
+                $($Setters."[]user".$SetterType)
+            }
+        }
+    }
+"@
+
+    # user self url array
+    $Setters."[]userself"."query" = "query.Add(`"${queryParam}`", newIDValue(item).GetID())"
+    $Setters."[]userself"."path" = "pathParameters[`"${queryParam}`"] = newIDValue(item).GetID()"
+    $Setters."[]userself"."body" = "body.Set(`"${queryParam}`", newIDValue(item).GetID())"
+    $Definitions."[]userself" = @"
+    if cmd.Flags().Changed("${prop}") {
+        ${prop}InputValues, ${prop}Value, err := getFormattedUserLinkSlice(cmd, args, "${prop}")
+
+        if err != nil {
+            return newUserError("no matching users found", ${prop}InputValues, err)
+        }
+
+        if len(${prop}Value) == 0 {
+            return newUserError("no matching users found", ${prop}InputValues)
+        }
+
+        for _, item := range ${prop}Value {
+            if item != "" {
+                $($Setters."[]userself".$SetterType)
+            }
+        }
+    }
+"@
+
+    # role self url array
+    $Setters."[]roleself"."query" = "query.Add(`"${queryParam}`", newIDValue(item).GetID())"
+    $Setters."[]roleself"."path" = "pathParameters[`"${queryParam}`"] = newIDValue(item).GetID()"
+    $Setters."[]roleself"."body" = "body.Set(`"${queryParam}`", newIDValue(item).GetID())"
+    $Definitions."[]roleself" = @"
+    if cmd.Flags().Changed("${prop}") {
+        ${prop}InputValues, ${prop}Value, err := getFormattedRoleSelfSlice(cmd, args, "${prop}")
+
+        if err != nil {
+            return newUserError("no matching roles found", ${prop}InputValues, err)
+        }
+
+        if len(${prop}Value) == 0 {
+            return newUserError("no matching roles found", ${prop}InputValues)
+        }
+
+        for _, item := range ${prop}Value {
+            if item != "" {
+                $($Setters."[]roleself".$SetterType)
+            }
+        }
+    }
+"@
+    # role array
+    $Setters."[]role"."query" = "query.Add(`"${queryParam}`", newIDValue(item).GetID())"
+    $Setters."[]role"."path" = "pathParameters[`"${queryParam}`"] = newIDValue(item).GetID()"
+    $Setters."[]role"."body" = "body.Set(`"${queryParam}`", newIDValue(item).GetID())"
+    $Definitions."[]role" = @"
+    if cmd.Flags().Changed("${prop}") {
+        ${prop}InputValues, ${prop}Value, err := getFormattedRoleSlice(cmd, args, "${prop}")
+
+        if err != nil {
+            return newUserError("no matching roles found", ${prop}InputValues, err)
+        }
+
+        if len(${prop}Value) == 0 {
+            return newUserError("no matching roles found", ${prop}InputValues)
+        }
+
+        for _, item := range ${prop}Value {
+            if item != "" {
+                $($Setters."[]role".$SetterType)
+            }
+        }
+    }
+"@
+
+    # user group array
+    $Setters."[]usergroup"."query" = "query.Add(`"${queryParam}`", newIDValue(item).GetID())"
+    $Setters."[]usergroup"."path" = "pathParameters[`"${queryParam}`"] = newIDValue(item).GetID()"
+    $Setters."[]usergroup"."body" = "body.Set(`"${queryParam}`", newIDValue(item).GetID())"
+    $Definitions."[]usergroup" = @"
+    if cmd.Flags().Changed("${prop}") {
+        ${prop}InputValues, ${prop}Value, err := getFormattedGroupSlice(cmd, args, "${prop}")
+
+        if err != nil {
+            return newUserError("no matching user groups found", ${prop}InputValues, err)
+        }
+
+        if len(${prop}Value) == 0 {
+            return newUserError("no matching user groups found", ${prop}InputValues)
+        }
+
+        for _, item := range ${prop}Value {
+            if item != "" {
+                $($Setters."[]usergroup".$SetterType)
             }
         }
     }

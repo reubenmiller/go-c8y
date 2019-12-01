@@ -26,7 +26,7 @@ func newAddUserToGroupCmd() *addUserToGroupCmd {
 		Short: "Get user",
 		Long:  ``,
 		Example: `
-$ c8y userReferences addUserToGroup --groupId 1 --userId myuser
+$ c8y userReferences addUserToGroup --group 1 --user myuser
 List the users within a user group
 		`,
 		RunE: ccmd.addUserToGroup,
@@ -35,8 +35,8 @@ List the users within a user group
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("tenant", "", "Tenant")
-	cmd.Flags().String("groupId", "", "Group ID")
-	cmd.Flags().String("userId", "", "User id")
+	cmd.Flags().StringSlice("group", []string{""}, "Group ID")
+	cmd.Flags().StringSlice("user", []string{""}, "User id")
 
 	// Required flags
 
@@ -70,12 +70,22 @@ func (n *addUserToGroupCmd) addUserToGroup(cmd *cobra.Command, args []string) er
 	// body
 	body := mapbuilder.NewMapBuilder()
 	body.SetMap(getDataFlag(cmd))
-	if v, err := cmd.Flags().GetString("userId"); err == nil {
-		if v != "" {
-			body.Set("user.self", v)
+	if cmd.Flags().Changed("user") {
+		userInputValues, userValue, err := getFormattedUserLinkSlice(cmd, args, "user")
+
+		if err != nil {
+			return newUserError("no matching users found", userInputValues, err)
 		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "userId", err))
+
+		if len(userValue) == 0 {
+			return newUserError("no matching users found", userInputValues)
+		}
+
+		for _, item := range userValue {
+			if item != "" {
+				body.Set("user.self", newIDValue(item).GetID())
+			}
+		}
 	}
 
 	// path parameters
@@ -83,15 +93,25 @@ func (n *addUserToGroupCmd) addUserToGroup(cmd *cobra.Command, args []string) er
 	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
 		pathParameters["tenant"] = v
 	}
-	if v, err := cmd.Flags().GetString("groupId"); err == nil {
-		if v != "" {
-			pathParameters["groupId"] = v
+	if cmd.Flags().Changed("group") {
+		groupInputValues, groupValue, err := getFormattedGroupSlice(cmd, args, "group")
+
+		if err != nil {
+			return newUserError("no matching user groups found", groupInputValues, err)
 		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "groupId", err))
+
+		if len(groupValue) == 0 {
+			return newUserError("no matching user groups found", groupInputValues)
+		}
+
+		for _, item := range groupValue {
+			if item != "" {
+				pathParameters["group"] = newIDValue(item).GetID()
+			}
+		}
 	}
 
-	path := replacePathParameters("/user/{tenant}/groups/{groupId}/users", pathParameters)
+	path := replacePathParameters("/user/{tenant}/groups/{group}/users", pathParameters)
 
 	// filter and selectors
 	filters := getFilterFlag(cmd, "filter")

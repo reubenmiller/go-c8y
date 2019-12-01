@@ -32,10 +32,14 @@ Normalize a list of ids
     Process {
         [array] $AllIds = foreach ($iID in $InputObject)
         {
-            if (($iID -is [string]) -and ($iID -match "^\d+$"))
+            $currentID = $iID
+            if ($null -ne $iID.id) {
+                $currentID = $iID.id
+            }
+            # Allow for matching integer or strings types, hence the the quotes around the $currentID variable
+            if ("$currentID" -match "^[0-9a-z_\-*]+$")
             {
-                $iID
-
+                $currentID
             }
         }
         $AllIds

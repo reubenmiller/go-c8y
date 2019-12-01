@@ -180,7 +180,6 @@ endpoints:
         property: application.id
         required: true
         description: Application id
-        valueFormatter: "{url}/application/applications/{application}"
 
   - name: disableApplicationFromTenant
     description: 'Disable application on tenant'

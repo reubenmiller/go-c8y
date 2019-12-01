@@ -5,7 +5,7 @@ Function Remove-UserFromGroup {
 Delete a user from a group
 
 .EXAMPLE
-PS> Remove-UserFromGroup -GroupId $Group.id -UserId $User.id
+PS> Remove-UserFromGroup -Group $Group.id -User $User.id
 Add a user to a user group
 
 
@@ -24,13 +24,13 @@ Add a user to a user group
 
         # Group ID
         [Parameter()]
-        [string]
-        $GroupId,
+        [object[]]
+        $Group,
 
         # User id/username
         [Parameter()]
         [string]
-        $UserId,
+        $User,
 
         # Include raw response including pagination information
         [Parameter()]
@@ -53,11 +53,11 @@ Add a user to a user group
         if ($PSBoundParameters.ContainsKey("Tenant")) {
             $Parameters["tenant"] = $Tenant
         }
-        if ($PSBoundParameters.ContainsKey("GroupId")) {
-            $Parameters["groupId"] = $GroupId
+        if ($PSBoundParameters.ContainsKey("Group")) {
+            $Parameters["group"] = PSC8y\Expand-Id $Group
         }
-        if ($PSBoundParameters.ContainsKey("UserId")) {
-            $Parameters["userId"] = $UserId
+        if ($PSBoundParameters.ContainsKey("User")) {
+            $Parameters["user"] = $User
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

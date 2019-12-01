@@ -26,7 +26,7 @@ func newGetRoleReferenceCollectionFromGroupCmd() *getRoleReferenceCollectionFrom
 		Short: "Get collection of user role references from a group",
 		Long:  ``,
 		Example: `
-$ c8y userRoles getRoleReferenceCollectionFromGroup --groupId "12345"
+$ c8y userRoles getRoleReferenceCollectionFromGroup --group "12345"
 Get a list of role references for a user group
 		`,
 		RunE: ccmd.getRoleReferenceCollectionFromGroup,
@@ -35,10 +35,10 @@ Get a list of role references for a user group
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("tenant", "", "Tenant")
-	cmd.Flags().String("groupId", "", "Group id (required)")
+	cmd.Flags().StringSlice("group", []string{""}, "Group id (required)")
 
 	// Required flags
-	cmd.MarkFlagRequired("groupId")
+	cmd.MarkFlagRequired("group")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
@@ -75,15 +75,25 @@ func (n *getRoleReferenceCollectionFromGroupCmd) getRoleReferenceCollectionFromG
 	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
 		pathParameters["tenant"] = v
 	}
-	if v, err := cmd.Flags().GetString("groupId"); err == nil {
-		if v != "" {
-			pathParameters["groupId"] = v
+	if cmd.Flags().Changed("group") {
+		groupInputValues, groupValue, err := getFormattedGroupSlice(cmd, args, "group")
+
+		if err != nil {
+			return newUserError("no matching user groups found", groupInputValues, err)
 		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "groupId", err))
+
+		if len(groupValue) == 0 {
+			return newUserError("no matching user groups found", groupInputValues)
+		}
+
+		for _, item := range groupValue {
+			if item != "" {
+				pathParameters["group"] = newIDValue(item).GetID()
+			}
+		}
 	}
 
-	path := replacePathParameters("/user/{tenant}/groups/{groupId}/roles", pathParameters)
+	path := replacePathParameters("/user/{tenant}/groups/{group}/roles", pathParameters)
 
 	// filter and selectors
 	filters := getFilterFlag(cmd, "filter")

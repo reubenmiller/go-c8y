@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/reubenmiller/go-c8y/pkg/matcher"
 	"github.com/spf13/cobra"
 	"github.com/thedevsaddam/gojsonq"
 	"github.com/tidwall/gjson"
@@ -140,24 +141,7 @@ func matchWithWildcards(x, y interface{}) (bool, error) {
 		return false, fmt.Errorf("wildcard matching only supports strings")
 	}
 
-	pattern = strings.ReplaceAll(pattern, "\\", "\\\\")
-	pattern = strings.ReplaceAll(pattern, ".", "\\.")
-
-	// convert wildcards to a regex
-	pattern = strings.ReplaceAll(pattern, "*", ".*")
-
-	// case insensitive matching and whole string matching
-	pattern = "(?i)^" + pattern + "$"
-
-	r, err := regexp.Compile(pattern)
-
-	if err != nil {
-		return false, fmt.Errorf("invalid regex patter")
-	}
-
-	log.Printf("Wildcard=>regex: %s", pattern)
-
-	return r.MatchString(xs), nil
+	return matcher.MatchWithWildcards(xs, pattern)
 }
 
 func matchWithRegex(x, y interface{}) (bool, error) {
@@ -167,16 +151,7 @@ func matchWithRegex(x, y interface{}) (bool, error) {
 		return false, fmt.Errorf("wildcard matching only supports strings")
 	}
 
-	// case-insensitive matching
-	pattern = "(?i)" + pattern
-
-	r, err := regexp.Compile(pattern)
-
-	if err != nil {
-		return false, fmt.Errorf("invalid regex patter")
-	}
-
-	return r.MatchString(xs), nil
+	return matcher.MatchWithRegex(xs, pattern)
 }
 
 func addFilterFlag(cmd *cobra.Command, name string) {

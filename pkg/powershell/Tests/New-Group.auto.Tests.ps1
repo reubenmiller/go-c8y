@@ -2,16 +2,17 @@
 
 Describe -Name "New-Group" {
     BeforeEach {
+        $GroupName = "testgroup_" + [guid]::NewGuid().Guid.Substring(1,10)
 
     }
 
     It "Create a user group" {
-        $Response = PSC8y\New-Group -Name "customGroup1"
+        $Response = PSC8y\New-Group -Name "$GroupName"
         $LASTEXITCODE | Should -Be 0
     }
 
     AfterEach {
-        Get-GroupByName -Name "customGroup1" | Remove-Group
+        Get-GroupByName -Name "$GroupName" | Remove-Group
 
     }
 }

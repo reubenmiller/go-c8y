@@ -18,14 +18,14 @@ Unassign/Remove role from a user
         [object]
         $Tenant,
 
-        # Username (required)
+        # User (required)
         [Parameter(Mandatory = $true)]
-        [string]
-        $Username,
+        [object[]]
+        $User,
 
         # Role name (required)
         [Parameter(Mandatory = $true)]
-        [string]
+        [object[]]
         $Role,
 
         # Include raw response including pagination information
@@ -49,8 +49,8 @@ Unassign/Remove role from a user
         if ($PSBoundParameters.ContainsKey("Tenant")) {
             $Parameters["tenant"] = $Tenant
         }
-        if ($PSBoundParameters.ContainsKey("Username")) {
-            $Parameters["username"] = $Username
+        if ($PSBoundParameters.ContainsKey("User")) {
+            $Parameters["user"] = $User
         }
         if ($PSBoundParameters.ContainsKey("Role")) {
             $Parameters["role"] = $Role

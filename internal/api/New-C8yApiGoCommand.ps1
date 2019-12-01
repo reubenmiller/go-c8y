@@ -281,7 +281,7 @@ Function Get-C8yGoArgs {
         $Description = "${Description} (required)"
     }
 
-    $Entry = switch -Regex ($Type) {
+    $Entry = switch ($Type) {
         "id" {
             @{
                 SetFlag = "addIDFlag(cmd)"
@@ -294,7 +294,7 @@ Function Get-C8yGoArgs {
             }
         }
 
-        "date(from|to|time)" {
+        { @("datefrom", "dateto", "datetime") -contains $_ } {
             $SetFlag = if ($UseOption) {
                 'cmd.Flags().StringP("{0}", "{1}", "{2}", "{3}{4}")' -f $Name, $OptionName, $Default, $Description
             } else {
@@ -305,7 +305,7 @@ Function Get-C8yGoArgs {
             }
         }
 
-        "\[\]string" {
+        "[]string" {
             $SetFlag = if ($UseOption) {
                 "cmd.Flags().StringSlice(`"${Name}`", `"${OptionName}`", []string{`"${Default}`"}, `"${Description}`")"
             } else {
@@ -316,7 +316,7 @@ Function Get-C8yGoArgs {
             }
         }
 
-        "\[\]device" {
+        "[]device" {
             $SetFlag = if ($UseOption) {
                 "cmd.Flags().StringSliceP(`"${Name}`", []string{`"${Default}`"}, `"${OptionName}`", `"${Description}`")"
             } else {
@@ -328,7 +328,55 @@ Function Get-C8yGoArgs {
             }
         }
 
-        "^application$" {
+        "[]devicegroup" {
+            $SetFlag = if ($UseOption) {
+                "cmd.Flags().StringSliceP(`"${Name}`", []string{`"${Default}`"}, `"${OptionName}`", `"${Description}`")"
+            } else {
+                "cmd.Flags().StringSlice(`"${Name}`", []string{`"${Default}`"}, `"${Description}`")"
+            }
+
+            @{
+                SetFlag = $SetFlag
+            }
+        }
+
+        "[]roleself" {
+            $SetFlag = if ($UseOption) {
+                "cmd.Flags().StringSliceP(`"${Name}`", []string{`"${Default}`"}, `"${OptionName}`", `"${Description}`")"
+            } else {
+                "cmd.Flags().StringSlice(`"${Name}`", []string{`"${Default}`"}, `"${Description}`")"
+            }
+
+            @{
+                SetFlag = $SetFlag
+            }
+        }
+
+        "[]role" {
+            $SetFlag = if ($UseOption) {
+                "cmd.Flags().StringSliceP(`"${Name}`", []string{`"${Default}`"}, `"${OptionName}`", `"${Description}`")"
+            } else {
+                "cmd.Flags().StringSlice(`"${Name}`", []string{`"${Default}`"}, `"${Description}`")"
+            }
+
+            @{
+                SetFlag = $SetFlag
+            }
+        }
+
+        "[]usergroup" {
+            $SetFlag = if ($UseOption) {
+                "cmd.Flags().StringSliceP(`"${Name}`", []string{`"${Default}`"}, `"${OptionName}`", `"${Description}`")"
+            } else {
+                "cmd.Flags().StringSlice(`"${Name}`", []string{`"${Default}`"}, `"${Description}`")"
+            }
+
+            @{
+                SetFlag = $SetFlag
+            }
+        }
+
+        "application" {
             $SetFlag = if ($UseOption) {
                 'cmd.Flags().StringP("{0}", "{1}", "{2}", "{3}")' -f $Name, $OptionName, $Default, $Description
             } else {
@@ -339,7 +387,7 @@ Function Get-C8yGoArgs {
             }
         }
 
-        "^string$" {
+        "string" {
             $SetFlag = if ($UseOption) {
                 'cmd.Flags().StringP("{0}", "{1}", "{2}", "{3}")' -f $Name, $OptionName, $Default, $Description
             } else {
@@ -351,7 +399,7 @@ Function Get-C8yGoArgs {
             }
         }
 
-        "^integer$" {
+        "integer" {
             try {
                 $DefaultInt = [convert]::ToInt64($Default)
             } catch {
@@ -369,7 +417,7 @@ Function Get-C8yGoArgs {
             }
         }
 
-        "^tenant$" {
+        "tenant" {
             $SetFlag = if ($UseOption) {
                 'cmd.Flags().StringP("{0}", "{1}", "{2}", "{3}")' -f $Name, $OptionName, $Default, $Description
             } else {
@@ -394,6 +442,34 @@ Function Get-C8yGoArgs {
             @{
                 SetFlag = $SetFlag
             }
+        }
+
+        "[]user" {
+            $SetFlag = if ($UseOption) {
+                "cmd.Flags().StringSliceP(`"${Name}`", []string{`"${Default}`"}, `"${OptionName}`", `"${Description}`")"
+            } else {
+                "cmd.Flags().StringSlice(`"${Name}`", []string{`"${Default}`"}, `"${Description}`")"
+            }
+
+            @{
+                SetFlag = $SetFlag
+            }
+        }
+
+        "[]userself" {
+            $SetFlag = if ($UseOption) {
+                "cmd.Flags().StringSliceP(`"${Name}`", []string{`"${Default}`"}, `"${OptionName}`", `"${Description}`")"
+            } else {
+                "cmd.Flags().StringSlice(`"${Name}`", []string{`"${Default}`"}, `"${Description}`")"
+            }
+
+            @{
+                SetFlag = $SetFlag
+            }
+        }
+
+        default {
+            Write-Warning "Unknown flag type [$_]"
         }
     }
 

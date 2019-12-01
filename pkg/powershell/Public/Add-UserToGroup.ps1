@@ -5,7 +5,7 @@ Function Add-UserToGroup {
 Get user
 
 .EXAMPLE
-PS> Add-UserToGroup -GroupId $Group.id -UserId $User.id
+PS> Add-UserToGroup -Group $Group.id -User $User.id
 Add a user to a user group
 
 
@@ -24,13 +24,14 @@ Add a user to a user group
 
         # Group ID
         [Parameter()]
-        [string]
-        $GroupId,
+        [object[]]
+        $Group,
 
         # User id
-        [Parameter()]
-        [string]
-        $UserId,
+        [Parameter(ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true)]
+        [object[]]
+        $User,
 
         # Include raw response including pagination information
         [Parameter()]
@@ -53,11 +54,8 @@ Add a user to a user group
         if ($PSBoundParameters.ContainsKey("Tenant")) {
             $Parameters["tenant"] = $Tenant
         }
-        if ($PSBoundParameters.ContainsKey("GroupId")) {
-            $Parameters["groupId"] = $GroupId
-        }
-        if ($PSBoundParameters.ContainsKey("UserId")) {
-            $Parameters["userId"] = $UserId
+        if ($PSBoundParameters.ContainsKey("Group")) {
+            $Parameters["group"] = PSC8y\Expand-Id $Group
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
@@ -66,7 +64,10 @@ Add a user to a user group
     }
 
     Process {
-        foreach ($item in @("")) {
+        foreach ($item in (PSC8y\Expand-User $User)) {
+            if ($item) {
+                $Parameters["user"] = if ($item.id) { $item.id } else { $item }
+            }
 
             if (!$Force -and
                 !$WhatIfPreference -and

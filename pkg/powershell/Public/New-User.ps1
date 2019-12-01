@@ -5,7 +5,7 @@ Function New-User {
 Create a new user within the collection
 
 .EXAMPLE
-PS> New-user -Username "testuser1" -Password "$NewPassword"
+PS> New-user -Username "$Username" -Password "$NewPassword"
 Create a user
 
 

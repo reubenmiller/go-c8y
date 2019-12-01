@@ -5,7 +5,7 @@ Function Get-GroupReferenceCollection {
 Get information about all groups of a user
 
 .EXAMPLE
-PS> Get-GroupReferenceCollection -Username $User.id
+PS> Get-GroupReferenceCollection -User $User.id
 Get a list of groups that a user belongs to
 
 
@@ -22,10 +22,10 @@ Get a list of groups that a user belongs to
         [object]
         $Tenant,
 
-        # Username (required)
+        # User (required)
         [Parameter(Mandatory = $true)]
-        [string]
-        $Username,
+        [object[]]
+        $User,
 
         # Maximum number of results
         [Parameter()]
@@ -61,8 +61,8 @@ Get a list of groups that a user belongs to
         if ($PSBoundParameters.ContainsKey("Tenant")) {
             $Parameters["tenant"] = $Tenant
         }
-        if ($PSBoundParameters.ContainsKey("Username")) {
-            $Parameters["username"] = $Username
+        if ($PSBoundParameters.ContainsKey("User")) {
+            $Parameters["user"] = $User
         }
         if ($PSBoundParameters.ContainsKey("PageSize")) {
             $Parameters["pageSize"] = $PageSize

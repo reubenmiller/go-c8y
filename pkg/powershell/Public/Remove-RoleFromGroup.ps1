@@ -20,12 +20,12 @@ Unassign/Remove role from a group
 
         # Group id (required)
         [Parameter(Mandatory = $true)]
-        [string]
-        $GroupId,
+        [object[]]
+        $Group,
 
         # Role name, e.g. ROLE_TENANT_MANAGEMENT_ADMIN (required)
         [Parameter(Mandatory = $true)]
-        [string]
+        [object[]]
         $Role,
 
         # Include raw response including pagination information
@@ -49,8 +49,8 @@ Unassign/Remove role from a group
         if ($PSBoundParameters.ContainsKey("Tenant")) {
             $Parameters["tenant"] = $Tenant
         }
-        if ($PSBoundParameters.ContainsKey("GroupId")) {
-            $Parameters["groupId"] = $GroupId
+        if ($PSBoundParameters.ContainsKey("Group")) {
+            $Parameters["group"] = PSC8y\Expand-Id $Group
         }
         if ($PSBoundParameters.ContainsKey("Role")) {
             $Parameters["role"] = $Role

@@ -5,7 +5,7 @@ Function Get-RoleReferenceCollectionFromGroup {
 Get collection of user role references from a group
 
 .EXAMPLE
-PS> Get-RoleReferenceCollectionFromGroup -GroupId $Group.id
+PS> Get-RoleReferenceCollectionFromGroup -Group $Group.id
 Get a list of role references for a user group
 
 
@@ -24,8 +24,8 @@ Get a list of role references for a user group
 
         # Group id (required)
         [Parameter(Mandatory = $true)]
-        [string]
-        $GroupId,
+        [object[]]
+        $Group,
 
         # Maximum number of results
         [Parameter()]
@@ -61,8 +61,8 @@ Get a list of role references for a user group
         if ($PSBoundParameters.ContainsKey("Tenant")) {
             $Parameters["tenant"] = $Tenant
         }
-        if ($PSBoundParameters.ContainsKey("GroupId")) {
-            $Parameters["groupId"] = $GroupId
+        if ($PSBoundParameters.ContainsKey("Group")) {
+            $Parameters["group"] = PSC8y\Expand-Id $Group
         }
         if ($PSBoundParameters.ContainsKey("PageSize")) {
             $Parameters["pageSize"] = $PageSize

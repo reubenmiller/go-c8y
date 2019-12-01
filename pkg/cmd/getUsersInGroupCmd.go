@@ -26,7 +26,7 @@ func newGetUsersInGroupCmd() *getUsersInGroupCmd {
 		Short: "Get all users in a group",
 		Long:  ``,
 		Example: `
-$ c8y userReferences getGroupMembership --groupId 1
+$ c8y userReferences getGroupMembership --group 1
 List the users within a user group
 		`,
 		RunE: ccmd.getUsersInGroup,

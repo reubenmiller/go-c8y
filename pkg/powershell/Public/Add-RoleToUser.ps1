@@ -5,8 +5,16 @@ Function Add-RoleToUser {
 Add role to a user
 
 .EXAMPLE
-PS> Add-RoleToUser -Username $User.id -Role "ROLE_ALARM_READ"
-Get a role (ROLE_ALARM_READ) to a user
+PS> Add-RoleToUser -User $User.id -Role "ROLE_ALARM_READ"
+Add a role (ROLE_ALARM_READ) to a user
+
+.EXAMPLE
+PS> Add-RoleToUser -User "customUser_*" -Role "*ALARM_*"
+Add a role to a user using wildcards
+
+.EXAMPLE
+PS> Get-RoleCollection -PageSize 100 | Where-Object Name -like "*ALARM*" | Add-RoleToUser -User "customUser_*"
+Add a role to a user using wildcards (using pipeline)
 
 
 #>
@@ -22,14 +30,15 @@ Get a role (ROLE_ALARM_READ) to a user
         [object]
         $Tenant,
 
-        # Username (required)
+        # User prefix or full username (required)
         [Parameter(Mandatory = $true)]
-        [string]
-        $Username,
+        [object[]]
+        $User,
 
         # User role id
-        [Parameter()]
-        [string]
+        [Parameter(ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true)]
+        [object[]]
         $Role,
 
         # Include raw response including pagination information
@@ -53,11 +62,8 @@ Get a role (ROLE_ALARM_READ) to a user
         if ($PSBoundParameters.ContainsKey("Tenant")) {
             $Parameters["tenant"] = $Tenant
         }
-        if ($PSBoundParameters.ContainsKey("Username")) {
-            $Parameters["username"] = $Username
-        }
-        if ($PSBoundParameters.ContainsKey("Role")) {
-            $Parameters["role"] = $Role
+        if ($PSBoundParameters.ContainsKey("User")) {
+            $Parameters["user"] = $User
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
@@ -66,7 +72,10 @@ Get a role (ROLE_ALARM_READ) to a user
     }
 
     Process {
-        foreach ($item in @("")) {
+        foreach ($item in (PSC8y\Expand-Id $Role)) {
+            if ($item) {
+                $Parameters["role"] = if ($item.id) { $item.id } else { $item }
+            }
 
             if (!$Force -and
                 !$WhatIfPreference -and

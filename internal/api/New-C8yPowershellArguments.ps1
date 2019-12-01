@@ -48,22 +48,29 @@ Function New-C8yPowershellArguments {
     }
 
     # Type Definition
-    $DataType = switch -Regex ($Type) {
-        "id" { "string" }
-        "json" { "hashtable" }
-        "date(from|to|time)" { "string" }
-        "\[\]string" { "string[]" }
-        "\[\]device" { "object[]" }
-        "\[\]devicegroup" { "object[]" }
-        "^string$" { "string" }
-        "boolean" { "switch" }
+    $DataType = switch ($Type) {
+        "[]device" { "object[]" }
+        "[]devicegroup" { "object[]" }
+        "[]role" { "object[]" }
+        "[]roleself" { "object[]" }
+        "[]string" { "string[]" }
+        "[]tenant" { "object[]" }
+        "[]user" { "object[]" }
+        "[]usergroup" { "object[]" }
+        "[]userself" { "object[]" }
         "application" { "object[]" }
-        "integer" { "long" }
-        "tenant" { "object" }
-        "\[\]tenant" { "object[]" }
-        "strings" { "string" }
+        "boolean" { "switch" }
+        "datefrom" { "string" }
+        "datetime" { "string" }
+        "dateto" { "string" }
         "file" { "string" }
+        "id" { "string" }
+        "integer" { "long" }
+        "json" { "hashtable" }
         "set" { "object[]" }
+        "string" { "string" }
+        "strings" { "string" }
+        "tenant" { "object" }
         default {
             Write-Error "Unsupported Type. $_"
         }

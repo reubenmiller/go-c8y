@@ -11,7 +11,7 @@ endpoints:
   - name: addUserToGroup
     description: Get user
     method: POST
-    path: /user/{tenant}/groups/{groupId}/users
+    path: /user/{tenant}/groups/{group}/users
     accept: 'application/vnd.com.nsn.cumulocity.userReference+json'
     alias:
         go: addUserToGroup
@@ -22,35 +22,33 @@ endpoints:
           beforeEach:
             - $User = New-TestUser
             - $Group = Get-GroupByName -Name "business"
-          command: Add-UserToGroup -GroupId $Group.id -UserId $User.id
+          command: Add-UserToGroup -Group $Group.id -User $User.id
           afterEach:
             - Remove-User -Id $User.id
       go:
         - description: List the users within a user group
-          command: c8y userReferences addUserToGroup --groupId 1 --userId myuser
+          command: c8y userReferences addUserToGroup --group 1 --user myuser
     pathParameters:
       - name: tenant
         type: tenant
         description: Tenant
 
-      - name: groupId
-        type: string
+      - name: group
+        type: '[]usergroup'
         description: Group ID
 
     body:
-      # TODO: Handle value expansion using the valueFormatter
-      # TODO: Add user lookup
-      - name: userId
-        type: string
+      - name: user
+        type: '[]userself'
+        pipeline: true
         property: user.self
         description: User id
-        valueFormatter: "{url}/user/{tenant}/users/{userId}"
 
 
   - name: deleteUserFromGroup
     description: Delete a user from a group
     method: DELETE
-    path: /user/{tenant}/groups/{groupId}/users/{userId}
+    path: /user/{tenant}/groups/{group}/users/{user}
     accept: ''
     alias:
         go: deleteUserFromGroup
@@ -61,23 +59,23 @@ endpoints:
           beforeEach:
             - $User = New-TestUser
             - $Group = Get-GroupByName -Name "business"
-            - Add-UserToGroup -GroupId $Group.id -UserId $User.id
-          command: Remove-UserFromGroup -GroupId $Group.id -UserId $User.id
+            - Add-UserToGroup -Group $Group.id -User $User.id
+          command: Remove-UserFromGroup -Group $Group.id -User $User.id
           afterEach:
             - Remove-User -Id $User.id
       go:
         - description: List the users within a user group
-          command: c8y userReferences deleteUserFromGroup --groupId 1 --userId myuser
+          command: c8y userReferences deleteUserFromGroup --group 1 --user myuser
     pathParameters:
       - name: tenant
         type: tenant
         description: Tenant
 
-      - name: groupId
-        type: string
+      - name: group
+        type: '[]usergroup'
         description: Group ID
 
-      - name: userId
+      - name: user
         type: string
         description: User id/username
 
@@ -102,7 +100,7 @@ endpoints:
           command: Get-GroupByName -Name "business" | Get-GroupMembership
       go:
         - description: List the users within a user group
-          command: c8y userReferences getGroupMembership --groupId 1
+          command: c8y userReferences getGroupMembership --group 1
     pathParameters:
       - name: tenant
         type: tenant

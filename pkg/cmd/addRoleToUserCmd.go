@@ -26,8 +26,8 @@ func newAddRoleToUserCmd() *addRoleToUserCmd {
 		Short: "Add role to a user",
 		Long:  ``,
 		Example: `
-$ c8y userRoles addRoleTouser --username "myuser" --role "ROLE_ALARM_READ"
-Get a role (ROLE_ALARM_READ) to a user
+$ c8y userRoles addRoleTouser --user "myuser" --role "ROLE_ALARM_READ"
+Add a role (ROLE_ALARM_READ) to a user
 		`,
 		RunE: ccmd.addRoleToUser,
 	}
@@ -35,11 +35,11 @@ Get a role (ROLE_ALARM_READ) to a user
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("tenant", "", "Tenant")
-	cmd.Flags().String("username", "", "Username (required)")
-	cmd.Flags().String("role", "", "User role id")
+	cmd.Flags().StringSlice("user", []string{""}, "User prefix or full username (required)")
+	cmd.Flags().StringSlice("role", []string{""}, "User role id")
 
 	// Required flags
-	cmd.MarkFlagRequired("username")
+	cmd.MarkFlagRequired("user")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
@@ -71,12 +71,22 @@ func (n *addRoleToUserCmd) addRoleToUser(cmd *cobra.Command, args []string) erro
 	// body
 	body := mapbuilder.NewMapBuilder()
 	body.SetMap(getDataFlag(cmd))
-	if v, err := cmd.Flags().GetString("role"); err == nil {
-		if v != "" {
-			body.Set("role.self", v)
+	if cmd.Flags().Changed("role") {
+		roleInputValues, roleValue, err := getFormattedRoleSelfSlice(cmd, args, "role")
+
+		if err != nil {
+			return newUserError("no matching roles found", roleInputValues, err)
 		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "role", err))
+
+		if len(roleValue) == 0 {
+			return newUserError("no matching roles found", roleInputValues)
+		}
+
+		for _, item := range roleValue {
+			if item != "" {
+				body.Set("role.self", newIDValue(item).GetID())
+			}
+		}
 	}
 
 	// path parameters
@@ -84,15 +94,25 @@ func (n *addRoleToUserCmd) addRoleToUser(cmd *cobra.Command, args []string) erro
 	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
 		pathParameters["tenant"] = v
 	}
-	if v, err := cmd.Flags().GetString("username"); err == nil {
-		if v != "" {
-			pathParameters["username"] = v
+	if cmd.Flags().Changed("user") {
+		userInputValues, userValue, err := getFormattedUserSlice(cmd, args, "user")
+
+		if err != nil {
+			return newUserError("no matching users found", userInputValues, err)
 		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "username", err))
+
+		if len(userValue) == 0 {
+			return newUserError("no matching users found", userInputValues)
+		}
+
+		for _, item := range userValue {
+			if item != "" {
+				pathParameters["user"] = newIDValue(item).GetID()
+			}
+		}
 	}
 
-	path := replacePathParameters("/user/{tenant}/users/{username}/roles", pathParameters)
+	path := replacePathParameters("/user/{tenant}/users/{user}/roles", pathParameters)
 
 	// filter and selectors
 	filters := getFilterFlag(cmd, "filter")

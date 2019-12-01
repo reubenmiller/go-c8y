@@ -157,8 +157,8 @@ Function New-C8yApiPowershellCommand {
                     "`"{0}`" -f ((ConvertTo-Json `$$($item.Name) -Compress) -replace '`"', '\`"')"
                 }
 
-                "datetime" {
-                    "`${0}" -f $item.Name
+                "[]usergroup" {
+                    "PSC8y\Expand-Id `${0}" -f $item.Name
                 }
 
                 default {
@@ -396,48 +396,6 @@ $(New-Body2 -Noun $Noun -IteratorVariable $IteratorVariable -SetParameters $Proc
 	[System.IO.File]::WriteAllLines($File, $Template, $Utf8NoBomEncoding)
 }
 
-Function New-Body {
-
-    @"
-        # Get the command name
-        `$CommandName = `$PSCmdlet.MyInvocation.InvocationName;
-        # Get the list of parameters for the command
-        `$ParameterList = (Get-Command -Name `$CommandName).Parameters;
-
-        `$Parameters = @{}
-
-        # Grab each parameter value, using Get-Variable
-        foreach (`$Name in (`$ParameterList.Keys -notmatch "^Raw$")) {
-            `$iParam = Get-Variable -Name `$Name -ErrorAction SilentlyContinue;
-
-            if (`$iParam.Value -is [Switch]) {
-                if (`$iParam.Value.IsPresent -and `$iParam) {
-                    `$Parameters[`$Name] = `$true
-                }
-            } elseif (`$iParam.Value -is [hashtable]) {
-                `$Parameters[`$Name] = "{0}" -f ((ConvertTo-Json `$iParam.Value -Compress) -replace '"', '\"')
-            } elseif (`$iParam.Value -is [datetime]) {
-                `$Parameters[`$Name] = `$iParam.Value
-                # `$Parameters[`$Name] = Format-Date `$iParam.Value
-            } else {
-                if ("`$iParam" -notmatch "^$") {
-                    `$Parameters[`$Name] = `$iParam.Value
-                }
-            }
-        }
-
-        Invoke-Command ``
-            -Noun $Noun ``
-            -Verb $Verb ``
-            -Parameters `$Parameters ``
-            -Type "$ResultType" ``
-            -ItemType "$ResultItemType" ``
-            -ResultProperty "$ResultSelectProperty" ``
-            -Raw:`$Raw ``
-            -IncludeAll:`$IncludeAll
-"@
-}
-
 Function New-Body2 {
     Param(
         [string] $Noun,
@@ -454,12 +412,15 @@ Function New-Body2 {
     $Message = "(Format-ConfirmationMessage -Name `$PSCmdlet.MyInvocation.InvocationName -InputObject `$item)"
 
     $ExpandFunction = switch ($IteratorType) {
-        "application" { "(PSC8y\Expand-Application $IteratorVariable)" }
         "[]device" { "(PSC8y\Expand-Device $IteratorVariable)" }
+        "[]role" { "(PSC8y\Expand-Id $IteratorVariable)" }
+        "[]roleself" { "(PSC8y\Expand-Id $IteratorVariable)" }
+        "[]tenant" { "(PSC8y\Expand-Tenant $IteratorVariable)" }
+        "[]userself" { "(PSC8y\Expand-User $IteratorVariable)" }
+        "application" { "(PSC8y\Expand-Application $IteratorVariable)" }
         "device" { "(PSC8y\Expand-Device $IteratorVariable)" }
         "event" { "(PSC8y\Expand-Event $IteratorVariable)" }
         "managedObject" { "(PSC8y\Expand-ManagedObject $IteratorVariable)" }
-        "[]tenant" { "(PSC8y\Expand-Tenant $IteratorVariable)" }
         default {
             if ($IteratorVariable -eq "") {
                 "@(`"`")"

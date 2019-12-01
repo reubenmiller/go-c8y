@@ -419,6 +419,9 @@ func (c *Client) SetJSONItems(resp *Response, v interface{}) error {
 	case *EventBinary:
 		t.Item = *resp.JSON
 
+	case *GroupCollection:
+		t.Items = resp.JSON.Get("groups").Array()
+
 	case *Identity:
 		t.Item = *resp.JSON
 
@@ -439,10 +442,17 @@ func (c *Client) SetJSONItems(resp *Response, v interface{}) error {
 	case *OperationCollection:
 		t.Items = resp.JSON.Get("operations").Array()
 
+	case *RoleCollection:
+		t.Items = resp.JSON.Get("roles").Array()
+
 	case *TenantOption:
 		t.Item = *resp.JSON
 	case *TenantOptionCollection:
 		t.Items = resp.JSON.Get("options").Array()
+
+	case *UserCollection:
+		t.Items = resp.JSON.Get("users").Array()
+
 	}
 
 	return nil

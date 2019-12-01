@@ -4,6 +4,14 @@ Function Add-RoleToGroup {
 .SYNOPSIS
 Add role to a group
 
+.EXAMPLE
+PS> Add-RoleToGroup -Group "customGroup1*" -Role *ALARM_*
+Add a role to a group using wildcards
+
+.EXAMPLE
+PS> Get-RoleCollection -PageSize 100 | Where-Object Name -like "*ALARM*" | Add-RoleToGroup -Group "customGroup1*"
+Add a role to a group using wildcards (using pipeline)
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -20,12 +28,14 @@ Add role to a group
 
         # Group ID (required)
         [Parameter(Mandatory = $true)]
-        [string]
-        $GroupId,
+        [object[]]
+        $Group,
 
         # User role id (required)
-        [Parameter(Mandatory = $true)]
-        [string]
+        [Parameter(Mandatory = $true,
+                   ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true)]
+        [object[]]
         $Role,
 
         # Include raw response including pagination information
@@ -49,11 +59,8 @@ Add role to a group
         if ($PSBoundParameters.ContainsKey("Tenant")) {
             $Parameters["tenant"] = $Tenant
         }
-        if ($PSBoundParameters.ContainsKey("GroupId")) {
-            $Parameters["groupId"] = $GroupId
-        }
-        if ($PSBoundParameters.ContainsKey("Role")) {
-            $Parameters["role"] = $Role
+        if ($PSBoundParameters.ContainsKey("Group")) {
+            $Parameters["group"] = PSC8y\Expand-Id $Group
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
@@ -62,7 +69,10 @@ Add role to a group
     }
 
     Process {
-        foreach ($item in @("")) {
+        foreach ($item in (PSC8y\Expand-Id $Role)) {
+            if ($item) {
+                $Parameters["role"] = if ($item.id) { $item.id } else { $item }
+            }
 
             if (!$Force -and
                 !$WhatIfPreference -and

@@ -26,7 +26,7 @@ func newGetRoleReferenceCollectionFromUserCmd() *getRoleReferenceCollectionFromU
 		Short: "Get collection of user role references from a user",
 		Long:  ``,
 		Example: `
-$ c8y userRoles getRoleReferenceCollectionFromUser --username "myuser"
+$ c8y userRoles getRoleReferenceCollectionFromUser --user "myuser"
 Get a list of role references for a user
 		`,
 		RunE: ccmd.getRoleReferenceCollectionFromUser,
@@ -35,10 +35,10 @@ Get a list of role references for a user
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("tenant", "", "Tenant")
-	cmd.Flags().String("username", "", "Username (required)")
+	cmd.Flags().StringSlice("user", []string{""}, "User (required)")
 
 	// Required flags
-	cmd.MarkFlagRequired("username")
+	cmd.MarkFlagRequired("user")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
@@ -75,15 +75,25 @@ func (n *getRoleReferenceCollectionFromUserCmd) getRoleReferenceCollectionFromUs
 	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
 		pathParameters["tenant"] = v
 	}
-	if v, err := cmd.Flags().GetString("username"); err == nil {
-		if v != "" {
-			pathParameters["username"] = v
+	if cmd.Flags().Changed("user") {
+		userInputValues, userValue, err := getFormattedUserSlice(cmd, args, "user")
+
+		if err != nil {
+			return newUserError("no matching users found", userInputValues, err)
 		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "username", err))
+
+		if len(userValue) == 0 {
+			return newUserError("no matching users found", userInputValues)
+		}
+
+		for _, item := range userValue {
+			if item != "" {
+				pathParameters["user"] = newIDValue(item).GetID()
+			}
+		}
 	}
 
-	path := replacePathParameters("/user/{tenant}/users/{username}/roles", pathParameters)
+	path := replacePathParameters("/user/{tenant}/users/{user}/roles", pathParameters)
 
 	// filter and selectors
 	filters := getFilterFlag(cmd, "filter")

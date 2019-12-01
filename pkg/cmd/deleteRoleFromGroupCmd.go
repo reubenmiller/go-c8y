@@ -34,11 +34,11 @@ func newDeleteRoleFromGroupCmd() *deleteRoleFromGroupCmd {
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("tenant", "", "Tenant")
-	cmd.Flags().String("groupId", "", "Group id (required)")
-	cmd.Flags().String("role", "", "Role name, e.g. ROLE_TENANT_MANAGEMENT_ADMIN (required)")
+	cmd.Flags().StringSlice("group", []string{""}, "Group id (required)")
+	cmd.Flags().StringSlice("role", []string{""}, "Role name, e.g. ROLE_TENANT_MANAGEMENT_ADMIN (required)")
 
 	// Required flags
-	cmd.MarkFlagRequired("groupId")
+	cmd.MarkFlagRequired("group")
 	cmd.MarkFlagRequired("role")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
@@ -76,22 +76,42 @@ func (n *deleteRoleFromGroupCmd) deleteRoleFromGroup(cmd *cobra.Command, args []
 	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
 		pathParameters["tenant"] = v
 	}
-	if v, err := cmd.Flags().GetString("groupId"); err == nil {
-		if v != "" {
-			pathParameters["groupId"] = v
+	if cmd.Flags().Changed("group") {
+		groupInputValues, groupValue, err := getFormattedGroupSlice(cmd, args, "group")
+
+		if err != nil {
+			return newUserError("no matching user groups found", groupInputValues, err)
 		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "groupId", err))
+
+		if len(groupValue) == 0 {
+			return newUserError("no matching user groups found", groupInputValues)
+		}
+
+		for _, item := range groupValue {
+			if item != "" {
+				pathParameters["group"] = newIDValue(item).GetID()
+			}
+		}
 	}
-	if v, err := cmd.Flags().GetString("role"); err == nil {
-		if v != "" {
-			pathParameters["role"] = v
+	if cmd.Flags().Changed("role") {
+		roleInputValues, roleValue, err := getFormattedRoleSlice(cmd, args, "role")
+
+		if err != nil {
+			return newUserError("no matching roles found", roleInputValues, err)
 		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "role", err))
+
+		if len(roleValue) == 0 {
+			return newUserError("no matching roles found", roleInputValues)
+		}
+
+		for _, item := range roleValue {
+			if item != "" {
+				pathParameters["role"] = newIDValue(item).GetID()
+			}
+		}
 	}
 
-	path := replacePathParameters("/user/{tenant}/groups/{groupId}/roles/{role}", pathParameters)
+	path := replacePathParameters("/user/{tenant}/groups/{group}/roles/{role}", pathParameters)
 
 	// filter and selectors
 	filters := getFilterFlag(cmd, "filter")

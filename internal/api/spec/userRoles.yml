@@ -29,44 +29,57 @@ endpoints:
   - name: addRoleToUser
     description: Add role to a user
     method: POST
-    path: /user/{tenant}/users/{username}/roles
+    path: /user/{tenant}/users/{user}/roles
     accept: application/vnd.com.nsn.cumulocity.roleReference+json
     alias:
         go: addRoleTouser
         powershell: Add-RoleToUser
     examples:
       powershell:
-        - description: Get a role (ROLE_ALARM_READ) to a user
+        - description: Add a role (ROLE_ALARM_READ) to a user
           beforeEach:
             - $User = PSC8y\New-TestUser
-          command: Add-RoleToUser -Username $User.id -Role "ROLE_ALARM_READ"
+          command: Add-RoleToUser -User $User.id -Role "ROLE_ALARM_READ"
+          afterEach:
+            - PSC8y\Remove-User -Id $User.id
+
+        - description: Add a role to a user using wildcards
+          beforeEach:
+            - $User = PSC8y\New-TestUser -Name "customUser_"
+          command: Add-RoleToUser -User "customUser_*" -Role "*ALARM_*"
+          afterEach:
+            - PSC8y\Remove-User -Id $User.id
+
+        - description: Add a role to a user using wildcards (using pipeline)
+          beforeEach:
+            - $User = PSC8y\New-TestUser -Name "customUser_"
+          command: Get-RoleCollection -PageSize 100 | Where-Object Name -like "*ALARM*" | Add-RoleToUser -User "customUser_*"
           afterEach:
             - PSC8y\Remove-User -Id $User.id
       go:
-        - description: Get a role (ROLE_ALARM_READ) to a user
-          command: c8y userRoles addRoleTouser --username "myuser" --role "ROLE_ALARM_READ"
+        - description: Add a role (ROLE_ALARM_READ) to a user
+          command: c8y userRoles addRoleTouser --user "myuser" --role "ROLE_ALARM_READ"
     pathParameters:
       - name: tenant
         type: tenant
         description: Tenant
 
-      - name: username
-        type: string
+      - name: user
+        type: '[]user'
         required: true
-        description: Username
+        description: User prefix or full username
 
     body:
-      # TODO: Add role self link lookup
       - name: role
-        type: string
+        type: '[]roleself'
+        pipeline: true
         property: role.self
         description: User role id
-        valueFormatter: "{url}/user/roles/{role}"
 
   - name: deleteRoleFromUser
     description: Unassign/Remove role from a user
     method: DELETE
-    path: /user/{tenant}/users/{username}/roles/{role}
+    path: /user/{tenant}/users/{user}/roles/{role}
     alias:
         go: deleteRoleFromUser
         powershell: Remove-RoleFromUser
@@ -75,47 +88,65 @@ endpoints:
         type: tenant
         description: Tenant
 
-      - name: username
-        type: string
+      - name: user
+        type: '[]user'
         required: true
-        description: Username
+        description: User
 
       - name: role
-        type: string
+        type: '[]role'
         required: true
         description: Role name
 
   - name: addRoleToGroup
     description: Add role to a group
     method: POST
-    path: /user/{tenant}/groups/{groupId}/roles
+    path: /user/{tenant}/groups/{group}/roles
     accept: application/vnd.com.nsn.cumulocity.roleReference+json
     alias:
         go: addRoleToGroup
         powershell: Add-RoleToGroup
+    examples:
+      powershell:
+        - description: Add a role to a group using wildcards
+          beforeEach:
+            - $Group = New-TestGroup -Name "customGroup1"
+          command: Add-RoleToGroup -Group "customGroup1*" -Role *ALARM_*
+          afterEach:
+            - PSC8y\Remove-Group -Id $Group.id
+
+        - description: Add a role to a group using wildcards (using pipeline)
+          beforeEach:
+            - $Group = New-TestGroup -Name "customGroup1"
+          command: Get-RoleCollection -PageSize 100 | Where-Object Name -like "*ALARM*" | Add-RoleToGroup -Group "customGroup1*"
+          afterEach:
+            - PSC8y\Remove-Group -Id $Group.id
+
+      go:
+        - description: Add a role to the admin group
+          command: c8y userRoles addRoleToGroup --group "customGroup1*" --role "*ALARM*"
     pathParameters:
       - name: tenant
         type: tenant
         description: Tenant
 
-      - name: groupId
-        type: string
+      - name: group
+        type: '[]usergroup'
         required: true
         description: Group ID
 
     body:
-      # TODO: Add role self link lookup from an id
       - name: role
-        type: string
+        type: '[]roleself'
+        pipeline: true
         required: true
         property: role.self
         description: User role id
-        valueFormatter: "{url}/user/roles/{role}"
 
   - name: deleteRoleFromGroup
     description: Unassign/Remove role from a group
     method: DELETE
-    path: /user/{tenant}/groups/{groupId}/roles/{role}
+    path: /user/{tenant}/groups/{group}/roles/{role}
     alias:
         go: deleteRoleFromGroup
         powershell: Remove-RoleFromGroup
@@ -124,13 +155,13 @@ endpoints:
         type: tenant
         description: Tenant
 
-      - name: groupId
-        type: string
+      - name: group
+        type: '[]usergroup'
         required: true
         description: Group id
 
       - name: role
-        type: string
+        type: '[]role'
         required: true
         description: Role name, e.g. ROLE_TENANT_MANAGEMENT_ADMIN
 
@@ -138,7 +169,7 @@ endpoints:
   - name: getRoleReferenceCollectionFromUser
     description: Get collection of user role references from a user
     method: GET
-    path: /user/{tenant}/users/{username}/roles
+    path: /user/{tenant}/users/{user}/roles
     accept: application/vnd.com.nsn.cumulocity.roleReferenceCollection+json
     collectionType: application/vnd.com.nsn.cumulocity.roleReference+json
     listProperty: references
@@ -150,24 +181,24 @@ endpoints:
         - description: Get a list of role references for a user
           beforeEach:
             - $User = Get-CurrentUser
-          command: Get-RoleReferenceCollectionFromUser -Username $User.id
+          command: Get-RoleReferenceCollectionFromUser -User $User.id
       go:
         - description: Get a list of role references for a user
-          command: c8y userRoles getRoleReferenceCollectionFromUser --username "myuser"
+          command: c8y userRoles getRoleReferenceCollectionFromUser --user "myuser"
     pathParameters:
       - name: tenant
         type: tenant
         description: Tenant
 
-      - name: username
-        type: string
+      - name: user
+        type: '[]user'
         required: true
-        description: Username
+        description: User
 
   - name: getRoleReferenceCollectionFromGroup
     description: Get collection of user role references from a group
     method: GET
-    path: /user/{tenant}/groups/{groupId}/roles
+    path: /user/{tenant}/groups/{group}/roles
     accept: application/vnd.com.nsn.cumulocity.roleReferenceCollection+json
     collectionType: application/vnd.com.nsn.cumulocity.roleReference+json
     listProperty: references
@@ -179,16 +210,16 @@ endpoints:
         - description: Get a list of role references for a user group
           beforeEach:
             - $Group = Get-GroupByName -Name "business"
-          command: Get-RoleReferenceCollectionFromGroup -GroupId $Group.id
+          command: Get-RoleReferenceCollectionFromGroup -Group $Group.id
       go:
         - description: Get a list of role references for a user group
-          command: c8y userRoles getRoleReferenceCollectionFromGroup --groupId "12345"
+          command: c8y userRoles getRoleReferenceCollectionFromGroup --group "12345"
     pathParameters:
       - name: tenant
         type: tenant
         description: Tenant
 
-      - name: groupId
-        type: string
+      - name: group
+        type: '[]usergroup'
         required: true
         description: Group id

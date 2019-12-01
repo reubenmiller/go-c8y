@@ -5,7 +5,7 @@ Function Get-RoleReferenceCollectionFromUser {
 Get collection of user role references from a user
 
 .EXAMPLE
-PS> Get-RoleReferenceCollectionFromUser -Username $User.id
+PS> Get-RoleReferenceCollectionFromUser -User $User.id
 Get a list of role references for a user
 
 
@@ -22,10 +22,10 @@ Get a list of role references for a user
         [object]
         $Tenant,
 
-        # Username (required)
+        # User (required)
         [Parameter(Mandatory = $true)]
-        [string]
-        $Username,
+        [object[]]
+        $User,
 
         # Maximum number of results
         [Parameter()]
@@ -61,8 +61,8 @@ Get a list of role references for a user
         if ($PSBoundParameters.ContainsKey("Tenant")) {
             $Parameters["tenant"] = $Tenant
         }
-        if ($PSBoundParameters.ContainsKey("Username")) {
-            $Parameters["username"] = $Username
+        if ($PSBoundParameters.ContainsKey("User")) {
+            $Parameters["user"] = $User
         }
         if ($PSBoundParameters.ContainsKey("PageSize")) {
             $Parameters["pageSize"] = $PageSize

@@ -5,7 +5,7 @@ Function New-Group {
 Create a new group
 
 .EXAMPLE
-PS> New-Group -Name "customGroup1"
+PS> New-Group -Name "$GroupName"
 Create a user group
 
 

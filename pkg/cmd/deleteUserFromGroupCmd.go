@@ -26,7 +26,7 @@ func newDeleteUserFromGroupCmd() *deleteUserFromGroupCmd {
 		Short: "Delete a user from a group",
 		Long:  ``,
 		Example: `
-$ c8y userReferences deleteUserFromGroup --groupId 1 --userId myuser
+$ c8y userReferences deleteUserFromGroup --group 1 --user myuser
 List the users within a user group
 		`,
 		RunE: ccmd.deleteUserFromGroup,
@@ -35,8 +35,8 @@ List the users within a user group
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("tenant", "", "Tenant")
-	cmd.Flags().String("groupId", "", "Group ID")
-	cmd.Flags().String("userId", "", "User id/username")
+	cmd.Flags().StringSlice("group", []string{""}, "Group ID")
+	cmd.Flags().String("user", "", "User id/username")
 
 	// Required flags
 
@@ -75,22 +75,32 @@ func (n *deleteUserFromGroupCmd) deleteUserFromGroup(cmd *cobra.Command, args []
 	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
 		pathParameters["tenant"] = v
 	}
-	if v, err := cmd.Flags().GetString("groupId"); err == nil {
-		if v != "" {
-			pathParameters["groupId"] = v
+	if cmd.Flags().Changed("group") {
+		groupInputValues, groupValue, err := getFormattedGroupSlice(cmd, args, "group")
+
+		if err != nil {
+			return newUserError("no matching user groups found", groupInputValues, err)
 		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "groupId", err))
+
+		if len(groupValue) == 0 {
+			return newUserError("no matching user groups found", groupInputValues)
+		}
+
+		for _, item := range groupValue {
+			if item != "" {
+				pathParameters["group"] = newIDValue(item).GetID()
+			}
+		}
 	}
-	if v, err := cmd.Flags().GetString("userId"); err == nil {
+	if v, err := cmd.Flags().GetString("user"); err == nil {
 		if v != "" {
-			pathParameters["userId"] = v
+			pathParameters["user"] = v
 		}
 	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "userId", err))
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "user", err))
 	}
 
-	path := replacePathParameters("/user/{tenant}/groups/{groupId}/users/{userId}", pathParameters)
+	path := replacePathParameters("/user/{tenant}/groups/{group}/users/{user}", pathParameters)
 
 	// filter and selectors
 	filters := getFilterFlag(cmd, "filter")

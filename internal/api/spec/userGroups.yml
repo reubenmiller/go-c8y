@@ -42,9 +42,11 @@ endpoints:
     examples:
       powershell:
         - description: Create a user group
-          command: New-Group -Name "customGroup1"
+          beforeEach:
+            - $GroupName = "testgroup_" + [guid]::NewGuid().Guid.Substring(1,10)
+          command: New-Group -Name "$GroupName"
           afterEach:
-            - Get-GroupByName -Name "customGroup1" | Remove-Group
+            - Get-GroupByName -Name "$GroupName" | Remove-Group
 
       go:
         - description: Create a user group
@@ -198,7 +200,7 @@ endpoints:
   - name: getGroupReferenceCollection
     description: Get information about all groups of a user
     method: GET
-    path: /user/{tenant}/users/{username}/groups
+    path: /user/{tenant}/users/{user}/groups
     accept: 'application/vnd.com.nsn.cumulocity.groupReferenceCollection+json'
     collectionType: application/vnd.com.nsn.cumulocity.groupReference+json
     listProperty: references.group
@@ -210,16 +212,16 @@ endpoints:
         - description: Get a list of groups that a user belongs to
           beforeEach:
             - $User = PSC8y\Get-CurrentUser
-          command: Get-GroupReferenceCollection -Username $User.id
+          command: Get-GroupReferenceCollection -User $User.id
       go:
         - description: Get a list of groups that a user belongs to
-          command: c8y userGroups listReferences --username "myuser"
+          command: c8y userGroups listReferences --user "myuser"
     pathParameters:
       - name: tenant
         type: tenant
         description: Tenant
 
-      - name: username
-        type: string
+      - name: user
+        type: '[]user'
         required: true
-        description: Username
+        description: User

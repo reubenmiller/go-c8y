@@ -34,11 +34,11 @@ func newDeleteRoleFromUserCmd() *deleteRoleFromUserCmd {
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("tenant", "", "Tenant")
-	cmd.Flags().String("username", "", "Username (required)")
-	cmd.Flags().String("role", "", "Role name (required)")
+	cmd.Flags().StringSlice("user", []string{""}, "User (required)")
+	cmd.Flags().StringSlice("role", []string{""}, "Role name (required)")
 
 	// Required flags
-	cmd.MarkFlagRequired("username")
+	cmd.MarkFlagRequired("user")
 	cmd.MarkFlagRequired("role")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
@@ -76,22 +76,42 @@ func (n *deleteRoleFromUserCmd) deleteRoleFromUser(cmd *cobra.Command, args []st
 	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
 		pathParameters["tenant"] = v
 	}
-	if v, err := cmd.Flags().GetString("username"); err == nil {
-		if v != "" {
-			pathParameters["username"] = v
+	if cmd.Flags().Changed("user") {
+		userInputValues, userValue, err := getFormattedUserSlice(cmd, args, "user")
+
+		if err != nil {
+			return newUserError("no matching users found", userInputValues, err)
 		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "username", err))
+
+		if len(userValue) == 0 {
+			return newUserError("no matching users found", userInputValues)
+		}
+
+		for _, item := range userValue {
+			if item != "" {
+				pathParameters["user"] = newIDValue(item).GetID()
+			}
+		}
 	}
-	if v, err := cmd.Flags().GetString("role"); err == nil {
-		if v != "" {
-			pathParameters["role"] = v
+	if cmd.Flags().Changed("role") {
+		roleInputValues, roleValue, err := getFormattedRoleSlice(cmd, args, "role")
+
+		if err != nil {
+			return newUserError("no matching roles found", roleInputValues, err)
 		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "role", err))
+
+		if len(roleValue) == 0 {
+			return newUserError("no matching roles found", roleInputValues)
+		}
+
+		for _, item := range roleValue {
+			if item != "" {
+				pathParameters["role"] = newIDValue(item).GetID()
+			}
+		}
 	}
 
-	path := replacePathParameters("/user/{tenant}/users/{username}/roles/{role}", pathParameters)
+	path := replacePathParameters("/user/{tenant}/users/{user}/roles/{role}", pathParameters)
 
 	// filter and selectors
 	filters := getFilterFlag(cmd, "filter")

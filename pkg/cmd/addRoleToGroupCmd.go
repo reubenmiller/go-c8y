@@ -26,7 +26,8 @@ func newAddRoleToGroupCmd() *addRoleToGroupCmd {
 		Short: "Add role to a group",
 		Long:  ``,
 		Example: `
-
+$ c8y userRoles addRoleToGroup --group "customGroup1*" --role "*ALARM*"
+Add a role to the admin group
 		`,
 		RunE: ccmd.addRoleToGroup,
 	}
@@ -34,11 +35,11 @@ func newAddRoleToGroupCmd() *addRoleToGroupCmd {
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("tenant", "", "Tenant")
-	cmd.Flags().String("groupId", "", "Group ID (required)")
-	cmd.Flags().String("role", "", "User role id (required)")
+	cmd.Flags().StringSlice("group", []string{""}, "Group ID (required)")
+	cmd.Flags().StringSlice("role", []string{""}, "User role id (required)")
 
 	// Required flags
-	cmd.MarkFlagRequired("groupId")
+	cmd.MarkFlagRequired("group")
 	cmd.MarkFlagRequired("role")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
@@ -71,12 +72,22 @@ func (n *addRoleToGroupCmd) addRoleToGroup(cmd *cobra.Command, args []string) er
 	// body
 	body := mapbuilder.NewMapBuilder()
 	body.SetMap(getDataFlag(cmd))
-	if v, err := cmd.Flags().GetString("role"); err == nil {
-		if v != "" {
-			body.Set("role.self", v)
+	if cmd.Flags().Changed("role") {
+		roleInputValues, roleValue, err := getFormattedRoleSelfSlice(cmd, args, "role")
+
+		if err != nil {
+			return newUserError("no matching roles found", roleInputValues, err)
 		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "role", err))
+
+		if len(roleValue) == 0 {
+			return newUserError("no matching roles found", roleInputValues)
+		}
+
+		for _, item := range roleValue {
+			if item != "" {
+				body.Set("role.self", newIDValue(item).GetID())
+			}
+		}
 	}
 
 	// path parameters
@@ -84,15 +95,25 @@ func (n *addRoleToGroupCmd) addRoleToGroup(cmd *cobra.Command, args []string) er
 	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
 		pathParameters["tenant"] = v
 	}
-	if v, err := cmd.Flags().GetString("groupId"); err == nil {
-		if v != "" {
-			pathParameters["groupId"] = v
+	if cmd.Flags().Changed("group") {
+		groupInputValues, groupValue, err := getFormattedGroupSlice(cmd, args, "group")
+
+		if err != nil {
+			return newUserError("no matching user groups found", groupInputValues, err)
 		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "groupId", err))
+
+		if len(groupValue) == 0 {
+			return newUserError("no matching user groups found", groupInputValues)
+		}
+
+		for _, item := range groupValue {
+			if item != "" {
+				pathParameters["group"] = newIDValue(item).GetID()
+			}
+		}
 	}
 
-	path := replacePathParameters("/user/{tenant}/groups/{groupId}/roles", pathParameters)
+	path := replacePathParameters("/user/{tenant}/groups/{group}/roles", pathParameters)
 
 	// filter and selectors
 	filters := getFilterFlag(cmd, "filter")
