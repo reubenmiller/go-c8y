@@ -26,7 +26,8 @@ func newDeleteUserFromGroupCmd() *deleteUserFromGroupCmd {
 		Short: "Delete a user from a group",
 		Long:  ``,
 		Example: `
-
+$ c8y userReferences getGroupMembership --groupId 1
+List the users within a user group
 		`,
 		RunE: ccmd.deleteUserFromGroup,
 	}

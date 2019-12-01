@@ -26,7 +26,8 @@ func newGetUsersInGroupCmd() *getUsersInGroupCmd {
 		Short: "Get all users in a group",
 		Long:  ``,
 		Example: `
-
+$ c8y userReferences getGroupMembership --groupId 1
+List the users within a user group
 		`,
 		RunE: ccmd.getUsersInGroup,
 	}
@@ -34,9 +35,10 @@ func newGetUsersInGroupCmd() *getUsersInGroupCmd {
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("tenant", "", "Tenant")
-	cmd.Flags().String("groupId", "", "Group ID")
+	cmd.Flags().String("id", "", "Group ID (required)")
 
 	// Required flags
+	cmd.MarkFlagRequired("id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
@@ -73,15 +75,15 @@ func (n *getUsersInGroupCmd) getUsersInGroup(cmd *cobra.Command, args []string) 
 	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
 		pathParameters["tenant"] = v
 	}
-	if v, err := cmd.Flags().GetString("groupId"); err == nil {
+	if v, err := cmd.Flags().GetString("id"); err == nil {
 		if v != "" {
-			pathParameters["groupId"] = v
+			pathParameters["id"] = v
 		}
 	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "groupId", err))
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "id", err))
 	}
 
-	path := replacePathParameters("/user/{tenant}/groups/{groupId}", pathParameters)
+	path := replacePathParameters("/user/{tenant}/groups/{id}/users", pathParameters)
 
 	// filter and selectors
 	filters := getFilterFlag(cmd, "filter")
@@ -112,7 +114,7 @@ func (n *getUsersInGroupCmd) doGetUsersInGroup(method string, path string, query
 		var responseText []byte
 
 		if filters != nil && !globalFlagRaw {
-			responseText = filters.Apply(*resp.JSONData, "")
+			responseText = filters.Apply(*resp.JSONData, "references.user")
 		} else {
 			responseText = []byte(*resp.JSONData)
 		}

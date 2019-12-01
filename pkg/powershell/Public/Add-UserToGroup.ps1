@@ -4,6 +4,10 @@ Function Add-UserToGroup {
 .SYNOPSIS
 Get user
 
+.EXAMPLE
+PS> Add-UserToGroup -GroupId $Group.id -UserId $User.id
+Add a user to a user group
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

@@ -4,6 +4,14 @@ Function Get-GroupMembership {
 .SYNOPSIS
 Get all users in a group
 
+.EXAMPLE
+PS> Get-GroupMembership -Id $Group.id
+List the users within a user group
+
+.EXAMPLE
+PS> Get-GroupByName -Name "business" | Get-GroupMembership
+List the users within a user group (using pipeline)
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -18,10 +26,12 @@ Get all users in a group
         [object]
         $Tenant,
 
-        # Group ID
-        [Parameter()]
+        # Group ID (required)
+        [Parameter(Mandatory = $true,
+                   ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true)]
         [string]
-        $GroupId,
+        $Id,
 
         # Maximum number of results
         [Parameter()]
@@ -57,9 +67,6 @@ Get all users in a group
         if ($PSBoundParameters.ContainsKey("Tenant")) {
             $Parameters["tenant"] = $Tenant
         }
-        if ($PSBoundParameters.ContainsKey("GroupId")) {
-            $Parameters["groupId"] = $GroupId
-        }
         if ($PSBoundParameters.ContainsKey("PageSize")) {
             $Parameters["pageSize"] = $PageSize
         }
@@ -73,7 +80,10 @@ Get all users in a group
     }
 
     Process {
-        foreach ($item in @("")) {
+        foreach ($item in (PSC8y\Expand-Id $Id)) {
+            if ($item) {
+                $Parameters["id"] = if ($item.id) { $item.id } else { $item }
+            }
 
             if (!$Force -and
                 !$WhatIfPreference -and
@@ -89,8 +99,8 @@ Get all users in a group
                 -Verb "getGroupMembership" `
                 -Parameters $Parameters `
                 -Type "application/vnd.com.nsn.cumulocity.userReferenceCollection+json" `
-                -ItemType "" `
-                -ResultProperty "" `
+                -ItemType "application/vnd.com.nsn.cumulocity.user+json" `
+                -ResultProperty "references.user" `
                 -Raw:$Raw `
                 -IncludeAll:$IncludeAll
         }

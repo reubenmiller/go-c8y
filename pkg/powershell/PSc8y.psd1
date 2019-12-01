@@ -84,7 +84,8 @@ FormatsToProcess = @(
     'format-data/tenants.ps1xml',
     'format-data/tenantStatistics.ps1xml',
     'format-data/userGroups.ps1xml',
-    'format-data/users.ps1xml'
+    'format-data/users.ps1xml',
+    'format-data/userReferences.ps1xml'
 )
 
 # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess

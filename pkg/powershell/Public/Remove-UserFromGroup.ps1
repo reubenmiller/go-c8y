@@ -4,6 +4,10 @@ Function Remove-UserFromGroup {
 .SYNOPSIS
 Delete a user from a group
 
+.EXAMPLE
+PS> Remove-UserFromGroup -GroupId $Group.id -UserId $User.id
+Add a user to a user group
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -77,7 +81,7 @@ Delete a user from a group
                 -Noun "userReferences" `
                 -Verb "deleteUserFromGroup" `
                 -Parameters $Parameters `
-                -Type "application/vnd.com.nsn.cumulocity.currentUser+json" `
+                -Type "" `
                 -ItemType "" `
                 -ResultProperty "" `
                 -Raw:$Raw `
