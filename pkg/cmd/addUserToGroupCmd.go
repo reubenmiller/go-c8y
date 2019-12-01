@@ -26,7 +26,7 @@ func newAddUserToGroupCmd() *addUserToGroupCmd {
 		Short: "Get user",
 		Long:  ``,
 		Example: `
-$ c8y userReferences getGroupMembership --groupId 1
+$ c8y userReferences addUserToGroup --groupId 1 --userId myuser
 List the users within a user group
 		`,
 		RunE: ccmd.addUserToGroup,
