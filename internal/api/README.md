@@ -38,6 +38,13 @@
 * [ ] Add examples
 * [ ] Generate tests automatically
 * [ ] Microservice aliases using my-app://health
+* [ ] Add "file" argument type
+* [ ] Review "set" argument type
+* [x] Lookups
+  * [x] Add role lookup, which converts a name to a self link. required for Add-RoleToUser
+  * [x] Add user lookup
+  * [x] Add user self reference lookup
+  * [x] Add user group lookup
 * [ ] Add outFile flag
   * [ ] Update all download files
 * [ ] Add upload flag
@@ -49,7 +56,7 @@
 
 * [ ] Make options case insensitive
 * [ ] Look over devices where []device type is used (parallel tasks?) Probably need a new template
-* [ ] New / Import / export cumulocity sessions
+* [ ] Cumulocity sessions
   * [ ] Store session credentials securely
   * [ ] Set credentials from a microservice subscription
 
