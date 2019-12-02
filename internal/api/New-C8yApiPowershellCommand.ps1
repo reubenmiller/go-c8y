@@ -51,7 +51,7 @@ Function New-C8yApiPowershellCommand {
 
             # Adjust test case template depending if a response is expected or not
             $TestCaseTemplate = "$PSScriptRoot/powershell/templates/testcase.template.ps1"
-            if ([string]::IsNullOrWhiteSpace($iExample.Accept)) {
+            if ([string]::IsNullOrWhiteSpace($Specification.accept)) {
                 $TestCaseTemplate = "$PSScriptRoot/powershell/templates/testcase.emptyresponse.template.ps1"
             }
 
