@@ -4,6 +4,18 @@ Function Get-ManagedObject {
 .SYNOPSIS
 Get inventory/s
 
+.EXAMPLE
+PS> Get-ManagedObject -Id $mo.id
+Get a managed object
+
+.EXAMPLE
+PS> Get-ManagedObject -Id $mo.id | Get-ManagedObject
+Get a managed object (using pipeline)
+
+.EXAMPLE
+PS> Get-ManagedObject -Id $mo.id -WithParents
+Get a managed object with parent references
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

@@ -9,6 +9,7 @@ Describe -Name "Get-RetentionRule" {
     It "Get a retention rule" {
         $Response = PSC8y\Get-RetentionRule -Id $RetentionRule.id
         $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
     }
 
     AfterEach {

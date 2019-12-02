@@ -8,6 +8,7 @@ Describe -Name "Get-ExternalIDCollection" {
     It "Get a list of external ids" {
         $Response = PSC8y\Get-ExternalIdCollection
         $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
     }
 
     AfterEach {

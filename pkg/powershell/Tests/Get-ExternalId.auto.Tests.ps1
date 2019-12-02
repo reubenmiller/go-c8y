@@ -10,6 +10,7 @@ Describe -Name "Get-ExternalId" {
     It "Get external identity" {
         $Response = PSC8y\Get-ExternalId -Type "my_SerialNumber" -Name "myserialnumber"
         $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
     }
 
     AfterEach {

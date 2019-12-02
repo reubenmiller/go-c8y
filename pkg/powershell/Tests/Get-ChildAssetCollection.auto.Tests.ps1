@@ -14,10 +14,12 @@ Describe -Name "Get-ChildAssetCollection" {
     It "Get a list of the child assets of an existing device" {
         $Response = PSC8y\Get-ChildAssetCollection -Group $Group.id
         $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
     }
     It "Get a list of the child assets of an existing group" {
         $Response = PSC8y\Get-ChildAssetCollection -Group $Group.id
         $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
     }
 
     AfterEach {

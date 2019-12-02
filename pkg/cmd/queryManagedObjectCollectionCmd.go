@@ -22,21 +22,23 @@ func newQueryManagedObjectCollectionCmd() *queryManagedObjectCollectionCmd {
 	ccmd := &queryManagedObjectCollectionCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "query",
+		Use:   "find",
 		Short: "Get a collection of managedObjects based on Cumulocity query language",
 		Long:  `Get a collection of managedObjects based on Cumulocity query language`,
 		Example: `
-c8y managedObjects query --type value --severity MAJOR
+$ c8y inventory find --query "name eq 'roomUpperFloor_*'"
+Get a list of managed objects
 		`,
 		RunE: ccmd.queryManagedObjectCollection,
 	}
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("query", "", "ManagedObject query.")
+	cmd.Flags().String("query", "", "ManagedObject query. (required)")
 	cmd.Flags().Bool("withParents", false, "include a flat list of all parents and grandparents of the given object")
 
 	// Required flags
+	cmd.MarkFlagRequired("query")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

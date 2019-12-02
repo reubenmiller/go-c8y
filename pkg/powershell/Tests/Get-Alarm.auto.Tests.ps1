@@ -9,6 +9,7 @@ Describe -Name "Get-Alarm" {
     It "Get alarm" {
         $Response = PSC8y\Get-Alarm -Id $TestAlarm.id
         $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
     }
 
     AfterEach {

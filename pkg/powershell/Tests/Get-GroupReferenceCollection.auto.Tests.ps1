@@ -9,6 +9,7 @@ Describe -Name "Get-GroupReferenceCollection" {
     It "Get a list of groups that a user belongs to" {
         $Response = PSC8y\Get-GroupReferenceCollection -User $User.id
         $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
     }
 
     AfterEach {

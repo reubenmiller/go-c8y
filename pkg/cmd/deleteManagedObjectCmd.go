@@ -26,7 +26,11 @@ func newDeleteManagedObjectCmd() *deleteManagedObjectCmd {
 		Short: "Delete inventory/s",
 		Long:  ``,
 		Example: `
+$ c8y inventory delete --id 12345
+Delete a managed object
 
+$ c8y inventory delete --id 12345 --cascade
+Delete a managed object
 		`,
 		RunE: ccmd.deleteManagedObject,
 	}

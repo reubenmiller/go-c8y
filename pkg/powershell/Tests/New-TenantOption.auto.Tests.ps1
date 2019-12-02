@@ -8,6 +8,7 @@ Describe -Name "New-TenantOption" {
     It "Create a tenant option" {
         $Response = PSC8y\New-TenantOption -Category "c8y_cli_tests" -Key "option1" -Value "1"
         $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
     }
 
     AfterEach {

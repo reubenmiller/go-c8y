@@ -9,6 +9,7 @@ Describe -Name "Get-Group" {
     It "Get a user group" {
         $Response = PSC8y\Get-Group -Id $Group.id
         $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
     }
 
     AfterEach {

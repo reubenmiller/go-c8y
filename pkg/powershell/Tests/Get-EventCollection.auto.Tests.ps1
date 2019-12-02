@@ -9,10 +9,12 @@ Describe -Name "Get-EventCollection" {
     It "Get events with type 'my_CustomType' that were created in the last 10 days" {
         $Response = PSC8y\Get-EventCollection -Type my_CustomType -DateFrom "-10d"
         $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
     }
     It "Get events from a device" {
         $Response = PSC8y\Get-EventCollection -Device $TestDevice.id
         $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
     }
 
     AfterEach {

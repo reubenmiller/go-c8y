@@ -26,7 +26,11 @@ func newGetManagedObjectCmd() *getManagedObjectCmd {
 		Short: "Get inventory/s",
 		Long:  ``,
 		Example: `
+$ c8y inventory get --id 12345
+Get a managed object
 
+$ c8y inventory get --id 12345 --withParents
+Get a managed object with parent references
 		`,
 		RunE: ccmd.getManagedObject,
 	}

@@ -9,6 +9,7 @@ Describe -Name "Get-Measurement" {
     It "Get measurement" {
         $Response = PSC8y\Get-Measurement -Id $Measurement.id
         $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
     }
 
     AfterEach {

@@ -5,7 +5,9 @@ Function New-RandomString {
 
         [string] $Postfix
     )
-    $RandomPart = -join ((48..57) + (97..122) | Get-Random -Count 10 | % {[char]$_})
+    $RandomPart = -join ((48..57) + (97..122) |
+        Get-Random -Count 10 |
+        ForEach-Object { [char]$_ })
 
     Write-Output "${Prefix}${RandomPart}${Postfix}"
 }

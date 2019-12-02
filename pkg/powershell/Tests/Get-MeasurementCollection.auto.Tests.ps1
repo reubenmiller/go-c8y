@@ -10,10 +10,12 @@ Describe -Name "Get-MeasurementCollection" {
     It "Get a list of measurements" {
         $Response = PSC8y\Get-MeasurementCollection
         $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
     }
     It "Get a list of measurements for a particular device" {
         $Response = PSC8y\Get-MeasurementCollection -Device $Device.id -Type "TempReading"
         $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
     }
 
     AfterEach {

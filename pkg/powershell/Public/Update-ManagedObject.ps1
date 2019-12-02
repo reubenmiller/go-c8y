@@ -4,6 +4,14 @@ Function Update-ManagedObject {
 .SYNOPSIS
 Update inventory
 
+.EXAMPLE
+PS> Update-ManagedObject -Id $mo.id -Data @{ com_my_props = @{ value = 1 } }
+Update a managed object
+
+.EXAMPLE
+PS> Get-ManagedObject -Id $mo.id | Update-ManagedObject -Data @{ com_my_props = @{ value = 1 } }
+Update a managed object (using pipeline)
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

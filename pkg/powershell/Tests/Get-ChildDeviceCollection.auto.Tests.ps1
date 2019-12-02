@@ -11,10 +11,12 @@ Describe -Name "Get-ChildDeviceCollection" {
     It "Get a list of the child devices of an existing device" {
         $Response = PSC8y\Get-ChildDeviceCollection -Device $Device.id
         $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
     }
     It "Get a list of the child devices of an existing device (using pipeline)" {
         $Response = PSC8y\Get-ManagedObject -Id $Device.id | Get-ChildDeviceCollection
         $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
     }
 
     AfterEach {

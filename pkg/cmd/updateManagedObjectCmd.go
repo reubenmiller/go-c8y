@@ -26,7 +26,8 @@ func newUpdateManagedObjectCmd() *updateManagedObjectCmd {
 		Short: "Update inventory",
 		Long:  ``,
 		Example: `
-
+$ c8y inventory update --id 12345 --name "my_custom_name" --data "{\"com_my_props\":{}\"value\":1}"
+Update a managed object
 		`,
 		RunE: ccmd.updateManagedObject,
 	}

@@ -8,6 +8,7 @@ Describe -Name "Get-UserCollection" {
     It "Get a list of users" {
         $Response = PSC8y\Get-UserCollection
         $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
     }
 
     AfterEach {

@@ -26,7 +26,8 @@ func newNewManagedObjectCmd() *newManagedObjectCmd {
 		Short: "Create a new inventory",
 		Long:  `Create a new inventory`,
 		Example: `
-
+$ c8y inventory create --name "testMO" --type "custom_type"
+Create a managed object
 		`,
 		RunE: ccmd.newManagedObject,
 	}

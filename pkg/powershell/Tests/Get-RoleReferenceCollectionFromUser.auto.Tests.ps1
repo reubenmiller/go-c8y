@@ -9,6 +9,7 @@ Describe -Name "Get-RoleReferenceCollectionFromUser" {
     It "Get a list of role references for a user" {
         $Response = PSC8y\Get-RoleReferenceCollectionFromUser -User $User.id
         $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
     }
 
     AfterEach {

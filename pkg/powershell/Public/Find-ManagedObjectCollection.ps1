@@ -8,7 +8,8 @@ Get a collection of managedObjects based on Cumulocity query language
 Get a collection of managedObjects based on Cumulocity query language
 
 .EXAMPLE
-Find-ManagedobjectCollection
+PS> Find-ManagedObjectCollection -Query "name eq 'roomUpperFloor_*'"
+Find all devices with their names starting with 'roomUpperFloor_'
 
 
 #>
@@ -19,8 +20,8 @@ Find-ManagedobjectCollection
     [Alias()]
     [OutputType([object])]
     Param(
-        # ManagedObject query.
-        [Parameter()]
+        # ManagedObject query. (required)
+        [Parameter(Mandatory = $true)]
         [string]
         $Query,
 
@@ -92,7 +93,7 @@ Find-ManagedobjectCollection
 
             Invoke-Command `
                 -Noun "inventory" `
-                -Verb "query" `
+                -Verb "find" `
                 -Parameters $Parameters `
                 -Type "application/vnd.com.nsn.cumulocity.managedObjectCollection+json" `
                 -ItemType "application/vnd.com.nsn.cumulocity.managedObject+json" `

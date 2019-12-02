@@ -10,6 +10,7 @@ Describe -Name "New-User" {
     It "Create a user" {
         $Response = PSC8y\New-user -Username "$Username" -Password "$NewPassword"
         $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
     }
 
     AfterEach {

@@ -9,6 +9,7 @@ Describe -Name "New-Operation" {
     It "Create operation for a device" {
         $Response = PSC8y\New-Operation -Device $TestAgent.id -Description "Restart device" -Data @{ c8y_Restart = @{} }
         $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
     }
 
     AfterEach {

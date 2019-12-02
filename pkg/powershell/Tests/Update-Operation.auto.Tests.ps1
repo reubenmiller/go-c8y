@@ -10,10 +10,12 @@ Describe -Name "Update-Operation" {
     It "Update an operation" {
         $Response = PSC8y\Update-Operation -Id $TestOperation.id -Status EXECUTING
         $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
     }
     It "Update multiple operations" {
         $Response = PSC8y\Get-OperationCollection -Device $TestDevice.id -Status EXECUTING | Update-Operation -Status FAILED -FailureReason "manually cancelled"
         $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
     }
 
     AfterEach {

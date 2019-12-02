@@ -8,7 +8,12 @@ Get a collection of managedObjects based on filter parameters
 Get a collection of managedObjects based on filter parameters
 
 .EXAMPLE
-Get-ManagedObjectCollection
+PS> Get-ManagedObjectCollection
+Get a list of managed objects
+
+.EXAMPLE
+PS> Get-ManagedObjectCollection -Device $Device1.name, $Device2.name
+Get a list of managed objects by looking up their names
 
 
 #>
@@ -19,7 +24,7 @@ Get-ManagedObjectCollection
     [Alias()]
     [OutputType([object])]
     Param(
-        # Source device id.
+        # List of ids.
         [Parameter()]
         [object[]]
         $Device,

@@ -9,6 +9,7 @@ Describe -Name "Get-UserByName" {
     It "Get a user by name" {
         $Response = PSC8y\Get-UserByName -Name $User.userName
         $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
     }
 
     AfterEach {

@@ -7,6 +7,10 @@ Create a new inventory
 .DESCRIPTION
 Create a new inventory
 
+.EXAMPLE
+PS> New-ManagedObject -Name "testMO" -Type $type -Data @{ custom_data = @{ value = 1 } }
+Create a managed object
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

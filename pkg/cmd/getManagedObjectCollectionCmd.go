@@ -26,14 +26,15 @@ func newGetManagedObjectCollectionCmd() *getManagedObjectCollectionCmd {
 		Short: "Get a collection of managedObjects based on filter parameters",
 		Long:  `Get a collection of managedObjects based on filter parameters`,
 		Example: `
-c8y managedObjects list --type value --severity MAJOR
+$ c8y inventory list
+Get a list of managed objects
 		`,
 		RunE: ccmd.getManagedObjectCollection,
 	}
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().StringSlice("device", []string{""}, "Source device id.")
+	cmd.Flags().StringSlice("device", []string{""}, "List of ids.")
 	cmd.Flags().String("type", "", "ManagedObject type.")
 	cmd.Flags().String("fragmentType", "", "ManagedObject fragment type.")
 	cmd.Flags().String("text", "", "managed objects containing a text value starting with the given text (placeholder {text}). Text value is any alphanumeric string starting with a latin letter (A-Z or a-z).")
@@ -64,7 +65,7 @@ func (n *getManagedObjectCollectionCmd) getManagedObjectCollection(cmd *cobra.Co
 
 		for _, item := range deviceValue {
 			if item != "" {
-				query.Add("source", newIDValue(item).GetID())
+				query.Add("ids", newIDValue(item).GetID())
 			}
 		}
 	}

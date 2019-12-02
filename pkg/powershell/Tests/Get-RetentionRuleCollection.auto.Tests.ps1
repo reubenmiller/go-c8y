@@ -8,6 +8,7 @@ Describe -Name "Get-RetentionRuleCollection" {
     It "Get a list of retention rules" {
         $Response = PSC8y\Get-RetentionRuleCollection
         $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
     }
 
     AfterEach {

@@ -4,6 +4,18 @@ Function Remove-ManagedObject {
 .SYNOPSIS
 Delete inventory/s
 
+.EXAMPLE
+PS> Remove-ManagedObject -Id $mo.id
+Delete a managed object
+
+.EXAMPLE
+PS> Get-ManagedObject -Id $mo.id | Remove-ManagedObject
+Delete a managed object (using pipeline)
+
+.EXAMPLE
+PS> Get-ManagedObject -Id $Device.id | Remove-ManagedObject -Cascade
+Delete a managed object and all child devices
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

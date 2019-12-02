@@ -9,6 +9,7 @@ Describe -Name "Update-User" {
     It "Update a user" {
         $Response = PSC8y\Update-User -Id $User.id -FirstName "Simon"
         $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
     }
 
     AfterEach {
