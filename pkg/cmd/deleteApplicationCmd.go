@@ -26,7 +26,8 @@ func newDeleteApplicationCmd() *deleteApplicationCmd {
 		Short: "Delete application",
 		Long:  `Info: The application can only be removed when its availability is PRIVATE or in other case when it has no subscriptions.`,
 		Example: `
-
+$ c8y applications delete --id 12345
+Delete application
 		`,
 		RunE: ccmd.deleteApplication,
 	}

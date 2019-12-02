@@ -22,11 +22,12 @@ func newUpdateApplicationCmd() *updateApplicationCmd {
 	ccmd := &updateApplicationCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "updateBinary",
-		Short: "Update application",
+		Use:   "update",
+		Short: "Update application meta information",
 		Long:  ``,
 		Example: `
-
+$ c8y applications update --id 12345 --availability MARKET
+Update application availability to MARKET
 		`,
 		RunE: ccmd.updateApplication,
 	}
@@ -37,7 +38,7 @@ func newUpdateApplicationCmd() *updateApplicationCmd {
 	addDataFlag(cmd)
 	cmd.Flags().String("name", "", "Name of application")
 	cmd.Flags().String("key", "", "Shared secret of application")
-	cmd.Flags().String("availability", "", "Application will be applied to this type of documents, possible values [ALARM, AUDIT, EVENT, MEASUREMENT, OPERATION, *].")
+	cmd.Flags().String("availability", "", "Access level for other tenants.  Possible values are : MARKET, PRIVATE (default)")
 	cmd.Flags().String("contextPath", "", "contextPath of the hosted application")
 	cmd.Flags().String("resourcesUrl", "", "URL to application base directory hosted on an external server")
 	cmd.Flags().String("resourcesUsername", "", "authorization username to access resourcesUrl")

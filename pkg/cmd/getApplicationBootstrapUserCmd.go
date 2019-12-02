@@ -26,7 +26,11 @@ func newGetApplicationBootstrapUserCmd() *getApplicationBootstrapUserCmd {
 		Short: "Get application bootstrap user",
 		Long:  ``,
 		Example: `
+$ c8y applications getBootstrapUser --id 12345
+Get application bootstrap user
 
+$ c8y applications getBootstrapUser --id myapp
+Get application bootstrap user
 		`,
 		RunE: ccmd.getApplicationBootstrapUser,
 	}

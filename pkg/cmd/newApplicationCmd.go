@@ -26,7 +26,8 @@ func newNewApplicationCmd() *newApplicationCmd {
 		Short: "New application",
 		Long:  ``,
 		Example: `
-
+$ c8y applications create --name myapp --type HOSTED
+Create new application
 		`,
 		RunE: ccmd.newApplication,
 	}
@@ -37,7 +38,7 @@ func newNewApplicationCmd() *newApplicationCmd {
 	cmd.Flags().String("name", "", "Name of application")
 	cmd.Flags().String("key", "", "Shared secret of application")
 	cmd.Flags().String("type", "", "Type of application. Possible values are EXTERNAL, HOSTED, MICROSERVICE")
-	cmd.Flags().String("availability", "", "Application will be applied to this type of documents, possible values [ALARM, AUDIT, EVENT, MEASUREMENT, OPERATION, *].")
+	cmd.Flags().String("availability", "", "Access level for other tenants.  Possible values are : MARKET, PRIVATE (default)")
 	cmd.Flags().String("contextPath", "", "contextPath of the hosted application. Required when application type is HOSTED")
 	cmd.Flags().String("resourcesUrl", "", "URL to application base directory hosted on an external server. Required when application type is HOSTED")
 	cmd.Flags().String("resourcesUsername", "", "authorization username to access resourcesUrl")
