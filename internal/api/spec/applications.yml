@@ -286,7 +286,7 @@ endpoints:
 
     method: POST
     path: /application/applications/{application}/binaries
-    accept: application/vnd.com.nsn.cumulocity.application+json
+    accept: application/vnd.com.nsn.cumulocity.managedObject+json
     alias:
         go: createBinary
         powershell: New-ApplicationBinary

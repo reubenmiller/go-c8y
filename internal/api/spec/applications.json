@@ -423,11 +423,11 @@
         ],
         "go": [
           {
-            "description": "Get application bootstrap user",
+            "description": "Get application bootstrap user by app id",
             "command": "c8y applications getBootstrapUser --application 12345"
           },
           {
-            "description": "Get application bootstrap user",
+            "description": "Get application bootstrap user by app name",
             "command": "c8y applications getBootstrapUser --application myapp"
           }
         ]
