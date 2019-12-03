@@ -23,21 +23,30 @@ Function New-C8yApiGoGetValueFromFlag {
 
     $Definitions = @{}
     $Setters = @{
-        "boolean" = @{}
-        "datetime" = @{}
-        "[]string" = @{}
-        "application" = @{}
         "[]device" = @{}
         "[]devicegroup" = @{}
-        "string" = @{}
-        "integer" = @{}
         "[]role" = @{}
         "[]roleself" = @{}
+        "[]string" = @{}
         "[]user" = @{}
-        "[]userself" = @{}
         "[]usergroup" = @{}
+        "[]userself" = @{}
+        "application" = @{}
+        "boolean" = @{}
+        "datetime" = @{}
+        "file" = @{}
+        "integer" = @{}
+        "string" = @{}
         "tenant" = @{}
     }
+
+    # file (used in multipart/form-data uploads). It rights to the formData object instead of the body
+    $Setters."file"."query" = "query.Add(`"${queryParam}`", `"true`")"
+    $Setters."file"."path" = "pathParameters[`"${queryParam}`"] = `"true`""
+    $Setters."file"."body" = "getFileFlag(cmd, `"${prop}`", formData)"
+    $Definitions."file" = @"
+    $($Setters."file".$SetterType)
+"@
 
     # Boolean
     $Setters."boolean"."query" = "query.Add(`"${queryParam}`", `"true`")"

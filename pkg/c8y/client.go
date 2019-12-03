@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"reflect"
 	"strings"
 	"sync"
@@ -289,6 +290,7 @@ type RequestOptions struct {
 	ContentType  string
 	Query        interface{} // Use string if you want
 	Body         interface{}
+	FormData     map[string]io.Reader
 	ResponseData interface{}
 	Header       http.Header
 	DryRun       bool
@@ -312,7 +314,22 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 		}
 	}
 
-	req, err := c.NewRequest(options.Method, options.Path, queryParams, options.Body)
+	var req *http.Request
+	var err error
+
+	if len(options.FormData) > 0 {
+		Logger.Printf("Sending multipart form-data")
+		// Process FormData (for multipart/form-data requests)
+		// TODO: Somehow use the c.NewRequet function as it provides
+		// the authentication required for the request
+		u, _ := url.Parse(c.BaseURL.String())
+		u.Path = path.Join(u.Path, options.Path)
+		req, err = prepareMultipartRequest(options.Method, u.String(), options.FormData)
+		c.SetAuthorization(req)
+	} else {
+		// Normal request
+		req, err = c.NewRequest(options.Method, options.Path, queryParams, options.Body)
+	}
 
 	if !options.IgnoreAccept {
 		if req.Header.Get("Accept") == "" {

@@ -67,6 +67,7 @@ Function New-C8yApiGoCommand {
     # Body
     #
     $RESTBodyBuilder = New-Object System.Text.StringBuilder
+    $RESTFormDataBuilder = New-Object System.Text.StringBuilder
     if ($Specification.body) {
         $null = $RESTBodyBuilder.AppendLine('body.SetMap(getDataFlag(cmd))')
 
@@ -142,6 +143,7 @@ import (
     "context"
     "encoding/json"
     "fmt"
+    "io"
     "net/url"
 
     "github.com/fatih/color"
@@ -186,6 +188,10 @@ func (n *${Name}Cmd) ${Name}(cmd *cobra.Command, args []string) error {
     queryValue := url.QueryEscape("")
     $RESTQueryBuilder
 
+    // form data
+    formData := make(map[string]io.Reader)
+    $RESTFormDataBuilder
+
     // body
     body := mapbuilder.NewMapBuilder()
     $RESTBodyBuilder
@@ -198,20 +204,24 @@ func (n *${Name}Cmd) ${Name}(cmd *cobra.Command, args []string) error {
     // filter and selectors
     filters := getFilterFlag(cmd, "filter")
 
-    return n.do${NameCamel}("${RESTMethod}", path, queryValue, body.GetMap(), filters)
+    req := c8y.RequestOptions{
+        Method:       "${RESTMethod}",
+        Path:         path,
+        Query:        queryValue,
+        Body:         body.GetMap(),
+        FormData:     formData,
+        IgnoreAccept: false,
+        DryRun:       globalFlagDryRun,
+    }
+
+    return n.do${NameCamel}(req, filters)
 }
 
-func (n *${Name}Cmd) do${NameCamel}(method string, path string, query string, body map[string]interface{}, filters *JSONFilters) error {
+func (n *${Name}Cmd) do${NameCamel}(req c8y.RequestOptions, filters *JSONFilters) error {
     resp, err := client.SendRequest(
 		context.Background(),
-		c8y.RequestOptions{
-			Method:       method,
-            Path:         path,
-            Query:        query,
-            Body:         body,
-            IgnoreAccept: false,
-            DryRun:       globalFlagDryRun,
-		})
+        req,
+    )
 
     if err != nil {
         color.Set(color.FgRed, color.Bold)
@@ -418,6 +428,18 @@ Function Get-C8yGoArgs {
         }
 
         "tenant" {
+            $SetFlag = if ($UseOption) {
+                'cmd.Flags().StringP("{0}", "{1}", "{2}", "{3}")' -f $Name, $OptionName, $Default, $Description
+            } else {
+                'cmd.Flags().String("{0}", "{1}", "{2}")' -f $Name, $Default, $Description
+            }
+
+            @{
+                SetFlag = $SetFlag
+            }
+        }
+
+        "file" {
             $SetFlag = if ($UseOption) {
                 'cmd.Flags().StringP("{0}", "{1}", "{2}", "{3}")' -f $Name, $OptionName, $Default, $Description
             } else {

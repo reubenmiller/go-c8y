@@ -9,7 +9,7 @@ import (
 	"os"
 )
 
-func prepareMultipartRequest(url string, method string, values map[string]io.Reader) (req *http.Request, err error) {
+func prepareMultipartRequest(method string, url string, values map[string]io.Reader) (req *http.Request, err error) {
 	// Prepare a form that you will submit to that URL.
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
