@@ -602,7 +602,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 			// Only log the file name
 			Logger.Printf("Body (file): %s", v.Name())
 		default:
-			// Don't print out multie part forms, but everything else is fine.
+			// Don't print out multi part forms, but everything else is fine.
 			if !strings.Contains(req.Header.Get("Content-Type"), "multipart/form-data") {
 				// bodyBytes, _ := ioutil.ReadAll(io.LimitReader(v, 4096))
 				bodyBytes, _ := ioutil.ReadAll(v)
