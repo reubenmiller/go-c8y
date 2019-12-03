@@ -341,7 +341,7 @@
       "description": "Delete user",
       "method": "DELETE",
       "path": "user/{tenant}/users/{id}",
-      "accept": "application/json",
+      "accept": "",
       "alias": {
         "go": "delete",
         "powershell": "Remove-User"
@@ -382,7 +382,7 @@
     {
       "name": "updateUser",
       "description": "Update user",
-      "method": "POST",
+      "method": "PUT",
       "path": "user/{tenant}/users/{id}",
       "accept": "application/vnd.com.nsn.cumulocity.user+json",
       "alias": {

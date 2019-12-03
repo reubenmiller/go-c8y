@@ -114,7 +114,7 @@ endpoints:
     description: Create a new user within the collection
     method: POST
     path: user/{tenant}/users
-    accept: 'application/vnd.com.nsn.cumulocity.user+json'
+    accept: application/vnd.com.nsn.cumulocity.user+json
     alias:
         go: create
         powershell: New-User
@@ -249,7 +249,7 @@ endpoints:
     description: Delete user
     method: DELETE
     path: user/{tenant}/users/{id}
-    accept: 'application/json'
+    accept: ''
     alias:
         go: delete
         powershell: Remove-User
@@ -276,7 +276,7 @@ endpoints:
 
   - name: updateUser
     description: Update user
-    method: POST
+    method: PUT
     path: user/{tenant}/users/{id}
     accept: 'application/vnd.com.nsn.cumulocity.user+json'
     alias:

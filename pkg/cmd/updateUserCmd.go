@@ -146,7 +146,7 @@ func (n *updateUserCmd) updateUser(cmd *cobra.Command, args []string) error {
 	// filter and selectors
 	filters := getFilterFlag(cmd, "filter")
 
-	return n.doUpdateUser("POST", path, queryValue, body.GetMap(), filters)
+	return n.doUpdateUser("PUT", path, queryValue, body.GetMap(), filters)
 }
 
 func (n *updateUserCmd) doUpdateUser(method string, path string, query string, body map[string]interface{}, filters *JSONFilters) error {

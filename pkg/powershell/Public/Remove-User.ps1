@@ -75,7 +75,7 @@ Delete a user
                 -Noun "users" `
                 -Verb "delete" `
                 -Parameters $Parameters `
-                -Type "application/json" `
+                -Type "" `
                 -ItemType "" `
                 -ResultProperty "" `
                 -Raw:$Raw `
