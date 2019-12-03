@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/url"
 
 	"github.com/fatih/color"
@@ -157,6 +158,9 @@ func (n *getAlarmCollectionCmd) getAlarmCollection(cmd *cobra.Command, args []st
 		return newSystemError("Invalid query parameter")
 	}
 
+	// form data
+	formData := make(map[string]io.Reader)
+
 	// body
 	body := mapbuilder.NewMapBuilder()
 
@@ -168,20 +172,24 @@ func (n *getAlarmCollectionCmd) getAlarmCollection(cmd *cobra.Command, args []st
 	// filter and selectors
 	filters := getFilterFlag(cmd, "filter")
 
-	return n.doGetAlarmCollection("GET", path, queryValue, body.GetMap(), filters)
+	req := c8y.RequestOptions{
+		Method:       "GET",
+		Path:         path,
+		Query:        queryValue,
+		Body:         body.GetMap(),
+		FormData:     formData,
+		IgnoreAccept: false,
+		DryRun:       globalFlagDryRun,
+	}
+
+	return n.doGetAlarmCollection(req, filters)
 }
 
-func (n *getAlarmCollectionCmd) doGetAlarmCollection(method string, path string, query string, body map[string]interface{}, filters *JSONFilters) error {
+func (n *getAlarmCollectionCmd) doGetAlarmCollection(req c8y.RequestOptions, filters *JSONFilters) error {
 	resp, err := client.SendRequest(
 		context.Background(),
-		c8y.RequestOptions{
-			Method:       method,
-			Path:         path,
-			Query:        query,
-			Body:         body,
-			IgnoreAccept: false,
-			DryRun:       globalFlagDryRun,
-		})
+		req,
+	)
 
 	if err != nil {
 		color.Set(color.FgRed, color.Bold)

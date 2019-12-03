@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/url"
 
 	"github.com/fatih/color"
@@ -65,6 +66,9 @@ func (n *downloadCmd) download(cmd *cobra.Command, args []string) error {
 		return newSystemError("Invalid query parameter")
 	}
 
+	// form data
+	formData := make(map[string]io.Reader)
+
 	// body
 	body := mapbuilder.NewMapBuilder()
 
@@ -83,20 +87,24 @@ func (n *downloadCmd) download(cmd *cobra.Command, args []string) error {
 	// filter and selectors
 	filters := getFilterFlag(cmd, "filter")
 
-	return n.doDownload("Get", path, queryValue, body.GetMap(), filters)
+	req := c8y.RequestOptions{
+		Method:       "Get",
+		Path:         path,
+		Query:        queryValue,
+		Body:         body.GetMap(),
+		FormData:     formData,
+		IgnoreAccept: false,
+		DryRun:       globalFlagDryRun,
+	}
+
+	return n.doDownload(req, filters)
 }
 
-func (n *downloadCmd) doDownload(method string, path string, query string, body map[string]interface{}, filters *JSONFilters) error {
+func (n *downloadCmd) doDownload(req c8y.RequestOptions, filters *JSONFilters) error {
 	resp, err := client.SendRequest(
 		context.Background(),
-		c8y.RequestOptions{
-			Method:       method,
-			Path:         path,
-			Query:        query,
-			Body:         body,
-			IgnoreAccept: false,
-			DryRun:       globalFlagDryRun,
-		})
+		req,
+	)
 
 	if err != nil {
 		color.Set(color.FgRed, color.Bold)

@@ -188,7 +188,7 @@ func (s *EventService) CreateBinary(ctx context.Context, filename string, ID str
 	u, _ := url.Parse(client.BaseURL.String())
 	u.Path = path.Join(u.Path, "/event/events/"+ID+"/binaries")
 
-	req, err := prepareMultipartRequest(u.String(), "POST", values)
+	req, err := prepareMultipartRequest("POST", u.String(), values)
 	s.client.SetAuthorization(req)
 
 	req.Header.Set("Accept", "application/json")

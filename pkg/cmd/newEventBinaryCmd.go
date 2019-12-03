@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/url"
 
 	"github.com/fatih/color"
@@ -34,9 +35,11 @@ func newNewEventBinaryCmd() *newEventBinaryCmd {
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("id", "", "Event id (required)")
+	cmd.Flags().String("file", "", "File to be uploaded as a binary (required)")
 
 	// Required flags
 	cmd.MarkFlagRequired("id")
+	cmd.MarkFlagRequired("file")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
@@ -65,9 +68,13 @@ func (n *newEventBinaryCmd) newEventBinary(cmd *cobra.Command, args []string) er
 		return newSystemError("Invalid query parameter")
 	}
 
+	// form data
+	formData := make(map[string]io.Reader)
+
 	// body
 	body := mapbuilder.NewMapBuilder()
 	body.SetMap(getDataFlag(cmd))
+	getFileFlag(cmd, "file", formData)
 
 	// path parameters
 	pathParameters := make(map[string]string)
@@ -84,20 +91,24 @@ func (n *newEventBinaryCmd) newEventBinary(cmd *cobra.Command, args []string) er
 	// filter and selectors
 	filters := getFilterFlag(cmd, "filter")
 
-	return n.doNewEventBinary("POST", path, queryValue, body.GetMap(), filters)
+	req := c8y.RequestOptions{
+		Method:       "POST",
+		Path:         path,
+		Query:        queryValue,
+		Body:         body.GetMap(),
+		FormData:     formData,
+		IgnoreAccept: false,
+		DryRun:       globalFlagDryRun,
+	}
+
+	return n.doNewEventBinary(req, filters)
 }
 
-func (n *newEventBinaryCmd) doNewEventBinary(method string, path string, query string, body map[string]interface{}, filters *JSONFilters) error {
+func (n *newEventBinaryCmd) doNewEventBinary(req c8y.RequestOptions, filters *JSONFilters) error {
 	resp, err := client.SendRequest(
 		context.Background(),
-		c8y.RequestOptions{
-			Method:       method,
-			Path:         path,
-			Query:        query,
-			Body:         body,
-			IgnoreAccept: false,
-			DryRun:       globalFlagDryRun,
-		})
+		req,
+	)
 
 	if err != nil {
 		color.Set(color.FgRed, color.Bold)

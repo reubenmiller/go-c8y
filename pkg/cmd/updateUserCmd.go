@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/url"
 
 	"github.com/fatih/color"
@@ -74,6 +75,9 @@ func (n *updateUserCmd) updateUser(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return newSystemError("Invalid query parameter")
 	}
+
+	// form data
+	formData := make(map[string]io.Reader)
 
 	// body
 	body := mapbuilder.NewMapBuilder()
@@ -146,20 +150,24 @@ func (n *updateUserCmd) updateUser(cmd *cobra.Command, args []string) error {
 	// filter and selectors
 	filters := getFilterFlag(cmd, "filter")
 
-	return n.doUpdateUser("PUT", path, queryValue, body.GetMap(), filters)
+	req := c8y.RequestOptions{
+		Method:       "PUT",
+		Path:         path,
+		Query:        queryValue,
+		Body:         body.GetMap(),
+		FormData:     formData,
+		IgnoreAccept: false,
+		DryRun:       globalFlagDryRun,
+	}
+
+	return n.doUpdateUser(req, filters)
 }
 
-func (n *updateUserCmd) doUpdateUser(method string, path string, query string, body map[string]interface{}, filters *JSONFilters) error {
+func (n *updateUserCmd) doUpdateUser(req c8y.RequestOptions, filters *JSONFilters) error {
 	resp, err := client.SendRequest(
 		context.Background(),
-		c8y.RequestOptions{
-			Method:       method,
-			Path:         path,
-			Query:        query,
-			Body:         body,
-			IgnoreAccept: false,
-			DryRun:       globalFlagDryRun,
-		})
+		req,
+	)
 
 	if err != nil {
 		color.Set(color.FgRed, color.Bold)

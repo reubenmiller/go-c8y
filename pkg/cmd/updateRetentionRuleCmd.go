@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/url"
 
 	"github.com/fatih/color"
@@ -74,6 +75,9 @@ func (n *updateRetentionRuleCmd) updateRetentionRule(cmd *cobra.Command, args []
 		return newSystemError("Invalid query parameter")
 	}
 
+	// form data
+	formData := make(map[string]io.Reader)
+
 	// body
 	body := mapbuilder.NewMapBuilder()
 	body.SetMap(getDataFlag(cmd))
@@ -133,20 +137,24 @@ func (n *updateRetentionRuleCmd) updateRetentionRule(cmd *cobra.Command, args []
 	// filter and selectors
 	filters := getFilterFlag(cmd, "filter")
 
-	return n.doUpdateRetentionRule("PUT", path, queryValue, body.GetMap(), filters)
+	req := c8y.RequestOptions{
+		Method:       "PUT",
+		Path:         path,
+		Query:        queryValue,
+		Body:         body.GetMap(),
+		FormData:     formData,
+		IgnoreAccept: false,
+		DryRun:       globalFlagDryRun,
+	}
+
+	return n.doUpdateRetentionRule(req, filters)
 }
 
-func (n *updateRetentionRuleCmd) doUpdateRetentionRule(method string, path string, query string, body map[string]interface{}, filters *JSONFilters) error {
+func (n *updateRetentionRuleCmd) doUpdateRetentionRule(req c8y.RequestOptions, filters *JSONFilters) error {
 	resp, err := client.SendRequest(
 		context.Background(),
-		c8y.RequestOptions{
-			Method:       method,
-			Path:         path,
-			Query:        query,
-			Body:         body,
-			IgnoreAccept: false,
-			DryRun:       globalFlagDryRun,
-		})
+		req,
+	)
 
 	if err != nil {
 		color.Set(color.FgRed, color.Bold)

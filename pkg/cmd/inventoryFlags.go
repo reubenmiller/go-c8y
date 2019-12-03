@@ -1,6 +1,10 @@
 package cmd
 
 import (
+	"io"
+	"errors"
+	"os"
+
 	"github.com/spf13/cobra"
 )
 
@@ -52,4 +56,20 @@ func getTenantWithDefaultFlag(cmd *cobra.Command, flagName string, defaultTenant
 	}
 
 	return defaultTenant
+}
+
+func getFileFlag(cmd *cobra.Command, flagName string, formData map[string]io.Reader) error {
+	if formData == nil {
+		formData = make(map[string]io.Reader)
+	}
+
+	if filename, err := cmd.Flags().GetString(flagName); err == nil {
+		r, err := os.Open(filename)
+		if err == nil {
+			formData["file"] = r
+		} else {
+			return errors.New("Failed to read file")
+		}
+	}
+	return nil
 }

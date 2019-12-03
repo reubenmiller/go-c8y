@@ -397,7 +397,7 @@ func (s *InventoryService) CreateBinary(ctx context.Context, filename string, pr
 	u, _ := url.Parse(client.BaseURL.String())
 	u.Path = path.Join(u.Path, "/inventory/binaries")
 
-	req, err := prepareMultipartRequest(u.String(), "POST", values)
+	req, err := prepareMultipartRequest("POST", u.String(), values)
 	s.client.SetAuthorization(req)
 
 	req.Header.Set("Accept", "application/json")

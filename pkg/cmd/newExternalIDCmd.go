@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/url"
 
 	"github.com/fatih/color"
@@ -70,6 +71,9 @@ func (n *newExternalIDCmd) newExternalID(cmd *cobra.Command, args []string) erro
 		return newSystemError("Invalid query parameter")
 	}
 
+	// form data
+	formData := make(map[string]io.Reader)
+
 	// body
 	body := mapbuilder.NewMapBuilder()
 	body.SetMap(getDataFlag(cmd))
@@ -113,20 +117,24 @@ func (n *newExternalIDCmd) newExternalID(cmd *cobra.Command, args []string) erro
 	// filter and selectors
 	filters := getFilterFlag(cmd, "filter")
 
-	return n.doNewExternalID("POST", path, queryValue, body.GetMap(), filters)
+	req := c8y.RequestOptions{
+		Method:       "POST",
+		Path:         path,
+		Query:        queryValue,
+		Body:         body.GetMap(),
+		FormData:     formData,
+		IgnoreAccept: false,
+		DryRun:       globalFlagDryRun,
+	}
+
+	return n.doNewExternalID(req, filters)
 }
 
-func (n *newExternalIDCmd) doNewExternalID(method string, path string, query string, body map[string]interface{}, filters *JSONFilters) error {
+func (n *newExternalIDCmd) doNewExternalID(req c8y.RequestOptions, filters *JSONFilters) error {
 	resp, err := client.SendRequest(
 		context.Background(),
-		c8y.RequestOptions{
-			Method:       method,
-			Path:         path,
-			Query:        query,
-			Body:         body,
-			IgnoreAccept: false,
-			DryRun:       globalFlagDryRun,
-		})
+		req,
+	)
 
 	if err != nil {
 		color.Set(color.FgRed, color.Bold)
