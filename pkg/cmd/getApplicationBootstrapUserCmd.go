@@ -26,10 +26,10 @@ func newGetApplicationBootstrapUserCmd() *getApplicationBootstrapUserCmd {
 		Short: "Get application bootstrap user",
 		Long:  ``,
 		Example: `
-$ c8y applications getBootstrapUser --id 12345
+$ c8y applications getBootstrapUser --application 12345
 Get application bootstrap user
 
-$ c8y applications getBootstrapUser --id myapp
+$ c8y applications getBootstrapUser --application myapp
 Get application bootstrap user
 		`,
 		RunE: ccmd.getApplicationBootstrapUser,
@@ -37,10 +37,10 @@ Get application bootstrap user
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("id", "", "Application id (required)")
+	cmd.Flags().String("application", "", "Application id (required)")
 
 	// Required flags
-	cmd.MarkFlagRequired("id")
+	cmd.MarkFlagRequired("application")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
@@ -74,20 +74,20 @@ func (n *getApplicationBootstrapUserCmd) getApplicationBootstrapUser(cmd *cobra.
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if cmd.Flags().Changed("id") {
-		idInputValues, idValue, err := getApplicationSlice(cmd, args, "id")
+	if cmd.Flags().Changed("application") {
+		applicationInputValues, applicationValue, err := getApplicationSlice(cmd, args, "application")
 
 		if err != nil {
-			return newUserError("no matching applications found", idInputValues, err)
+			return newUserError("no matching applications found", applicationInputValues, err)
 		}
 
-		if len(idValue) == 0 {
-			return newUserError("no matching applications found", idInputValues)
+		if len(applicationValue) == 0 {
+			return newUserError("no matching applications found", applicationInputValues)
 		}
 
-		for _, item := range idValue {
+		for _, item := range applicationValue {
 			if item != "" {
-				pathParameters["id"] = newIDValue(item).GetID()
+				pathParameters["application"] = newIDValue(item).GetID()
 			}
 		}
 	}

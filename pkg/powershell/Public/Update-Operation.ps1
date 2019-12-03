@@ -12,7 +12,7 @@ PS> Update-Operation -Id {{ NewOperation }} -Status EXECUTING
 Update an operation
 
 .EXAMPLE
-PS> Get-OperationCollection -Device "{{ randomdevice }}" -Status EXECUTING | Update-Operation -Status FAILED -FailureReason "manually cancelled"
+PS> Get-OperationCollection -Device $Agent.id -Status PENDING | Update-Operation -Status FAILED -FailureReason "manually cancelled"
 Update multiple operations
 
 

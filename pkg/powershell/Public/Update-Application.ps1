@@ -1,12 +1,12 @@
 # Code generated from specification version 1.0.0: DO NOT EDIT
-Function New-Application {
+Function Update-Application {
 <#
 .SYNOPSIS
-New application
+Update application meta information
 
 .EXAMPLE
-PS> New-Application -Name myapp -Type HOSTED -Key "myapp-key" -ContextPath "myapp"
-Create new hosted application
+PS> Update-Application -Application "helloworld-app" -Availability "MARKET"
+Update application availability to MARKET
 
 
 #>
@@ -17,26 +17,27 @@ Create new hosted application
     [Alias()]
     [OutputType([object])]
     Param(
+        # Application id (required)
+        [Parameter(Mandatory = $true,
+                   ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true)]
+        [object[]]
+        $Application,
+
         # data
         [Parameter()]
         [hashtable]
         $Data,
 
-        # Name of application (required)
-        [Parameter(Mandatory = $true)]
+        # Name of application
+        [Parameter()]
         [string]
         $Name,
 
-        # Shared secret of application (required)
-        [Parameter(Mandatory = $true)]
+        # Shared secret of application
+        [Parameter()]
         [string]
         $Key,
-
-        # Type of application. Possible values are EXTERNAL, HOSTED, MICROSERVICE (required)
-        [Parameter(Mandatory = $true)]
-        [ValidateSet('EXTERNAL','HOSTED','MICROSERVICE')]
-        [string]
-        $Type,
 
         # Access level for other tenants.  Possible values are : MARKET, PRIVATE (default)
         [Parameter()]
@@ -44,12 +45,12 @@ Create new hosted application
         [string]
         $Availability,
 
-        # contextPath of the hosted application. Required when application type is HOSTED
+        # contextPath of the hosted application
         [Parameter()]
         [string]
         $ContextPath,
 
-        # URL to application base directory hosted on an external server. Required when application type is HOSTED
+        # URL to application base directory hosted on an external server
         [Parameter()]
         [string]
         $ResourcesUrl,
@@ -64,7 +65,7 @@ Create new hosted application
         [string]
         $ResourcesPassword,
 
-        # URL to the external application. Required when application type is EXTERNAL
+        # URL to the external application
         [Parameter()]
         [string]
         $ExternalUrl,
@@ -96,9 +97,6 @@ Create new hosted application
         if ($PSBoundParameters.ContainsKey("Key")) {
             $Parameters["key"] = $Key
         }
-        if ($PSBoundParameters.ContainsKey("Type")) {
-            $Parameters["type"] = $Type
-        }
         if ($PSBoundParameters.ContainsKey("Availability")) {
             $Parameters["availability"] = $Availability
         }
@@ -124,7 +122,10 @@ Create new hosted application
     }
 
     Process {
-        foreach ($item in @("")) {
+        foreach ($item in (PSC8y\Expand-Application $Application)) {
+            if ($item) {
+                $Parameters["application"] = if ($item.id) { $item.id } else { $item }
+            }
 
             if (!$Force -and
                 !$WhatIfPreference -and
@@ -137,7 +138,7 @@ Create new hosted application
 
             Invoke-Command `
                 -Noun "applications" `
-                -Verb "create" `
+                -Verb "update" `
                 -Parameters $Parameters `
                 -Type "application/vnd.com.nsn.cumulocity.application+json" `
                 -ItemType "" `

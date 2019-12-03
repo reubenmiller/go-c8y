@@ -13,17 +13,17 @@ List of ids, names or application objects
 Limit the types of object by a specific type
 
 .EXAMPLE
-Expand-C8yApplication "app-name"
+Expand-Application "app-name"
 
 Retrieve the application objects by name or id
 
 .EXAMPLE
-Get-C8yApplication *app* | Expand-C8yApplication
+Get-C8yApplicationCollection *app* | Expand-Application
 
 Get all the application object (with app in their name). Note the Expand cmdlet won't do much here except for returning the input objects.
 
 .EXAMPLE
-Expand-C8yApplication * -Type MICROSERVICE
+Expand-Application * -Type MICROSERVICE
 
 Expand applications that match a name of "*" and have a type of "MICROSERVICE"
 
@@ -35,48 +35,31 @@ Expand applications that match a name of "*" and have a type of "MICROSERVICE"
             ValueFromPipeline=$true,
             Position=0
         )]
-        [object[]] $InputObject,
-
-        [ValidateSet("MICROSERVICE", "EXTERNAL", "HOSTED")]
-        [string] $Type
+        [object[]] $InputObject
     )
 
     Process {
         [array] $AllApplications = foreach ($iApp in $InputObject)
         {
-            if (($iApp -is [string]) -or ($iApp -match "^\d+$"))
-            {
-                if ($Type) {
-                    Get-C8yApplication -Name $iApp -Type:$Type -WhatIf:$false
-                } else {
-                    Get-C8yApplication -Name $iApp -WhatIf:$false
-                }
-
+            # Already an app object, so do nothing
+            if ($iApp.id) {
+                $iApp
+                continue
             }
-            elseif (($iApp.applicationId -is [string]) -or ($iApp.applicationId -match "^\d+$"))
-            {
-                if ($Type)
-                {
-                    Get-C8yApplication -Name $iApp.applicationId -Type:$Type -WhatIf:$false
-                } else {
-                    Get-C8yApplication -Name $iApp.applicationId -WhatIf:$false
-                }
-            }
-            else
-            {
-                if ($Type)
-                {
-                    # Only return if the type matching the expected type
-                    if ($Type -eq $iApp.type)
-                    {
-                        $iApp
-                    }
-                }
-                else
-                {
-                    $iApp
-                }
 
+            if ($iApp.applicationId) {
+                PSC8y\Get-Application -Application $iApp.applicationId -WhatIf:$false
+                continue
+            }
+
+            if ("$iApp" -match "^\d+$") {
+                # Provided with an id
+                $iApp
+                # PSC8y\Get-Application -Application $iApp -WhatIf:$false
+            } else {
+                # Provided with a query
+                PSC8y\Get-ApplicationCollection -PageSize 2000 |
+                        Where-Object { $_.name -like "$iApp" }
             }
         }
 

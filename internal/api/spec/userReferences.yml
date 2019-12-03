@@ -76,7 +76,7 @@ endpoints:
         description: Group ID
 
       - name: user
-        type: string
+        type: '[]user'
         description: User id/username
 
   - name: getUsersInGroup
@@ -107,7 +107,7 @@ endpoints:
         description: Tenant
 
       - name: id
-        type: string
+        type: '[]usergroup'
         required: true
         pipeline: true
         description: Group ID

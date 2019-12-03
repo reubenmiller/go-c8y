@@ -36,7 +36,7 @@ List the users within a user group
 
 	cmd.Flags().String("tenant", "", "Tenant")
 	cmd.Flags().StringSlice("group", []string{""}, "Group ID")
-	cmd.Flags().String("user", "", "User id/username")
+	cmd.Flags().StringSlice("user", []string{""}, "User id/username")
 
 	// Required flags
 
@@ -92,12 +92,22 @@ func (n *deleteUserFromGroupCmd) deleteUserFromGroup(cmd *cobra.Command, args []
 			}
 		}
 	}
-	if v, err := cmd.Flags().GetString("user"); err == nil {
-		if v != "" {
-			pathParameters["user"] = v
+	if cmd.Flags().Changed("user") {
+		userInputValues, userValue, err := getFormattedUserSlice(cmd, args, "user")
+
+		if err != nil {
+			return newUserError("no matching users found", userInputValues, err)
 		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "user", err))
+
+		if len(userValue) == 0 {
+			return newUserError("no matching users found", userInputValues)
+		}
+
+		for _, item := range userValue {
+			if item != "" {
+				pathParameters["user"] = newIDValue(item).GetID()
+			}
+		}
 	}
 
 	path := replacePathParameters("/user/{tenant}/groups/{group}/users/{user}", pathParameters)

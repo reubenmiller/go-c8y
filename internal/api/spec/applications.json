@@ -17,6 +17,20 @@
       "alias": {
         "go": "list",
         "powershell": "Get-ApplicationCollection"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get applications",
+            "command": "Get-ApplicationCollection -PageSize 100"
+          }
+        ],
+        "go": [
+          {
+            "description": "Get applications",
+            "command": "c8y applications list --pageSize 100"
+          }
+        ]
       }
     },
     {
@@ -29,6 +43,23 @@
         "go": "create",
         "powershell": "New-Application"
       },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Create new hosted application",
+            "command": "New-Application -Name myapp -Type HOSTED -Key \"myapp-key\" -ContextPath \"myapp\"",
+            "afterEach": [
+              "Remove-Application -Application \"myapp\""
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Create new hosted application",
+            "command": "c8y applications create --name myapp --type HOSTED --key \"myapp-key\" --contextPath \"myapp\""
+          }
+        ]
+      },
       "body": [
         {
           "name": "data",
@@ -38,13 +69,13 @@
         {
           "name": "name",
           "type": "string",
-          "required": false,
+          "required": true,
           "description": "Name of application"
         },
         {
           "name": "key",
           "type": "string",
-          "required": false,
+          "required": true,
           "description": "Shared secret of application"
         },
         {
@@ -55,7 +86,7 @@
             "HOSTED",
             "MICROSERVICE"
           ],
-          "required": false,
+          "required": true,
           "description": "Type of application. Possible values are EXTERNAL, HOSTED, MICROSERVICE"
         },
         {
@@ -66,7 +97,7 @@
             "PRIVATE"
           ],
           "required": false,
-          "description": "Application will be applied to this type of documents, possible values [ALARM, AUDIT, EVENT, MEASUREMENT, OPERATION, *]."
+          "description": "Access level for other tenants.  Possible values are : MARKET, PRIVATE (default)"
         },
         {
           "name": "contextPath",
@@ -111,6 +142,27 @@
         "go": "copy",
         "powershell": "Copy-Application"
       },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Copy an existing application",
+            "beforeEach": [
+              "New-Application -Name my-example-app -Type HOSTED -Key \"my-example-app-key\" -ContextPath \"my-example-app\""
+            ],
+            "command": "Copy-Application -Application \"my-example-app\"",
+            "afterEach": [
+              "Remove-Application -Application \"my-example-app\"",
+              "Remove-Application -Application \"clonemy-example-app\""
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Copy an existing application",
+            "command": "c8y applications copy --application my-example-app"
+          }
+        ]
+      },
       "pathParameters": [
         {
           "name": "application",
@@ -130,6 +182,36 @@
       "alias": {
         "go": "get",
         "powershell": "Get-Application"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get an application by id",
+            "beforeEach": [
+              "$App = New-Application -Name my-simple-app -Type HOSTED -Key \"my-simple-app-key\" -ContextPath \"my-simple-app\""
+            ],
+            "command": "Get-Application -Application $App.id",
+            "afterEach": [
+              "Remove-Application -Application \"my-simple-app\""
+            ]
+          },
+          {
+            "description": "Get an application by name",
+            "beforeEach": [
+              "New-Application -Name my-simple-app -Type HOSTED -Key \"my-simple-app-key\" -ContextPath \"my-simple-app\""
+            ],
+            "command": "Get-Application -Application \"my-simple-app\"",
+            "afterEach": [
+              "Remove-Application -Application \"my-simple-app\""
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Get an application",
+            "command": "c8y applications get --application 12345"
+          }
+        ]
       },
       "pathParameters": [
         {
@@ -151,6 +233,34 @@
         "go": "delete",
         "powershell": "Remove-Application"
       },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Delete an application by id",
+            "beforeEach": [
+              "$App = New-Application -Name my-temp-app -Type HOSTED -Key \"my-temp-app-key\" -ContextPath \"my-temp-app\""
+            ],
+            "command": "Remove-Application -Application $App.id"
+          },
+          {
+            "description": "Delete an application by name",
+            "beforeEach": [
+              "New-Application -Name my-temp-app -Type HOSTED -Key \"my-temp-app-key\" -ContextPath \"my-temp-app\""
+            ],
+            "command": "Remove-Application -Application \"my-temp-app\""
+          }
+        ],
+        "go": [
+          {
+            "description": "Delete an application by id",
+            "command": "c8y applications delete --application 12345"
+          },
+          {
+            "description": "Delete an application by name",
+            "command": "c8y applications delete --application my-temp-app"
+          }
+        ]
+      },
       "pathParameters": [
         {
           "name": "application",
@@ -163,13 +273,33 @@
     },
     {
       "name": "updateApplication",
-      "description": "Update application",
+      "description": "Update application meta information",
       "method": "PUT",
       "path": "/application/applications/{application}",
       "accept": "application/vnd.com.nsn.cumulocity.application+json",
       "alias": {
-        "go": "updateBinary",
-        "powershell": "Update-Binary"
+        "go": "update",
+        "powershell": "Update-Application"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Update application availability to MARKET",
+            "beforeEach": [
+              "$App = New-Application -Name \"helloworld-app\" -Type HOSTED -Key \"helloworld-app-key\" -ContextPath \"helloworld-app\""
+            ],
+            "command": "Update-Application -Application \"helloworld-app\" -Availability \"MARKET\"",
+            "afterEach": [
+              "Remove-Application -Application $App.id"
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Update application availability to MARKET",
+            "command": "c8y applications update --application \"helloworld-app\" --availability MARKET"
+          }
+        ]
       },
       "pathParameters": [
         {
@@ -206,7 +336,7 @@
             "PRIVATE"
           ],
           "required": false,
-          "description": "Application will be applied to this type of documents, possible values [ALARM, AUDIT, EVENT, MEASUREMENT, OPERATION, *]."
+          "description": "Access level for other tenants.  Possible values are : MARKET, PRIVATE (default)"
         },
         {
           "name": "contextPath",
@@ -278,9 +408,33 @@
         "go": "getBootstrapUser",
         "powershell": "Get-ApplicationBootstrapUser"
       },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get application bootstrap user",
+            "beforeEach": [
+              "$App = New-Application -Name \"helloworld-microservice\" -Type MICROSERVICE -Key \"helloworld-microservice-key\" -ContextPath \"helloworld-microservice\""
+            ],
+            "command": "Get-ApplicationBootstrapUser -Application $App.name",
+            "afterEach": [
+              "Remove-Application -Application $App.id"
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Get application bootstrap user",
+            "command": "c8y applications getBootstrapUser --application 12345"
+          },
+          {
+            "description": "Get application bootstrap user",
+            "command": "c8y applications getBootstrapUser --application myapp"
+          }
+        ]
+      },
       "pathParameters": [
         {
-          "name": "id",
+          "name": "application",
           "type": "application",
           "pipeline": true,
           "required": true,

@@ -2,6 +2,8 @@
 
 Describe -Name "Get-AlarmCollection" {
     BeforeEach {
+        $Device = New-TestDevice
+        $Alarm = PSC8y\New-Alarm -Device $Device.id -Type c8y_TestAlarm -Time "-0s" -Text "Test alarm" -Severity MAJOR
 
     }
 
@@ -17,6 +19,7 @@ Describe -Name "Get-AlarmCollection" {
     }
 
     AfterEach {
+        PSC8y\Remove-ManagedObject -Id $Device.id
 
     }
 }

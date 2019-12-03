@@ -7,6 +7,14 @@ Delete application
 .DESCRIPTION
 Info: The application can only be removed when its availability is PRIVATE or in other case when it has no subscriptions.
 
+.EXAMPLE
+PS> Remove-Application -Application $App.id
+Delete an application by id
+
+.EXAMPLE
+PS> Remove-Application -Application "my-temp-app"
+Delete an application by name
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

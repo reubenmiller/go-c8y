@@ -2,8 +2,11 @@
 
 Describe -Name "Get-OperationCollection" {
     BeforeEach {
-        $TestAgent = PSC8y\New-TestAgent
-        $TestDevice = PSC8y\New-TestDevice
+        $Agent = New-TestAgent
+        $Operation1 = PSC8y\New-TestOperation -Device $Agent.id
+        $Device = New-TestDevice
+        New-ChildDeviceReference -Device $Agent.id -NewChild $Device.id
+        $Operation1 = PSC8y\New-TestOperation -Device $Device.id
 
     }
 
@@ -13,23 +16,19 @@ Describe -Name "Get-OperationCollection" {
         $Response | Should -Not -BeNullOrEmpty
     }
     It "Get a list of pending operations for a given agent and all of its child devices" {
-        $Response = PSC8y\Get-OperationCollection -Agent $TestAgent.id -Status PENDING
+        $Response = PSC8y\Get-OperationCollection -Agent $Agent.id -Status PENDING
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
     It "Get a list of pending operations for a device" {
-        $Response = PSC8y\Get-OperationCollection -Device $TestDevice.id -Status PENDING
+        $Response = PSC8y\Get-OperationCollection -Device $Device.id -Status PENDING
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
 
     AfterEach {
-        if ($TestAgent.id) {
-            PSC8y\Remove-ManagedObject -Id $TestAgent.id -ErrorAction SilentlyContinue
-        }
-        if ($TestDevice.id) {
-            PSC8y\Remove-ManagedObject -Id $TestDevice.id -ErrorAction SilentlyContinue
-        }
+        Remove-ManagedObject -id $Agent.id
+        Remove-ManagedObject -id $Device.id
 
     }
 }

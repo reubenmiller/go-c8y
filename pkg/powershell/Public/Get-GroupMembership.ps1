@@ -30,7 +30,7 @@ List the users within a user group (using pipeline)
         [Parameter(Mandatory = $true,
                    ValueFromPipeline=$true,
                    ValueFromPipelineByPropertyName=$true)]
-        [string]
+        [object[]]
         $Id,
 
         # Maximum number of results

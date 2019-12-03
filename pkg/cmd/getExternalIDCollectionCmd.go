@@ -34,9 +34,10 @@ Get a list of external ids
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().StringSlice("device", []string{""}, "Device id")
+	cmd.Flags().StringSlice("device", []string{""}, "Device id (required)")
 
 	// Required flags
+	cmd.MarkFlagRequired("device")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

@@ -31,7 +31,8 @@ The response contains a representation of the newly created application.
 Required role ROLE_APPLICATION_MANAGMENT_ADMIN
 `,
 		Example: `
-
+$ c8y applications copy --application my-example-app
+Copy an existing application
 		`,
 		RunE: ccmd.copyApplication,
 	}

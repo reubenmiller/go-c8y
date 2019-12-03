@@ -4,6 +4,10 @@ Function Get-ApplicationCollection {
 .SYNOPSIS
 Get collection of applications
 
+.EXAMPLE
+PS> Get-ApplicationCollection -PageSize 100
+Get applications
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

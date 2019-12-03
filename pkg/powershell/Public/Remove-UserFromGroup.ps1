@@ -29,7 +29,7 @@ Add a user to a user group
 
         # User id/username
         [Parameter()]
-        [string]
+        [object[]]
         $User,
 
         # Include raw response including pagination information

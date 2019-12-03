@@ -3,7 +3,9 @@
 Describe -Name "Update-Operation" {
     BeforeEach {
         $TestOperation = PSC8y\New-TestOperation
-        $TestDevice = PSC8y\New-TestDevice
+        $Agent = PSC8y\New-TestAgent
+        $Operation1 = PSC8y\New-TestOperation -Device $Agent.id
+        $Operation2 = PSC8y\New-TestOperation -Device $Agent.id
 
     }
 
@@ -13,7 +15,7 @@ Describe -Name "Update-Operation" {
         $Response | Should -Not -BeNullOrEmpty
     }
     It "Update multiple operations" {
-        $Response = PSC8y\Get-OperationCollection -Device $TestDevice.id -Status EXECUTING | Update-Operation -Status FAILED -FailureReason "manually cancelled"
+        $Response = PSC8y\Get-OperationCollection -Device $Agent.id -Status PENDING | Update-Operation -Status FAILED -FailureReason "manually cancelled"
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
@@ -22,9 +24,7 @@ Describe -Name "Update-Operation" {
         if ($TestOperation.deviceId) {
             PSC8y\Remove-ManagedObject -Id $TestOperation.deviceId -ErrorAction SilentlyContinue
         }
-        if ($TestDevice.id) {
-            PSC8y\Remove-ManagedObject -Id $TestDevice.id -ErrorAction SilentlyContinue
-        }
+        PSC8y\Remove-ManagedObject -Id $Agent.id
 
     }
 }

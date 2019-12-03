@@ -26,8 +26,8 @@ func newNewApplicationCmd() *newApplicationCmd {
 		Short: "New application",
 		Long:  ``,
 		Example: `
-$ c8y applications create --name myapp --type HOSTED
-Create new application
+$ c8y applications create --name myapp --type HOSTED --key "myapp-key" --contextPath "myapp"
+Create new hosted application
 		`,
 		RunE: ccmd.newApplication,
 	}
@@ -35,9 +35,9 @@ Create new application
 	cmd.SilenceUsage = true
 
 	addDataFlag(cmd)
-	cmd.Flags().String("name", "", "Name of application")
-	cmd.Flags().String("key", "", "Shared secret of application")
-	cmd.Flags().String("type", "", "Type of application. Possible values are EXTERNAL, HOSTED, MICROSERVICE")
+	cmd.Flags().String("name", "", "Name of application (required)")
+	cmd.Flags().String("key", "", "Shared secret of application (required)")
+	cmd.Flags().String("type", "", "Type of application. Possible values are EXTERNAL, HOSTED, MICROSERVICE (required)")
 	cmd.Flags().String("availability", "", "Access level for other tenants.  Possible values are : MARKET, PRIVATE (default)")
 	cmd.Flags().String("contextPath", "", "contextPath of the hosted application. Required when application type is HOSTED")
 	cmd.Flags().String("resourcesUrl", "", "URL to application base directory hosted on an external server. Required when application type is HOSTED")
@@ -46,6 +46,9 @@ Create new application
 	cmd.Flags().String("externalUrl", "", "URL to the external application. Required when application type is EXTERNAL")
 
 	// Required flags
+	cmd.MarkFlagRequired("name")
+	cmd.MarkFlagRequired("key")
+	cmd.MarkFlagRequired("type")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

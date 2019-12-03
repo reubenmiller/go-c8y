@@ -12,11 +12,11 @@ PS> Get-OperationCollection -Status PENDING
 Get a list of pending operations
 
 .EXAMPLE
-PS> Get-OperationCollection -Agent "{{ randomagent }}" -Status PENDING
+PS> Get-OperationCollection -Agent $Agent.id -Status PENDING
 Get a list of pending operations for a given agent and all of its child devices
 
 .EXAMPLE
-PS> Get-OperationCollection -Device "{{ randomdevice }}" -Status PENDING
+PS> Get-OperationCollection -Device $Device.id -Status PENDING
 Get a list of pending operations for a device
 
 

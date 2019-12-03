@@ -8,7 +8,7 @@ Get a collection of external ids based on filter parameters
 Get a collection of external ids based on filter parameters
 
 .EXAMPLE
-PS> Get-ExternalIdCollection
+PS> Get-ExternalIdCollection -Device $Device.id
 Get a list of external ids
 
 
@@ -20,8 +20,8 @@ Get a list of external ids
     [Alias()]
     [OutputType([object])]
     Param(
-        # Device id
-        [Parameter()]
+        # Device id (required)
+        [Parameter(Mandatory = $true)]
         [object[]]
         $Device,
 

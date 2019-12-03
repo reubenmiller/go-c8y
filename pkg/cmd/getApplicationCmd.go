@@ -26,8 +26,8 @@ func newGetApplicationCmd() *getApplicationCmd {
 		Short: "Get application",
 		Long:  ``,
 		Example: `
-$ c8y applications list --pageSize 100
-Get applications
+$ c8y applications get --application 12345
+Get an application
 		`,
 		RunE: ccmd.getApplication,
 	}

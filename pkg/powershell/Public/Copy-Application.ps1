@@ -12,6 +12,10 @@ The response contains a representation of the newly created application.
 Required role ROLE_APPLICATION_MANAGMENT_ADMIN
 
 
+.EXAMPLE
+PS> Copy-Application -Application "my-example-app"
+Copy an existing application
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

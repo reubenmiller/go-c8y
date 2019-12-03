@@ -51,6 +51,8 @@
   * [ ] Update all upload files
 * [ ] Generic download file cmd
 * [ ] Generic upload file cmd
+* [ ] Generic rest cmd
+  * [ ] If the response is not json, then return it as is (i.e. like the --raw switch)
 
 ### Phase 2
 

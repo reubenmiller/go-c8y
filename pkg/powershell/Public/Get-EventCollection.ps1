@@ -8,11 +8,11 @@ Get a collection of events based on filter parameters
 Get a collection of events based on filter parameters
 
 .EXAMPLE
-PS> Get-EventCollection -Type my_CustomType -DateFrom "-10d"
+PS> Get-EventCollection -Type "my_CustomType2" -DateFrom "-10d"
 Get events with type 'my_CustomType' that were created in the last 10 days
 
 .EXAMPLE
-PS> Get-EventCollection -Device "{{ randomdevice }}"
+PS> Get-EventCollection -Device $Device.id
 Get events from a device
 
 

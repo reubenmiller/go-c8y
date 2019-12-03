@@ -4,6 +4,14 @@ Function Get-Application {
 .SYNOPSIS
 Get application
 
+.EXAMPLE
+PS> Get-Application -Application $App.id
+Get an application by id
+
+.EXAMPLE
+PS> Get-Application -Application "my-simple-app"
+Get an application by name
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

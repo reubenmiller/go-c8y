@@ -4,6 +4,10 @@ Function Get-ApplicationBootstrapUser {
 .SYNOPSIS
 Get application bootstrap user
 
+.EXAMPLE
+PS> Get-ApplicationBootstrapUser -Application $App.name
+Get application bootstrap user
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -18,7 +22,7 @@ Get application bootstrap user
                    ValueFromPipeline=$true,
                    ValueFromPipelineByPropertyName=$true)]
         [object[]]
-        $Id,
+        $Application,
 
         # Include raw response including pagination information
         [Parameter()]
@@ -40,9 +44,9 @@ Get application bootstrap user
     }
 
     Process {
-        foreach ($item in (PSC8y\Expand-Application $Id)) {
+        foreach ($item in (PSC8y\Expand-Application $Application)) {
             if ($item) {
-                $Parameters["id"] = if ($item.id) { $item.id } else { $item }
+                $Parameters["application"] = if ($item.id) { $item.id } else { $item }
             }
 
             if (!$Force -and

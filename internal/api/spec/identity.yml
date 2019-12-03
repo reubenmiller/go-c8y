@@ -21,7 +21,13 @@ endpoints:
     examples:
       powershell:
         - description: Get a list of external ids
-          command: Get-ExternalIdCollection
+          beforeEach:
+            - $Device = New-TestDevice
+            - $ExtName = New-RandomString -Prefix "IMEI"
+            - $ExternalID = PSC8y\New-ExternalID -Device $Device.id -Type "my_SerialNumber" -Name "$ExtName"
+          command: Get-ExternalIdCollection -Device $Device.id
+          afterEach:
+            - PSC8y\Remove-ManagedObject -Id $Device.id
 
       go:
         - description: Get a list of external ids
@@ -29,6 +35,7 @@ endpoints:
     pathParameters:
       - name: device
         type: '[]device'
+        required: true
         description: Device id
 
 

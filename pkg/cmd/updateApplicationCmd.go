@@ -26,7 +26,7 @@ func newUpdateApplicationCmd() *updateApplicationCmd {
 		Short: "Update application meta information",
 		Long:  ``,
 		Example: `
-$ c8y applications update --id 12345 --availability MARKET
+$ c8y applications update --application "helloworld-app" --availability MARKET
 Update application availability to MARKET
 		`,
 		RunE: ccmd.updateApplication,
