@@ -71,7 +71,7 @@ New application binary
                 -Noun "applications" `
                 -Verb "createBinary" `
                 -Parameters $Parameters `
-                -Type "application/vnd.com.nsn.cumulocity.application+json" `
+                -Type "application/vnd.com.nsn.cumulocity.managedObject+json" `
                 -ItemType "" `
                 -ResultProperty "" `
                 -Raw:$Raw `
