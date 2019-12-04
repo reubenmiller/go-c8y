@@ -53,11 +53,6 @@ Create a new audit record
         [string]
         $Application,
 
-        # An optional collection of objects describing the changes that were carried out.
-        [Parameter()]
-        [object[]]
-        $Changes,
-
         # Additional properties of the audit record.
         [Parameter()]
         [hashtable]
@@ -104,9 +99,6 @@ Create a new audit record
         }
         if ($PSBoundParameters.ContainsKey("Application")) {
             $Parameters["application"] = $Application
-        }
-        if ($PSBoundParameters.ContainsKey("Changes")) {
-            $Parameters["changes"] = $Changes
         }
         if ($PSBoundParameters.ContainsKey("Data")) {
             $Parameters["data"] = "{0}" -f ((ConvertTo-Json $Data -Compress) -replace '"', '\"')

@@ -1,29 +1,23 @@
 # Code generated from specification version 1.0.0: DO NOT EDIT
-Function Get-AuditRecordCollection {
+Function Remove-AuditRecordCollection {
 <#
 .SYNOPSIS
-Get collection of (user) audits
+Delete a collection of audit records
 
-.EXAMPLE
-PS> Get-AuditRecordCollection -PageSize 100
-Get a list of audit records
-
-.EXAMPLE
-PS> Get-AuditRecordCollection -Source $Device.id
-Get a list of audit records
+.DESCRIPTION
+Important: This method has been deprecated and will be removed completely with the July 2020 release (10.6.6). With Cumulocity IoT >= 10.6.6 the deletion of audit logs will no longer be permitted. All DELETE requests to the audit API will return the error 405 Method not allowed. Note that retention rules still apply to audit logs and will delete audit log records older than the specified retention time.
 
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
                    PositionalBinding=$true,
                    HelpUri='',
-                   ConfirmImpact = 'None')]
+                   ConfirmImpact = 'High')]
     [Alias()]
     [OutputType([object])]
     Param(
         # Source Id or object containing an .id property of the element that should be detected. i.e. AlarmID, or Operation ID. Note: Only one source can be provided
-        [Parameter(ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true)]
+        [Parameter()]
         [string]
         $Source,
 
@@ -52,29 +46,6 @@ Get a list of audit records
         [string]
         $DateTo,
 
-        # Return the newest instead of the oldest audit records. Must be used with dateFrom and dateTo parameters
-        [Parameter()]
-        [switch]
-        $Revert,
-
-        # Maximum number of results
-        [Parameter()]
-        [AllowNull()]
-        [AllowEmptyString()]
-        [ValidateRange(1,2000)]
-        [int]
-        $PageSize,
-
-        # Include total pages statistic
-        [Parameter()]
-        [switch]
-        $WithTotalPages,
-
-        # Include all results
-        [Parameter()]
-        [switch]
-        $IncludeAll,
-
         # Include raw response including pagination information
         [Parameter()]
         [switch]
@@ -83,11 +54,19 @@ Get a list of audit records
         # Session path
         [Parameter()]
         [string]
-        $Session
+        $Session,
+
+        # Don't prompt for confirmation
+        [Parameter()]
+        [switch]
+        $Force
     )
 
     Begin {
         $Parameters = @{}
+        if ($PSBoundParameters.ContainsKey("Source")) {
+            $Parameters["source"] = $Source
+        }
         if ($PSBoundParameters.ContainsKey("Type")) {
             $Parameters["type"] = $Type
         }
@@ -103,15 +82,6 @@ Get a list of audit records
         if ($PSBoundParameters.ContainsKey("DateTo")) {
             $Parameters["dateTo"] = $DateTo
         }
-        if ($PSBoundParameters.ContainsKey("Revert")) {
-            $Parameters["revert"] = $Revert
-        }
-        if ($PSBoundParameters.ContainsKey("PageSize")) {
-            $Parameters["pageSize"] = $PageSize
-        }
-        if ($PSBoundParameters.ContainsKey("WithTotalPages") -and $WithTotalPages) {
-            $Parameters["withTotalPages"] = $WithTotalPages
-        }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
         }
@@ -119,10 +89,7 @@ Get a list of audit records
     }
 
     Process {
-        foreach ($item in (PSC8y\Expand-Id $Source)) {
-            if ($item) {
-                $Parameters["source"] = if ($item.id) { $item.id } else { $item }
-            }
+        foreach ($item in @("")) {
 
             if (!$Force -and
                 !$WhatIfPreference -and
@@ -135,11 +102,11 @@ Get a list of audit records
 
             Invoke-Command `
                 -Noun "auditRecords" `
-                -Verb "list" `
+                -Verb "deleteCollection" `
                 -Parameters $Parameters `
-                -Type "application/vnd.com.nsn.cumulocity.auditRecordCollection+json" `
-                -ItemType "application/vnd.com.nsn.cumulocity.auditRecord+json" `
-                -ResultProperty "auditRecords" `
+                -Type "" `
+                -ItemType "" `
+                -ResultProperty "" `
                 -Raw:$Raw `
                 -IncludeAll:$IncludeAll
         }

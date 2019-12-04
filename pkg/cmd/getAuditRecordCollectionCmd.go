@@ -27,7 +27,8 @@ func newGetAuditRecordCollectionCmd() *getAuditRecordCollectionCmd {
 		Short: "Get collection of (user) audits",
 		Long:  ``,
 		Example: `
-
+$ c8y auditRecords list --pageSize 100
+Get a list of audit records
 		`,
 		RunE: ccmd.getAuditRecordCollection,
 	}
