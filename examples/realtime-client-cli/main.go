@@ -19,8 +19,9 @@ import (
 )
 
 var (
-	device   = flag.String("device", "", "Device id to subscribe to")
-	series   = flag.String("series", "", "Device id to subscribe to")
+	device   = flag.String("device", "", "Device id or name to subscribe to. Accepts wildcards but only the first result will be used")
+	series   = flag.String("series", "", "Series filter. Only show values from this series. Accepts wildcards. Only valid if channel is set to measurements")
+	channel  = flag.String("channel", "measurements", "Channel type. i.e. measurements, events, operations etc.")
 	duration = flag.Int64("duration", 60*60, "Duration in seconds that the realtime client should run for")
 	verbose  = flag.Bool("verbose", false, "Verbose logging")
 )
@@ -77,8 +78,6 @@ func parseMeasurementSeries(data []byte) ([]MeasurementSeries, error) {
 		return series, err
 	}
 
-	// fmt.Printf("payload: %s", data)
-
 	flat, _ := flatten.Flatten(jsonMap, "", flatten.DotStyle)
 
 	valueKeys := []string{}
@@ -124,12 +123,6 @@ func main() {
 	// C8Y_HOST, C8Y_TENANT, C8Y_USER, C8Y_PASSWORD
 	client := c8y.NewClientFromEnvironment(nil, false)
 
-	deviceID, err = findDevice(client, *device)
-
-	if err != nil {
-		panic(err)
-	}
-
 	// Create realtime connection
 	err = client.Realtime.Connect()
 
@@ -139,35 +132,66 @@ func main() {
 
 	// Subscribe to all measurements
 	ch := make(chan *c8y.Message)
-	client.Realtime.Subscribe(c8y.RealtimeMeasurements(deviceID), ch)
+
+	// TODO: only look up device if a custom channel is being used
+	deviceID, err = findDevice(client, *device)
+
+	if err != nil {
+		panic(err)
+	}
+
+	channelPattern := ""
+	switch *channel {
+	case "alarms":
+		channelPattern = c8y.RealtimeAlarms(deviceID)
+	case "events":
+		channelPattern = c8y.RealtimeEvents(deviceID)
+	case "measurements":
+		channelPattern = c8y.RealtimeMeasurements(deviceID)
+
+	case "operations":
+		fallthrough
+	case "devicecontrol":
+		channelPattern = c8y.RealtimeOperations(deviceID)
+	default:
+		// Custom channel as defined by the user
+		channelPattern = *channel
+	}
+
+	client.Realtime.Subscribe(channelPattern, ch)
 
 	// Enable ctrl-c stop signal
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, os.Interrupt)
 
-	log.Printf("Listenening to subscriptions: %s", deviceID)
+	log.Printf("Listenening to subscriptions: %s", channelPattern)
+
+	timeoutCh := time.After(timeoutDuration)
 
 	for {
 		select {
-		case msg := <-ch:
-			if bytes.Contains(msg.Payload.Data, []byte(*series)) {
-				series, err := parseMeasurementSeries(msg.Payload.Data)
-
-				if err != nil {
-					return
-				}
-				for _, iSeries := range series {
-					if deviceID == "*" {
-						fmt.Printf("%-15s\t%s\t%-40s\t%.2f %s\n", iSeries.SourceID, iSeries.Timestamp, iSeries.Fragment+"."+iSeries.Series, iSeries.Value, iSeries.Unit)
-					} else {
-						fmt.Printf("%-15s\t%s\t%-40s\t%.2f %s\n", *device, iSeries.Timestamp, iSeries.Fragment+"."+iSeries.Series, iSeries.Value, iSeries.Unit)
-					}
-				}
-			}
-
-		case <-time.After(timeoutDuration):
+		case <-timeoutCh:
 			log.Printf("Duration has expired. Stopping realtime client")
 			return
+		case msg := <-ch:
+			if bytes.Contains(msg.Payload.Data, []byte(*series)) {
+				if *channel == "measurements" {
+					series, err := parseMeasurementSeries(msg.Payload.Data)
+
+					if err != nil {
+						return
+					}
+					for _, iSeries := range series {
+						if deviceID == "*" {
+							fmt.Printf("%-15s\t%s\t%-40s\t%.2f %s\n", iSeries.SourceID, iSeries.Timestamp, iSeries.Fragment+"."+iSeries.Series, iSeries.Value, iSeries.Unit)
+						} else {
+							fmt.Printf("%-15s\t%s\t%-40s\t%.2f %s\n", *device, iSeries.Timestamp, iSeries.Fragment+"."+iSeries.Series, iSeries.Value, iSeries.Unit)
+						}
+					}
+				} else {
+					fmt.Printf("%s\n", msg.Payload.Data)
+				}
+			}
 
 		case <-signalCh:
 			// Enable ctrl-c to stop
