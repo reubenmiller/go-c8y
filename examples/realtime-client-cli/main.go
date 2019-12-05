@@ -6,21 +6,23 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
+	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/jeremywohl/flatten"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 )
 
 var (
-	device  = flag.String("device", "", "Device id to subscribe to")
-	series  = flag.String("series", "", "Device id to subscribe to")
-	verbose = flag.Bool("verbose", false, "Verbose logging")
+	device   = flag.String("device", "", "Device id to subscribe to")
+	series   = flag.String("series", "", "Device id to subscribe to")
+	duration = flag.Int64("duration", 60*60, "Duration in seconds that the realtime client should run for")
+	verbose  = flag.Bool("verbose", false, "Verbose logging")
 )
 
 func getBetweenBytes(msg, startsWith, endsWith []byte) (string, error) {
@@ -114,29 +116,18 @@ func main() {
 	var deviceID string
 	flag.Parse()
 
-	if !*verbose {
-		log.SetOutput(ioutil.Discard)
-	}
+	c8y.SilenceLogger()
+
+	timeoutDuration := time.Duration(*duration) * time.Second
 
 	// Create the client from the following environment variables
 	// C8Y_HOST, C8Y_TENANT, C8Y_USER, C8Y_PASSWORD
 	client := c8y.NewClientFromEnvironment(nil, false)
 
-	if *device != "" && *device != "*" {
-		devices, _, err := client.Inventory.GetDevicesByName(context.Background(), *device, c8y.NewPaginationOptions(1))
+	deviceID, err = findDevice(client, *device)
 
-		if err != nil {
-			panic(err)
-		}
-
-		if len(devices.ManagedObjects) == 0 {
-			log.Panicf("Could not find a device with the name '%s'", *device)
-		}
-
-		deviceID = devices.ManagedObjects[0].ID
-	} else {
-		fmt.Println("Using a wildcard")
-		deviceID = "*"
+	if err != nil {
+		panic(err)
 	}
 
 	// Create realtime connection
@@ -154,7 +145,7 @@ func main() {
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, os.Interrupt)
 
-	log.Printf("Listenening to subscriptions")
+	log.Printf("Listenening to subscriptions: %s", deviceID)
 
 	for {
 		select {
@@ -174,10 +165,39 @@ func main() {
 				}
 			}
 
+		case <-time.After(timeoutDuration):
+			log.Printf("Duration has expired. Stopping realtime client")
+			return
+
 		case <-signalCh:
 			// Enable ctrl-c to stop
 			log.Printf("Stopping realtime client")
 			return
 		}
 	}
+}
+
+func findDevice(client *c8y.Client, device string) (string, error) {
+	if device == "" || device == "*" {
+		return device, nil
+	}
+
+	// device is an id
+	pattern := regexp.MustCompile("^\\d+$")
+	if pattern.MatchString(device) {
+		return device, nil
+	}
+
+	// lookup device by name
+	devices, _, err := client.Inventory.GetDevicesByName(context.Background(), device, c8y.NewPaginationOptions(1))
+
+	if err != nil {
+		return "", fmt.Errorf("failed to send request to Cumulocity. '%s'", err)
+	}
+
+	if len(devices.ManagedObjects) == 0 {
+		return "", fmt.Errorf("Could not find a device with the name '%s'", device)
+	}
+
+	return devices.ManagedObjects[0].ID, nil
 }
