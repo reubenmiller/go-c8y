@@ -64,10 +64,11 @@ Function New-C8yPowershellArguments {
         "datetime" { "string" }
         "dateto" { "string" }
         "file" { "string" }
-        "id" { "string" }
+        "id" { "object" }
         "integer" { "long" }
         "json" { "hashtable" }
         "set" { "object[]" }
+        "source" { "object" }
         "string" { "string" }
         "strings" { "string" }
         "tenant" { "object" }

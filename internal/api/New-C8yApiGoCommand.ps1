@@ -293,8 +293,20 @@ Function Get-C8yGoArgs {
 
     $Entry = switch ($Type) {
         "id" {
-            @{
-                SetFlag = "addIDFlag(cmd)"
+            # TODO: refactor addIdFlag to accept a property name
+            if ($Name -eq "id") {
+                @{
+                    SetFlag = "addIDFlag(cmd)"
+                }
+            } else {
+                $SetFlag = if ($UseOption) {
+                    'cmd.Flags().StringP("{0}", "{1}", "{2}", "{3}")' -f $Name, $OptionName, $Default, $Description
+                } else {
+                    'cmd.Flags().String("{0}", "{1}", "{2}")' -f $Name, $Default, $Description
+                }
+                @{
+                    SetFlag = $SetFlag
+                }
             }
         }
 
@@ -306,7 +318,18 @@ Function Get-C8yGoArgs {
 
         { @("datefrom", "dateto", "datetime") -contains $_ } {
             $SetFlag = if ($UseOption) {
-                'cmd.Flags().StringP("{0}", "{1}", "{2}", "{3}{4}")' -f $Name, $OptionName, $Default, $Description
+                'cmd.Flags().StringP("{0}", "{1}", "{2}", "{3}")' -f $Name, $OptionName, $Default, $Description
+            } else {
+                'cmd.Flags().String("{0}", "{1}", "{2}")' -f $Name, $Default, $Description
+            }
+            @{
+                SetFlag = $SetFlag
+            }
+        }
+
+        "source" {
+            $SetFlag = if ($UseOption) {
+                'cmd.Flags().StringP("{0}", "{1}", "{2}", "{3}")' -f $Name, $OptionName, $Default, $Description
             } else {
                 'cmd.Flags().String("{0}", "{1}", "{2}")' -f $Name, $Default, $Description
             }

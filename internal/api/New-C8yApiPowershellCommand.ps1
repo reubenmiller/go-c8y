@@ -118,6 +118,7 @@ Function New-C8yApiPowershellCommand {
     # Set iterator type
     $IteratorType = ""
     $IteratorVariable = ""
+    $PipelineTemplateFormat = ""
 
     foreach ($iArg in $ArgumentSources) {
         $ReadFromPipeline = $iArg.pipeline -or $iArg.name -eq "id" -or $iArg.alias -eq "id"
@@ -139,9 +140,16 @@ Function New-C8yApiPowershellCommand {
 
         # Set parameters
         if ($iArg.pipeline) {
-            $null = $ProcessParameterBuilder.AppendLine("            if (`$item) {")
-            $null = $ProcessParameterBuilder.AppendLine("                `$Parameters[`"$($iArg.Name)`"] = if (`$item.id) { `$item.id } else { `$item }")
-            $null = $ProcessParameterBuilder.AppendLine("            }")
+            if ($iArg.required) {
+                $null = $ProcessParameterBuilder.AppendLine("            if (`$item) {")
+                $null = $ProcessParameterBuilder.AppendLine("                `$Parameters[`"$($iArg.Name)`"] = if (`$item.id) { `$item.id } else { `$item }")
+                $null = $ProcessParameterBuilder.AppendLine("            }")
+            } else {
+                $PipelineTemplateFormat = "loop_without_pipeline"
+                $ExpanderFunction = Get-IteratorFunction -Type $IteratorType -Variable $IteratorVariable
+                $null = $ProcessParameterBuilder.AppendLine("        `$Parameters[`"$($iArg.Name)`"] = $ExpanderFunction")
+            }
+
         } else {
 
             $ItemValue = switch ($iArg.Type) {
@@ -384,7 +392,7 @@ $($BeginParameterBuilder -join "`n")
     }
 
     Process {
-$(New-Body2 -Noun $Noun -IteratorVariable $IteratorVariable -SetParameters $ProcessParameterBuilder -Verb $Verb -IteratorType $IteratorType -ResultType $ResultType -ResultItemType $ResultItemType -ResultSelectProperty $ResultSelectProperty)
+$(New-Body2 -Noun $Noun -PipelineTemplateFormat $PipelineTemplateFormat -IteratorVariable $IteratorVariable -SetParameters $ProcessParameterBuilder -Verb $Verb -IteratorType $IteratorType -ResultType $ResultType -ResultItemType $ResultItemType -ResultSelectProperty $ResultSelectProperty)
     }
 
     End {}
@@ -405,33 +413,16 @@ Function New-Body2 {
         [string] $ResultItemType,
         [string] $ResultSelectProperty,
         [string] $IteratorType,
-        [string] $IteratorVariable
+        [string] $IteratorVariable,
+        [string] $PipelineTemplateType
     )
 
     $Target = "(PSC8y\Get-C8ySessionProperty -Name `"tenant`")"
     $Message = "(Format-ConfirmationMessage -Name `$PSCmdlet.MyInvocation.InvocationName -InputObject `$item)"
 
-    $ExpandFunction = switch ($IteratorType) {
-        "[]device" { "(PSC8y\Expand-Device $IteratorVariable)" }
-        "[]role" { "(PSC8y\Expand-Id $IteratorVariable)" }
-        "[]roleself" { "(PSC8y\Expand-Id $IteratorVariable)" }
-        "[]tenant" { "(PSC8y\Expand-Tenant $IteratorVariable)" }
-        "[]userself" { "(PSC8y\Expand-User $IteratorVariable)" }
-        "application" { "(PSC8y\Expand-Application $IteratorVariable)" }
-        "device" { "(PSC8y\Expand-Device $IteratorVariable)" }
-        "event" { "(PSC8y\Expand-Event $IteratorVariable)" }
-        "managedObject" { "(PSC8y\Expand-ManagedObject $IteratorVariable)" }
-        default {
-            if ($IteratorVariable -eq "") {
-                "@(`"`")"
-            } else {
-                "(PSC8y\Expand-Id $IteratorVariable)"
-            }
+    $ExpandFunction = Get-IteratorFunction -Type $IteratorType -Variable $IteratorVariable
 
-        }
-    }
-
-    @"
+    $Template1 = @"
         foreach (`$item in $ExpandFunction) {
 $SetParameters
             if (!`$Force -and
@@ -454,4 +445,63 @@ $SetParameters
                 -IncludeAll:`$IncludeAll
         }
 "@
+        $Template2 = @"
+$SetParameters
+        if (!`$Force -and
+            !`$WhatIfPreference -and
+            !`$PSCmdlet.ShouldProcess(
+                $Target,
+                $Message
+            )) {
+            continue
+        }
+
+        Invoke-Command ``
+            -Noun "$Noun" ``
+            -Verb "$Verb" ``
+            -Parameters `$Parameters ``
+            -Type "$ResultType" ``
+            -ItemType "$ResultItemType" ``
+            -ResultProperty "$ResultSelectProperty" ``
+            -Raw:`$Raw ``
+            -IncludeAll:`$IncludeAll
+"@
+        # Return the appropriate process block
+        switch ($PipelineTemplateFormat) {
+            "loop_without_pipeline" { $Template2 }
+            default {
+                $Template1
+            }
+        }
+}
+
+Function Get-IteratorFunction {
+    Param(
+        [string] $Type,
+
+        [string] $Variable
+    )
+
+    $ExpandFunction = switch ($Type) {
+        "[]device" { "(PSC8y\Expand-Device $Variable)" }
+        "[]role" { "(PSC8y\Expand-Id $Variable)" }
+        "[]roleself" { "(PSC8y\Expand-Id $Variable)" }
+        "[]tenant" { "(PSC8y\Expand-Tenant $Variable)" }
+        "[]userself" { "(PSC8y\Expand-User $Variable)" }
+        "application" { "(PSC8y\Expand-Application $Variable)" }
+        "device" { "(PSC8y\Expand-Device $Variable)" }
+        "event" { "(PSC8y\Expand-Event $Variable)" }
+        "id" { "(PSC8y\Expand-Id $Variable)" }
+        "managedObject" { "(PSC8y\Expand-ManagedObject $Variable)" }
+        "source" { "(PSC8y\Expand-Source $Variable)" }
+        default {
+            if ($Variable -eq "") {
+                "@(`"`")"
+            } else {
+                "(PSC8y\Expand-Id $Variable)"
+            }
+        }
+    }
+
+    $ExpandFunction
 }

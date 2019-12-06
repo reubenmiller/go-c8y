@@ -33,6 +33,7 @@
 * [x] Support more filtering possibilities
   * [x] Wildcard
   * [x] Regex
+* [x] Add option to not loop over the piped variable. Required for Get-AuditRecordCollection when receiving a piped alarm|operation|event etc.
 * [ ] Adding timeout argument
 * [ ] Add request response time to log
 * [ ] Add examples

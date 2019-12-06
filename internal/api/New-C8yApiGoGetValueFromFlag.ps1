@@ -35,7 +35,9 @@ Function New-C8yApiGoGetValueFromFlag {
         "boolean" = @{}
         "datetime" = @{}
         "file" = @{}
+        "id" = @{}
         "integer" = @{}
+        "source" = @{}
         "string" = @{}
         "tenant" = @{}
     }
@@ -57,6 +59,18 @@ Function New-C8yApiGoGetValueFromFlag {
         if v {
             $($Setters."boolean".$SetterType)
         }
+    } else {
+        return newUserError("Flag does not exist")
+    }
+"@
+
+    # Boolean
+    $Setters."source"."query" = "query.Add(`"${queryParam}`", v)"
+    $Setters."source"."path" = "pathParameters[`"${queryParam}`"] = v"
+    $Setters."source"."body" = "body.Set(`"${queryParam}`", v)"
+    $Definitions."source" = @"
+    if v, err := cmd.Flags().GetString("${prop}"); err == nil {
+        $($Setters."source".$SetterType)
     } else {
         return newUserError("Flag does not exist")
     }
@@ -303,6 +317,20 @@ Function New-C8yApiGoGetValueFromFlag {
     if v, err := cmd.Flags().GetString("${prop}"); err == nil {
         if v != "" {
             $($Setters.string.$SetterType)
+        }
+    } else {
+        return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "${prop}", err))
+    }
+"@
+
+    # id
+    $Setters."id"."query" = "query.Add(`"${queryParam}`", url.QueryEscape(v))"
+    $Setters."id"."path" = "pathParameters[`"${queryParam}`"] = v"
+    $Setters."id"."body" = "body.Set(`"${queryParam}`", v)"
+    $Definitions."id" = @"
+    if v, err := cmd.Flags().GetString("${prop}"); err == nil {
+        if v != "" {
+            $($Setters.id.$SetterType)
         }
     } else {
         return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "${prop}", err))
