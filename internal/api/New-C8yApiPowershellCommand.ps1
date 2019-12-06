@@ -146,7 +146,7 @@ Function New-C8yApiPowershellCommand {
                 $null = $ProcessParameterBuilder.AppendLine("            }")
             } else {
                 $PipelineTemplateFormat = "loop_without_pipeline"
-                $ExpanderFunction = Get-IteratorFunction -Type $IteratorType -Variable $IteratorVariable
+                $ExpanderFunction = "Expand-Id `$$($iArg.Name)"
                 $null = $ProcessParameterBuilder.AppendLine("        `$Parameters[`"$($iArg.Name)`"] = $ExpanderFunction")
             }
 
