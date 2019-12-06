@@ -9,7 +9,7 @@ Get-SessionCollection
 List all of the Cumulocity sessions in the default home folder
 
 .OUTPUTS
-[]object
+object[]
 #>
     [CmdletBinding()]
     Param()

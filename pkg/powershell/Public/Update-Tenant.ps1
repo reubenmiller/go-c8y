@@ -100,30 +100,26 @@ Update tenant
     }
 
     Process {
-        foreach ($item in (PSC8y\Expand-Id $Tenant)) {
-            if ($item) {
-                $Parameters["tenant"] = if ($item.id) { $item.id } else { $item }
-            }
+        $Parameters["tenant"] = (PSC8y\Expand-Id $Tenant)
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
-
-            Invoke-Command `
-                -Noun "tenants" `
-                -Verb "update" `
-                -Parameters $Parameters `
-                -Type "application/vnd.com.nsn.cumulocity.tenant+json" `
-                -ItemType "" `
-                -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+        if (!$Force -and
+            !$WhatIfPreference -and
+            !$PSCmdlet.ShouldProcess(
+                (PSC8y\Get-C8ySessionProperty -Name "tenant"),
+                (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
+            )) {
+            continue
         }
+
+        Invoke-Command `
+            -Noun "tenants" `
+            -Verb "update" `
+            -Parameters $Parameters `
+            -Type "application/vnd.com.nsn.cumulocity.tenant+json" `
+            -ItemType "" `
+            -ResultProperty "" `
+            -Raw:$Raw `
+            -IncludeAll:$IncludeAll
     }
 
     End {}

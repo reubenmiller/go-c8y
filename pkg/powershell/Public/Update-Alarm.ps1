@@ -5,11 +5,11 @@ Function Update-Alarm {
 Update an alarm
 
 .EXAMPLE
-PS> Update-Alarm -Id {{ NewAlarm }} -Status ACKNOWLEDGED
+PS> Update-Alarm -Id $Alarm.id -Status ACKNOWLEDGED
 Acknowledge an existing alarm
 
 .EXAMPLE
-PS> Update-Alarm -Id {{ NewAlarm }} -Severity CRITICAL
+PS> Update-Alarm -Id $Alarm.id -Severity CRITICAL
 Update severity of an existing alarm to CRITICAL
 
 

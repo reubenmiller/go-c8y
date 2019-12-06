@@ -27,7 +27,8 @@ func newGetAuditRecordCmd() *getAuditRecordCmd {
 		Short: "Get an audit record",
 		Long:  ``,
 		Example: `
-
+$ c8y auditRecords get --id 12345
+Get an audit record by id
 		`,
 		RunE: ccmd.getAuditRecord,
 	}

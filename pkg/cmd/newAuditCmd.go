@@ -27,7 +27,8 @@ func newNewAuditCmd() *newAuditCmd {
 		Short: "Create a new audit record",
 		Long:  ``,
 		Example: `
-
+$ c8y auditRecords create --type "ManagedObject" --time "0s" --text "Managed Object updated: my_Prop: value" --source $Device.id --activity "Managed Object updated" --severity "information"
+Create an audit record for a custom managed object update
 		`,
 		RunE: ccmd.newAudit,
 	}

@@ -2,29 +2,24 @@
 
 Describe -Name "Update-Event" {
     BeforeEach {
-        $TestEvent = PSC8y\New-TestEvent
-        $TestEvent = PSC8y\New-TestEvent
+        $Device = New-TestDevice
+        $Event = New-TestEvent -Device $Device.id
 
     }
 
     It "Update the text field of an existing event" {
-        $Response = PSC8y\Update-Event -Id $TestEvent.id -Text "example text 1"
+        $Response = PSC8y\Update-Event -Id $Event.id -Text "example text 1"
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
     It "Update custom properties of an existing event" {
-        $Response = PSC8y\Update-Event -Id $TestEvent.id -Data @{ my_event = @{ active = $true } }
+        $Response = PSC8y\Update-Event -Id $Event.id -Data @{ my_event = @{ active = $true } }
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
 
     AfterEach {
-        if ($TestEvent.source.id) {
-            PSC8y\Remove-ManagedObject -Id $TestEvent.source.id -ErrorAction SilentlyContinue
-        }
-        if ($TestEvent.source.id) {
-            PSC8y\Remove-ManagedObject -Id $TestEvent.source.id -ErrorAction SilentlyContinue
-        }
+        Remove-ManagedObject -Id $Device.id
 
     }
 }

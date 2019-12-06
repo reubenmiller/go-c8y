@@ -9,8 +9,12 @@ PS> Get-AuditRecordCollection -PageSize 100
 Get a list of audit records
 
 .EXAMPLE
-PS> Get-AuditRecordCollection -Source $Device.id
-Get a list of audit records
+PS> Get-AuditRecordCollection -Source $Device2.id
+Get a list of audit records related to a managed object
+
+.EXAMPLE
+PS> Get-Operation -Id $Operation.id | Get-AuditRecordCollection
+Get a list of audit records related to an operation
 
 
 #>
@@ -24,7 +28,7 @@ Get a list of audit records
         # Source Id or object containing an .id property of the element that should be detected. i.e. AlarmID, or Operation ID. Note: Only one source can be provided
         [Parameter(ValueFromPipeline=$true,
                    ValueFromPipelineByPropertyName=$true)]
-        [string]
+        [object]
         $Source,
 
         # Type
@@ -119,30 +123,26 @@ Get a list of audit records
     }
 
     Process {
-        foreach ($item in (PSC8y\Expand-Id $Source)) {
-            if ($item) {
-                $Parameters["source"] = if ($item.id) { $item.id } else { $item }
-            }
+        $Parameters["source"] = (PSC8y\Expand-Id $Source)
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
-
-            Invoke-Command `
-                -Noun "auditRecords" `
-                -Verb "list" `
-                -Parameters $Parameters `
-                -Type "application/vnd.com.nsn.cumulocity.auditRecordCollection+json" `
-                -ItemType "application/vnd.com.nsn.cumulocity.auditRecord+json" `
-                -ResultProperty "auditRecords" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+        if (!$Force -and
+            !$WhatIfPreference -and
+            !$PSCmdlet.ShouldProcess(
+                (PSC8y\Get-C8ySessionProperty -Name "tenant"),
+                (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
+            )) {
+            continue
         }
+
+        Invoke-Command `
+            -Noun "auditRecords" `
+            -Verb "list" `
+            -Parameters $Parameters `
+            -Type "application/vnd.com.nsn.cumulocity.auditRecordCollection+json" `
+            -ItemType "application/vnd.com.nsn.cumulocity.auditRecord+json" `
+            -ResultProperty "auditRecords" `
+            -Raw:$Raw `
+            -IncludeAll:$IncludeAll
     }
 
     End {}

@@ -1,8 +1,12 @@
 # Code generated from specification version 1.0.0: DO NOT EDIT
-Function New-Audit {
+Function New-AuditRecord {
 <#
 .SYNOPSIS
 Create a new audit record
+
+.EXAMPLE
+PS> New-AuditRecord -Type "ManagedObject" -Time "0s" -Text "Managed Object updated: my_Prop: value" -Source $Device.id -Activity "Managed Object updated" -Severity "information"
+Create an audit record for a custom managed object update
 
 
 #>

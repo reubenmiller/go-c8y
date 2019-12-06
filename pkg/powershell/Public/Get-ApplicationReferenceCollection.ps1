@@ -63,30 +63,26 @@ Enable application on tenant
     }
 
     Process {
-        foreach ($item in (PSC8y\Expand-Id $Tenant)) {
-            if ($item) {
-                $Parameters["tenant"] = if ($item.id) { $item.id } else { $item }
-            }
+        $Parameters["tenant"] = (PSC8y\Expand-Id $Tenant)
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
-
-            Invoke-Command `
-                -Noun "tenants" `
-                -Verb "listReferences" `
-                -Parameters $Parameters `
-                -Type "application/vnd.com.nsn.cumulocity.applicationReferenceCollection+json" `
-                -ItemType "application/vnd.com.nsn.cumulocity.applicationReference+json" `
-                -ResultProperty "references" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+        if (!$Force -and
+            !$WhatIfPreference -and
+            !$PSCmdlet.ShouldProcess(
+                (PSC8y\Get-C8ySessionProperty -Name "tenant"),
+                (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
+            )) {
+            continue
         }
+
+        Invoke-Command `
+            -Noun "tenants" `
+            -Verb "listReferences" `
+            -Parameters $Parameters `
+            -Type "application/vnd.com.nsn.cumulocity.applicationReferenceCollection+json" `
+            -ItemType "application/vnd.com.nsn.cumulocity.applicationReference+json" `
+            -ResultProperty "references" `
+            -Raw:$Raw `
+            -IncludeAll:$IncludeAll
     }
 
     End {}

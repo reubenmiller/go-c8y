@@ -51,30 +51,26 @@ Get a user group
     }
 
     Process {
-        foreach ($item in (PSC8y\Expand-Id $Id)) {
-            if ($item) {
-                $Parameters["id"] = if ($item.id) { $item.id } else { $item }
-            }
+        $Parameters["id"] = (PSC8y\Expand-Id $Id)
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
-
-            Invoke-Command `
-                -Noun "userGroups" `
-                -Verb "get" `
-                -Parameters $Parameters `
-                -Type "application/vnd.com.nsn.cumulocity.group+json" `
-                -ItemType "" `
-                -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+        if (!$Force -and
+            !$WhatIfPreference -and
+            !$PSCmdlet.ShouldProcess(
+                (PSC8y\Get-C8ySessionProperty -Name "tenant"),
+                (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
+            )) {
+            continue
         }
+
+        Invoke-Command `
+            -Noun "userGroups" `
+            -Verb "get" `
+            -Parameters $Parameters `
+            -Type "application/vnd.com.nsn.cumulocity.group+json" `
+            -ItemType "" `
+            -ResultProperty "" `
+            -Raw:$Raw `
+            -IncludeAll:$IncludeAll
     }
 
     End {}

@@ -7,8 +7,7 @@ Describe -Name "New Measurement" {
             -Name "testdevice001" `
             -Data @{
                 c8y_IsDevice = @{}
-            } `
-            -Force
+            }
 
         $TestDevice.id | Should -Not -BeNullOrEmpty
     }
@@ -18,7 +17,6 @@ Describe -Name "New Measurement" {
             -Device $TestDevice.id `
             -Time "0d" `
             -Type "ciSeria1" `
-            -Verbose `
             -Data @{
                 test1 = @{
                     signal1 = @{
@@ -26,8 +24,7 @@ Describe -Name "New Measurement" {
                         unit = "°"
                     }
                 }
-            } `
-            -Force
+            }
         $Response | Should -Not -BeNullOrEmpty
         $Response.test1.signal1.value | Should -BeExactly 1.234
         $Response.test1.signal1.unit | Should -BeExactly "°"
@@ -35,6 +32,6 @@ Describe -Name "New Measurement" {
 
     AfterEach {
         $TestDevice.id | Should -Not -BeNullOrEmpty
-        $TestDevice.id | PSC8y\Remove-ManagedObject -Force
+        $TestDevice.id | PSC8y\Remove-ManagedObject
     }
 }

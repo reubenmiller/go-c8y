@@ -22,13 +22,13 @@ Add a user to a user group
         [object]
         $Tenant,
 
-        # Group ID
-        [Parameter()]
+        # Group ID (required)
+        [Parameter(Mandatory = $true)]
         [object[]]
         $Group,
 
-        # User id/username
-        [Parameter()]
+        # User id/username (required)
+        [Parameter(Mandatory = $true)]
         [object[]]
         $User,
 

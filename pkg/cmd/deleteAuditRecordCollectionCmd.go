@@ -15,21 +15,22 @@ import (
 	"github.com/tidwall/pretty"
 )
 
-type deleteAuditRecordCmd struct {
+type deleteAuditRecordCollectionCmd struct {
 	*baseCmd
 }
 
-func newDeleteAuditRecordCmd() *deleteAuditRecordCmd {
-	ccmd := &deleteAuditRecordCmd{}
+func newDeleteAuditRecordCollectionCmd() *deleteAuditRecordCollectionCmd {
+	ccmd := &deleteAuditRecordCollectionCmd{}
 
 	cmd := &cobra.Command{
 		Use:   "deleteCollection",
 		Short: "Delete a collection of audit records",
 		Long:  `Important: This method has been deprecated and will be removed completely with the July 2020 release (10.6.6). With Cumulocity IoT >= 10.6.6 the deletion of audit logs will no longer be permitted. All DELETE requests to the audit API will return the error 405 Method not allowed. Note that retention rules still apply to audit logs and will delete audit log records older than the specified retention time.`,
 		Example: `
-
+$ c8y auditRecords deleteCollection --source 12345
+Delete audit records from a device
 		`,
-		RunE: ccmd.deleteAuditRecord,
+		RunE: ccmd.deleteAuditRecordCollection,
 	}
 
 	cmd.SilenceUsage = true
@@ -48,11 +49,53 @@ func newDeleteAuditRecordCmd() *deleteAuditRecordCmd {
 	return ccmd
 }
 
-func (n *deleteAuditRecordCmd) deleteAuditRecord(cmd *cobra.Command, args []string) error {
+func (n *deleteAuditRecordCollectionCmd) deleteAuditRecordCollection(cmd *cobra.Command, args []string) error {
 
 	// query parameters
 	queryValue := url.QueryEscape("")
 	query := url.Values{}
+	if v, err := cmd.Flags().GetString("source"); err == nil {
+		if v != "" {
+			query.Add("source", url.QueryEscape(v))
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "source", err))
+	}
+	if v, err := cmd.Flags().GetString("type"); err == nil {
+		if v != "" {
+			query.Add("type", url.QueryEscape(v))
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "type", err))
+	}
+	if v, err := cmd.Flags().GetString("user"); err == nil {
+		if v != "" {
+			query.Add("user", url.QueryEscape(v))
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "user", err))
+	}
+	if v, err := cmd.Flags().GetString("application"); err == nil {
+		if v != "" {
+			query.Add("application", url.QueryEscape(v))
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "application", err))
+	}
+	if cmd.Flags().Changed("dateFrom") {
+		if v, err := tryGetTimestampFlag(cmd, "dateFrom"); err == nil && v != "" {
+			query.Add("dateFrom", v)
+		} else {
+			return newUserError("invalid date format", err)
+		}
+	}
+	if cmd.Flags().Changed("dateTo") {
+		if v, err := tryGetTimestampFlag(cmd, "dateTo"); err == nil && v != "" {
+			query.Add("dateTo", v)
+		} else {
+			return newUserError("invalid date format", err)
+		}
+	}
 	if cmd.Flags().Changed("pageSize") {
 		if v, err := cmd.Flags().GetInt("pageSize"); err == nil && v > 0 {
 			query.Add("pageSize", fmt.Sprintf("%d", v))
@@ -78,48 +121,6 @@ func (n *deleteAuditRecordCmd) deleteAuditRecord(cmd *cobra.Command, args []stri
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v, err := cmd.Flags().GetString("source"); err == nil {
-		if v != "" {
-			pathParameters["source"] = v
-		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "source", err))
-	}
-	if v, err := cmd.Flags().GetString("type"); err == nil {
-		if v != "" {
-			pathParameters["type"] = v
-		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "type", err))
-	}
-	if v, err := cmd.Flags().GetString("user"); err == nil {
-		if v != "" {
-			pathParameters["user"] = v
-		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "user", err))
-	}
-	if v, err := cmd.Flags().GetString("application"); err == nil {
-		if v != "" {
-			pathParameters["application"] = v
-		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "application", err))
-	}
-	if cmd.Flags().Changed("dateFrom") {
-		if v, err := tryGetTimestampFlag(cmd, "dateFrom"); err == nil && v != "" {
-			pathParameters["dateFrom"] = v
-		} else {
-			return newUserError("invalid date format", err)
-		}
-	}
-	if cmd.Flags().Changed("dateTo") {
-		if v, err := tryGetTimestampFlag(cmd, "dateTo"); err == nil && v != "" {
-			pathParameters["dateTo"] = v
-		} else {
-			return newUserError("invalid date format", err)
-		}
-	}
 
 	path := replacePathParameters("/audit/auditRecords", pathParameters)
 
@@ -136,10 +137,10 @@ func (n *deleteAuditRecordCmd) deleteAuditRecord(cmd *cobra.Command, args []stri
 		DryRun:       globalFlagDryRun,
 	}
 
-	return n.doDeleteAuditRecord(req, filters)
+	return n.doDeleteAuditRecordCollection(req, filters)
 }
 
-func (n *deleteAuditRecordCmd) doDeleteAuditRecord(req c8y.RequestOptions, filters *JSONFilters) error {
+func (n *deleteAuditRecordCollectionCmd) doDeleteAuditRecordCollection(req c8y.RequestOptions, filters *JSONFilters) error {
 	resp, err := client.SendRequest(
 		context.Background(),
 		req,

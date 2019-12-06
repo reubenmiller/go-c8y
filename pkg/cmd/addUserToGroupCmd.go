@@ -36,10 +36,12 @@ List the users within a user group
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("tenant", "", "Tenant")
-	cmd.Flags().StringSlice("group", []string{""}, "Group ID")
-	cmd.Flags().StringSlice("user", []string{""}, "User id")
+	cmd.Flags().StringSlice("group", []string{""}, "Group ID (required)")
+	cmd.Flags().StringSlice("user", []string{""}, "User id (required)")
 
 	// Required flags
+	cmd.MarkFlagRequired("group")
+	cmd.MarkFlagRequired("user")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

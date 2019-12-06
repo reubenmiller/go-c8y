@@ -21,7 +21,7 @@ func newAuditRecordsRootCmd() *auditRecordsCmd {
 	cmd.AddCommand(newNewAuditCmd().getCommand())
 	cmd.AddCommand(newGetAuditRecordCollectionCmd().getCommand())
 	cmd.AddCommand(newGetAuditRecordCmd().getCommand())
-	cmd.AddCommand(newDeleteAuditRecordCmd().getCommand())
+	cmd.AddCommand(newDeleteAuditRecordCollectionCmd().getCommand())
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

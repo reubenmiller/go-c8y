@@ -1,8 +1,12 @@
 # Code generated from specification version 1.0.0: DO NOT EDIT
-Function Get-Audit {
+Function Get-AuditRecord {
 <#
 .SYNOPSIS
 Get an audit record
+
+.EXAMPLE
+PS> Get-AuditRecord -Id $Record.id
+Get an audit record by id
 
 
 #>

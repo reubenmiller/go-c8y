@@ -72,30 +72,26 @@ Add a role to a user using wildcards (using pipeline)
     }
 
     Process {
-        foreach ($item in (PSC8y\Expand-Id $Role)) {
-            if ($item) {
-                $Parameters["role"] = if ($item.id) { $item.id } else { $item }
-            }
+        $Parameters["role"] = (PSC8y\Expand-Id $Role)
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
-
-            Invoke-Command `
-                -Noun "userRoles" `
-                -Verb "addRoleTouser" `
-                -Parameters $Parameters `
-                -Type "application/vnd.com.nsn.cumulocity.roleReference+json" `
-                -ItemType "" `
-                -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+        if (!$Force -and
+            !$WhatIfPreference -and
+            !$PSCmdlet.ShouldProcess(
+                (PSC8y\Get-C8ySessionProperty -Name "tenant"),
+                (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
+            )) {
+            continue
         }
+
+        Invoke-Command `
+            -Noun "userRoles" `
+            -Verb "addRoleTouser" `
+            -Parameters $Parameters `
+            -Type "application/vnd.com.nsn.cumulocity.roleReference+json" `
+            -ItemType "" `
+            -ResultProperty "" `
+            -Raw:$Raw `
+            -IncludeAll:$IncludeAll
     }
 
     End {}
