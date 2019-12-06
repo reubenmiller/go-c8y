@@ -49,6 +49,17 @@
               "Remove-ManagedObject -id $Device.id",
               "Remove-ManagedObject -id $Agent.id"
             ]
+          },
+          {
+            "description": "Get operations from a device (using pipeline)",
+            "beforeEach": [
+              "$Agent2 = New-TestAgent",
+              "$Operation2 = PSC8y\\New-TestOperation -Device $Agent2.id"
+            ],
+            "command": "Get-DeviceCollection -Name $Agent2.name | Get-OperationCollection",
+            "afterEach": [
+              "PSC8y\\Remove-ManagedObject -Id $Agent2.id"
+            ]
           }
         ],
         "go": [
@@ -79,7 +90,7 @@
           "type": "[]device",
           "property": "deviceId",
           "description": "Device ID",
-          "pipeline": false
+          "pipeline": true
         },
         {
           "name": "dateFrom",

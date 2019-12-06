@@ -32,6 +32,14 @@ endpoints:
           afterEach:
             - PSC8y\Remove-ManagedObject -Id $Device.id
 
+        - description: Get measurements from a device (using pipeline)
+          beforeEach:
+            - $Device = PSC8y\New-TestDevice
+            - $Measurement = New-TestMeasurement -Device $Device.id -Type "TempReading"
+          command: Get-DeviceCollection -Name $Device.name | Get-MeasurementCollection
+          afterEach:
+            - PSC8y\Remove-ManagedObject -Id $Device.id
+
       go:
         - description: Get a list of measurements
           command: c8y measurements list
@@ -58,6 +66,7 @@ endpoints:
       - name: device
         type: '[]device'
         property: source
+        pipeline: true
         description: Device ID
 
       - name: type
@@ -116,6 +125,14 @@ endpoints:
           afterEach:
             - PSC8y\Remove-ManagedObject -Id $Measurement2.source.id
 
+        - description: Get measurement series from a device (using pipeline)
+            beforeEach:
+              - $Device = PSC8y\New-TestDevice
+              - $Measurement2 = New-TestMeasurement -Type "TempReading" -ValueFragmentType "c8y_Temperature" -ValueFragmentSeries "T"
+            command: Get-DeviceCollection -Name $Device.name | Get-MeasurementSeries -Series "c8y_Temperature.T"
+            afterEach:
+              - PSC8y\Remove-ManagedObject -Id $Device.id
+
       go:
         - description: Get a list of series [nx_WEA_29_Delta.MDL10FG001] and [nx_WEA_29_Delta.ST9] for device 12345
           command: c8y measurements getSeries -source 12345 --series nx_WEA_29_Delta.MDL10FG001 --series nx_WEA_29_Delta.ST9 --dateFrom "-10min" --dateTo "0s"
@@ -123,6 +140,7 @@ endpoints:
       - name: device
         type: '[]device'
         property: source
+        pipeline: true
         description: Device ID
 
       - name: series

@@ -29,6 +29,14 @@ endpoints:
           afterEach:
             - Remove-ManagedObject -Id $Device.id
 
+        - description: Get events from a device (using pipeline)
+          beforeEach:
+            - $Device = New-TestDevice
+            - $Event = PSC8y\New-Event -Device $Device.id -Type "my_CustomType2" -Time "-9d" -Text "Test event"
+          command: Get-DeviceCollection -Name $Device.name | Get-EventCollection
+          afterEach:
+            - PSC8y\Remove-ManagedObject -Id $Device.id
+
       go:
         - description: Get events with type 'my_CustomType' that were created in the last 10 days
           command: c8y events list --type my_CustomType --dateFrom "-10d"
@@ -46,6 +54,7 @@ endpoints:
     queryParameters:
       - name: device
         type: '[]device'
+        pipeline: true
         property: source
         description: Device ID
 
