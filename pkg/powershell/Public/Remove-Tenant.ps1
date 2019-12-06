@@ -44,7 +44,7 @@ Delete tenant
     }
 
     Process {
-        $Parameters["tenant"] = (PSC8y\Expand-Id $Tenant)
+        $Parameters["tenant"] = PSC8y\Expand-Id $Tenant
 
         if (!$Force -and
             !$WhatIfPreference -and

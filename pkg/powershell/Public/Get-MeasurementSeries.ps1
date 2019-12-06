@@ -15,6 +15,15 @@ Get a list of measurements for a particular device
 PS> Get-MeasurementSeries -Device $Measurement2.source.id -Series "c8y_Temperature.T" -DateFrom "1970-01-01" -DateTo "0s"
 Get measurement series c8y_Temperature.T on a device
 
+.EXAMPLE
+@{description=Get measurement series from a device (using pipeline)
+beforeEach:
+  - $Device = PSC8y\New-TestDevice
+  - $Measurement2 = New-TestMeasurement -Type "TempReading" -ValueFragmentType "c8y_Temperature" -ValueFragmentSeries "T"
+command: Get-DeviceCollection -Name $Device.name | Get-MeasurementSeries -Series "c8y_Temperature.T"
+afterEach:
+  - PSC8y\Remove-ManagedObject -Id $Device.id}
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -25,7 +34,8 @@ Get measurement series c8y_Temperature.T on a device
     [OutputType([object])]
     Param(
         # Device ID
-        [Parameter()]
+        [Parameter(ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true)]
         [object[]]
         $Device,
 
@@ -62,9 +72,6 @@ Get measurement series c8y_Temperature.T on a device
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("Device")) {
-            $Parameters["device"] = $Device
-        }
         if ($PSBoundParameters.ContainsKey("Series")) {
             $Parameters["series"] = $Series
         }
@@ -84,27 +91,26 @@ Get measurement series c8y_Temperature.T on a device
     }
 
     Process {
-        foreach ($item in @("")) {
+        $Parameters["device"] = PSC8y\Expand-Id $Device
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
-
-            Invoke-Command `
-                -Noun "measurements" `
-                -Verb "getSeries" `
-                -Parameters $Parameters `
-                -Type "application/json" `
-                -ItemType "" `
-                -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+        if (!$Force -and
+            !$WhatIfPreference -and
+            !$PSCmdlet.ShouldProcess(
+                (PSC8y\Get-C8ySessionProperty -Name "tenant"),
+                (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
+            )) {
+            continue
         }
+
+        Invoke-Command `
+            -Noun "measurements" `
+            -Verb "getSeries" `
+            -Parameters $Parameters `
+            -Type "application/json" `
+            -ItemType "" `
+            -ResultProperty "" `
+            -Raw:$Raw `
+            -IncludeAll:$IncludeAll
     }
 
     End {}

@@ -72,7 +72,7 @@ Add a role to a user using wildcards (using pipeline)
     }
 
     Process {
-        $Parameters["role"] = (PSC8y\Expand-Id $Role)
+        $Parameters["role"] = PSC8y\Expand-Id $Role
 
         if (!$Force -and
             !$WhatIfPreference -and

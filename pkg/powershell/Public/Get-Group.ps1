@@ -51,7 +51,7 @@ Get a user group
     }
 
     Process {
-        $Parameters["id"] = (PSC8y\Expand-Id $Id)
+        $Parameters["id"] = PSC8y\Expand-Id $Id
 
         if (!$Force -and
             !$WhatIfPreference -and

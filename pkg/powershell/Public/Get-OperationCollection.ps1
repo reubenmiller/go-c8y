@@ -19,6 +19,10 @@ Get a list of pending operations for a given agent and all of its child devices
 PS> Get-OperationCollection -Device $Device.id -Status PENDING
 Get a list of pending operations for a device
 
+.EXAMPLE
+PS> Get-DeviceCollection -Name $Agent2.name | Get-OperationCollection
+Get operations from a device (using pipeline)
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -34,7 +38,8 @@ Get a list of pending operations for a device
         $Agent,
 
         # Device ID
-        [Parameter()]
+        [Parameter(ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true)]
         [object[]]
         $Device,
 
@@ -88,9 +93,6 @@ Get a list of pending operations for a device
         if ($PSBoundParameters.ContainsKey("Agent")) {
             $Parameters["agent"] = $Agent
         }
-        if ($PSBoundParameters.ContainsKey("Device")) {
-            $Parameters["device"] = $Device
-        }
         if ($PSBoundParameters.ContainsKey("DateFrom")) {
             $Parameters["dateFrom"] = $DateFrom
         }
@@ -113,27 +115,26 @@ Get a list of pending operations for a device
     }
 
     Process {
-        foreach ($item in @("")) {
+        $Parameters["device"] = PSC8y\Expand-Id $Device
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
-
-            Invoke-Command `
-                -Noun "operations" `
-                -Verb "list" `
-                -Parameters $Parameters `
-                -Type "application/vnd.com.nsn.cumulocity.operationCollection+json" `
-                -ItemType "application/vnd.com.nsn.cumulocity.operation+json" `
-                -ResultProperty "operations" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+        if (!$Force -and
+            !$WhatIfPreference -and
+            !$PSCmdlet.ShouldProcess(
+                (PSC8y\Get-C8ySessionProperty -Name "tenant"),
+                (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
+            )) {
+            continue
         }
+
+        Invoke-Command `
+            -Noun "operations" `
+            -Verb "list" `
+            -Parameters $Parameters `
+            -Type "application/vnd.com.nsn.cumulocity.operationCollection+json" `
+            -ItemType "application/vnd.com.nsn.cumulocity.operation+json" `
+            -ResultProperty "operations" `
+            -Raw:$Raw `
+            -IncludeAll:$IncludeAll
     }
 
     End {}

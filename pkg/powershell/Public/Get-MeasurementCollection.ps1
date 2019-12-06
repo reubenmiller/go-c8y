@@ -15,6 +15,10 @@ Get a list of measurements
 PS> Get-MeasurementCollection -Device $Device.id -Type "TempReading"
 Get a list of measurements for a particular device
 
+.EXAMPLE
+PS> Get-DeviceCollection -Name $Device.name | Get-MeasurementCollection
+Get measurements from a device (using pipeline)
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -25,7 +29,8 @@ Get a list of measurements for a particular device
     [OutputType([object])]
     Param(
         # Device ID
-        [Parameter()]
+        [Parameter(ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true)]
         [object[]]
         $Device,
 
@@ -95,9 +100,6 @@ Get a list of measurements for a particular device
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("Device")) {
-            $Parameters["device"] = $Device
-        }
         if ($PSBoundParameters.ContainsKey("Type")) {
             $Parameters["type"] = $Type
         }
@@ -132,27 +134,26 @@ Get a list of measurements for a particular device
     }
 
     Process {
-        foreach ($item in @("")) {
+        $Parameters["device"] = PSC8y\Expand-Id $Device
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
-
-            Invoke-Command `
-                -Noun "measurements" `
-                -Verb "list" `
-                -Parameters $Parameters `
-                -Type "application/vnd.com.nsn.cumulocity.measurementCollection+json" `
-                -ItemType "application/vnd.com.nsn.cumulocity.measurement+json" `
-                -ResultProperty "measurements" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+        if (!$Force -and
+            !$WhatIfPreference -and
+            !$PSCmdlet.ShouldProcess(
+                (PSC8y\Get-C8ySessionProperty -Name "tenant"),
+                (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
+            )) {
+            continue
         }
+
+        Invoke-Command `
+            -Noun "measurements" `
+            -Verb "list" `
+            -Parameters $Parameters `
+            -Type "application/vnd.com.nsn.cumulocity.measurementCollection+json" `
+            -ItemType "application/vnd.com.nsn.cumulocity.measurement+json" `
+            -ResultProperty "measurements" `
+            -Raw:$Raw `
+            -IncludeAll:$IncludeAll
     }
 
     End {}

@@ -123,7 +123,7 @@ Get a list of audit records related to an operation
     }
 
     Process {
-        $Parameters["source"] = (PSC8y\Expand-Id $Source)
+        $Parameters["source"] = PSC8y\Expand-Id $Source
 
         if (!$Force -and
             !$WhatIfPreference -and

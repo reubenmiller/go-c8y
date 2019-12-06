@@ -15,6 +15,10 @@ Get alarms with the severity set to MAJOR
 PS> Get-AlarmCollection -DateFrom "-10m" -Status ACTIVE
 Get active alarms which occurred in the last 10 minutes
 
+.EXAMPLE
+PS> Get-DeviceCollection -Name $Device.name | Get-AlarmCollection -Status ACTIVE
+Get active alarms from a device (using pipeline)
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -25,7 +29,8 @@ Get active alarms which occurred in the last 10 minutes
     [OutputType([object])]
     Param(
         # Source device id.
-        [Parameter()]
+        [Parameter(ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true)]
         [object[]]
         $Device,
 
@@ -107,9 +112,6 @@ Get active alarms which occurred in the last 10 minutes
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("Device")) {
-            $Parameters["device"] = $Device
-        }
         if ($PSBoundParameters.ContainsKey("DateFrom")) {
             $Parameters["dateFrom"] = $DateFrom
         }
@@ -150,27 +152,26 @@ Get active alarms which occurred in the last 10 minutes
     }
 
     Process {
-        foreach ($item in @("")) {
+        $Parameters["device"] = PSC8y\Expand-Id $Device
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
-
-            Invoke-Command `
-                -Noun "alarms" `
-                -Verb "list" `
-                -Parameters $Parameters `
-                -Type "application/vnd.com.nsn.cumulocity.alarmCollection+json" `
-                -ItemType "application/vnd.com.nsn.cumulocity.alarm+json" `
-                -ResultProperty "alarms" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+        if (!$Force -and
+            !$WhatIfPreference -and
+            !$PSCmdlet.ShouldProcess(
+                (PSC8y\Get-C8ySessionProperty -Name "tenant"),
+                (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
+            )) {
+            continue
         }
+
+        Invoke-Command `
+            -Noun "alarms" `
+            -Verb "list" `
+            -Parameters $Parameters `
+            -Type "application/vnd.com.nsn.cumulocity.alarmCollection+json" `
+            -ItemType "application/vnd.com.nsn.cumulocity.alarm+json" `
+            -ResultProperty "alarms" `
+            -Raw:$Raw `
+            -IncludeAll:$IncludeAll
     }
 
     End {}

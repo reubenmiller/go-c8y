@@ -7,6 +7,8 @@ Describe -Name "Get-OperationCollection" {
         $Device = New-TestDevice
         New-ChildDeviceReference -Device $Agent.id -NewChild $Device.id
         $Operation1 = PSC8y\New-TestOperation -Device $Device.id
+        $Agent2 = New-TestAgent
+        $Operation2 = PSC8y\New-TestOperation -Device $Agent2.id
 
     }
 
@@ -25,10 +27,16 @@ Describe -Name "Get-OperationCollection" {
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+    It "Get operations from a device (using pipeline)" {
+        $Response = PSC8y\Get-DeviceCollection -Name $Agent2.name | Get-OperationCollection
+        $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
+    }
 
     AfterEach {
         Remove-ManagedObject -id $Agent.id
         Remove-ManagedObject -id $Device.id
+        PSC8y\Remove-ManagedObject -Id $Agent2.id
 
     }
 }

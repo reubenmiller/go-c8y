@@ -17,9 +17,15 @@ Describe -Name "Get-EventCollection" {
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+    It "Get events from a device (using pipeline)" {
+        $Response = PSC8y\Get-DeviceCollection -Name $Device.name | Get-EventCollection
+        $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
+    }
 
     AfterEach {
         Remove-ManagedObject -Id $Device.id
+        PSC8y\Remove-ManagedObject -Id $Device.id
 
     }
 }

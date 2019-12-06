@@ -15,6 +15,10 @@ Get events with type 'my_CustomType' that were created in the last 10 days
 PS> Get-EventCollection -Device $Device.id
 Get events from a device
 
+.EXAMPLE
+PS> Get-DeviceCollection -Name $Device.name | Get-EventCollection
+Get events from a device (using pipeline)
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -25,7 +29,8 @@ Get events from a device
     [OutputType([object])]
     Param(
         # Device ID
-        [Parameter()]
+        [Parameter(ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true)]
         [object[]]
         $Device,
 
@@ -85,9 +90,6 @@ Get events from a device
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("Device")) {
-            $Parameters["device"] = $Device
-        }
         if ($PSBoundParameters.ContainsKey("Type")) {
             $Parameters["type"] = $Type
         }
@@ -116,27 +118,26 @@ Get events from a device
     }
 
     Process {
-        foreach ($item in @("")) {
+        $Parameters["device"] = PSC8y\Expand-Id $Device
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
-
-            Invoke-Command `
-                -Noun "events" `
-                -Verb "list" `
-                -Parameters $Parameters `
-                -Type "application/vnd.com.nsn.cumulocity.eventCollection+json" `
-                -ItemType "application/vnd.com.nsn.cumulocity.event+json" `
-                -ResultProperty "events" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+        if (!$Force -and
+            !$WhatIfPreference -and
+            !$PSCmdlet.ShouldProcess(
+                (PSC8y\Get-C8ySessionProperty -Name "tenant"),
+                (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
+            )) {
+            continue
         }
+
+        Invoke-Command `
+            -Noun "events" `
+            -Verb "list" `
+            -Parameters $Parameters `
+            -Type "application/vnd.com.nsn.cumulocity.eventCollection+json" `
+            -ItemType "application/vnd.com.nsn.cumulocity.event+json" `
+            -ResultProperty "events" `
+            -Raw:$Raw `
+            -IncludeAll:$IncludeAll
     }
 
     End {}
