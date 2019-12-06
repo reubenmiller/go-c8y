@@ -14,7 +14,27 @@
       "accept": "application/vnd.com.nsn.cumulocity.auditRecord+json",
       "alias": {
         "go": "create",
-        "powershell": "New-Audit"
+        "powershell": "New-AuditRecord"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Create an audit record for a custom managed object update",
+            "beforeEach": [
+              "$Device = New-TestDevice"
+            ],
+            "command": "New-AuditRecord -Type \"ManagedObject\" -Time \"0s\" -Text \"Managed Object updated: my_Prop: value\" -Source $Device.id -Activity \"Managed Object updated\" -Severity \"information\"",
+            "afterEach": [
+              "Remove-ManagedObject -Id $Device.id"
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Create an audit record for a custom managed object update",
+            "command": "c8y auditRecords create --type \"ManagedObject\" --time \"0s\" --text \"Managed Object updated: my_Prop: value\" --source $Device.id --activity \"Managed Object updated\" --severity \"information\""
+          }
+        ]
       },
       "body": [
         {
@@ -52,6 +72,13 @@
           "name": "severity",
           "type": "string",
           "required": true,
+          "validateSet": [
+            "critical",
+            "major",
+            "minor",
+            "warning",
+            "information"
+          ],
           "description": "The severity of action: critical, major, minor, warning or information."
         },
         {
@@ -91,20 +118,33 @@
           {
             "description": "Get a list of audit records",
             "beforeEach": [
-              "$Device = New-TestDevice"
+              "$Device1 = New-TestDevice"
             ],
             "command": "Get-AuditRecordCollection -PageSize 100",
             "afterEach": [
-              "Remove-ManagedObject -Id $Device.id"
+              "Remove-ManagedObject -Id $Device1.id"
             ]
           },
           {
-            "description": "Get a list of audit records",
+            "description": "Get a list of audit records related to a managed object",
             "beforeEach": [
-              "$Device = New-TestDevice",
-              "Remove-ManagedObject -Id $Device.id"
+              "$Device2 = New-TestDevice",
+              "Remove-ManagedObject -Id $Device2.id"
             ],
-            "command": "Get-AuditRecordCollection -Source $Device.id"
+            "command": "Get-AuditRecordCollection -Source $Device2.id"
+          },
+          {
+            "description": "Get a list of audit records related to an operation",
+            "beforeEach": [
+              "$Device3 = New-TestAgent",
+              "$Operation = New-TestOperation -Device $Device3",
+              "Update-Operation -Id $Operation.id -Status \"EXECUTING\"",
+              "Update-Operation -Id $Operation.id -Status \"SUCCESSFUL\""
+            ],
+            "command": "Get-Operation -Id $Operation.id | Get-AuditRecordCollection",
+            "afterEach": [
+              "Remove-ManagedObject -Id $Device3.id"
+            ]
           }
         ],
         "go": [
@@ -117,8 +157,9 @@
       "queryParameters": [
         {
           "name": "source",
-          "type": "string",
+          "type": "id",
           "pipeline": true,
+          "required": false,
           "description": "Source Id or object containing an .id property of the element that should be detected. i.e. AlarmID, or Operation ID. Note: Only one source can be provided"
         },
         {
@@ -161,7 +202,28 @@
       "accept": "application/vnd.com.nsn.cumulocity.auditRecord+json",
       "alias": {
         "go": "get",
-        "powershell": "Get-Audit"
+        "powershell": "Get-AuditRecord"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get an audit record by id",
+            "beforeEach": [
+              "$Device = New-TestDevice",
+              "$Record = New-AuditRecord -Type \"ManagedObject\" -Time \"0s\" -Text \"Managed Object updated: my_Prop: value\" -Source $Device.id -Activity \"Managed Object updated\" -Severity \"information\""
+            ],
+            "command": "Get-AuditRecord -Id $Record.id",
+            "afterEach": [
+              "Remove-ManagedObject -Id $Device.id"
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Get an audit record by id",
+            "command": "c8y auditRecords get --id 12345"
+          }
+        ]
       },
       "pathParameters": [
         {
@@ -174,16 +236,38 @@
       ]
     },
     {
-      "name": "deleteAuditRecord",
+      "name": "deleteAuditRecordCollection",
       "description": "Delete a collection of audit records",
       "descriptionLong": "Important: This method has been deprecated and will be removed completely with the July 2020 release (10.6.6). With Cumulocity IoT >= 10.6.6 the deletion of audit logs will no longer be permitted. All DELETE requests to the audit API will return the error 405 Method not allowed. Note that retention rules still apply to audit logs and will delete audit log records older than the specified retention time.",
       "method": "DELETE",
       "path": "/audit/auditRecords",
+      "deprecated": true,
       "alias": {
         "go": "deleteCollection",
         "powershell": "Remove-AuditRecordCollection"
       },
-      "pathParameters": [
+      "examples": {
+        "powershell": [
+          {
+            "description": "Delete audit records from a device",
+            "beforeEach": [
+              "$Device = New-TestDevice",
+              "$Record = New-AuditRecord -Type \"ManagedObject\" -Time \"0s\" -Text \"Managed Object updated: my_Prop: value\" -Source $Device.id -Activity \"Managed Object updated\" -Severity \"information\""
+            ],
+            "command": "Remove-AuditRecordCollection -Source $Device.id",
+            "afterEach": [
+              "Remove-ManagedObject -Id $Device.id"
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Delete audit records from a device",
+            "command": "c8y auditRecords deleteCollection --source 12345"
+          }
+        ]
+      },
+      "queryParameters": [
         {
           "name": "source",
           "type": "string",
