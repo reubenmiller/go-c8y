@@ -35,12 +35,14 @@ endpoints:
 
       - name: group
         type: '[]usergroup'
+        required: true
         description: Group ID
 
     body:
       - name: user
         type: '[]userself'
         pipeline: true
+        required: true
         property: user.self
         description: User id
 
@@ -73,10 +75,12 @@ endpoints:
 
       - name: group
         type: '[]usergroup'
+        required: true
         description: Group ID
 
       - name: user
         type: '[]user'
+        required: true
         description: User id/username
 
   - name: getUsersInGroup
