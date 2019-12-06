@@ -330,11 +330,25 @@
         "powershell": [
           {
             "description": "Acknowledge an existing alarm",
-            "command": "Update-Alarm -Id {{ NewAlarm }} -Status ACKNOWLEDGED"
+            "beforeEach": [
+              "$Device = New-TestDevice",
+              "$Alarm = New-TestAlarm -Device $Device.id"
+            ],
+            "command": "Update-Alarm -Id $Alarm.id -Status ACKNOWLEDGED",
+            "afterEach": [
+              "Remove-ManagedObject -Id $Device.id"
+            ]
           },
           {
             "description": "Update severity of an existing alarm to CRITICAL",
-            "command": "Update-Alarm -Id {{ NewAlarm }} -Severity CRITICAL"
+            "beforeEach": [
+              "$Device = New-TestDevice",
+              "$Alarm = New-TestAlarm -Device $Device.id"
+            ],
+            "command": "Update-Alarm -Id $Alarm.id -Severity CRITICAL",
+            "afterEach": [
+              "Remove-ManagedObject -Id $Device.id"
+            ]
           }
         ],
         "go": [
