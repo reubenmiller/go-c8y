@@ -191,10 +191,20 @@ endpoints:
     examples:
       powershell:
         - description: Update the text field of an existing event
-          command: Update-Event -Id {{ NewEvent }} -Text "example text 1"
+          beforeEach:
+            - $Device = New-TestDevice
+            - $Event = New-TestEvent -Device $Device.id
+          command: Update-Event -Id $Event.id -Text "example text 1"
+          afterEach:
+            - Remove-ManagedObject -Id $Device.id
 
         - description: Update custom properties of an existing event
-          command: Update-Event -Id {{ NewEvent }} -Data @{ my_event = @{ active = $true } }
+          beforeEach:
+            - $Device = New-TestDevice
+            - $Event = New-TestEvent -Device $Device.id
+          command: Update-Event -Id $Event.id -Data @{ my_event = @{ active = $true } }
+          afterEach:
+            - Remove-ManagedObject -Id $Device.id
 
       go:
         - description: Update the text field of an existing event
