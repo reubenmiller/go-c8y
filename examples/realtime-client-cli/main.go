@@ -19,11 +19,12 @@ import (
 )
 
 var (
-	device   = flag.String("device", "", "Device id or name to subscribe to. Accepts wildcards but only the first result will be used")
-	series   = flag.String("series", "", "Series filter. Only show values from this series. Accepts wildcards. Only valid if channel is set to measurements")
-	channel  = flag.String("channel", "measurements", "Channel type. i.e. measurements, events, operations etc.")
-	duration = flag.Int64("duration", 60*60, "Duration in seconds that the realtime client should run for")
-	verbose  = flag.Bool("verbose", false, "Verbose logging")
+	device     = flag.String("device", "", "Device id or name to subscribe to. Accepts wildcards but only the first result will be used")
+	series     = flag.String("series", "", "Series filter. Only show values from this series. Accepts wildcards. Only valid if channel is set to measurements")
+	channel    = flag.String("channel", "measurements", "Channel type. i.e. measurements, events, operations etc.")
+	duration   = flag.Int64("duration", 60*60, "Duration in seconds that the realtime client should run for")
+	verbose    = flag.Bool("verbose", false, "Verbose logging")
+	jsonOutput = flag.Bool("json", false, "Display all output data as json, including measurements")
 )
 
 func getBetweenBytes(msg, startsWith, endsWith []byte) (string, error) {
@@ -175,12 +176,13 @@ func main() {
 			return
 		case msg := <-ch:
 			if bytes.Contains(msg.Payload.Data, []byte(*series)) {
-				if *channel == "measurements" {
+				if *channel == "measurements" && !*jsonOutput {
 					series, err := parseMeasurementSeries(msg.Payload.Data)
 
 					if err != nil {
 						return
 					}
+
 					for _, iSeries := range series {
 						if deviceID == "*" {
 							fmt.Printf("%-15s\t%s\t%-40s\t%.2f %s\n", iSeries.SourceID, iSeries.Timestamp, iSeries.Fragment+"."+iSeries.Series, iSeries.Value, iSeries.Unit)
