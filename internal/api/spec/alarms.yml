@@ -25,12 +25,12 @@ endpoints:
             - PSC8y\Remove-ManagedObject -Id $Device.id
 
         - description: Get active alarms from a device (using pipeline)
-            beforeEach:
-              - $Device = New-TestDevice
-              - $Alarm = PSC8y\New-Alarm -Device $Device.id -Type c8y_TestAlarm -Time "-0s" -Text "Test alarm" -Severity MAJOR
-            command: Get-DeviceCollection -Name $Device.name | Get-AlarmCollection -Status ACTIVE
-            afterEach:
-              - PSC8y\Remove-ManagedObject -Id $Device.id
+          beforeEach:
+            - $Device = New-TestDevice
+            - $Alarm = PSC8y\New-Alarm -Device $Device.id -Type c8y_TestAlarm -Time "-0s" -Text "Test alarm" -Severity MAJOR
+          command: Get-DeviceCollection -Name $Device.name | Get-AlarmCollection -Status ACTIVE
+          afterEach:
+            - PSC8y\Remove-ManagedObject -Id $Device.id
 
       go:
         - description: Get alarms with the severity set to MAJOR
