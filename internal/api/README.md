@@ -34,36 +34,48 @@
   * [x] Wildcard
   * [x] Regex
 * [x] Add option to not loop over the piped variable. Required for Get-AuditRecordCollection when receiving a piped alarm|operation|event etc.
-* [ ] Adding timeout argument
-* [ ] Add request response time to log
-* [ ] Add examples
-* [ ] Generate tests automatically
-* [ ] Microservice aliases using my-app://health
-* [ ] Add "file" argument type
-* [ ] Review "set" argument type
+* [x] Add examples
+* [x] Generate tests automatically
+* [x] Add "file" argument type
+* [x] ~~Review "set" argument type~~
 * [x] Lookups
   * [x] Add role lookup, which converts a name to a self link. required for Add-RoleToUser
   * [x] Add user lookup
   * [x] Add user self reference lookup
   * [x] Add user group lookup
-* [ ] Add outFile flag
-  * [ ] Update all download files
-* [ ] Add upload flag
-  * [ ] Update all upload files
-* [ ] Generic download file cmd
-* [ ] Generic upload file cmd
-* [ ] Generic rest cmd
-  * [ ] If the response is not json, then return it as is (i.e. like the --raw switch)
+* [x] Add outFile flag
+  * [x] Update all download file commands
+* [x] Generic download file cmd
+* [x] Generic rest cmd
+  * [x] If the response is not json, then return it as is (i.e. like the --raw switch)
+* [x] Adding timeout argument
+* [x] Add upload flag
+  * [x] Update all upload files
+  * [ ] Add upload flag to generic function
+* [x] Add request response time to log
+* [ ] Add ignore proxy switch
+* [ ] Handle headerParameters in spec
+* [ ] Allow spec to define static values if of type switch
+* [ ] Fix New-ApplicationBinary test
+* [ ] Microservice aliases using my-app://health
+* [ ] Manual realtime commands (for alarms, events, measurements, etc.)
+* [ ] Allow file upload to include additional "type" property
+
+## Bugs
+
+* [ ] Make the http method all caps by defualt as it causes a 400 error if not
+
 
 ### Phase 2
 
 * [ ] Make options case insensitive
 * [ ] Look over devices where []device type is used (parallel tasks?) Probably need a new template
+
+### Phase 3
+
 * [ ] Cumulocity sessions
   * [ ] Store session credentials securely
   * [ ] Set credentials from a microservice subscription
-
-
 
 ## Powershell
 
@@ -94,33 +106,29 @@
   * [x] Get-TenantStatisticsCollection.ps1
   * [x] Get-UserCollection.ps1
   * [x] Update-AlarmCollection.ps1
-* [ ] Parameter types
-  * [ ] File
-  * [ ] Data
+* [x] Parameter types
+  * [x] File
+  * [x] Data
     * [x] hashtable
-    * [ ] manual json or json shortform
-  * [ ] device expansion (if given an id, don't do a lookup)
+    * [x] ~~manual json or json shortform~~
+  * [x] device expansion (if given an id, don't do a lookup)
   * [x] application
+* [x] Support for ShouldProcess prompt
+  * [x] Support device name lookup in the message?
+* [x] Add tests
+  * [x] How to automatic generate Pester tests
+* [x] Use session default values (C8Y_TENANT for tenant path/query variables)
 * [ ] Client side filtering of results for those that don't support server side filters
   * [ ] Application
     * [ ] Name
     * [ ] type
-  * [ ]
-* [x] Support for ShouldProcess prompt
-  * [x] Support device name lookup in the message?
-* [ ] ?native multi-part upload?
-* [ ] Add tests
-  * [ ] How to automatic generate Pester tests
 * [ ] Return status codes
-* [x] Use session default values (C8Y_TENANT for tenant path/query variables)
-
 * [ ] Remove child devices and child references by wildcard. Only delete matching children
 
 Manual commands
 
 * [ ] applications
   * [ ] New-Microservice
-  * [ ]
 
 
 ## Command layout
