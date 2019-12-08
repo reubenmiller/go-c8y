@@ -18,6 +18,7 @@ import (
 	"sync"
 
 	"github.com/google/go-querystring/query"
+	"github.com/reubenmiller/go-c8y/pkg/encoding"
 	"github.com/tidwall/gjson"
 	"moul.io/http2curl"
 )
@@ -395,6 +396,8 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 		return nil, nil
 	}
 
+	Logger.Infof("Headers: %v", req.Header)
+
 	resp, err := c.Do(ctx, req, options.ResponseData)
 
 	c.SetJSONItems(resp, options.ResponseData)
@@ -567,7 +570,13 @@ func newResponse(r *http.Response) *Response {
 	rdr1 := ioutil.NopCloser(bytes.NewBuffer(buf))
 	rdr2 := ioutil.NopCloser(bytes.NewBuffer(buf))
 	bodyBytes, _ := ioutil.ReadAll(rdr1)
-	bodyString := string(bodyBytes)
+	var bodyString string
+	if data, err := encoding.DecodeUTF16(bodyBytes); err == nil {
+		Logger.Debug("decoding utf16")
+		bodyString = data
+	} else {
+		bodyString = string(bodyBytes)
+	}
 	response.JSONData = &bodyString
 
 	jsonObject := gjson.Parse(bodyString)
