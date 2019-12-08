@@ -18,7 +18,6 @@ import (
 	"sync"
 
 	"github.com/google/go-querystring/query"
-	"github.com/reubenmiller/go-c8y/pkg/encoding"
 	"github.com/tidwall/gjson"
 	"moul.io/http2curl"
 )
@@ -227,6 +226,12 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 	c.TenantOptions = (*TenantOptionsService)(&c.common)
 	c.User = (*UserService)(&c.common)
 	return c
+}
+
+func (c *Client) setTransport(transport *http.Transport) {
+	c.clientMu.Lock()
+	defer c.clientMu.Unlock()
+	c.client.Transport = transport
 }
 
 // addOptions adds the parameters in opt as URL query parameters to s. opt
@@ -570,13 +575,7 @@ func newResponse(r *http.Response) *Response {
 	rdr1 := ioutil.NopCloser(bytes.NewBuffer(buf))
 	rdr2 := ioutil.NopCloser(bytes.NewBuffer(buf))
 	bodyBytes, _ := ioutil.ReadAll(rdr1)
-	var bodyString string
-	if data, err := encoding.DecodeUTF16(bodyBytes); err == nil {
-		Logger.Debug("decoding utf16")
-		bodyString = data
-	} else {
-		bodyString = string(bodyBytes)
-	}
+	bodyString := string(bodyBytes)
 	response.JSONData = &bodyString
 
 	jsonObject := gjson.Parse(bodyString)
