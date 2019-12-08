@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"crypto/tls"
 	"fmt"
+	"net/http"
 	"os"
 	"path"
 
@@ -56,6 +58,7 @@ var (
 	globalFlagOutputFile     string
 	globalFlagUseEnv         bool
 	globalFlagRaw            bool
+	globalFlagNoProxy        bool
 	globalFlagTimeout        uint
 )
 
@@ -73,6 +76,7 @@ func Execute() {
 	rootCmd.PersistentFlags().BoolVar(&globalFlagDryRun, "dry", false, "Dry run. Don't send any data to the server")
 	rootCmd.PersistentFlags().BoolVar(&globalFlagUseEnv, "useEnv", false, "Allow loading Cumulocity session setting from environment variables")
 	rootCmd.PersistentFlags().BoolVar(&globalFlagRaw, "raw", false, "Raw values")
+	rootCmd.PersistentFlags().BoolVar(&globalFlagNoProxy, "noProxy", false, "Ignore the proxy settings")
 
 	rootCmd.PersistentFlags().StringVar(&globalFlagOutputFile, "outputFile", "", "Output file")
 
@@ -209,11 +213,13 @@ func initConfig() {
 		}
 	}
 
+	httpClient := newHTTPClient(globalFlagNoProxy)
+
 	// Try reading session from file
 	if err := viper.ReadInConfig(); err == nil {
 		Logger.Println("Using config file:", viper.ConfigFileUsed())
 		client = c8y.NewClient(
-			nil,
+			httpClient,
 			formatHost(viper.GetString("host")),
 			viper.GetString("tenant"),
 			viper.GetString("username"),
@@ -224,5 +230,29 @@ func initConfig() {
 	}
 
 	// Fallback to reading session from environment variables
-	client = c8y.NewClientFromEnvironment(nil, true)
+	client = c8y.NewClientFromEnvironment(httpClient, true)
+}
+
+func newHTTPClient(ignoreProxySettings bool) *http.Client {
+	// Default client ignores self signed certificates (to enable compatibility to the edge which uses self signed certs)
+	defaultTransport := http.DefaultTransport.(*http.Transport)
+	tr := &http.Transport{
+		Proxy:                 defaultTransport.Proxy,
+		DialContext:           defaultTransport.DialContext,
+		MaxIdleConns:          defaultTransport.MaxIdleConns,
+		IdleConnTimeout:       defaultTransport.IdleConnTimeout,
+		ExpectContinueTimeout: defaultTransport.ExpectContinueTimeout,
+		TLSHandshakeTimeout:   defaultTransport.TLSHandshakeTimeout,
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+
+	if ignoreProxySettings {
+		tr.Proxy = nil
+	}
+
+	return &http.Client{
+		Transport: tr,
+	}
 }

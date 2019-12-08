@@ -53,13 +53,14 @@
   * [x] Update all upload files
   * [ ] Add upload flag to generic function
 * [x] Add request response time to log
-* [ ] Add ignore proxy switch
-* [ ] Handle headerParameters in spec
+* [x] Handle headerParameters in spec
+* [x] Add ignore proxy switch
 * [ ] Allow spec to define static values if of type switch
 * [ ] Fix New-ApplicationBinary test
 * [ ] Microservice aliases using my-app://health
 * [ ] Manual realtime commands (for alarms, events, measurements, etc.)
 * [ ] Allow file upload to include additional "type" property
+* [ ] Adding encoding tests
 
 ## Bugs
 
@@ -129,6 +130,15 @@ Manual commands
 
 * [ ] applications
   * [ ] New-Microservice
+
+## Debugging
+
+* VSCode Powershell Integrated console has encoding issues with characters like "°C"
+
+Change the default encoding by running the following command in the integrated console
+```sh
+chcp 65001
+```
 
 
 ## Command layout

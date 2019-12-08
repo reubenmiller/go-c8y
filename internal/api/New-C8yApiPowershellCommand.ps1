@@ -266,6 +266,19 @@ Function New-C8yApiPowershellCommand {
     $null = $BeginParameterBuilder.AppendLine("            `$Parameters[`"outputFile`"] = `$OutputFile")
     $null = $BeginParameterBuilder.AppendLine("        }")
 
+    # No Proxy
+    $NoProxyParam = New-Object System.Text.StringBuilder
+    $null = $NoProxyParam.AppendLine('        # NoProxy')
+    $null = $NoProxyParam.AppendLine('        [Parameter()]')
+    $null = $NoProxyParam.AppendLine('        [switch]')
+    $null = $NoProxyParam.Append('        $NoProxy')
+    $null = $CmdletParameters.Add($NoProxyParam)
+
+    $null = $BeginParameterBuilder.AppendLine("        if (`$PSBoundParameters.ContainsKey(`"NoProxy`")) {")
+    $null = $BeginParameterBuilder.AppendLine("            `$Parameters[`"noProxy`"] = `$NoProxy")
+    $null = $BeginParameterBuilder.AppendLine("        }")
+
+
     $SessionParam = New-Object System.Text.StringBuilder
     $null = $SessionParam.AppendLine('        # Session path')
     $null = $SessionParam.AppendLine('        [Parameter()]')
