@@ -85,7 +85,23 @@ Function Invoke-Command {
         return
     }
 
-    $response = $RawResponse | ConvertFrom-Json
+    $isJSON = $false
+    try {
+        $response = $RawResponse | ConvertFrom-Json
+        $isJSON = $true
+    } catch {
+        # ignore json errors, because sometimes the response is not json...so we want
+        # to return it anyways
+    }
+
+    # Return quickly if a non-json response is detected
+    if (!$isJSON) {
+        Write-Verbose "non-json response detected"
+        $global:_rawdata = $RawResponse
+        $global:_data = $null
+        $RawResponse
+        return
+    }
 
     $NestedData = Get-NestedProperty -InputObject $response -Name $ResultProperty
 
