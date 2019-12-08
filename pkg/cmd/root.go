@@ -53,6 +53,7 @@ var (
 	globalFlagPrettyPrint    bool
 	globalFlagDryRun         bool
 	globalFlagSessionFile    string
+	globalFlagOutputFile     string
 	globalFlagUseEnv         bool
 	globalFlagRaw            bool
 )
@@ -71,6 +72,8 @@ func Execute() {
 	rootCmd.PersistentFlags().BoolVar(&globalFlagDryRun, "dry", false, "Dry run. Don't send any data to the server")
 	rootCmd.PersistentFlags().BoolVar(&globalFlagUseEnv, "useEnv", false, "Allow loading Cumulocity session setting from environment variables")
 	rootCmd.PersistentFlags().BoolVar(&globalFlagRaw, "raw", false, "Raw values")
+
+	rootCmd.PersistentFlags().StringVar(&globalFlagOutputFile, "outputFile", "", "Output file")
 
 	rootCmd.PersistentFlags().StringSlice("filter", nil, "filter")
 	rootCmd.PersistentFlags().StringSlice("select", nil, "select")

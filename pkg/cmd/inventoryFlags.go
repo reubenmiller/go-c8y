@@ -1,9 +1,14 @@
 package cmd
 
 import (
-	"io"
+	"bytes"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
+	"mime"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 )
@@ -58,6 +63,21 @@ func getTenantWithDefaultFlag(cmd *cobra.Command, flagName string, defaultTenant
 	return defaultTenant
 }
 
+func getFormDataObjectFlag(cmd *cobra.Command, flagName string, formData map[string]io.Reader) error {
+	if formData == nil {
+		return fmt.Errorf("formData can not be nil")
+	}
+
+	if value, err := cmd.Flags().GetString(FlagDataName); err == nil {
+		data := MustParseJSON(value)
+
+		if metadataBytes, err := json.Marshal(data); err == nil {
+			formData["object"] = bytes.NewReader(metadataBytes)
+		}
+	}
+	return nil
+}
+
 func getFileFlag(cmd *cobra.Command, flagName string, formData map[string]io.Reader) error {
 	if formData == nil {
 		formData = make(map[string]io.Reader)
@@ -67,9 +87,30 @@ func getFileFlag(cmd *cobra.Command, flagName string, formData map[string]io.Rea
 		r, err := os.Open(filename)
 		if err == nil {
 			formData["file"] = r
+
+			// Add required object field if it does not already exist
+			if _, ok := formData["object"]; !ok {
+				objectInfo := make(map[string]interface{})
+				objectInfo["type"] = mime.TypeByExtension(filepath.Ext(filename))
+				objectInfo["name"] = filepath.Base(filename)
+				if v, err := json.Marshal(objectInfo); err == nil {
+					formData["object"] = bytes.NewReader(v)
+				} else {
+					return errors.New("failed to create object form-data property")
+				}
+			}
 		} else {
 			return errors.New("Failed to read file")
 		}
 	}
 	return nil
+}
+
+func getOutputFileFlag(cmd *cobra.Command, flagName string) (filename string, err error) {
+	if v, flagErr := cmd.Flags().GetString(flagName); flagErr == nil {
+		filename = v
+	} else {
+		err = newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", flagName, flagErr))
+	}
+	return
 }
