@@ -104,8 +104,17 @@ Function New-C8yApiPowershellCommand {
     if ($Specification.queryParameters) {
         $null = $ArgumentSources.AddRange(([array]$Specification.queryParameters))
     }
+
     if ($Specification.body) {
         $null = $ArgumentSources.AddRange(([array]$Specification.body))
+    }
+
+    if ($Specification.headerParameters) {
+        $null = $ArgumentSources.AddRange(([array]$Specification.headerParameters))
+    }
+
+    if ($Specification.options) {
+        $null = $ArgumentSources.AddRange(([array]$Specification.options))
     }
 
     $CmdletParameters = New-Object System.Collections.ArrayList
@@ -245,6 +254,17 @@ Function New-C8yApiPowershellCommand {
     $null = $RawParam.AppendLine('        [switch]')
     $null = $RawParam.Append('        $Raw')
     $null = $CmdletParameters.Add($RawParam)
+
+    $OutputFileParam = New-Object System.Text.StringBuilder
+    $null = $OutputFileParam.AppendLine('        # Outputfile')
+    $null = $OutputFileParam.AppendLine('        [Parameter()]')
+    $null = $OutputFileParam.AppendLine('        [string]')
+    $null = $OutputFileParam.Append('        $OutputFile')
+    $null = $CmdletParameters.Add($OutputFileParam)
+
+    $null = $BeginParameterBuilder.AppendLine("        if (`$PSBoundParameters.ContainsKey(`"OutputFile`")) {")
+    $null = $BeginParameterBuilder.AppendLine("            `$Parameters[`"outputFile`"] = `$OutputFile")
+    $null = $BeginParameterBuilder.AppendLine("        }")
 
     $SessionParam = New-Object System.Text.StringBuilder
     $null = $SessionParam.AppendLine('        # Session path')

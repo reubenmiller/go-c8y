@@ -63,6 +63,7 @@ Function New-C8yPowershellArguments {
         "datefrom" { "string" }
         "datetime" { "string" }
         "dateto" { "string" }
+        "directory" { "string" }
         "file" { "string" }
         "id" { "object" }
         "integer" { "long" }

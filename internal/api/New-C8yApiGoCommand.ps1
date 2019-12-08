@@ -37,15 +37,29 @@ Function New-C8yApiGoCommand {
     #
     $ArgumentSources = New-Object System.Collections.ArrayList
 
+    # Path parameters
     if ($Specification.pathParameters) {
         $null = $ArgumentSources.AddRange(([array]$Specification.pathParameters))
     }
 
+    # Query parameters
     if ($Specification.queryParameters) {
         $null = $ArgumentSources.AddRange(([array]$Specification.queryParameters))
     }
+
+    # Body parameters
     if ($Specification.body) {
         $null = $ArgumentSources.AddRange(([array]$Specification.body))
+    }
+
+    # Header parameters
+    if ($Specification.headerParameters) {
+        $null = $ArgumentSources.AddRange(([array]$Specification.headerParameters))
+    }
+
+    # Additional parameters used to control a function
+    if ($Specification.options) {
+        $null = $ArgumentSources.AddRange(([array]$Specification.options))
     }
 
     $CommandArgs = foreach ($iArg in $ArgumentSources) {
@@ -105,6 +119,21 @@ Function New-C8yApiGoCommand {
     }
 
     #
+    # Options
+    #
+    $RESTOptionsBuilder = New-Object System.Text.StringBuilder
+    if ($Specification.options) {
+        $null = $RESTOptionsBuilder.AppendLine('body.SetMap(getDataFlag(cmd))')
+
+        foreach ($iArg in $Specification.options) {
+            $code = New-C8yApiGoGetValueFromFlag -Parameters $iArg -SetterType "body"
+            if ($code) {
+                $null = $RESTOptionsBuilder.AppendLine($code)
+            }
+        }
+    }
+
+    #
     # Add common options
     #
     $null = $RESTQueryBuilder.AppendLine(@"
@@ -145,8 +174,10 @@ import (
     "fmt"
     "io"
     "net/url"
+    "net/http"
 
     "github.com/fatih/color"
+    "github.com/reubenmiller/go-c8y/pkg/encoding"
     "github.com/reubenmiller/go-c8y/pkg/mapbuilder"
     "github.com/reubenmiller/go-c8y/pkg/c8y"
     "github.com/spf13/cobra"
@@ -188,6 +219,10 @@ func (n *${Name}Cmd) ${Name}(cmd *cobra.Command, args []string) error {
     queryValue := url.QueryEscape("")
     $RESTQueryBuilder
 
+    // headers
+    headers := http.Header{}
+    $RestHeaderBuilder
+
     // form data
     formData := make(map[string]io.Reader)
     $RESTFormDataBuilder
@@ -210,18 +245,56 @@ func (n *${Name}Cmd) ${Name}(cmd *cobra.Command, args []string) error {
         Query:        queryValue,
         Body:         body.GetMap(),
         FormData:     formData,
+        Header:       headers,
         IgnoreAccept: false,
         DryRun:       globalFlagDryRun,
     }
 
-    return n.do${NameCamel}(req, filters)
+    // Common outputfile option
+    outputfile := `"`"
+    if v, err := getOutputFileFlag(cmd, `"outputFile`"); err == nil {
+        outputfile = v
+    } else {
+        return err
+    }
+
+    return n.do${NameCamel}(req, outputfile, filters)
 }
 
-func (n *${Name}Cmd) do${NameCamel}(req c8y.RequestOptions, filters *JSONFilters) error {
+func (n *${Name}Cmd) do${NameCamel}(req c8y.RequestOptions, outputfile string, filters *JSONFilters) error {
     resp, err := client.SendRequest(
 		context.Background(),
         req,
     )
+
+    if resp != nil {
+        Logger.Infof("Response header: %v", resp.Header)
+    }
+
+    // write response to file instead of to stdout
+	if resp != nil && err == nil && outputfile != `"`" {
+		fullFilePath, err := saveResponseToFile(resp, outputfile)
+
+		if err != nil {
+			return newSystemError("write to file failed", err)
+		}
+
+		fmt.Printf("%s", fullFilePath)
+		return nil
+    }
+
+    if resp != nil && err == nil && resp.Header.Get("Content-Type") == "application/octet-stream" && resp.JSONData != nil {
+        if encoding.IsUTF16(*resp.JSONData) {
+            if utf8, err := encoding.DecodeUTF16([]byte(*resp.JSONData)); err == nil {
+                fmt.Printf("%s", utf8)
+            } else {
+                fmt.Printf("%s", *resp.JSONData)
+            }
+        } else {
+            fmt.Printf("%s", *resp.JSONData)
+        }
+        return nil
+	}
 
     if err != nil {
         color.Set(color.FgRed, color.Bold)
@@ -328,6 +401,17 @@ Function Get-C8yGoArgs {
         }
 
         "source" {
+            $SetFlag = if ($UseOption) {
+                'cmd.Flags().StringP("{0}", "{1}", "{2}", "{3}")' -f $Name, $OptionName, $Default, $Description
+            } else {
+                'cmd.Flags().String("{0}", "{1}", "{2}")' -f $Name, $Default, $Description
+            }
+            @{
+                SetFlag = $SetFlag
+            }
+        }
+
+        "directory" {
             $SetFlag = if ($UseOption) {
                 'cmd.Flags().StringP("{0}", "{1}", "{2}", "{3}")' -f $Name, $OptionName, $Default, $Description
             } else {

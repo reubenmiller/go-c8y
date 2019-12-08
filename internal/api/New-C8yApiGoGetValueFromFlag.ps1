@@ -37,6 +37,7 @@ Function New-C8yApiGoGetValueFromFlag {
         "file" = @{}
         "id" = @{}
         "integer" = @{}
+        "outputfile" = @{}
         "source" = @{}
         "string" = @{}
         "tenant" = @{}
@@ -322,6 +323,19 @@ Function New-C8yApiGoGetValueFromFlag {
         return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "${prop}", err))
     }
 "@
+
+    # outputfile
+    <# $Setters."outputfile"."query" = "query.Add(`"${queryParam}`", url.QueryEscape(v))"
+    $Setters."outputfile"."path" = "pathParameters[`"${queryParam}`"] = v"
+    $Setters."outputfile"."body" = "body.Set(`"${queryParam}`", v)"
+    $Definitions."outputfile" = @"
+    if v, err := getOutputFileFlag; err == nil {
+        $($Setters.outputfile.$SetterType)
+        outputfile = v
+    } else {
+        return err
+    }
+"@ #>
 
     # id
     $Setters."id"."query" = "query.Add(`"${queryParam}`", url.QueryEscape(v))"
