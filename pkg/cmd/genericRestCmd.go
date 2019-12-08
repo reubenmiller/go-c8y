@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -11,6 +10,8 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/encoding"
+	"github.com/reubenmiller/go-c8y/pkg/jsonUtilities"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/pretty"
@@ -133,6 +134,36 @@ func (n *getGenericRestCmd) doDataGenericRest(method string, path string, header
 			IgnoreAccept: ignoreAcceptHeader,
 			ResponseData: nil,
 		})
+	outputfile := globalFlagOutputFile
+
+	if resp != nil {
+		Logger.Infof("Response header: %v", resp.Header)
+	}
+
+	// write response to file instead of to stdout
+	if resp != nil && err == nil && outputfile != "" {
+		fullFilePath, err := saveResponseToFile(resp, outputfile)
+
+		if err != nil {
+			return newSystemError("write to file failed", err)
+		}
+
+		fmt.Printf("%s", fullFilePath)
+		return nil
+	}
+
+	if resp != nil && err == nil && resp.Header.Get("Content-Type") == "application/octet-stream" && resp.JSONData != nil {
+		if encoding.IsUTF16(*resp.JSONData) {
+			if utf8, err := encoding.DecodeUTF16([]byte(*resp.JSONData)); err == nil {
+				fmt.Printf("%s", utf8)
+			} else {
+				fmt.Printf("%s", *resp.JSONData)
+			}
+		} else {
+			fmt.Printf("%s", *resp.JSONData)
+		}
+		return nil
+	}
 
 	if err != nil {
 		color.Set(color.FgRed, color.Bold)
@@ -141,8 +172,9 @@ func (n *getGenericRestCmd) doDataGenericRest(method string, path string, header
 	if resp != nil && resp.JSONData != nil {
 
 		var responseText []byte
+		isJSONResponse := jsonUtilities.IsValidJSON([]byte(*resp.JSONData))
 
-		if filters != nil && !globalFlagRaw {
+		if filters != nil && !globalFlagRaw && isJSONResponse {
 			dataKey := ""
 			if v := resp.JSON.Get("id"); !v.Exists() {
 				// Find the property which is an array
@@ -158,13 +190,12 @@ func (n *getGenericRestCmd) doDataGenericRest(method string, path string, header
 			if dataKey != "" {
 				log.Printf("data property: %s", dataKey)
 			}
-
 			responseText = filters.Apply(*resp.JSONData, dataKey)
 		} else {
 			responseText = []byte(*resp.JSONData)
 		}
 
-		if globalFlagPrettyPrint && json.Valid(responseText) {
+		if globalFlagPrettyPrint && isJSONResponse {
 			fmt.Printf("%s", pretty.Pretty(responseText))
 		} else {
 			fmt.Printf("%s", responseText)
