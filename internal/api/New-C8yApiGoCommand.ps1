@@ -170,16 +170,16 @@ package cmd
 
 import (
     "context"
-    "encoding/json"
     "fmt"
     "io"
     "net/url"
     "net/http"
 
     "github.com/fatih/color"
-    "github.com/reubenmiller/go-c8y/pkg/encoding"
-    "github.com/reubenmiller/go-c8y/pkg/mapbuilder"
     "github.com/reubenmiller/go-c8y/pkg/c8y"
+    "github.com/reubenmiller/go-c8y/pkg/encoding"
+    "github.com/reubenmiller/go-c8y/pkg/jsonUtilities"
+    "github.com/reubenmiller/go-c8y/pkg/mapbuilder"
     "github.com/spf13/cobra"
     "github.com/tidwall/pretty"
 )
@@ -305,14 +305,15 @@ func (n *${Name}Cmd) do${NameCamel}(req c8y.RequestOptions, outputfile string, f
 	    Logger.Printf("Response Length: %0.1fKB", float64(len(*resp.JSONData)*1)/1024)
 
         var responseText []byte
+        isJSONResponse := jsonUtilities.IsValidJSON([]byte(*resp.JSONData))
 
-        if filters != nil && !globalFlagRaw {
+        if isJSONResponse && filters != nil && !globalFlagRaw {
 			responseText = filters.Apply(*resp.JSONData, "$($Specification.listProperty)")
 		} else {
 			responseText = []byte(*resp.JSONData)
 		}
 
-        if globalFlagPrettyPrint && json.Valid(responseText) {
+        if globalFlagPrettyPrint && isJSONResponse {
             fmt.Printf("%s", pretty.Pretty(responseText))
         } else {
             fmt.Printf("%s", responseText)
