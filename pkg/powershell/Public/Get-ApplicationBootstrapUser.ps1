@@ -29,6 +29,11 @@ Get application bootstrap user
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -37,6 +42,9 @@ Get application bootstrap user
 
     Begin {
         $Parameters = @{}
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
+        }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
         }

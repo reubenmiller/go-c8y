@@ -4,6 +4,10 @@ Function New-ApplicationBinary {
 .SYNOPSIS
 New application binary
 
+.EXAMPLE
+PS> New-ApplicationBinary -Application $App.id -File ./helloworld.zip
+Upload application microservice binary
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -30,6 +34,11 @@ New application binary
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -45,6 +54,9 @@ New application binary
         $Parameters = @{}
         if ($PSBoundParameters.ContainsKey("File")) {
             $Parameters["file"] = $File
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

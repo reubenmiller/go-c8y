@@ -57,6 +57,11 @@ Get a list of the child assets of an existing group
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -76,6 +81,9 @@ Get a list of the child assets of an existing group
         }
         if ($PSBoundParameters.ContainsKey("WithTotalPages") -and $WithTotalPages) {
             $Parameters["withTotalPages"] = $WithTotalPages
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

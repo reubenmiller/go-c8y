@@ -29,6 +29,11 @@ Get alarm
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -37,6 +42,9 @@ Get alarm
 
     Begin {
         $Parameters = @{}
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
+        }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
         }

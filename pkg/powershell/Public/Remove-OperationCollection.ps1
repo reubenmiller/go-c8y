@@ -48,6 +48,11 @@ Remove all pending operations for a given device
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -75,6 +80,9 @@ Remove all pending operations for a given device
         }
         if ($PSBoundParameters.ContainsKey("Status")) {
             $Parameters["status"] = $Status
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

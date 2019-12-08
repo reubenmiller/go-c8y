@@ -41,6 +41,11 @@ Update editable property for an existing tenant option
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -62,6 +67,9 @@ Update editable property for an existing tenant option
         }
         if ($PSBoundParameters.ContainsKey("Editable")) {
             $Parameters["editable"] = $Editable
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

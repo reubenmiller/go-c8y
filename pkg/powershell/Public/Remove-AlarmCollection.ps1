@@ -78,6 +78,11 @@ Remove alarms on the device which are active and created in the last 10 minutes
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -120,6 +125,9 @@ Remove alarms on the device which are active and created in the last 10 minutes
         }
         if ($PSBoundParameters.ContainsKey("WithSourceDevices")) {
             $Parameters["withSourceDevices"] = $WithSourceDevices
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

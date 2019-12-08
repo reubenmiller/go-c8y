@@ -42,6 +42,11 @@ Get a managed object with parent references
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -52,6 +57,9 @@ Get a managed object with parent references
         $Parameters = @{}
         if ($PSBoundParameters.ContainsKey("WithParents")) {
             $Parameters["withParents"] = $WithParents
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

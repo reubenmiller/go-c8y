@@ -42,6 +42,11 @@ Delete a managed object and all child devices
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -57,6 +62,9 @@ Delete a managed object and all child devices
         $Parameters = @{}
         if ($PSBoundParameters.ContainsKey("Cascade")) {
             $Parameters["cascade"] = $Cascade
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

@@ -53,6 +53,11 @@ Create a retention rule to delete all alarms after 180 days
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -83,6 +88,9 @@ Create a retention rule to delete all alarms after 180 days
         }
         if ($PSBoundParameters.ContainsKey("Editable")) {
             $Parameters["editable"] = $Editable
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

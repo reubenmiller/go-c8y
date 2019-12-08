@@ -32,6 +32,11 @@ Delete external identity
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -50,6 +55,9 @@ Delete external identity
         }
         if ($PSBoundParameters.ContainsKey("Name")) {
             $Parameters["name"] = $Name
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

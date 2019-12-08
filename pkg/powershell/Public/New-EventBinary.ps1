@@ -4,6 +4,10 @@ Function New-EventBinary {
 .SYNOPSIS
 New event binary
 
+.EXAMPLE
+PS> New-EventBinary -Id $Event.id -File $TestFile
+Add a binary to an event
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -30,6 +34,11 @@ New event binary
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -43,11 +52,11 @@ New event binary
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("Id")) {
-            $Parameters["id"] = $Id
-        }
         if ($PSBoundParameters.ContainsKey("File")) {
             $Parameters["file"] = $File
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
@@ -57,6 +66,9 @@ New event binary
 
     Process {
         foreach ($item in (PSC8y\Expand-Id $Id)) {
+            if ($item) {
+                $Parameters["id"] = if ($item.id) { $item.id } else { $item }
+            }
 
             if (!$Force -and
                 !$WhatIfPreference -and

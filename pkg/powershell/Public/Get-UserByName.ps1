@@ -32,6 +32,11 @@ Get a user by name
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -45,6 +50,9 @@ Get a user by name
         }
         if ($PSBoundParameters.ContainsKey("Name")) {
             $Parameters["name"] = $Name
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

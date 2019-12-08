@@ -53,6 +53,11 @@ Find all devices with their names starting with 'roomUpperFloor_'
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -72,6 +77,9 @@ Find all devices with their names starting with 'roomUpperFloor_'
         }
         if ($PSBoundParameters.ContainsKey("WithTotalPages") -and $WithTotalPages) {
             $Parameters["withTotalPages"] = $WithTotalPages
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

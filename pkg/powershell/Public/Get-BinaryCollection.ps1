@@ -4,6 +4,10 @@ Function Get-BinaryCollection {
 .SYNOPSIS
 Get collection of inventory binaries
 
+.EXAMPLE
+PS> Get-BinaryCollection -PageSize 100
+Get a list of binaries
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -36,6 +40,11 @@ Get collection of inventory binaries
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -49,6 +58,9 @@ Get collection of inventory binaries
         }
         if ($PSBoundParameters.ContainsKey("WithTotalPages") -and $WithTotalPages) {
             $Parameters["withTotalPages"] = $WithTotalPages
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

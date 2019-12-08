@@ -2,7 +2,10 @@
 
 Describe -Name "Remove-EventBinary" {
     BeforeEach {
-        $Event = New-TestEvent -WithBinary
+        $Device = New-TestDevice
+        $Event = New-TestEvent -Device $Device.id
+        $TestFile = New-TestFile
+        New-EventBinary -Id $Event.id -File $TestFile
 
     }
 
@@ -12,6 +15,8 @@ Describe -Name "Remove-EventBinary" {
     }
 
     AfterEach {
+        Remove-Item $TestFile
+        Remove-ManagedObject -Id $Device.id
 
     }
 }

@@ -24,7 +24,6 @@ Describe -Name "Get-EventCollection" {
     }
 
     AfterEach {
-        Remove-ManagedObject -Id $Device.id
         PSC8y\Remove-ManagedObject -Id $Device.id
 
     }

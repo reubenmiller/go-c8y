@@ -38,6 +38,11 @@ Create a child asset (device or devicegroup) reference
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -56,6 +61,9 @@ Create a child asset (device or devicegroup) reference
         }
         if ($PSBoundParameters.ContainsKey("NewChildGroup")) {
             $Parameters["newChildGroup"] = $NewChildGroup
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

@@ -56,6 +56,11 @@ List the users within a user group (using pipeline)
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -72,6 +77,9 @@ List the users within a user group (using pipeline)
         }
         if ($PSBoundParameters.ContainsKey("WithTotalPages") -and $WithTotalPages) {
             $Parameters["withTotalPages"] = $WithTotalPages
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

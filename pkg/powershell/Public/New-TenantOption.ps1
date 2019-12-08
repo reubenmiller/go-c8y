@@ -37,6 +37,11 @@ Create a tenant option
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -58,6 +63,9 @@ Create a tenant option
         }
         if ($PSBoundParameters.ContainsKey("Value")) {
             $Parameters["value"] = $Value
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

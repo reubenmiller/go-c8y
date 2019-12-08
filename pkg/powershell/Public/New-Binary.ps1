@@ -4,6 +4,10 @@ Function New-Binary {
 .SYNOPSIS
 New inventory binary
 
+.EXAMPLE
+PS> New-Binary -File $File
+Upload a log file
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -23,6 +27,11 @@ New inventory binary
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -38,6 +47,9 @@ New inventory binary
         $Parameters = @{}
         if ($PSBoundParameters.ContainsKey("File")) {
             $Parameters["file"] = $File
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

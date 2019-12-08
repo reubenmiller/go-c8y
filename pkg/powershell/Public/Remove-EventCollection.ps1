@@ -56,6 +56,11 @@ Remove events from a device
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -86,6 +91,9 @@ Remove events from a device
         }
         if ($PSBoundParameters.ContainsKey("Revert")) {
             $Parameters["revert"] = $Revert
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

@@ -30,6 +30,11 @@ Get managed object child asset reference
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -40,6 +45,9 @@ Get managed object child asset reference
         $Parameters = @{}
         if ($PSBoundParameters.ContainsKey("Reference")) {
             $Parameters["reference"] = $Reference
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

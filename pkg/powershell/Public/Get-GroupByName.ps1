@@ -32,6 +32,11 @@ Get user group by its name
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -45,6 +50,9 @@ Get user group by its name
         }
         if ($PSBoundParameters.ContainsKey("Name")) {
             $Parameters["name"] = $Name
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

@@ -33,6 +33,11 @@ Unassign/Remove role from a user
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -54,6 +59,9 @@ Unassign/Remove role from a user
         }
         if ($PSBoundParameters.ContainsKey("Role")) {
             $Parameters["role"] = $Role
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

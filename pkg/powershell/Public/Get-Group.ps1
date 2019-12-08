@@ -33,6 +33,11 @@ Get a user group
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -43,6 +48,9 @@ Get a user group
         $Parameters = @{}
         if ($PSBoundParameters.ContainsKey("Tenant")) {
             $Parameters["tenant"] = $Tenant
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

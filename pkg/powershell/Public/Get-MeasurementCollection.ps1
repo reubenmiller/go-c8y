@@ -69,6 +69,21 @@ Get measurements from a device (using pipeline)
         [switch]
         $Revert,
 
+        # Results will be displayed in csv format
+        [Parameter()]
+        [switch]
+        $Csv,
+
+        # Results will be displayed in Excel format
+        [Parameter()]
+        [switch]
+        $Excel,
+
+        # Every measurement fragment which contains 'unit' property will be transformed to use required system of units.
+        [Parameter()]
+        [string]
+        $Unit,
+
         # Maximum number of results
         [Parameter()]
         [AllowNull()]
@@ -91,6 +106,11 @@ Get measurements from a device (using pipeline)
         [Parameter()]
         [switch]
         $Raw,
+
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
 
         # Session path
         [Parameter()]
@@ -121,11 +141,23 @@ Get measurements from a device (using pipeline)
         if ($PSBoundParameters.ContainsKey("Revert")) {
             $Parameters["revert"] = $Revert
         }
+        if ($PSBoundParameters.ContainsKey("Csv")) {
+            $Parameters["csv"] = $Csv
+        }
+        if ($PSBoundParameters.ContainsKey("Excel")) {
+            $Parameters["excel"] = $Excel
+        }
+        if ($PSBoundParameters.ContainsKey("Unit")) {
+            $Parameters["unit"] = $Unit
+        }
         if ($PSBoundParameters.ContainsKey("PageSize")) {
             $Parameters["pageSize"] = $PageSize
         }
         if ($PSBoundParameters.ContainsKey("WithTotalPages") -and $WithTotalPages) {
             $Parameters["withTotalPages"] = $WithTotalPages
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

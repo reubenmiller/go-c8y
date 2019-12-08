@@ -40,6 +40,11 @@ Get tenant summary statistics collection for the last 10 days, only return until
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -53,6 +58,9 @@ Get tenant summary statistics collection for the last 10 days, only return until
         }
         if ($PSBoundParameters.ContainsKey("DateTo")) {
             $Parameters["dateTo"] = $DateTo
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

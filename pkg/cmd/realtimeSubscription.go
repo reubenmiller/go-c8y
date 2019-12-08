@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"os"
@@ -12,6 +13,7 @@ import (
 )
 
 type subscribeRealtimeCmd struct {
+	device   string
 	deviceID string
 	timeout  int
 
@@ -23,7 +25,7 @@ func newSubscribeRealtimeCmd() *subscribeRealtimeCmd {
 
 	cmd := &cobra.Command{
 		Use:   "measurements",
-		Short: "Subscribe to realtime measurement events",
+		Short: "Subscribe to realtime measurements",
 		Long:  `Subscribe to realtime measurements for a specific device`,
 		Example: `
 			TODO
@@ -32,7 +34,7 @@ func newSubscribeRealtimeCmd() *subscribeRealtimeCmd {
 	}
 
 	// Flags
-	cmd.Flags().StringVarP(&ccmd.deviceID, "deviceID", "d", "", "name (accepts wildcards)")
+	cmd.Flags().StringVarP(&ccmd.device, "device", "d", "", "name (accepts wildcards)")
 	cmd.Flags().IntVarP(&ccmd.timeout, "timeout", "t", 30, "Timeout in seconds")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
@@ -41,6 +43,25 @@ func newSubscribeRealtimeCmd() *subscribeRealtimeCmd {
 }
 
 func (n *subscribeRealtimeCmd) subscribeRealtime(cmd *cobra.Command, args []string) error {
+	if n.cmd.Flags().Changed("device") {
+		deviceInputValues, deviceValue, err := getFormattedDeviceSlice(cmd, args, "device")
+
+		if err != nil {
+			return newUserError("no matching devices found", deviceInputValues, err)
+		}
+
+		if len(deviceValue) == 0 {
+			return newUserError("no matching devices found", deviceInputValues)
+		}
+
+		for _, item := range deviceValue {
+			if item != "" {
+				n.deviceID = newIDValue(item).GetID()
+				break
+			}
+		}
+	}
+
 	return n.doSubscribeRealtime(n.deviceID, n.timeout)
 }
 
@@ -68,18 +89,23 @@ func (n *subscribeRealtimeCmd) doSubscribeRealtime(deviceID string, timeout int)
 		signalCh <- os.Kill
 	})
 
+	filterText := []byte("")
+
 	for {
 		select {
 		case msg := <-ch:
 			if msg != nil {
-				fmt.Printf("%s\n", msg.Payload.Data)
+				if len(filterText) == 0 || bytes.Contains(msg.Payload.Data, filterText) {
+					fmt.Printf("%s\n", msg.Payload.Data)
+				}
 			} else {
+				Logger.Debug("Stopping realtime client")
 				log.Printf("Received empty message")
 			}
 
 		case <-signalCh:
 			// Enable ctrl-c to stop
-			log.Printf("Stopping realtime client")
+			Logger.Info("Stopping realtime client")
 			client.Realtime.Disconnect()
 			return nil
 		}

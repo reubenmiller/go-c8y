@@ -55,6 +55,11 @@ Update severity of an existing alarm to CRITICAL
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -79,6 +84,9 @@ Update severity of an existing alarm to CRITICAL
         }
         if ($PSBoundParameters.ContainsKey("Data")) {
             $Parameters["data"] = "{0}" -f ((ConvertTo-Json $Data -Compress) -replace '"', '\"')
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

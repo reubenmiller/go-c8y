@@ -34,6 +34,11 @@ Unassign a child device from its parent device
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -49,6 +54,9 @@ Unassign a child device from its parent device
         $Parameters = @{}
         if ($PSBoundParameters.ContainsKey("ChildDevice")) {
             $Parameters["childDevice"] = $ChildDevice
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

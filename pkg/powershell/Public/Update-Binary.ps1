@@ -4,6 +4,10 @@ Function Update-Binary {
 .SYNOPSIS
 Update inventory binary
 
+.EXAMPLE
+PS> Update-Binary -Id $Binary1.id -File $File2
+Update an existing binary file
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -30,6 +34,11 @@ Update inventory binary
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -45,6 +54,9 @@ Update inventory binary
         $Parameters = @{}
         if ($PSBoundParameters.ContainsKey("File")) {
             $Parameters["file"] = $File
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

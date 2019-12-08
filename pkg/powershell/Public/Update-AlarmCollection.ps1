@@ -60,6 +60,11 @@ Update the status of all active alarms on a device to ACKNOWLEDGED
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -93,6 +98,9 @@ Update the status of all active alarms on a device to ACKNOWLEDGED
         }
         if ($PSBoundParameters.ContainsKey("NewStatus")) {
             $Parameters["newStatus"] = $NewStatus
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

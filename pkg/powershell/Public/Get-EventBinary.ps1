@@ -4,6 +4,10 @@ Function Get-EventBinary {
 .SYNOPSIS
 Get event binary
 
+.EXAMPLE
+PS> Get-EventBinary -Id $Event.id -OutputFile ./eventbinary.txt
+Download a binary related to an event
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -25,6 +29,11 @@ Get event binary
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -33,8 +42,8 @@ Get event binary
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("Id")) {
-            $Parameters["id"] = $Id
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
@@ -44,6 +53,9 @@ Get event binary
 
     Process {
         foreach ($item in (PSC8y\Expand-Id $Id)) {
+            if ($item) {
+                $Parameters["id"] = if ($item.id) { $item.id } else { $item }
+            }
 
             if (!$Force -and
                 !$WhatIfPreference -and
@@ -58,7 +70,7 @@ Get event binary
                 -Noun "events" `
                 -Verb "downloadBinary" `
                 -Parameters $Parameters `
-                -Type "" `
+                -Type "*/*" `
                 -ItemType "" `
                 -ResultProperty "" `
                 -Raw:$Raw `

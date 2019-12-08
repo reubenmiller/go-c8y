@@ -48,6 +48,11 @@ Update the current user
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -78,6 +83,9 @@ Update the current user
         }
         if ($PSBoundParameters.ContainsKey("Password")) {
             $Parameters["password"] = $Password
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

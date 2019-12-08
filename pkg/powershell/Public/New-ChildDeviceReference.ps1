@@ -41,6 +41,11 @@ Assign a device as a child device to an existing device (using pipeline)
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -56,6 +61,9 @@ Assign a device as a child device to an existing device (using pipeline)
         $Parameters = @{}
         if ($PSBoundParameters.ContainsKey("Device")) {
             $Parameters["device"] = $Device
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

@@ -55,6 +55,11 @@ Delete audit records from a device
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -85,6 +90,9 @@ Delete audit records from a device
         }
         if ($PSBoundParameters.ContainsKey("DateTo")) {
             $Parameters["dateTo"] = $DateTo
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

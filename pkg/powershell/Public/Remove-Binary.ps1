@@ -4,6 +4,10 @@ Function Remove-Binary {
 .SYNOPSIS
 Delete event binary
 
+.EXAMPLE
+PS> Remove-Binary -Id $Binary.id
+Delete a binary
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -25,6 +29,11 @@ Delete event binary
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -38,6 +47,9 @@ Delete event binary
 
     Begin {
         $Parameters = @{}
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
+        }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
         }

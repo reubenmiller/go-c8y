@@ -30,6 +30,11 @@ Disable application on tenant
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -45,6 +50,9 @@ Disable application on tenant
         $Parameters = @{}
         if ($PSBoundParameters.ContainsKey("Tenant")) {
             $Parameters["tenant"] = $Tenant
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

@@ -29,6 +29,11 @@ Get measurement
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -39,6 +44,9 @@ Get measurement
         $Parameters = @{}
         if ($PSBoundParameters.ContainsKey("Id")) {
             $Parameters["id"] = $Id
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

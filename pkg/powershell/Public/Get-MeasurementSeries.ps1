@@ -64,6 +64,11 @@ afterEach:
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -83,6 +88,9 @@ afterEach:
         }
         if ($PSBoundParameters.ContainsKey("DateTo")) {
             $Parameters["dateTo"] = $DateTo
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

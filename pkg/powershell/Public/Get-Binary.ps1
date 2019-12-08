@@ -1,8 +1,16 @@
 # Code generated from specification version 1.0.0: DO NOT EDIT
-Function Save-Binary {
+Function Get-Binary {
 <#
 .SYNOPSIS
 Get binary
+
+.EXAMPLE
+PS> Get-Binary -Id $Binary.id
+Get a binary and display the contents on the console
+
+.EXAMPLE
+PS> Get-Binary -Id $Binary.id -OutputFile ./download-binary1.txt
+Get a binary and save it to a file
 
 
 #>
@@ -25,6 +33,11 @@ Get binary
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -33,6 +46,9 @@ Get binary
 
     Begin {
         $Parameters = @{}
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
+        }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
         }
@@ -56,9 +72,9 @@ Get binary
 
             Invoke-Command `
                 -Noun "binaries" `
-                -Verb "download" `
+                -Verb "get" `
                 -Parameters $Parameters `
-                -Type "" `
+                -Type "*/*" `
                 -ItemType "" `
                 -ResultProperty "" `
                 -Raw:$Raw `

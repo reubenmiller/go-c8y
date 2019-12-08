@@ -43,6 +43,11 @@ Add a role to a group using wildcards (using pipeline)
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -61,6 +66,9 @@ Add a role to a group using wildcards (using pipeline)
         }
         if ($PSBoundParameters.ContainsKey("Group")) {
             $Parameters["group"] = PSC8y\Expand-Id $Group
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

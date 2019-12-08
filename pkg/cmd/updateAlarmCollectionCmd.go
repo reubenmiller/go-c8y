@@ -3,13 +3,16 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/encoding"
+	"github.com/reubenmiller/go-c8y/pkg/jsonUtilities"
 	"github.com/reubenmiller/go-c8y/pkg/mapbuilder"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
@@ -125,6 +128,9 @@ func (n *updateAlarmCollectionCmd) updateAlarmCollection(cmd *cobra.Command, arg
 		return newSystemError("Invalid query parameter")
 	}
 
+	// headers
+	headers := http.Header{}
+
 	// form data
 	formData := make(map[string]io.Reader)
 
@@ -153,18 +159,65 @@ func (n *updateAlarmCollectionCmd) updateAlarmCollection(cmd *cobra.Command, arg
 		Query:        queryValue,
 		Body:         body.GetMap(),
 		FormData:     formData,
+		Header:       headers,
 		IgnoreAccept: false,
 		DryRun:       globalFlagDryRun,
 	}
 
-	return n.doUpdateAlarmCollection(req, filters)
+	// Common outputfile option
+	outputfile := ""
+	if v, err := getOutputFileFlag(cmd, "outputFile"); err == nil {
+		outputfile = v
+	} else {
+		return err
+	}
+
+	return n.doUpdateAlarmCollection(req, outputfile, filters)
 }
 
-func (n *updateAlarmCollectionCmd) doUpdateAlarmCollection(req c8y.RequestOptions, filters *JSONFilters) error {
+func (n *updateAlarmCollectionCmd) doUpdateAlarmCollection(req c8y.RequestOptions, outputfile string, filters *JSONFilters) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(globalFlagTimeout)*time.Millisecond)
+	defer cancel()
+	start := time.Now()
 	resp, err := client.SendRequest(
-		context.Background(),
+		ctx,
 		req,
 	)
+
+	Logger.Infof("Response time: %dms", int64(time.Since(start)/time.Millisecond))
+
+	if ctx.Err() != nil {
+		Logger.Criticalf("request timed out after %d", globalFlagTimeout)
+	}
+
+	if resp != nil {
+		Logger.Infof("Response header: %v", resp.Header)
+	}
+
+	// write response to file instead of to stdout
+	if resp != nil && err == nil && outputfile != "" {
+		fullFilePath, err := saveResponseToFile(resp, outputfile)
+
+		if err != nil {
+			return newSystemError("write to file failed", err)
+		}
+
+		fmt.Printf("%s", fullFilePath)
+		return nil
+	}
+
+	if resp != nil && err == nil && resp.Header.Get("Content-Type") == "application/octet-stream" && resp.JSONData != nil {
+		if encoding.IsUTF16(*resp.JSONData) {
+			if utf8, err := encoding.DecodeUTF16([]byte(*resp.JSONData)); err == nil {
+				fmt.Printf("%s", utf8)
+			} else {
+				fmt.Printf("%s", *resp.JSONData)
+			}
+		} else {
+			fmt.Printf("%s", *resp.JSONData)
+		}
+		return nil
+	}
 
 	if err != nil {
 		color.Set(color.FgRed, color.Bold)
@@ -175,14 +228,15 @@ func (n *updateAlarmCollectionCmd) doUpdateAlarmCollection(req c8y.RequestOption
 		Logger.Printf("Response Length: %0.1fKB", float64(len(*resp.JSONData)*1)/1024)
 
 		var responseText []byte
+		isJSONResponse := jsonUtilities.IsValidJSON([]byte(*resp.JSONData))
 
-		if filters != nil && !globalFlagRaw {
+		if isJSONResponse && filters != nil && !globalFlagRaw {
 			responseText = filters.Apply(*resp.JSONData, "alarms")
 		} else {
 			responseText = []byte(*resp.JSONData)
 		}
 
-		if globalFlagPrettyPrint && json.Valid(responseText) {
+		if globalFlagPrettyPrint && isJSONResponse {
 			fmt.Printf("%s", pretty.Pretty(responseText))
 		} else {
 			fmt.Printf("%s", responseText)

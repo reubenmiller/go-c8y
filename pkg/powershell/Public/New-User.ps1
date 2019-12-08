@@ -72,6 +72,11 @@ Create a user
         [switch]
         $Raw,
 
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
         # Session path
         [Parameter()]
         [string]
@@ -114,6 +119,9 @@ Create a user
         }
         if ($PSBoundParameters.ContainsKey("CustomProperties")) {
             $Parameters["customProperties"] = "{0}" -f ((ConvertTo-Json $CustomProperties -Compress) -replace '"', '\"')
+        }
+        if ($PSBoundParameters.ContainsKey("OutputFile")) {
+            $Parameters["outputFile"] = $OutputFile
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
