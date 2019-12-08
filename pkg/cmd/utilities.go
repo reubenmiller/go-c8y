@@ -3,14 +3,19 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"path"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/reubenmiller/go-c8y/pkg/c8y"
 )
 
 // MustParseJSON parses a string and returns the map structure
@@ -178,4 +183,44 @@ func GetFileContentType(out *os.File) (string, error) {
 	contentType := http.DetectContentType(buffer)
 
 	return contentType, nil
+}
+
+// getTempFilepath returns a temp file path. If outputDir is empty, then a temp folder will be created
+func getTempFilepath(name string, outputDir string) (string, error) {
+	directory := "./"
+
+	if outputDir == "" {
+		tempDir, err := ioutil.TempDir("", "go-c8y_")
+
+		if err != nil {
+			return "", fmt.Errorf("Could not create temp folder. %s", err)
+		}
+		directory = tempDir
+	}
+
+	return path.Join(directory, name), nil
+}
+
+// saveResponseToFile saves a response to file
+// @filename	filename
+// @directory	output directory. If empty, then a temp directory will be used
+// if filename
+func saveResponseToFile(resp *c8y.Response, filename string) (string, error) {
+	out, err := os.Create(filename)
+	if err != nil {
+		return "", fmt.Errorf("Could not create file. %s", err)
+	}
+	defer out.Close()
+
+	// Writer the body to file
+	Logger.Printf("header: %v", resp.Header)
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to copy file contents to file. %s", err)
+	}
+
+	if fullpath, err := filepath.Abs(filename); err == nil {
+		return fullpath, nil
+	}
+	return filename, nil
 }
