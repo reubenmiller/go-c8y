@@ -79,7 +79,7 @@ func Execute() {
 	rootCmd.PersistentFlags().StringSlice("filter", nil, "filter")
 	rootCmd.PersistentFlags().StringSlice("select", nil, "select")
 	rootCmd.PersistentFlags().String("format", "", "format")
-	rootCmd.PersistentFlags().UintVarP(&globalFlagTimeout, "timeout", "t", 10*60, "Timeout in milliseconds")
+	rootCmd.PersistentFlags().UintVarP(&globalFlagTimeout, "timeout", "t", 10*60*1000, "Timeout in milliseconds")
 
 	// TODO: Make flags case-insensitive
 	// rootCmd.PersistentFlags().SetNormalizeFunc(flagNormalizeFunc)
