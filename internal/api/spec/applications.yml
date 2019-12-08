@@ -290,6 +290,18 @@ endpoints:
     alias:
         go: createBinary
         powershell: New-ApplicationBinary
+    examples:
+      powershell:
+        - description: Upload application microservice binary
+          beforeEach:
+            - $App = New-Application -Name my-temp-app2 -Type HOSTED -Key "my-temp-app2-key" -ContextPath "my-temp-app2"
+          command: New-ApplicationBinary -Application $App.id -File ./helloworld.zip
+          afterEach:
+            - Remove-Item ./helloworld.zip
+            - Remove-Application -Application $App.id
+      go:
+        - description: Upload application microservice binary
+          command: c8y applications createBinary --application 12345 --file ./helloworld.zip
     pathParameters:
       - name: application
         type: application
