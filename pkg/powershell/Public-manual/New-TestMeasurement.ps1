@@ -3,7 +3,10 @@ Function New-TestMeasurement {
 .SYNOPSIS
 Create a new test measurement
 #>
-    [cmdletbinding()]
+    [cmdletbinding(
+        SupportsShouldProcess = $true,
+        ConfirmImpact = "None"
+    )]
     Param(
         [object] $Device,
 
@@ -24,7 +27,7 @@ Create a new test measurement
     )
 
     if ($null -eq $Device) {
-        $iDevice = PSC8y\New-TestDevice
+        $iDevice = PSC8y\New-TestDevice -WhatIf:$false
     } else {
         $iDevice = PSC8y\Expand-Device $Device
     }

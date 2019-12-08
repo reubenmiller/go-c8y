@@ -1,5 +1,8 @@
 Function New-TestDevice {
-    [cmdletbinding()]
+    [cmdletbinding(
+        SupportsShouldProcess = $true,
+        ConfirmImpact = "None"
+    )]
     Param(
         [Parameter(
             Mandatory = $false,

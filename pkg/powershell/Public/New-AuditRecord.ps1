@@ -44,6 +44,7 @@ Create an audit record for a custom managed object update
 
         # The severity of action: critical, major, minor, warning or information. (required)
         [Parameter(Mandatory = $true)]
+        [ValidateSet('critical','major','minor','warning','information')]
         [string]
         $Severity,
 

@@ -147,6 +147,27 @@ func (n *getMeasurementCollectionCmd) getMeasurementCollection(cmd *cobra.Comman
 
 	// headers
 	headers := http.Header{}
+	if v, err := cmd.Flags().GetBool("csv"); err == nil {
+		if v {
+			headers.Add("Accept", "text/csv")
+		}
+	} else {
+		return newUserError("Flag does not exist")
+	}
+	if v, err := cmd.Flags().GetBool("excel"); err == nil {
+		if v {
+			headers.Add("Accept", "application/vnd.ms-excel")
+		}
+	} else {
+		return newUserError("Flag does not exist")
+	}
+	if v, err := cmd.Flags().GetString("unit"); err == nil {
+		if v != "" {
+			headers.Add("X-Cumulocity-System-Of-Units", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "unit", err))
+	}
 
 	// form data
 	formData := make(map[string]io.Reader)

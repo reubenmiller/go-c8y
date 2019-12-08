@@ -33,6 +33,7 @@ Update editable property for an existing tenant option
 
         # Whether the tenant option should be editable or not (required)
         [Parameter(Mandatory = $true)]
+        [ValidateSet('true','false')]
         [string]
         $Editable,
 

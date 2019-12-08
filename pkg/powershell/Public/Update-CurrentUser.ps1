@@ -35,6 +35,7 @@ Update the current user
 
         # User activation status (true/false)
         [Parameter()]
+        [ValidateSet('true','false')]
         [string]
         $Enabled,
 

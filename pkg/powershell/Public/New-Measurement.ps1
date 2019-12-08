@@ -8,7 +8,7 @@ Create a new measurement
 Create a new measurement
 
 .EXAMPLE
-PS> New-Measurement -Device {{ randomdevice }} -Time "0s" -Type "myType" -Data @{ c8y_Winding = @{ temperature = @{ value = 1.2345; unit = "Â°C" } } }
+PS> New-Measurement -Device {{ randomdevice }} -Time "0s" -Type "myType" -Data @{ c8y_Winding = @{ temperature = @{ value = 1.2345; unit = "°C" } } }
 Create measurement
 
 

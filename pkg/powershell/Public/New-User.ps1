@@ -59,6 +59,7 @@ Create a user
 
         # User activation status (true/false)
         [Parameter()]
+        [ValidateSet('true','false')]
         [switch]
         $SendPasswordResetEmail,
 

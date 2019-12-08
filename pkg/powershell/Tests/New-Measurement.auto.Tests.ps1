@@ -7,7 +7,7 @@ Describe -Name "New-Measurement" {
     }
 
     It "Create measurement" {
-        $Response = PSC8y\New-Measurement -Device $TestDevice.id -Time "0s" -Type "myType" -Data @{ c8y_Winding = @{ temperature = @{ value = 1.2345; unit = "Â°C" } } }
+        $Response = PSC8y\New-Measurement -Device $TestDevice.id -Time "0s" -Type "myType" -Data @{ c8y_Winding = @{ temperature = @{ value = 1.2345; unit = "°C" } } }
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }

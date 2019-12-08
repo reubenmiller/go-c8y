@@ -46,6 +46,7 @@ afterEach:
 
         # Fragment name from measurement.
         [Parameter()]
+        [ValidateSet('DAILY','HOURLY','MINUTELY')]
         [string]
         $AggregationType,
 

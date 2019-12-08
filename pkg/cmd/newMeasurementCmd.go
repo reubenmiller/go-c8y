@@ -30,7 +30,7 @@ func newNewMeasurementCmd() *newMeasurementCmd {
 		Short: "Create a new measurement",
 		Long:  `Create a new measurement`,
 		Example: `
-$ c8y measurements create --id 12345 --time "0s" --type "myType" --data "{\"c8y_Winding\":{ \"temperature\":{\"value\": 1.2345,\"unit\":\"Â°C\"}}}"
+$ c8y measurements create --id 12345 --time "0s" --type "myType" --data "{\"c8y_Winding\":{ \"temperature\":{\"value\": 1.2345,\"unit\":\"°C\"}}}"
 Create measurement
 		`,
 		RunE: ccmd.newMeasurement,

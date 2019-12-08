@@ -21,7 +21,10 @@ Get all the device object (with app in their name). Note the Expand cmdlet won't
 
 
 #>
-    [cmdletbinding()]
+    [cmdletbinding(
+        # SupportsShouldProcess = $true,
+        # ConfirmImpact = "None"
+    )]
     Param(
         [Parameter(
             Mandatory=$true,

@@ -81,6 +81,7 @@ Get measurements from a device (using pipeline)
 
         # Every measurement fragment which contains 'unit' property will be transformed to use required system of units.
         [Parameter()]
+        [ValidateSet('imperial','metric')]
         [string]
         $Unit,
 
