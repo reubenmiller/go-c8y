@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/fatih/color"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
@@ -121,8 +122,11 @@ func (n *getGenericRestCmd) getGenericRest(cmd *cobra.Command, args []string) er
 func (n *getGenericRestCmd) doDataGenericRest(method string, path string, header http.Header, data map[string]interface{}, ignoreAcceptHeader, dryRun bool, filters *JSONFilters) error {
 	baseURL, _ := url.Parse(path)
 
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(globalFlagTimeout)*time.Millisecond)
+	defer cancel()
+	start := time.Now()
 	resp, err := client.SendRequest(
-		context.Background(),
+		ctx,
 		c8y.RequestOptions{
 			Method:       method,
 			Host:         baseURL.Host,
@@ -134,7 +138,13 @@ func (n *getGenericRestCmd) doDataGenericRest(method string, path string, header
 			IgnoreAccept: ignoreAcceptHeader,
 			ResponseData: nil,
 		})
+
+	Logger.Infof("Response time: %dms", int64(time.Since(start)/time.Millisecond))
 	outputfile := globalFlagOutputFile
+
+	if ctx.Err() != nil {
+		Logger.Criticalf("request timed out after %d", globalFlagTimeout)
+	}
 
 	if resp != nil {
 		Logger.Infof("Response header: %v", resp.Header)

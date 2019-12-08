@@ -264,11 +264,14 @@ func (n *${Name}Cmd) ${Name}(cmd *cobra.Command, args []string) error {
 
 func (n *${Name}Cmd) do${NameCamel}(req c8y.RequestOptions, outputfile string, filters *JSONFilters) error {
     ctx, cancel := context.WithTimeout(context.Background(), time.Duration(globalFlagTimeout)*time.Millisecond)
-	defer cancel()
+    defer cancel()
+    start := time.Now()
     resp, err := client.SendRequest(
 		ctx,
         req,
     )
+
+    Logger.Infof("Response time: %dms", int64(time.Since(start)/time.Millisecond))
 
     if ctx.Err() != nil {
 		Logger.Criticalf("request timed out after %d", globalFlagTimeout)
