@@ -24,7 +24,7 @@ Function New-C8yApi {
         $importStatements = foreach ($iFile in $InFile) {
 			$Path = Resolve-Path $iFile
 
-            $Specification = Get-Content $Path -Raw | ConvertFrom-Json
+            $Specification = Get-Content $Path -Raw -Encoding utf8 | ConvertFrom-Json
 
             # Create root command
             New-C8yApiGoRootCommand -Specification:$Specification -OutputDir:$OutputDir

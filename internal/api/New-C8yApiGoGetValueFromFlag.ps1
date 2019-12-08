@@ -9,7 +9,7 @@ Function New-C8yApiGoGetValueFromFlag {
         [Parameter(
             Mandatory = $true
         )]
-        [ValidateSet("query", "path", "body")]
+        [ValidateSet("query", "path", "body", "header")]
         [string] $SetterType
     )
 
@@ -20,6 +20,8 @@ Function New-C8yApiGoGetValueFromFlag {
     }
 
     $Type = $Parameters.type
+
+    $FixedValue = $Parameters.value
 
     $Definitions = @{}
     $Setters = @{
@@ -55,6 +57,12 @@ Function New-C8yApiGoGetValueFromFlag {
     $Setters."boolean"."query" = "query.Add(`"${queryParam}`", `"true`")"
     $Setters."boolean"."path" = "pathParameters[`"${queryParam}`"] = `"true`""
     $Setters."boolean"."body" = "body.Set(`"${queryParam}`", `"true`")"
+    if ($FixedValue) {
+        $Setters."boolean"."header" = "headers.Add(`"${queryParam}`", `"$FixedValue`")"
+    } else {
+        $Setters."boolean"."header" = "headers.Add(`"${queryParam}`", `"true`")"
+    }
+
     $Definitions."boolean" = @"
     if v, err := cmd.Flags().GetBool("${prop}"); err == nil {
         if v {
@@ -314,6 +322,7 @@ Function New-C8yApiGoGetValueFromFlag {
     $Setters."string"."query" = "query.Add(`"${queryParam}`", url.QueryEscape(v))"
     $Setters."string"."path" = "pathParameters[`"${queryParam}`"] = v"
     $Setters."string"."body" = "body.Set(`"${queryParam}`", v)"
+    $Setters."string"."header" = "headers.Add(`"${queryParam}`", v)"
     $Definitions."string" = @"
     if v, err := cmd.Flags().GetString("${prop}"); err == nil {
         if v != "" {

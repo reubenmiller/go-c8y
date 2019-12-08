@@ -24,7 +24,7 @@ Function New-C8yPowershellApi {
         $importStatements = foreach ($iFile in $InFile) {
 			$Path = Resolve-Path $iFile
 
-            $Specification = Get-Content $Path -Raw | ConvertFrom-Json
+            $Specification = Get-Content $Path -Raw -Encoding utf8 | ConvertFrom-Json
 
 			foreach ($iSpec in $Specification.endpoints) {
                 New-C8yApiPowershellCommand `

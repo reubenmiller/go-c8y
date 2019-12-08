@@ -119,6 +119,20 @@ Function New-C8yApiGoCommand {
     }
 
     #
+    # Headers
+    #
+    $RestHeaderBuilder = New-Object System.Text.StringBuilder
+    if ($Specification.headerParameters) {
+        foreach ($iArg in $Specification.headerParameters) {
+            $code = New-C8yApiGoGetValueFromFlag -Parameters $iArg -SetterType "header"
+            if ($code) {
+                $null = $RestHeaderBuilder.AppendLine($code)
+            }
+        }
+    }
+
+    #
+    # TODO: Check if this option can be removed
     # Options
     #
     $RESTOptionsBuilder = New-Object System.Text.StringBuilder
@@ -339,7 +353,7 @@ func (n *${Name}Cmd) do${NameCamel}(req c8y.RequestOptions, outputfile string, f
 }
 "@
 
-	# Must not include BOM!
+    # Must not include BOM!
 	$Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding $False
 	[System.IO.File]::WriteAllLines($File, $Template, $Utf8NoBomEncoding)
 
