@@ -361,7 +361,7 @@
           "name": "editable",
           "type": "string",
           "required": true,
-          "validateSet": [
+          "validationSet": [
             "true",
             "false"
           ],

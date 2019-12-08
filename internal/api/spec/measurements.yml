@@ -47,20 +47,20 @@ endpoints:
       - name: csv
         type: boolean
         description: Results will be displayed in csv format
-        header: Accept
+        property: Accept
         value: text/csv
 
       - name: excel
         type: boolean
         description: Results will be displayed in Excel format
-        header: Accept
+        property: Accept
         value: application/vnd.ms-excel
 
       - name: unit
         type: string
         description: Every measurement fragment which contains 'unit' property will be transformed to use required system of units.
-        header: X-Cumulocity-System-Of-Units
-        validateSet: [imperial, metric]
+        property: X-Cumulocity-System-Of-Units
+        validationSet: [imperial, metric]
 
     queryParameters:
       - name: device
@@ -150,7 +150,7 @@ endpoints:
       - name: aggregationType
         type: string
         description: Fragment name from measurement.
-        validateSet: [DAILY, HOURLY, MINUTELY]
+        validationSet: [DAILY, HOURLY, MINUTELY]
 
       - name: dateFrom
         type: datetime

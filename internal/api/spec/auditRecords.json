@@ -72,7 +72,7 @@
           "name": "severity",
           "type": "string",
           "required": true,
-          "validateSet": [
+          "validationSet": [
             "critical",
             "major",
             "minor",

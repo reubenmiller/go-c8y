@@ -58,7 +58,7 @@ endpoints:
       - name: severity
         type: string
         required: true
-        validateSet: [critical, major, minor, warning, information]
+        validationSet: [critical, major, minor, warning, information]
         description: 'The severity of action: critical, major, minor, warning or information.'
 
       # Optional parameters

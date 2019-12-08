@@ -262,6 +262,6 @@ endpoints:
       - name: editable
         type: string
         required: true
-        validateSet: ['true', 'false']
+        validationSet: ['true', 'false']
         description: Whether the tenant option should be editable or not
 

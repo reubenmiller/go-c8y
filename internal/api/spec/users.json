@@ -70,7 +70,7 @@
           "name": "enabled",
           "type": "string",
           "required": false,
-          "validateSet": [
+          "validationSet": [
             "true",
             "false"
           ],
@@ -231,7 +231,7 @@
           "name": "sendPasswordResetEmail",
           "type": "boolean",
           "required": false,
-          "validateSet": [
+          "validationSet": [
             "true",
             "false"
           ],
@@ -462,7 +462,7 @@
           "name": "sendPasswordResetEmail",
           "type": "boolean",
           "required": false,
-          "validateSet": [
+          "validationSet": [
             "true",
             "false"
           ],

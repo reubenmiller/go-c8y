@@ -56,7 +56,7 @@ endpoints:
       - name: enabled
         type: string
         required: false
-        validateSet: ["true", "false"]
+        validationSet: ["true", "false"]
         description: User activation status (true/false)
 
       - name: password
@@ -175,7 +175,7 @@ endpoints:
       - name: sendPasswordResetEmail
         type: boolean
         required: false
-        validateSet: ["true", "false"]
+        validationSet: ["true", "false"]
         description: User activation status (true/false)
 
       - name: customProperties
@@ -338,7 +338,7 @@ endpoints:
       - name: sendPasswordResetEmail
         type: boolean
         required: false
-        validateSet: ["true", "false"]
+        validationSet: ["true", "false"]
         description: User activation status (true/false)
 
       - name: customProperties
