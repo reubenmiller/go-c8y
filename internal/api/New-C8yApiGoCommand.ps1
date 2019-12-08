@@ -174,6 +174,7 @@ import (
     "io"
     "net/url"
     "net/http"
+    "time"
 
     "github.com/fatih/color"
     "github.com/reubenmiller/go-c8y/pkg/c8y"
@@ -262,10 +263,16 @@ func (n *${Name}Cmd) ${Name}(cmd *cobra.Command, args []string) error {
 }
 
 func (n *${Name}Cmd) do${NameCamel}(req c8y.RequestOptions, outputfile string, filters *JSONFilters) error {
+    ctx, cancel := context.WithTimeout(context.Background(), time.Duration(globalFlagTimeout)*time.Millisecond)
+	defer cancel()
     resp, err := client.SendRequest(
-		context.Background(),
+		ctx,
         req,
     )
+
+    if ctx.Err() != nil {
+		Logger.Criticalf("request timed out after %d", globalFlagTimeout)
+	}
 
     if resp != nil {
         Logger.Infof("Response header: %v", resp.Header)
