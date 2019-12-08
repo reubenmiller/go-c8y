@@ -390,7 +390,7 @@
             "command": "New-ApplicationBinary -Application $App.id -File ./helloworld.zip",
             "afterEach": [
               "Remove-Item ./helloworld.zip",
-              "- Remove-Application -Application $App.id"
+              "Remove-Application -Application $App.id"
             ]
           }
         ],
