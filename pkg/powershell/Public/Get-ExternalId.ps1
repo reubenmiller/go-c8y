@@ -37,6 +37,11 @@ Get external identity
         [string]
         $OutputFile,
 
+        # NoProxy
+        [Parameter()]
+        [switch]
+        $NoProxy,
+
         # Session path
         [Parameter()]
         [string]
@@ -53,6 +58,9 @@ Get external identity
         }
         if ($PSBoundParameters.ContainsKey("OutputFile")) {
             $Parameters["outputFile"] = $OutputFile
+        }
+        if ($PSBoundParameters.ContainsKey("NoProxy")) {
+            $Parameters["noProxy"] = $NoProxy
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

@@ -39,6 +39,11 @@ Add a binary to an event
         [string]
         $OutputFile,
 
+        # NoProxy
+        [Parameter()]
+        [switch]
+        $NoProxy,
+
         # Session path
         [Parameter()]
         [string]
@@ -57,6 +62,9 @@ Add a binary to an event
         }
         if ($PSBoundParameters.ContainsKey("OutputFile")) {
             $Parameters["outputFile"] = $OutputFile
+        }
+        if ($PSBoundParameters.ContainsKey("NoProxy")) {
+            $Parameters["noProxy"] = $NoProxy
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

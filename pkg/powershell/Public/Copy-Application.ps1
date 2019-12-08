@@ -42,6 +42,11 @@ Copy an existing application
         [string]
         $OutputFile,
 
+        # NoProxy
+        [Parameter()]
+        [switch]
+        $NoProxy,
+
         # Session path
         [Parameter()]
         [string]
@@ -57,6 +62,9 @@ Copy an existing application
         $Parameters = @{}
         if ($PSBoundParameters.ContainsKey("OutputFile")) {
             $Parameters["outputFile"] = $OutputFile
+        }
+        if ($PSBoundParameters.ContainsKey("NoProxy")) {
+            $Parameters["noProxy"] = $NoProxy
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

@@ -39,6 +39,11 @@ Upload application microservice binary
         [string]
         $OutputFile,
 
+        # NoProxy
+        [Parameter()]
+        [switch]
+        $NoProxy,
+
         # Session path
         [Parameter()]
         [string]
@@ -57,6 +62,9 @@ Upload application microservice binary
         }
         if ($PSBoundParameters.ContainsKey("OutputFile")) {
             $Parameters["outputFile"] = $OutputFile
+        }
+        if ($PSBoundParameters.ContainsKey("NoProxy")) {
+            $Parameters["noProxy"] = $NoProxy
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session

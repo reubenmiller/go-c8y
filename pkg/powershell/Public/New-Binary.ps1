@@ -32,6 +32,11 @@ Upload a log file
         [string]
         $OutputFile,
 
+        # NoProxy
+        [Parameter()]
+        [switch]
+        $NoProxy,
+
         # Session path
         [Parameter()]
         [string]
@@ -50,6 +55,9 @@ Upload a log file
         }
         if ($PSBoundParameters.ContainsKey("OutputFile")) {
             $Parameters["outputFile"] = $OutputFile
+        }
+        if ($PSBoundParameters.ContainsKey("NoProxy")) {
+            $Parameters["noProxy"] = $NoProxy
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
