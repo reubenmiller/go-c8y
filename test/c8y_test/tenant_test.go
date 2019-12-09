@@ -24,7 +24,7 @@ func TestTenantService_GetTenantStatisticsSummary(t *testing.T) {
 	)
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
-	testingutils.Assert(t, summary.StorageSize > 0, "Storage size should be greater than 0")
+	testingutils.Assert(t, summary.StorageSize >= 0, "Storage size should be greater than or equal to 0")
 	testingutils.Assert(t, summary.RequestCount > 0, "Request count should be greater than 0")
 }
 
