@@ -338,9 +338,9 @@ func TestMeasurementService_CreateWithDifferentTypes(t *testing.T) {
 	createMeasurement(uint8(8))
 	createMeasurement(uint(101))
 
-	// boolean values
-	createMeasurement(true)
-	createMeasurement(false)
+	// boolean values (No longer supported by c8y)
+	// createMeasurement(true)
+	// createMeasurement(false)
 }
 
 func TestMeasurementService_GetMeasurement_DeleteMeasurement(t *testing.T) {
