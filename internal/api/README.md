@@ -134,6 +134,7 @@
 * [ ] Remove child devices and child references by wildcard. Only delete matching children
 * [ ] Implement --all switch for collections to iterate through all results (max results)
 * [ ] Package c8y binary with the powershell app
+* [ ] Change all Pester test files to use utf8 with BOM!! This is because Pester does not interpret the encoding of utf8 (no bom) files correctly, thus causing some encoding issues when testing!
 Manual commands
 
 * [ ] applications
