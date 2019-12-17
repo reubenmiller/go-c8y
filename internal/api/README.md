@@ -136,7 +136,7 @@
 * [ ] Package c8y binary with the powershell app
 * [ ] Change all Pester test files to use utf8 with BOM!! This is because Pester does not interpret the encoding of utf8 (no bom) files correctly, thus causing some encoding issues when testing!
 Manual commands
-
+* [ ] Convert "\u00b0C" characters to their correct code. This is due to a bug in the ConvertTo-Json powershell cmdlet. Use [System.Text.RegularExpressions.Regex]::Unescape() to remove the escape characters
 * [ ] applications
   * [ ] New-Microservice
 
