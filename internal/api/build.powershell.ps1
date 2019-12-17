@@ -26,15 +26,22 @@ if (!$SkipGenerate) {
 
     $OutputDir = Resolve-path $OutputDir
 
-    Write-Host "Building the c8y.exe"
-    $env:GOARCH = "amd64"
-    $env:GOOS = "windows"
+    Write-Host "Building the c8y binary"
     $c8yBinary = Resolve-Path "$PSScriptRoot/../../cmd/c8y/main.go"
-    & go build -ldflags="-s -w" -o "$OutputDir/../c8y.exe" "$c8yBinary"
 
-    $env:GOARCH = "amd64"
-    $env:GOOS = "linux"
-    & go build -ldflags="-s -w" -o "$OutputDir/../c8y" "$c8yBinary"
+    if ($IsMacOS) {
+        $env:GOARCH = "amd64"
+        $env:GOOS = "darwin"
+        & go build -ldflags="-s -w" -o "$OutputDir/../c8y" "$c8yBinary"
+    } elseif ($IsLinux) {
+        $env:GOARCH = "amd64"
+        $env:GOOS = "linux"
+        & go build -ldflags="-s -w" -o "$OutputDir/../c8y" "$c8yBinary"
+    } else {
+        $env:GOARCH = "amd64"
+        $env:GOOS = "windows"
+        & go build -ldflags="-s -w" -o "$OutputDir/../c8y.exe" "$c8yBinary"
+    }
 
     $SpecFiles = Get-ChildItem -Path "$PSScriptRoot/spec" -Filter "*.json"
 
