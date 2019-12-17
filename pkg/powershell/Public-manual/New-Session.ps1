@@ -44,7 +44,7 @@ None
     $Binary = Get-CumulocityBinary
 
     if (!$Credential -or ($Credential -eq [System.Management.Automation.PSCredential]::Empty)) {
-        $Credential = Get-Credential -UserName "" -Message "Enter the API credentials for the $Tenant C8Y Tenant    (leave-out the the tenant prefix)" -ErrorAction SilentlyContinue
+        $Credential = Get-Credential -Message "Enter the API credentials for the $Tenant C8Y Tenant    (leave-out the the tenant prefix)" -ErrorAction SilentlyContinue
     }
 
     if (!$Credential.UserName -or
@@ -79,6 +79,4 @@ None
     $Path = & $Binary $args
 
     Set-Session -File $Path
-
-    Get-Session
 }
