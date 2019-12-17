@@ -224,13 +224,13 @@ func initConfig() {
 			viper.GetString("tenant"),
 			viper.GetString("username"),
 			viper.GetString("password"),
-			true,
+			false,
 		)
 		return
 	}
 
 	// Fallback to reading session from environment variables
-	client = c8y.NewClientFromEnvironment(httpClient, true)
+	client = c8y.NewClientFromEnvironment(httpClient, false)
 }
 
 func newHTTPClient(ignoreProxySettings bool) *http.Client {
