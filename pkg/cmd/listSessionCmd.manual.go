@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/manifoldco/promptui"
 	homedir "github.com/mitchellh/go-homedir"
-	"github.com/reubenmiller/promptui"
 	"github.com/spf13/cobra"
 )
 

@@ -16,6 +16,7 @@ require (
 	github.com/karrick/tparse/v2 v2.7.1
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/gommon v0.2.8 // indirect
+	github.com/manifoldco/promptui v0.3.2
 	github.com/mattn/go-isatty v0.0.8 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/nicksnyder/go-i18n v1.10.0 // indirect
