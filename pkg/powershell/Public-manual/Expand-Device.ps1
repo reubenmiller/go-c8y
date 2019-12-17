@@ -37,17 +37,14 @@ Get all the device object (with app in their name). Note the Expand cmdlet won't
     Process {
         [array] $AllDevices = foreach ($iDevice in $InputObject)
         {
-            if (($iDevice -is [string]))
-            {
+            if ($iDevice.id) {
+                $iDevice
+            } else {
                 if ($iDevice -match "^\d+$") {
                     Get-ManagedObject -Id $iDevice
                 } else {
                     Get-DeviceCollection -Name $iDevice -WhatIf:$false
                 }
-            }
-            else
-            {
-                $iDevice
             }
         }
 
