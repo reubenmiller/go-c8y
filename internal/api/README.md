@@ -55,12 +55,19 @@
 * [x] Add request response time to log
 * [x] Handle headerParameters in spec
 * [x] Add ignore proxy switch
-* [ ] Allow spec to define static values if of type switch
-* [ ] Fix New-ApplicationBinary test
-* [ ] Microservice aliases using my-app://health
-* [ ] Manual realtime commands (for alarms, events, measurements, etc.)
+* [x] Allow spec to define static values if of type switch (on headerParameters)
 * [ ] Allow file upload to include additional "type" property
+* [ ] Fix New-ApplicationBinary test. Create a example microservice (something small hopefully)
+* [ ] Manual realtime commands (for alarms, events, measurements, etc.)
+  * [ ] c8y measurements subscribe --device * --series <filter> --csv
+  * [ ] c8y alarms subscribe --device * (if *, then don't do anything, use as is) otherwise find device
+  * [ ] c8y events subscribe --device *
+  * [ ] c8y operations subscribe --device *
+  * [ ] c8y realtime subscribe --channel /measurements/* --device
+  * [ ]
 * [ ] Adding encoding tests
+* [ ] Microservice aliases using my-app://health
+* [ ] handle
 
 ## Bugs
 
@@ -125,7 +132,8 @@
     * [ ] type
 * [ ] Return status codes
 * [ ] Remove child devices and child references by wildcard. Only delete matching children
-
+* [ ] Implement --all switch for collections to iterate through all results (max results)
+* [ ] Package c8y binary with the powershell app
 Manual commands
 
 * [ ] applications
