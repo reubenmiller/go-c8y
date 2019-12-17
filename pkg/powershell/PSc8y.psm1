@@ -6,6 +6,15 @@ if ($PSVersionTable["PSVersion"].Major -le 2) {
     $RootFolder = $PSScriptRoot
 }
 
+#
+# Create session folder
+#
+$HomePath = Join-Path $env:HOME -ChildPath ".cumulocity"
+if (!(Test-Path $HomePath)) {
+    Write-Host "Creating home director [$HomePath]"
+    $null = New-Item -Path $HomePath -ItemType Directory
+}
+
 $PublicManual  = @( Get-ChildItem -Path $RootFolder\Public-manual\ -Filter *.ps1 -Recurse -ErrorAction SilentlyContinue )
 $Public  = @( Get-ChildItem -Path $RootFolder\Public\ -Filter *.ps1 -Recurse -ErrorAction SilentlyContinue )
 $Private = @( Get-ChildItem -Path $RootFolder\Private\ -Filter *.ps1 -Recurse -ErrorAction SilentlyContinue )
