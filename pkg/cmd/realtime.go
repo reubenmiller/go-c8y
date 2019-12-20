@@ -19,6 +19,7 @@ func newRealtimeCmd() *realtimeCmd {
 
 	// Subcommands
 	cmd.AddCommand(newSubscribeRealtimeCmd().getCommand())
+	cmd.AddCommand(newSubscribeAllRealtimeCmd().getCommand())
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
