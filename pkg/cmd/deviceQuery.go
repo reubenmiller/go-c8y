@@ -32,7 +32,7 @@ func newQueryDeviceCmd() *queryDeviceCmd {
 
 	// Flags
 	cmd.Flags().StringSliceVarP(&ccmd.deviceName, "name", "n", []string{"*"}, "name (accepts wildcards")
-	cmd.Flags().StringVarP(&ccmd.deviceType, "type", "t", "", "type")
+	cmd.Flags().StringVar(&ccmd.deviceType, "type", "", "type")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
