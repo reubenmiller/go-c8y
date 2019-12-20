@@ -7,31 +7,31 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type subscribeMeasurementCmd struct {
+type subscribeOperationCmd struct {
 	*baseCmd
 
 	flagDurationSec int64
 	flagCount       int64
 }
 
-func newSubscribeMeasurementCmd() *subscribeMeasurementCmd {
-	ccmd := &subscribeMeasurementCmd{}
+func newSubscribeOperationCmd() *subscribeOperationCmd {
+	ccmd := &subscribeOperationCmd{}
 
 	cmd := &cobra.Command{
 		Use:   "subscribe",
-		Short: "Subscribe to realtime measurements",
-		Long:  `Subscribe to realtime measurements`,
+		Short: "Subscribe to realtime operations",
+		Long:  `Subscribe to realtime operations`,
 		Example: `
-$ c8y measurements subscribe --device 12345
-Subscribe to measurements (in realtime) for device 12345
+$ c8y operations subscribe --device 12345
+Subscribe to operations (in realtime) for device 12345
 
-$ c8y measurements subscribe --device 12345 --duration 30
-Subscribe to measurements (in realtime) for device 12345 for 30 seconds
+$ c8y operations subscribe --device 12345 --duration 30
+Subscribe to operations (in realtime) for device 12345 for 30 seconds
 
-$ c8y measurements subscribe --count 10
-Subscribe to measurements (in realtime) for all devices, and stop after receiving 10 measurements
+$ c8y operations subscribe --count 10
+Subscribe to operations (in realtime) for all devices, and stop after receiving 10 operations
 		`,
-		RunE: ccmd.subscribeMeasurement,
+		RunE: ccmd.subscribeOperation,
 	}
 
 	cmd.SilenceUsage = true
@@ -47,7 +47,7 @@ Subscribe to measurements (in realtime) for all devices, and stop after receivin
 	return ccmd
 }
 
-func (n *subscribeMeasurementCmd) subscribeMeasurement(cmd *cobra.Command, args []string) error {
+func (n *subscribeOperationCmd) subscribeOperation(cmd *cobra.Command, args []string) error {
 
 	// options
 	device := "*"
@@ -70,5 +70,5 @@ func (n *subscribeMeasurementCmd) subscribeMeasurement(cmd *cobra.Command, args 
 		}
 	}
 
-	return subscribe(c8y.RealtimeMeasurements(device), n.flagDurationSec, n.flagCount, cmd)
+	return subscribe(c8y.RealtimeOperations(device), n.flagDurationSec, n.flagCount, cmd)
 }

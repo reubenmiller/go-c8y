@@ -1,5 +1,3 @@
-// TODO
-
 package cmd
 
 import (
@@ -7,31 +5,31 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type subscribeMeasurementCmd struct {
+type subscribeManagedObjectCmd struct {
 	*baseCmd
 
 	flagDurationSec int64
 	flagCount       int64
 }
 
-func newSubscribeMeasurementCmd() *subscribeMeasurementCmd {
-	ccmd := &subscribeMeasurementCmd{}
+func newSubscribeManagedObjectCmd() *subscribeManagedObjectCmd {
+	ccmd := &subscribeManagedObjectCmd{}
 
 	cmd := &cobra.Command{
 		Use:   "subscribe",
-		Short: "Subscribe to realtime measurements",
-		Long:  `Subscribe to realtime measurements`,
+		Short: "Subscribe to realtime managedObjects",
+		Long:  `Subscribe to realtime managedObjects`,
 		Example: `
-$ c8y measurements subscribe --device 12345
-Subscribe to measurements (in realtime) for device 12345
+$ c8y inventory subscribe --device 12345
+Subscribe to managedObjects (in realtime) for device 12345
 
-$ c8y measurements subscribe --device 12345 --duration 30
-Subscribe to measurements (in realtime) for device 12345 for 30 seconds
+$ c8y inventory subscribe --device 12345 --duration 30
+Subscribe to managedObjects (in realtime) for device 12345 for 30 seconds
 
-$ c8y measurements subscribe --count 10
-Subscribe to measurements (in realtime) for all devices, and stop after receiving 10 measurements
+$ c8y inventory subscribe --count 10
+Subscribe to managedObjects (in realtime) for all devices, and stop after receiving 10 managedObjects
 		`,
-		RunE: ccmd.subscribeMeasurement,
+		RunE: ccmd.subscribeManagedObject,
 	}
 
 	cmd.SilenceUsage = true
@@ -47,7 +45,7 @@ Subscribe to measurements (in realtime) for all devices, and stop after receivin
 	return ccmd
 }
 
-func (n *subscribeMeasurementCmd) subscribeMeasurement(cmd *cobra.Command, args []string) error {
+func (n *subscribeManagedObjectCmd) subscribeManagedObject(cmd *cobra.Command, args []string) error {
 
 	// options
 	device := "*"
@@ -70,5 +68,5 @@ func (n *subscribeMeasurementCmd) subscribeMeasurement(cmd *cobra.Command, args 
 		}
 	}
 
-	return subscribe(c8y.RealtimeMeasurements(device), n.flagDurationSec, n.flagCount, cmd)
+	return subscribe(c8y.RealtimeManagedObjects(device), n.flagDurationSec, n.flagCount, cmd)
 }

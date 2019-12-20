@@ -23,7 +23,9 @@ Create a new test measurement
         [Double] $Value = 1.2345,
 
         # Unit. i.e. °C, m/s
-        [string] $Unit = "°C"
+        [string] $Unit = "°C",
+
+        [switch] $Force
     )
 
     if ($null -eq $Device) {
@@ -43,5 +45,6 @@ Create a new test measurement
                     unit = $Unit
                 }
             }
-        }
+        } `
+        -Force:$Force
 }

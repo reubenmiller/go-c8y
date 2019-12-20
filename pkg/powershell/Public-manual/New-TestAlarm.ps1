@@ -9,7 +9,9 @@ Create a new test alarm
             Mandatory = $false,
             Position = 0
         )]
-        [object] $Device
+        [object] $Device,
+
+        [switch] $Force
     )
 
     if ($null -ne $Device) {
@@ -23,5 +25,6 @@ Create a new test alarm
         -Time "1970-01-01" `
         -Type "c8y_ci_TestAlarm" `
         -Severity MAJOR `
-        -Text "Test CI Alarm"
+        -Text "Test CI Alarm" `
+        -Force:$Force
 }

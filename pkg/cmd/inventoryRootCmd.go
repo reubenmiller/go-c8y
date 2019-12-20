@@ -24,6 +24,7 @@ func newInventoryRootCmd() *inventoryCmd {
 	cmd.AddCommand(newGetManagedObjectCmd().getCommand())
 	cmd.AddCommand(newUpdateManagedObjectCmd().getCommand())
 	cmd.AddCommand(newDeleteManagedObjectCmd().getCommand())
+	cmd.AddCommand(newSubscribeManagedObjectCmd().getCommand())
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

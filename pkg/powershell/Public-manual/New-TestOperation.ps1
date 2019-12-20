@@ -9,7 +9,9 @@ Create a new test operation
             Mandatory = $false,
             Position = 0
         )]
-        [object] $Device
+        [object] $Device,
+
+        [switch] $Force
     )
 
     if ($null -ne $Device) {
@@ -24,7 +26,8 @@ Create a new test operation
         -Description "Test operation" `
         -Data @{
         c8y_Restart = @{
-            parameters = @{ }
-        }
-    }
+                parameters = @{ }
+            }
+        } `
+        -Force:$Force
 }

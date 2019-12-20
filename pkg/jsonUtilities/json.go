@@ -3,6 +3,8 @@ package jsonUtilities
 import (
 	"bytes"
 	"encoding/json"
+	"strconv"
+	"strings"
 )
 
 var (
@@ -27,4 +29,13 @@ func IsJSONArray(v []byte) bool {
 // IsJSONObject returns true if the byte array represents a JSON object
 func IsJSONObject(v []byte) bool {
 	return bytes.HasPrefix(v, objectPrefix) && bytes.HasSuffix(v, arraySuffix)
+}
+
+// UnescapeJSON replaces unicode escape characters with the actual character
+func UnescapeJSON(v []byte) string {
+	val, err := strconv.Unquote("\"" + strings.ReplaceAll(string(v), `"`, `\"`) + "\"")
+	if err != nil {
+		return string(v)
+	}
+	return val
 }

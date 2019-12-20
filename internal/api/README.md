@@ -59,12 +59,12 @@
 * [ ] Allow file upload to include additional "type" property
 * [ ] Fix New-ApplicationBinary test. Create a example microservice (something small hopefully)
 * [ ] Manual realtime commands (for alarms, events, measurements, etc.)
-  * [ ] c8y measurements subscribe --device * --series <filter> --csv
-  * [ ] c8y alarms subscribe --device * (if *, then don't do anything, use as is) otherwise find device
-  * [ ] c8y events subscribe --device *
-  * [ ] c8y operations subscribe --device *
-  * [ ] c8y realtime subscribe --channel /measurements/* --device
-  * [ ]
+  * [x] c8y measurements subscribe --device * --series <filter> --csv
+  * [x] c8y alarms subscribe --device * (if *, then don't do anything, use as is) otherwise find device
+  * [x] c8y events subscribe --device *
+  * [x] c8y operations subscribe --device *
+  * [x] c8y realtime subscribe --channel /measurements/* --device
+  * [ ] c8y subscribe to all realtime notifications
 * [ ] Adding encoding tests
 * [ ] Microservice aliases using my-app://health
 * [ ] handle

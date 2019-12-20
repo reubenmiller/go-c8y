@@ -11,7 +11,9 @@ Create a new test event
         )]
         [object] $Device,
 
-        [switch] $WithBinary
+        [switch] $WithBinary,
+
+        [switch] $Force
     )
 
     if ($null -ne $Device) {
@@ -23,8 +25,9 @@ Create a new test event
     $Event = PSC8y\New-Event `
         -Device $iDevice.id `
         -Time "1970-01-01" `
-        -Type "c8y_ci_TestAlarm" `
-        -Text "Test CI Alarm"
+        -Type "c8y_ci_TestEvent" `
+        -Text "Test CI Event" `
+        -Force:$Force
 
     if ($WithBinary) {
         $tempfile = New-TemporaryFile
