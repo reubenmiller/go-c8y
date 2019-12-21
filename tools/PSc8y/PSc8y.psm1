@@ -9,7 +9,12 @@ if ($PSVersionTable["PSVersion"].Major -le 2) {
 #
 # Create session folder
 #
-$HomePath = Join-Path $env:HOME -ChildPath ".cumulocity"
+if ($env:HOME) {
+    $HomePath = Join-Path $env:HOME -ChildPath ".cumulocity"
+} else {
+    # default to current directory
+    $HomePath = Join-Path "." -ChildPath ".cumulocity"
+}
 if (!(Test-Path $HomePath)) {
     Write-Host "Creating home director [$HomePath]"
     $null = New-Item -Path $HomePath -ItemType Directory
