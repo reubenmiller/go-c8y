@@ -23,7 +23,6 @@ func newOperationsRootCmd() *operationsCmd {
 	cmd.AddCommand(newNewOperationCmd().getCommand())
 	cmd.AddCommand(newUpdateOperationCmd().getCommand())
 	cmd.AddCommand(newDeleteOperationCollectionCmd().getCommand())
-	cmd.AddCommand(newSubscribeOperationCmd().getCommand())
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

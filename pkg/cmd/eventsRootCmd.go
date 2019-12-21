@@ -28,7 +28,6 @@ func newEventsRootCmd() *eventsCmd {
 	cmd.AddCommand(newNewEventBinaryCmd().getCommand())
 	cmd.AddCommand(newUpdateEventBinaryCmd().getCommand())
 	cmd.AddCommand(newDeleteEventBinaryCmd().getCommand())
-	cmd.AddCommand(newSubscribeEventCmd().getCommand())
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

@@ -24,7 +24,6 @@ func newAlarmsRootCmd() *alarmsCmd {
 	cmd.AddCommand(newGetAlarmCmd().getCommand())
 	cmd.AddCommand(newUpdateAlarmCmd().getCommand())
 	cmd.AddCommand(newDeleteAlarmCollectionCmd().getCommand())
-	cmd.AddCommand(newSubscribeAlarmCmd().getCommand())
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

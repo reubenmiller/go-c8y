@@ -1,0 +1,22 @@
+Function New-TestAgent {
+    [cmdletbinding()]
+    Param(
+        [Parameter(
+            Mandatory = $false,
+            Position = 0
+        )]
+        [string] $Name = "testagent"
+    )
+    $Data = @{
+        c8y_IsDevice = @{}
+        com_cumulocity_model_Agent = @{}
+    }
+
+    $AgentName = New-RandomString -Prefix "${Name}_"
+    $TestAgent = PSC8y\New-ManagedObject `
+        -Name $AgentName `
+        -Data $Data `
+        -Force
+
+    $TestAgent
+}

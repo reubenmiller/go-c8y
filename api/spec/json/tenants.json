@@ -1,0 +1,276 @@
+{
+  "information": {
+    "name": "tenants",
+    "description": "Cumulocity tenant",
+    "descriptionLong": "REST endpoint to interact with Cumulocity tenants",
+    "link": "https://cumulocity.com/guides/reference/tenants/#tenants"
+  },
+  "endpoints": [
+    {
+      "name": "getTenantCollection",
+      "description": "Get collection of tenants",
+      "method": "GET",
+      "path": "/tenant/tenants",
+      "accept": "application/vnd.com.nsn.cumulocity.tenantCollection+json",
+      "collectionType": "application/vnd.com.nsn.cumulocity.tenant+json",
+      "listProperty": "tenants",
+      "alias": {
+        "go": "list",
+        "powershell": "Get-TenantCollection"
+      }
+    },
+    {
+      "name": "newTenant",
+      "description": "New tenant",
+      "method": "POST",
+      "path": "/tenant/tenants",
+      "accept": "application/vnd.com.nsn.cumulocity.tenant+json",
+      "alias": {
+        "go": "create",
+        "powershell": "New-Tenant"
+      },
+      "body": [
+        {
+          "name": "company",
+          "type": "string",
+          "required": true,
+          "description": "Company name. Maximum 256 characters"
+        },
+        {
+          "name": "domain",
+          "type": "string",
+          "required": true,
+          "description": "Domain name to be used for the tenant. Maximum 256 characters"
+        },
+        {
+          "name": "id",
+          "type": "string",
+          "required": false,
+          "description": "The tenant ID. Will be auto-generated if not present."
+        },
+        {
+          "name": "adminName",
+          "type": "string",
+          "required": false,
+          "description": "Username of the tenant administrator"
+        },
+        {
+          "name": "adminPass",
+          "type": "string",
+          "required": false,
+          "description": "Password of the tenant administrator"
+        },
+        {
+          "name": "contactName",
+          "type": "string",
+          "required": false,
+          "description": "A contact name, for example an administrator, of the tenant"
+        },
+        {
+          "name": "contact_phone",
+          "type": "string",
+          "required": false,
+          "description": "An international contact phone number"
+        },
+        {
+          "name": "data",
+          "type": "json",
+          "property": "customProperties",
+          "required": false,
+          "description": "A set of custom properties of the tenant"
+        }
+      ]
+    },
+    {
+      "name": "getTenant",
+      "description": "Get tenant",
+      "method": "GET",
+      "path": "/tenant/tenants/{tenant}",
+      "accept": "application/vnd.com.nsn.cumulocity.tenant+json",
+      "alias": {
+        "go": "get",
+        "powershell": "Get-Tenant"
+      },
+      "pathParameters": [
+        {
+          "name": "tenant",
+          "type": "tenant",
+          "pipeline": true,
+          "required": false,
+          "description": "Tenant id"
+        }
+      ]
+    },
+    {
+      "name": "deleteTenant",
+      "description": "Delete tenant",
+      "method": "DELETE",
+      "path": "/tenant/tenants/{tenant}",
+      "alias": {
+        "go": "delete",
+        "powershell": "Remove-Tenant"
+      },
+      "pathParameters": [
+        {
+          "name": "tenant",
+          "type": "tenant",
+          "pipeline": true,
+          "required": false,
+          "description": "Tenant id"
+        }
+      ]
+    },
+    {
+      "name": "updateTenant",
+      "description": "Update tenant",
+      "method": "PUT",
+      "path": "/tenant/tenants/{tenant}",
+      "accept": "application/vnd.com.nsn.cumulocity.tenant+json",
+      "alias": {
+        "go": "update",
+        "powershell": "Update-Tenant"
+      },
+      "pathParameters": [
+        {
+          "name": "tenant",
+          "type": "tenant",
+          "pipeline": true,
+          "required": false,
+          "description": "Tenant id"
+        }
+      ],
+      "body": [
+        {
+          "name": "company",
+          "type": "string",
+          "required": true,
+          "description": "Company name. Maximum 256 characters"
+        },
+        {
+          "name": "domain",
+          "type": "string",
+          "required": true,
+          "description": "Domain name to be used for the tenant. Maximum 256 characters"
+        },
+        {
+          "name": "adminName",
+          "type": "string",
+          "required": false,
+          "description": "Username of the tenant administrator"
+        },
+        {
+          "name": "adminPass",
+          "type": "string",
+          "required": false,
+          "description": "Password of the tenant administrator"
+        },
+        {
+          "name": "contactName",
+          "type": "string",
+          "required": false,
+          "description": "A contact name, for example an administrator, of the tenant"
+        },
+        {
+          "name": "contact_phone",
+          "type": "string",
+          "required": false,
+          "description": "An international contact phone number"
+        },
+        {
+          "name": "data",
+          "type": "json",
+          "property": "customProperties",
+          "required": false,
+          "description": "A set of custom properties of the tenant"
+        }
+      ]
+    },
+    {
+      "name": "currentTenant",
+      "description": "Get current tenant",
+      "method": "GET",
+      "path": "/tenant/currentTenant",
+      "accept": "application/vnd.com.nsn.cumulocity.currentTenant+json",
+      "alias": {
+        "go": "getCurrentTenant",
+        "powershell": "Get-CurrentTenant"
+      }
+    },
+    {
+      "name": "enableApplicationOnTenant",
+      "description": "Enable application on tenant",
+      "method": "POST",
+      "path": "/tenant/tenants/{tenant}/applications",
+      "accept": "application/vnd.com.nsn.cumulocity.applicationReference+json",
+      "alias": {
+        "go": "enableApplication",
+        "powershell": "Enable-Application"
+      },
+      "pathParameters": [
+        {
+          "name": "tenant",
+          "type": "tenant",
+          "required": false,
+          "description": "Tenant id"
+        }
+      ],
+      "body": [
+        {
+          "name": "application",
+          "pipeline": true,
+          "type": "application",
+          "property": "application.id",
+          "required": true,
+          "description": "Application id"
+        }
+      ]
+    },
+    {
+      "name": "disableApplicationFromTenant",
+      "description": "Disable application on tenant",
+      "method": "DELETE",
+      "path": "/tenant/tenants/{tenant}/applications/{application}",
+      "alias": {
+        "go": "disableApplication",
+        "powershell": "Disable-Application"
+      },
+      "pathParameters": [
+        {
+          "name": "tenant",
+          "type": "tenant",
+          "required": false,
+          "description": "Tenant id"
+        },
+        {
+          "name": "application",
+          "type": "application",
+          "pipeline": true,
+          "required": true,
+          "description": "Application id"
+        }
+      ]
+    },
+    {
+      "name": "getApplicationReferenceCollection",
+      "description": "Enable application on tenant",
+      "method": "GET",
+      "path": "/tenant/tenants/{tenant}/applications",
+      "accept": "application/vnd.com.nsn.cumulocity.applicationReferenceCollection+json",
+      "collectionType": "application/vnd.com.nsn.cumulocity.applicationReference+json",
+      "listProperty": "references",
+      "alias": {
+        "go": "listReferences",
+        "powershell": "Get-ApplicationReferenceCollection"
+      },
+      "pathParameters": [
+        {
+          "name": "tenant",
+          "type": "tenant",
+          "pipeline": true,
+          "required": false,
+          "description": "Tenant id"
+        }
+      ]
+    }
+  ]
+}

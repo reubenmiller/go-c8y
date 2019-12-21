@@ -24,7 +24,6 @@ func newMeasurementsRootCmd() *measurementsCmd {
 	cmd.AddCommand(newNewMeasurementCmd().getCommand())
 	cmd.AddCommand(newDeleteMeasurementCmd().getCommand())
 	cmd.AddCommand(newDeleteMeasurementCollectionCmd().getCommand())
-	cmd.AddCommand(newSubscribeMeasurementCmd().getCommand())
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
