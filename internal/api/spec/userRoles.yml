@@ -180,8 +180,11 @@ endpoints:
       powershell:
         - description: Get a list of role references for a user
           beforeEach:
-            - $User = Get-CurrentUser
+            - $User = New-TestUser
+            - Add-RoleToUser -User $User.id -Role "ROLE_ALARM_READ"
           command: Get-RoleReferenceCollectionFromUser -User $User.id
+          afterEach:
+            - Remove-User -Id $User.id
       go:
         - description: Get a list of role references for a user
           command: c8y userRoles getRoleReferenceCollectionFromUser --user "myuser"
