@@ -82,7 +82,7 @@
           },
           {
             "description": "Get tenant summary statistics collection for the last 30 days",
-            "command": "Get-AllTenantUsageSummaryStatistics -DateFrom \"-30d\" -PageSize 30"
+            "command": "Get-AllTenantUsageSummaryStatistics -DateFrom \"-30d\""
           },
           {
             "description": "Get tenant summary statistics collection for the last 10 days, only return until the last 9 days",
@@ -96,11 +96,11 @@
           },
           {
             "description": "Get tenant summary statistics collection for the last 30 days",
-            "command": "c8y tenantStatistics listSummaryAllTenants --dateFrom \"-30d\" --pageSize 30"
+            "command": "c8y tenantStatistics listSummaryAllTenants --dateFrom \"-30d\""
           },
           {
             "description": "Get tenant summary statistics collection for the last 10 days, only return until the last 9 days",
-            "command": "c8y tenantStatistics listSummaryAllTenants --dateFrom \"-10d\" --pageSize 30 --dateTo \"-9d\""
+            "command": "c8y tenantStatistics listSummaryAllTenants --dateFrom \"-10d\" --dateTo \"-9d\""
           }
         ]
       },
