@@ -100,7 +100,9 @@ func Execute() {
 
 	// Auto generated commands
 	// alarms commands
-	rootCmd.AddCommand(newAlarmsRootCmd().getCommand())
+	alarms := newAlarmsRootCmd().getCommand()
+	alarms.AddCommand(newSubscribeAlarmCmd().getCommand())
+	rootCmd.AddCommand(alarms)
 
 	// applications commands
 	rootCmd.AddCommand(newApplicationsRootCmd().getCommand())
@@ -115,22 +117,30 @@ func Execute() {
 	rootCmd.AddCommand(newCurrentApplicationRootCmd().getCommand())
 
 	// operations commands
-	rootCmd.AddCommand(newOperationsRootCmd().getCommand())
+	operations := newOperationsRootCmd().getCommand()
+	operations.AddCommand(newSubscribeOperationCmd().getCommand())
+	rootCmd.AddCommand(operations)
 
 	// events commands
-	rootCmd.AddCommand(newEventsRootCmd().getCommand())
+	events := newEventsRootCmd().getCommand()
+	events.AddCommand(newSubscribeEventCmd().getCommand())
+	rootCmd.AddCommand(events)
 
 	// identity commands
 	rootCmd.AddCommand(newIdentityRootCmd().getCommand())
 
 	// inventory commands
-	rootCmd.AddCommand(newInventoryRootCmd().getCommand())
+	inventory := newInventoryRootCmd().getCommand()
+	inventory.AddCommand(newSubscribeManagedObjectCmd().getCommand())
+	rootCmd.AddCommand(inventory)
 
 	// inventoryReferences commands
 	rootCmd.AddCommand(newInventoryReferencesRootCmd().getCommand())
 
 	// measurements commands
-	rootCmd.AddCommand(newMeasurementsRootCmd().getCommand())
+	measurements := newMeasurementsRootCmd().getCommand()
+	measurements.AddCommand(newSubscribeMeasurementCmd().getCommand())
+	rootCmd.AddCommand(measurements)
 
 	// retentionRules commands
 	rootCmd.AddCommand(newRetentionRulesRootCmd().getCommand())
