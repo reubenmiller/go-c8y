@@ -1,4 +1,5 @@
 $ErrorActionPreference = 'Stop'
+$ConfirmPreference = "None"
 
 try {
 
