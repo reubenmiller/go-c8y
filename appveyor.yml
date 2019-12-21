@@ -5,7 +5,7 @@ environment:
     secure: 1mpbPj8TYp5TrBamoABxWATQWb1t1BIsdyos8N8R60QOVB1puaWvH/yuw+0ClWjk
   C8Y_TENANT:
     secure: dldySxQAn1jXmUCoZFkKRw==
-  C8Y_USER:
+  C8Y_USERNAME:
     secure: uXftywGmgrCcRt5ScMu4tg==
   C8Y_PASSWORD:
     secure: RxmWWtUWDyiLSyRNVJ0drw==
