@@ -1,0 +1,28 @@
+environment:
+  nuget_apikey:
+    secure: asdfasdf/asdfasdfasdf
+image: 
+  - Visual Studio 2019
+  - Ubuntu
+  - macos
+
+install:
+- ps: ./scripts/build-powershell/install.ps1
+
+build_script:
+- ps: ./scripts/build-powershell/build.ps1
+
+test_script:
+- ps: ./scripts/build-powershell/test.ps1
+
+#after_test:
+#- ps: ./scripts/build-powershell/publish.ps1
+
+for:
+-
+  matrix:
+    only:
+      - image: Ubuntu
+
+  build_script:
+  - echo Ubuntu build script

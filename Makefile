@@ -131,3 +131,12 @@ view-trace:
 
 profile:
 	GO111MODULE=on $(GOCMD) test -bench=Div_SSA -cpuprofile=cpu.pb.gz github.com/reubenmiller/go-c8y/pkg/cmd
+
+#
+# Powershell Module
+#
+build_powershell:
+	pwsh -File scripts/build-powershell/build.ps1;
+
+test_powershell:
+	pwsh -File tools/PSc8y/tests.ps1
