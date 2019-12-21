@@ -6,6 +6,7 @@ Function Get-NestedProperty {
             Position = 0
         )]
         [AllowNull()]
+        [AllowEmptyCollection()]
         [object[]] $InputObject,
 
         [Parameter(
