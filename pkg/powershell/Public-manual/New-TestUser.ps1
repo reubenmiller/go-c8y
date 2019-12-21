@@ -10,10 +10,12 @@ Create a new test user
             Mandatory = $false,
             Position = 0
         )]
-        [string] $Name = "testuser"
+        [string] $Name = "testuser",
+
+        [switch] $Force
     )
 
     $Username = New-RandomString -Prefix "${Name}_"
 
-    PSC8y\New-User -UserName $Username -Password (New-RandomString)
+    PSC8y\New-User -UserName $Username -Password (New-RandomString) -Force:$Force
 }
