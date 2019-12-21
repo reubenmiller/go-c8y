@@ -13,7 +13,7 @@ build_script:
 - ps: ./scripts/build-powershell/build.ps1
 
 test_script:
-- ps: ./scripts/build-powershell/test.ps1
+- ps: ./scripts/build-powershell/test.ci.ps1
 
 #after_test:
 #- ps: ./scripts/build-powershell/publish.ps1
