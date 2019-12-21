@@ -2,7 +2,8 @@
 
 Describe -Name "Get-RoleReferenceCollectionFromUser" {
     BeforeEach {
-        $User = Get-CurrentUser
+        $User = New-TestUser
+        Add-RoleToUser -User $User.id -Role "ROLE_ALARM_READ"
 
     }
 
@@ -13,6 +14,7 @@ Describe -Name "Get-RoleReferenceCollectionFromUser" {
     }
 
     AfterEach {
+        Remove-User -Id $User.id
 
     }
 }

@@ -9,7 +9,7 @@ PS> Get-AllTenantUsageSummaryStatistics
 Get tenant summary statistics for all tenants
 
 .EXAMPLE
-PS> Get-AllTenantUsageSummaryStatistics -DateFrom "-30d" -PageSize 30
+PS> Get-AllTenantUsageSummaryStatistics -DateFrom "-30d"
 Get tenant summary statistics collection for the last 30 days
 
 .EXAMPLE

@@ -33,10 +33,10 @@ func newGetAllTenantUsageStatisticsSummaryCollectionCmd() *getAllTenantUsageStat
 $ c8y tenantStatistics listSummaryAllTenants
 Get tenant summary statistics for all tenants
 
-$ c8y tenantStatistics listSummaryAllTenants --dateFrom "-30d" --pageSize 30
+$ c8y tenantStatistics listSummaryAllTenants --dateFrom "-30d"
 Get tenant summary statistics collection for the last 30 days
 
-$ c8y tenantStatistics listSummaryAllTenants --dateFrom "-10d" --pageSize 30 --dateTo "-9d"
+$ c8y tenantStatistics listSummaryAllTenants --dateFrom "-10d" --dateTo "-9d"
 Get tenant summary statistics collection for the last 10 days, only return until the last 9 days
 		`,
 		RunE: ccmd.getAllTenantUsageStatisticsSummaryCollection,
