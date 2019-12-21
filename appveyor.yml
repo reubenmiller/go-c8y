@@ -1,7 +1,7 @@
 environment:
   nuget_apikey:
     secure: asdfasdf/asdfasdfasdf
-  C8Y_URL:
+  C8Y_HOST:
     secure: 1mpbPj8TYp5TrBamoABxWATQWb1t1BIsdyos8N8R60QOVB1puaWvH/yuw+0ClWjk
   C8Y_TENANT:
     secure: dldySxQAn1jXmUCoZFkKRw==
