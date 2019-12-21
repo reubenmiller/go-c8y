@@ -1,6 +1,9 @@
 $ErrorActionPreference = 'Stop'
 $ConfirmPreference = "None"
 
+# required in non-interactive mode, otherwise powershell throws errors (regardless of confirmation preference)
+$PSDefaultParameterValues = @{"*:Confirm"=$false}
+
 try {
 
 	Import-Module -Name Pester
