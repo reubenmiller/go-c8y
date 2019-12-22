@@ -2,7 +2,6 @@
 
 Describe -Name "Add-RoleToUser" {
     BeforeEach {
-        $User = PSC8y\New-TestUser
         $User = PSC8y\New-TestUser -Name "customUser_"
 
     }

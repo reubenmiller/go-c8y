@@ -5,7 +5,7 @@ Function Add-RoleToGroup {
 Add role to a group
 
 .EXAMPLE
-PS> Add-RoleToGroup -Group "customGroup1*" -Role *ALARM_*
+PS> Add-RoleToGroup -Group "customGroup1*" -Role "*ALARM_*"
 Add a role to a group using wildcards
 
 .EXAMPLE

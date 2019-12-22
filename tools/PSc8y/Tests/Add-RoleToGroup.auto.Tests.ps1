@@ -7,7 +7,7 @@ Describe -Name "Add-RoleToGroup" {
     }
 
     It "Add a role to a group using wildcards" {
-        $Response = PSC8y\Add-RoleToGroup -Group "customGroup1*" -Role *ALARM_*
+        $Response = PSC8y\Add-RoleToGroup -Group "customGroup1*" -Role "*ALARM_*"
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
