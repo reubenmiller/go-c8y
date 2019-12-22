@@ -3,7 +3,7 @@ Remove-Module PSC8y -ErrorAction SilentlyContinue
 
 Write-Verbose "PSScriptRoot: $PSSScriptRoot";
 Import-Module Pester -MinimumVersion "4.0.0"
-Import-Module $PSScriptRoot/../PSC8y.psd1 -Prefix ""
+Import-Module "$PSScriptRoot/../PSc8y.psd1" -Prefix ""
 
 # Get credentials from the environment
 $env:C8Y_USE_ENVIRONMENT = "on"
