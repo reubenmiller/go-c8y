@@ -68,7 +68,13 @@ Function Invoke-Command {
     $c8ycli = Get-CumulocityBinary
     Write-Verbose ("$c8ycli {0}" -f $args -join " ")
 
-    $RawResponse = & $c8ycli $args
+    try {
+        $RawResponse = & $c8ycli $args
+    } catch {
+        Write-Warning -Message $_.Exception.Message
+        # do nothing, due to remote powershell session issue and $ErrorActionPreference being set to 'Stop'
+        # https://github.com/PowerShell/PowerShell/issues/4002
+    }
 
     $ExitCode = $LASTEXITCODE
     if ($ExitCode -ne 0) {
