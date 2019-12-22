@@ -135,8 +135,14 @@ profile:
 #
 # Powershell Module
 #
+update_spec:
+	pwsh -File scripts/generate-spec.ps1;
+
 build_powershell:
 	pwsh -File scripts/build-powershell/build.ps1;
 
 test_powershell:
-	pwsh -File tools/PSc8y/tests.ps1
+	pwsh -File tools/PSc8y/tests.ps1 -NonInteractive
+
+test_ci_powershell:
+	pwsh -File scripts/build-powershell/test.ci.ps1 -NonInteractive
