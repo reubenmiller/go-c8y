@@ -38,7 +38,7 @@ endpoints:
       powershell:
         - description: Add a role (ROLE_ALARM_READ) to a user
           beforeEach:
-            - $User = PSC8y\New-TestUser
+            - $User = PSC8y\New-TestUser -Name "customUser_"
           command: Add-RoleToUser -User $User.id -Role "ROLE_ALARM_READ"
           afterEach:
             - PSC8y\Remove-User -Id $User.id
@@ -111,7 +111,7 @@ endpoints:
         - description: Add a role to a group using wildcards
           beforeEach:
             - $Group = New-TestGroup -Name "customGroup1"
-          command: Add-RoleToGroup -Group "customGroup1*" -Role *ALARM_*
+          command: Add-RoleToGroup -Group "customGroup1*" -Role "*ALARM_*"
           afterEach:
             - PSC8y\Remove-Group -Id $Group.id
 
