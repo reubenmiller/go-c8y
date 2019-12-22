@@ -24,3 +24,4 @@ trace.out
 pkg/powershell/PSC8y.coverage.xml
 .DS_Store
 tools/PSc8y/report/report.xml
+tools/PSc8y/TestResults.xml
