@@ -21,15 +21,18 @@ $name = "c8y"
 if ($IsMacOS) {
     $env:GOARCH = "amd64"
     $env:GOOS = "darwin"
-    & go build -ldflags="-s -w" -o "$OutputDir/${name}" "$c8yBinary"
+    $OutputPath = Join-Path -Path $OutputDir -ChildPath "${name}"
+    & go build -ldflags="-s -w" -o "$OutputPath" "$c8yBinary"
 } elseif ($IsLinux) {
     $env:GOARCH = "amd64"
     $env:GOOS = "linux"
-    & go build -ldflags="-s -w" -o "$OutputDir/${name}" "$c8yBinary"
+    $OutputPath = Join-Path -Path $OutputDir -ChildPath "${name}"
+    & go build -ldflags="-s -w" -o "$OutputPath" "$c8yBinary"
 } else {
     $env:GOARCH = "amd64"
     $env:GOOS = "windows"
-    & go build -ldflags="-s -w" -o "$OutputDir/${name}.exe" "$c8yBinary"
+    $OutputPath = Join-Path -Path $OutputDir -ChildPath "${name}.exe"
+    & go build -ldflags="-s -w" -o "$OutputPath" "$c8yBinary"
 }
 
 if ($LASTEXITCODE -ne 0) {
