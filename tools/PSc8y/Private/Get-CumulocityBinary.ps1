@@ -1,7 +1,10 @@
 Function Get-CumulocityBinary {
-    if ($IsLinux -or $IsMacOS) {
-        Resolve-Path "$PSScriptRoot/../c8y"
+    $RootPath = "$PSScriptRoot/../Dependencies"
+    if ($IsLinux) {
+        Resolve-Path "$RootPath/c8y.linux"
+    } elseif ($IsMacOS) {
+        Resolve-Path "$RootPath/c8y.macos"
     } else {
-        Resolve-Path "$PSScriptRoot/../c8y.exe"
+        Resolve-Path "$RootPath/c8y.windows.exe"
     }
 }
