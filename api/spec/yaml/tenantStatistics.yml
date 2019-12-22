@@ -61,12 +61,15 @@ endpoints:
       powershell:
         - description: Get tenant summary statistics for all tenants
           command: Get-AllTenantUsageSummaryStatistics
+          skipTest: true
 
         - description: Get tenant summary statistics collection for the last 30 days
           command: Get-AllTenantUsageSummaryStatistics -DateFrom "-30d"
+          skipTest: true
 
         - description: Get tenant summary statistics collection for the last 10 days, only return until the last 9 days
           command: Get-AllTenantUsageSummaryStatistics -DateFrom "-10d" -DateTo "-9d"
+          skipTest: true
 
       go:
         - description: Get tenant summary statistics for all tenants
