@@ -8,6 +8,12 @@ Import-Module "$PSScriptRoot/../PSc8y.psd1" -Prefix ""
 # Get credentials from the environment
 $env:C8Y_USE_ENVIRONMENT = "on"
 
+# required in non-interactive mode, otherwise powershell throws errors (regardless of confirmation preference)
+$PSDefaultParameterValues = @{
+	"*:Confirm" = $false;
+	"*:Force" = $true;
+}
+
 $TenantInfo = Get-CurrentTenant
 
 $User = Get-CurrentUser
