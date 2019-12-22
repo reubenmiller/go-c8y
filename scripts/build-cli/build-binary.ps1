@@ -23,11 +23,13 @@ if ($IsMacOS) {
     $env:GOOS = "darwin"
     $OutputPath = Join-Path -Path $OutputDir -ChildPath "${name}"
     & go build -ldflags="-s -w" -o "$OutputPath" "$c8yBinary"
+    chmod +x "$OutputPath"
 } elseif ($IsLinux) {
     # $env:GOARCH = "amd64"
     $env:GOOS = "linux"
     $OutputPath = Join-Path -Path $OutputDir -ChildPath "${name}"
     & go build -ldflags="-s -w" -o "$OutputPath" "$c8yBinary"
+    chmod +x "$OutputPath"
 } else {
     # $env:GOARCH = "amd64"
     $env:GOOS = "windows"
