@@ -16,7 +16,7 @@ if ($env:HOME) {
     $HomePath = Join-Path "." -ChildPath ".cumulocity"
 }
 if (!(Test-Path $HomePath)) {
-    Write-Host "Creating home director [$HomePath]"
+    Write-Host "Creating home directory [$HomePath]"
     $null = New-Item -Path $HomePath -ItemType Directory
 }
 
