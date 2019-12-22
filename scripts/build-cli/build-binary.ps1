@@ -19,17 +19,17 @@ $c8yBinary = Resolve-Path "$PSScriptRoot/../../cmd/c8y/main.go"
 $name = "c8y"
 
 if ($IsMacOS) {
-    $env:GOARCH = "amd64"
+    # $env:GOARCH = "amd64"
     $env:GOOS = "darwin"
     $OutputPath = Join-Path -Path $OutputDir -ChildPath "${name}"
     & go build -ldflags="-s -w" -o "$OutputPath" "$c8yBinary"
 } elseif ($IsLinux) {
-    $env:GOARCH = "amd64"
+    # $env:GOARCH = "amd64"
     $env:GOOS = "linux"
     $OutputPath = Join-Path -Path $OutputDir -ChildPath "${name}"
     & go build -ldflags="-s -w" -o "$OutputPath" "$c8yBinary"
 } else {
-    $env:GOARCH = "amd64"
+    # $env:GOARCH = "amd64"
     $env:GOOS = "windows"
     $OutputPath = Join-Path -Path $OutputDir -ChildPath "${name}.exe"
     & go build -ldflags="-s -w" -o "$OutputPath" "$c8yBinary"
