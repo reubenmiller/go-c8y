@@ -15,7 +15,10 @@ RootModule = './PSc8y.psm1'
 ModuleVersion = '1.0.0'
 
 # Supported PSEditions
-# CompatiblePSEditions = @()
+CompatiblePSEditions = @(
+    "Desktop",
+    "Core"
+)
 
 # ID used to uniquely identify this module
 GUID = '9b4ebc35-bd61-4d07-a528-81c5733d0732'
@@ -31,10 +34,10 @@ CompanyName = ''
 Copyright = '(c) 2019. All rights reserved.'
 
 # Description of the functionality provided by this module
-Description = 'Cumulocity REST API wrapper'
+Description = 'Cumulocity REST API'
 
 # Minimum version of the Windows PowerShell engine required by this module
-PowerShellVersion = '5.0'
+PowerShellVersion = '5.1'
 
 # Name of the Windows PowerShell host required by this module
 # PowerShellHostName = ''
@@ -52,7 +55,7 @@ PowerShellVersion = '5.0'
 # ProcessorArchitecture = ''
 
 # Modules that must be imported into the global environment prior to importing this module
-  RequiredModules = @()
+RequiredModules = @()
 
 # Assemblies that must be loaded prior to importing this module
 # RequiredAssemblies = @()
@@ -65,7 +68,6 @@ PowerShellVersion = '5.0'
 
 # Format files (.ps1xml) to be loaded when importing this module
 FormatsToProcess = @(
-    # 'PSc8y.ps1xml'
     'format-data/alarms.ps1xml',
     'format-data/applicationReferences.ps1xml',
     'format-data/applications.ps1xml',
@@ -121,13 +123,17 @@ PrivateData = @{
     PSData = @{
 
         # Tags applied to this module. These help with module discovery in online galleries.
-        # Tags = @()
+        Tags = @(
+            'Cumulocity',
+            'IoT',
+            'REST-API'
+        )
 
         # A URL to the license for this module.
         # LicenseUri = ''
 
         # A URL to the main website for this project.
-        # ProjectUri = ''
+        ProjectUri = 'https://github.com/reubenmiller/go-c8y'
 
         # A URL to an icon representing this module.
         # IconUri = ''
@@ -149,4 +155,3 @@ PrivateData = @{
 DefaultCommandPrefix = ''
 
 }
-
