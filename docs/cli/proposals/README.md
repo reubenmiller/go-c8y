@@ -58,20 +58,21 @@
 * [x] Allow spec to define static values if of type switch (on headerParameters)
 * [ ] Allow file upload to include additional "type" property
 * [ ] Fix New-ApplicationBinary test. Create a example microservice (something small hopefully)
-* [ ] Manual realtime commands (for alarms, events, measurements, etc.)
+* [x] Manual realtime commands (for alarms, events, measurements, etc.)
   * [x] c8y measurements subscribe --device * --series <filter> --csv
   * [x] c8y alarms subscribe --device * (if *, then don't do anything, use as is) otherwise find device
   * [x] c8y events subscribe --device *
   * [x] c8y operations subscribe --device *
   * [x] c8y realtime subscribe --channel /measurements/* --device
-  * [ ] c8y subscribe to all realtime notifications
+  * [x] c8y subscribe to all realtime notifications
 * [ ] Adding encoding tests
 * [ ] Microservice aliases using my-app://health
-* [ ] handle
+* [ ] Handle proxy/noproxy support for realtime notifications (websockets)
+* [ ] Write github pages with a tutorial
 
 ## Bugs
 
-* [ ] Make the http method all caps by defualt as it causes a 400 error if not
+* [ ] Make the http method all caps by default as it causes a 400 error if not
 
 
 ### Phase 2
@@ -139,6 +140,11 @@ Manual commands
 * [ ] Convert "\u00b0C" characters to their correct code. This is due to a bug in the ConvertTo-Json powershell cmdlet. Use [System.Text.RegularExpressions.Regex]::Unescape() to remove the escape characters
 * [ ] applications
   * [ ] New-Microservice
+
+* [x] Restructure powershell module location in repo
+* [ ] Figure how to best package the c8y binary file/s with the powershell module
+* [ ] Publish powershell module to PSGallery
+* [ ] Publish c8y binaries to github
 
 ## Debugging
 
