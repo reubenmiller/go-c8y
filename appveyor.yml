@@ -9,7 +9,7 @@ environment:
     secure: 7nnf6/dt+mNSq5pVZrdXBw==
   C8Y_PASSWORD:
     secure: olAYnZxd7FOGGVMy0pgrTcl+LcNGEtraxIkPJftUndk=
-image: 
+image:
   - Visual Studio 2019
   - Ubuntu
   - macos
@@ -25,12 +25,3 @@ test_script:
 
 #after_test:
 #- ps: ./scripts/build-powershell/publish.ps1
-
-for:
--
-  matrix:
-    only:
-      - image: Ubuntu
-
-  build_script:
-  - echo Ubuntu build script
