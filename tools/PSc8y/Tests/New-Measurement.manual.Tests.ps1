@@ -3,7 +3,7 @@
 
 Describe -Name "New Measurement" {
     BeforeEach {
-        $TestDevice = PSC8y\New-ManagedObject `
+        $TestDevice = PSc8y\New-ManagedObject `
             -Name "testdevice001" `
             -Data @{
                 c8y_IsDevice = @{}
@@ -13,7 +13,7 @@ Describe -Name "New Measurement" {
     }
     It "Data" {
         $TestDevice.id | Should -Not -BeNullOrEmpty
-        $Response = PSC8y\New-Measurement `
+        $Response = PSc8y\New-Measurement `
             -Device $TestDevice.id `
             -Time "0d" `
             -Type "ciSeria1" `
@@ -32,6 +32,6 @@ Describe -Name "New Measurement" {
 
     AfterEach {
         $TestDevice.id | Should -Not -BeNullOrEmpty
-        $TestDevice.id | PSC8y\Remove-ManagedObject
+        $TestDevice.id | PSc8y\Remove-ManagedObject
     }
 }

@@ -9,7 +9,7 @@ Describe -Name "Update-EventBinary" {
     }
 
     It "Update a binary related to an event" {
-        $Response = PSC8y\Update-EventBinary -Id $Event.id -File $TestFile
+        $Response = PSc8y\Update-EventBinary -Id $Event.id -File $TestFile
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }

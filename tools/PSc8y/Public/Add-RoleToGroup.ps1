@@ -70,7 +70,7 @@ Add a role to a group using wildcards (using pipeline)
             $Parameters["tenant"] = $Tenant
         }
         if ($PSBoundParameters.ContainsKey("Group")) {
-            $Parameters["group"] = PSC8y\Expand-Id $Group
+            $Parameters["group"] = PSc8y\Expand-Id $Group
         }
         if ($PSBoundParameters.ContainsKey("OutputFile")) {
             $Parameters["outputFile"] = $OutputFile
@@ -85,7 +85,7 @@ Add a role to a group using wildcards (using pipeline)
     }
 
     Process {
-        foreach ($item in (PSC8y\Expand-Id $Role)) {
+        foreach ($item in (PSc8y\Expand-Id $Role)) {
             if ($item) {
                 $Parameters["role"] = if ($item.id) { $item.id } else { $item }
             }
@@ -93,7 +93,7 @@ Add a role to a group using wildcards (using pipeline)
             if (!$Force -and
                 !$WhatIfPreference -and
                 !$PSCmdlet.ShouldProcess(
-                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
+                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
                     (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
                 )) {
                 continue

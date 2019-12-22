@@ -19,7 +19,7 @@ Function New-TestDevice {
         $Data.com_cumulocity_model_Agent = @{}
     }
     $DeviceName = New-RandomString -Prefix "${Name}_"
-    $TestDevice = PSC8y\New-ManagedObject `
+    $TestDevice = PSc8y\New-ManagedObject `
         -Name $DeviceName `
         -Data $Data `
         -Force

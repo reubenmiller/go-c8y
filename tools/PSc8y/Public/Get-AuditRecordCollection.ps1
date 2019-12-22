@@ -139,12 +139,12 @@ Get a list of audit records related to an operation
     }
 
     Process {
-        $Parameters["source"] = PSC8y\Expand-Id $Source
+        $Parameters["source"] = PSc8y\Expand-Id $Source
 
         if (!$Force -and
             !$WhatIfPreference -and
             !$PSCmdlet.ShouldProcess(
-                (PSC8y\Get-C8ySessionProperty -Name "tenant"),
+                (PSc8y\Get-C8ySessionProperty -Name "tenant"),
                 (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
             )) {
             continue

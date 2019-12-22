@@ -7,7 +7,7 @@ Describe -Name "Get-TenantOptionForCategory" {
     }
 
     It "Get a list of options for a category" {
-        $Response = PSC8y\Get-TenantOptionForCategory -Category "c8y_cli_tests"
+        $Response = PSc8y\Get-TenantOptionForCategory -Category "c8y_cli_tests"
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }

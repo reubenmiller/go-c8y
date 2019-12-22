@@ -25,20 +25,20 @@ endpoints:
 
         - description: Get a list of measurements for a particular device
           beforeEach:
-            - $Device = PSC8y\New-TestDevice
+            - $Device = PSc8y\New-TestDevice
             - $Measurement = New-TestMeasurement -Device $Device.id -Type "TempReading"
 
           command: Get-MeasurementCollection -Device $Device.id -Type "TempReading"
           afterEach:
-            - PSC8y\Remove-ManagedObject -Id $Device.id
+            - PSc8y\Remove-ManagedObject -Id $Device.id
 
         - description: Get measurements from a device (using pipeline)
           beforeEach:
-            - $Device = PSC8y\New-TestDevice
+            - $Device = PSc8y\New-TestDevice
             - $Measurement = New-TestMeasurement -Device $Device.id -Type "TempReading"
           command: Get-DeviceCollection -Name $Device.name | Get-MeasurementCollection
           afterEach:
-            - PSC8y\Remove-ManagedObject -Id $Device.id
+            - PSc8y\Remove-ManagedObject -Id $Device.id
 
       go:
         - description: Get a list of measurements
@@ -111,27 +111,27 @@ endpoints:
       powershell:
         - description: Get a list of measurements for a particular device
           beforeEach:
-            - $Device = PSC8y\New-TestDevice
+            - $Device = PSc8y\New-TestDevice
             - $Measurement = New-TestMeasurement -Device $Device.id -Type "TempReading" -ValueFragmentType "c8y_Temperature" -ValueFragmentSeries "T"
 
           command: Get-MeasurementSeries -Device $Device.id -Series "c8y_Temperature.T" -DateFrom "1970-01-01" -DateTo "0s"
           afterEach:
-            - PSC8y\Remove-ManagedObject -Id $Device.id
+            - PSc8y\Remove-ManagedObject -Id $Device.id
 
         - description: Get measurement series c8y_Temperature.T on a device
           beforeEach:
             - $Measurement2 = New-TestMeasurement -Type "TempReading" -ValueFragmentType "c8y_Temperature" -ValueFragmentSeries "T"
           command: Get-MeasurementSeries -Device $Measurement2.source.id -Series "c8y_Temperature.T" -DateFrom "1970-01-01" -DateTo "0s"
           afterEach:
-            - PSC8y\Remove-ManagedObject -Id $Measurement2.source.id
+            - PSc8y\Remove-ManagedObject -Id $Measurement2.source.id
 
         - description: Get measurement series from a device (using pipeline)
             beforeEach:
-              - $Device = PSC8y\New-TestDevice
+              - $Device = PSc8y\New-TestDevice
               - $Measurement2 = New-TestMeasurement -Type "TempReading" -ValueFragmentType "c8y_Temperature" -ValueFragmentSeries "T"
             command: Get-DeviceCollection -Name $Device.name | Get-MeasurementSeries -Series "c8y_Temperature.T"
             afterEach:
-              - PSC8y\Remove-ManagedObject -Id $Device.id
+              - PSc8y\Remove-ManagedObject -Id $Device.id
 
       go:
         - description: Get a list of series [nx_WEA_29_Delta.MDL10FG001] and [nx_WEA_29_Delta.ST9] for device 12345
@@ -178,7 +178,7 @@ endpoints:
             - $Measurement = New-TestMeasurement
           command: Get-Measurement -Id $Measurement.id
           afterEach:
-            - PSC8y\Remove-ManagedObject -Id $Measurement.source.id
+            - PSc8y\Remove-ManagedObject -Id $Measurement.source.id
 
       go:
         - description: Get measurement
@@ -243,7 +243,7 @@ endpoints:
             - $Measurement = New-TestMeasurement
           command: Remove-Measurement -id $Measurement.id
           afterEach:
-            - PSC8y\Remove-ManagedObject -Id $Measurement.source.id
+            - PSc8y\Remove-ManagedObject -Id $Measurement.source.id
 
       go:
         - description: Delete measurement
@@ -270,7 +270,7 @@ endpoints:
             - $Measurement = New-TestMeasurement
           command: Remove-MeasurementCollection -Device $Measurement.source.id
           afterEach:
-            - PSC8y\Remove-ManagedObject -Id $Measurement.source.id
+            - PSc8y\Remove-ManagedObject -Id $Measurement.source.id
 
       go:
         - description: Delete measurement collection for a device

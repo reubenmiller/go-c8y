@@ -24,27 +24,27 @@
           {
             "description": "Get a list of the child devices of an existing device",
             "beforeEach": [
-              "$Device = PSC8y\\New-TestDevice",
-              "$ChildDevice = PSC8y\\New-TestDevice",
-              "PSC8y\\New-ChildDeviceReference -Device $Device.id -NewChild $ChildDevice.id"
+              "$Device = PSc8y\\New-TestDevice",
+              "$ChildDevice = PSc8y\\New-TestDevice",
+              "PSc8y\\New-ChildDeviceReference -Device $Device.id -NewChild $ChildDevice.id"
             ],
             "command": "Get-ChildDeviceCollection -Device $Device.id",
             "afterEach": [
-              "PSC8y\\Remove-ManagedObject -Id $Device.id",
-              "PSC8y\\Remove-ManagedObject -Id $ChildDevice.id"
+              "PSc8y\\Remove-ManagedObject -Id $Device.id",
+              "PSc8y\\Remove-ManagedObject -Id $ChildDevice.id"
             ]
           },
           {
             "description": "Get a list of the child devices of an existing device (using pipeline)",
             "beforeEach": [
-              "$Device = PSC8y\\New-TestDevice",
-              "$ChildDevice = PSC8y\\New-TestDevice",
-              "PSC8y\\New-ChildDeviceReference -Device $Device.id -NewChild $ChildDevice.id"
+              "$Device = PSc8y\\New-TestDevice",
+              "$ChildDevice = PSc8y\\New-TestDevice",
+              "PSc8y\\New-ChildDeviceReference -Device $Device.id -NewChild $ChildDevice.id"
             ],
             "command": "Get-ManagedObject -Id $Device.id | Get-ChildDeviceCollection",
             "afterEach": [
-              "PSC8y\\Remove-ManagedObject -Id $Device.id",
-              "PSC8y\\Remove-ManagedObject -Id $ChildDevice.id"
+              "PSc8y\\Remove-ManagedObject -Id $Device.id",
+              "PSc8y\\Remove-ManagedObject -Id $ChildDevice.id"
             ]
           }
         ],
@@ -83,27 +83,27 @@
           {
             "description": "Get a list of the child assets of an existing device",
             "beforeEach": [
-              "$Device = PSC8y\\New-TestDevice",
-              "$ChildDevice = PSC8y\\New-TestDevice",
-              "PSC8y\\New-ChildAssetReference -Group $Device.id -NewChildDevice $ChildDevice.id"
+              "$Device = PSc8y\\New-TestDevice",
+              "$ChildDevice = PSc8y\\New-TestDevice",
+              "PSc8y\\New-ChildAssetReference -Group $Device.id -NewChildDevice $ChildDevice.id"
             ],
             "command": "Get-ChildAssetCollection -Group $Group.id",
             "afterEach": [
-              "PSC8y\\Remove-ManagedObject -Id $ChildDevice.id",
-              "PSC8y\\Remove-ManagedObject -Id $Device.id"
+              "PSc8y\\Remove-ManagedObject -Id $ChildDevice.id",
+              "PSc8y\\Remove-ManagedObject -Id $Device.id"
             ]
           },
           {
             "description": "Get a list of the child assets of an existing group",
             "beforeEach": [
-              "$Group = PSC8y\\New-TestDeviceGroup",
-              "$ChildGroup = PSC8y\\New-TestDeviceGroup",
-              "PSC8y\\New-ChildAssetReference -Group $Group.id -NewChildGroup $ChildGroup.id"
+              "$Group = PSc8y\\New-TestDeviceGroup",
+              "$ChildGroup = PSc8y\\New-TestDeviceGroup",
+              "PSc8y\\New-ChildAssetReference -Group $Group.id -NewChildGroup $ChildGroup.id"
             ],
             "command": "Get-ChildAssetCollection -Group $Group.id",
             "afterEach": [
-              "PSC8y\\Remove-ManagedObject -Id $ChildGroup.id",
-              "PSC8y\\Remove-ManagedObject -Id $Group.id"
+              "PSc8y\\Remove-ManagedObject -Id $ChildGroup.id",
+              "PSc8y\\Remove-ManagedObject -Id $Group.id"
             ]
           }
         ],
@@ -147,25 +147,25 @@
           {
             "description": "Assign a device as a child device to an existing device",
             "beforeEach": [
-              "$Device = PSC8y\\New-TestDevice",
-              "$ChildDevice = PSC8y\\New-TestDevice"
+              "$Device = PSc8y\\New-TestDevice",
+              "$ChildDevice = PSc8y\\New-TestDevice"
             ],
             "command": "New-ChildDeviceReference -Device $Device.id -NewChild $ChildDevice.id",
             "afterEach": [
-              "PSC8y\\Remove-ManagedObject -Id $ChildDevice.id",
-              "PSC8y\\Remove-ManagedObject -Id $Device.id"
+              "PSc8y\\Remove-ManagedObject -Id $ChildDevice.id",
+              "PSc8y\\Remove-ManagedObject -Id $Device.id"
             ]
           },
           {
             "description": "Assign a device as a child device to an existing device (using pipeline)",
             "beforeEach": [
-              "$Device = PSC8y\\New-TestDevice",
-              "$ChildDevice = PSC8y\\New-TestDevice"
+              "$Device = PSc8y\\New-TestDevice",
+              "$ChildDevice = PSc8y\\New-TestDevice"
             ],
             "command": "Get-ManagedObject -Id $ChildDevice.id | New-ChildDeviceReference -Device $Device.id",
             "afterEach": [
-              "PSC8y\\Remove-ManagedObject -Id $Device.id",
-              "PSC8y\\Remove-ManagedObject -Id $ChildDevice.id"
+              "PSc8y\\Remove-ManagedObject -Id $Device.id",
+              "PSc8y\\Remove-ManagedObject -Id $ChildDevice.id"
             ]
           }
         ],
@@ -302,14 +302,14 @@
           {
             "description": "Unassign a child device from its parent device",
             "beforeEach": [
-              "$Device = PSC8y\\New-TestDevice",
-              "$ChildDevice = PSC8y\\New-TestDevice",
-              "PSC8y\\New-ChildDeviceReference -Device $Device.id -NewChild $ChildDevice.id"
+              "$Device = PSc8y\\New-TestDevice",
+              "$ChildDevice = PSc8y\\New-TestDevice",
+              "PSc8y\\New-ChildDeviceReference -Device $Device.id -NewChild $ChildDevice.id"
             ],
             "command": "Remove-ChildDeviceReference -Device $Device.id -ChildDevice $ChildDevice.id",
             "afterEach": [
-              "PSC8y\\Remove-ManagedObject -Id $ChildDevice.id",
-              "PSC8y\\Remove-ManagedObject -Id $Device.id"
+              "PSc8y\\Remove-ManagedObject -Id $ChildDevice.id",
+              "PSc8y\\Remove-ManagedObject -Id $Device.id"
             ]
           }
         ],
@@ -351,14 +351,14 @@
           {
             "description": "Unassign a child device from its parent asset",
             "beforeEach": [
-              "$Group = PSC8y\\New-TestDeviceGroup",
-              "$ChildDevice = PSC8y\\New-TestDevice",
-              "PSC8y\\New-ChildAssetReference -Group $Group.id -NewChildDevice $ChildDevice.id"
+              "$Group = PSc8y\\New-TestDeviceGroup",
+              "$ChildDevice = PSc8y\\New-TestDevice",
+              "PSc8y\\New-ChildAssetReference -Group $Group.id -NewChildDevice $ChildDevice.id"
             ],
             "command": "Remove-ChildAssetReference -Asset $Group.id -ChildDevice $ChildDevice.id",
             "afterEach": [
-              "PSC8y\\Remove-ManagedObject -Id $ChildDevice.id",
-              "PSC8y\\Remove-ManagedObject -Id $Group.id"
+              "PSc8y\\Remove-ManagedObject -Id $ChildDevice.id",
+              "PSc8y\\Remove-ManagedObject -Id $Group.id"
             ]
           }
         ],

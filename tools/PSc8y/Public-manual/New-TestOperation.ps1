@@ -18,10 +18,10 @@ Create a new test operation
         $iAgent = Expand-Device $Device
     }
     else {
-        $iAgent = PSC8y\New-TestAgent
+        $iAgent = PSc8y\New-TestAgent
     }
 
-    PSC8y\New-Operation `
+    PSc8y\New-Operation `
         -Device $iAgent.id `
         -Description "Test operation" `
         -Data @{

@@ -7,11 +7,11 @@ Describe -Name "Remove-Group" {
     }
 
     It "Delete a user group" {
-        $Response = PSC8y\Remove-Group -Id $Group.id
+        $Response = PSc8y\Remove-Group -Id $Group.id
         $LASTEXITCODE | Should -Be 0
     }
     It "Delete a user group (using pipeline)" {
-        $Response = PSC8y\Get-GroupByName -Name $Group.name | Remove-Group
+        $Response = PSc8y\Get-GroupByName -Name $Group.name | Remove-Group
         $LASTEXITCODE | Should -Be 0
     }
 

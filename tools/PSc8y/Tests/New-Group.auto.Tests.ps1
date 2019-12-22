@@ -7,7 +7,7 @@ Describe -Name "New-Group" {
     }
 
     It "Create a user group" {
-        $Response = PSC8y\New-Group -Name "$GroupName"
+        $Response = PSc8y\New-Group -Name "$GroupName"
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }

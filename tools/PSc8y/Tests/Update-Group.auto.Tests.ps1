@@ -7,11 +7,11 @@ Describe -Name "Update-Group" {
     }
 
     It "Update a user group" {
-        $Response = PSC8y\Update-Group -Id $Group -Name "customGroup2"
+        $Response = PSc8y\Update-Group -Id $Group -Name "customGroup2"
         $LASTEXITCODE | Should -Be 0
     }
     It "Update a user group (using pipeline)" {
-        $Response = PSC8y\Get-GroupByName -Name $Group.name | Update-Group -Name "customGroup2"
+        $Response = PSc8y\Get-GroupByName -Name $Group.name | Update-Group -Name "customGroup2"
         $LASTEXITCODE | Should -Be 0
     }
 

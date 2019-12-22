@@ -7,7 +7,7 @@ Describe -Name "New-ApplicationBinary" {
     }
 
     It "Upload application microservice binary" {
-        $Response = PSC8y\New-ApplicationBinary -Application $App.id -File ./helloworld.zip
+        $Response = PSc8y\New-ApplicationBinary -Application $App.id -File ./helloworld.zip
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }

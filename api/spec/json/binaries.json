@@ -24,11 +24,11 @@
             "description": "Get a list of binaries",
             "beforeEach": [
               "$File = New-TestFile",
-              "$Binary = PSC8y\\New-Binary -File $File"
+              "$Binary = PSc8y\\New-Binary -File $File"
             ],
             "command": "Get-BinaryCollection -PageSize 100",
             "afterEach": [
-              "PSC8y\\Remove-Binary -Id $Binary.id"
+              "PSc8y\\Remove-Binary -Id $Binary.id"
             ]
           }
         ],
@@ -56,24 +56,24 @@
             "description": "Get a binary and display the contents on the console",
             "beforeEach": [
               "$File = New-TestFile",
-              "$Binary = PSC8y\\New-Binary -File $File"
+              "$Binary = PSc8y\\New-Binary -File $File"
             ],
             "command": "Get-Binary -Id $Binary.id",
             "afterEach": [
-              "PSC8y\\Remove-Binary -Id $Binary.id"
+              "PSc8y\\Remove-Binary -Id $Binary.id"
             ]
           },
           {
             "description": "Get a binary and save it to a file",
             "beforeEach": [
               "$File = New-TestFile",
-              "$Binary = PSC8y\\New-Binary -File $File"
+              "$Binary = PSc8y\\New-Binary -File $File"
             ],
             "command": "Get-Binary -Id $Binary.id -OutputFile ./download-binary1.txt",
             "afterEach": [
               "if (Test-Path \"./download-binary1.txt\") { Remove-Item ./download-binary1.txt }",
               "Remove-Item $File",
-              "PSC8y\\Remove-Binary -Id $Binary.id"
+              "PSc8y\\Remove-Binary -Id $Binary.id"
             ]
           }
         ],

@@ -155,7 +155,7 @@ Function New-C8yApiPowershellCommand {
                 $null = $ProcessParameterBuilder.AppendLine("            }")
             } else {
                 $PipelineTemplateFormat = "loop_without_pipeline"
-                $ExpanderFunction = "PSC8y\Expand-Id `$$($item.Name)"
+                $ExpanderFunction = "PSc8y\Expand-Id `$$($item.Name)"
                 $null = $ProcessParameterBuilder.AppendLine("        `$Parameters[`"$($iArg.Name)`"] = $ExpanderFunction")
             }
 
@@ -175,7 +175,7 @@ Function New-C8yApiPowershellCommand {
                 }
 
                 "[]usergroup" {
-                    "PSC8y\Expand-Id `${0}" -f $item.Name
+                    "PSc8y\Expand-Id `${0}" -f $item.Name
                 }
 
                 default {
@@ -450,7 +450,7 @@ Function New-Body2 {
         [string] $PipelineTemplateType
     )
 
-    $Target = "(PSC8y\Get-C8ySessionProperty -Name `"tenant`")"
+    $Target = "(PSc8y\Get-C8ySessionProperty -Name `"tenant`")"
     $Message = "(Format-ConfirmationMessage -Name `$PSCmdlet.MyInvocation.InvocationName -InputObject `$item)"
 
     $ExpandFunction = Get-IteratorFunction -Type $IteratorType -Variable $IteratorVariable
@@ -516,22 +516,22 @@ Function Get-IteratorFunction {
     )
 
     $ExpandFunction = switch ($Type) {
-        "[]device" { "(PSC8y\Expand-Device $Variable)" }
-        "[]role" { "(PSC8y\Expand-Id $Variable)" }
-        "[]roleself" { "(PSC8y\Expand-Id $Variable)" }
-        "[]tenant" { "(PSC8y\Expand-Tenant $Variable)" }
-        "[]userself" { "(PSC8y\Expand-User $Variable)" }
-        "application" { "(PSC8y\Expand-Application $Variable)" }
-        "device" { "(PSC8y\Expand-Device $Variable)" }
-        "event" { "(PSC8y\Expand-Event $Variable)" }
-        "id" { "(PSC8y\Expand-Id $Variable)" }
-        "managedObject" { "(PSC8y\Expand-ManagedObject $Variable)" }
-        "source" { "(PSC8y\Expand-Source $Variable)" }
+        "[]device" { "(PSc8y\Expand-Device $Variable)" }
+        "[]role" { "(PSc8y\Expand-Id $Variable)" }
+        "[]roleself" { "(PSc8y\Expand-Id $Variable)" }
+        "[]tenant" { "(PSc8y\Expand-Tenant $Variable)" }
+        "[]userself" { "(PSc8y\Expand-User $Variable)" }
+        "application" { "(PSc8y\Expand-Application $Variable)" }
+        "device" { "(PSc8y\Expand-Device $Variable)" }
+        "event" { "(PSc8y\Expand-Event $Variable)" }
+        "id" { "(PSc8y\Expand-Id $Variable)" }
+        "managedObject" { "(PSc8y\Expand-ManagedObject $Variable)" }
+        "source" { "(PSc8y\Expand-Source $Variable)" }
         default {
             if ($Variable -eq "") {
                 "@(`"`")"
             } else {
-                "(PSC8y\Expand-Id $Variable)"
+                "(PSc8y\Expand-Id $Variable)"
             }
         }
     }

@@ -96,12 +96,12 @@ Update multiple operations
     }
 
     Process {
-        $Parameters["id"] = PSC8y\Expand-Id $Id
+        $Parameters["id"] = PSc8y\Expand-Id $Id
 
         if (!$Force -and
             !$WhatIfPreference -and
             !$PSCmdlet.ShouldProcess(
-                (PSC8y\Get-C8ySessionProperty -Name "tenant"),
+                (PSc8y\Get-C8ySessionProperty -Name "tenant"),
                 (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
             )) {
             continue

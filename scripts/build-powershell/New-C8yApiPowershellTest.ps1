@@ -54,7 +54,7 @@ Function New-C8yApiPowershellTest {
         # TODO: Check if a test device has already been created already in the before block
         #       then the  -ErrorAction silentlycontinue can be removed.
         if ($TestCase.Command -match "{{\s*randomdevice\s*}}") {
-            $BeforeStatement = '$TestDevice = PSC8y\New-TestDevice'
+            $BeforeStatement = '$TestDevice = PSc8y\New-TestDevice'
             if (!$BeforeBlock.ToString().Contains($BeforeStatement)) {
                 $null = $BeforeBlock.AppendLine("        $BeforeStatement")
             }
@@ -64,48 +64,48 @@ Function New-C8yApiPowershellTest {
             $AfterStatement = 'if ($TestDevice.id) {'
             if (!$AfterBlock.ToString().Contains($AfterStatement)) {
                 $null = $AfterBlock.AppendLine("        $AfterStatement")
-                $null = $AfterBlock.AppendLine("            PSC8y\Remove-ManagedObject -Id `$TestDevice.id -ErrorAction SilentlyContinue")
+                $null = $AfterBlock.AppendLine("            PSc8y\Remove-ManagedObject -Id `$TestDevice.id -ErrorAction SilentlyContinue")
                 $null = $AfterBlock.AppendLine("        }")
             }
         }
 
         if ($TestCase.Command -match "{{\s*randomagent\s*}}") {
-            $null = $BeforeBlock.AppendLine("        `$TestAgent = PSC8y\New-TestAgent")
+            $null = $BeforeBlock.AppendLine("        `$TestAgent = PSc8y\New-TestAgent")
 
             $TestCase.Command = $TestCase.Command -replace "`"?{{\s*randomagent\s*}}`"?", "`$TestAgent.id"
 
             $null = $AfterBlock.AppendLine("        if (`$TestAgent.id) {")
-            $null = $AfterBlock.AppendLine("            PSC8y\Remove-ManagedObject -Id `$TestAgent.id -ErrorAction SilentlyContinue")
+            $null = $AfterBlock.AppendLine("            PSc8y\Remove-ManagedObject -Id `$TestAgent.id -ErrorAction SilentlyContinue")
             $null = $AfterBlock.AppendLine("        }")
         }
 
         if ($TestCase.Command -match "{{\s*NewAlarm\s*}}") {
-            $null = $BeforeBlock.AppendLine("        `$TestAlarm = PSC8y\New-TestAlarm")
+            $null = $BeforeBlock.AppendLine("        `$TestAlarm = PSc8y\New-TestAlarm")
 
             $TestCase.Command = $TestCase.Command -replace "`"?{{\s*NewAlarm\s*}}`"?", "`$TestAlarm.id"
 
             $null = $AfterBlock.AppendLine("        if (`$TestAlarm.source.id) {")
-            $null = $AfterBlock.AppendLine("            PSC8y\Remove-ManagedObject -Id `$TestAlarm.source.id -ErrorAction SilentlyContinue")
+            $null = $AfterBlock.AppendLine("            PSc8y\Remove-ManagedObject -Id `$TestAlarm.source.id -ErrorAction SilentlyContinue")
             $null = $AfterBlock.AppendLine("        }")
         }
 
         if ($TestCase.Command -match "{{\s*NewOperation\s*}}") {
-            $null = $BeforeBlock.AppendLine("        `$TestOperation = PSC8y\New-TestOperation")
+            $null = $BeforeBlock.AppendLine("        `$TestOperation = PSc8y\New-TestOperation")
 
             $TestCase.Command = $TestCase.Command -replace "`"?{{\s*NewOperation\s*}}`"?", "`$TestOperation.id"
 
             $null = $AfterBlock.AppendLine("        if (`$TestOperation.deviceId) {")
-            $null = $AfterBlock.AppendLine("            PSC8y\Remove-ManagedObject -Id `$TestOperation.deviceId -ErrorAction SilentlyContinue")
+            $null = $AfterBlock.AppendLine("            PSc8y\Remove-ManagedObject -Id `$TestOperation.deviceId -ErrorAction SilentlyContinue")
             $null = $AfterBlock.AppendLine("        }")
         }
 
         if ($TestCase.Command -match "{{\s*NewEvent\s*}}") {
-            $null = $BeforeBlock.AppendLine("        `$TestEvent = PSC8y\New-TestEvent")
+            $null = $BeforeBlock.AppendLine("        `$TestEvent = PSc8y\New-TestEvent")
 
             $TestCase.Command = $TestCase.Command -replace "`"?{{\s*NewEvent\s*}}`"?", "`$TestEvent.id"
 
             $null = $AfterBlock.AppendLine("        if (`$TestEvent.source.id) {")
-            $null = $AfterBlock.AppendLine("            PSC8y\Remove-ManagedObject -Id `$TestEvent.source.id -ErrorAction SilentlyContinue")
+            $null = $AfterBlock.AppendLine("            PSc8y\Remove-ManagedObject -Id `$TestEvent.source.id -ErrorAction SilentlyContinue")
             $null = $AfterBlock.AppendLine("        }")
         }
 

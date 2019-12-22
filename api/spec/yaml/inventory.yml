@@ -140,21 +140,21 @@ endpoints:
       powershell:
         - description: Get a managed object
           beforeEach:
-            - $mo = PSC8y\New-ManagedObject -Name "testMO"
+            - $mo = PSc8y\New-ManagedObject -Name "testMO"
           command: Get-ManagedObject -Id $mo.id
           afterEach:
             - Remove-ManagedObject -Id $mo.id
 
         - description: Get a managed object (using pipeline)
           beforeEach:
-            - $mo = PSC8y\New-ManagedObject -Name "testMO"
+            - $mo = PSc8y\New-ManagedObject -Name "testMO"
           command: Get-ManagedObject -Id $mo.id | Get-ManagedObject
           afterEach:
             - Remove-ManagedObject -Id $mo.id
 
         - description: Get a managed object with parent references
           beforeEach:
-            - $mo = PSC8y\New-ManagedObject -Name "testMO"
+            - $mo = PSc8y\New-ManagedObject -Name "testMO"
           command: Get-ManagedObject -Id $mo.id -WithParents
           afterEach:
             - Remove-ManagedObject -Id $mo.id
@@ -190,14 +190,14 @@ endpoints:
       powershell:
         - description: Update a managed object
           beforeEach:
-            - $mo = PSC8y\New-ManagedObject -Name "testMO"
+            - $mo = PSc8y\New-ManagedObject -Name "testMO"
           command: Update-ManagedObject -Id $mo.id -Data @{ com_my_props = @{ value = 1 } }
           afterEach:
             - Remove-ManagedObject -Id $mo.id
 
         - description: Update a managed object (using pipeline)
           beforeEach:
-            - $mo = PSC8y\New-ManagedObject -Name "testMO"
+            - $mo = PSc8y\New-ManagedObject -Name "testMO"
           command: Get-ManagedObject -Id $mo.id | Update-ManagedObject -Data @{ com_my_props = @{ value = 1 } }
           afterEach:
             - Remove-ManagedObject -Id $mo.id
@@ -234,19 +234,19 @@ endpoints:
       powershell:
         - description: Delete a managed object
           beforeEach:
-            - $mo = PSC8y\New-ManagedObject -Name "testMO"
+            - $mo = PSc8y\New-ManagedObject -Name "testMO"
           command: Remove-ManagedObject -Id $mo.id
 
         - description: Delete a managed object (using pipeline)
           beforeEach:
-            - $mo = PSC8y\New-ManagedObject -Name "testMO"
+            - $mo = PSc8y\New-ManagedObject -Name "testMO"
           command: Get-ManagedObject -Id $mo.id | Remove-ManagedObject
 
         - description: Delete a managed object and all child devices
           beforeEach:
-            - $Device = PSC8y\New-TestDevice
-            - $ChildDevice = PSC8y\New-TestDevice
-            - PSC8y\New-ChildDeviceReference -Device $Device.id -NewChild $ChildDevice.id
+            - $Device = PSc8y\New-TestDevice
+            - $ChildDevice = PSc8y\New-TestDevice
+            - PSc8y\New-ChildDeviceReference -Device $Device.id -NewChild $ChildDevice.id
           command: Get-ManagedObject -Id $Device.id | Remove-ManagedObject -Cascade
 
       go:

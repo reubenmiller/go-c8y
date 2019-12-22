@@ -7,12 +7,12 @@ Describe -Name "Remove-Measurement" {
     }
 
     It "Delete measurement" {
-        $Response = PSC8y\Remove-Measurement -id $Measurement.id
+        $Response = PSc8y\Remove-Measurement -id $Measurement.id
         $LASTEXITCODE | Should -Be 0
     }
 
     AfterEach {
-        PSC8y\Remove-ManagedObject -Id $Measurement.source.id
+        PSc8y\Remove-ManagedObject -Id $Measurement.source.id
 
     }
 }

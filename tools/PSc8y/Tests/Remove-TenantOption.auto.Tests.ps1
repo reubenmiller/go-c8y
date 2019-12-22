@@ -7,7 +7,7 @@ Describe -Name "Remove-TenantOption" {
     }
 
     It "Delete a tenant option" {
-        $Response = PSC8y\Remove-TenantOption -Category "c8y_cli_tests" -Key "option3"
+        $Response = PSc8y\Remove-TenantOption -Category "c8y_cli_tests" -Key "option3"
         $LASTEXITCODE | Should -Be 0
     }
 

@@ -14,7 +14,7 @@ Create a test user group
     )
 
     $GroupName = New-RandomString -Prefix "${Name}_"
-    $TestGroup = PSC8y\New-Group -Name $GroupName
+    $TestGroup = PSc8y\New-Group -Name $GroupName
 
     $TestGroup
 }

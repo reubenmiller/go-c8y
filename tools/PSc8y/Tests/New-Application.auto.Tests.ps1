@@ -6,7 +6,7 @@ Describe -Name "New-Application" {
     }
 
     It "Create new hosted application" {
-        $Response = PSC8y\New-Application -Name myapp -Type HOSTED -Key "myapp-key" -ContextPath "myapp"
+        $Response = PSc8y\New-Application -Name myapp -Type HOSTED -Key "myapp-key" -ContextPath "myapp"
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }

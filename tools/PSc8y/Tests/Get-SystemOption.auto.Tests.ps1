@@ -6,7 +6,7 @@ Describe -Name "Get-SystemOption" {
     }
 
     It "Get system option value" {
-        $Response = PSC8y\Get-SystemOption -Category "system" -Key "version"
+        $Response = PSc8y\Get-SystemOption -Category "system" -Key "version"
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }

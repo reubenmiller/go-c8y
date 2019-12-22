@@ -7,7 +7,7 @@ Describe -Name "Get-ApplicationBootstrapUser" {
     }
 
     It "Get application bootstrap user" {
-        $Response = PSC8y\Get-ApplicationBootstrapUser -Application $App.name
+        $Response = PSc8y\Get-ApplicationBootstrapUser -Application $App.name
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }

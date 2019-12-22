@@ -73,7 +73,7 @@ Upload application microservice binary
     }
 
     Process {
-        foreach ($item in (PSC8y\Expand-Application $Application)) {
+        foreach ($item in (PSc8y\Expand-Application $Application)) {
             if ($item) {
                 $Parameters["application"] = if ($item.id) { $item.id } else { $item }
             }
@@ -81,7 +81,7 @@ Upload application microservice binary
             if (!$Force -and
                 !$WhatIfPreference -and
                 !$PSCmdlet.ShouldProcess(
-                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
+                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
                     (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
                 )) {
                 continue

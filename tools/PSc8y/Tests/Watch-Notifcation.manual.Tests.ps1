@@ -24,7 +24,7 @@ Describe -Name "Watch-Notifcation" {
 
     It "Watch measurements for a time period" {
         $StartTime = Get-Date
-        [array] $Response = PSC8y\Watch-Notification -Channel ("/measurements/" + $Device.id) -DurationSec 10
+        [array] $Response = PSc8y\Watch-Notification -Channel ("/measurements/" + $Device.id) -DurationSec 10
         $LASTEXITCODE | Should -Be 0
         $Response.Count | Should -BeGreaterOrEqual 1
         $Duration = (Get-Date) - $StartTime
@@ -32,13 +32,13 @@ Describe -Name "Watch-Notifcation" {
     }
 
     It "Watch measurements for a number of measurements" {
-        $Response = PSC8y\Watch-Notification -Channel ("/measurements/" + $Device.id) -Count 2
+        $Response = PSc8y\Watch-Notification -Channel ("/measurements/" + $Device.id) -Count 2
         $LASTEXITCODE | Should -Be 0
         $Response | Should -HaveCount 2
     }
 
     It "Watch measurements for all devices and stop after receiving x messages" {
-        $Response = PSC8y\Watch-Notification -Channel ("/measurements/" + $Device.id) -Count 2
+        $Response = PSc8y\Watch-Notification -Channel ("/measurements/" + $Device.id) -Count 2
         $LASTEXITCODE | Should -Be 0
         $Response | Should -HaveCount 2
     }
@@ -46,7 +46,7 @@ Describe -Name "Watch-Notifcation" {
     AfterEach {
         Stop-Job -Job $Job
         Remove-Job -Id $Job.Id
-        PSC8y\Remove-ManagedObject -Id $Device.id
+        PSc8y\Remove-ManagedObject -Id $Device.id
 
     }
 }

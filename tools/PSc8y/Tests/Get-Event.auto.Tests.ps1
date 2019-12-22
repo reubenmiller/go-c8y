@@ -2,19 +2,19 @@
 
 Describe -Name "Get-Event" {
     BeforeEach {
-        $TestEvent = PSC8y\New-TestEvent
+        $TestEvent = PSc8y\New-TestEvent
 
     }
 
     It "Get event" {
-        $Response = PSC8y\Get-Event -Id $TestEvent.id
+        $Response = PSc8y\Get-Event -Id $TestEvent.id
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
 
     AfterEach {
         if ($TestEvent.source.id) {
-            PSC8y\Remove-ManagedObject -Id $TestEvent.source.id -ErrorAction SilentlyContinue
+            PSc8y\Remove-ManagedObject -Id $TestEvent.source.id -ErrorAction SilentlyContinue
         }
 
     }

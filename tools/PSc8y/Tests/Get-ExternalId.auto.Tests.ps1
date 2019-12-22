@@ -2,13 +2,13 @@
 
 Describe -Name "Get-ExternalId" {
     BeforeEach {
-        $Device = PSC8y\New-TestDevice
-        $ExternalID = PSC8y\New-ExternalID -Device $Device.id -Type "my_SerialNumber" -Name "myserialnumber"
+        $Device = PSc8y\New-TestDevice
+        $ExternalID = PSc8y\New-ExternalID -Device $Device.id -Type "my_SerialNumber" -Name "myserialnumber"
 
     }
 
     It "Get external identity" {
-        $Response = PSC8y\Get-ExternalId -Type "my_SerialNumber" -Name "myserialnumber"
+        $Response = PSc8y\Get-ExternalId -Type "my_SerialNumber" -Name "myserialnumber"
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }

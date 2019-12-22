@@ -72,7 +72,7 @@ Delete an application by name
     }
 
     Process {
-        foreach ($item in (PSC8y\Expand-Application $Application)) {
+        foreach ($item in (PSc8y\Expand-Application $Application)) {
             if ($item) {
                 $Parameters["application"] = if ($item.id) { $item.id } else { $item }
             }
@@ -80,7 +80,7 @@ Delete an application by name
             if (!$Force -and
                 !$WhatIfPreference -and
                 !$PSCmdlet.ShouldProcess(
-                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
+                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
                     (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
                 )) {
                 continue

@@ -68,7 +68,7 @@ Get a user
     }
 
     Process {
-        foreach ($item in (PSC8y\Expand-Id $Id)) {
+        foreach ($item in (PSc8y\Expand-Id $Id)) {
             if ($item) {
                 $Parameters["id"] = if ($item.id) { $item.id } else { $item }
             }
@@ -76,7 +76,7 @@ Get a user
             if (!$Force -and
                 !$WhatIfPreference -and
                 !$PSCmdlet.ShouldProcess(
-                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
+                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
                     (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
                 )) {
                 continue

@@ -7,7 +7,7 @@ Describe -Name "Copy-Application" {
     }
 
     It "Copy an existing application" {
-        $Response = PSC8y\Copy-Application -Application "my-example-app"
+        $Response = PSc8y\Copy-Application -Application "my-example-app"
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }

@@ -48,17 +48,17 @@ Expand applications that match a name of "*" and have a type of "MICROSERVICE"
             }
 
             if ($iApp.applicationId) {
-                PSC8y\Get-Application -Application $iApp.applicationId -WhatIf:$false
+                PSc8y\Get-Application -Application $iApp.applicationId -WhatIf:$false
                 continue
             }
 
             if ("$iApp" -match "^\d+$") {
                 # Provided with an id
                 $iApp
-                # PSC8y\Get-Application -Application $iApp -WhatIf:$false
+                # PSc8y\Get-Application -Application $iApp -WhatIf:$false
             } else {
                 # Provided with a query
-                PSC8y\Get-ApplicationCollection -PageSize 2000 |
+                PSc8y\Get-ApplicationCollection -PageSize 2000 |
                         Where-Object { $_.name -like "$iApp" }
             }
         }

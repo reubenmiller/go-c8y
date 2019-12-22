@@ -211,7 +211,7 @@ endpoints:
       powershell:
         - description: Get a list of groups that a user belongs to
           beforeEach:
-            - $User = PSC8y\Get-CurrentUser
+            - $User = PSc8y\Get-CurrentUser
           command: Get-GroupReferenceCollection -User $User.id
       go:
         - description: Get a list of groups that a user belongs to

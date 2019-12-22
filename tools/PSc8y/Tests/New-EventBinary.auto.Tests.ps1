@@ -9,7 +9,7 @@ Describe -Name "New-EventBinary" {
     }
 
     It "Add a binary to an event" {
-        $Response = PSC8y\New-EventBinary -Id $Event.id -File $TestFile
+        $Response = PSc8y\New-EventBinary -Id $Event.id -File $TestFile
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }

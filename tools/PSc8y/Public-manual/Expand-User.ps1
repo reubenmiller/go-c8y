@@ -40,7 +40,7 @@ Get all the user object (with app in their name). Note the Expand cmdlet won't d
                 $iUserNormalized = $iUser -replace "\*", ""
 
                 # Search for users
-                PSC8y\Get-UserCollection -Username $iUserNormalized -WhatIf:$false -PageSize 100 |
+                PSc8y\Get-UserCollection -Username $iUserNormalized -WhatIf:$false -PageSize 100 |
                     Where-Object { $_.id -like $iUser -or $_.userName -like $iUser }
             }
             else

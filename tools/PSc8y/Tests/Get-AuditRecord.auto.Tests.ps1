@@ -8,7 +8,7 @@ Describe -Name "Get-AuditRecord" {
     }
 
     It "Get an audit record by id" {
-        $Response = PSC8y\Get-AuditRecord -Id $Record.id
+        $Response = PSc8y\Get-AuditRecord -Id $Record.id
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }

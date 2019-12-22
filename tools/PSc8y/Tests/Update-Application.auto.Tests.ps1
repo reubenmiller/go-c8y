@@ -7,7 +7,7 @@ Describe -Name "Update-Application" {
     }
 
     It "Update application availability to MARKET" {
-        $Response = PSC8y\Update-Application -Application "helloworld-app" -Availability "MARKET"
+        $Response = PSc8y\Update-Application -Application "helloworld-app" -Availability "MARKET"
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }

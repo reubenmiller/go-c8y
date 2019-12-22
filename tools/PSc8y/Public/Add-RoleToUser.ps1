@@ -88,12 +88,12 @@ Add a role to a user using wildcards (using pipeline)
     }
 
     Process {
-        $Parameters["role"] = PSC8y\Expand-Id $Role
+        $Parameters["role"] = PSc8y\Expand-Id $Role
 
         if (!$Force -and
             !$WhatIfPreference -and
             !$PSCmdlet.ShouldProcess(
-                (PSC8y\Get-C8ySessionProperty -Name "tenant"),
+                (PSc8y\Get-C8ySessionProperty -Name "tenant"),
                 (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
             )) {
             continue

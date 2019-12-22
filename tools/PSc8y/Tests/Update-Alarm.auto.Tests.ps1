@@ -8,12 +8,12 @@ Describe -Name "Update-Alarm" {
     }
 
     It "Acknowledge an existing alarm" {
-        $Response = PSC8y\Update-Alarm -Id $Alarm.id -Status ACKNOWLEDGED
+        $Response = PSc8y\Update-Alarm -Id $Alarm.id -Status ACKNOWLEDGED
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
     It "Update severity of an existing alarm to CRITICAL" {
-        $Response = PSC8y\Update-Alarm -Id $Alarm.id -Severity CRITICAL
+        $Response = PSc8y\Update-Alarm -Id $Alarm.id -Severity CRITICAL
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }

@@ -11,7 +11,7 @@ if (!(Get-Module "Pester")) {
 }
 
 if ($Coverage) {
-    $output = Invoke-Pester -Script $PSScriptRoot/Tests -CodeCoverage $PSScriptRoot/Public/* -CodeCoverageOutputFile "$PSScriptRoot/PSC8y.coverage.xml" -PassThru
+    $output = Invoke-Pester -Script $PSScriptRoot/Tests -CodeCoverage $PSScriptRoot/Public/* -CodeCoverageOutputFile "$PSScriptRoot/PSc8y.coverage.xml" -PassThru
 } else {
     Invoke-Pester -Script $PSScriptRoot/Tests -OutputFile "report/report.xml"
 }

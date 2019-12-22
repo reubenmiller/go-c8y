@@ -8,12 +8,12 @@ Describe -Name "Get-ManagedObjectCollection" {
     }
 
     It "Get a list of managed objects" {
-        $Response = PSC8y\Get-ManagedObjectCollection
+        $Response = PSc8y\Get-ManagedObjectCollection
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
     It "Get a list of managed objects by looking up their names" {
-        $Response = PSC8y\Get-ManagedObjectCollection -Device $Device1.name, $Device2.name
+        $Response = PSc8y\Get-ManagedObjectCollection -Device $Device1.name, $Device2.name
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }

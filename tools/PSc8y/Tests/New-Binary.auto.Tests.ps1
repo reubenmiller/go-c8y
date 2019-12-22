@@ -8,7 +8,7 @@ Describe -Name "New-Binary" {
     }
 
     It "Upload a log file" {
-        $Response = PSC8y\New-Binary -File $File
+        $Response = PSc8y\New-Binary -File $File
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }

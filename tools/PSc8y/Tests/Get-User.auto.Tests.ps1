@@ -2,12 +2,12 @@
 
 Describe -Name "Get-User" {
     BeforeEach {
-        $User = PSC8y\New-TestUser
+        $User = PSc8y\New-TestUser
 
     }
 
     It "Get a user" {
-        $Response = PSC8y\Get-User -Id $User.id
+        $Response = PSc8y\Get-User -Id $User.id
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }

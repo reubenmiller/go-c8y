@@ -8,12 +8,12 @@ Describe -Name "Update-Event" {
     }
 
     It "Update the text field of an existing event" {
-        $Response = PSC8y\Update-Event -Id $Event.id -Text "example text 1"
+        $Response = PSc8y\Update-Event -Id $Event.id -Text "example text 1"
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
     It "Update custom properties of an existing event" {
-        $Response = PSC8y\Update-Event -Id $Event.id -Data @{ my_event = @{ active = $true } }
+        $Response = PSc8y\Update-Event -Id $Event.id -Data @{ my_event = @{ active = $true } }
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }

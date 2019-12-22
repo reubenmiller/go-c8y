@@ -7,7 +7,7 @@ Describe -Name "New-ManagedObject" {
     }
 
     It "Create a managed object" {
-        $Response = PSC8y\New-ManagedObject -Name "testMO" -Type $type -Data @{ custom_data = @{ value = 1 } }
+        $Response = PSc8y\New-ManagedObject -Name "testMO" -Type $type -Data @{ custom_data = @{ value = 1 } }
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }

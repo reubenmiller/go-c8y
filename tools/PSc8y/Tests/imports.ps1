@@ -1,5 +1,5 @@
 
-Remove-Module PSC8y -ErrorAction SilentlyContinue
+Remove-Module PSc8y -ErrorAction SilentlyContinue
 
 Write-Verbose "PSScriptRoot: $PSSScriptRoot";
 Import-Module Pester -MinimumVersion "4.0.0"

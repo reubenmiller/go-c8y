@@ -3,28 +3,28 @@
 Describe -Name "Get-AlarmCollection" {
     BeforeEach {
         $Device = New-TestDevice
-        $Alarm = PSC8y\New-Alarm -Device $Device.id -Type c8y_TestAlarm -Time "-0s" -Text "Test alarm" -Severity MAJOR
+        $Alarm = PSc8y\New-Alarm -Device $Device.id -Type c8y_TestAlarm -Time "-0s" -Text "Test alarm" -Severity MAJOR
 
     }
 
     It "Get alarms with the severity set to MAJOR" {
-        $Response = PSC8y\Get-AlarmCollection -Severity MAJOR -PageSize 100
+        $Response = PSc8y\Get-AlarmCollection -Severity MAJOR -PageSize 100
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
     It "Get active alarms which occurred in the last 10 minutes" {
-        $Response = PSC8y\Get-AlarmCollection -DateFrom "-10m" -Status ACTIVE
+        $Response = PSc8y\Get-AlarmCollection -DateFrom "-10m" -Status ACTIVE
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
     It "Get active alarms from a device (using pipeline)" {
-        $Response = PSC8y\Get-DeviceCollection -Name $Device.name | Get-AlarmCollection -Status ACTIVE
+        $Response = PSc8y\Get-DeviceCollection -Name $Device.name | Get-AlarmCollection -Status ACTIVE
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
 
     AfterEach {
-        PSC8y\Remove-ManagedObject -Id $Device.id
+        PSc8y\Remove-ManagedObject -Id $Device.id
 
     }
 }

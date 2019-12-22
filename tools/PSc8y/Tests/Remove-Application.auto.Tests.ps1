@@ -7,11 +7,11 @@ Describe -Name "Remove-Application" {
     }
 
     It "Delete an application by id" {
-        $Response = PSC8y\Remove-Application -Application $App.id
+        $Response = PSc8y\Remove-Application -Application $App.id
         $LASTEXITCODE | Should -Be 0
     }
     It "Delete an application by name" {
-        $Response = PSC8y\Remove-Application -Application "my-temp-app"
+        $Response = PSc8y\Remove-Application -Application "my-temp-app"
         $LASTEXITCODE | Should -Be 0
     }
 

@@ -81,7 +81,7 @@ Unassign a child device from its parent asset
     }
 
     Process {
-        foreach ($item in (PSC8y\Expand-Device $Asset)) {
+        foreach ($item in (PSc8y\Expand-Device $Asset)) {
             if ($item) {
                 $Parameters["asset"] = if ($item.id) { $item.id } else { $item }
             }
@@ -89,7 +89,7 @@ Unassign a child device from its parent asset
             if (!$Force -and
                 !$WhatIfPreference -and
                 !$PSCmdlet.ShouldProcess(
-                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
+                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
                     (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
                 )) {
                 continue

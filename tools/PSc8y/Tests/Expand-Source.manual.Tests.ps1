@@ -4,16 +4,16 @@
 Describe -Name "Expand-Source" {
     BeforeEach {
         # Must be an agent so it accepts operations
-        $Device = PSC8y\New-TestAgent
+        $Device = PSc8y\New-TestAgent
     }
 
     It "Expand source id from a list of alarms" {
         # Note, these alarms will be dededuplicated because they have the same
         # alarm type. The count will be set to 2
-        $Alarm1 = PSC8y\New-TestAlarm -Device $Device.id
-        $Alarm2 = PSC8y\New-TestAlarm -Device $Device.id
+        $Alarm1 = PSc8y\New-TestAlarm -Device $Device.id
+        $Alarm2 = PSc8y\New-TestAlarm -Device $Device.id
 
-        $Response = Get-AlarmCollection -Device $Device.id | PSC8y\Expand-Source
+        $Response = Get-AlarmCollection -Device $Device.id | PSc8y\Expand-Source
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
 
@@ -21,10 +21,10 @@ Describe -Name "Expand-Source" {
     }
 
     It "Expand source id from a list of events" {
-        $Event1 = PSC8y\New-TestEvent -Device $Device.id
-        $Event2 = PSC8y\New-TestEvent -Device $Device.id
+        $Event1 = PSc8y\New-TestEvent -Device $Device.id
+        $Event2 = PSc8y\New-TestEvent -Device $Device.id
 
-        $Response = Get-EventCollection -Device $Device.id | PSC8y\Expand-Source
+        $Response = Get-EventCollection -Device $Device.id | PSc8y\Expand-Source
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
 
@@ -32,10 +32,10 @@ Describe -Name "Expand-Source" {
     }
 
     It "Expand source id from a list of measurements" {
-        $Measurement1 = PSC8y\New-TestMeasurement -Device $Device.id
-        $Measurement2 = PSC8y\New-TestMeasurement -Device $Device.id
+        $Measurement1 = PSc8y\New-TestMeasurement -Device $Device.id
+        $Measurement2 = PSc8y\New-TestMeasurement -Device $Device.id
 
-        $Response = Get-MeasurementCollection -Device $Device.id | PSC8y\Expand-Source
+        $Response = Get-MeasurementCollection -Device $Device.id | PSc8y\Expand-Source
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
 
@@ -43,10 +43,10 @@ Describe -Name "Expand-Source" {
     }
 
     It "Expand source id from a list of operations" {
-        $Operation1 = PSC8y\New-TestOperation -Device $Device.id
-        $Operation2 = PSC8y\New-TestOperation -Device $Device.id
+        $Operation1 = PSc8y\New-TestOperation -Device $Device.id
+        $Operation2 = PSc8y\New-TestOperation -Device $Device.id
 
-        $Response = Get-OperationCollection -Device $Device.id | PSC8y\Expand-Source
+        $Response = Get-OperationCollection -Device $Device.id | PSc8y\Expand-Source
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
 
@@ -54,6 +54,6 @@ Describe -Name "Expand-Source" {
     }
 
     AfterEach {
-        PSC8y\Remove-ManagedObject -Id $Device.id
+        PSc8y\Remove-ManagedObject -Id $Device.id
     }
 }

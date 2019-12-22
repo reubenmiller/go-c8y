@@ -6,7 +6,7 @@ Describe -Name "Get-CurrentUser" {
     }
 
     It "Get the current user" {
-        $Response = PSC8y\Get-CurrentUser
+        $Response = PSc8y\Get-CurrentUser
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }

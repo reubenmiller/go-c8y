@@ -12,7 +12,7 @@ Describe -Name "Get-EventBinary" {
     }
 
     It "Download a binary related to an event should have expected contents" {
-        $Response = PSC8y\Get-EventBinary -Id $Event.id -OutputFile "./value1.output.txt"
+        $Response = PSc8y\Get-EventBinary -Id $Event.id -OutputFile "./value1.output.txt"
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Exist
         $Response | Should -FileContentMatchMultiline (Get-Content -Raw -LiteralPath $TestFile)
@@ -20,7 +20,7 @@ Describe -Name "Get-EventBinary" {
     }
 
     It "Download a binary related to an event should have expected contents (using pipeline)" {
-        $Response = $Event | PSC8y\Get-EventBinary -OutputFile "./value2.output.txt"
+        $Response = $Event | PSc8y\Get-EventBinary -OutputFile "./value2.output.txt"
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Exist
         $Response | Should -FileContentMatchMultiline (Get-Content -Raw -LiteralPath $TestFile)

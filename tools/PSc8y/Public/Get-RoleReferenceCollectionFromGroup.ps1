@@ -72,7 +72,7 @@ Get a list of role references for a user group
             $Parameters["tenant"] = $Tenant
         }
         if ($PSBoundParameters.ContainsKey("Group")) {
-            $Parameters["group"] = PSC8y\Expand-Id $Group
+            $Parameters["group"] = PSc8y\Expand-Id $Group
         }
         if ($PSBoundParameters.ContainsKey("PageSize")) {
             $Parameters["pageSize"] = $PageSize
@@ -98,7 +98,7 @@ Get a list of role references for a user group
             if (!$Force -and
                 !$WhatIfPreference -and
                 !$PSCmdlet.ShouldProcess(
-                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
+                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
                     (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
                 )) {
                 continue

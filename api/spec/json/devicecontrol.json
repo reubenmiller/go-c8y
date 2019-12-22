@@ -29,7 +29,7 @@
             "description": "Get a list of pending operations for a given agent and all of its child devices",
             "beforeEach": [
               "$Agent = New-TestAgent",
-              "$Operation1 = PSC8y\\New-TestOperation -Device $Agent.id"
+              "$Operation1 = PSc8y\\New-TestOperation -Device $Agent.id"
             ],
             "command": "Get-OperationCollection -Agent $Agent.id -Status PENDING",
             "afterEach": [
@@ -42,7 +42,7 @@
               "$Agent = New-TestAgent",
               "$Device = New-TestDevice",
               "New-ChildDeviceReference -Device $Agent.id -NewChild $Device.id",
-              "$Operation1 = PSC8y\\New-TestOperation -Device $Device.id"
+              "$Operation1 = PSc8y\\New-TestOperation -Device $Device.id"
             ],
             "command": "Get-OperationCollection -Device $Device.id -Status PENDING",
             "afterEach": [
@@ -54,11 +54,11 @@
             "description": "Get operations from a device (using pipeline)",
             "beforeEach": [
               "$Agent2 = New-TestAgent",
-              "$Operation2 = PSC8y\\New-TestOperation -Device $Agent2.id"
+              "$Operation2 = PSc8y\\New-TestOperation -Device $Agent2.id"
             ],
             "command": "Get-DeviceCollection -Name $Agent2.name | Get-OperationCollection",
             "afterEach": [
-              "PSC8y\\Remove-ManagedObject -Id $Agent2.id"
+              "PSc8y\\Remove-ManagedObject -Id $Agent2.id"
             ]
           }
         ],
@@ -208,13 +208,13 @@
           {
             "description": "Update multiple operations",
             "beforeEach": [
-              "$Agent = PSC8y\\New-TestAgent",
-              "$Operation1 = PSC8y\\New-TestOperation -Device $Agent.id",
-              "$Operation2 = PSC8y\\New-TestOperation -Device $Agent.id"
+              "$Agent = PSc8y\\New-TestAgent",
+              "$Operation1 = PSc8y\\New-TestOperation -Device $Agent.id",
+              "$Operation2 = PSc8y\\New-TestOperation -Device $Agent.id"
             ],
             "command": "Get-OperationCollection -Device $Agent.id -Status PENDING | Update-Operation -Status FAILED -FailureReason \"manually cancelled\"",
             "afterEach": [
-              "PSC8y\\Remove-ManagedObject -Id $Agent.id"
+              "PSc8y\\Remove-ManagedObject -Id $Agent.id"
             ]
           }
         ],

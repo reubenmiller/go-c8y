@@ -7,13 +7,13 @@ Describe -Name "Get-Measurement" {
     }
 
     It "Get measurement" {
-        $Response = PSC8y\Get-Measurement -Id $Measurement.id
+        $Response = PSc8y\Get-Measurement -Id $Measurement.id
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
 
     AfterEach {
-        PSC8y\Remove-ManagedObject -Id $Measurement.source.id
+        PSc8y\Remove-ManagedObject -Id $Measurement.source.id
 
     }
 }

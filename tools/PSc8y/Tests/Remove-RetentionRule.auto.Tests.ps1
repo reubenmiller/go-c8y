@@ -7,11 +7,11 @@ Describe -Name "Remove-RetentionRule" {
     }
 
     It "Delete a retention rule" {
-        $Response = PSC8y\Remove-RetentionRule -Id $RetentionRule.id
+        $Response = PSc8y\Remove-RetentionRule -Id $RetentionRule.id
         $LASTEXITCODE | Should -Be 0
     }
     It "Delete a retention rule (using pipeline)" {
-        $Response = PSC8y\Get-RetentionRule -Id $RetentionRule.id | Remove-RetentionRule
+        $Response = PSc8y\Get-RetentionRule -Id $RetentionRule.id | Remove-RetentionRule
         $LASTEXITCODE | Should -Be 0
     }
 

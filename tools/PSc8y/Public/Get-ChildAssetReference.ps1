@@ -64,7 +64,7 @@ Get managed object child asset reference
     }
 
     Process {
-        foreach ($item in (PSC8y\Expand-Device $Asset)) {
+        foreach ($item in (PSc8y\Expand-Device $Asset)) {
             if ($item) {
                 $Parameters["asset"] = if ($item.id) { $item.id } else { $item }
             }
@@ -72,7 +72,7 @@ Get managed object child asset reference
             if (!$Force -and
                 !$WhatIfPreference -and
                 !$PSCmdlet.ShouldProcess(
-                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
+                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
                     (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
                 )) {
                 continue

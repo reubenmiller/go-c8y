@@ -8,7 +8,7 @@ Describe -Name "Remove-AuditRecordCollection" {
     }
 
     It "Delete audit records from a device" {
-        $Response = PSC8y\Remove-AuditRecordCollection -Source $Device.id
+        $Response = PSc8y\Remove-AuditRecordCollection -Source $Device.id
         $LASTEXITCODE | Should -Be 0
     }
 

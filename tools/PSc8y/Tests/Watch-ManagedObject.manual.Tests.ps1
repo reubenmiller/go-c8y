@@ -26,7 +26,7 @@ Describe -Name "Watch-ManagedObject" {
 
     It "Watch managedObjects for a time period" {
         $StartTime = Get-Date
-        [array] $Response = PSC8y\Watch-ManagedObject -Device $Device.id -DurationSec 10
+        [array] $Response = PSc8y\Watch-ManagedObject -Device $Device.id -DurationSec 10
         $LASTEXITCODE | Should -Be 0
         $Response.Count | Should -BeGreaterOrEqual 1
         $Duration = (Get-Date) - $StartTime
@@ -34,13 +34,13 @@ Describe -Name "Watch-ManagedObject" {
     }
 
     It "Watch managedObjects for a number of managedObjects" {
-        $Response = PSC8y\Watch-ManagedObject -Device $Device.id -Count 2
+        $Response = PSc8y\Watch-ManagedObject -Device $Device.id -Count 2
         $LASTEXITCODE | Should -Be 0
         $Response | Should -HaveCount 2
     }
 
     It "Watch managedObjects for all devices and stop after receiving x messages" {
-        $Response = PSC8y\Watch-ManagedObject -Count 2
+        $Response = PSc8y\Watch-ManagedObject -Count 2
         $LASTEXITCODE | Should -Be 0
         $Response | Should -HaveCount 2
     }
@@ -48,7 +48,7 @@ Describe -Name "Watch-ManagedObject" {
     AfterEach {
         Stop-Job -Job $Job
         Remove-Job -Id $Job.Id
-        PSC8y\Remove-ManagedObject -Id $Device.id
+        PSc8y\Remove-ManagedObject -Id $Device.id
 
     }
 }

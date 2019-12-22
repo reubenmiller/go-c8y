@@ -6,7 +6,7 @@ Describe -Name "New-RetentionRule" {
     }
 
     It "Create a retention rule to delete all alarms after 180 days" {
-        $Response = PSC8y\New-RetentionRule -DataType ALARM -MaximumAge 180
+        $Response = PSc8y\New-RetentionRule -DataType ALARM -MaximumAge 180
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }

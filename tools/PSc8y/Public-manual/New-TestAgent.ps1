@@ -13,7 +13,7 @@ Function New-TestAgent {
     }
 
     $AgentName = New-RandomString -Prefix "${Name}_"
-    $TestAgent = PSC8y\New-ManagedObject `
+    $TestAgent = PSc8y\New-ManagedObject `
         -Name $AgentName `
         -Data $Data `
         -Force

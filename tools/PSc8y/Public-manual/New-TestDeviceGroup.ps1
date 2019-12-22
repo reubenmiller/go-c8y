@@ -26,7 +26,7 @@ Function New-TestDeviceGroup {
     }
 
     $GroupName = New-RandomString -Prefix "${Name}_"
-    PSC8y\New-ManagedObject `
+    PSc8y\New-ManagedObject `
         -Name $GroupName `
         -Data $Data `
         -Force

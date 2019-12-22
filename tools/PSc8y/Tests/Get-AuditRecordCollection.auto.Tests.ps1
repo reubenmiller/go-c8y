@@ -13,17 +13,17 @@ Describe -Name "Get-AuditRecordCollection" {
     }
 
     It "Get a list of audit records" {
-        $Response = PSC8y\Get-AuditRecordCollection -PageSize 100
+        $Response = PSc8y\Get-AuditRecordCollection -PageSize 100
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
     It "Get a list of audit records related to a managed object" {
-        $Response = PSC8y\Get-AuditRecordCollection -Source $Device2.id
+        $Response = PSc8y\Get-AuditRecordCollection -Source $Device2.id
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
     It "Get a list of audit records related to an operation" {
-        $Response = PSC8y\Get-Operation -Id $Operation.id | Get-AuditRecordCollection
+        $Response = PSc8y\Get-Operation -Id $Operation.id | Get-AuditRecordCollection
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }

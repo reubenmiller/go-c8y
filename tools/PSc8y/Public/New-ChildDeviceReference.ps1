@@ -80,7 +80,7 @@ Assign a device as a child device to an existing device (using pipeline)
     }
 
     Process {
-        foreach ($item in (PSC8y\Expand-Device $NewChild)) {
+        foreach ($item in (PSc8y\Expand-Device $NewChild)) {
             if ($item) {
                 $Parameters["newChild"] = if ($item.id) { $item.id } else { $item }
             }
@@ -88,7 +88,7 @@ Assign a device as a child device to an existing device (using pipeline)
             if (!$Force -and
                 !$WhatIfPreference -and
                 !$PSCmdlet.ShouldProcess(
-                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
+                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
                     (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
                 )) {
                 continue

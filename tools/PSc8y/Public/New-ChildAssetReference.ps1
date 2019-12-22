@@ -80,7 +80,7 @@ Create a child asset (device or devicegroup) reference
     }
 
     Process {
-        foreach ($item in (PSC8y\Expand-Id $Group)) {
+        foreach ($item in (PSc8y\Expand-Id $Group)) {
             if ($item) {
                 $Parameters["group"] = if ($item.id) { $item.id } else { $item }
             }
@@ -88,7 +88,7 @@ Create a child asset (device or devicegroup) reference
             if (!$Force -and
                 !$WhatIfPreference -and
                 !$PSCmdlet.ShouldProcess(
-                    (PSC8y\Get-C8ySessionProperty -Name "tenant"),
+                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
                     (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
                 )) {
                 continue

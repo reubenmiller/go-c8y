@@ -260,7 +260,7 @@
           {
             "description": "Get a user",
             "beforeEach": [
-              "$User = PSC8y\\New-TestUser"
+              "$User = PSc8y\\New-TestUser"
             ],
             "command": "Get-User -Id $User.id",
             "afterEach": [
@@ -306,7 +306,7 @@
           {
             "description": "Get a user by name",
             "beforeEach": [
-              "$User = PSC8y\\New-TestUser"
+              "$User = PSc8y\\New-TestUser"
             ],
             "command": "Get-UserByName -Name $User.userName",
             "afterEach": [
@@ -351,7 +351,7 @@
           {
             "description": "Delete a user",
             "beforeEach": [
-              "$User = PSC8y\\New-TestUser"
+              "$User = PSc8y\\New-TestUser"
             ],
             "command": "Remove-User -Id $User.id"
           }
@@ -394,7 +394,7 @@
           {
             "description": "Update a user",
             "beforeEach": [
-              "$User = PSC8y\\New-TestUser"
+              "$User = PSc8y\\New-TestUser"
             ],
             "command": "Update-User -Id $User.id -FirstName \"Simon\""
           }

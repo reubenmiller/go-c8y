@@ -8,7 +8,7 @@ Describe -Name "Update-TenantOptionBulk" {
     }
 
     It "Update multiple tenant options" {
-        $Response = PSC8y\Update-TenantOptionBulk -Category "c8y_cli_tests" -Data @{ option5 = 0; option6 = 1 }
+        $Response = PSc8y\Update-TenantOptionBulk -Category "c8y_cli_tests" -Data @{ option5 = 0; option6 = 1 }
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }

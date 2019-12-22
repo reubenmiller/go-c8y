@@ -10,7 +10,7 @@ Describe -Name "Update-Binary" {
     }
 
     It "Update an existing binary file" {
-        $Response = PSC8y\Update-Binary -Id $Binary1.id -File $File2
+        $Response = PSc8y\Update-Binary -Id $Binary1.id -File $File2
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }

@@ -37,7 +37,7 @@ Describe -Name "Watch-NotificationChannels" {
 
     It "Watch all notifications for a time period" {
         $StartTime = Get-Date
-        [array] $Response = PSC8y\Watch-NotificationChannels -Device $Device.id -DurationSec 15
+        [array] $Response = PSc8y\Watch-NotificationChannels -Device $Device.id -DurationSec 15
         $LASTEXITCODE | Should -Be 0
         $Response.Count | Should -BeGreaterOrEqual 1
         $Duration = (Get-Date) - $StartTime
@@ -45,13 +45,13 @@ Describe -Name "Watch-NotificationChannels" {
     }
 
     It "Watch a device for a number of notifications" {
-        $Response = PSC8y\Watch-NotificationChannels -Device $Device.id -Count 2
+        $Response = PSc8y\Watch-NotificationChannels -Device $Device.id -Count 2
         $LASTEXITCODE | Should -Be 0
         $Response | Should -HaveCount 2
     }
 
     It "Watch notifications for all devices and stop after receiving x messages" {
-        $Response = PSC8y\Watch-NotificationChannels -Count 2
+        $Response = PSc8y\Watch-NotificationChannels -Count 2
         $LASTEXITCODE | Should -Be 0
         $Response | Should -HaveCount 2
     }
@@ -60,7 +60,7 @@ Describe -Name "Watch-NotificationChannels" {
         Stop-Job -Job $Job, $Job2
         Remove-Job -Id $Job.Id
         Remove-Job -Id $Job2.Id
-        PSC8y\Remove-ManagedObject -Id $Device.id
+        PSc8y\Remove-ManagedObject -Id $Device.id
 
     }
 }

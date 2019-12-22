@@ -8,7 +8,7 @@ Describe -Name "Remove-Binary" {
     }
 
     It "Delete a binary" {
-        $Response = PSC8y\Remove-Binary -Id $Binary.id
+        $Response = PSc8y\Remove-Binary -Id $Binary.id
         $LASTEXITCODE | Should -Be 0
     }
 

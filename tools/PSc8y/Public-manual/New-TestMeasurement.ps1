@@ -29,12 +29,12 @@ Create a new test measurement
     )
 
     if ($null -eq $Device) {
-        $iDevice = PSC8y\New-TestDevice -WhatIf:$false
+        $iDevice = PSc8y\New-TestDevice -WhatIf:$false
     } else {
-        $iDevice = PSC8y\Expand-Device $Device
+        $iDevice = PSc8y\Expand-Device $Device
     }
 
-    PSC8y\New-Measurement `
+    PSc8y\New-Measurement `
         -Device $iDevice.id `
         -Time "1970-01-01" `
         -Type $Type `

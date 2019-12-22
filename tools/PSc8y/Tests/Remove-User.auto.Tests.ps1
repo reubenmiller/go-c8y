@@ -2,12 +2,12 @@
 
 Describe -Name "Remove-User" {
     BeforeEach {
-        $User = PSC8y\New-TestUser
+        $User = PSc8y\New-TestUser
 
     }
 
     It "Delete a user" {
-        $Response = PSC8y\Remove-User -Id $User.id
+        $Response = PSc8y\Remove-User -Id $User.id
         $LASTEXITCODE | Should -Be 0
     }
 

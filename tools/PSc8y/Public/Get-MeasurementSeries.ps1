@@ -18,11 +18,11 @@ Get measurement series c8y_Temperature.T on a device
 .EXAMPLE
 @{description=Get measurement series from a device (using pipeline)
 beforeEach:
-  - $Device = PSC8y\New-TestDevice
+  - $Device = PSc8y\New-TestDevice
   - $Measurement2 = New-TestMeasurement -Type "TempReading" -ValueFragmentType "c8y_Temperature" -ValueFragmentSeries "T"
 command: Get-DeviceCollection -Name $Device.name | Get-MeasurementSeries -Series "c8y_Temperature.T"
 afterEach:
-  - PSC8y\Remove-ManagedObject -Id $Device.id}
+  - PSc8y\Remove-ManagedObject -Id $Device.id}
 
 
 #>
@@ -108,12 +108,12 @@ afterEach:
     }
 
     Process {
-        $Parameters["device"] = PSC8y\Expand-Id $Device
+        $Parameters["device"] = PSc8y\Expand-Id $Device
 
         if (!$Force -and
             !$WhatIfPreference -and
             !$PSCmdlet.ShouldProcess(
-                (PSC8y\Get-C8ySessionProperty -Name "tenant"),
+                (PSc8y\Get-C8ySessionProperty -Name "tenant"),
                 (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
             )) {
             continue

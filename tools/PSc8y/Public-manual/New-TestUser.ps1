@@ -17,5 +17,5 @@ Create a new test user
 
     $Username = New-RandomString -Prefix "${Name}_"
 
-    PSC8y\New-User -UserName $Username -Password (New-RandomString) -Force:$Force
+    PSc8y\New-User -UserName $Username -Password (New-RandomString) -Force:$Force
 }

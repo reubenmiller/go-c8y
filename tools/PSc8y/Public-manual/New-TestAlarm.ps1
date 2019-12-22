@@ -17,10 +17,10 @@ Create a new test alarm
     if ($null -ne $Device) {
         $iDevice = Expand-Device $Device
     } else {
-        $iDevice = PSC8y\New-TestDevice
+        $iDevice = PSc8y\New-TestDevice
     }
 
-    PSC8y\New-Alarm `
+    PSc8y\New-Alarm `
         -Device $iDevice.id `
         -Time "1970-01-01" `
         -Type "c8y_ci_TestAlarm" `

@@ -8,7 +8,7 @@ Describe -Name "Add-UserToGroup" {
     }
 
     It "Add a user to a user group" {
-        $Response = PSC8y\Add-UserToGroup -Group $Group.id -User $User.id
+        $Response = PSc8y\Add-UserToGroup -Group $Group.id -User $User.id
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }

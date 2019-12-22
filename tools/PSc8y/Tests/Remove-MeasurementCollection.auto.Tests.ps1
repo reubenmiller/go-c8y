@@ -7,12 +7,12 @@ Describe -Name "Remove-MeasurementCollection" {
     }
 
     It "Delete measurement collection for a device" {
-        $Response = PSC8y\Remove-MeasurementCollection -Device $Measurement.source.id
+        $Response = PSc8y\Remove-MeasurementCollection -Device $Measurement.source.id
         $LASTEXITCODE | Should -Be 0
     }
 
     AfterEach {
-        PSC8y\Remove-ManagedObject -Id $Measurement.source.id
+        PSc8y\Remove-ManagedObject -Id $Measurement.source.id
 
     }
 }

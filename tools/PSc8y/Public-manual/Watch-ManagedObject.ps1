@@ -71,15 +71,15 @@ Watch all managedObjects for a device
     }
 
     Process {
-        $id = PSC8y\Expand-Id $Device
+        $id = PSc8y\Expand-Id $Device
         if ($id) {
-            $Parameters["device"] = PSC8y\Expand-Id $Device
+            $Parameters["device"] = PSc8y\Expand-Id $Device
         }
 
         if (!$Force -and
             !$WhatIfPreference -and
             !$PSCmdlet.ShouldProcess(
-                (PSC8y\Get-C8ySessionProperty -Name "tenant"),
+                (PSc8y\Get-C8ySessionProperty -Name "tenant"),
                 (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
             )) {
             continue

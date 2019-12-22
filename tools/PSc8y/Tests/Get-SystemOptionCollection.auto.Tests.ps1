@@ -6,7 +6,7 @@ Describe -Name "Get-SystemOptionCollection" {
     }
 
     It "Get a list of system options" {
-        $Response = PSC8y\Get-SystemOptionCollection
+        $Response = PSc8y\Get-SystemOptionCollection
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }

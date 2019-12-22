@@ -9,7 +9,7 @@ Function Get-C8ySessionProperty {
     )
 
     switch ($Name) {
-        "Tenant" {
+        "tenant" {
             $env:C8Y_TENANT
         }
     }

@@ -10,7 +10,7 @@ Describe -Name "Remove-EventBinary" {
     }
 
     It "Delete an binary attached to an event" {
-        $Response = PSC8y\Remove-EventBinary -Id $Event.id
+        $Response = PSc8y\Remove-EventBinary -Id $Event.id
         $LASTEXITCODE | Should -Be 0
     }
 

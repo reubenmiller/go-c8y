@@ -7,18 +7,18 @@ Describe -Name "Add-RoleToGroup" {
     }
 
     It "Add a role to a group using wildcards" {
-        $Response = PSC8y\Add-RoleToGroup -Group "customGroup1*" -Role "*ALARM_*"
+        $Response = PSc8y\Add-RoleToGroup -Group "customGroup1*" -Role "*ALARM_*"
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
     It "Add a role to a group using wildcards (using pipeline)" {
-        $Response = PSC8y\Get-RoleCollection -PageSize 100 | Where-Object Name -like "*ALARM*" | Add-RoleToGroup -Group "customGroup1*"
+        $Response = PSc8y\Get-RoleCollection -PageSize 100 | Where-Object Name -like "*ALARM*" | Add-RoleToGroup -Group "customGroup1*"
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
 
     AfterEach {
-        PSC8y\Remove-Group -Id $Group.id
+        PSc8y\Remove-Group -Id $Group.id
 
     }
 }

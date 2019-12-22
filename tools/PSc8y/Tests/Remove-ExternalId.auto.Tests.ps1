@@ -2,13 +2,13 @@
 
 Describe -Name "Remove-ExternalId" {
     BeforeEach {
-        $Device = PSC8y\New-TestDevice
-        $ExternalID = PSC8y\New-ExternalID -Device $Device.id -Type "my_SerialNumber" -Name "myserialnumber2"
+        $Device = PSc8y\New-TestDevice
+        $ExternalID = PSc8y\New-ExternalID -Device $Device.id -Type "my_SerialNumber" -Name "myserialnumber2"
 
     }
 
     It "Delete external identity" {
-        $Response = PSC8y\Remove-ExternalId -Type "my_SerialNumber" -Name "myserialnumber2"
+        $Response = PSc8y\Remove-ExternalId -Type "my_SerialNumber" -Name "myserialnumber2"
         $LASTEXITCODE | Should -Be 0
     }
 

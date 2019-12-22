@@ -6,7 +6,7 @@ Describe -Name "Get-ApplicationCollection" {
     }
 
     It "Get applications" {
-        $Response = PSC8y\Get-ApplicationCollection -PageSize 100
+        $Response = PSc8y\Get-ApplicationCollection -PageSize 100
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }

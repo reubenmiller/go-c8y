@@ -2,22 +2,22 @@
 
 Describe -Name "Get-ManagedObject" {
     BeforeEach {
-        $mo = PSC8y\New-ManagedObject -Name "testMO"
+        $mo = PSc8y\New-ManagedObject -Name "testMO"
 
     }
 
     It "Get a managed object" {
-        $Response = PSC8y\Get-ManagedObject -Id $mo.id
+        $Response = PSc8y\Get-ManagedObject -Id $mo.id
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
     It "Get a managed object (using pipeline)" {
-        $Response = PSC8y\Get-ManagedObject -Id $mo.id | Get-ManagedObject
+        $Response = PSc8y\Get-ManagedObject -Id $mo.id | Get-ManagedObject
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
     It "Get a managed object with parent references" {
-        $Response = PSC8y\Get-ManagedObject -Id $mo.id -WithParents
+        $Response = PSc8y\Get-ManagedObject -Id $mo.id -WithParents
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }

@@ -9,7 +9,7 @@ Describe -Name "Remove-UserFromGroup" {
     }
 
     It "Add a user to a user group" {
-        $Response = PSC8y\Remove-UserFromGroup -Group $Group.id -User $User.id
+        $Response = PSc8y\Remove-UserFromGroup -Group $Group.id -User $User.id
         $LASTEXITCODE | Should -Be 0
     }
 
