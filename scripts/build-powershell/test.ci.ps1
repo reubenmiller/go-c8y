@@ -1,8 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
-
-
 try {
+	Write-Host ("Powershell Version: {0}" -f $PSVersionTable.PSVersion.ToString())
 
 	Import-Module -Name Pester
 	$ProjectRoot = "$ENV:APPVEYOR_BUILD_FOLDER/tools/PSc8y"
