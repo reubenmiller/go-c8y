@@ -14,13 +14,18 @@ try {
 		OutputFormat = 'NUnitXml'
 		OutputFile = $testResultsFilePath
 		EnableExit = $true
+		PassThru = $true
 	}
-	Invoke-Pester @invPesterParams
+	$results = Invoke-Pester @invPesterParams
 
     if ($env:APPVEYOR) {
         $Address = "https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)"
         (New-Object 'System.Net.WebClient').UploadFile( $Address, $testResultsFilePath )
-    }
+	}
+
+	if ($results.FailedCount -gt 0) {
+		exit $results.FailedCount
+	}
 
 } catch {
 	Write-Error -Message $_.Exception.Message
