@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"strings"
@@ -18,7 +17,8 @@ import (
 func subscribe(channelPattern string, timeoutSec int64, maxMessages int64, cmd *cobra.Command) error {
 
 	if err := client.Realtime.Connect(); err != nil {
-		log.Fatalf("Could not connect to /cep/realtime. %s", err)
+		Logger.Errorf("Could not connect to /cep/realtime. %s", err)
+		return err
 	}
 
 	msgCh := make(chan (*c8y.Message))
@@ -64,7 +64,7 @@ func subscribe(channelPattern string, timeoutSec int64, maxMessages int64, cmd *
 
 		case <-signalCh:
 			// Enable ctrl-c to stop
-			log.Printf("Stopping realtime client")
+			Logger.Info("Stopping realtime client")
 			return nil
 		}
 	}
@@ -73,7 +73,8 @@ func subscribe(channelPattern string, timeoutSec int64, maxMessages int64, cmd *
 func subscribeMultiple(channelPatterns []string, timeoutSec int64, maxMessages int64, cmd *cobra.Command) error {
 
 	if err := client.Realtime.Connect(); err != nil {
-		log.Fatalf("Could not connect to /cep/realtime. %s", err)
+		Logger.Errorf("Could not connect to /cep/realtime. %s", err)
+		return nil
 	}
 
 	msgCh := make(chan (*c8y.Message))
@@ -140,7 +141,7 @@ func subscribeMultiple(channelPatterns []string, timeoutSec int64, maxMessages i
 
 		case <-signalCh:
 			// Enable ctrl-c to stop
-			log.Printf("Stopping realtime client")
+			Logger.Info("Stopping realtime client")
 			return nil
 		}
 	}

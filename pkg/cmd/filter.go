@@ -3,7 +3,6 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"regexp"
 	"strings"
 
@@ -50,7 +49,7 @@ type JSONFilter struct {
 
 func isJSONArrayString(jsonValue string) bool {
 	trimmed := strings.TrimSpace(jsonValue)
-	log.Printf("checking string: %s, first=%v, last=%v", trimmed, trimmed[0], trimmed[len(trimmed)-1])
+	Logger.Debugf("checking string: %s, first=%v, last=%v", trimmed, trimmed[0], trimmed[len(trimmed)-1])
 	return strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]")
 }
 
@@ -83,7 +82,7 @@ func filterJSON(jsonValue string, property string, filters JSONFilters, selector
 	}
 
 	if v.IsObject() {
-		log.Printf("Converting json object to array")
+		Logger.Debug("Converting json object to array")
 		jq = gojsonq.New().FromString("[" + v.String() + "]")
 		convertBackFromArray = true
 	} else {
@@ -95,7 +94,7 @@ func filterJSON(jsonValue string, property string, filters JSONFilters, selector
 	jq.Macro("match", matchWithRegex)
 
 	for _, query := range filters.Filters {
-		log.Printf("filtering data: %s %s %s", query.Property, query.Operation, query.Value)
+		Logger.Debugf("filtering data: %s %s %s", query.Property, query.Operation, query.Value)
 		jq.Where(query.Property, query.Operation, query.Value)
 	}
 
@@ -121,7 +120,7 @@ func filterJSON(jsonValue string, property string, filters JSONFilters, selector
 		if v := formattedJSON.Get(pluck); v.Exists() {
 			return []byte(strings.TrimRight(v.String(), "\n"))
 		}
-		log.Printf("ERROR: gjson path does not exist. %s", pluck)
+		Logger.Debugf("ERROR: gjson path does not exist. %s", pluck)
 		return []byte("")
 	}
 

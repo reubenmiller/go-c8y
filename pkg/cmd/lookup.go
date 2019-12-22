@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -180,16 +179,16 @@ func getFormattedDeviceSlice(cmd *cobra.Command, args []string, name string) ([]
 		// TODO: Read from os.PIPE
 		pipedInput, err := getPipe()
 		if err != nil {
-			log.Printf("No pipeline input detected")
+			Logger.Debug("No pipeline input detected")
 		} else {
-			fmt.Printf("PIPED Input: %s\n", pipedInput)
+			Logger.Debugf("PIPED Input: %s\n", pipedInput)
 			return nil, nil, nil
 		}
 	}
 
 	values, err := cmd.Flags().GetStringSlice(name)
 	if err != nil {
-		log.Println("Flag is missing", err)
+		Logger.Error("Flag is missing", err)
 	}
 
 	values = ParseValues(append(values, args...))
@@ -197,7 +196,7 @@ func getFormattedDeviceSlice(cmd *cobra.Command, args []string, name string) ([]
 	formattedValues, err := lookupEntity(f, values, true)
 
 	if err != nil {
-		log.Printf("Failed to fetch entities. %s", err)
+		Logger.Errorf("Failed to fetch entities. %s", err)
 		return values, nil, err
 	}
 
@@ -236,9 +235,9 @@ func getApplicationSlice(cmd *cobra.Command, args []string, name string) ([]stri
 		// TODO: Read from os.PIPE
 		pipedInput, err := getPipe()
 		if err != nil {
-			log.Printf("No pipeline input detected")
+			Logger.Debug("No pipeline input detected")
 		} else {
-			fmt.Printf("PIPED Input: %s\n", pipedInput)
+			Logger.Debugf("PIPED Input: %s\n", pipedInput)
 			return nil, nil, nil
 		}
 	}
@@ -246,7 +245,7 @@ func getApplicationSlice(cmd *cobra.Command, args []string, name string) ([]stri
 	values := make([]string, 1)
 
 	if value, err := cmd.Flags().GetString(name); err != nil {
-		log.Println("Flag is missing", err)
+		Logger.Error("Flag is missing", err)
 	} else {
 		values[0] = value
 	}
@@ -256,7 +255,7 @@ func getApplicationSlice(cmd *cobra.Command, args []string, name string) ([]stri
 	formattedValues, err := lookupEntity(f, values, true)
 
 	if err != nil {
-		log.Printf("Failed to fetch entities. %s", err)
+		Logger.Errorf("Failed to fetch entities. %s", err)
 		return values, nil, err
 	}
 
@@ -335,7 +334,7 @@ func lookupEntity(fetch entityFetcher, values []string, getID bool) ([]entityRef
 				}
 			} else {
 				// TODO: Handle error
-				log.Printf("Failed to get entity by id. %s", err)
+				Logger.Errorf("Failed to get entity by id. %s", err)
 			}
 		} else {
 			entities = append(entities, entityReference{
@@ -357,7 +356,7 @@ func lookupEntity(fetch entityFetcher, values []string, getID bool) ([]entityRef
 			}
 		} else {
 			// TODO: Handle error
-			log.Printf("Failed to get entity by id. %s", err)
+			Logger.Errorf("Failed to get entity by id. %s", err)
 		}
 	}
 

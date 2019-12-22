@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/pkg/errors"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
@@ -75,7 +74,7 @@ func getFormattedDeviceGroupSlice(cmd *cobra.Command, args []string, name string
 		// TODO: Read from os.PIPE
 		pipedInput, err := getPipe()
 		if err != nil {
-			log.Printf("No pipeline input detected")
+			Logger.Debug("No pipeline input detected")
 		} else {
 			fmt.Printf("PIPED Input: %s\n", pipedInput)
 			return nil, nil, nil
@@ -84,7 +83,7 @@ func getFormattedDeviceGroupSlice(cmd *cobra.Command, args []string, name string
 
 	values, err := cmd.Flags().GetStringSlice(name)
 	if err != nil {
-		log.Println("Flag is missing", err)
+		Logger.Warning("Flag is missing", err)
 	}
 
 	values = ParseValues(append(values, args...))
@@ -92,7 +91,7 @@ func getFormattedDeviceGroupSlice(cmd *cobra.Command, args []string, name string
 	formattedValues, err := lookupEntity(f, values, true)
 
 	if err != nil {
-		log.Printf("Failed to fetch entities. %s", err)
+		Logger.Warningf("Failed to fetch entities. %s", err)
 		return values, nil, err
 	}
 

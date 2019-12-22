@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"log"
 	"strconv"
 	"strings"
 
@@ -16,7 +15,7 @@ import (
 // --id 22437097744 1235,1234 asdfasdf		asdfasdf will be ignored as it does not match the pattern
 func GetIDs(cmd *cobra.Command, args []string) (ids []string) {
 	if values, err := cmd.Flags().GetStringArray("id"); err != nil {
-		log.Fatalf("Missing flag --id")
+		cmd.PrintErrf("Missing flag --id")
 	} else {
 		ids = GetIDArray(append(values, args...))
 	}

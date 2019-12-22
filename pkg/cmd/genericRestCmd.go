@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -78,10 +77,10 @@ func (n *getGenericRestCmd) getGenericRest(cmd *cobra.Command, args []string) er
 		for _, v := range values {
 			parts := strings.SplitN(v, ":", 2)
 			if len(parts) != 2 {
-				log.Printf("Invalid header. %s", v)
+				Logger.Warningf("Invalid header. %s", v)
 				continue
 			}
-			log.Printf("Setting header: name=%s, value=%s", parts[0], parts[1])
+			Logger.Debugf("Setting header: name=%s, value=%s", parts[0], parts[1])
 			header.Add(parts[0], strings.TrimSpace(parts[1]))
 		}
 	}
@@ -198,7 +197,7 @@ func (n *getGenericRestCmd) doDataGenericRest(method string, path string, header
 			}
 
 			if dataKey != "" {
-				log.Printf("data property: %s", dataKey)
+				Logger.Debugf("data property: %s", dataKey)
 			}
 			responseText = filters.Apply(*resp.JSONData, dataKey)
 		} else {

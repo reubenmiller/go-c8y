@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"path"
 	"path/filepath"
 	"strings"
@@ -224,7 +223,7 @@ func (n *newSessionCmd) writeSessionFile(outputDir, outputFile string, session C
 
 	outputPath := path.Join(outputDir, outputFile)
 
-	log.Printf("output file: %s", outputPath)
+	Logger.Debugf("output file: %s", outputPath)
 
 	if err := ioutil.WriteFile(path.Join(outputDir, outputFile), data, 0644); err != nil {
 		return errors.Wrap(err, "failed to write to file")

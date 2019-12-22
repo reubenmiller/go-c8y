@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"sync"
@@ -98,7 +97,7 @@ func (n *newBinaryManagedObjectCmd) doNewBinaryManagedObject(files []string, dat
 
 			if err != nil {
 				failures[index] = err
-				log.Printf("file=%s, error`=%s", files[index], err)
+				Logger.Debugf("file=%s, error`=%s", files[index], err)
 			} else {
 				fmt.Println(*resp.JSONData)
 			}

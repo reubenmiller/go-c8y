@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -85,7 +84,7 @@ func parseValue(value string) interface{} {
 
 		jsonMap := make(map[string]interface{})
 		if err := json.Unmarshal([]byte(propValue), &jsonMap); err != nil {
-			log.Printf("Invalid json. %s", err)
+			Logger.Warningf("Invalid json. %s", err)
 
 			// Try parsing
 			return parseValue(propValue[1 : len(propValue)-1])
@@ -95,7 +94,7 @@ func parseValue(value string) interface{} {
 		// parse array values
 		valueArray := []interface{}{}
 		for _, item := range values {
-			log.Printf("item: %s", item)
+			Logger.Debugf("item: %s", item)
 			valueArray = append(valueArray, parseValue(item))
 		}
 		return valueArray
@@ -123,7 +122,7 @@ func parseShorthandJSONStructure(value string, data map[string]interface{}) erro
 
 	valuePairs := strings.Split(value, "=")
 
-	log.Printf("Input: %v", value)
+	Logger.Debugf("Input: %s", value)
 
 	outputValues := []string{}
 	for _, item := range valuePairs {
@@ -158,7 +157,7 @@ func parseShorthandJSONStructure(value string, data map[string]interface{}) erro
 		validItems++
 	}
 
-	log.Printf("Output: %v", outputValues)
+	Logger.Debugf("Output: %v", outputValues)
 
 	if validItems == 0 {
 		return fmt.Errorf("Input contains no valid shorthand data")
