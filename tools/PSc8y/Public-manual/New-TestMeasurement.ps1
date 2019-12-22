@@ -29,7 +29,7 @@ Create a new test measurement
     )
 
     if ($null -eq $Device) {
-        $iDevice = PSc8y\New-TestDevice -WhatIf:$false
+        $iDevice = PSc8y\New-TestDevice -WhatIf:$false -Force:$Force
     } else {
         $iDevice = PSc8y\Expand-Device $Device
     }

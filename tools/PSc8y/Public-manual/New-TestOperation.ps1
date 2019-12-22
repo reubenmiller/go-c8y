@@ -18,7 +18,7 @@ Create a new test operation
         $iAgent = Expand-Device $Device
     }
     else {
-        $iAgent = PSc8y\New-TestAgent
+        $iAgent = PSc8y\New-TestAgent -Force:$Force
     }
 
     PSc8y\New-Operation `

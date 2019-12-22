@@ -19,7 +19,7 @@ Create a new test event
     if ($null -ne $Device) {
         $iDevice = Expand-Device $Device
     } else {
-        $iDevice = PSc8y\New-TestDevice
+        $iDevice = PSc8y\New-TestDevice -Force:$Force
     }
 
     $Event = PSc8y\New-Event `
@@ -34,7 +34,8 @@ Create a new test event
         "Cumulocity test content" | Out-File -LiteralPath $tempfile
         $null = PSc8y\New-EventBinary `
             -Id $Event.id `
-            -File $tempfile
+            -File $tempfile `
+            -Force:$Force
 
         Remove-Item $tempfile
     }

@@ -5,7 +5,9 @@ Function New-TestAgent {
             Mandatory = $false,
             Position = 0
         )]
-        [string] $Name = "testagent"
+        [string] $Name = "testagent",
+
+        [switch] $Force
     )
     $Data = @{
         c8y_IsDevice = @{}
@@ -16,7 +18,7 @@ Function New-TestAgent {
     $TestAgent = PSc8y\New-ManagedObject `
         -Name $AgentName `
         -Data $Data `
-        -Force
+        -Force:$Force
 
     $TestAgent
 }

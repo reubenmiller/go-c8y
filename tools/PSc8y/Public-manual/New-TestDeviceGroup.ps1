@@ -8,7 +8,9 @@ Function New-TestDeviceGroup {
         [string] $Name = "testgroup",
 
         [ValidateSet("Group", "SubGroup")]
-        [string] $Type = "Group"
+        [string] $Type = "Group",
+
+        [switch] $Force
     )
     $Data = @{
         c8y_IsDeviceGroup = @{ }
@@ -29,5 +31,5 @@ Function New-TestDeviceGroup {
     PSc8y\New-ManagedObject `
         -Name $GroupName `
         -Data $Data `
-        -Force
+        -Force:$Force
 }

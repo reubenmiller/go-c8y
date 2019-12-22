@@ -10,7 +10,9 @@ Function New-TestDevice {
         )]
         [string] $Name = "testdevice",
 
-        [switch] $AsAgent
+        [switch] $AsAgent,
+
+        [switch] $Force
     )
     $Data = @{
         c8y_IsDevice = @{}

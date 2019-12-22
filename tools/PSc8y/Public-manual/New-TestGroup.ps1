@@ -10,11 +10,13 @@ Create a test user group
             Mandatory = $false,
             Position = 0
         )]
-        [string] $Name = "testgroup"
+        [string] $Name = "testgroup",
+
+        [switch] $Force
     )
 
     $GroupName = New-RandomString -Prefix "${Name}_"
-    $TestGroup = PSc8y\New-Group -Name $GroupName
+    $TestGroup = PSc8y\New-Group -Name $GroupName -Force:$Force
 
     $TestGroup
 }

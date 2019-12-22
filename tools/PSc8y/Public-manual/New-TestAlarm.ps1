@@ -17,7 +17,7 @@ Create a new test alarm
     if ($null -ne $Device) {
         $iDevice = Expand-Device $Device
     } else {
-        $iDevice = PSc8y\New-TestDevice
+        $iDevice = PSc8y\New-TestDevice -Force:$Force
     }
 
     PSc8y\New-Alarm `
