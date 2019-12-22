@@ -1,3 +1,14 @@
+#---------------------------------#
+#      general configuration      #
+#---------------------------------#
+skip_commits:
+   files:
+     - docs/*
+     - '**/*.md'
+
+#---------------------------------#
+#    environment configuration    #
+#---------------------------------#
 environment:
   nuget_apikey:
     secure: rfFg7q0kl5loV6mXquG73NKa5NEAtLKyKHhQJy0TiwIXdeMHYhqGqZCl5sb/7Hpz
@@ -24,4 +35,25 @@ test_script:
 - ps: ./scripts/build-powershell/test.ci.ps1
 
 #after_test:
+  # publish to Powershell Gallery
 #- ps: ./scripts/build-powershell/publish.ps1
+
+artifacts:
+
+  # pushing a single file with environment variable in path and "Deployment name" specified
+  - path: tools/PSc8y/Dependencies/*
+
+
+deploy:
+    # Deploy to GitHub Releases
+  - provider: GitHub
+    release: c8y-v$(APPVEYOR_REPO_TAG_NAME)
+    description: 'Release $(APPVEYOR_REPO_TAG_NAME)'
+    auth_token:
+      secure: oFVzQ+7hf85G71CNiQaUl5yUeqHdQHKkf14jaXSociwIEPWS9BWU9y3TQRlk7Pg8
+    artifact: /c8y.*/           # upload all NuGet packages to release assets
+    draft: true
+    prerelease: false
+    on:
+      branch: master                # release from master branch only
+      APPVEYOR_REPO_TAG: true       # deploy on tag push only
