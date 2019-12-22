@@ -55,10 +55,13 @@ Function New-C8yApiPowershellCommand {
                 $TestCaseTemplate = "$PSScriptRoot/templates/testcase.emptyresponse.template.ps1"
             }
 
+            $SkipTest = $iExample.skipTest -eq $true
+
             New-C8yApiPowershellTest `
                 -Name $CmdletName `
                 -TestCaseVariables $TestCaseVariables `
                 -OutFolder "$OutputDir/../Tests" `
+                -SkipTest:$SkipTest `
                 -TestCaseTemplateFile $TestCaseTemplate `
                 -TemplateFile "$PSScriptRoot/templates/test.template.ps1"
         }

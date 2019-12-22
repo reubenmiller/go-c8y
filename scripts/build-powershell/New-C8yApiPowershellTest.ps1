@@ -14,6 +14,8 @@ Function New-C8yApiPowershellTest {
 
         [string] $TestCaseTemplateFile,
 
+        [switch] $SkipTest,
+
         [string] $TemplateFile = "templates/test.template.ps1",
 
         [Parameter(
@@ -31,6 +33,11 @@ Function New-C8yApiPowershellTest {
 
     $TestCases = foreach ($TestCase in $TestCaseVariables) {
         $iTestCaseTemplate = "$TestCaseTemplate"
+
+        # Skip Test
+        if ($SkipTest) {
+            $iTestCaseTemplate = $iTestCaseTemplate -replace '\bIt "', 'It -Skip "'
+        }
 
         # Add any explicit before blocks
         if ($null -ne $TestCase.BeforeEach) {
