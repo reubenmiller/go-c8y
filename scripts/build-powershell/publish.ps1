@@ -14,6 +14,7 @@ try {
 
 	## Remove all of the files/folders to exclude out of the main folder
 	$excludeFromPublish = @(
+		'PSc8y[\\\/]c8y'
 		'PSc8y[\\\/]appveyor\.yml'
 		'PSc8y[\\\/]\.git'
 		'PSc8y[\\\/]\.nuspec'

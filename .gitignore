@@ -25,3 +25,6 @@ pkg/powershell/PSC8y.coverage.xml
 .DS_Store
 tools/PSc8y/report/report.xml
 tools/PSc8y/TestResults.xml
+tools/PSc8y/Dependencies/c8y.linux
+tools/PSc8y/Dependencies/c8y.macos
+tools/PSc8y/Dependencies/c8y.windows.exe
