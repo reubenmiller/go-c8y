@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "New-Binary" {
     BeforeEach {

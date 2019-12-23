@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 $env:C8Y_SESSION = "C:\Users\millerr\.cumulocity\nifqa.citests01.json"
 
