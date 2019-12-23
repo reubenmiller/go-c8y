@@ -1,4 +1,4 @@
-Function New-TestGroup {
+﻿Function New-TestGroup {
 <#
 .SYNOPSIS
 Create a test user group

@@ -1,4 +1,4 @@
-Function Clear-Session {
+﻿Function Clear-Session {
 <#
 .SYNOPSIS
 Clear the active Cumulocity Session

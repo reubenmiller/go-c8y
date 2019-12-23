@@ -1,4 +1,4 @@
-Function Get-CumulocityBinaryVersion {
+﻿Function Get-CumulocityBinaryVersion {
     [cmdletbinding()]
     Param()
     $c8y = Get-CumulocityBinary

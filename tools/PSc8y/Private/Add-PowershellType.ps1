@@ -1,4 +1,4 @@
-Function Add-PowershellType {
+﻿Function Add-PowershellType {
 <#
 .SYNOPSIS
 Add a powershell type name to a powershell object

@@ -1,4 +1,4 @@
-Function Expand-Device {
+﻿Function Expand-Device {
 <#
 .SYNOPSIS
 Expand a list of devices replacing any ids or names with the actual device object.

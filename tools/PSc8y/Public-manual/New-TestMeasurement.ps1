@@ -1,4 +1,4 @@
-Function New-TestMeasurement {
+﻿Function New-TestMeasurement {
 <#
 .SYNOPSIS
 Create a new test measurement

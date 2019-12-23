@@ -1,4 +1,4 @@
-[cmdletbinding()]
+﻿[cmdletbinding()]
 Param()
 
 # Convert the yaml specs to json

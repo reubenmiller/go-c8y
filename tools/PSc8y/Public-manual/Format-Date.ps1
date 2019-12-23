@@ -1,4 +1,4 @@
-Function Format-Date {
+﻿Function Format-Date {
 <#
 .SYNOPSIS
 Gets a Cumulocity (ISO-8601) formatted DateTime string in the specified timezone

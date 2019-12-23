@@ -1,4 +1,4 @@
-Function Expand-Application {
+﻿Function Expand-Application {
 <#
 .SYNOPSIS
 Expand a list of applications replacing any ids or names with the actual application object.

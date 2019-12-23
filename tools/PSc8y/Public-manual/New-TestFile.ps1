@@ -1,4 +1,4 @@
-Function New-TestFile {
+﻿Function New-TestFile {
 <#
 .SYNOPSIS
 Create a new temp file with default contents

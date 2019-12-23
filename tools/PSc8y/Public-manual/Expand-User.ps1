@@ -1,4 +1,4 @@
-Function Expand-User {
+﻿Function Expand-User {
 <#
 .SYNOPSIS
 Expand a list of users replacing any ids or names with the actual user object.

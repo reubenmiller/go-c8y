@@ -1,4 +1,4 @@
-Function Watch-NotificationChannels {
+﻿Function Watch-NotificationChannels {
 <#
 .SYNOPSIS
 Watch realtime device notifications

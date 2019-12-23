@@ -1,4 +1,4 @@
-Function Watch-ManagedObject {
+﻿Function Watch-ManagedObject {
 <#
 .SYNOPSIS
 Watch realtime managedObjects

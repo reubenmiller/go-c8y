@@ -1,4 +1,4 @@
-Function New-C8yApiPowershellTest {
+﻿Function New-C8yApiPowershellTest {
     [cmdletbinding()]
     Param(
         [Parameter(
@@ -137,7 +137,7 @@ Function New-C8yApiPowershellTest {
 
     $OutFile = Join-Path -Path $OutFolder -ChildPath "${Name}.auto.Tests.ps1"
 
-    # Write to file with BOM (required by Pester to interpret encoding correctly)
+    # Write to file with BOM (to help with encoding in powershell)
     $Encoding = New-Object System.Text.UTF8Encoding $true
 	[System.IO.File]::WriteAllLines($OutFile, $Template, $Encoding)
 }

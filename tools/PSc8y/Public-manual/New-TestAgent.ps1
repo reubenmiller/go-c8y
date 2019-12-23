@@ -1,4 +1,4 @@
-Function New-TestAgent {
+﻿Function New-TestAgent {
     [cmdletbinding()]
     Param(
         [Parameter(

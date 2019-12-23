@@ -1,4 +1,4 @@
-Function New-TestUser {
+﻿Function New-TestUser {
 <#
 .SYNOPSIS
 Create a new test user

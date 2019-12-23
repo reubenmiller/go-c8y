@@ -1,4 +1,4 @@
-Function New-C8yPowershellArguments {
+﻿Function New-C8yPowershellArguments {
     [cmdletbinding()]
     Param(
         [Parameter(

@@ -1,4 +1,4 @@
-Function New-TestDeviceGroup {
+﻿Function New-TestDeviceGroup {
     [cmdletbinding()]
     Param(
         [Parameter(

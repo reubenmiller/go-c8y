@@ -1,4 +1,4 @@
-Function Format-ConfirmationMessage {
+﻿Function Format-ConfirmationMessage {
 <#
 .SYNOPSIS
 Format the confirmation message from a cmdlet name and input object

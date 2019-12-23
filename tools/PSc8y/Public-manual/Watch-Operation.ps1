@@ -1,4 +1,4 @@
-Function Watch-Operation {
+﻿Function Watch-Operation {
 <#
 .SYNOPSIS
 Watch realtime operations

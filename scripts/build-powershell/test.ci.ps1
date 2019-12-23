@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 
 try {
 	Write-Host ("Powershell Version: {0}" -f $PSVersionTable.PSVersion.ToString())

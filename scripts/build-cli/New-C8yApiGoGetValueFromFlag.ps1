@@ -1,4 +1,4 @@
-Function New-C8yApiGoGetValueFromFlag {
+﻿Function New-C8yApiGoGetValueFromFlag {
     [cmdletbinding()]
     Param(
         [Parameter(

@@ -1,4 +1,4 @@
-Function Watch-Alarm {
+﻿Function Watch-Alarm {
 <#
 .SYNOPSIS
 Watch realtime alarms

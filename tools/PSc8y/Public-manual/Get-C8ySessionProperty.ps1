@@ -1,4 +1,4 @@
-Function Get-C8ySessionProperty {
+﻿Function Get-C8ySessionProperty {
     [cmdletbinding()]
     Param(
         [Parameter(

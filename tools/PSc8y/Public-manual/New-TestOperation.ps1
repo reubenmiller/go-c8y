@@ -1,4 +1,4 @@
-Function New-TestOperation {
+﻿Function New-TestOperation {
     <#
 .SYNOPSIS
 Create a new test operation

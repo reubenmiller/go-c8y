@@ -1,4 +1,4 @@
-Function Watch-Event {
+﻿Function Watch-Event {
 <#
 .SYNOPSIS
 Watch realtime events

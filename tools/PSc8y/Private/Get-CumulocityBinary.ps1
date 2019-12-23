@@ -1,4 +1,4 @@
-Function Get-CumulocityBinary {
+﻿Function Get-CumulocityBinary {
     $RootPath = "$PSScriptRoot/../Dependencies"
     if ($IsLinux) {
         Resolve-Path "$RootPath/c8y.linux"

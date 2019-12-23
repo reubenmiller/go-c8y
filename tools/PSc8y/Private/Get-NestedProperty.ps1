@@ -1,4 +1,4 @@
-Function Get-NestedProperty {
+﻿Function Get-NestedProperty {
     [cmdletbinding()]
     Param(
         [Parameter(

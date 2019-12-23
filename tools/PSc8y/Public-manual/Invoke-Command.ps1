@@ -1,4 +1,4 @@
-Function Invoke-Command {
+﻿Function Invoke-Command {
     [cmdletbinding()]
     Param(
         [Parameter(

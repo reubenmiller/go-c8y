@@ -1,4 +1,4 @@
-Function New-C8yApi {
+﻿Function New-C8yApi {
     [cmdletbinding()]
     Param(
         [Parameter(

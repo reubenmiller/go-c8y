@@ -1,4 +1,4 @@
-Function Format-CommandParameter {
+﻿Function Format-CommandParameter {
     [cmdletbinding()]
     Param(
         [Parameter(

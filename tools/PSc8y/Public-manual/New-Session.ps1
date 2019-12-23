@@ -1,4 +1,4 @@
-Function New-Session {
+﻿Function New-Session {
 <#
 .SYNOPSIS
 Get the active Cumulocity Session

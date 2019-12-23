@@ -1,4 +1,4 @@
-Function Invoke-CustomRestRequest {
+﻿Function Invoke-CustomRestRequest {
     [cmdletbinding()]
     Param(
         [string] $Uri,

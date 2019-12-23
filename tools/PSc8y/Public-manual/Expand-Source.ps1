@@ -1,4 +1,4 @@
-Function Expand-Source {
+﻿Function Expand-Source {
 <#
 .SYNOPSIS
 Expand a list of source ids.
