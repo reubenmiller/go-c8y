@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "Get-Binary" {
     BeforeEach {
@@ -12,11 +12,13 @@ Describe -Name "Get-Binary" {
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
     It "Get a binary and save it to a file" {
         $Response = PSc8y\Get-Binary -Id $Binary.id -OutputFile ./download-binary1.txt
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
 
     AfterEach {
         PSc8y\Remove-Binary -Id $Binary.id

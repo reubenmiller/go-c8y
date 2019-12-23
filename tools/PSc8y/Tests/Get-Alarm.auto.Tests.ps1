@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "Get-Alarm" {
     BeforeEach {
@@ -11,6 +11,7 @@ Describe -Name "Get-Alarm" {
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
 
     AfterEach {
         if ($TestAlarm.source.id) {

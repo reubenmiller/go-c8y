@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "Get-BinaryCollection" {
     BeforeEach {
@@ -12,6 +12,7 @@ Describe -Name "Get-BinaryCollection" {
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
 
     AfterEach {
         PSc8y\Remove-Binary -Id $Binary.id

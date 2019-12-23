@@ -1,4 +1,4 @@
-Function New-C8yApiPowershellCommand {
+﻿Function New-C8yApiPowershellCommand {
     [cmdletbinding()]
     Param(
         [Parameter(
@@ -435,9 +435,9 @@ $(New-Body2 -Noun $Noun -PipelineTemplateFormat $PipelineTemplateFormat -Iterato
 }
 "@
 
-	# Must not include BOM!
-	$Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding $False
-	[System.IO.File]::WriteAllLines($File, $Template, $Utf8NoBomEncoding)
+	# Write to file with BOM (to help with encoding in powershell)
+    $Encoding = New-Object System.Text.UTF8Encoding $true
+	[System.IO.File]::WriteAllLines($File, $Template, $Encoding)
 }
 
 Function New-Body2 {

@@ -1,4 +1,4 @@
-Function New-TestEvent {
+﻿Function New-TestEvent {
 <#
 .SYNOPSIS
 Create a new test event

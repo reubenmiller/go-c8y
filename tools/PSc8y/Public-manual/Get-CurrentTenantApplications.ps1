@@ -1,4 +1,4 @@
-Function Get-CurrentTenantApplications {
+﻿Function Get-CurrentTenantApplications {
 <#
 .SYNOPSIS
 Get the list of applications that are subscribed on the current tenant

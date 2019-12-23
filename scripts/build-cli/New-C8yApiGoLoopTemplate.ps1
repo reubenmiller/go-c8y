@@ -1,4 +1,4 @@
-Function New-C8yApiGoLoopTemplate {
+﻿Function New-C8yApiGoLoopTemplate {
     [cmdletbinding()]
     Param()
 

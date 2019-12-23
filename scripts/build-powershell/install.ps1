@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 
 # Source: https://github.com/adbertram/PSADSync/blob/master/buildscripts/install.ps1
 

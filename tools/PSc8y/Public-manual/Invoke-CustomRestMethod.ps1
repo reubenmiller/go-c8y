@@ -1,4 +1,4 @@
-Function Invoke-CustomRestMethod {
+﻿Function Invoke-CustomRestMethod {
     <#
 .SYNOPSIS
 Create a new C8Y Rest Request given a specific API string. It uses information from the active c8y session to build the full api request object

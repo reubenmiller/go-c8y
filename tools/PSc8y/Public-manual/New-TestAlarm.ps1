@@ -1,4 +1,4 @@
-Function New-TestAlarm {
+﻿Function New-TestAlarm {
 <#
 .SYNOPSIS
 Create a new test alarm

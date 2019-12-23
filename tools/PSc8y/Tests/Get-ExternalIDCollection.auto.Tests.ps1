@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "Get-ExternalIDCollection" {
     BeforeEach {
@@ -13,6 +13,7 @@ Describe -Name "Get-ExternalIDCollection" {
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
 
     AfterEach {
         PSc8y\Remove-ManagedObject -Id $Device.id

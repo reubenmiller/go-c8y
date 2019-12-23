@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "Get-EventBinary" {
     BeforeEach {
@@ -15,6 +15,7 @@ Describe -Name "Get-EventBinary" {
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
 
     AfterEach {
         Remove-Item "./eventbinary.txt"

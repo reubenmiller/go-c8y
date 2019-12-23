@@ -1,4 +1,4 @@
-# Code generated from specification version 1.0.0: DO NOT EDIT
+﻿# Code generated from specification version 1.0.0: DO NOT EDIT
 Function Get-CurrentTenant {
 <#
 .SYNOPSIS

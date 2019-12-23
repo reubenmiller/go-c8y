@@ -1,4 +1,4 @@
-[cmdletbinding()]
+﻿[cmdletbinding()]
 Param()
 
 . $PSScriptRoot/New-C8yPowershellApi.ps1

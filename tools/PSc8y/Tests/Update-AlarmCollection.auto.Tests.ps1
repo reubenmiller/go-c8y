@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "Update-AlarmCollection" {
     BeforeEach {
@@ -11,6 +11,7 @@ Describe -Name "Update-AlarmCollection" {
         $Response = PSc8y\Update-AlarmCollection -Device $Device.id -Status ACTIVE -NewStatus ACKNOWLEDGED
         $LASTEXITCODE | Should -Be 0
     }
+
 
     AfterEach {
         PSc8y\Remove-ManagedObject -Id $Device.id

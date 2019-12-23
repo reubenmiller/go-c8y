@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "Remove-ManagedObject" {
     BeforeEach {
@@ -13,14 +13,17 @@ Describe -Name "Remove-ManagedObject" {
         $Response = PSc8y\Remove-ManagedObject -Id $mo.id
         $LASTEXITCODE | Should -Be 0
     }
+
     It "Delete a managed object (using pipeline)" {
         $Response = PSc8y\Get-ManagedObject -Id $mo.id | Remove-ManagedObject
         $LASTEXITCODE | Should -Be 0
     }
+
     It "Delete a managed object and all child devices" {
         $Response = PSc8y\Get-ManagedObject -Id $Device.id | Remove-ManagedObject -Cascade
         $LASTEXITCODE | Should -Be 0
     }
+
 
     AfterEach {
 

@@ -1,19 +1,21 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "New-ApplicationBinary" {
     BeforeEach {
-        $App = New-Application -Name my-temp-app2 -Type HOSTED -Key "my-temp-app2-key" -ContextPath "my-temp-app2"
+        $AppName = New-RandomString -Prefix "testapp_"
+        $App = New-Application -Name $AppName -Type HOSTED -Key "${AppName}-key" -ContextPath $AppName
+        $MicroserviceZip = "$PSScriptRoot/TestData/microservice/helloworld.zip"
 
     }
 
     It "Upload application microservice binary" {
-        $Response = PSc8y\New-ApplicationBinary -Application $App.id -File ./helloworld.zip
+        $Response = PSc8y\New-ApplicationBinary -Application $App.id -File $MicroserviceZip
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
-        Remove-Item ./helloworld.zip
         Remove-Application -Application $App.id
 
     }

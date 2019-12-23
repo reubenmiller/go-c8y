@@ -36,7 +36,7 @@ endpoints:
             - $Agent = New-TestAgent
             - $Device = New-TestDevice
             - New-ChildDeviceReference -Device $Agent.id -NewChild $Device.id
-            - $Operation1 = PSc8y\New-TestOperation -Device $Device.id
+            - $Operation2 = PSc8y\New-TestOperation -Device $Device.id
           command: Get-OperationCollection -Device $Device.id -Status PENDING
           afterEach:
             - Remove-ManagedObject -id $Device.id
@@ -45,7 +45,7 @@ endpoints:
         - description: Get operations from a device (using pipeline)
           beforeEach:
             - $Agent2 = New-TestAgent
-            - $Operation2 = PSc8y\New-TestOperation -Device $Agent2.id
+            - $Operation3 = PSc8y\New-TestOperation -Device $Agent2.id
           command: Get-DeviceCollection -Name $Agent2.name | Get-OperationCollection
           afterEach:
             - PSc8y\Remove-ManagedObject -Id $Agent2.id

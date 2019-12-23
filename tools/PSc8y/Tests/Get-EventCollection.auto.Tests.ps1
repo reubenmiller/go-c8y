@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "Get-EventCollection" {
     BeforeEach {
@@ -12,16 +12,19 @@ Describe -Name "Get-EventCollection" {
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
     It "Get events from a device" {
         $Response = PSc8y\Get-EventCollection -Device $Device.id
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
     It "Get events from a device (using pipeline)" {
         $Response = PSc8y\Get-DeviceCollection -Name $Device.name | Get-EventCollection
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
 
     AfterEach {
         PSc8y\Remove-ManagedObject -Id $Device.id

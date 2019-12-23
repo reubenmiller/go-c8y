@@ -1,4 +1,4 @@
-
+﻿
 Remove-Module PSc8y -ErrorAction SilentlyContinue
 
 Write-Verbose "PSScriptRoot: $PSSScriptRoot";

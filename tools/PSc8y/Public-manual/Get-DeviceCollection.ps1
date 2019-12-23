@@ -1,4 +1,4 @@
-Function Get-DeviceCollection {
+﻿Function Get-DeviceCollection {
 <#
 .SYNOPSIS
 Get the active Cumulocity Session

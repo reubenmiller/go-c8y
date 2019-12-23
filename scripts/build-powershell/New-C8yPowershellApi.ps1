@@ -1,4 +1,4 @@
-Function New-C8yPowershellApi {
+﻿Function New-C8yPowershellApi {
     [cmdletbinding()]
     Param(
         [Parameter(

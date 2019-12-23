@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "Remove-EventBinary" {
     BeforeEach {
@@ -13,6 +13,7 @@ Describe -Name "Remove-EventBinary" {
         $Response = PSc8y\Remove-EventBinary -Id $Event.id
         $LASTEXITCODE | Should -Be 0
     }
+
 
     AfterEach {
         Remove-Item $TestFile

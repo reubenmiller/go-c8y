@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "Remove-Binary" {
     BeforeEach {
@@ -11,6 +11,7 @@ Describe -Name "Remove-Binary" {
         $Response = PSc8y\Remove-Binary -Id $Binary.id
         $LASTEXITCODE | Should -Be 0
     }
+
 
     AfterEach {
         Remove-Item $File

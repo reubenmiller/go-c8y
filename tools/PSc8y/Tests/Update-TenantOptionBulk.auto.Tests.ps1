@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "Update-TenantOptionBulk" {
     BeforeEach {
@@ -12,6 +12,7 @@ Describe -Name "Update-TenantOptionBulk" {
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
 
     AfterEach {
         Remove-TenantOption -Category "c8y_cli_tests" -Key "option5"

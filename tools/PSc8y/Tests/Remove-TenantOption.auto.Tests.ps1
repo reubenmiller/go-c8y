@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "Remove-TenantOption" {
     BeforeEach {
@@ -10,6 +10,7 @@ Describe -Name "Remove-TenantOption" {
         $Response = PSc8y\Remove-TenantOption -Category "c8y_cli_tests" -Key "option3"
         $LASTEXITCODE | Should -Be 0
     }
+
 
     AfterEach {
 

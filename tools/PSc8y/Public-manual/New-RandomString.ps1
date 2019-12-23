@@ -1,4 +1,4 @@
-Function New-RandomString {
+﻿Function New-RandomString {
     [cmdletbinding()]
     Param(
         [string] $Prefix,

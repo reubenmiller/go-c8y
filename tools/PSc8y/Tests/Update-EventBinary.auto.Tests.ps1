@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "Update-EventBinary" {
     BeforeEach {
@@ -13,6 +13,7 @@ Describe -Name "Update-EventBinary" {
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
 
     AfterEach {
         Remove-Item $TestFile

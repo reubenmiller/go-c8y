@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "Get-ChildDeviceCollection" {
     BeforeEach {
@@ -13,11 +13,13 @@ Describe -Name "Get-ChildDeviceCollection" {
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
     It "Get a list of the child devices of an existing device (using pipeline)" {
         $Response = PSc8y\Get-ManagedObject -Id $Device.id | Get-ChildDeviceCollection
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
 
     AfterEach {
         PSc8y\Remove-ManagedObject -Id $Device.id

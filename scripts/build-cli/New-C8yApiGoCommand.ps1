@@ -1,4 +1,4 @@
-Function New-C8yApiGoCommand {
+﻿Function New-C8yApiGoCommand {
     [cmdletbinding()]
     Param(
         [Parameter(

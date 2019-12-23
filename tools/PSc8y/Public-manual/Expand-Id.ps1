@@ -1,4 +1,4 @@
-Function Expand-Id {
+﻿Function Expand-Id {
 <#
 .SYNOPSIS
 Expand a list of ids.

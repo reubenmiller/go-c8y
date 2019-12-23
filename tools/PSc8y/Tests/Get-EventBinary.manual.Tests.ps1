@@ -1,6 +1,4 @@
-. $PSScriptRoot/imports.ps1
-
-$env:C8Y_SESSION = "C:\Users\millerr\.cumulocity\nifqa.citests01.json"
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "Get-EventBinary" {
     BeforeEach {

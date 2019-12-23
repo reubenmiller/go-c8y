@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "Remove-OperationCollection" {
     BeforeEach {
@@ -10,6 +10,7 @@ Describe -Name "Remove-OperationCollection" {
         $Response = PSc8y\Remove-OperationCollection -Device $TestDevice.id -Status PENDING
         $LASTEXITCODE | Should -Be 0
     }
+
 
     AfterEach {
         if ($TestDevice.id) {

@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "Get-AlarmCollection" {
     BeforeEach {
@@ -12,16 +12,19 @@ Describe -Name "Get-AlarmCollection" {
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
     It "Get active alarms which occurred in the last 10 minutes" {
         $Response = PSc8y\Get-AlarmCollection -DateFrom "-10m" -Status ACTIVE
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
     It "Get active alarms from a device (using pipeline)" {
         $Response = PSc8y\Get-DeviceCollection -Name $Device.name | Get-AlarmCollection -Status ACTIVE
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
 
     AfterEach {
         PSc8y\Remove-ManagedObject -Id $Device.id

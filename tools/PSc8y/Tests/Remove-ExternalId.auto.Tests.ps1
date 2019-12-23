@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "Remove-ExternalId" {
     BeforeEach {
@@ -11,6 +11,7 @@ Describe -Name "Remove-ExternalId" {
         $Response = PSc8y\Remove-ExternalId -Type "my_SerialNumber" -Name "myserialnumber2"
         $LASTEXITCODE | Should -Be 0
     }
+
 
     AfterEach {
         Remove-ManagedObject -Id $Device.id

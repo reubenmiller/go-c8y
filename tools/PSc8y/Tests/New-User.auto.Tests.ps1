@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "New-User" {
     BeforeEach {
@@ -12,6 +12,7 @@ Describe -Name "New-User" {
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
 
     AfterEach {
         Get-UserByName -Name "$Username" | Remove-User

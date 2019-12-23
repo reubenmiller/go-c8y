@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "Remove-User" {
     BeforeEach {
@@ -10,6 +10,7 @@ Describe -Name "Remove-User" {
         $Response = PSc8y\Remove-User -Id $User.id
         $LASTEXITCODE | Should -Be 0
     }
+
 
     AfterEach {
 

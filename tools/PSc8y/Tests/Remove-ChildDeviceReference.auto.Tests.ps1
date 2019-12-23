@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "Remove-ChildDeviceReference" {
     BeforeEach {
@@ -12,6 +12,7 @@ Describe -Name "Remove-ChildDeviceReference" {
         $Response = PSc8y\Remove-ChildDeviceReference -Device $Device.id -ChildDevice $ChildDevice.id
         $LASTEXITCODE | Should -Be 0
     }
+
 
     AfterEach {
         PSc8y\Remove-ManagedObject -Id $ChildDevice.id

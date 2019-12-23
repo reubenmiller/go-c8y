@@ -1,11 +1,11 @@
-# Code generated from specification version 1.0.0: DO NOT EDIT
+﻿# Code generated from specification version 1.0.0: DO NOT EDIT
 Function New-ApplicationBinary {
 <#
 .SYNOPSIS
 New application binary
 
 .EXAMPLE
-PS> New-ApplicationBinary -Application $App.id -File ./helloworld.zip
+PS> New-ApplicationBinary -Application $App.id -File $MicroserviceZip
 Upload application microservice binary
 
 

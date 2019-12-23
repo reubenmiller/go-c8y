@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "Remove-MeasurementCollection" {
     BeforeEach {
@@ -10,6 +10,7 @@ Describe -Name "Remove-MeasurementCollection" {
         $Response = PSc8y\Remove-MeasurementCollection -Device $Measurement.source.id
         $LASTEXITCODE | Should -Be 0
     }
+
 
     AfterEach {
         PSc8y\Remove-ManagedObject -Id $Measurement.source.id

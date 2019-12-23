@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "Remove-Event" {
     BeforeEach {
@@ -10,6 +10,7 @@ Describe -Name "Remove-Event" {
         $Response = PSc8y\Remove-Event -Id $TestEvent.id
         $LASTEXITCODE | Should -Be 0
     }
+
 
     AfterEach {
         if ($TestEvent.source.id) {

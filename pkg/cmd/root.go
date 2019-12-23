@@ -16,6 +16,11 @@ import (
 
 var Logger *logger.Logger
 
+// Build data
+// These variables should be set using the -ldflags "-X github.com/reubenmiller/go-c8y/pkg/cmd.version=1.0.0" when running go build
+var buildVersion string
+var buildBranch string
+
 const (
 	module = "c8yapi"
 )

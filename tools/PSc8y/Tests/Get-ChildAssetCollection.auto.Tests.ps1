@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "Get-ChildAssetCollection" {
     BeforeEach {
@@ -16,11 +16,13 @@ Describe -Name "Get-ChildAssetCollection" {
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
     It "Get a list of the child assets of an existing group" {
         $Response = PSc8y\Get-ChildAssetCollection -Group $Group.id
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
 
     AfterEach {
         PSc8y\Remove-ManagedObject -Id $ChildDevice.id

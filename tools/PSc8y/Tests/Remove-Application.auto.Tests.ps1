@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "Remove-Application" {
     BeforeEach {
@@ -10,10 +10,12 @@ Describe -Name "Remove-Application" {
         $Response = PSc8y\Remove-Application -Application $App.id
         $LASTEXITCODE | Should -Be 0
     }
+
     It "Delete an application by name" {
         $Response = PSc8y\Remove-Application -Application "my-temp-app"
         $LASTEXITCODE | Should -Be 0
     }
+
 
     AfterEach {
 

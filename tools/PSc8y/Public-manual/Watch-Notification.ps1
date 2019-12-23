@@ -1,4 +1,4 @@
-Function Watch-Notification {
+﻿Function Watch-Notification {
 <#
 .SYNOPSIS
 Watch realtime notifications

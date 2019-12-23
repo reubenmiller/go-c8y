@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "Copy-Application" {
     BeforeEach {
@@ -11,6 +11,7 @@ Describe -Name "Copy-Application" {
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
 
     AfterEach {
         Remove-Application -Application "my-example-app"

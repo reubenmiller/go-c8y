@@ -1,4 +1,4 @@
-Function Set-EnvironmentVariablesFromSession {
+﻿Function Set-EnvironmentVariablesFromSession {
 <#
 .SYNOPSIS
 Set environment variables based on the current Cumulocity session

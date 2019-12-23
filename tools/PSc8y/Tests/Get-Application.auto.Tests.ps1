@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "Get-Application" {
     BeforeEach {
@@ -11,11 +11,13 @@ Describe -Name "Get-Application" {
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
     It "Get an application by name" {
         $Response = PSc8y\Get-Application -Application "my-simple-app"
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
 
     AfterEach {
         Remove-Application -Application "my-simple-app"

@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "Remove-UserFromGroup" {
     BeforeEach {
@@ -12,6 +12,7 @@ Describe -Name "Remove-UserFromGroup" {
         $Response = PSc8y\Remove-UserFromGroup -Group $Group.id -User $User.id
         $LASTEXITCODE | Should -Be 0
     }
+
 
     AfterEach {
         Remove-User -Id $User.id

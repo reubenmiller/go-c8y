@@ -1,4 +1,4 @@
-Function Set-Session {
+﻿Function Set-Session {
 <#
 .SYNOPSIS
 Set/activate a Cumulocity Session.

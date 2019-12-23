@@ -1,4 +1,4 @@
-Function New-C8yApiGoRootCommand {
+﻿Function New-C8yApiGoRootCommand {
     [cmdletbinding()]
     Param(
         [Parameter(

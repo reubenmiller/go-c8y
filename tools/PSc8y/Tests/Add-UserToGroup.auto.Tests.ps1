@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "Add-UserToGroup" {
     BeforeEach {
@@ -12,6 +12,7 @@ Describe -Name "Add-UserToGroup" {
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
 
     AfterEach {
         Remove-User -Id $User.id

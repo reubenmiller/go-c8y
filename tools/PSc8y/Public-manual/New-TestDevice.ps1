@@ -1,4 +1,4 @@
-Function New-TestDevice {
+﻿Function New-TestDevice {
     [cmdletbinding(
         SupportsShouldProcess = $true,
         ConfirmImpact = "None"

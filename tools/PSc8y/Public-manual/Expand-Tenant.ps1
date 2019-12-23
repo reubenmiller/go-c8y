@@ -1,4 +1,4 @@
-Function Expand-Tenant {
+﻿Function Expand-Tenant {
 <#
 .SYNOPSIS
 Expand a list of tenants replacing any ids or names with the actual tenant object.

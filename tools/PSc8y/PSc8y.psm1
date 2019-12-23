@@ -1,4 +1,4 @@
-
+﻿
 if ($PSVersionTable["PSVersion"].Major -le 2) {
     $RootFolder = Split-Path -Parent -Path $MyInvocation.Mycommand.Definition
 } else {

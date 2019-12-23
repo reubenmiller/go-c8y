@@ -1,4 +1,4 @@
-. $PSScriptRoot/imports.ps1
+﻿. $PSScriptRoot/imports.ps1
 
 Describe -Name "Remove-AuditRecordCollection" {
     BeforeEach {
@@ -11,6 +11,7 @@ Describe -Name "Remove-AuditRecordCollection" {
         $Response = PSc8y\Remove-AuditRecordCollection -Source $Device.id
         $LASTEXITCODE | Should -Be 0
     }
+
 
     AfterEach {
         Remove-ManagedObject -Id $Device.id

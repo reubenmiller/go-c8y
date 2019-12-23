@@ -1,4 +1,4 @@
-Function Watch-Measurement {
+﻿Function Watch-Measurement {
 <#
 .SYNOPSIS
 Watch realtime measurements
