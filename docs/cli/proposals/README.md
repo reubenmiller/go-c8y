@@ -65,11 +65,11 @@
   * [x] c8y operations subscribe --device *
   * [x] c8y realtime subscribe --channel /measurements/* --device
   * [x] c8y subscribe to all realtime notifications
+* [x] Add version to c8y binary, i.e. 'c8y version' should print out the current version. It should match the Cumulocity version numbers?
 * [ ] Adding encoding tests
 * [ ] Microservice aliases using my-app://health
 * [ ] Handle proxy/noproxy support for realtime notifications (websockets)
 * [ ] Write github pages with a tutorial
-* [ ] Add version to c8y binary, i.e. 'c8y version' should print out the current version. It should match the Cumulocity version numbers?
 
 ## Bugs
 

@@ -1,7 +1,5 @@
 ﻿. $PSScriptRoot/imports.ps1
 
-$env:C8Y_SESSION = "C:\Users\millerr\.cumulocity\nifqa.citests01.json"
-
 Describe -Name "Get-EventBinary" {
     BeforeEach {
         $Device = New-TestDevice

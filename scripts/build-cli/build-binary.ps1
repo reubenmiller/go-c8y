@@ -21,6 +21,10 @@ $OutputDir = Resolve-path $OutputDir
 Write-Host "Building the c8y binary"
 $c8yBinary = Resolve-Path "$PSScriptRoot/../../cmd/c8y/main.go"
 
+$Version = & git describe --tags
+$Branch = & git rev-parse --abbrev-ref HEAD
+$LDFlags = "-ldflags=`"-s -w -X github.com/reubenmiller/go-c8y/pkg/cmd.buildVersion=$Version -X github.com/reubenmiller/go-c8y/pkg/cmd.buildBranch=$Branch`""
+
 $name = "c8y"
 
 if ($All -or $IsMacOS) {
@@ -28,7 +32,7 @@ if ($All -or $IsMacOS) {
     # $env:GOARCH = "amd64"
     $env:GOOS = "darwin"
     $OutputPath = Join-Path -Path $OutputDir -ChildPath "${name}.macos"
-    & go build -ldflags="-s -w" -o "$OutputPath" "$c8yBinary"
+    & go build $LDFlags -o "$OutputPath" "$c8yBinary"
 
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Failed to build project"
@@ -49,7 +53,7 @@ if ($All -or $IsLinux) {
     # $env:GOARCH = "amd64"
     $env:GOOS = "linux"
     $OutputPath = Join-Path -Path $OutputDir -ChildPath "${name}.linux"
-    & go build -ldflags="-s -w" -o "$OutputPath" "$c8yBinary"
+    & go build $LDFlags -o "$OutputPath" "$c8yBinary"
 
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Failed to build project"
@@ -71,7 +75,7 @@ if ($All -or !($IsMacOS -or $IsLinux)) {
     # $env:GOARCH = "amd64"
     $env:GOOS = "windows"
     $OutputPath = Join-Path -Path $OutputDir -ChildPath "${name}.windows.exe"
-    & go build -ldflags="-s -w" -o "$OutputPath" "$c8yBinary"
+    & go build $LDFlags -o "$OutputPath" "$c8yBinary"
 
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Failed to build project"
