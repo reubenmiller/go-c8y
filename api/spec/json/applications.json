@@ -385,11 +385,12 @@
           {
             "description": "Upload application microservice binary",
             "beforeEach": [
-              "$App = New-Application -Name my-temp-app2 -Type HOSTED -Key \"my-temp-app2-key\" -ContextPath \"my-temp-app2\""
+              "$AppName = New-RandomString -Prefix \"testapp_\"",
+              "$App = New-Application -Name $AppName -Type HOSTED -Key \"${AppName}-key\" -ContextPath $AppName",
+              "$MicroserviceZip = \"$PSScriptRoot/TestData/microservice/helloworld.zip\""
             ],
-            "command": "New-ApplicationBinary -Application $App.id -File ./helloworld.zip",
+            "command": "New-ApplicationBinary -Application $App.id -File $MicroserviceZip",
             "afterEach": [
-              "Remove-Item ./helloworld.zip",
               "Remove-Application -Application $App.id"
             ]
           }
