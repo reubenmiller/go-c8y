@@ -57,7 +57,7 @@
 * [x] Add ignore proxy switch
 * [x] Allow spec to define static values if of type switch (on headerParameters)
 * [ ] Allow file upload to include additional "type" property
-* [ ] Fix New-ApplicationBinary test. Create a example microservice (something small hopefully)
+* [x] Fix New-ApplicationBinary test. Create a example microservice (something small hopefully)
 * [x] Manual realtime commands (for alarms, events, measurements, etc.)
   * [x] c8y measurements subscribe --device * --series <filter> --csv
   * [x] c8y alarms subscribe --device * (if *, then don't do anything, use as is) otherwise find device
@@ -136,7 +136,7 @@
 * [ ] Remove child devices and child references by wildcard. Only delete matching children
 * [ ] Implement --all switch for collections to iterate through all results (max results)
 * [ ] Package c8y binary with the powershell app
-* [ ] Change all Pester test files to use utf8 with BOM!! This is because Pester does not interpret the encoding of utf8 (no bom) files correctly, thus causing some encoding issues when testing!
+* [x] Change all Pester test files to use utf8 with BOM!! This is because Pester does not interpret the encoding of utf8 (no bom) files correctly, thus causing some encoding issues when testing!
 Manual commands
 * [ ] Convert "\u00b0C" characters to their correct code. This is due to a bug in the ConvertTo-Json powershell cmdlet. Use [System.Text.RegularExpressions.Regex]::Unescape() to remove the escape characters
 * [ ] applications
