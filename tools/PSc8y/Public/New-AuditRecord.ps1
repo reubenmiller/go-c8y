@@ -116,7 +116,7 @@ Create an audit record for a custom managed object update
             $Parameters["application"] = $Application
         }
         if ($PSBoundParameters.ContainsKey("Data")) {
-            $Parameters["data"] = "{0}" -f ((ConvertTo-Json $Data -Compress) -replace '"', '\"')
+            $Parameters["data"] = ConvertTo-JsonArgument $Data
         }
         if ($PSBoundParameters.ContainsKey("OutputFile")) {
             $Parameters["outputFile"] = $OutputFile

@@ -91,7 +91,7 @@ Required authentication with bootstrap user
     Begin {
         $Parameters = @{}
         if ($PSBoundParameters.ContainsKey("Data")) {
-            $Parameters["data"] = "{0}" -f ((ConvertTo-Json $Data -Compress) -replace '"', '\"')
+            $Parameters["data"] = ConvertTo-JsonArgument $Data
         }
         if ($PSBoundParameters.ContainsKey("Name")) {
             $Parameters["name"] = $Name

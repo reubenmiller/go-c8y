@@ -124,7 +124,7 @@ Create a user
             $Parameters["sendPasswordResetEmail"] = $SendPasswordResetEmail
         }
         if ($PSBoundParameters.ContainsKey("CustomProperties")) {
-            $Parameters["customProperties"] = "{0}" -f ((ConvertTo-Json $CustomProperties -Compress) -replace '"', '\"')
+            $Parameters["customProperties"] = ConvertTo-JsonArgument $CustomProperties
         }
         if ($PSBoundParameters.ContainsKey("OutputFile")) {
             $Parameters["outputFile"] = $OutputFile

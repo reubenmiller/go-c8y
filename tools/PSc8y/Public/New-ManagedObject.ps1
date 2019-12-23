@@ -70,7 +70,7 @@ Create a managed object
             $Parameters["type"] = $Type
         }
         if ($PSBoundParameters.ContainsKey("Data")) {
-            $Parameters["data"] = "{0}" -f ((ConvertTo-Json $Data -Compress) -replace '"', '\"')
+            $Parameters["data"] = ConvertTo-JsonArgument $Data
         }
         if ($PSBoundParameters.ContainsKey("OutputFile")) {
             $Parameters["outputFile"] = $OutputFile

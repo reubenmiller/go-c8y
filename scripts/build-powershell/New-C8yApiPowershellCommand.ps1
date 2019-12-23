@@ -170,11 +170,11 @@
                 }
 
                 "hashtable" {
-                    "`"{0}`" -f ((ConvertTo-Json `$$($item.Name) -Compress) -replace '`"', '\`"')"
+                    "ConvertTo-JsonArgument `${0}" -f $item.Name
                 }
 
                 "json" {
-                    "`"{0}`" -f ((ConvertTo-Json `$$($item.Name) -Compress) -replace '`"', '\`"')"
+                    "ConvertTo-JsonArgument `${0}" -f $item.Name
                 }
 
                 "[]usergroup" {
