@@ -23,12 +23,12 @@ func IsValidJSON(v []byte) bool {
 
 // IsJSONArray returns true if the byte array represents a JSON array
 func IsJSONArray(v []byte) bool {
-	return bytes.HasPrefix(v, arrayPrefix) && bytes.HasSuffix(v, objectSuffix)
+	return bytes.HasPrefix(v, arrayPrefix) && bytes.HasSuffix(v, arraySuffix)
 }
 
 // IsJSONObject returns true if the byte array represents a JSON object
 func IsJSONObject(v []byte) bool {
-	return bytes.HasPrefix(v, objectPrefix) && bytes.HasSuffix(v, arraySuffix)
+	return bytes.HasPrefix(v, objectPrefix) && bytes.HasSuffix(v, objectSuffix)
 }
 
 // UnescapeJSON replaces unicode escape characters with the actual character
