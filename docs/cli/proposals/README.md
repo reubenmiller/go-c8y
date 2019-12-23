@@ -3,7 +3,9 @@
 
 ## current todo
 
-* [ ] Add aliases for all the commands, i.e. Get-ApplicationCollection -> apps, Get-DeviceCollection -> devices
+* [ ] Handle proxy/noproxy support for realtime notifications (websockets)
+* [ ] New-Microservice (manual application)
+* [ ] Add device commands. New-Device, Update-Device, Remove-Device, Get-DeviceCollection (already exists)
 
 ## Bugs
 
@@ -70,12 +72,7 @@ Currently not known
 
 
 * [ ] Allow file upload to include additional "type" property
-* [ ] Handle proxy/noproxy support for realtime notifications (websockets)
-
-
-* [ ] Write github pages with a tutorial
 * [ ] Microservice aliases using my-app://health
-
 
 
 ## PSc8y (Powershell)
@@ -126,15 +123,13 @@ Manual commands
 * [x] Restructure powershell module location in repo
 * [x] Figure how to best package the c8y binary file/s with the powershell module
 * [x] Adding encoding tests
+* [x] Add aliases for all the commands, i.e. Get-ApplicationCollection -> apps, Get-DeviceCollection -> devices
 
-* [ ] New-Microservice (manual application)
 * [ ] Client side filtering of results for those that don't support server side filters
   * [ ] Application
     * [ ] Name
     * [ ] type
-* [ ] Return status codes
 * [ ] Remove child devices and child references by wildcard. Only delete matching children
-* [ ] Implement --all switch for collections to iterate through all results (max results)
 
 ## Packaging
 
@@ -142,11 +137,16 @@ Manual commands
 * [ ] Publish c8y binaries to github
 * [ ] Publish powershell module to PSGallery
 
+## Docs
+
+* [ ] Write github pages with a tutorial
+
 
 # Future
 
 ### Phase 2
 
+* [ ] Implement --all switch for collections to iterate through all results (max results)
 * [ ] Make options case insensitive
 * [ ] Look over devices where []device type is used (parallel tasks?) Probably need a new template
 

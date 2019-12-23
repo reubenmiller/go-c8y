@@ -53,7 +53,7 @@ deploy:
       secure: oFVzQ+7hf85G71CNiQaUl5yUeqHdQHKkf14jaXSociwIEPWS9BWU9y3TQRlk7Pg8
     artifact: /c8y.*/           # upload all NuGet packages to release assets
     draft: true
-    prerelease: false
+    prerelease: true
     on:
       branch: master                # release from master branch only
       APPVEYOR_REPO_TAG: true       # deploy on tag push only
