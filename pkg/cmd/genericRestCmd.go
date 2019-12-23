@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -30,7 +31,7 @@ func newGetGenericRestCmd() *getGenericRestCmd {
 		Long:  `Send generic REST request`,
 		Example: `
 			Get a list of managed objects
-			c8y rest get /alarm/alarms
+			c8y rest GET /alarm/alarms
 
 			c8y rest GET "/alarm/alarms?pageSize=10&status=ACTIVE"
 
@@ -41,6 +42,7 @@ func newGetGenericRestCmd() *getGenericRestCmd {
 	}
 
 	addDataFlag(cmd)
+	cmd.Flags().String("file", "", "File to be uploaded as a binary")
 	cmd.Flags().StringSliceP("header", "H", nil, "headers. i.e. --header \"Accept: value\"")
 	cmd.Flags().String("accept", "", "accept (header)")
 	cmd.Flags().String("contentType", "", "content type (header)")
@@ -103,22 +105,31 @@ func (n *getGenericRestCmd) getGenericRest(cmd *cobra.Command, args []string) er
 	}
 
 	if method == "GET" || method == "DELETE" {
-		return n.doDataGenericRest(method, uri, header, nil, ignoreAcceptHeader, globalFlagDryRun, filters)
+		return n.doDataGenericRest(method, uri, header, nil, nil, ignoreAcceptHeader, globalFlagDryRun, filters)
 	}
 
 	if method == "PUT" || method == "POST" {
 		data := getDataFlag(cmd)
-		if !cmd.Flags().Changed(FlagDataName) {
-			return newUserError("Missing --data argument")
+
+		if !cmd.Flags().Changed(FlagDataName) && !cmd.Flags().Changed("file") {
+			return newUserError("Missing required arguments. Either --data or --file are required")
 		}
+
+		// get file info
+		var formData map[string]io.Reader
+		if cmd.Flags().Changed("file") {
+			formData = make(map[string]io.Reader)
+			getFileFlag(cmd, "file", formData)
+		}
+
 		// Hide usage for system errors
 		cmd.SilenceUsage = true
-		return n.doDataGenericRest(method, uri, header, data, ignoreAcceptHeader, globalFlagDryRun, filters)
+		return n.doDataGenericRest(method, uri, header, data, formData, ignoreAcceptHeader, globalFlagDryRun, filters)
 	}
 	return nil
 }
 
-func (n *getGenericRestCmd) doDataGenericRest(method string, path string, header http.Header, data map[string]interface{}, ignoreAcceptHeader, dryRun bool, filters *JSONFilters) error {
+func (n *getGenericRestCmd) doDataGenericRest(method string, path string, header http.Header, data map[string]interface{}, formData map[string]io.Reader, ignoreAcceptHeader, dryRun bool, filters *JSONFilters) error {
 	baseURL, _ := url.Parse(path)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(globalFlagTimeout)*time.Millisecond)
@@ -132,6 +143,7 @@ func (n *getGenericRestCmd) doDataGenericRest(method string, path string, header
 			Path:         baseURL.Path,
 			Query:        baseURL.RawQuery,
 			Body:         data,
+			FormData:     formData,
 			Header:       header,
 			DryRun:       dryRun,
 			IgnoreAccept: ignoreAcceptHeader,
