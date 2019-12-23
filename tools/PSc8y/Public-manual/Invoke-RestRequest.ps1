@@ -130,9 +130,7 @@ Get a list of alarms with page size of 100
         $null = $c8yargs.Add("--noProxy")
     }
 
-    if ($Pretty) {
-        $null = $c8yargs.Add("--pretty")
-    }
+    $null = $c8yargs.Add("--pretty={0}" -f $Pretty.ToString().ToLower())
 
     if ($WhatIfPreference) {
         $null = $c8yargs.Add("--dry")

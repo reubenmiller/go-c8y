@@ -45,3 +45,31 @@ foreach($publicFile in @($PublicManual + $Public)) {
 
 Export-ModuleMember -Alias *
 #Export-ModuleMember -Function $Private.Basename
+
+$script:Aliases = @{
+    # collections
+    alarms = "Get-AlarmCollection"
+    apps = "Get-ApplicationCollection"
+    devices = "Get-DeviceCollection"
+    events = "Get-EventCollection"
+    fmo = "Find-ManagedObjectCollection"
+    measurements = "Get-MeasurementCollection"
+    ops = "Get-OperationCollection"
+    series = "Get-MeasurementSeries"
+
+    # single items
+    alarm = "Get-Alarm"
+    event = "Get-Event"
+    m = "Get-Measurements"
+    mo = "Get-ManagedObject"
+    op = "Get-Operation"
+
+    # utilities
+    json = "ConvertTo-Json"
+    tojson = "ConvertTo-Json"
+    fromjson = "ConvertFrom-Json"
+    rest = "Invoke-RestRequest"
+
+    # session
+    session = "Get-Session"
+}

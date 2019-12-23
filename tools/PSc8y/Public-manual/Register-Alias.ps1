@@ -1,31 +1,18 @@
 Function Register-Alias {
+<#
+.SYNOPSIS
+Register aliases for commonly used cmdlets within the PSc8y module
+
+.EXAMPLE
+Register-Alias
+
+.LINK
+Unregister-Alias
+#>
     [cmdletbinding()]
     Param()
 
-    $Aliases = @{
-        # collections
-        alarms = "Get-AlarmCollection"
-        apps = "Get-ApplicationCollection"
-        devices = "Get-DeviceCollection"
-        events = "Get-EventCollection"
-        fmo = "Find-ManagedObjectCollection"
-        measurements = "Get-MeasurementCollection"
-        ops = "Get-OperationCollection"
-        series = "Get-MeasurementSeries"
-
-        # single items
-        alarm = "Get-Alarm"
-        event = "Get-Event"
-        m = "Get-Measurements"
-        mo = "Get-ManagedObject"
-        op = "Get-Operation"
-
-        # utilities
-        json = "ConvertTo-Json"
-
-        # session
-        session = "Get-Session"
-    }
+    $Aliases = $script:Aliases
 
     foreach ($Alias in $Aliases.Keys) {
         $Value = $Aliases[$Alias]
