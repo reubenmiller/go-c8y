@@ -41,7 +41,7 @@ test_script:
 artifacts:
 
   # pushing a single file with environment variable in path and "Deployment name" specified
-  - path: tools/PSc8y/Dependencies/*
+  - path: tools/PSc8y/Dependencies/c8y*
 
 
 deploy:
