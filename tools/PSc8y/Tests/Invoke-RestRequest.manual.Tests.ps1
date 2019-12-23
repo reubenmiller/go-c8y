@@ -24,7 +24,7 @@ Describe -Name "Invoke-RestRequest" {
         -Raw
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
-        $Result = $Response | ConvertFrom-Json -Depth 100
+        $Result = $Response | ConvertFrom-Json
         $Result.statistics | Should -Not -BeNullOrEmpty
         $Result.next | Should -Not -BeNullOrEmpty
         $Result.self | Should -Not -BeNullOrEmpty
@@ -36,7 +36,7 @@ Describe -Name "Invoke-RestRequest" {
         }
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
-        $Results = $Response | ConvertFrom-Json -Depth 100
+        $Results = $Response | ConvertFrom-Json
         $Results | Should -HaveCount 2
     }
 
