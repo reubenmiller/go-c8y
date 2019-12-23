@@ -1,9 +1,15 @@
 
 # Roadmap
 
+## current todo
+
+* [ ] Adding encoding tests
+* [ ] Add aliases for all the commands, i.e. Get-ApplicationCollection -> apps, Get-DeviceCollection -> devices
+* [ ] Convert "\u00b0C" characters to their correct code. This is due to a bug in the ConvertTo-Json powershell cmdlet. Use [System.Text.RegularExpressions.Regex]::Unescape() to remove the escape characters
+
 ## Bugs
 
-* [ ] Make the http method all caps by default as it causes a 400 error if not
+Currently not known
 
 ## c8y (golang)
 
@@ -49,12 +55,10 @@
 * [x] Adding timeout argument
 * [x] Add upload flag
   * [x] Update all upload files
-  * [ ] Add upload flag to generic function
 * [x] Add request response time to log
 * [x] Handle headerParameters in spec
 * [x] Add ignore proxy switch
 * [x] Allow spec to define static values if of type switch (on headerParameters)
-* [ ] Allow file upload to include additional "type" property
 * [x] Fix New-ApplicationBinary test. Create a example microservice (something small hopefully)
 * [x] Manual realtime commands (for alarms, events, measurements, etc.)
   * [x] c8y measurements subscribe --device * --series <filter> --csv
@@ -64,9 +68,10 @@
   * [x] c8y realtime subscribe --channel /measurements/* --device
   * [x] c8y subscribe to all realtime notifications
 * [x] Add version to c8y binary, i.e. 'c8y version' should print out the current version. It should match the Cumulocity version numbers?
+* [x] Add upload flag to generic function
 
 
-* [ ] Adding encoding tests
+* [ ] Allow file upload to include additional "type" property
 * [ ] Handle proxy/noproxy support for realtime notifications (websockets)
 
 
@@ -124,9 +129,7 @@ Manual commands
 * [x] Figure how to best package the c8y binary file/s with the powershell module
 
 
-* [ ] Add aliases for all the commands, i.e. Get-ApplicationCollection -> apps, Get-DeviceCollection -> devices
-* [ ] Convert "\u00b0C" characters to their correct code. This is due to a bug in the ConvertTo-Json powershell cmdlet. Use [System.Text.RegularExpressions.Regex]::Unescape() to remove the escape characters
-
+* [ ] New-Microservice (manual application)
 * [ ] Client side filtering of results for those that don't support server side filters
   * [ ] Application
     * [ ] Name
@@ -134,13 +137,12 @@ Manual commands
 * [ ] Return status codes
 * [ ] Remove child devices and child references by wildcard. Only delete matching children
 * [ ] Implement --all switch for collections to iterate through all results (max results)
-* [ ] New-Microservice
 
 ## Packaging
 
 * [x] Package c8y binary with the powershell app
-* [ ] Publish powershell module to PSGallery
 * [ ] Publish c8y binaries to github
+* [ ] Publish powershell module to PSGallery
 
 
 # Future
