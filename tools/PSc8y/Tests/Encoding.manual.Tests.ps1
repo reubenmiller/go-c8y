@@ -5,7 +5,7 @@ Describe -Name "Encoding" {
         $TestDevice = PSc8y\New-TestAgent
 
         It "Create alarm with extended character set" {
-            $Text = "Test Alarm äöüßáàæåāø¡µ~∫√ç≈≈¥å‚∂ƒ©ªº∆@œæ•πø⁄¨Ω†∑«¡¶¢[[]|{}≠¿'"
+            $Text = "Test Alarm äöüßáàæåāø¡µ~∫√ç≈≈¥å‚∂ƒ©ªº∆@œæ•πø⁄¨Ω†∑«¡¶¢[[]|{}≠¿"
             $Response = PSc8y\New-Alarm `
                 -Device $TestDevice.id `
                 -Type c8y_TestAlarm `
@@ -18,7 +18,7 @@ Describe -Name "Encoding" {
         }
 
         It "Create event with extended character set" {
-            $Text = "Test Alarm äöüßáàæåāø¡µ~∫√ç≈≈¥å‚∂ƒ©ªº∆@œæ•πø⁄¨Ω†∑«¡¶¢[[]|{}≠¿'"
+            $Text = "Test Event äöüßáàæåāø¡µ~∫√ç≈≈¥å‚∂ƒ©ªº∆@œæ•πø⁄¨Ω†∑«¡¶¢[[]|{}≠¿"
             $Response = PSc8y\New-Event `
                 -Device $TestDevice.id `
                 -Type c8y_TestEvent `
@@ -30,7 +30,7 @@ Describe -Name "Encoding" {
         }
 
         It "Create operation with extended character set" {
-            $Text = "Test Alarm äöüßáàæåāø¡µ~∫√ç≈≈¥å‚∂ƒ©ªº∆@œæ•πø⁄¨Ω†∑«¡¶¢[[]|{}≠¿'"
+            $Text = "Test Operation äöüßáàæåāø¡µ~∫√ç≈≈¥å‚∂ƒ©ªº∆@œæ•πø⁄¨Ω†∑«¡¶¢[[]|{}≠¿"
             $Response = PSc8y\New-Operation `
                 -Device $TestDevice.id `
                 -Description $Text `
@@ -93,4 +93,3 @@ Describe -Name "Encoding" {
         }
     }
 }
-
