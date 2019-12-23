@@ -195,6 +195,8 @@ func (n *getGenericRestCmd) doDataGenericRest(method string, path string, header
 		var responseText []byte
 		isJSONResponse := jsonUtilities.IsValidJSON([]byte(*resp.JSONData))
 
+		Logger.Debugf("isJson: %v", isJSONResponse)
+
 		if filters != nil && !globalFlagRaw && isJSONResponse {
 			dataKey := ""
 			if v := resp.JSON.Get("id"); !v.Exists() {
@@ -215,6 +217,8 @@ func (n *getGenericRestCmd) doDataGenericRest(method string, path string, header
 		} else {
 			responseText = []byte(*resp.JSONData)
 		}
+
+		Logger.Debugf("Pretty print: %v", globalFlagPrettyPrint)
 
 		if globalFlagPrettyPrint && isJSONResponse {
 			fmt.Printf("%s", pretty.Pretty(responseText))
