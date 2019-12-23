@@ -1,4 +1,25 @@
 ﻿Function Invoke-RestRequest {
+<#
+.SYNOPSIS
+Send a rest request using the c8y
+
+.D
+
+.EXAMPLE
+Invoke-RestRequest -Uri "/inventory/managedObjects" -Method "post" -Data "name=test"
+
+Create a new managed object with the name "test"
+
+.EXAMPLE
+Invoke-RestRequest -Uri "/alarm/alarms" -QueryParameters @{ pageSize = "100" }
+
+Get a list of alarms with page size of 100
+
+.EXAMPLE
+Invoke-RestRequest -Uri "/alarm/alarms?pageSize=100"
+
+Get a list of alarms with page size of 100
+#>
     [cmdletbinding(
         SupportsShouldProcess = $true,
         ConfirmImpact = "None")]
@@ -9,15 +30,42 @@
             Position = 0)]
         [string] $Uri,
 
-        # Rest Method: defaults to GET
+        # Rest Method. Defaults to GET
         [Microsoft.PowerShell.Commands.WebRequestMethod] $Method,
 
+        # Request body
         [object] $Data,
 
         # Input file to be uploaded as FormData
         [string] $InFile,
 
-        [hashtable] $QueryParameters
+        # Uri query parameters
+        [hashtable] $QueryParameters,
+
+        # Pretty print json response
+        [Parameter()]
+        [switch]
+        $Pretty,
+
+        # Include raw response including pagination information
+        [Parameter()]
+        [switch]
+        $Raw,
+
+        # Outputfile
+        [Parameter()]
+        [string]
+        $OutputFile,
+
+        # NoProxy
+        [Parameter()]
+        [switch]
+        $NoProxy,
+
+        # Session path
+        [Parameter()]
+        [string]
+        $Session
     )
 
     $c8y = Get-CumulocityBinary
@@ -64,6 +112,26 @@
 
     if ($InFile) {
         $null = $c8yargs.AddRange(@("--file", $InFile))
+    }
+
+    if ($OutputFile) {
+        $null = $c8yargs.AddRange(@("--outputFile", $OutputFile))
+    }
+
+    if ($Raw) {
+        $null = $c8yargs.Add("--raw")
+    }
+
+    if ($Session) {
+        $null = $c8yargs.AddRange(@("--session", $Session))
+    }
+
+    if ($NoProxy) {
+        $null = $c8yargs.Add("--noProxy")
+    }
+
+    if ($Pretty) {
+        $null = $c8yargs.Add("--pretty")
     }
 
     if ($WhatIfPreference) {
