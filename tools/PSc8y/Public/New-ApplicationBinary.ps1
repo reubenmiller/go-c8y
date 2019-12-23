@@ -5,7 +5,7 @@ Function New-ApplicationBinary {
 New application binary
 
 .EXAMPLE
-PS> New-ApplicationBinary -Application $App.id -File ./helloworld.zip
+PS> New-ApplicationBinary -Application $App.id -File $MicroserviceZip
 Upload application microservice binary
 
 
