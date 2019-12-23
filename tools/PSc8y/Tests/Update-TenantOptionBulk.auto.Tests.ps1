@@ -13,6 +13,7 @@ Describe -Name "Update-TenantOptionBulk" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
         Remove-TenantOption -Category "c8y_cli_tests" -Key "option5"
         Remove-TenantOption -Category "c8y_cli_tests" -Key "option6"

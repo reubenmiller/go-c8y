@@ -12,6 +12,7 @@ Describe -Name "New-AuditRecord" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
         Remove-ManagedObject -Id $Device.id
 

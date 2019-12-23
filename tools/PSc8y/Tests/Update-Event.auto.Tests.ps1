@@ -12,11 +12,13 @@ Describe -Name "Update-Event" {
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
     It "Update custom properties of an existing event" {
         $Response = PSc8y\Update-Event -Id $Event.id -Data @{ my_event = @{ active = $true } }
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
 
     AfterEach {
         Remove-ManagedObject -Id $Device.id

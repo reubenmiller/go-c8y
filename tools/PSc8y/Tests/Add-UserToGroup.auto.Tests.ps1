@@ -13,6 +13,7 @@ Describe -Name "Add-UserToGroup" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
         Remove-User -Id $User.id
 

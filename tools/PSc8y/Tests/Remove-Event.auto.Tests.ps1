@@ -11,6 +11,7 @@ Describe -Name "Remove-Event" {
         $LASTEXITCODE | Should -Be 0
     }
 
+
     AfterEach {
         if ($TestEvent.source.id) {
             PSc8y\Remove-ManagedObject -Id $TestEvent.source.id -ErrorAction SilentlyContinue

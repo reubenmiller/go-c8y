@@ -17,16 +17,19 @@ Describe -Name "Get-AuditRecordCollection" {
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
     It "Get a list of audit records related to a managed object" {
         $Response = PSc8y\Get-AuditRecordCollection -Source $Device2.id
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
     It "Get a list of audit records related to an operation" {
         $Response = PSc8y\Get-Operation -Id $Operation.id | Get-AuditRecordCollection
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
 
     AfterEach {
         Remove-ManagedObject -Id $Device1.id

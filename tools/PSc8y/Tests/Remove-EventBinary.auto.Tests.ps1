@@ -14,6 +14,7 @@ Describe -Name "Remove-EventBinary" {
         $LASTEXITCODE | Should -Be 0
     }
 
+
     AfterEach {
         Remove-Item $TestFile
         Remove-ManagedObject -Id $Device.id

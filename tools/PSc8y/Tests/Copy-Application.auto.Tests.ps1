@@ -12,6 +12,7 @@ Describe -Name "Copy-Application" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
         Remove-Application -Application "my-example-app"
         Remove-Application -Application "clonemy-example-app"

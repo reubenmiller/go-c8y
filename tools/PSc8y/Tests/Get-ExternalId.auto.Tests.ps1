@@ -13,6 +13,7 @@ Describe -Name "Get-ExternalId" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
         Remove-ManagedObject -Id $Device.id
 

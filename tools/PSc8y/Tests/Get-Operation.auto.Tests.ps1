@@ -12,6 +12,7 @@ Describe -Name "Get-Operation" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
         if ($TestOperation.deviceId) {
             PSc8y\Remove-ManagedObject -Id $TestOperation.deviceId -ErrorAction SilentlyContinue

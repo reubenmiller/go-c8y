@@ -14,6 +14,7 @@ Describe -Name "New-EventBinary" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
         Remove-Item $TestFile
         Remove-ManagedObject -Id $Device.id

@@ -11,6 +11,7 @@ Describe -Name "Get-ApplicationCollection" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
 
     }

@@ -11,11 +11,13 @@ Describe -Name "Update-ManagedObject" {
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
     It "Update a managed object (using pipeline)" {
         $Response = PSc8y\Get-ManagedObject -Id $mo.id | Update-ManagedObject -Data @{ com_my_props = @{ value = 1 } }
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
 
     AfterEach {
         Remove-ManagedObject -Id $mo.id

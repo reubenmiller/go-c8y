@@ -13,11 +13,13 @@ Describe -Name "Get-MeasurementSeries" {
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
     It "Get measurement series c8y_Temperature.T on a device" {
         $Response = PSc8y\Get-MeasurementSeries -Device $Measurement2.source.id -Series "c8y_Temperature.T" -DateFrom "1970-01-01" -DateTo "0s"
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
 
     AfterEach {
         PSc8y\Remove-ManagedObject -Id $Device.id

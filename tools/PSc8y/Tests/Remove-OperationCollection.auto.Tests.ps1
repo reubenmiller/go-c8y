@@ -11,6 +11,7 @@ Describe -Name "Remove-OperationCollection" {
         $LASTEXITCODE | Should -Be 0
     }
 
+
     AfterEach {
         if ($TestDevice.id) {
             PSc8y\Remove-ManagedObject -Id $TestDevice.id -ErrorAction SilentlyContinue

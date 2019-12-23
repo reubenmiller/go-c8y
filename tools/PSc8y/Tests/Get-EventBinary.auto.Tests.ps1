@@ -16,6 +16,7 @@ Describe -Name "Get-EventBinary" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
         Remove-Item "./eventbinary.txt"
         Remove-ManagedObject -Id $Device.id

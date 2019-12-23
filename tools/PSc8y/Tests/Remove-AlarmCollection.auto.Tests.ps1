@@ -10,10 +10,12 @@ Describe -Name "Remove-AlarmCollection" {
         $Response = PSc8y\Remove-AlarmCollection -Device $TestDevice.id -Severity MAJOR
         $LASTEXITCODE | Should -Be 0
     }
+
     It "Remove alarms on the device which are active and created in the last 10 minutes" {
         $Response = PSc8y\Remove-AlarmCollection -Device $TestDevice.id -DateFrom "-10m" -Status ACTIVE
         $LASTEXITCODE | Should -Be 0
     }
+
 
     AfterEach {
         if ($TestDevice.id) {

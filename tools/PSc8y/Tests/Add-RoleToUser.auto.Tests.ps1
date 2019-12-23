@@ -11,16 +11,19 @@ Describe -Name "Add-RoleToUser" {
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
     It "Add a role to a user using wildcards" {
         $Response = PSc8y\Add-RoleToUser -User "customUser_*" -Role "*ALARM_*"
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
     It "Add a role to a user using wildcards (using pipeline)" {
         $Response = PSc8y\Get-RoleCollection -PageSize 100 | Where-Object Name -like "*ALARM*" | Add-RoleToUser -User "customUser_*"
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
 
     AfterEach {
         PSc8y\Remove-User -Id $User.id

@@ -12,6 +12,7 @@ Describe -Name "Update-Application" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
         Remove-Application -Application $App.id
 

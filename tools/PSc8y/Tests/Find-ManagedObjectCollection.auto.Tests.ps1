@@ -12,6 +12,7 @@ Describe -Name "Find-ManagedObjectCollection" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
         Remove-ManagedObject -Id $Device.id
 

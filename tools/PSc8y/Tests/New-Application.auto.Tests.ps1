@@ -11,6 +11,7 @@ Describe -Name "New-Application" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
         Remove-Application -Application "myapp"
 

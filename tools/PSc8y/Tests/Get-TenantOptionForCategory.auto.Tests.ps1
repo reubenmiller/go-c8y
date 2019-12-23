@@ -12,6 +12,7 @@ Describe -Name "Get-TenantOptionForCategory" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
         Remove-TenantOption -Category "c8y_cli_tests" -Key "option7"
 

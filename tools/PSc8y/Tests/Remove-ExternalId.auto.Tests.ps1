@@ -12,6 +12,7 @@ Describe -Name "Remove-ExternalId" {
         $LASTEXITCODE | Should -Be 0
     }
 
+
     AfterEach {
         Remove-ManagedObject -Id $Device.id
 

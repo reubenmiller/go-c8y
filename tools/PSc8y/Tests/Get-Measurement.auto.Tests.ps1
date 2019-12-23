@@ -12,6 +12,7 @@ Describe -Name "Get-Measurement" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
         PSc8y\Remove-ManagedObject -Id $Measurement.source.id
 

@@ -13,6 +13,7 @@ Describe -Name "New-Binary" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
         Remove-Item $File
         Find-ManagedObjectCollection -Query "has(c8y_IsBinary) and (name eq '$FileName')" | Remove-Binary

@@ -11,6 +11,7 @@ Describe -Name "Get-UserCollection" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
 
     }

@@ -12,6 +12,7 @@ Describe -Name "New-Group" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
         Get-GroupByName -Name "$GroupName" | Remove-Group
 

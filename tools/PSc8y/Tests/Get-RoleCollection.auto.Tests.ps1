@@ -11,6 +11,7 @@ Describe -Name "Get-RoleCollection" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
 
     }

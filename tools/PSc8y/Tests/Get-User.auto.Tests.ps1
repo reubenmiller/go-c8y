@@ -12,6 +12,7 @@ Describe -Name "Get-User" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
         Remove-User -Id $User.id
 

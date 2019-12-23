@@ -14,11 +14,13 @@ Describe -Name "Update-Operation" {
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
     It "Update multiple operations" {
         $Response = PSc8y\Get-OperationCollection -Device $Agent.id -Status PENDING | Update-Operation -Status FAILED -FailureReason "manually cancelled"
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
 
     AfterEach {
         if ($TestOperation.deviceId) {

@@ -12,6 +12,7 @@ Describe -Name "Get-GroupReferenceCollection" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
 
     }

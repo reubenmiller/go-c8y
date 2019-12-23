@@ -12,11 +12,13 @@ Describe -Name "Get-ManagedObjectCollection" {
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
     It "Get a list of managed objects by looking up their names" {
         $Response = PSc8y\Get-ManagedObjectCollection -Device $Device1.name, $Device2.name
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
 
     AfterEach {
         Remove-ManagedObject -Id $Device1.id

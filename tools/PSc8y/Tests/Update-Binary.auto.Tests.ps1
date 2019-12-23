@@ -15,6 +15,7 @@ Describe -Name "Update-Binary" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
         Remove-Item $File1
         Remove-Item $File2

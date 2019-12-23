@@ -12,6 +12,7 @@ Describe -Name "Update-AlarmCollection" {
         $LASTEXITCODE | Should -Be 0
     }
 
+
     AfterEach {
         PSc8y\Remove-ManagedObject -Id $Device.id
 

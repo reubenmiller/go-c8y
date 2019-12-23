@@ -12,6 +12,7 @@ Describe -Name "Get-RetentionRule" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
         Remove-RetentionRule -Id $RetentionRule.id
 

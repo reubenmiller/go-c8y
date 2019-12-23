@@ -11,6 +11,7 @@ Describe -Name "Get-CurrentUser" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
 
     }

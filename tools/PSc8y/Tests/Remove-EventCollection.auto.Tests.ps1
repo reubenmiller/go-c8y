@@ -10,10 +10,12 @@ Describe -Name "Remove-EventCollection" {
         $Response = PSc8y\Remove-EventCollection -Type my_CustomType -DateFrom "-10d"
         $LASTEXITCODE | Should -Be 0
     }
+
     It "Remove events from a device" {
         $Response = PSc8y\Remove-EventCollection -Device $TestDevice.id
         $LASTEXITCODE | Should -Be 0
     }
+
 
     AfterEach {
         if ($TestDevice.id) {

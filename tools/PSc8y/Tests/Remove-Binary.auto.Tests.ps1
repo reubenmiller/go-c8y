@@ -12,6 +12,7 @@ Describe -Name "Remove-Binary" {
         $LASTEXITCODE | Should -Be 0
     }
 
+
     AfterEach {
         Remove-Item $File
 

@@ -14,6 +14,7 @@ Describe -Name "Get-ExternalIDCollection" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
         PSc8y\Remove-ManagedObject -Id $Device.id
 

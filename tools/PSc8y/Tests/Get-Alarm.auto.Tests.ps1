@@ -12,6 +12,7 @@ Describe -Name "Get-Alarm" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
         if ($TestAlarm.source.id) {
             PSc8y\Remove-ManagedObject -Id $TestAlarm.source.id -ErrorAction SilentlyContinue

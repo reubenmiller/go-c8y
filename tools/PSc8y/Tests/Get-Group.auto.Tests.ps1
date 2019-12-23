@@ -12,6 +12,7 @@ Describe -Name "Get-Group" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
         Remove-Group -Id $Group.id
 

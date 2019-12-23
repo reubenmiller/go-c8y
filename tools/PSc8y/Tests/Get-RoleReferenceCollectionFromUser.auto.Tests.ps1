@@ -13,6 +13,7 @@ Describe -Name "Get-RoleReferenceCollectionFromUser" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
         Remove-User -Id $User.id
 

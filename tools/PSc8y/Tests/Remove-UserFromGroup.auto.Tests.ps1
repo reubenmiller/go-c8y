@@ -13,6 +13,7 @@ Describe -Name "Remove-UserFromGroup" {
         $LASTEXITCODE | Should -Be 0
     }
 
+
     AfterEach {
         Remove-User -Id $User.id
 

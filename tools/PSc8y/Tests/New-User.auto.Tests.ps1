@@ -13,6 +13,7 @@ Describe -Name "New-User" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
         Get-UserByName -Name "$Username" | Remove-User
 

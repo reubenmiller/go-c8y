@@ -12,6 +12,7 @@ Describe -Name "New-Operation" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
         if ($TestAgent.id) {
             PSc8y\Remove-ManagedObject -Id $TestAgent.id -ErrorAction SilentlyContinue

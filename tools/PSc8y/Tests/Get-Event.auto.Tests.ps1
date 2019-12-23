@@ -12,6 +12,7 @@ Describe -Name "Get-Event" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
         if ($TestEvent.source.id) {
             PSc8y\Remove-ManagedObject -Id $TestEvent.source.id -ErrorAction SilentlyContinue

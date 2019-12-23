@@ -12,6 +12,7 @@ Describe -Name "New-ManagedObject" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
         Get-ManagedObjectCollection -Type $type | Remove-ManagedObject
 

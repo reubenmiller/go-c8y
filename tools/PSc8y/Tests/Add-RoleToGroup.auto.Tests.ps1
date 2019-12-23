@@ -11,11 +11,13 @@ Describe -Name "Add-RoleToGroup" {
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
     It "Add a role to a group using wildcards (using pipeline)" {
         $Response = PSc8y\Get-RoleCollection -PageSize 100 | Where-Object Name -like "*ALARM*" | Add-RoleToGroup -Group "customGroup1*"
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
 
     AfterEach {
         PSc8y\Remove-Group -Id $Group.id

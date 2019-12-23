@@ -13,6 +13,7 @@ Describe -Name "Get-BinaryCollection" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
         PSc8y\Remove-Binary -Id $Binary.id
 

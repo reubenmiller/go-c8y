@@ -12,11 +12,13 @@ Describe -Name "Update-Alarm" {
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
     It "Update severity of an existing alarm to CRITICAL" {
         $Response = PSc8y\Update-Alarm -Id $Alarm.id -Severity CRITICAL
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
 
     AfterEach {
         Remove-ManagedObject -Id $Device.id

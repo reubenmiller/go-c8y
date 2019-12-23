@@ -11,11 +11,13 @@ Describe -Name "Get-GroupMembership" {
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
     It "List the users within a user group (using pipeline)" {
         $Response = PSc8y\Get-GroupByName -Name "business" | Get-GroupMembership
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
+
 
     AfterEach {
 

@@ -13,6 +13,7 @@ Describe -Name "Get-AuditRecord" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
         Remove-ManagedObject -Id $Device.id
 

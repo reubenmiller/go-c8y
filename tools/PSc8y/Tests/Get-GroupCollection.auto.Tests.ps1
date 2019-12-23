@@ -11,6 +11,7 @@ Describe -Name "Get-GroupCollection" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
 
     }

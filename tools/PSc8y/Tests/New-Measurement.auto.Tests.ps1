@@ -12,6 +12,7 @@ Describe -Name "New-Measurement" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+
     AfterEach {
         if ($TestDevice.id) {
             PSc8y\Remove-ManagedObject -Id $TestDevice.id -ErrorAction SilentlyContinue

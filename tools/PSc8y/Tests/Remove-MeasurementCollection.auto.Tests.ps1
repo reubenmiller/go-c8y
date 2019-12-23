@@ -11,6 +11,7 @@ Describe -Name "Remove-MeasurementCollection" {
         $LASTEXITCODE | Should -Be 0
     }
 
+
     AfterEach {
         PSc8y\Remove-ManagedObject -Id $Measurement.source.id
 

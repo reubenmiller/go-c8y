@@ -13,6 +13,7 @@ Describe -Name "Remove-ChildDeviceReference" {
         $LASTEXITCODE | Should -Be 0
     }
 
+
     AfterEach {
         PSc8y\Remove-ManagedObject -Id $ChildDevice.id
         PSc8y\Remove-ManagedObject -Id $Device.id
