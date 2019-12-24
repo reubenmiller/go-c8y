@@ -43,7 +43,7 @@ func (f *userGroupFetcher) getByName(name string) ([]fetcherResultSet, error) {
 	groups, _, err := client.User.GetGroups(
 		context.Background(),
 		&c8y.GroupOptions{
-			PaginationOptions: *c8y.NewPaginationOptions(100),
+			PaginationOptions: *c8y.NewPaginationOptions(2000),
 		},
 	)
 
