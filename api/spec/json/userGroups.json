@@ -123,7 +123,7 @@
         },
         {
           "name": "id",
-          "type": "string",
+          "type": "[]usergroup",
           "pipeline": true,
           "description": "Group id"
         }
@@ -213,7 +213,7 @@
         },
         {
           "name": "id",
-          "type": "string",
+          "type": "[]usergroup",
           "required": true,
           "pipeline": true,
           "description": "Group id"
@@ -267,7 +267,7 @@
         },
         {
           "name": "id",
-          "type": "string",
+          "type": "[]usergroup",
           "required": true,
           "pipeline": true,
           "description": "Group id"

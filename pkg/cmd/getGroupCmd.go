@@ -39,7 +39,7 @@ Get a user group
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("tenant", "", "Tenant")
-	cmd.Flags().String("id", "", "Group id")
+	cmd.Flags().StringSlice("id", []string{""}, "Group id")
 
 	// Required flags
 
@@ -84,12 +84,22 @@ func (n *getGroupCmd) getGroup(cmd *cobra.Command, args []string) error {
 	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
 		pathParameters["tenant"] = v
 	}
-	if v, err := cmd.Flags().GetString("id"); err == nil {
-		if v != "" {
-			pathParameters["id"] = v
+	if cmd.Flags().Changed("id") {
+		idInputValues, idValue, err := getFormattedGroupSlice(cmd, args, "id")
+
+		if err != nil {
+			return newUserError("no matching user groups found", idInputValues, err)
 		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "id", err))
+
+		if len(idValue) == 0 {
+			return newUserError("no matching user groups found", idInputValues)
+		}
+
+		for _, item := range idValue {
+			if item != "" {
+				pathParameters["id"] = newIDValue(item).GetID()
+			}
+		}
 	}
 
 	path := replacePathParameters("/user/{tenant}/groups/{id}", pathParameters)

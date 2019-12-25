@@ -30,7 +30,7 @@ Delete a user group (using pipeline)
         [Parameter(Mandatory = $true,
                    ValueFromPipeline=$true,
                    ValueFromPipelineByPropertyName=$true)]
-        [string]
+        [object[]]
         $Id,
 
         # Include raw response including pagination information

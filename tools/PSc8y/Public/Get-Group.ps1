@@ -25,7 +25,7 @@ Get a user group
         # Group id
         [Parameter(ValueFromPipeline=$true,
                    ValueFromPipelineByPropertyName=$true)]
-        [string]
+        [object[]]
         $Id,
 
         # Include raw response including pagination information

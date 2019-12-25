@@ -87,7 +87,7 @@ endpoints:
         description: Tenant
 
       - name: id
-        type: string
+        type: '[]usergroup'
         pipeline: true
         description: Group id
 
@@ -148,7 +148,7 @@ endpoints:
         description: Tenant
 
       - name: id
-        type: string
+        type: '[]usergroup'
         required: true
         pipeline: true
         description: Group id
@@ -184,7 +184,7 @@ endpoints:
         description: Tenant
 
       - name: id
-        type: string
+        type: '[]usergroup'
         required: true
         pipeline: true
         description: Group id
