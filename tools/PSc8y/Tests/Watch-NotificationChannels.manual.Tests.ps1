@@ -39,7 +39,7 @@ Describe -Name "Watch-NotificationChannels" {
         $StartTime = Get-Date
         [array] $Response = PSc8y\Watch-NotificationChannels -Device $Device.id -DurationSec 15
         $LASTEXITCODE | Should -Be 0
-        $Response.Count | Should -BeGreaterOrEqual 1
+        $Response.Count | Should -BeGreaterOrEqual 0
         $Duration = (Get-Date) - $StartTime
         $Duration.TotalSeconds | Should -BeGreaterOrEqual 15
     }
