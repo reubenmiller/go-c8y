@@ -5,11 +5,11 @@ Function Get-Application {
 Get application
 
 .EXAMPLE
-PS> Get-Application -Application $App.id
+PS> Get-Application -Id $App.id
 Get an application by id
 
 .EXAMPLE
-PS> Get-Application -Application "my-simple-app"
+PS> Get-Application -Id "my-simple-app"
 Get an application by name
 
 
@@ -26,7 +26,7 @@ Get an application by name
                    ValueFromPipeline=$true,
                    ValueFromPipelineByPropertyName=$true)]
         [object[]]
-        $Application,
+        $Id,
 
         # Include raw response including pagination information
         [Parameter()]
@@ -64,9 +64,9 @@ Get an application by name
     }
 
     Process {
-        foreach ($item in (PSc8y\Expand-Application $Application)) {
+        foreach ($item in (PSc8y\Expand-Application $Id)) {
             if ($item) {
-                $Parameters["application"] = if ($item.id) { $item.id } else { $item }
+                $Parameters["id"] = if ($item.id) { $item.id } else { $item }
             }
 
             if (!$Force -and

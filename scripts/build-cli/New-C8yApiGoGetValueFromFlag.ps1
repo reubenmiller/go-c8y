@@ -39,6 +39,7 @@
         "file" = @{}
         "id" = @{}
         "integer" = @{}
+        "microservice" = @{}
         "outputfile" = @{}
         "source" = @{}
         "string" = @{}
@@ -136,6 +137,30 @@
         for _, item := range ${prop}Value {
             if item != "" {
                 $($Setters."application".$SetterType)
+            }
+        }
+    }
+"@
+
+    # microservice
+    $Setters."microservice"."query" = "query.Add(`"${queryParam}`", url.QueryEscape(newIDValue(item).GetID()))"
+    $Setters."microservice"."path" = "pathParameters[`"${queryParam}`"] = newIDValue(item).GetID()"
+    $Setters."microservice"."body" = "body.Set(`"${queryParam}`", newIDValue(item).GetID())"
+    $Definitions."microservice" = @"
+    if cmd.Flags().Lookup("${prop}") != nil {
+        ${prop}InputValues, ${prop}Value, err := getMicroserviceSlice(cmd, args, "${prop}")
+
+        if err != nil {
+            return newUserError("no matching microservices found", ${prop}InputValues, err)
+        }
+
+        if len(${prop}Value) == 0 {
+            return newUserError("no matching microservices found", ${prop}InputValues)
+        }
+
+        for _, item := range ${prop}Value {
+            if item != "" {
+                $($Setters."microservice".$SetterType)
             }
         }
     }

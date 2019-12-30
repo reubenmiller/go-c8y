@@ -13,7 +13,7 @@ Required role ROLE_APPLICATION_MANAGMENT_ADMIN
 
 
 .EXAMPLE
-PS> Copy-Application -Application "my-example-app"
+PS> Copy-Application -Id "my-example-app"
 Copy an existing application
 
 
@@ -30,7 +30,7 @@ Copy an existing application
                    ValueFromPipeline=$true,
                    ValueFromPipelineByPropertyName=$true)]
         [object[]]
-        $Application,
+        $Id,
 
         # Include raw response including pagination information
         [Parameter()]
@@ -73,9 +73,9 @@ Copy an existing application
     }
 
     Process {
-        foreach ($item in (PSc8y\Expand-Application $Application)) {
+        foreach ($item in (PSc8y\Expand-Application $Id)) {
             if ($item) {
-                $Parameters["application"] = if ($item.id) { $item.id } else { $item }
+                $Parameters["id"] = if ($item.id) { $item.id } else { $item }
             }
 
             if (!$Force -and

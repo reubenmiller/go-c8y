@@ -45,6 +45,8 @@ func (f *microserviceFetcher) getByName(name string) ([]fetcherResultSet, error)
 		context.Background(),
 		&c8y.ApplicationOptions{
 			PaginationOptions: *c8y.NewPaginationOptions(2000),
+
+			Type: c8y.ApplicationTypeMicroservice,
 		},
 	)
 
@@ -77,7 +79,6 @@ func (f *microserviceFetcher) getByName(name string) ([]fetcherResultSet, error)
 // getMicroserviceSlice returns the microservice (application) id and name
 // returns raw strings, lookuped values, and errors
 func getMicroserviceSlice(cmd *cobra.Command, args []string, name string) ([]string, []string, error) {
-	f := newMicroserviceFetcher(client)
 
 	if !cmd.Flags().Changed(name) {
 		// TODO: Read from os.PIPE
@@ -90,33 +91,44 @@ func getMicroserviceSlice(cmd *cobra.Command, args []string, name string) ([]str
 		}
 	}
 
-	values := make([]string, 1)
+	values := make([]string, 0)
 
 	if value, err := cmd.Flags().GetString(name); err != nil {
 		Logger.Error("Flag is missing", err)
 	} else {
-		values[0] = value
+		values = append(values, value)
 	}
 
-	// values = ParseValues(append(values, args...))
+	refs, err := findMicroservices(values, true)
 
-	formattedValues, err := lookupEntity(f, values, true)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	results, _ := getFetchedResultsAsString(refs)
+
+	return values, results, nil
+}
+
+// findMicroservices returns microservices given either an id or search text
+// @values: An array of ids, or names (with wildcards)
+// @lookupID: Lookup the data if an id is given. If a non-id text is given, the result will always be looked up.
+func findMicroservices(values []string, lookupID bool) ([]entityReference, error) {
+	f := newMicroserviceFetcher(client)
+
+	formattedValues, err := lookupEntity(f, values, lookupID)
 
 	if err != nil {
 		Logger.Errorf("Failed to fetch entities. %s", err)
-		return values, nil, err
+		return nil, err
 	}
 
-	results := []string{}
+	results := []entityReference{}
 
 	invalidLookups := []string{}
 	for _, item := range formattedValues {
 		if item.ID != "" {
-			if item.Name != "" {
-				results = append(results, fmt.Sprintf("%s|%s", item.ID, item.Name))
-			} else {
-				results = append(results, item.ID)
-			}
+			results = append(results, item)
 		} else {
 			if item.Name != "" {
 				invalidLookups = append(invalidLookups, item.Name)
@@ -130,5 +142,5 @@ func getMicroserviceSlice(cmd *cobra.Command, args []string, name string) ([]str
 		errors = fmt.Errorf("no results %v", invalidLookups)
 	}
 
-	return values, results, errors
+	return results, errors
 }

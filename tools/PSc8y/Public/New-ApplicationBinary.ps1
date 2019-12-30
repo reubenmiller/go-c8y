@@ -5,7 +5,7 @@ Function New-ApplicationBinary {
 New application binary
 
 .EXAMPLE
-PS> New-ApplicationBinary -Application $App.id -File $MicroserviceZip
+PS> New-ApplicationBinary -Id $App.id -File $MicroserviceZip
 Upload application microservice binary
 
 
@@ -22,7 +22,7 @@ Upload application microservice binary
                    ValueFromPipeline=$true,
                    ValueFromPipelineByPropertyName=$true)]
         [object[]]
-        $Application,
+        $Id,
 
         # File to be uploaded as a binary (required)
         [Parameter(Mandatory = $true)]
@@ -73,9 +73,9 @@ Upload application microservice binary
     }
 
     Process {
-        foreach ($item in (PSc8y\Expand-Application $Application)) {
+        foreach ($item in (PSc8y\Expand-Application $Id)) {
             if ($item) {
-                $Parameters["application"] = if ($item.id) { $item.id } else { $item }
+                $Parameters["id"] = if ($item.id) { $item.id } else { $item }
             }
 
             if (!$Force -and

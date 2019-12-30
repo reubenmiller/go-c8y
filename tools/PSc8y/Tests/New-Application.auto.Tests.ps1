@@ -13,7 +13,7 @@ Describe -Name "New-Application" {
 
 
     AfterEach {
-        Remove-Application -Application "myapp"
+        Remove-Application -Id "myapp"
 
     }
 }

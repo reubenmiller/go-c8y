@@ -30,7 +30,7 @@ func newUpdateApplicationCmd() *updateApplicationCmd {
 		Short: "Update application meta information",
 		Long:  ``,
 		Example: `
-$ c8y applications update --application "helloworld-app" --availability MARKET
+$ c8y applications update --id "helloworld-app" --availability MARKET
 Update application availability to MARKET
 		`,
 		RunE: ccmd.updateApplication,
@@ -38,11 +38,11 @@ Update application availability to MARKET
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("application", "", "Application id (required)")
+	cmd.Flags().String("id", "", "Application id (required)")
 	addDataFlag(cmd)
 	cmd.Flags().String("name", "", "Name of application")
 	cmd.Flags().String("key", "", "Shared secret of application")
-	cmd.Flags().String("availability", "", "Access level for other tenants.  Possible values are : MARKET, PRIVATE (default)")
+	cmd.Flags().String("availability", "", "Access level for other tenants. Possible values are : MARKET, PRIVATE (default)")
 	cmd.Flags().String("contextPath", "", "contextPath of the hosted application")
 	cmd.Flags().String("resourcesUrl", "", "URL to application base directory hosted on an external server")
 	cmd.Flags().String("resourcesUsername", "", "authorization username to access resourcesUrl")
@@ -50,7 +50,7 @@ Update application availability to MARKET
 	cmd.Flags().String("externalUrl", "", "URL to the external application")
 
 	// Required flags
-	cmd.MarkFlagRequired("application")
+	cmd.MarkFlagRequired("id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
@@ -147,25 +147,25 @@ func (n *updateApplicationCmd) updateApplication(cmd *cobra.Command, args []stri
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if cmd.Flags().Changed("application") {
-		applicationInputValues, applicationValue, err := getApplicationSlice(cmd, args, "application")
+	if cmd.Flags().Changed("id") {
+		idInputValues, idValue, err := getApplicationSlice(cmd, args, "id")
 
 		if err != nil {
-			return newUserError("no matching applications found", applicationInputValues, err)
+			return newUserError("no matching applications found", idInputValues, err)
 		}
 
-		if len(applicationValue) == 0 {
-			return newUserError("no matching applications found", applicationInputValues)
+		if len(idValue) == 0 {
+			return newUserError("no matching applications found", idInputValues)
 		}
 
-		for _, item := range applicationValue {
+		for _, item := range idValue {
 			if item != "" {
-				pathParameters["application"] = newIDValue(item).GetID()
+				pathParameters["id"] = newIDValue(item).GetID()
 			}
 		}
 	}
 
-	path := replacePathParameters("/application/applications/{application}", pathParameters)
+	path := replacePathParameters("/application/applications/{id}", pathParameters)
 
 	// filter and selectors
 	filters := getFilterFlag(cmd, "filter")

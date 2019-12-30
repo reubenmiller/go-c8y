@@ -42,7 +42,7 @@ Create new hosted application
 	cmd.Flags().String("name", "", "Name of application (required)")
 	cmd.Flags().String("key", "", "Shared secret of application (required)")
 	cmd.Flags().String("type", "", "Type of application. Possible values are EXTERNAL, HOSTED, MICROSERVICE (required)")
-	cmd.Flags().String("availability", "", "Access level for other tenants.  Possible values are : MARKET, PRIVATE (default)")
+	cmd.Flags().String("availability", "", "Access level for other tenants. Possible values are : MARKET, PRIVATE (default)")
 	cmd.Flags().String("contextPath", "", "contextPath of the hosted application. Required when application type is HOSTED")
 	cmd.Flags().String("resourcesUrl", "", "URL to application base directory hosted on an external server. Required when application type is HOSTED")
 	cmd.Flags().String("resourcesUsername", "", "authorization username to access resourcesUrl")

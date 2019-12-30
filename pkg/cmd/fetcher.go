@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -106,6 +107,34 @@ func parseAndSanitizeIDs(values []string) (ids []string, names []string) {
 				ids = append(ids, part)
 			} else {
 				names = append(names, part)
+			}
+		}
+	}
+	return
+}
+
+// getFetchedIDs returns non empty ids from an array of entity references
+func getFetchedIDs(results []entityReference) []string {
+	ids := make([]string, 0)
+	for _, item := range results {
+		if item.Data.ID != "" {
+			ids = append(ids, item.Data.ID)
+		}
+	}
+	return ids
+}
+
+func getFetchedResultsAsString(refs []entityReference) (results []string, invalidLookups []string) {
+	for _, item := range refs {
+		if item.ID != "" {
+			if item.Name != "" {
+				results = append(results, fmt.Sprintf("%s|%s", item.ID, item.Name))
+			} else {
+				results = append(results, item.ID)
+			}
+		} else {
+			if item.Name != "" {
+				invalidLookups = append(invalidLookups, item.Name)
 			}
 		}
 	}

@@ -38,7 +38,7 @@ Create new hosted application
         [string]
         $Type,
 
-        # Access level for other tenants.  Possible values are : MARKET, PRIVATE (default)
+        # Access level for other tenants. Possible values are : MARKET, PRIVATE (default)
         [Parameter()]
         [ValidateSet('MARKET','PRIVATE')]
         [string]

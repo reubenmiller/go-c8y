@@ -30,6 +30,10 @@
             New-C8yApiGoRootCommand -Specification:$Specification -OutputDir:$OutputDir
 
 			foreach ($iSpec in $Specification.endpoints) {
+                if ($iSpec.skip -eq $true) {
+                    Write-Verbose ("Skipping [{0}]" -f $iSpec.name)
+                    continue
+                }
 				New-C8yApiGoCommand -Specification:$iSpec -OutputDir:$OutputDir
 			}
         }

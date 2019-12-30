@@ -525,6 +525,7 @@ Function Get-IteratorFunction {
         "[]tenant" { "(PSc8y\Expand-Tenant $Variable)" }
         "[]userself" { "(PSc8y\Expand-User $Variable)" }
         "application" { "(PSc8y\Expand-Application $Variable)" }
+        "microservice" { "(PSc8y\Expand-Microservice $Variable)" }
         "device" { "(PSc8y\Expand-Device $Variable)" }
         "event" { "(PSc8y\Expand-Event $Variable)" }
         "id" { "(PSc8y\Expand-Id $Variable)" }

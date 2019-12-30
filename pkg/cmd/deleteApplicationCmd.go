@@ -30,10 +30,10 @@ func newDeleteApplicationCmd() *deleteApplicationCmd {
 		Short: "Delete application",
 		Long:  `Info: The application can only be removed when its availability is PRIVATE or in other case when it has no subscriptions.`,
 		Example: `
-$ c8y applications delete --application 12345
+$ c8y applications delete --id 12345
 Delete an application by id
 
-$ c8y applications delete --application my-temp-app
+$ c8y applications delete --id my-temp-app
 Delete an application by name
 		`,
 		RunE: ccmd.deleteApplication,
@@ -41,10 +41,10 @@ Delete an application by name
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("application", "", "Application id (required)")
+	cmd.Flags().String("id", "", "Application id (required)")
 
 	// Required flags
-	cmd.MarkFlagRequired("application")
+	cmd.MarkFlagRequired("id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
@@ -84,25 +84,25 @@ func (n *deleteApplicationCmd) deleteApplication(cmd *cobra.Command, args []stri
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if cmd.Flags().Changed("application") {
-		applicationInputValues, applicationValue, err := getApplicationSlice(cmd, args, "application")
+	if cmd.Flags().Changed("id") {
+		idInputValues, idValue, err := getApplicationSlice(cmd, args, "id")
 
 		if err != nil {
-			return newUserError("no matching applications found", applicationInputValues, err)
+			return newUserError("no matching applications found", idInputValues, err)
 		}
 
-		if len(applicationValue) == 0 {
-			return newUserError("no matching applications found", applicationInputValues)
+		if len(idValue) == 0 {
+			return newUserError("no matching applications found", idInputValues)
 		}
 
-		for _, item := range applicationValue {
+		for _, item := range idValue {
 			if item != "" {
-				pathParameters["application"] = newIDValue(item).GetID()
+				pathParameters["id"] = newIDValue(item).GetID()
 			}
 		}
 	}
 
-	path := replacePathParameters("/application/applications/{application}", pathParameters)
+	path := replacePathParameters("/application/applications/{id}", pathParameters)
 
 	// filter and selectors
 	filters := getFilterFlag(cmd, "filter")

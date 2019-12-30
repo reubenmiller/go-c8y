@@ -3,6 +3,10 @@ package jsonUtilities
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -38,4 +42,38 @@ func UnescapeJSON(v []byte) string {
 		return string(v)
 	}
 	return val
+}
+
+type JsonDecodeError struct {
+	Err error
+}
+
+var ErrOpenFile = errors.New("failed to open file")
+var ErrJSONDecode = errors.New("failed to decode JSON")
+var ErrReadFile = errors.New("failed to read file")
+
+// DecodeJSONFile returns the contents of a json file as a map
+func DecodeJSONFile(filename string) (map[string]interface{}, error) {
+	var err error
+
+	jsonFile, err := os.Open(filename)
+	// if we os.Open returns an error then handle it
+	if err != nil {
+		return nil, fmt.Errorf("%w", ErrOpenFile)
+	}
+
+	defer jsonFile.Close()
+
+	contents := make(map[string]interface{})
+
+	b, err := ioutil.ReadAll(jsonFile)
+	if err != nil {
+		return nil, fmt.Errorf("%w", ErrReadFile)
+	}
+
+	err = json.Unmarshal(b, &contents)
+	if err != nil {
+		return nil, fmt.Errorf("%w", ErrJSONDecode)
+	}
+	return contents, nil
 }

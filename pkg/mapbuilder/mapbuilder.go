@@ -35,6 +35,17 @@ func (b MapBuilder) GetMap() map[string]interface{} {
 	return b.body
 }
 
+// GetMap returns the body as a map[string]interface{}
+func (b MapBuilder) Get(key string) interface{} {
+	return b.body[key]
+}
+
+// Get the value as a string
+func (b MapBuilder) GetString(key string) (string, bool) {
+	val, ok := b.body[key].(string)
+	return val, ok
+}
+
 // MarshalJSON returns the body as json
 func (b MapBuilder) MarshalJSON() ([]byte, error) {
 	if b.body == nil {

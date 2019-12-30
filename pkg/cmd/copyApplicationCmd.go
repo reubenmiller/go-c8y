@@ -35,7 +35,7 @@ The response contains a representation of the newly created application.
 Required role ROLE_APPLICATION_MANAGMENT_ADMIN
 `,
 		Example: `
-$ c8y applications copy --application my-example-app
+$ c8y applications copy --id my-example-app
 Copy an existing application
 		`,
 		RunE: ccmd.copyApplication,
@@ -43,10 +43,10 @@ Copy an existing application
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("application", "", "Application id (required)")
+	cmd.Flags().String("id", "", "Application id (required)")
 
 	// Required flags
-	cmd.MarkFlagRequired("application")
+	cmd.MarkFlagRequired("id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
@@ -86,25 +86,25 @@ func (n *copyApplicationCmd) copyApplication(cmd *cobra.Command, args []string) 
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if cmd.Flags().Changed("application") {
-		applicationInputValues, applicationValue, err := getApplicationSlice(cmd, args, "application")
+	if cmd.Flags().Changed("id") {
+		idInputValues, idValue, err := getApplicationSlice(cmd, args, "id")
 
 		if err != nil {
-			return newUserError("no matching applications found", applicationInputValues, err)
+			return newUserError("no matching applications found", idInputValues, err)
 		}
 
-		if len(applicationValue) == 0 {
-			return newUserError("no matching applications found", applicationInputValues)
+		if len(idValue) == 0 {
+			return newUserError("no matching applications found", idInputValues)
 		}
 
-		for _, item := range applicationValue {
+		for _, item := range idValue {
 			if item != "" {
-				pathParameters["application"] = newIDValue(item).GetID()
+				pathParameters["id"] = newIDValue(item).GetID()
 			}
 		}
 	}
 
-	path := replacePathParameters("/application/applications/{application}/clone", pathParameters)
+	path := replacePathParameters("/application/applications/{id}/clone", pathParameters)
 
 	// filter and selectors
 	filters := getFilterFlag(cmd, "filter")

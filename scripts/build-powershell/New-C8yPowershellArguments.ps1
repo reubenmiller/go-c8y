@@ -68,6 +68,7 @@
         "id" { "object" }
         "integer" { "long" }
         "json" { "hashtable" }
+        "microservice" { "object[]" }
         "set" { "object[]" }
         "source" { "object" }
         "string" { "string" }

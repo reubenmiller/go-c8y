@@ -59,6 +59,7 @@ $script:Aliases = @{
 
     # single items
     alarm = "Get-Alarm"
+    app = "Get-Application"
     event = "Get-Event"
     m = "Get-Measurements"
     mo = "Get-ManagedObject"

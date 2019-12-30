@@ -3,9 +3,8 @@
 
 ## current todo
 
-* [ ] Handle proxy/noproxy support for realtime notifications (websockets)
-* [ ] New-Microservice (manual application)
 * [ ] Add device commands. New-Device, Update-Device, Remove-Device, Get-DeviceCollection (already exists)
+* [ ] Handle proxy/noproxy support for realtime notifications (websockets)
 
 ## Bugs
 
@@ -69,7 +68,8 @@ Currently not known
   * [x] c8y subscribe to all realtime notifications
 * [x] Add version to c8y binary, i.e. 'c8y version' should print out the current version. It should match the Cumulocity version numbers?
 * [x] Add upload flag to generic function
-
+* [x] New-Microservice (manual application)
+* [x] Get microservice, delete microservice, update microservice? get credentials?
 
 * [ ] Allow file upload to include additional "type" property
 * [ ] Microservice aliases using my-app://health
@@ -128,7 +128,6 @@ Manual commands
 * [ ] Client side filtering of results for those that don't support server side filters
   * [ ] Application
     * [ ] Name
-    * [ ] type
 * [ ] Remove child devices and child references by wildcard. Only delete matching children
 
 ## Packaging

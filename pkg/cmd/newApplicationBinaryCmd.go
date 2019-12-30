@@ -30,7 +30,7 @@ func newNewApplicationBinaryCmd() *newApplicationBinaryCmd {
 		Short: "New application binary",
 		Long:  ``,
 		Example: `
-$ c8y applications createBinary --application 12345 --file ./helloworld.zip
+$ c8y applications createBinary --id 12345 --file ./helloworld.zip
 Upload application microservice binary
 		`,
 		RunE: ccmd.newApplicationBinary,
@@ -38,11 +38,11 @@ Upload application microservice binary
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("application", "", "Application id (required)")
+	cmd.Flags().String("id", "", "Application id (required)")
 	cmd.Flags().String("file", "", "File to be uploaded as a binary (required)")
 
 	// Required flags
-	cmd.MarkFlagRequired("application")
+	cmd.MarkFlagRequired("id")
 	cmd.MarkFlagRequired("file")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
@@ -85,25 +85,25 @@ func (n *newApplicationBinaryCmd) newApplicationBinary(cmd *cobra.Command, args 
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if cmd.Flags().Changed("application") {
-		applicationInputValues, applicationValue, err := getApplicationSlice(cmd, args, "application")
+	if cmd.Flags().Changed("id") {
+		idInputValues, idValue, err := getApplicationSlice(cmd, args, "id")
 
 		if err != nil {
-			return newUserError("no matching applications found", applicationInputValues, err)
+			return newUserError("no matching applications found", idInputValues, err)
 		}
 
-		if len(applicationValue) == 0 {
-			return newUserError("no matching applications found", applicationInputValues)
+		if len(idValue) == 0 {
+			return newUserError("no matching applications found", idInputValues)
 		}
 
-		for _, item := range applicationValue {
+		for _, item := range idValue {
 			if item != "" {
-				pathParameters["application"] = newIDValue(item).GetID()
+				pathParameters["id"] = newIDValue(item).GetID()
 			}
 		}
 	}
 
-	path := replacePathParameters("/application/applications/{application}/binaries", pathParameters)
+	path := replacePathParameters("/application/applications/{id}/binaries", pathParameters)
 
 	// filter and selectors
 	filters := getFilterFlag(cmd, "filter")

@@ -8,11 +8,11 @@ Delete application
 Info: The application can only be removed when its availability is PRIVATE or in other case when it has no subscriptions.
 
 .EXAMPLE
-PS> Remove-Application -Application $App.id
+PS> Remove-Application -Id $App.id
 Delete an application by id
 
 .EXAMPLE
-PS> Remove-Application -Application "my-temp-app"
+PS> Remove-Application -Id "my-temp-app"
 Delete an application by name
 
 
@@ -29,7 +29,7 @@ Delete an application by name
                    ValueFromPipeline=$true,
                    ValueFromPipelineByPropertyName=$true)]
         [object[]]
-        $Application,
+        $Id,
 
         # Include raw response including pagination information
         [Parameter()]
@@ -72,9 +72,9 @@ Delete an application by name
     }
 
     Process {
-        foreach ($item in (PSc8y\Expand-Application $Application)) {
+        foreach ($item in (PSc8y\Expand-Application $Id)) {
             if ($item) {
-                $Parameters["application"] = if ($item.id) { $item.id } else { $item }
+                $Parameters["id"] = if ($item.id) { $item.id } else { $item }
             }
 
             if (!$Force -and

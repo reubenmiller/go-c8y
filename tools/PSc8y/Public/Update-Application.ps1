@@ -5,7 +5,7 @@ Function Update-Application {
 Update application meta information
 
 .EXAMPLE
-PS> Update-Application -Application "helloworld-app" -Availability "MARKET"
+PS> Update-Application -Id "helloworld-app" -Availability "MARKET"
 Update application availability to MARKET
 
 
@@ -22,7 +22,7 @@ Update application availability to MARKET
                    ValueFromPipeline=$true,
                    ValueFromPipelineByPropertyName=$true)]
         [object[]]
-        $Application,
+        $Id,
 
         # data
         [Parameter()]
@@ -39,7 +39,7 @@ Update application availability to MARKET
         [string]
         $Key,
 
-        # Access level for other tenants.  Possible values are : MARKET, PRIVATE (default)
+        # Access level for other tenants. Possible values are : MARKET, PRIVATE (default)
         [Parameter()]
         [ValidateSet('MARKET','PRIVATE')]
         [string]
@@ -138,9 +138,9 @@ Update application availability to MARKET
     }
 
     Process {
-        foreach ($item in (PSc8y\Expand-Application $Application)) {
+        foreach ($item in (PSc8y\Expand-Application $Id)) {
             if ($item) {
-                $Parameters["application"] = if ($item.id) { $item.id } else { $item }
+                $Parameters["id"] = if ($item.id) { $item.id } else { $item }
             }
 
             if (!$Force -and

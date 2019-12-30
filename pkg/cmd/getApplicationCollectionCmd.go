@@ -38,6 +38,8 @@ Get applications
 
 	cmd.SilenceUsage = true
 
+	cmd.Flags().String("type", "", "Application type")
+
 	// Required flags
 
 	ccmd.baseCmd = newBaseCmd(cmd)
@@ -50,6 +52,13 @@ func (n *getApplicationCollectionCmd) getApplicationCollection(cmd *cobra.Comman
 	// query parameters
 	queryValue := url.QueryEscape("")
 	query := url.Values{}
+	if v, err := cmd.Flags().GetString("type"); err == nil {
+		if v != "" {
+			query.Add("type", url.QueryEscape(v))
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "type", err))
+	}
 	if cmd.Flags().Changed("pageSize") {
 		if v, err := cmd.Flags().GetInt("pageSize"); err == nil && v > 0 {
 			query.Add("pageSize", fmt.Sprintf("%d", v))

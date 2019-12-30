@@ -7,20 +7,20 @@ Describe -Name "Get-Application" {
     }
 
     It "Get an application by id" {
-        $Response = PSc8y\Get-Application -Application $App.id
+        $Response = PSc8y\Get-Application -Id $App.id
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
 
     It "Get an application by name" {
-        $Response = PSc8y\Get-Application -Application "my-simple-app"
+        $Response = PSc8y\Get-Application -Id "my-simple-app"
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
 
 
     AfterEach {
-        Remove-Application -Application "my-simple-app"
+        Remove-Application -Id "my-simple-app"
 
     }
 }

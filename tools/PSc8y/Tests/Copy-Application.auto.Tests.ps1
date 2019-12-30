@@ -7,15 +7,15 @@ Describe -Name "Copy-Application" {
     }
 
     It "Copy an existing application" {
-        $Response = PSc8y\Copy-Application -Application "my-example-app"
+        $Response = PSc8y\Copy-Application -Id "my-example-app"
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
 
 
     AfterEach {
-        Remove-Application -Application "my-example-app"
-        Remove-Application -Application "clonemy-example-app"
+        Remove-Application -Id "my-example-app"
+        Remove-Application -Id "clonemy-example-app"
 
     }
 }

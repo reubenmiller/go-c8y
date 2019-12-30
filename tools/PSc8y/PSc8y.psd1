@@ -77,6 +77,7 @@ FormatsToProcess = @(
     'format-data/managedObjects.ps1xml',
     'format-data/managedObjectReferences.ps1xml',
     'format-data/measurements.ps1xml',
+    'format-data/microservices.ps1xml',
     'format-data/operations.ps1xml',
     'format-data/options.ps1xml',
     'format-data/retentionRules.ps1xml',

@@ -17,6 +17,12 @@ Get applications
     [Alias()]
     [OutputType([object])]
     Param(
+        # Application type
+        [Parameter()]
+        [ValidateSet('APAMA_CEP_RULE','EXTERNAL','HOSTED','MICROSERVICE')]
+        [string]
+        $Type,
+
         # Maximum number of results
         [Parameter()]
         [AllowNull()]
@@ -58,6 +64,9 @@ Get applications
 
     Begin {
         $Parameters = @{}
+        if ($PSBoundParameters.ContainsKey("Type")) {
+            $Parameters["type"] = $Type
+        }
         if ($PSBoundParameters.ContainsKey("PageSize")) {
             $Parameters["pageSize"] = $PageSize
         }

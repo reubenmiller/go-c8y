@@ -26,6 +26,10 @@
     $File = Join-Path -Path $OutputDir -ChildPath ("{0}RootCmd.go" -f $Name)
 
     foreach ($endpoint in $Specification.endpoints) {
+        if ($endpoint.skip -eq $true) {
+            Write-Verbose ("Skipping [{0}]" -f $endpoint.name)
+            continue
+        }
         $EndpointName = $endpoint.name
         $EndpointNameCamel = $EndpointName[0].ToString().ToUpperInvariant() + $EndpointName.Substring(1)
 

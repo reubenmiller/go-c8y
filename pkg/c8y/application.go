@@ -18,6 +18,8 @@ type ApplicationService service
 // ApplicationOptions options that can be provided when using application api calls
 type ApplicationOptions struct {
 	PaginationOptions
+
+	Type string `json:"type,omitempty"`
 }
 
 //  Cumulocity Application Types

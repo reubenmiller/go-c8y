@@ -147,6 +147,11 @@ func Execute() {
 	measurements.AddCommand(newSubscribeMeasurementCmd().getCommand())
 	rootCmd.AddCommand(measurements)
 
+	// microservices commands
+	microservices := newMicroservicesRootCmd().getCommand()
+	microservices.AddCommand(newNewMicroserviceCmd().getCommand())
+	rootCmd.AddCommand(microservices)
+
 	// retentionRules commands
 	rootCmd.AddCommand(newRetentionRulesRootCmd().getCommand())
 

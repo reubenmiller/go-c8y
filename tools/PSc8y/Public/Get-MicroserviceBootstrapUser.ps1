@@ -1,11 +1,11 @@
 ﻿# Code generated from specification version 1.0.0: DO NOT EDIT
-Function Get-ApplicationBootstrapUser {
+Function Get-MicroserviceBootstrapUser {
 <#
 .SYNOPSIS
-Get application bootstrap user
+Get microservice bootstrap user
 
 .EXAMPLE
-PS> Get-ApplicationBootstrapUser -Application $App.name
+PS> Get-MicroserviceBootstrapUser -Id $App.name
 Get application bootstrap user
 
 
@@ -17,12 +17,12 @@ Get application bootstrap user
     [Alias()]
     [OutputType([object])]
     Param(
-        # Application id (required)
+        # Microservice id (required)
         [Parameter(Mandatory = $true,
                    ValueFromPipeline=$true,
                    ValueFromPipelineByPropertyName=$true)]
         [object[]]
-        $Application,
+        $Id,
 
         # Include raw response including pagination information
         [Parameter()]
@@ -60,9 +60,9 @@ Get application bootstrap user
     }
 
     Process {
-        foreach ($item in (PSc8y\Expand-Application $Application)) {
+        foreach ($item in (PSc8y\Expand-Microservice $Id)) {
             if ($item) {
-                $Parameters["application"] = if ($item.id) { $item.id } else { $item }
+                $Parameters["id"] = if ($item.id) { $item.id } else { $item }
             }
 
             if (!$Force -and
@@ -75,10 +75,10 @@ Get application bootstrap user
             }
 
             Invoke-Command `
-                -Noun "applications" `
+                -Noun "microservices" `
                 -Verb "getBootstrapUser" `
                 -Parameters $Parameters `
-                -Type "application/vnd.com.nsn.cumulocity.user+json" `
+                -Type "application/vnd.com.nsn.cumulocity.bootstrapuser+json" `
                 -ItemType "" `
                 -ResultProperty "" `
                 -Raw:$Raw `

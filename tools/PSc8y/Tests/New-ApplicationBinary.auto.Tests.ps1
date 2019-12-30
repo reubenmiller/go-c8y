@@ -9,14 +9,14 @@ Describe -Name "New-ApplicationBinary" {
     }
 
     It "Upload application microservice binary" {
-        $Response = PSc8y\New-ApplicationBinary -Application $App.id -File $MicroserviceZip
+        $Response = PSc8y\New-ApplicationBinary -Id $App.id -File $MicroserviceZip
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
 
 
     AfterEach {
-        Remove-Application -Application $App.id
+        Remove-Application -Id $App.id
 
     }
 }
