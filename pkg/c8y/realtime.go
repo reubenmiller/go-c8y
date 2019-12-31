@@ -159,7 +159,7 @@ func getC8yExtension(tenant, username, password string) c8yExtensionMessage {
 	}
 }
 
-func getRealtimURL(host string) *url.URL {
+func getRealtimeURL(host string) *url.URL {
 	c8yhost, _ := url.Parse(host)
 
 	if c8yhost.Scheme == "http" {
@@ -189,7 +189,7 @@ func NewRealtimeClient(host string, wsDialer *websocket.Dialer, tenant, username
 	}
 
 	// Convert url to a websocket
-	websocketURL := getRealtimURL(host)
+	websocketURL := getRealtimeURL(host)
 
 	client := &RealtimeClient{
 		url:       websocketURL,
