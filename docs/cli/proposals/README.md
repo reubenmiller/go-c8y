@@ -4,10 +4,10 @@
 ## current todo
 
 * [ ] Add device commands. New-Device, Update-Device, Remove-Device, Get-DeviceCollection (already exists)
-* [ ] Handle proxy/noproxy support for realtime notifications (websockets)
 
 ## Bugs
 
+* Subscription tests are flakey
 Currently not known
 
 ## c8y (golang)
@@ -70,6 +70,7 @@ Currently not known
 * [x] Add upload flag to generic function
 * [x] New-Microservice (manual application)
 * [x] Get microservice, delete microservice, update microservice? get credentials?
+* [x] Handle proxy/noproxy support for realtime notifications (websockets)
 
 * [ ] Allow file upload to include additional "type" property
 * [ ] Microservice aliases using my-app://health

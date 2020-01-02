@@ -6,7 +6,10 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strings"
+	"time"
 
+	"github.com/gorilla/websocket"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/reubenmiller/go-c8y/pkg/logger"
@@ -63,6 +66,7 @@ var (
 	globalFlagOutputFile     string
 	globalFlagUseEnv         bool
 	globalFlagRaw            bool
+	globalFlagProxy          string
 	globalFlagNoProxy        bool
 	globalFlagTimeout        uint
 )
@@ -81,6 +85,7 @@ func Execute() {
 	rootCmd.PersistentFlags().BoolVar(&globalFlagDryRun, "dry", false, "Dry run. Don't send any data to the server")
 	rootCmd.PersistentFlags().BoolVar(&globalFlagUseEnv, "useEnv", false, "Allow loading Cumulocity session setting from environment variables")
 	rootCmd.PersistentFlags().BoolVar(&globalFlagRaw, "raw", false, "Raw values")
+	rootCmd.PersistentFlags().StringVar(&globalFlagProxy, "proxy", "", "Proxy setting")
 	rootCmd.PersistentFlags().BoolVar(&globalFlagNoProxy, "noProxy", false, "Ignore the proxy settings")
 
 	rootCmd.PersistentFlags().StringVar(&globalFlagOutputFile, "outputFile", "", "Output file")
@@ -212,6 +217,44 @@ func initConfig() {
 		viper.AutomaticEnv()
 	}
 
+	// Proxy settings
+	// Either use explicit proxy, ignore proxy, or use existing env variables
+	// --proxy "http://10.0.0.1:8080"
+	// --noProxy
+	// HTTP_PROXY=http://10.0.0.1:8080
+	// NO_PROXY=localhost,127.0.0.1
+	explictProxy := rootCmd.Flags().Changed("proxy")
+	explictNoProxy := rootCmd.Flags().Changed("noProxy")
+	if explictNoProxy {
+		Logger.Debug("using explicit noProxy setting")
+		os.Setenv("HTTP_PROXY", "")
+		os.Setenv("HTTPS_PROXY", "")
+		os.Setenv("http_proxy", "")
+		os.Setenv("https_proxy", "")
+	} else {
+		if explictProxy {
+			Logger.Debugf("using explicit proxy [%s]", globalFlagProxy)
+
+			globalFlagProxy = strings.TrimSpace(globalFlagProxy)
+
+			os.Setenv("HTTP_PROXY", globalFlagProxy)
+			os.Setenv("HTTPS_PROXY", globalFlagProxy)
+			os.Setenv("http_proxy", globalFlagProxy)
+			os.Setenv("https_proxy", globalFlagProxy)
+
+		} else {
+			Logger.Debugf(
+				"using existing env variables. HTTP_PROXY [%s], http_proxy [%s], HTTPS_PROXY [%s], https_proxy [%s], NO_PROXY [%s], no_proxy [%s]",
+				os.Getenv("HTTP_PROXY"),
+				os.Getenv("http_proxy"),
+				os.Getenv("HTTPS_PROXY"),
+				os.Getenv("https_proxy"),
+				os.Getenv("NO_PROXY"),
+				os.Getenv("no_proxy"),
+			)
+		}
+	}
+
 	if _, err := os.Stat(globalFlagSessionFile); err == nil {
 		// Use config file from the flag.
 		viper.SetConfigFile(globalFlagSessionFile)
@@ -244,13 +287,38 @@ func initConfig() {
 			viper.GetString("tenant"),
 			viper.GetString("username"),
 			viper.GetString("password"),
-			false,
+			true,
 		)
-		return
+	} else {
+		// Fallback to reading session from environment variables
+		client = c8y.NewClientFromEnvironment(httpClient, true)
 	}
 
-	// Fallback to reading session from environment variables
-	client = c8y.NewClientFromEnvironment(httpClient, false)
+	// Add the realtime client
+	client.Realtime = c8y.NewRealtimeClient(
+		client.BaseURL.String(),
+		newWebsocketDialer(globalFlagNoProxy),
+		client.TenantName,
+		client.Username,
+		client.Password,
+	)
+}
+
+func newWebsocketDialer(ignoreProxySettings bool) *websocket.Dialer {
+	dialer := &websocket.Dialer{
+		Proxy:             http.ProxyFromEnvironment,
+		HandshakeTimeout:  10 * time.Second,
+		EnableCompression: false,
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+
+	if ignoreProxySettings {
+		dialer.Proxy = nil
+	}
+
+	return dialer
 }
 
 func newHTTPClient(ignoreProxySettings bool) *http.Client {

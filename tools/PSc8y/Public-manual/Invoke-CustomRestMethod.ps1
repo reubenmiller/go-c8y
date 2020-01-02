@@ -64,6 +64,10 @@ Get the health status of the myapp microservice
         [switch]
         $NoProxy,
 
+        # Use an explicit proxy setting (instead of environmnet variables)
+        [string]
+        $Proxy,
+
         [int]
         $TimeoutSec,
 
@@ -130,6 +134,12 @@ Get the health status of the myapp microservice
         }
         if ($Compress) {
             $null = $args.Add("--pretty=false")
+        }
+        if (![string]::IsNullOrEmpty($Proxy)) {
+            $null = $args.AddRange(@("--proxy", $Proxy))
+        }
+        if ($NoProxy) {
+            $null = $args.Add("--noProxy")
         }
         if ($VerbosePreference) {
             $null = $args.Add("--verbose")
