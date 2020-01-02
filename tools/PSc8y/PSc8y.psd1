@@ -104,7 +104,12 @@ PrivateData = @{
         Tags = @(
             'Cumulocity',
             'IoT',
-            'REST-API'
+            'REST-API',
+            'Windows',
+            'Linux',
+            'MacOS',
+            'PSEdition_Desktop',
+            'PSEdition_Core'
         )
 
         # A URL to the license for this module.
