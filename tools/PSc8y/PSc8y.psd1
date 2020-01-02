@@ -12,7 +12,7 @@
 RootModule = './PSc8y.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0.0'
+ModuleVersion = '1.0.1'
 
 # Supported PSEditions
 CompatiblePSEditions = @(
@@ -96,11 +96,9 @@ AliasesToExport = '*'
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
 PrivateData = @{
-
-    #Prerelease of this module
-    Prerelease = 'alpha.02'
-
     PSData = @{
+        #Prerelease of this module
+        Prerelease = '-alpha01'
 
         # Tags applied to this module. These help with module discovery in online galleries.
         Tags = @(
