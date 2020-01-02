@@ -4,6 +4,10 @@ $ErrorActionPreference = 'Stop'
 
 Import-Module PowershellGet -MinimumVersion "2.0.0"
 
+if ($env:APPVEYOR) {
+	& $PSScriptRoot/wait-for-jobs.ps1
+}
+
 try {
 	## Don't upload the build scripts and appveyor.yml to PowerShell Gallery
 	$tempName = New-TemporaryFile
@@ -18,6 +22,7 @@ try {
 		'PSc8y[\\\/]appveyor\.yml'
 		'PSc8y[\\\/]\.git'
 		'PSc8y[\\\/]\.nuspec'
+		'PSc8y[\\\/]Dependencies[\\\/]\.gitkeep'
 		'PSc8y[\\\/]README\.md'
 		'PSc8y[\\\/]CHANGELOG\.md'
 		'PSc8y[\\\/]tests\.ps1'
@@ -33,6 +38,18 @@ try {
 		| Where-Object { $_.FullName -match $exclude } `
 		| Remove-Item -Force -Recurse
 
+	#
+	# Build binaries
+	#
+	$DependenciesDir = "$tempmoduleFolderPath/Dependencies/"
+	& $PSScriptRoot/../build-cli/build-binary.ps1 -OutputDir $DependenciesDir -All
+
+	[array] $c8ybinaries = Get-ChildItem -Path $DependenciesDir -Filter "*c8y*"
+
+	if ($c8ybinaries.Count -ne 3) {
+		Write-Error "Failed to find all 3 c8y binaries"
+		Exit 1
+	}
 
 	## Publish module to PowerShell Gallery
 	$publishParams = @{

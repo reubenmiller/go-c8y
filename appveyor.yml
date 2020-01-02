@@ -10,8 +10,16 @@ skip_commits:
 #    environment configuration    #
 #---------------------------------#
 environment:
+  # Deploy timeout
+  TimeOutMins: 2
+
+  # AppVeyor Apikey used when checking status of build
+  ApiKey:
+    secure: JWEJSOBJbCfIMb+J4Cnb2Fbn7gVsWfqWsdQEoqLvN5c=
+  
   nuget_apikey:
     secure: rfFg7q0kl5loV6mXquG73NKa5NEAtLKyKHhQJy0TiwIXdeMHYhqGqZCl5sb/7Hpz
+  
   C8Y_HOST:
     secure: 1mpbPj8TYp5TrBamoABxWATQWb1t1BIsdyos8N8R60QOVB1puaWvH/yuw+0ClWjk
   C8Y_TENANT:
@@ -34,9 +42,6 @@ build_script:
 test_script:
 - ps: ./scripts/build-powershell/test.ci.ps1
 
-after_test:
-  # publish to Powershell Gallery
-- ps: ./scripts/build-powershell/publish.ps1
 
 artifacts:
 
@@ -57,3 +62,14 @@ deploy:
     on:
       branch: master                # release from master branch only
       APPVEYOR_REPO_TAG: true       # deploy on tag push only
+
+for:
+  # Only publish on the last build
+  -
+    matrix:
+      only:
+        - image: macos
+  
+    on_success:
+      # publish to Powershell Gallery
+    - ps: ./scripts/build-powershell/publish.ps1
