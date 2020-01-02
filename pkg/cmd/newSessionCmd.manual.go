@@ -124,10 +124,6 @@ func (n *newSessionCmd) newSession(cmd *cobra.Command, args []string) error {
 	session := &CumulocitySession{}
 	session.MicroserviceAliases = make(map[string]string)
 
-	sessionName := ""
-	if v, err := cmd.Flags().GetString("name"); err == nil && v != "" {
-		sessionName = v
-	}
 	if v, err := cmd.Flags().GetString("host"); err == nil && v != "" {
 		session.SetHost(v)
 	}
@@ -149,6 +145,12 @@ func (n *newSessionCmd) newSession(cmd *cobra.Command, args []string) error {
 	}
 	if v, err := cmd.Flags().GetString("description"); err == nil && v != "" {
 		session.Description = v
+	}
+
+	// session name (default to host and username)
+	sessionName := session.Tenant + "-" + session.Username
+	if v, err := cmd.Flags().GetString("name"); err == nil && v != "" {
+		sessionName = v
 	}
 
 	outputDir := n.getHomeDir("")
