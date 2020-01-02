@@ -29,6 +29,7 @@ To configure your bash shell to load completions for each session add to your ba
 
 	// Subcommands
 	cmd.AddCommand(newBashCompletionCmd().getCommand())
+	cmd.AddCommand(newZshCompletionCmd().getCommand())
 	cmd.AddCommand(newPowershellCompletionCmd().getCommand())
 
 	ccmd.baseCmd = newBaseCmd(cmd)
@@ -57,6 +58,35 @@ To configure your bash shell to load completions for each session add to your ba
 `,
 		Run: func(cmd *cobra.Command, args []string) {
 			rootCmd.GenBashCompletion(os.Stdout)
+		},
+	}
+
+	ccmd.baseCmd = newBaseCmd(cmd)
+
+	return ccmd
+}
+
+type zshCompletionCmd struct {
+	*baseCmd
+}
+
+func newZshCompletionCmd() *zshCompletionCmd {
+	ccmd := &zshCompletionCmd{}
+
+	cmd := &cobra.Command{
+		Use:   "zsh",
+		Short: "Generates zsh completion scripts",
+		Long: `To load completion run
+
+. <(bitbucket completion)
+
+To configure your zsh shell to load completions for each session add to your bashrc
+
+# ~/.zshrc or ~/.profile
+. <(bitbucket completion)
+`,
+		Run: func(cmd *cobra.Command, args []string) {
+			rootCmd.GenZshCompletion(os.Stdout)
 		},
 	}
 
