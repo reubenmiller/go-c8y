@@ -34,9 +34,9 @@ build_script:
 test_script:
 - ps: ./scripts/build-powershell/test.ci.ps1
 
-#after_test:
+after_test:
   # publish to Powershell Gallery
-#- ps: ./scripts/build-powershell/publish.ps1
+- ps: ./scripts/build-powershell/publish.ps1
 
 artifacts:
 
