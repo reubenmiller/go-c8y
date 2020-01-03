@@ -46,7 +46,28 @@ foreach($publicFile in @($PublicManual + $Public)) {
 
 # Install binary (and make it executable)
 if ($IsLinux -or $IsMacOS) {
-    Install-CumulocityBinary
+    # silence errors
+    if ($env:PSC8Y_SKIP_INSTALL_ON_IMPORT -notmatch "true|1|on") {
+        Install-CumulocityBinary -ErrorAction SilentlyContinue
+    }
+}
+
+# Set environment variables if a session is set via the C8Y_SESSION env variable
+$ExistingSession = Get-Session -WarningAction SilentlyContinue -ErrorAction SilentlyContinue
+if ($ExistingSession) {
+    Set-EnvironmentVariablesFromSession
+
+    # Display current session
+    Write-Host "Current Cumulocity session"
+    Write-Host ""
+    Write-Host ("    Path: {0}" -f $ExistingSession.Path)
+    Write-Host ""
+    Write-Host ("description : {0}" -f $ExistingSession.description)
+    Write-Host ("host        : {0}" -f $ExistingSession.host)
+    Write-Host ("tenant      : {0}" -f $ExistingSession.tenant)
+    Write-Host ("username    : {0}" -f $ExistingSession.username)
+    Write-Host ("password    : {0}" -f ($ExistingSession.password -replace ".", "*"))
+    Write-Host ""
 }
 
 Export-ModuleMember -Alias *
