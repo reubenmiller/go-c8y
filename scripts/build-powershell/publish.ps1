@@ -34,16 +34,19 @@ try {
 	Write-Host "Temp folder: $tempmoduleFolderPath"
 
 	## Remove all of the files/folders to exclude out of the main folder
+	# Use forward slashes for the path separator (the paths will be normalized before matching)
 	$excludeFromPublish = @(
-		'PSc8y[\\\/]c8y'
-		'PSc8y[\\\/]appveyor\.yml'
-		'PSc8y[\\\/]\.git'
-		'PSc8y[\\\/]\.nuspec'
-		'PSc8y[\\\/]Dependencies[\\\/]\.gitkeep'
-		'PSc8y[\\\/]README\.md'
-		'PSc8y[\\\/]CHANGELOG\.md'
-		'PSc8y[\\\/]tests\.ps1'
-		'PSc8y[\\\/]Tests'
+		"PSc8y/c8y"
+		'PSc8y/appveyor\.yml'
+		'PSc8y/\.git'
+		'PSc8y/\.nuspec'
+		'PSc8y/Dependencies/\.gitkeep'
+		'PSc8y/README\.md'
+		'PSc8y/CHANGELOG\.md'
+		'PSc8y/TestResults\.xml'
+		'PSc8y/report'
+		'PSc8y/tests\.ps1'
+		'PSc8y/Tests'
 	)
 
 	$ProjectDir = Resolve-Path "$PSScriptRoot/../../tools/PSc8y"
@@ -52,7 +55,12 @@ try {
 
 	$exclude = $excludeFromPublish -join '|'
 	Get-ChildItem -Path $tempmoduleFolderPath -Recurse `
-		| Where-Object { $_.FullName -match $exclude } `
+		| Where-Object {
+			# Normalise path before comparing
+			$Path = $_.FullName -replace "\\", "/"
+			
+			$Path -match $exclude
+		} `
 		| Remove-Item -Force -Recurse
 
 	#
