@@ -1,0 +1,67 @@
+Function Install-CumulocityBinary {
+    <# 
+.SYNOPSIS
+Install the Cumulocity cli binary (c8y) so it is accessible from everywhere in consoles (assuming /usr/local/bin is in the $PATH variable)
+
+.EXAMPLE
+Install-CumulocityBinary
+
+On Linux/MacOS, this installs the cumulocity binary to /usr/local/bin
+On Windows this will throw a warning
+
+.EXAMPLE
+Install-CumulocityBinary -InstallPath /usr/bin
+
+Install the Cumulocity binary to /usr/bin
+
+#>
+    [cmdletbinding()]
+    Param(
+        [Parameter(
+            Position = 0
+        )]
+        [string] $InstallPath
+    )
+
+    $binary = Get-CumulocityBinary
+
+    if (!$binary -or !(Test-Path $binary)) {
+        Write-Error "Could not find c8y binary"
+        return
+    }
+
+    if ($IsMacOS -or $IsLinux) {
+        if (!$InstallPath) {
+            $InstallPath = "/usr/local/bin"
+        }
+        $TargetBinary = "c8y"
+        
+        Write-Verbose "Changing execution rights for the binary [$binary]"
+        & chmod +x $binary
+
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning "Failed to change binary to executable mode. Try running 'chmod +x $InstallPath/$TargetBinary' manually"
+        }
+    
+    }
+    else {
+        if (!$InstallPath) {
+            if ($env:HOME) {
+                $InstallPath = $env:HOME
+            }
+        }
+        $TargetBinary = "c8y.exe"
+    }
+
+    if (!$InstallPath) {
+        Write-Warning "InstallPath is empty. Please specify a target install path by using the -InstallPath parameter"
+        return
+    }
+
+    Write-Verbose "Copying binary to [$InstallPath/$TargetBinary]"
+    Copy-Item -Path $binary -Destination "$InstallPath/$TargetBinary"
+
+    if ($env:PATH -notlike "*${InstallPath}*") {
+        Write-Warning "The Cumulocity binary has been installed in [$InstallPath] however it is not in your `$PATH variable. This means it will not be accessible from any where in the console. Please add [$InstallPath] to your `$PATH variable"
+    }
+}

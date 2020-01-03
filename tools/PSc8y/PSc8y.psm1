@@ -43,8 +43,12 @@ foreach($publicFile in @($PublicManual + $Public)) {
     Export-ModuleMember -Function $publicFile.Basename
 }
 
+# Install binary (and make it executable)
+if ($IsLinux -or $IsMacOS) {
+    PSc8y\Install-CumulocityBinary
+}
+
 Export-ModuleMember -Alias *
-#Export-ModuleMember -Function $Private.Basename
 
 $script:Aliases = @{
     # collections
