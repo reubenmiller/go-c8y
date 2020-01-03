@@ -1,12 +1,12 @@
 # Installation
 
-The c8y application is packaged as a single binary.
+The c8y application is packaged as a single binary, which support the following Operating Systems.
 
 * Windows 7+
 * MacOS
 * *nix
 
-In addition to
+In addition to the single binary, there is also a Powershell Module called `PSc8y`.
 
 ## Bash
 
@@ -42,7 +42,7 @@ In addition to
 1. Install `PSc8y` module from PSGallery using the following commands
 
     ```powershell
-    Install-Module PSc8y
+    Install-Module PSc8y -AllowPrerelease
     Import-Module PSc8y
     ```
 
@@ -51,3 +51,22 @@ In addition to
     Powershell 5.1 onwards is required. Powershell Core (pwsh) is also supported, so it can be run on Windows, MacOS and *nix systems.
 
 2. You will have to import it again everytime you start a new powershell console. You can also add it into your powershell profile `Import-Module PSc8y` so it loaded automatically.
+
+### Module installation Problems on (MacOS and Linux)
+
+**Note:**
+
+If you're having problems with installing PowerShell modules using `Install-Module`, then try updating to the latest PowerShellGet module directly from the source using the following:
+
+1. Clone the PowerShellGet repository
+
+    ```sh
+    git clone https://github.com/PowerShell/PowerShellGet
+    ```
+
+1. Import the module from the cloned directory
+
+    ```sh
+    Remove-Module PowerShellGet -ErrorAction SilentlyContinue
+    Import-Module PowerShellGet/src/PowerShellGet -Force
+    ```

@@ -43,6 +43,8 @@ Set-Session
 
 If you only need to set a session for a single session, then you can use the global `--session` argument. The name of the session should be the name of the file stored under your `~/.cumulocity/` folder (with or without the .json extension).
 
+You can set the `C8Y_SESSION_HOME` environment variable to control where the sessions should be stored.
+
 ### Bash
 
 ```sh
