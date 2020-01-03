@@ -58,7 +58,13 @@ Install the Cumulocity binary to /usr/bin
     }
 
     Write-Verbose "Copying binary to [$InstallPath/$TargetBinary]"
-    Copy-Item -Path $binary -Destination "$InstallPath/$TargetBinary"
+
+    try {
+        Copy-Item -Path $binary -Destination "$InstallPath/$TargetBinary" -ErrorAction Stop
+    } catch {
+        Write-Warning "Failed to copy file. $_"
+        Write-Warning "`nPlease run the following command manually `n`n`tsudo cp `"$binary`" `"$InstallPath/$TargetBinary`""
+    }
 
     if ($env:PATH -notlike "*${InstallPath}*") {
         Write-Warning "The Cumulocity binary has been installed in [$InstallPath] however it is not in your `$PATH variable. This means it will not be accessible from any where in the console. Please add [$InstallPath] to your `$PATH variable"
