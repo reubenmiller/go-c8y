@@ -51,8 +51,16 @@ func (n *listSessionCmd) listSession(cmd *cobra.Command, args []string) error {
 
 	files := make([]string, 0)
 
-	outputDir, _ := homedir.Dir()
-	outputDir = filepath.Join(outputDir, ".cumulocity")
+	var outputDir string
+
+	if v := os.Getenv("C8Y_SESSION_HOME"); v != "" {
+		outputDir = v
+	} else {
+		outputDir, _ = homedir.Dir()
+		outputDir = filepath.Join(outputDir, ".cumulocity")
+	}
+
+	Logger.Infof("using c8y session folder: %s", outputDir)
 
 	err := filepath.Walk(outputDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
