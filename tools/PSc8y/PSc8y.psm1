@@ -1,4 +1,5 @@
-﻿
+﻿[cmdletbinding()]
+Param()
 if ($PSVersionTable["PSVersion"].Major -le 2) {
     $RootFolder = Split-Path -Parent -Path $MyInvocation.Mycommand.Definition
 } else {
@@ -45,7 +46,7 @@ foreach($publicFile in @($PublicManual + $Public)) {
 
 # Install binary (and make it executable)
 if ($IsLinux -or $IsMacOS) {
-    PSc8y\Install-CumulocityBinary
+    Install-CumulocityBinary
 }
 
 Export-ModuleMember -Alias *

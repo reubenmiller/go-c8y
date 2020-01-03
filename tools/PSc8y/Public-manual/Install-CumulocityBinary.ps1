@@ -42,7 +42,6 @@ Install the Cumulocity binary to /usr/bin
         if ($LASTEXITCODE -ne 0) {
             Write-Warning "Failed to change binary to executable mode. Try running 'chmod +x $InstallPath/$TargetBinary' manually"
         }
-    
     }
     else {
         if (!$InstallPath) {
