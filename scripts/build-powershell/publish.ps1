@@ -2,7 +2,10 @@
 Param()
 $ErrorActionPreference = 'Stop'
 
-Import-Module PowershellGet -MinimumVersion "2.0.0"
+# PowershellGet 2.2.3 required to run correctly on MacOS
+Install-Module PowershellGet -MinimumVersion "2.2.3" -Force
+Remove-Module PowershellGet
+Import-Module PowershellGet -MinimumVersion "2.2.3"
 
 if ($env:APPVEYOR) {
 	& $PSScriptRoot/wait-for-jobs.ps1
@@ -51,10 +54,12 @@ try {
 		Exit 1
 	}
 
+	Write-Host "Publishing module"
 	## Publish module to PowerShell Gallery
 	$publishParams = @{
 		Path        = $tempmoduleFolderPath
 		NuGetApiKey = $env:nuget_apikey
+		Verbose = $true
 	}
 	Publish-Module @publishParams
 
