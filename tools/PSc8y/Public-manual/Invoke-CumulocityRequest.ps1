@@ -1,22 +1,20 @@
-﻿Function Invoke-RestRequest {
+﻿Function Invoke-CumulocityRequest {
 <#
 .SYNOPSIS
 Send a rest request using the c8y
 
-.D
-
 .EXAMPLE
-Invoke-RestRequest -Uri "/inventory/managedObjects" -Method "post" -Data "name=test"
+Invoke-CumulocityRequest -Uri "/inventory/managedObjects" -Method "post" -Data "name=test"
 
 Create a new managed object with the name "test"
 
 .EXAMPLE
-Invoke-RestRequest -Uri "/alarm/alarms" -QueryParameters @{ pageSize = "100" }
+Invoke-CumulocityRequest -Uri "/alarm/alarms" -QueryParameters @{ pageSize = "100" }
 
 Get a list of alarms with page size of 100
 
 .EXAMPLE
-Invoke-RestRequest -Uri "/alarm/alarms?pageSize=100"
+Invoke-CumulocityRequest -Uri "/alarm/alarms?pageSize=100"
 
 Get a list of alarms with page size of 100
 #>
