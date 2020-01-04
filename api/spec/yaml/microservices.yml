@@ -189,11 +189,6 @@ endpoints:
         type: json
         description: data
 
-      - name: name
-        type: string
-        required: false
-        description: Name of microservice
-
       - name: key
         type: string
         required: false
@@ -346,13 +341,13 @@ endpoints:
         - description: Disable (unsubscribe) to a microservice
           command: c8y microservices disable --id myapp
     pathParameters:
-      - name: tenant
-        type: tenant
-        required: false
-        description: Tenant id
-
       - name: id
         type: microservice
         pipeline: true
         required: true
         description: Microservice id
+
+      - name: tenant
+        type: tenant
+        required: false
+        description: Tenant id
