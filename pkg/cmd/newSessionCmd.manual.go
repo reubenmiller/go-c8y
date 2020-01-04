@@ -11,7 +11,6 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/howeyc/gopass"
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/spf13/cobra"
@@ -153,7 +152,7 @@ func (n *newSessionCmd) newSession(cmd *cobra.Command, args []string) error {
 		sessionName = v
 	}
 
-	outputDir := n.getHomeDir("")
+	outputDir := getSessionHomeDir()
 	outputFile := n.formatFilename(sessionName)
 
 	if err := n.writeSessionFile(outputDir, outputFile, *session); err != nil {
@@ -205,15 +204,6 @@ func (n *newSessionCmd) formatFilename(name string) string {
 		name = fmt.Sprintf("%s.json", name)
 	}
 	return name
-}
-
-func (n *newSessionCmd) getHomeDir(defaultPath string) string {
-	if defaultPath == "" {
-		if homeDir, err := homedir.Dir(); err == nil {
-			defaultPath = path.Join(homeDir, ".cumulocity")
-		}
-	}
-	return defaultPath
 }
 
 func (n *newSessionCmd) writeSessionFile(outputDir, outputFile string, session CumulocitySession) error {

@@ -3,12 +3,10 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
 	"github.com/manifoldco/promptui"
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 )
 
@@ -51,14 +49,7 @@ func (n *listSessionCmd) listSession(cmd *cobra.Command, args []string) error {
 
 	files := make([]string, 0)
 
-	var outputDir string
-
-	if v := os.Getenv("C8Y_SESSION_HOME"); v != "" {
-		outputDir = v
-	} else {
-		outputDir, _ = homedir.Dir()
-		outputDir = filepath.Join(outputDir, ".cumulocity")
-	}
+	outputDir := getSessionHomeDir()
 
 	Logger.Infof("using c8y session folder: %s", outputDir)
 
@@ -157,13 +148,4 @@ func (n *listSessionCmd) formatFilename(name string) string {
 		name = fmt.Sprintf("%s.json", name)
 	}
 	return name
-}
-
-func (n *listSessionCmd) getHomeDir(defaultPath string) string {
-	if defaultPath == "" {
-		if homeDir, err := homedir.Dir(); err == nil {
-			defaultPath = path.Join(homeDir, ".cumulocity")
-		}
-	}
-	return defaultPath
 }

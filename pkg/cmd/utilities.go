@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 
+	homedir "github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 )
@@ -222,4 +223,16 @@ func saveResponseToFile(resp *c8y.Response, filename string) (string, error) {
 		return fullpath, nil
 	}
 	return filename, nil
+}
+
+func getSessionHomeDir() string {
+	var outputDir string
+
+	if v := os.Getenv("C8Y_SESSION_HOME"); v != "" {
+		outputDir = v
+	} else {
+		outputDir, _ = homedir.Dir()
+		outputDir = filepath.Join(outputDir, ".cumulocity")
+	}
+	return outputDir
 }
