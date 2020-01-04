@@ -1,0 +1,13 @@
+# Site wide configuration
+
+title: Cumulocity REST CLI Tool
+locale: en_US
+# logo: # filename of a logo image that has been placed into your images directory
+
+owner:
+  name: Reuben Miller
+  avatar: bio-photo.jpg
+  bio: "Cumulocity REST cli tool documentation."
+  email: reuben.d.miller@gmail.com
+  # Do not include the @ symbol in your Twitter username
+  github: reubenmiller

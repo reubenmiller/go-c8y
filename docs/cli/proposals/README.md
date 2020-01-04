@@ -140,7 +140,20 @@ Manual commands
 ## Docs
 
 * [ ] Write github pages with a tutorial
+* [ ] General concepts
+    * [ ] Dates
+    * [ ] Lookups
+* [ ] Setup
+    * [ ] Install binary
 
+* [ ] Add/Remove child devices
+* [ ] users (add, skip send email, or static password)
+* [ ] managed objects
+* [ ] aliases
+* [ ] custom requests
+* [ ] Extending modules
+* [ ] notifications
+* [ ]
 
 # Future
 
