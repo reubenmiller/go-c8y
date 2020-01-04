@@ -1,25 +1,6 @@
 ﻿[cmdletbinding()]
 Param()
-if ($PSVersionTable["PSVersion"].Major -le 2) {
-    $RootFolder = Split-Path -Parent -Path $MyInvocation.Mycommand.Definition
-} else {
-    # Introduced in Powershell 3.0
-    $RootFolder = $PSScriptRoot
-}
-
-#
-# Create session folder
-#
-if ($env:HOME) {
-    $HomePath = Join-Path $env:HOME -ChildPath ".cumulocity"
-} else {
-    # default to current directory
-    $HomePath = Join-Path "." -ChildPath ".cumulocity"
-}
-if (!(Test-Path $HomePath)) {
-    Write-Host "Creating home directory [$HomePath]"
-    $null = New-Item -Path $HomePath -ItemType Directory
-}
+$RootFolder = $PSScriptRoot
 
 $PublicManual  = @( Get-ChildItem -Path $RootFolder\Public-manual\ -Filter *.ps1 -Recurse -ErrorAction SilentlyContinue )
 $Public  = @( Get-ChildItem -Path $RootFolder\Public\ -Filter *.ps1 -Recurse -ErrorAction SilentlyContinue )
@@ -44,10 +25,20 @@ foreach($publicFile in @($PublicManual + $Public)) {
     Export-ModuleMember -Function $publicFile.Basename
 }
 
+#
+# Create session folder
+#
+$HomePath = Get-SessionHomePath
+
+if (!(Test-Path $HomePath)) {
+    Write-Host "Creating home directory [$HomePath]"
+    $null = New-Item -Path $HomePath -ItemType Directory
+}
+
 # Install binary (and make it executable)
 if ($IsLinux -or $IsMacOS) {
     # silence errors
-    if ($env:PSC8Y_SKIP_INSTALL_ON_IMPORT -notmatch "true|1|on") {
+    if ($env:PSC8Y_INSTALL_ON_IMPORT -match "true|1|on") {
         Install-CumulocityBinary -ErrorAction SilentlyContinue
     }
 }
@@ -95,7 +86,7 @@ $script:Aliases = @{
     json = "ConvertTo-Json"
     tojson = "ConvertTo-Json"
     fromjson = "ConvertFrom-Json"
-    rest = "Invoke-RestRequest"
+    rest = "Invoke-CumulocityRequest"
 
     # session
     session = "Get-Session"
