@@ -130,7 +130,7 @@ Upload application microservice binary
                 -Noun "microservices" `
                 -Verb "create" `
                 -Parameters $Parameters `
-                -Type "application/vnd.com.nsn.cumulocity.managedObject+json" `
+                -Type "application/vnd.com.nsn.cumulocity.application+json" `
                 -ItemType "" `
                 -ResultProperty "" `
                 -Raw:$Raw
