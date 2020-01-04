@@ -29,11 +29,6 @@ Update microservice availability to MARKET
         [hashtable]
         $Data,
 
-        # Name of microservice
-        [Parameter()]
-        [string]
-        $Name,
-
         # Shared secret of microservice
         [Parameter()]
         [string]
@@ -85,9 +80,6 @@ Update microservice availability to MARKET
         $Parameters = @{}
         if ($PSBoundParameters.ContainsKey("Data")) {
             $Parameters["data"] = ConvertTo-JsonArgument $Data
-        }
-        if ($PSBoundParameters.ContainsKey("Name")) {
-            $Parameters["name"] = $Name
         }
         if ($PSBoundParameters.ContainsKey("Key")) {
             $Parameters["key"] = $Key

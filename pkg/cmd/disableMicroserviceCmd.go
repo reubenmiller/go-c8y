@@ -41,8 +41,8 @@ Disable (unsubscribe) to a microservice
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("tenant", "", "Tenant id")
 	cmd.Flags().String("id", "", "Microservice id (required)")
+	cmd.Flags().String("tenant", "", "Tenant id")
 
 	// Required flags
 	cmd.MarkFlagRequired("id")
@@ -85,9 +85,6 @@ func (n *disableMicroserviceCmd) disableMicroservice(cmd *cobra.Command, args []
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
-		pathParameters["tenant"] = v
-	}
 	if cmd.Flags().Lookup("id") != nil {
 		idInputValues, idValue, err := getMicroserviceSlice(cmd, args, "id")
 
@@ -104,6 +101,9 @@ func (n *disableMicroserviceCmd) disableMicroservice(cmd *cobra.Command, args []
 				pathParameters["id"] = newIDValue(item).GetID()
 			}
 		}
+	}
+	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
+		pathParameters["tenant"] = v
 	}
 
 	path := replacePathParameters("/tenant/tenants/{tenant}/applications/{id}", pathParameters)

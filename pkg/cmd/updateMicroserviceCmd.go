@@ -40,7 +40,6 @@ Update microservice availability to MARKET
 
 	cmd.Flags().String("id", "", "Microservice id (required)")
 	addDataFlag(cmd)
-	cmd.Flags().String("name", "", "Name of microservice")
 	cmd.Flags().String("key", "", "Shared secret of microservice")
 	cmd.Flags().String("availability", "", "Access level for other tenants. Possible values are : MARKET, PRIVATE (default)")
 	cmd.Flags().String("contextPath", "", "contextPath of the hosted application")
@@ -85,13 +84,6 @@ func (n *updateMicroserviceCmd) updateMicroservice(cmd *cobra.Command, args []st
 	// body
 	body := mapbuilder.NewMapBuilder()
 	body.SetMap(getDataFlag(cmd))
-	if v, err := cmd.Flags().GetString("name"); err == nil {
-		if v != "" {
-			body.Set("name", v)
-		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "name", err))
-	}
 	if v, err := cmd.Flags().GetString("key"); err == nil {
 		if v != "" {
 			body.Set("key", v)
