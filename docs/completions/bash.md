@@ -19,6 +19,11 @@ Execute the following command to add the completions to your profile:
 echo 'source <(c8y completion zsh)' >> ~/.zshrc
 ```
 
+To enable reverse cyling through completion options, add the following to your profile
+```sh
+bindkey '^[[Z' reverse-menu-complete
+```
+
 #### MacOS Troubleshooting
 
 If the completions aren't working in the zsh, then try following the instructions here to resolve the issue.

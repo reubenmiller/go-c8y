@@ -32,12 +32,16 @@ $env:C8Y_USE_ENVIRONMENT = "on"
 By default the `$HOME/.cumulocity` directory is used to store the Cumulocity session files. A custom session home folder can be specified by setting the `C8Y_SESSION_HOME` to a folder.
 Use a custom folder where the Cumulocity Session files should be keep and scanned. 
 
-### PSC8Y_SKIP_INSTALL_ON_IMPORT (PowerShell only)
+### PSC8Y_INSTALL_ON_IMPORT (PowerShell only)
 
-On MacOS and Linux don't install the c8y executable when loading the PSc8y PowerShell module.
+On MacOS and Linux the c8y binary will be installed / copied to the /usr/local/bin directory when importing the PSc8y PowerShell module.
 
 Example:
 
 ```PowerShell
-export PSC8Y_SKIP_INSTALL_ON_IMPORT=on
+export PSC8Y_INSTALL_ON_IMPORT=on
 ```
+
+### C8Y_INSTALL_PATH (PowerShell only)
+
+On MacOS and Linux, the install path where the c8y binary will be installed.
