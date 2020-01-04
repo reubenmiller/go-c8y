@@ -17,9 +17,7 @@ environment:
   ApiKey:
     secure: JWEJSOBJbCfIMb+J4Cnb2Fbn7gVsWfqWsdQEoqLvN5c=
 
-  # Don't install the c8y binary when importing PSc8y powershell module
-  PSC8Y_SKIP_INSTALL_ON_IMPORT: true
-  
+  # nuget api key used to publish to PowerShell Gallery
   nuget_apikey:
     secure: rfFg7q0kl5loV6mXquG73NKa5NEAtLKyKHhQJy0TiwIXdeMHYhqGqZCl5sb/7Hpz
   
