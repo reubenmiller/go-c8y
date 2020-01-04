@@ -20,7 +20,7 @@ Install the Cumulocity binary to /usr/bin
         [Parameter(
             Position = 0
         )]
-        [string] $InstallPath
+        [string] $InstallPath = $env:C8Y_INSTALL_PATH
     )
 
     $binary = Get-CumulocityBinary
@@ -60,7 +60,13 @@ Install the Cumulocity binary to /usr/bin
     Write-Verbose "Copying binary to [$InstallPath/$TargetBinary]"
 
     try {
-        Copy-Item -Path $binary -Destination "$InstallPath/$TargetBinary" -ErrorAction Stop
+        $AlreadyInstalled = $false
+        if (Test-Path "$InstallPath/$TargetBinary") {
+            (Get-FileHash -Path $binary -Algorithm SHA256).Hash -eq (Get-FileHash -Path "$InstallPath/$TargetBinary" -Algorithm SHA256).Hash
+        }
+        if (!$AlreadyInstalled) {
+            Copy-Item -Path $binary -Destination "$InstallPath/$TargetBinary" -ErrorAction Stop
+        }
     } catch {
         Write-Warning "Failed to copy file. $_"
         Write-Warning "`nPlease run the following command manually `n`n`tsudo cp `"$binary`" `"$InstallPath/$TargetBinary`""
