@@ -13,9 +13,9 @@ object[]
 #>
     [CmdletBinding()]
     Param()
-    $HomePath = Join-Path $env:HOME -ChildPath ".cumulocity"
+    $HomePath = Get-SessionHomePath
 
-    $Sessions = Get-ChildItem -LiteralPath $HomePath -Filter "*.json" | ForEach-Object {
+    $Sessions = Get-ChildItem -LiteralPath $HomePath -Filter "*.json" -Recurse | ForEach-Object {
         $Path = $PSItem.FullName
         $data = Get-Content -LiteralPath $Path | ConvertFrom-Json
         $data | Add-Member -MemberType NoteProperty -Name "path" -Value $Path -ErrorAction SilentlyContinue
