@@ -98,7 +98,7 @@ AliasesToExport = '*'
 PrivateData = @{
     PSData = @{
         #Prerelease of this module
-        Prerelease = '-alpha03'
+        Prerelease = '-alpha04'
 
         # Tags applied to this module. These help with module discovery in online galleries.
         Tags = @(
@@ -116,7 +116,7 @@ PrivateData = @{
         # LicenseUri = ''
 
         # A URL to the main website for this project.
-        ProjectUri = 'https://github.com/reubenmiller/go-c8y'
+        ProjectUri = 'https://reubenmiller.github.io/go-c8y'
 
         # A URL to an icon representing this module.
         # IconUri = ''
