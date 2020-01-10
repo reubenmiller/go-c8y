@@ -21,13 +21,15 @@ type CumulocitySessions struct {
 	Sessions []CumulocitySession `json:"sessions"`
 }
 
+// CumulocitySession contains all settings required to communicate with a Cumulocity service
 type CumulocitySession struct {
 	// ID          string `json:"id"`
-	Host        string `json:"host"`
-	Tenant      string `json:"tenant"`
-	Username    string `json:"username"`
-	Password    string `json:"password"`
-	Description string `json:"description"`
+	Host            string `json:"host"`
+	Tenant          string `json:"tenant"`
+	Username        string `json:"username"`
+	Password        string `json:"password"`
+	Description     string `json:"description"`
+	UseTenantPrefix bool   `json:"useTenantPrefix"`
 
 	MicroserviceAliases map[string]string `json:"microserviceAliases"`
 
@@ -106,6 +108,7 @@ func newNewSessionCmd() *newSessionCmd {
 	cmd.Flags().String("description", "", "Description about the session")
 	cmd.Flags().String("name", "", "Name of the session")
 	cmd.Flags().String("microserviceAliases", "", "Name of the session")
+	cmd.Flags().Bool("noTenantPrefix", false, "Don't use tenant name as a prefix to the user name when using Basic Authentication. Defaults to false")
 
 	// Required flags
 	cmd.MarkFlagRequired("host")
@@ -144,6 +147,10 @@ func (n *newSessionCmd) newSession(cmd *cobra.Command, args []string) error {
 	}
 	if v, err := cmd.Flags().GetString("description"); err == nil && v != "" {
 		session.Description = v
+	}
+
+	if v, err := cmd.Flags().GetBool("noTenantPrefix"); err == nil {
+		session.UseTenantPrefix = !v
 	}
 
 	// session name (default to host and username)

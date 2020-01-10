@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/reubenmiller/go-c8y/pkg/logger"
 	"github.com/spf13/cobra"
@@ -51,19 +50,20 @@ var rootCmd = &cobra.Command{
 }
 
 var (
-	client                   *c8y.Client
-	globalFlagPageSize       int
-	globalFlagVerbose        bool
-	globalFlagWithTotalPages bool
-	globalFlagPrettyPrint    bool
-	globalFlagDryRun         bool
-	globalFlagSessionFile    string
-	globalFlagOutputFile     string
-	globalFlagUseEnv         bool
-	globalFlagRaw            bool
-	globalFlagProxy          string
-	globalFlagNoProxy        bool
-	globalFlagTimeout        uint
+	client                    *c8y.Client
+	globalFlagPageSize        int
+	globalFlagVerbose         bool
+	globalFlagWithTotalPages  bool
+	globalFlagPrettyPrint     bool
+	globalFlagDryRun          bool
+	globalFlagSessionFile     string
+	globalFlagOutputFile      string
+	globalFlagUseEnv          bool
+	globalFlagRaw             bool
+	globalFlagProxy           string
+	globalFlagNoProxy         bool
+	globalFlagTimeout         uint
+	globalFlagUseTenantPrefix bool
 )
 
 func Execute() {
@@ -208,7 +208,7 @@ func initConfig() {
 	// only parse env variables if no explict config file is given
 	if globalFlagUseEnv {
 		Logger.Println("C8Y_USE_ENVIRONMENT is set. Environment variables can be used to override config settings")
-		viper.SetEnvPrefix("C8Y")
+		viper.SetEnvPrefix("c8y")
 		viper.AutomaticEnv()
 	}
 
@@ -254,14 +254,11 @@ func initConfig() {
 		// Use config file from the flag.
 		viper.SetConfigFile(globalFlagSessionFile)
 	} else {
-		// Find home directory.
-		home, err := homedir.Dir()
-		if err != nil {
-			Logger.Panic(err)
-		}
+		home := getSessionHomeDir()
 
-		// Search config in home directory with name ".cobra" (without extension).
+		// Search config in home directory with name ".cumulocity" (without extension).
 		viper.AddConfigPath(".")
+
 		viper.AddConfigPath(path.Join(home, ".cumulocity"))
 
 		if globalFlagSessionFile != "" {
@@ -288,6 +285,13 @@ func initConfig() {
 		// Fallback to reading session from environment variables
 		client = c8y.NewClientFromEnvironment(httpClient, true)
 	}
+
+	// Should we use the tenant in the name or not
+	if viper.IsSet("useTenantPrefix") {
+		client.UseTenantInUsername = viper.GetBool("useTenantPrefix")
+	}
+
+	Logger.Printf("use tenant prefix: %v", client.UseTenantInUsername)
 
 	// Add the realtime client
 	client.Realtime = c8y.NewRealtimeClient(

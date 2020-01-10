@@ -535,6 +535,7 @@ func (c *Client) SetAuthorization(req *http.Request) {
 	} else {
 		headerUsername = c.Username
 	}
+	Logger.Debugf("current username: %s\n", headerUsername)
 	req.SetBasicAuth(headerUsername, c.Password)
 }
 
