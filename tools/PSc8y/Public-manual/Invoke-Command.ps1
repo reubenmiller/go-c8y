@@ -136,6 +136,7 @@
         ))
     }
 
+    <# 
     if ($NestedData) {
         $null = Add-Member -InputObject $NestedData -MemberType NoteProperty -Name "PSStatistics" -Value @{
             pageSize = $response.statistics.pageSize
@@ -143,6 +144,7 @@
             currentPage = $response.statistics.currentPage
         }
     }
+    #>
 
     # Save last value for easier recall on command line
     $global:_rawdata = $response
