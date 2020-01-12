@@ -76,6 +76,15 @@ Currently not known
 * [ ] Microservice aliases using my-app://health
 
 
+* [ ] Get-DeviceParent -Depth 1 etc.
+* [ ] DeviceGroup actions, Get, New, Remove, Update (by name etc.)
+* [ ] Get list of firmware. managed object "type eq 'c8y_Firmware'"
+
+* [ ] Adding device management i.e. Update supported operations
+* [ ] Remove PSStatistics property from powershell response
+  
+
+
 ## PSc8y (Powershell)
 
 * [x] Support common parameters
