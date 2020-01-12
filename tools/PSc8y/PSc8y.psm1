@@ -40,6 +40,10 @@ if ($IsLinux -or $IsMacOS) {
     # silence errors
     if ($env:PSC8Y_INSTALL_ON_IMPORT -match "true|1|on") {
         Install-CumulocityBinary -ErrorAction SilentlyContinue
+    } else {
+        # Make c8y executable
+        $binary = Get-CumulocityBinary
+        & chmod +x $binary
     }
 }
 

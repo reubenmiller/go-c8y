@@ -37,7 +37,7 @@ Copyright = '(c) 2020. All rights reserved.'
 Description = 'Cumulocity REST API'
 
 # Minimum version of the Windows PowerShell engine required by this module
-PowerShellVersion = '5.1'
+PowerShellVersion = '5.0'
 
 # Name of the Windows PowerShell host required by this module
 # PowerShellHostName = ''
@@ -98,7 +98,7 @@ AliasesToExport = '*'
 PrivateData = @{
     PSData = @{
         #Prerelease of this module
-        Prerelease = '-alpha04'
+        Prerelease = '-alpha05'
 
         # Tags applied to this module. These help with module discovery in online galleries.
         Tags = @(
