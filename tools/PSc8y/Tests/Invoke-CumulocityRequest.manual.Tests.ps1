@@ -101,4 +101,51 @@ Describe -Name "Invoke-CumulocityRequest" {
         }
     }
 
+    It "post an inventory managed object using uncompressed json text" {
+        $jsonText = @"
+{
+    "name": "manual_object_001",
+    "c8y_CustomObject": {
+        "prop1": true
+    }
+}
+"@
+        $Response = Invoke-CumulocityRequest `
+            -Uri "/inventory/managedObjects" `
+            -Method "post" `
+            -Data $jsonText
+
+        $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
+
+        $obj = $Response | ConvertFrom-Json
+        $obj.name | Should -BeExactly "manual_object_001"
+
+        if ($obj.id) {
+            Remove-ManagedObject -Id $obj.id
+        }
+    }
+
+    It "post an inventory managed object using hashtable" {
+        $Response = Invoke-CumulocityRequest `
+            -Uri "/inventory/managedObjects" `
+            -Method "post" `
+            -Data @{
+                name = "manual_object_002"
+                c8y_CustomObject = @{
+                    prop1 = false
+                }
+            }
+
+        $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
+
+        $obj = $Response | ConvertFrom-Json
+        $obj.name | Should -BeExactly "manual_object_002"
+
+        if ($obj.id) {
+            Remove-ManagedObject -Id $obj.id
+        }
+    }
+
 }

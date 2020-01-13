@@ -100,12 +100,17 @@ Get a list of alarms with page size of 100
 
     if ($null -ne $Data) {
         if ($Data -is [string]) {
-            $null = $c8yargs.AddRange(@("--data", $Data))
-        } elseif ($Data -is [hashtable]) {
-            # todo: handle
-            $jsonstring = ConvertTo-Json -InputObject $Data -Depth 100 -Compress
-            $null = $c8yargs.AddRange(@("--data", $jsonstring))
+            if (Test-Json -InputObject $Data -WarningAction SilentlyContinue) {
+                $null = $c8yargs.AddRange(@("--data", (ConvertTo-JsonArgument $Data)))
+            } else {
+                # allow shortform strings (intepreted by c8y cli tool)
+                $null = $c8yargs.AddRange(@("--data", $Data))
+            }
+        } else {
+            # Convert hashtables, psobject etc.
+            $null = $c8yargs.AddRange(@("--data", (ConvertTo-JsonArgument $Data)))
         }
+        
     }
 
     if ($InFile) {
