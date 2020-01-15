@@ -75,14 +75,97 @@ Currently not known
 * [ ] Allow file upload to include additional "type" property
 * [ ] Microservice aliases using my-app://health
 
+* [x] Get-DeviceParent (PowerShell only)
 
-* [ ] Get-DeviceParent -Depth 1 etc.
-* [ ] DeviceGroup actions, Get, New, Remove, Update (by name etc.)
 * [ ] Get list of firmware. managed object "type eq 'c8y_Firmware'"
 
 * [ ] Adding device management i.e. Update supported operations
 * [ ] Remove PSStatistics property from powershell response
-  
+* [ ] Add device view (ps1xml), Maybe display c8y_Software and/or c8y_Firmware if present
+
+
+* [ ] Device Groups
+    * [ ] Get-DeviceGroup
+    * [ ] New-DeviceGroup
+    * [ ] Update-DeviceGroup
+    * [ ] Remove-DeviceGroup
+
+* [ ] Device Requests
+    * [ ] New-DeviceRequest
+    * [ ] New-DeviceCredential
+    * [ ] Register-Device
+    * [ ] Remove-DeviceRequest
+
+* [ ] Applications
+    * [ ] New-HostedApplication?
+    * [ ] New-WebPlugin
+    * [ ] Get-WebPlugin
+    * [ ] Get Application Tenant Option
+    * [ ] Restart-MultiTenantMicroservice
+    * [ ] Restart-Microservice (enable then disable)
+
+* [ ] Sessions
+    * [ ] Remove session? Is this necessary? Or just manually delete it
+
+* [ ] General
+    * [ ] New-RandomPassword
+    * [ ] Get-Version
+    * [ ] Copy managed object - custom command? or remove reserved properties
+    * [ ] Format C8y Query (helper to allow the user shorthand c8y query language)
+    * [ ] Open-Website
+    * [ ] Merge-Object
+
+* [ ] User
+    * [ ] Reset-UserPassword
+
+* [ ] Device Control
+    * [ ] Wait-Operation (using websockets if possible...extend notification cmdlet to support waiting for a particular operation)
+
+* [ ] Devices
+    * [ ] Get Supported Series
+    * [ ] Get Supported Measurements
+    * [ ] Get Supported Operations
+    * [ ] Add-SupportedOperation
+    * [ ] Remove-SupportedOperation
+    * [ ] Get agent collection
+    * [ ] Set-DeviceMonitoring
+
+* [ ] Formatting / Grouping
+    * [ ] Group-Operation
+    * [ ] Group-ManagedObject
+    * [ ] Group-PendingOperation
+
+* [ ] Inventory
+    * [ ] Find Data Point (c8y_Kpi ? using query language)
+
+* [ ] 
+    * [ ] 
+    * [ ] 
+    * [ ] 
+
+### PSc8y.diagnostics Module
+
+* [ ] Get-DeviceStatistics
+* [ ] Calculate processing time of an operation (using audit records)
+* [ ] Test-ApiPerformance
+* [ ] Test-Measurement
+* [ ] Test-MeasurementCollection
+* [ ] 
+* [ ] 
+
+
+* [ ] Microservice alias
+    * [ ] Set-MicroserviceAlias
+    * [ ] Reset-MicroserviceAlias
+
+
+## PSc8y.deviceControl
+    * [ ] New-UpdateConfigurationOperation
+
+
+## Future releases
+
+* Rate limiter???
 
 
 ## PSc8y (Powershell)
