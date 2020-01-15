@@ -31,10 +31,14 @@ $OutputDir = Resolve-Path $OutputDir
 
 
 # Generate code completions
-$BinaryName = "c8y.exe"
-if ($IsMacOS -or $IsLinux) {
-    $BinaryName = "c8y"
+if ($IsMacOS) {
+    $BinaryName = "c8y.macos"
+} elseif ($IsLinux) {
+    $BinaryName = "c8y.linux"
+} else {
+    $BinaryName = "c8y.windows.exe"
 }
+
 & "$OutputDir/$BinaryName" completion powershell > "$OutputDir/c8y.completion.ps1"
 & "$OutputDir/$BinaryName" completion bash > "$OutputDir/c8y.completion.sh"
 
