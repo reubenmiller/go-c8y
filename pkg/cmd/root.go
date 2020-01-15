@@ -120,6 +120,9 @@ func Execute() {
 	// currentApplication commands
 	rootCmd.AddCommand(newCurrentApplicationRootCmd().getCommand())
 
+	// deviceCredentials commands
+	rootCmd.AddCommand(newDeviceCredentialsRootCmd().getCommand())
+
 	// devices commands
 	devices := newDevicesRootCmd().getCommand()
 	devices.AddCommand(newQueryDeviceCmd().getCommand())
