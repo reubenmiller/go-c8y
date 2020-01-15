@@ -27,6 +27,7 @@ func newTenantsRootCmd() *tenantsCmd {
 	cmd.AddCommand(newEnableApplicationOnTenantCmd().getCommand())
 	cmd.AddCommand(newDisableApplicationFromTenantCmd().getCommand())
 	cmd.AddCommand(newGetApplicationReferenceCollectionCmd().getCommand())
+	cmd.AddCommand(newGetTenantVersionCmd().getCommand())
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

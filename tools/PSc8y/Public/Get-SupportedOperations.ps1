@@ -1,16 +1,16 @@
 ﻿# Code generated from specification version 1.0.0: DO NOT EDIT
-Function Get-SupportedMeasurements {
+Function Get-SupportedOperations {
 <#
 .SYNOPSIS
-Get supported measurements/s of a device
+Get supported operations of a device
 
 .EXAMPLE
-PS> Get-SupportedMeasurements -Device $device.id
-Get the supported measurements of a device by name
+PS> Get-SupportedOperations -Device $device.id
+Get the supported operations of a device by name
 
 .EXAMPLE
-PS> Get-SupportedMeasurements -Device $device.id
-Get the supported measurements of a device (using pipeline)
+PS> Get-SupportedOperations -Device $device.id
+Get the supported operations of a device (using pipeline)
 
 
 #>
@@ -80,11 +80,11 @@ Get the supported measurements of a device (using pipeline)
 
             Invoke-Command `
                 -Noun "devices" `
-                -Verb "getSupportedMeasurements" `
+                -Verb "getSupportedOperations" `
                 -Parameters $Parameters `
                 -Type "application/vnd.com.nsn.cumulocity.inventory+json" `
                 -ItemType "" `
-                -ResultProperty "c8y_SupportedMeasurements" `
+                -ResultProperty "c8y_SupportedOperations" `
                 -Raw:$Raw `
                 -IncludeAll:$IncludeAll
         }

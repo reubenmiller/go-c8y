@@ -1,23 +1,26 @@
 ﻿# Code generated from specification version 1.0.0: DO NOT EDIT
-Function Get-SupportedMeasurements {
+Function Set-DeviceRequiredAvailability {
 <#
 .SYNOPSIS
-Get supported measurements/s of a device
+Set the required availability of a device
+
+.DESCRIPTION
+Devices that have not sent any message in the response interval are considered unavailable. Response interval can have value between -32768 and 32767 and any values out of range will be shrink to range borders. Such devices are marked as unavailable (see below) and an unavailability alarm is raised. Devices with a response interval of zero minutes are considered to be under maintenance. No alarm is raised while a device is under maintenance. Devices that do not contain 'c8y_RequiredAvailability' are not monitored.
 
 .EXAMPLE
-PS> Get-SupportedMeasurements -Device $device.id
-Get the supported measurements of a device by name
+PS> Set-DeviceRequiredAvailability -Device $device.id -Interval 10
+Set the required availability of a device by name to 10 minutes
 
 .EXAMPLE
-PS> Get-SupportedMeasurements -Device $device.id
-Get the supported measurements of a device (using pipeline)
+PS> Get-ManagedObject -Id $device.id | PSc8y\Set-DeviceRequiredAvailability -Interval 10
+Set the required availability of a device (using pipeline)
 
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
                    PositionalBinding=$true,
                    HelpUri='',
-                   ConfirmImpact = 'None')]
+                   ConfirmImpact = 'High')]
     [Alias()]
     [OutputType([object])]
     Param(
@@ -27,6 +30,11 @@ Get the supported measurements of a device (using pipeline)
                    ValueFromPipelineByPropertyName=$true)]
         [object[]]
         $Device,
+
+        # Interval in minutes (required)
+        [Parameter(Mandatory = $true)]
+        [long]
+        $Interval,
 
         # Include raw response including pagination information
         [Parameter()]
@@ -46,11 +54,19 @@ Get the supported measurements of a device (using pipeline)
         # Session path
         [Parameter()]
         [string]
-        $Session
+        $Session,
+
+        # Don't prompt for confirmation
+        [Parameter()]
+        [switch]
+        $Force
     )
 
     Begin {
         $Parameters = @{}
+        if ($PSBoundParameters.ContainsKey("Interval")) {
+            $Parameters["interval"] = $Interval
+        }
         if ($PSBoundParameters.ContainsKey("OutputFile")) {
             $Parameters["outputFile"] = $OutputFile
         }
@@ -80,11 +96,11 @@ Get the supported measurements of a device (using pipeline)
 
             Invoke-Command `
                 -Noun "devices" `
-                -Verb "getSupportedMeasurements" `
+                -Verb "setRequiredAvailability" `
                 -Parameters $Parameters `
                 -Type "application/vnd.com.nsn.cumulocity.inventory+json" `
                 -ItemType "" `
-                -ResultProperty "c8y_SupportedMeasurements" `
+                -ResultProperty "" `
                 -Raw:$Raw `
                 -IncludeAll:$IncludeAll
         }

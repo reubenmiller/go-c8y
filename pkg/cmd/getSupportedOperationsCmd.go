@@ -18,22 +18,22 @@ import (
 	"github.com/tidwall/pretty"
 )
 
-type getSupportedSeriesCmd struct {
+type getSupportedOperationsCmd struct {
 	*baseCmd
 }
 
-func newGetSupportedSeriesCmd() *getSupportedSeriesCmd {
-	ccmd := &getSupportedSeriesCmd{}
+func newGetSupportedOperationsCmd() *getSupportedOperationsCmd {
+	ccmd := &getSupportedOperationsCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "getSupportedSeries",
-		Short: "Get supported measurement series/s of a device",
+		Use:   "getSupportedOperations",
+		Short: "Get supported operations of a device",
 		Long:  ``,
 		Example: `
-$ c8y inventory getSupportedSeries --device 12345
-Get the supported measurement series of a device by name
+$ c8y inventory getSupportedOperations --device 12345
+Get the supported operations of a device by name
 		`,
-		RunE: ccmd.getSupportedSeries,
+		RunE: ccmd.getSupportedOperations,
 	}
 
 	cmd.SilenceUsage = true
@@ -48,7 +48,7 @@ Get the supported measurement series of a device by name
 	return ccmd
 }
 
-func (n *getSupportedSeriesCmd) getSupportedSeries(cmd *cobra.Command, args []string) error {
+func (n *getSupportedOperationsCmd) getSupportedOperations(cmd *cobra.Command, args []string) error {
 
 	// query parameters
 	queryValue := url.QueryEscape("")
@@ -99,7 +99,7 @@ func (n *getSupportedSeriesCmd) getSupportedSeries(cmd *cobra.Command, args []st
 		}
 	}
 
-	path := replacePathParameters("inventory/managedObjects/{device}/supportedSeries", pathParameters)
+	path := replacePathParameters("inventory/managedObjects/{device}", pathParameters)
 
 	// filter and selectors
 	filters := getFilterFlag(cmd, "filter")
@@ -123,10 +123,10 @@ func (n *getSupportedSeriesCmd) getSupportedSeries(cmd *cobra.Command, args []st
 		return err
 	}
 
-	return n.doGetSupportedSeries(req, outputfile, filters)
+	return n.doGetSupportedOperations(req, outputfile, filters)
 }
 
-func (n *getSupportedSeriesCmd) doGetSupportedSeries(req c8y.RequestOptions, outputfile string, filters *JSONFilters) error {
+func (n *getSupportedOperationsCmd) doGetSupportedOperations(req c8y.RequestOptions, outputfile string, filters *JSONFilters) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(globalFlagTimeout)*time.Millisecond)
 	defer cancel()
 	start := time.Now()
@@ -182,7 +182,7 @@ func (n *getSupportedSeriesCmd) doGetSupportedSeries(req c8y.RequestOptions, out
 		isJSONResponse := jsonUtilities.IsValidJSON([]byte(*resp.JSONData))
 
 		if isJSONResponse && filters != nil && !globalFlagRaw {
-			responseText = filters.Apply(*resp.JSONData, "c8y_SupportedSeries")
+			responseText = filters.Apply(*resp.JSONData, "c8y_SupportedOperations")
 		} else {
 			responseText = []byte(*resp.JSONData)
 		}

@@ -96,7 +96,6 @@ func Execute() {
 	rootCmd.AddCommand(newCompletionsCmd().getCommand())
 	rootCmd.AddCommand(newVersionCmd().getCommand())
 
-	rootCmd.AddCommand(newDeviceRootCmd().getCommand())
 	rootCmd.AddCommand(newRealtimeCmd().getCommand())
 	rootCmd.AddCommand(newSessionsRootCmd().getCommand())
 
@@ -120,6 +119,12 @@ func Execute() {
 
 	// currentApplication commands
 	rootCmd.AddCommand(newCurrentApplicationRootCmd().getCommand())
+
+	// devices commands
+	devices := newDevicesRootCmd().getCommand()
+	devices.AddCommand(newQueryDeviceCmd().getCommand())
+	devices.AddCommand(newGetDeviceCollectionCmd().getCommand())
+	rootCmd.AddCommand(devices)
 
 	// operations commands
 	operations := newOperationsRootCmd().getCommand()

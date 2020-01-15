@@ -79,7 +79,7 @@ Get the supported measurement series of a device (using pipeline)
             }
 
             Invoke-Command `
-                -Noun "inventory" `
+                -Noun "devices" `
                 -Verb "getSupportedSeries" `
                 -Parameters $Parameters `
                 -Type "application/vnd.com.nsn.cumulocity.inventory+json" `

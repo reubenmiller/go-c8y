@@ -18,37 +18,39 @@ import (
 	"github.com/tidwall/pretty"
 )
 
-type getSupportedSeriesCmd struct {
+type setDeviceRequiredAvailabilityCmd struct {
 	*baseCmd
 }
 
-func newGetSupportedSeriesCmd() *getSupportedSeriesCmd {
-	ccmd := &getSupportedSeriesCmd{}
+func newSetDeviceRequiredAvailabilityCmd() *setDeviceRequiredAvailabilityCmd {
+	ccmd := &setDeviceRequiredAvailabilityCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "getSupportedSeries",
-		Short: "Get supported measurement series/s of a device",
-		Long:  ``,
+		Use:   "setRequiredAvailability",
+		Short: "Set the required availability of a device",
+		Long:  `Devices that have not sent any message in the response interval are considered unavailable. Response interval can have value between -32768 and 32767 and any values out of range will be shrink to range borders. Such devices are marked as unavailable (see below) and an unavailability alarm is raised. Devices with a response interval of zero minutes are considered to be under maintenance. No alarm is raised while a device is under maintenance. Devices that do not contain 'c8y_RequiredAvailability' are not monitored.`,
 		Example: `
-$ c8y inventory getSupportedSeries --device 12345
-Get the supported measurement series of a device by name
+$ c8y inventory setRequiredAvailability --device 12345 --interval 10
+Set the required availability of a device by name to 10 minutes
 		`,
-		RunE: ccmd.getSupportedSeries,
+		RunE: ccmd.setDeviceRequiredAvailability,
 	}
 
 	cmd.SilenceUsage = true
 
 	cmd.Flags().StringSlice("device", []string{""}, "Device ID (required)")
+	cmd.Flags().Int("interval", 0, "Interval in minutes (required)")
 
 	// Required flags
 	cmd.MarkFlagRequired("device")
+	cmd.MarkFlagRequired("interval")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd
 }
 
-func (n *getSupportedSeriesCmd) getSupportedSeries(cmd *cobra.Command, args []string) error {
+func (n *setDeviceRequiredAvailabilityCmd) setDeviceRequiredAvailability(cmd *cobra.Command, args []string) error {
 
 	// query parameters
 	queryValue := url.QueryEscape("")
@@ -78,6 +80,12 @@ func (n *getSupportedSeriesCmd) getSupportedSeries(cmd *cobra.Command, args []st
 
 	// body
 	body := mapbuilder.NewMapBuilder()
+	body.SetMap(getDataFlag(cmd))
+	if v, err := cmd.Flags().GetInt("interval"); err == nil {
+		body.Set("c8y_RequiredAvailability.responseInterval", v)
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "interval", err))
+	}
 
 	// path parameters
 	pathParameters := make(map[string]string)
@@ -99,13 +107,13 @@ func (n *getSupportedSeriesCmd) getSupportedSeries(cmd *cobra.Command, args []st
 		}
 	}
 
-	path := replacePathParameters("inventory/managedObjects/{device}/supportedSeries", pathParameters)
+	path := replacePathParameters("inventory/managedObjects/{device}", pathParameters)
 
 	// filter and selectors
 	filters := getFilterFlag(cmd, "filter")
 
 	req := c8y.RequestOptions{
-		Method:       "GET",
+		Method:       "PUT",
 		Path:         path,
 		Query:        queryValue,
 		Body:         body.GetMap(),
@@ -123,10 +131,10 @@ func (n *getSupportedSeriesCmd) getSupportedSeries(cmd *cobra.Command, args []st
 		return err
 	}
 
-	return n.doGetSupportedSeries(req, outputfile, filters)
+	return n.doSetDeviceRequiredAvailability(req, outputfile, filters)
 }
 
-func (n *getSupportedSeriesCmd) doGetSupportedSeries(req c8y.RequestOptions, outputfile string, filters *JSONFilters) error {
+func (n *setDeviceRequiredAvailabilityCmd) doSetDeviceRequiredAvailability(req c8y.RequestOptions, outputfile string, filters *JSONFilters) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(globalFlagTimeout)*time.Millisecond)
 	defer cancel()
 	start := time.Now()
@@ -182,7 +190,7 @@ func (n *getSupportedSeriesCmd) doGetSupportedSeries(req c8y.RequestOptions, out
 		isJSONResponse := jsonUtilities.IsValidJSON([]byte(*resp.JSONData))
 
 		if isJSONResponse && filters != nil && !globalFlagRaw {
-			responseText = filters.Apply(*resp.JSONData, "c8y_SupportedSeries")
+			responseText = filters.Apply(*resp.JSONData, "")
 		} else {
 			responseText = []byte(*resp.JSONData)
 		}

@@ -18,37 +18,34 @@ import (
 	"github.com/tidwall/pretty"
 )
 
-type getSupportedSeriesCmd struct {
+type getTenantVersionCmd struct {
 	*baseCmd
 }
 
-func newGetSupportedSeriesCmd() *getSupportedSeriesCmd {
-	ccmd := &getSupportedSeriesCmd{}
+func newGetTenantVersionCmd() *getTenantVersionCmd {
+	ccmd := &getTenantVersionCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "getSupportedSeries",
-		Short: "Get supported measurement series/s of a device",
+		Use:   "getVersion",
+		Short: "Get tenant platform (backend) version",
 		Long:  ``,
 		Example: `
-$ c8y inventory getSupportedSeries --device 12345
-Get the supported measurement series of a device by name
+$ c8y tenants getVersion
+Set the required availability of a device by name to 10 minutes
 		`,
-		RunE: ccmd.getSupportedSeries,
+		RunE: ccmd.getTenantVersion,
 	}
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().StringSlice("device", []string{""}, "Device ID (required)")
-
 	// Required flags
-	cmd.MarkFlagRequired("device")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd
 }
 
-func (n *getSupportedSeriesCmd) getSupportedSeries(cmd *cobra.Command, args []string) error {
+func (n *getTenantVersionCmd) getTenantVersion(cmd *cobra.Command, args []string) error {
 
 	// query parameters
 	queryValue := url.QueryEscape("")
@@ -81,25 +78,8 @@ func (n *getSupportedSeriesCmd) getSupportedSeries(cmd *cobra.Command, args []st
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if cmd.Flags().Changed("device") {
-		deviceInputValues, deviceValue, err := getFormattedDeviceSlice(cmd, args, "device")
 
-		if err != nil {
-			return newUserError("no matching devices found", deviceInputValues, err)
-		}
-
-		if len(deviceValue) == 0 {
-			return newUserError("no matching devices found", deviceInputValues)
-		}
-
-		for _, item := range deviceValue {
-			if item != "" {
-				pathParameters["device"] = newIDValue(item).GetID()
-			}
-		}
-	}
-
-	path := replacePathParameters("inventory/managedObjects/{device}/supportedSeries", pathParameters)
+	path := replacePathParameters("/tenant/system/options/system/version", pathParameters)
 
 	// filter and selectors
 	filters := getFilterFlag(cmd, "filter")
@@ -123,10 +103,10 @@ func (n *getSupportedSeriesCmd) getSupportedSeries(cmd *cobra.Command, args []st
 		return err
 	}
 
-	return n.doGetSupportedSeries(req, outputfile, filters)
+	return n.doGetTenantVersion(req, outputfile, filters)
 }
 
-func (n *getSupportedSeriesCmd) doGetSupportedSeries(req c8y.RequestOptions, outputfile string, filters *JSONFilters) error {
+func (n *getTenantVersionCmd) doGetTenantVersion(req c8y.RequestOptions, outputfile string, filters *JSONFilters) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(globalFlagTimeout)*time.Millisecond)
 	defer cancel()
 	start := time.Now()
@@ -182,7 +162,7 @@ func (n *getSupportedSeriesCmd) doGetSupportedSeries(req c8y.RequestOptions, out
 		isJSONResponse := jsonUtilities.IsValidJSON([]byte(*resp.JSONData))
 
 		if isJSONResponse && filters != nil && !globalFlagRaw {
-			responseText = filters.Apply(*resp.JSONData, "c8y_SupportedSeries")
+			responseText = filters.Apply(*resp.JSONData, "value")
 		} else {
 			responseText = []byte(*resp.JSONData)
 		}

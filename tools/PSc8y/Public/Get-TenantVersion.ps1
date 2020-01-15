@@ -1,16 +1,12 @@
 ﻿# Code generated from specification version 1.0.0: DO NOT EDIT
-Function Get-SupportedMeasurements {
+Function Get-TenantVersion {
 <#
 .SYNOPSIS
-Get supported measurements/s of a device
+Get tenant platform (backend) version
 
 .EXAMPLE
-PS> Get-SupportedMeasurements -Device $device.id
-Get the supported measurements of a device by name
-
-.EXAMPLE
-PS> Get-SupportedMeasurements -Device $device.id
-Get the supported measurements of a device (using pipeline)
+PS> Get-TenantVersion
+Get the Cumulocity backend version
 
 
 #>
@@ -21,13 +17,6 @@ Get the supported measurements of a device (using pipeline)
     [Alias()]
     [OutputType([object])]
     Param(
-        # Device ID (required)
-        [Parameter(Mandatory = $true,
-                   ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true)]
-        [object[]]
-        $Device,
-
         # Include raw response including pagination information
         [Parameter()]
         [switch]
@@ -64,10 +53,7 @@ Get the supported measurements of a device (using pipeline)
     }
 
     Process {
-        foreach ($item in (PSc8y\Expand-Device $Device)) {
-            if ($item) {
-                $Parameters["device"] = if ($item.id) { $item.id } else { $item }
-            }
+        foreach ($item in @("")) {
 
             if (!$Force -and
                 !$WhatIfPreference -and
@@ -79,12 +65,12 @@ Get the supported measurements of a device (using pipeline)
             }
 
             Invoke-Command `
-                -Noun "devices" `
-                -Verb "getSupportedMeasurements" `
+                -Noun "tenants" `
+                -Verb "getVersion" `
                 -Parameters $Parameters `
-                -Type "application/vnd.com.nsn.cumulocity.inventory+json" `
+                -Type "application/vnd.com.nsn.cumulocity.option+json" `
                 -ItemType "" `
-                -ResultProperty "c8y_SupportedMeasurements" `
+                -ResultProperty "value" `
                 -Raw:$Raw `
                 -IncludeAll:$IncludeAll
         }
