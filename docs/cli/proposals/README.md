@@ -85,16 +85,19 @@ Currently not known
 
 
 * [ ] Device Groups
+    * [ ] Get-DeviceGroupCollection
     * [ ] Get-DeviceGroup
     * [ ] New-DeviceGroup
     * [ ] Update-DeviceGroup
     * [ ] Remove-DeviceGroup
 
+
 * [ ] Device Requests
-    * [ ] New-DeviceRequest
-    * [ ] New-DeviceCredential
-    * [ ] Register-Device
-    * [ ] Remove-DeviceRequest
+    * [x] Register-NewDevice
+    * [x] Approve-DeviceRequest
+    * [x] Remove-DeviceRequest
+    * [x] New-DeviceCredential
+    * [ ] New-BulkNewDeviceRequest
 
 * [ ] Applications
     * [ ] New-HostedApplication?
@@ -108,8 +111,8 @@ Currently not known
     * [ ] Remove session? Is this necessary? Or just manually delete it
 
 * [ ] General
-    * [ ] New-RandomPassword
-    * [ ] Get-Version
+    * [x] New-RandomPassword
+    * [x] Get-TenantVersion
     * [ ] Copy managed object - custom command? or remove reserved properties
     * [ ] Format C8y Query (helper to allow the user shorthand c8y query language)
     * [ ] Open-Website
@@ -122,13 +125,13 @@ Currently not known
     * [ ] Wait-Operation (using websockets if possible...extend notification cmdlet to support waiting for a particular operation)
 
 * [ ] Devices
-    * [ ] Get Supported Series
-    * [ ] Get Supported Measurements
-    * [ ] Get Supported Operations
+    * [x] Get Supported Series
+    * [x] Get Supported Measurements
+    * [x] Get Supported Operations
     * [ ] Add-SupportedOperation
     * [ ] Remove-SupportedOperation
     * [ ] Get agent collection
-    * [ ] Set-DeviceMonitoring
+    * [x] Set-DeviceRequiredInterval
 
 * [ ] Formatting / Grouping
     * [ ] Group-Operation
