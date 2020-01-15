@@ -1,0 +1,229 @@
+{
+  "information": {
+    "name": "devices",
+    "description": "Cumulocity devices",
+    "descriptionLong": "REST endpoint to interact with Cumulocity devices",
+    "link": "https://cumulocity.com/guides/reference/inventory/"
+  },
+  "endpoints": [
+    {
+      "name": "getSupportedMeasurements",
+      "description": "Get supported measurements/s of a device",
+      "method": "GET",
+      "path": "inventory/managedObjects/{device}/supportedMeasurements",
+      "accept": "application/vnd.com.nsn.cumulocity.inventory+json",
+      "listProperty": "c8y_SupportedMeasurements",
+      "alias": {
+        "go": "getSupportedMeasurements",
+        "powershell": "Get-SupportedMeasurements"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get the supported measurements of a device by name",
+            "beforeEach": [
+              "$device = PSc8y\\New-TestDevice",
+              "$Measurement = PSc8y\\New-TestMeasurement -Device $device.id"
+            ],
+            "command": "Get-SupportedMeasurements -Device $device.id",
+            "afterEach": [
+              "Remove-ManagedObject -Id $device.id"
+            ]
+          },
+          {
+            "description": "Get the supported measurements of a device (using pipeline)",
+            "beforeEach": [
+              "$device = PSc8y\\New-TestDevice",
+              "$Measurement = PSc8y\\New-TestMeasurement -Device $device.id"
+            ],
+            "command": "Get-SupportedMeasurements -Device $device.id",
+            "afterEach": [
+              "Remove-ManagedObject -Id $device.id"
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Get the supported measurements of a device by name",
+            "command": "c8y inventory getSupportedMeasurements --device 12345"
+          }
+        ]
+      },
+      "pathParameters": [
+        {
+          "name": "device",
+          "type": "[]device",
+          "pipeline": true,
+          "required": true,
+          "description": "Device ID"
+        }
+      ]
+    },
+    {
+      "name": "getSupportedSeries",
+      "description": "Get supported measurement series/s of a device",
+      "method": "GET",
+      "path": "inventory/managedObjects/{device}/supportedSeries",
+      "accept": "application/vnd.com.nsn.cumulocity.inventory+json",
+      "listProperty": "c8y_SupportedSeries",
+      "alias": {
+        "go": "getSupportedSeries",
+        "powershell": "Get-SupportedSeries"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get the supported measurement series of a device by name",
+            "beforeEach": [
+              "$device = PSc8y\\New-TestDevice",
+              "$Measurement = PSc8y\\New-TestMeasurement -Device $device.id"
+            ],
+            "command": "Get-SupportedSeries -Device $device.id",
+            "afterEach": [
+              "Remove-ManagedObject -Id $device.id"
+            ]
+          },
+          {
+            "description": "Get the supported measurement series of a device (using pipeline)",
+            "beforeEach": [
+              "$device = PSc8y\\New-TestDevice",
+              "$Measurement = PSc8y\\New-TestMeasurement -Device $device.id"
+            ],
+            "command": "Get-SupportedSeries -Device $device.id",
+            "afterEach": [
+              "Remove-ManagedObject -Id $device.id"
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Get the supported measurement series of a device by name",
+            "command": "c8y inventory getSupportedSeries --device 12345"
+          }
+        ]
+      },
+      "pathParameters": [
+        {
+          "name": "device",
+          "type": "[]device",
+          "pipeline": true,
+          "required": true,
+          "description": "Device ID"
+        }
+      ]
+    },
+    {
+      "name": "getSupportedOperations",
+      "description": "Get supported operations of a device",
+      "method": "GET",
+      "path": "inventory/managedObjects/{device}",
+      "accept": "application/vnd.com.nsn.cumulocity.inventory+json",
+      "listProperty": "c8y_SupportedOperations",
+      "alias": {
+        "go": "getSupportedOperations",
+        "powershell": "Get-SupportedOperations"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get the supported operations of a device by name",
+            "beforeEach": [
+              "$device = PSc8y\\New-TestDevice",
+              "$device = PSc8y\\Update-ManagedObject -Id $device.id -Data @{ c8y_SupportedOperations = @( \"c8y_Restart\", \"c8y_SoftwareList\", \"c8y_Firmware\" ) }"
+            ],
+            "command": "Get-SupportedOperations -Device $device.id",
+            "afterEach": [
+              "Remove-ManagedObject -Id $device.id"
+            ]
+          },
+          {
+            "description": "Get the supported operations of a device (using pipeline)",
+            "beforeEach": [
+              "$device = PSc8y\\New-TestDevice",
+              "$device = PSc8y\\Update-ManagedObject -Id $device.id -Data @{ c8y_SupportedOperations = @( \"c8y_Restart\", \"c8y_SoftwareList\", \"c8y_Firmware\" ) }"
+            ],
+            "command": "Get-SupportedOperations -Device $device.id",
+            "afterEach": [
+              "Remove-ManagedObject -Id $device.id"
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Get the supported operations of a device by name",
+            "command": "c8y inventory getSupportedOperations --device 12345"
+          }
+        ]
+      },
+      "pathParameters": [
+        {
+          "name": "device",
+          "type": "[]device",
+          "pipeline": true,
+          "required": true,
+          "description": "Device ID"
+        }
+      ]
+    },
+    {
+      "name": "setDeviceRequiredAvailability",
+      "description": "Set the required availability of a device",
+      "descriptionLong": "Devices that have not sent any message in the response interval are considered unavailable. Response interval can have value between -32768 and 32767 and any values out of range will be shrink to range borders. Such devices are marked as unavailable (see below) and an unavailability alarm is raised. Devices with a response interval of zero minutes are considered to be under maintenance. No alarm is raised while a device is under maintenance. Devices that do not contain 'c8y_RequiredAvailability' are not monitored.",
+      "method": "PUT",
+      "path": "inventory/managedObjects/{device}",
+      "accept": "application/vnd.com.nsn.cumulocity.inventory+json",
+      "alias": {
+        "go": "setRequiredAvailability",
+        "powershell": "Set-DeviceRequiredAvailability"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Set the required availability of a device by name to 10 minutes",
+            "beforeEach": [
+              "$device = PSc8y\\New-TestDevice"
+            ],
+            "command": "Set-DeviceRequiredAvailability -Device $device.id -Interval 10",
+            "afterEach": [
+              "Remove-ManagedObject -Id $device.id"
+            ]
+          },
+          {
+            "description": "Set the required availability of a device (using pipeline)",
+            "beforeEach": [
+              "$device = PSc8y\\New-TestDevice"
+            ],
+            "command": "Get-ManagedObject -Id $device.id | PSc8y\\Set-DeviceRequiredAvailability -Interval 10",
+            "afterEach": [
+              "Remove-ManagedObject -Id $device.id"
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Set the required availability of a device by name to 10 minutes",
+            "command": "c8y inventory setRequiredAvailability --device 12345 --interval 10"
+          }
+        ]
+      },
+      "pathParameters": [
+        {
+          "name": "device",
+          "type": "[]device",
+          "pipeline": true,
+          "required": true,
+          "description": "Device ID"
+        }
+      ],
+      "body": [
+        {
+          "name": "interval",
+          "type": "integer",
+          "required": true,
+          "property": "c8y_RequiredAvailability.responseInterval",
+          "description": "Interval in minutes"
+        }
+      ]
+    }
+  ]
+}
