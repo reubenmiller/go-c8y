@@ -34,7 +34,7 @@ Returns true if the input data is valid json
 
         $IsValid = $false
         try {
-            $null = ConvertFrom-Json -InputObject $InputObject -Depth 100 -ErrorAction Stop
+            $null = ConvertFrom-Json -InputObject $InputObject -ErrorAction Stop
             $IsValid = $true
         } catch {
             Write-Information "Invalid json: $_"
