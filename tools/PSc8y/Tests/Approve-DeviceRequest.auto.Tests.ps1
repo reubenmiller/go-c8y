@@ -7,7 +7,7 @@ Describe -Name "Approve-DeviceRequest" {
 
     }
 
-    It "Approve a new device request" {
+    It -Skip "Approve a new device request" {
         $Response = PSc8y\Approve-DeviceRequest -Id $DeviceRequest.id
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty

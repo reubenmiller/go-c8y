@@ -5,7 +5,7 @@ Describe -Name "Request-DeviceCredentials" {
 
     }
 
-    It "Request credentials for a new device" {
+    It -Skip "Request credentials for a new device" {
         $Response = PSc8y\Request-DeviceCredentials -Id "device-AD76-matrixer"
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
