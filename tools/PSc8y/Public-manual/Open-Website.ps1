@@ -68,7 +68,7 @@ Open the devicemanagement to the device alarm page for myDevice01
       }
 
       "Device" {
-        $DeviceInfo = Expand-C8yDevice $Device | Select-Object -First 1
+        $DeviceInfo = Expand-Device $Device | Select-Object -First 1
 
         if (!$DeviceInfo) {
           Write-Error "Could not find a matching devices to [$Device]"
