@@ -12,5 +12,9 @@
         "tenant" {
             $env:C8Y_TENANT
         }
+
+        "host" {
+            $env:C8Y_HOST
+        }
     }
 }
