@@ -53,17 +53,17 @@ func (n *getDeviceCollectionCmd) getDeviceCollection(cmd *cobra.Command, args []
 
 	var c8yQueryParts = make([]string, 0)
 
-	c8yQueryParts = append(c8yQueryParts, "(has(c8y_IsDevice)+or+has(c8y_ModbusDevice))")
+	c8yQueryParts = append(c8yQueryParts, "(has(c8y_IsDevice) or has(c8y_ModbusDevice))")
 
 	if v, err := cmd.Flags().GetString("name"); err == nil {
 		if v != "" {
-			c8yQueryParts = append(c8yQueryParts, fmt.Sprintf("name+eq+'%s'", v))
+			c8yQueryParts = append(c8yQueryParts, fmt.Sprintf("(name eq '%s')", v))
 		}
 	}
 
 	if v, err := cmd.Flags().GetString("type"); err == nil {
 		if v != "" {
-			c8yQueryParts = append(c8yQueryParts, fmt.Sprintf("type+eq+'%s'", v))
+			c8yQueryParts = append(c8yQueryParts, fmt.Sprintf("(type eq '%s')", v))
 		}
 	}
 
@@ -75,7 +75,7 @@ func (n *getDeviceCollectionCmd) getDeviceCollection(cmd *cobra.Command, args []
 
 	if v, err := cmd.Flags().GetString("owner"); err == nil {
 		if v != "" {
-			c8yQueryParts = append(c8yQueryParts, fmt.Sprintf("owner+eq+'%s'", v))
+			c8yQueryParts = append(c8yQueryParts, fmt.Sprintf("(owner eq '%s')", v))
 		}
 	}
 
@@ -87,13 +87,14 @@ func (n *getDeviceCollectionCmd) getDeviceCollection(cmd *cobra.Command, args []
 
 	if v, err := cmd.Flags().GetString("query"); err == nil {
 		if v != "" {
-			c8yQueryParts = append(c8yQueryParts, strings.ReplaceAll(v, " ", "+"))
+			c8yQueryParts = append(c8yQueryParts, v)
 		}
 	}
 
 	// Compile query
-	filter := strings.Join(c8yQueryParts, "+and+")
-	orderBy := fmt.Sprintf("%s", "name")
+	// replace all spaces with "+" due to url encoding
+	filter := url.QueryEscape(strings.Join(c8yQueryParts, " and "))
+	orderBy := url.QueryEscape("name")
 	query.Add("query", fmt.Sprintf("$filter=%s+$orderby=%s", filter, orderBy))
 
 	if v, err := cmd.Flags().GetBool("withParents"); err == nil {
