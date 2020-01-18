@@ -67,7 +67,7 @@
         "file" { "string" }
         "id" { "object" }
         "integer" { "long" }
-        "json" { "hashtable" }
+        "json" { "object" }
         "microservice" { "object[]" }
         "set" { "object[]" }
         "source" { "object" }
