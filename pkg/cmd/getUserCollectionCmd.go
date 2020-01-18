@@ -78,19 +78,19 @@ func (n *getUserCollectionCmd) getUserCollection(cmd *cobra.Command, args []stri
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "owner", err))
 	}
-	if v, err := cmd.Flags().GetBool("onlyDevices"); err == nil {
-		if v {
-			query.Add("onlyDevices", "true")
+	if cmd.Flags().Changed("onlyDevices") {
+		if v, err := cmd.Flags().GetBool("onlyDevices"); err == nil {
+			query.Add("onlyDevices", fmt.Sprintf("%v", v))
+		} else {
+			return newUserError("Flag does not exist")
 		}
-	} else {
-		return newUserError("Flag does not exist")
 	}
-	if v, err := cmd.Flags().GetBool("withSubusersCount"); err == nil {
-		if v {
-			query.Add("withSubusersCount", "true")
+	if cmd.Flags().Changed("withSubusersCount") {
+		if v, err := cmd.Flags().GetBool("withSubusersCount"); err == nil {
+			query.Add("withSubusersCount", fmt.Sprintf("%v", v))
+		} else {
+			return newUserError("Flag does not exist")
 		}
-	} else {
-		return newUserError("Flag does not exist")
 	}
 	if cmd.Flags().Changed("pageSize") {
 		if v, err := cmd.Flags().GetInt("pageSize"); err == nil && v > 0 {

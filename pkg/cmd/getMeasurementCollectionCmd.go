@@ -121,12 +121,12 @@ func (n *getMeasurementCollectionCmd) getMeasurementCollection(cmd *cobra.Comman
 			return newUserError("invalid date format", err)
 		}
 	}
-	if v, err := cmd.Flags().GetBool("revert"); err == nil {
-		if v {
-			query.Add("revert", "true")
+	if cmd.Flags().Changed("revert") {
+		if v, err := cmd.Flags().GetBool("revert"); err == nil {
+			query.Add("revert", fmt.Sprintf("%v", v))
+		} else {
+			return newUserError("Flag does not exist")
 		}
-	} else {
-		return newUserError("Flag does not exist")
 	}
 	if cmd.Flags().Changed("pageSize") {
 		if v, err := cmd.Flags().GetInt("pageSize"); err == nil && v > 0 {
@@ -147,19 +147,19 @@ func (n *getMeasurementCollectionCmd) getMeasurementCollection(cmd *cobra.Comman
 
 	// headers
 	headers := http.Header{}
-	if v, err := cmd.Flags().GetBool("csv"); err == nil {
-		if v {
+	if cmd.Flags().Changed("csv") {
+		if _, err := cmd.Flags().GetBool("csv"); err == nil {
 			headers.Add("Accept", "text/csv")
+		} else {
+			return newUserError("Flag does not exist")
 		}
-	} else {
-		return newUserError("Flag does not exist")
 	}
-	if v, err := cmd.Flags().GetBool("excel"); err == nil {
-		if v {
+	if cmd.Flags().Changed("excel") {
+		if _, err := cmd.Flags().GetBool("excel"); err == nil {
 			headers.Add("Accept", "application/vnd.ms-excel")
+		} else {
+			return newUserError("Flag does not exist")
 		}
-	} else {
-		return newUserError("Flag does not exist")
 	}
 	if v, err := cmd.Flags().GetString("unit"); err == nil {
 		if v != "" {

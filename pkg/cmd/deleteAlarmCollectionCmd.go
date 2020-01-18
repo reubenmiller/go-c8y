@@ -123,26 +123,26 @@ func (n *deleteAlarmCollectionCmd) deleteAlarmCollection(cmd *cobra.Command, arg
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "severity", err))
 	}
-	if v, err := cmd.Flags().GetBool("resolved"); err == nil {
-		if v {
-			query.Add("resolved", "true")
+	if cmd.Flags().Changed("resolved") {
+		if v, err := cmd.Flags().GetBool("resolved"); err == nil {
+			query.Add("resolved", fmt.Sprintf("%v", v))
+		} else {
+			return newUserError("Flag does not exist")
 		}
-	} else {
-		return newUserError("Flag does not exist")
 	}
-	if v, err := cmd.Flags().GetBool("withSourceAssets"); err == nil {
-		if v {
-			query.Add("withSourceAssets", "true")
+	if cmd.Flags().Changed("withSourceAssets") {
+		if v, err := cmd.Flags().GetBool("withSourceAssets"); err == nil {
+			query.Add("withSourceAssets", fmt.Sprintf("%v", v))
+		} else {
+			return newUserError("Flag does not exist")
 		}
-	} else {
-		return newUserError("Flag does not exist")
 	}
-	if v, err := cmd.Flags().GetBool("withSourceDevices"); err == nil {
-		if v {
-			query.Add("withSourceDevices", "true")
+	if cmd.Flags().Changed("withSourceDevices") {
+		if v, err := cmd.Flags().GetBool("withSourceDevices"); err == nil {
+			query.Add("withSourceDevices", fmt.Sprintf("%v", v))
+		} else {
+			return newUserError("Flag does not exist")
 		}
-	} else {
-		return newUserError("Flag does not exist")
 	}
 	if cmd.Flags().Changed("pageSize") {
 		if v, err := cmd.Flags().GetInt("pageSize"); err == nil && v > 0 {

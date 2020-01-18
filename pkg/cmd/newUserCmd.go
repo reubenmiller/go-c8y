@@ -124,12 +124,12 @@ func (n *newUserCmd) newUser(cmd *cobra.Command, args []string) error {
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "email", err))
 	}
-	if v, err := cmd.Flags().GetBool("enabled"); err == nil {
-		if v {
-			body.Set("enabled", "true")
+	if cmd.Flags().Changed("enabled") {
+		if v, err := cmd.Flags().GetBool("enabled"); err == nil {
+			body.Set("enabled", v)
+		} else {
+			return newUserError("Flag does not exist")
 		}
-	} else {
-		return newUserError("Flag does not exist")
 	}
 	if v, err := cmd.Flags().GetString("password"); err == nil {
 		if v != "" {
@@ -138,17 +138,19 @@ func (n *newUserCmd) newUser(cmd *cobra.Command, args []string) error {
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "password", err))
 	}
-	if v, err := cmd.Flags().GetBool("sendPasswordResetEmail"); err == nil {
-		if v {
-			body.Set("sendPasswordResetEmail", "true")
+	if cmd.Flags().Changed("sendPasswordResetEmail") {
+		if v, err := cmd.Flags().GetBool("sendPasswordResetEmail"); err == nil {
+			body.Set("sendPasswordResetEmail", v)
+		} else {
+			return newUserError("Flag does not exist")
 		}
-	} else {
-		return newUserError("Flag does not exist")
 	}
-	if v, err := cmd.Flags().GetString("customProperties"); err == nil {
-		body.Set("customProperties", MustParseJSON(v))
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "customProperties", err))
+	if cmd.Flags().Changed("customProperties") {
+		if v, err := cmd.Flags().GetString("customProperties"); err == nil {
+			body.Set("customProperties", MustParseJSON(v))
+		} else {
+			return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "customProperties", err))
+		}
 	}
 
 	// path parameters

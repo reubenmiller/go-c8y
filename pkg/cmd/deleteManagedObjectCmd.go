@@ -57,12 +57,12 @@ func (n *deleteManagedObjectCmd) deleteManagedObject(cmd *cobra.Command, args []
 	// query parameters
 	queryValue := url.QueryEscape("")
 	query := url.Values{}
-	if v, err := cmd.Flags().GetBool("cascade"); err == nil {
-		if v {
-			query.Add("cascade", "true")
+	if cmd.Flags().Changed("cascade") {
+		if v, err := cmd.Flags().GetBool("cascade"); err == nil {
+			query.Add("cascade", fmt.Sprintf("%v", v))
+		} else {
+			return newUserError("Flag does not exist")
 		}
-	} else {
-		return newUserError("Flag does not exist")
 	}
 	if cmd.Flags().Changed("pageSize") {
 		if v, err := cmd.Flags().GetInt("pageSize"); err == nil && v > 0 {

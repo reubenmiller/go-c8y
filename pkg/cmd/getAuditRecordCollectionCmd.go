@@ -100,12 +100,12 @@ func (n *getAuditRecordCollectionCmd) getAuditRecordCollection(cmd *cobra.Comman
 			return newUserError("invalid date format", err)
 		}
 	}
-	if v, err := cmd.Flags().GetBool("revert"); err == nil {
-		if v {
-			query.Add("revert", "true")
+	if cmd.Flags().Changed("revert") {
+		if v, err := cmd.Flags().GetBool("revert"); err == nil {
+			query.Add("revert", fmt.Sprintf("%v", v))
+		} else {
+			return newUserError("Flag does not exist")
 		}
-	} else {
-		return newUserError("Flag does not exist")
 	}
 	if cmd.Flags().Changed("pageSize") {
 		if v, err := cmd.Flags().GetInt("pageSize"); err == nil && v > 0 {

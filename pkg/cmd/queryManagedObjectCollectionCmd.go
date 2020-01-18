@@ -61,12 +61,12 @@ func (n *queryManagedObjectCollectionCmd) queryManagedObjectCollection(cmd *cobr
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "query", err))
 	}
-	if v, err := cmd.Flags().GetBool("withParents"); err == nil {
-		if v {
-			query.Add("withParents", "true")
+	if cmd.Flags().Changed("withParents") {
+		if v, err := cmd.Flags().GetBool("withParents"); err == nil {
+			query.Add("withParents", fmt.Sprintf("%v", v))
+		} else {
+			return newUserError("Flag does not exist")
 		}
-	} else {
-		return newUserError("Flag does not exist")
 	}
 	if cmd.Flags().Changed("pageSize") {
 		if v, err := cmd.Flags().GetInt("pageSize"); err == nil && v > 0 {

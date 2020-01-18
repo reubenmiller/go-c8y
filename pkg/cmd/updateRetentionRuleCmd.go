@@ -120,12 +120,12 @@ func (n *updateRetentionRuleCmd) updateRetentionRule(cmd *cobra.Command, args []
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "maximumAge", err))
 	}
-	if v, err := cmd.Flags().GetBool("editable"); err == nil {
-		if v {
-			body.Set("editable", "true")
+	if cmd.Flags().Changed("editable") {
+		if v, err := cmd.Flags().GetBool("editable"); err == nil {
+			body.Set("editable", v)
+		} else {
+			return newUserError("Flag does not exist")
 		}
-	} else {
-		return newUserError("Flag does not exist")
 	}
 
 	// path parameters
