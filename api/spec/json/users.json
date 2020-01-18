@@ -239,7 +239,7 @@
         },
         {
           "name": "customProperties",
-          "type": "json",
+          "type": "json_custom",
           "required": false,
           "description": "Custom properties to be added to the user"
         }
@@ -396,7 +396,10 @@
             "beforeEach": [
               "$User = PSc8y\\New-TestUser"
             ],
-            "command": "Update-User -Id $User.id -FirstName \"Simon\""
+            "command": "Update-User -Id $User.id -FirstName \"Simon\"",
+            "afterEach": [
+              "PSc8y\\Remove-User -Id $User.id"
+            ]
           }
         ],
         "go": [
@@ -470,7 +473,7 @@
         },
         {
           "name": "customProperties",
-          "type": "json",
+          "type": "json_custom",
           "required": false,
           "description": "Custom properties to be added to the user"
         }

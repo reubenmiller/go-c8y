@@ -179,7 +179,7 @@ endpoints:
         description: User activation status (true/false)
 
       - name: customProperties
-        type: json
+        type: json_custom
         required: false
         description: 'Custom properties to be added to the user'
 
@@ -288,6 +288,8 @@ endpoints:
           beforeEach:
             - $User = PSc8y\New-TestUser
           command: Update-User -Id $User.id -FirstName "Simon"
+          afterEach:
+            - PSc8y\Remove-User -Id $User.id
       go:
         - description: Update a user
           command: c8y users update --id "myuser" --firstName "Simon"
@@ -342,6 +344,6 @@ endpoints:
         description: User activation status (true/false)
 
       - name: customProperties
-        type: json
+        type: json_custom
         required: false
         description: 'Custom properties to be added to the user'
