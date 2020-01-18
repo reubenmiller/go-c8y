@@ -47,7 +47,7 @@ Update a user
 	cmd.Flags().Bool("enabled", false, "User activation status (true/false)")
 	cmd.Flags().String("password", "", "User password. Min: 6, max: 32 characters. Only Latin1 chars allowed")
 	cmd.Flags().Bool("sendPasswordResetEmail", false, "User activation status (true/false)")
-	addDataFlag(cmd)
+	cmd.Flags().String("customProperties", "", "Custom properties to be added to the user")
 
 	// Required flags
 	cmd.MarkFlagRequired("id")
@@ -136,6 +136,11 @@ func (n *updateUserCmd) updateUser(cmd *cobra.Command, args []string) error {
 		}
 	} else {
 		return newUserError("Flag does not exist")
+	}
+	if v, err := cmd.Flags().GetString("customProperties"); err == nil {
+		body.Set("customProperties", MustParseJSON(v))
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "customProperties", err))
 	}
 
 	// path parameters

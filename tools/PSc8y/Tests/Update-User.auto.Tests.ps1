@@ -14,6 +14,7 @@ Describe -Name "Update-User" {
 
 
     AfterEach {
+        PSc8y\Remove-User -Id $User.id
 
     }
 }

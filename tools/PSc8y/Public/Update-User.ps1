@@ -65,7 +65,7 @@ Update a user
         [switch]
         $SendPasswordResetEmail,
 
-        # User password. Min: 6, max: 32 characters. Only Latin1 chars allowed
+        # Custom properties to be added to the user
         [Parameter()]
         [object]
         $CustomProperties,

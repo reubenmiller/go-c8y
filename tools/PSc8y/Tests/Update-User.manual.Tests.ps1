@@ -1,0 +1,40 @@
+. $PSScriptRoot/imports.ps1
+
+Describe -Name "Update-User" {
+    Context "existing user" {
+
+        $User = PSc8y\New-TestUser
+
+        It "Update custom properties for a user" {
+            $Response = PSc8y\Update-User -Id $User.id -CustomProperties @{
+                language = "fr"
+            }
+            $LASTEXITCODE | Should -Be 0
+            $Response | Should -Not -BeNullOrEmpty
+
+            $Response.customProperties.language | Should -BeExactly "fr"
+        }
+
+        It "Update user (from pipeline)" {
+            $Response = $User | PSc8y\Update-User -CustomProperties @{
+                language = "de"
+            }
+            $LASTEXITCODE | Should -Be 0
+            $Response | Should -Not -BeNullOrEmpty
+            $Response.customProperties.language | Should -BeExactly "de"
+        }
+
+        # Note: passing an object to a string, does some weird type coersion.
+        # Might have to switch to using an [object] as the type
+        It -Skip "Update user (using object)" {
+            $Response = PSc8y\Update-User -Id $User -CustomProperties @{
+                language = "de"
+            }
+            $LASTEXITCODE | Should -Be 0
+            $Response | Should -Not -BeNullOrEmpty
+            $Response.customProperties.language | Should -BeExactly "de"
+        }
+
+        Remove-User -Id $User.id
+    }
+}
