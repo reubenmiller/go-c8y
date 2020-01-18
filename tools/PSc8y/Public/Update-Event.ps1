@@ -38,7 +38,7 @@ Update custom properties of an existing event
 
         # Additional properties of the event.
         [Parameter()]
-        [hashtable]
+        [object]
         $Data,
 
         # Include raw response including pagination information

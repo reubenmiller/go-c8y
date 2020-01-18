@@ -24,7 +24,7 @@ Update multiple tenant options
 
         # Key/value pairs (required)
         [Parameter(Mandatory = $true)]
-        [hashtable]
+        [object]
         $Data,
 
         # Include raw response including pagination information

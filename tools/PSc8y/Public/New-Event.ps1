@@ -42,7 +42,7 @@ Create a new event for a device
 
         # Additional properties of the event.
         [Parameter()]
-        [hashtable]
+        [object]
         $Data,
 
         # Include raw response including pagination information

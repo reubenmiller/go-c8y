@@ -32,7 +32,7 @@ Create a managed object
 
         # Additional properties of the inventory.
         [Parameter()]
-        [hashtable]
+        [object]
         $Data,
 
         # Include raw response including pagination information

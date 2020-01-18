@@ -61,7 +61,7 @@ Update a retention rule (using pipeline)
 
         # Data
         [Parameter()]
-        [hashtable]
+        [object]
         $Data,
 
         # Include raw response including pagination information

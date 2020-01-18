@@ -26,7 +26,7 @@ Update application availability to MARKET
 
         # data
         [Parameter()]
-        [hashtable]
+        [object]
         $Data,
 
         # Name of application

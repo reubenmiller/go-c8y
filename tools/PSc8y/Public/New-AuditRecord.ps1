@@ -60,7 +60,7 @@ Create an audit record for a custom managed object update
 
         # Additional properties of the audit record.
         [Parameter()]
-        [hashtable]
+        [object]
         $Data,
 
         # Include raw response including pagination information

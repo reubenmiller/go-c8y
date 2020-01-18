@@ -18,7 +18,7 @@ Required authentication with bootstrap user
     Param(
         # data
         [Parameter()]
-        [hashtable]
+        [object]
         $Data,
 
         # Name of application

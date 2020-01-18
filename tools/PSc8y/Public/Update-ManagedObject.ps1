@@ -35,7 +35,7 @@ Update a managed object (using pipeline)
 
         # Additional properties of the inventory.
         [Parameter()]
-        [hashtable]
+        [object]
         $Data,
 
         # Include raw response including pagination information

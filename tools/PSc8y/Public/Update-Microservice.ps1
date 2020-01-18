@@ -26,7 +26,7 @@ Update microservice availability to MARKET
 
         # data
         [Parameter()]
-        [hashtable]
+        [object]
         $Data,
 
         # Shared secret of microservice

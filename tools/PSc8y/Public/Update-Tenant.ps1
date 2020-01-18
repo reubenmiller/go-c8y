@@ -51,7 +51,7 @@ Update tenant
 
         # A set of custom properties of the tenant
         [Parameter()]
-        [hashtable]
+        [object]
         $Data,
 
         # Include raw response including pagination information

@@ -39,7 +39,7 @@ Create measurement
 
         # List of measurement fragments.
         [Parameter()]
-        [hashtable]
+        [object]
         $Data,
 
         # Include raw response including pagination information

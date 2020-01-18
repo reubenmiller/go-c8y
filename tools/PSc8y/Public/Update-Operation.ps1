@@ -43,7 +43,7 @@ Update multiple operations
 
         # Additional properties describing the operation which will be performed on the device.
         [Parameter()]
-        [hashtable]
+        [object]
         $Data,
 
         # Include raw response including pagination information

@@ -67,7 +67,7 @@ Update a user
 
         # User password. Min: 6, max: 32 characters. Only Latin1 chars allowed
         [Parameter()]
-        [hashtable]
+        [object]
         $CustomProperties,
 
         # Include raw response including pagination information

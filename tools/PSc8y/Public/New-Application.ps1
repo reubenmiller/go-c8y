@@ -19,7 +19,7 @@ Create new hosted application
     Param(
         # data
         [Parameter()]
-        [hashtable]
+        [object]
         $Data,
 
         # Name of application (required)

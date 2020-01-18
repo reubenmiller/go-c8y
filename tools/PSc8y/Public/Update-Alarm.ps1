@@ -47,7 +47,7 @@ Update severity of an existing alarm to CRITICAL
 
         # Additional properties of the alarm.
         [Parameter()]
-        [hashtable]
+        [object]
         $Data,
 
         # Include raw response including pagination information

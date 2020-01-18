@@ -54,7 +54,7 @@ Create a new alarm for device
 
         # Additional properties of the alarm.
         [Parameter()]
-        [hashtable]
+        [object]
         $Data,
 
         # Include raw response including pagination information
