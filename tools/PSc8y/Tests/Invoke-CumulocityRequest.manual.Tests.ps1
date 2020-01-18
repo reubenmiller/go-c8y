@@ -133,7 +133,7 @@ Describe -Name "Invoke-CumulocityRequest" {
             -Data @{
                 name = "manual_object_002"
                 c8y_CustomObject = @{
-                    prop1 = false
+                    prop1 = $false
                 }
             }
 
