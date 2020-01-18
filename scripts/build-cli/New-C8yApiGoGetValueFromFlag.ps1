@@ -56,24 +56,34 @@
 "@
 
     # Boolean
-    $Setters."boolean"."query" = "query.Add(`"${queryParam}`", `"true`")"
-    $Setters."boolean"."path" = "pathParameters[`"${queryParam}`"] = `"true`""
-    $Setters."boolean"."body" = "body.Set(`"${queryParam}`", `"true`")"
+    $Setters."boolean"."query" = "query.Add(`"${queryParam}`", fmt.Sprintf(`"%v`", v))"
+    $Setters."boolean"."path" = "pathParameters[`"${queryParam}`"] = fmt.Sprintf(`"%v`", v)"
+    $Setters."boolean"."body" = "body.Set(`"${queryParam}`", v)"
     if ($FixedValue) {
         $Setters."boolean"."header" = "headers.Add(`"${queryParam}`", `"$FixedValue`")"
-    } else {
-        $Setters."boolean"."header" = "headers.Add(`"${queryParam}`", `"true`")"
-    }
 
-    $Definitions."boolean" = @"
-    if v, err := cmd.Flags().GetBool("${prop}"); err == nil {
-        if v {
+        $Definitions."boolean" = @"
+    if cmd.Flags().Changed("${prop}") {
+        if _, err := cmd.Flags().GetBool("${prop}"); err == nil {
             $($Setters."boolean".$SetterType)
+        } else {
+            return newUserError("Flag does not exist")
         }
-    } else {
-        return newUserError("Flag does not exist")
     }
 "@
+    } else {
+        $Setters."boolean"."header" = "headers.Add(`"${queryParam}`", fmt.Sprintf(`"%v`", v))"
+
+        $Definitions."boolean" = @"
+    if cmd.Flags().Changed("${prop}") {
+        if v, err := cmd.Flags().GetBool("${prop}"); err == nil {
+            $($Setters."boolean".$SetterType)
+        } else {
+            return newUserError("Flag does not exist")
+        }
+    }
+"@
+    }
 
     # Boolean
     $Setters."source"."query" = "query.Add(`"${queryParam}`", v)"
@@ -401,10 +411,12 @@
     # json_custom: Only supported for use with the body
     $Setters."json_custom"."body" = 'body.Set("{0}", MustParseJSON(v))' -f $queryParam
     $Definitions."json_custom" = @"
-    if v, err := cmd.Flags().GetString("${prop}"); err == nil {
-        $($Setters.json_custom.$SetterType)
-    } else {
-        return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "${prop}", err))
+    if cmd.Flags().Changed("${prop}") {
+        if v, err := cmd.Flags().GetString("${prop}"); err == nil {
+            $($Setters.json_custom.$SetterType)
+        } else {
+            return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "${prop}", err))
+        }
     }
 "@
 
