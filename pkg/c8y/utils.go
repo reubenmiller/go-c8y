@@ -7,6 +7,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"path/filepath"
 )
 
 func prepareMultipartRequest(method string, url string, values map[string]io.Reader) (req *http.Request, err error) {
@@ -20,7 +21,7 @@ func prepareMultipartRequest(method string, url string, values map[string]io.Rea
 		}
 		// Add an image file
 		if x, ok := r.(*os.File); ok {
-			if fw, err = w.CreateFormFile(key, x.Name()); err != nil {
+			if fw, err = w.CreateFormFile(key, filepath.Base(x.Name())); err != nil {
 				return
 			}
 		} else {
