@@ -420,8 +420,13 @@ Function Get-C8yGoArgs {
         # Usage: Accept json, but assign it to a nested property
         #
         "json_custom" {
+            $SetFlag = if ($UseOption) {
+                'cmd.Flags().StringP("{0}", "{1}", "{2}", "{3}")' -f $Name, $OptionName, $Default, $Description
+            } else {
+                'cmd.Flags().String("{0}", "{1}", "{2}")' -f $Name, $Default, $Description
+            }
             @{
-                SetFlag = 'addJSONFlag(cmd, "{0}", "{1}")' -f $Name, $OptionName
+                SetFlag = $SetFlag
             }
         }
 
