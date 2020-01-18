@@ -20,6 +20,6 @@ foreach ($iFile in $SpecFiles) {
 #
 # Build the c8y cli binaries for each environment
 #
-& "$PSScriptRoot/../build-cli/build-binary.ps1" -OutputDir "$BaseDir/Dependencies"
+& "$PSScriptRoot/../build-cli/build-binary.ps1" -OutputDir "$BaseDir/Dependencies" -All
 
 Write-Host "Build successful! $BaseDir"
