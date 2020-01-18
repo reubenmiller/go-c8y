@@ -68,6 +68,7 @@
         "id" { "object" }
         "integer" { "long" }
         "json" { "object" }
+        "json_custom" { "object" }
         "microservice" { "object[]" }
         "set" { "object[]" }
         "source" { "object" }

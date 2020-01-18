@@ -177,6 +177,10 @@
                     "ConvertTo-JsonArgument `${0}" -f $item.Name
                 }
 
+                "json_custom" {
+                    "ConvertTo-JsonArgument `${0}" -f $item.Name
+                }
+
                 "[]usergroup" {
                     "PSc8y\Expand-Id `${0}" -f $item.Name
                 }

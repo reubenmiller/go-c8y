@@ -89,6 +89,8 @@
             $code = New-C8yApiGoGetValueFromFlag -Parameters $iArg -SetterType "body"
             if ($code) {
                 $null = $RESTBodyBuilder.AppendLine($code)
+            } else {
+                Write-Warning ("No setter found for [{0}]" -f $iArg.name)
             }
         }
     }
@@ -411,6 +413,15 @@ Function Get-C8yGoArgs {
         "json" {
             @{
                 SetFlag = "addDataFlag(cmd)"
+            }
+        }
+
+        #
+        # Usage: Accept json, but assign it to a nested property
+        #
+        "json_custom" {
+            @{
+                SetFlag = 'addJSONFlag(cmd, "{0}", "{1}")' -f $Name, $OptionName
             }
         }
 

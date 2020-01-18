@@ -39,6 +39,7 @@
         "file" = @{}
         "id" = @{}
         "integer" = @{}
+        "json_custom" = @{}
         "microservice" = @{}
         "outputfile" = @{}
         "source" = @{}
@@ -397,6 +398,16 @@
     }
 "@
 
+    # json_custom: Only supported for use with the body
+    $Setters."json_custom"."body" = 'body.Set("{0}", MustParseJSON(v))' -f $queryParam
+    $Definitions."json_custom" = @"
+    if v, err := cmd.Flags().GetString("${prop}"); err == nil {
+        $($Setters.json_custom.$SetterType)
+    } else {
+        return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "${prop}", err))
+    }
+"@
+
     # json - don't do anything because it should be manually set
     $Definitions."json" = ""
 
@@ -405,6 +416,7 @@
     if ($null -eq $MatchingType) {
         # Default to a string
         $MatchingType = "string"
+        Write-Warning "Using default type [$MatchingType]"
     }
 
     $Definitions[$MatchingType]
