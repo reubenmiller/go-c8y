@@ -51,8 +51,11 @@ type Application struct {
 	ResourcesPassword string            `json:"resourcesPassword,omitempty"`
 	Owner             *ApplicationOwner `json:"owner,omitempty"`
 
+	// Hosted application
+	ActiveVersionId string `json:"activeVersionId,omitempty"`
+
 	// Microservice roles
-	RequiredRoles []string `json:"requiredRoles"`
+	RequiredRoles []string `json:"requiredRoles,omitempty"`
 
 	Item gjson.Result `json:"-"`
 }
