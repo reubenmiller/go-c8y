@@ -241,7 +241,7 @@
           "name": "customProperties",
           "type": "json",
           "required": false,
-          "description": "User password. Min: 6, max: 32 characters. Only Latin1 chars allowed"
+          "description": "Custom properties to be added to the user"
         }
       ]
     },
@@ -472,7 +472,7 @@
           "name": "customProperties",
           "type": "json",
           "required": false,
-          "description": "User password. Min: 6, max: 32 characters. Only Latin1 chars allowed"
+          "description": "Custom properties to be added to the user"
         }
       ]
     }
