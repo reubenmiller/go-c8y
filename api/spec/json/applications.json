@@ -386,6 +386,7 @@
     {
       "name": "newApplicationBinary",
       "description": "New application binary",
+      "descriptionLong": "For the applications of type 'microservice' and 'web application' to be available for Cumulocity platform users, a binary zip file must be uploaded.\nFor the microservice application, the zip file must consist of  * cumulocity.json - file describing the deployment\n  * image.tar - executable docker image\n\nFor the web application, the zip file must include index.html in the root directory.\n",
       "method": "POST",
       "path": "/application/applications/{id}/binaries",
       "accept": "application/vnd.com.nsn.cumulocity.managedObject+json",
@@ -430,6 +431,59 @@
           "type": "file",
           "required": true,
           "description": "File to be uploaded as a binary"
+        }
+      ]
+    },
+    {
+      "name": "getApplicationBinaryCollection",
+      "description": "Get application binaries",
+      "descriptionLong": "A list of all binaries related to the given application will be returned\n",
+      "method": "GET",
+      "path": "/application/applications/{id}/binaries",
+      "accept": "application/vnd.com.nsn.cumulocity.customAttachmentCollection+json",
+      "collectionType": "application/vnd.com.nsn.cumulocity.customBinaryAttachment+json",
+      "listProperty": "attachments",
+      "alias": {
+        "go": "listApplicationBinaries",
+        "powershell": "Get-ApplicationBinaryCollection"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "List all of the binaries related to a Hosted (web) application",
+            "beforeEach": [
+              "$app = New-TestHostedApplication"
+            ],
+            "command": "Get-ApplicationBinaryCollection -Id $App.id",
+            "afterEach": [
+              "Remove-Application -Id $app.id"
+            ]
+          },
+          {
+            "description": "List all of the binaries related to a Hosted (web) application (using pipeline)",
+            "beforeEach": [
+              "$app = New-TestHostedApplication"
+            ],
+            "command": "Get-Application $App.id | Get-ApplicationBinaryCollection",
+            "afterEach": [
+              "Remove-Application -Id $app.id"
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "List all of the binaries related to a Hosted (web) application",
+            "command": "c8y applications listApplicationBinaries --id 12345"
+          }
+        ]
+      },
+      "pathParameters": [
+        {
+          "name": "id",
+          "type": "application",
+          "pipeline": true,
+          "required": true,
+          "description": "Application id"
         }
       ]
     }
