@@ -1,27 +1,27 @@
 ﻿# Code generated from specification version 1.0.0: DO NOT EDIT
-Function New-ApplicationBinary {
+Function Get-ApplicationBinaryCollection {
 <#
 .SYNOPSIS
-New application binary
+Get application binaries
 
 .DESCRIPTION
-For the applications of type 'microservice' and 'web application' to be available for Cumulocity platform users, a binary zip file must be uploaded.
-For the microservice application, the zip file must consist of  * cumulocity.json - file describing the deployment
-  * image.tar - executable docker image
-
-For the web application, the zip file must include index.html in the root directory.
+A list of all binaries related to the given application will be returned
 
 
 .EXAMPLE
-PS> New-ApplicationBinary -Id $App.id -File $MicroserviceZip
-Upload application microservice binary
+PS> Get-ApplicationBinaryCollection -Id $App.id
+List all of the binaries related to a Hosted (web) application
+
+.EXAMPLE
+PS> Get-Application $App.id | Get-ApplicationBinaryCollection
+List all of the binaries related to a Hosted (web) application (using pipeline)
 
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
                    PositionalBinding=$true,
                    HelpUri='',
-                   ConfirmImpact = 'High')]
+                   ConfirmImpact = 'None')]
     [Alias()]
     [OutputType([object])]
     Param(
@@ -32,10 +32,23 @@ Upload application microservice binary
         [object[]]
         $Id,
 
-        # File to be uploaded as a binary (required)
-        [Parameter(Mandatory = $true)]
-        [string]
-        $File,
+        # Maximum number of results
+        [Parameter()]
+        [AllowNull()]
+        [AllowEmptyString()]
+        [ValidateRange(1,2000)]
+        [int]
+        $PageSize,
+
+        # Include total pages statistic
+        [Parameter()]
+        [switch]
+        $WithTotalPages,
+
+        # Include all results
+        [Parameter()]
+        [switch]
+        $IncludeAll,
 
         # Include raw response including pagination information
         [Parameter()]
@@ -55,18 +68,16 @@ Upload application microservice binary
         # Session path
         [Parameter()]
         [string]
-        $Session,
-
-        # Don't prompt for confirmation
-        [Parameter()]
-        [switch]
-        $Force
+        $Session
     )
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("File")) {
-            $Parameters["file"] = $File
+        if ($PSBoundParameters.ContainsKey("PageSize")) {
+            $Parameters["pageSize"] = $PageSize
+        }
+        if ($PSBoundParameters.ContainsKey("WithTotalPages") -and $WithTotalPages) {
+            $Parameters["withTotalPages"] = $WithTotalPages
         }
         if ($PSBoundParameters.ContainsKey("OutputFile")) {
             $Parameters["outputFile"] = $OutputFile
@@ -97,11 +108,11 @@ Upload application microservice binary
 
             Invoke-Command `
                 -Noun "applications" `
-                -Verb "createBinary" `
+                -Verb "listApplicationBinaries" `
                 -Parameters $Parameters `
-                -Type "application/vnd.com.nsn.cumulocity.managedObject+json" `
-                -ItemType "" `
-                -ResultProperty "" `
+                -Type "application/vnd.com.nsn.cumulocity.customAttachmentCollection+json" `
+                -ItemType "application/vnd.com.nsn.cumulocity.customBinaryAttachment+json" `
+                -ResultProperty "attachments" `
                 -Raw:$Raw `
                 -IncludeAll:$IncludeAll
         }

@@ -25,6 +25,7 @@ func newApplicationsRootCmd() *applicationsCmd {
 	cmd.AddCommand(newDeleteApplicationCmd().getCommand())
 	cmd.AddCommand(newUpdateApplicationCmd().getCommand())
 	cmd.AddCommand(newNewApplicationBinaryCmd().getCommand())
+	cmd.AddCommand(newGetApplicationBinaryCollectionCmd().getCommand())
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

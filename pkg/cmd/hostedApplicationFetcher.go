@@ -10,17 +10,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type microserviceFetcher struct {
+type hostedApplicationFetcher struct {
 	client *c8y.Client
 }
 
-func newMicroserviceFetcher(client *c8y.Client) *microserviceFetcher {
-	return &microserviceFetcher{
+func newHostedApplicationFetcher(client *c8y.Client) *hostedApplicationFetcher {
+	return &hostedApplicationFetcher{
 		client: client,
 	}
 }
 
-func (f *microserviceFetcher) getByID(id string) ([]fetcherResultSet, error) {
+func (f *hostedApplicationFetcher) getByID(id string) ([]fetcherResultSet, error) {
 	app, resp, err := client.Application.GetApplication(
 		context.Background(),
 		id,
@@ -40,13 +40,13 @@ func (f *microserviceFetcher) getByID(id string) ([]fetcherResultSet, error) {
 }
 
 // getByName returns applications matching a given using regular expression
-func (f *microserviceFetcher) getByName(name string) ([]fetcherResultSet, error) {
+func (f *hostedApplicationFetcher) getByName(name string) ([]fetcherResultSet, error) {
 	col, _, err := client.Application.GetApplications(
 		context.Background(),
 		&c8y.ApplicationOptions{
 			PaginationOptions: *c8y.NewPaginationOptions(2000),
 
-			Type: c8y.ApplicationTypeMicroservice,
+			Type: c8y.ApplicationTypeHosted,
 		},
 	)
 
@@ -63,7 +63,7 @@ func (f *microserviceFetcher) getByName(name string) ([]fetcherResultSet, error)
 	results := make([]fetcherResultSet, 0)
 
 	for i, app := range col.Applications {
-		if app.Type == "MICROSERVICE" && pattern.MatchString(app.Name) {
+		if app.Type == "HOSTED" && pattern.MatchString(app.Name) {
 			results = append(results, fetcherResultSet{
 				ID:    app.ID,
 				Name:  app.Name,
@@ -76,9 +76,9 @@ func (f *microserviceFetcher) getByName(name string) ([]fetcherResultSet, error)
 	return results, nil
 }
 
-// getMicroserviceSlice returns the microservice (application) id and name
+// getHostedApplicationSlice returns the hosted application id and name
 // returns raw strings, lookuped values, and errors
-func getMicroserviceSlice(cmd *cobra.Command, args []string, name string) ([]string, []string, error) {
+func getHostedApplicationSlice(cmd *cobra.Command, args []string, name string) ([]string, []string, error) {
 
 	if !cmd.Flags().Changed(name) {
 		// TODO: Read from os.PIPE
@@ -99,7 +99,11 @@ func getMicroserviceSlice(cmd *cobra.Command, args []string, name string) ([]str
 		values = append(values, value)
 	}
 
-	refs, err := findMicroservices(values, true)
+	if len(values) == 0 {
+		return nil, nil, fmt.Errorf("Failed to find matching applications")
+	}
+
+	refs, err := findHostedApplications(values, true)
 
 	if err != nil {
 		return nil, nil, err
@@ -110,11 +114,11 @@ func getMicroserviceSlice(cmd *cobra.Command, args []string, name string) ([]str
 	return values, results, nil
 }
 
-// findMicroservices returns microservices given either an id or search text
+// findHostedApplications returns hosted applications given either an id or search text
 // @values: An array of ids, or names (with wildcards)
 // @lookupID: Lookup the data if an id is given. If a non-id text is given, the result will always be looked up.
-func findMicroservices(values []string, lookupID bool) ([]entityReference, error) {
-	f := newMicroserviceFetcher(client)
+func findHostedApplications(values []string, lookupID bool) ([]entityReference, error) {
+	f := newHostedApplicationFetcher(client)
 
 	formattedValues, err := lookupEntity(f, values, lookupID)
 

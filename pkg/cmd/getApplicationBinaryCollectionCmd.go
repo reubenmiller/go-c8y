@@ -18,44 +18,38 @@ import (
 	"github.com/tidwall/pretty"
 )
 
-type newApplicationBinaryCmd struct {
+type getApplicationBinaryCollectionCmd struct {
 	*baseCmd
 }
 
-func newNewApplicationBinaryCmd() *newApplicationBinaryCmd {
-	ccmd := &newApplicationBinaryCmd{}
+func newGetApplicationBinaryCollectionCmd() *getApplicationBinaryCollectionCmd {
+	ccmd := &getApplicationBinaryCollectionCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "createBinary",
-		Short: "New application binary",
-		Long: `For the applications of type 'microservice' and 'web application' to be available for Cumulocity platform users, a binary zip file must be uploaded.
-For the microservice application, the zip file must consist of  * cumulocity.json - file describing the deployment
-  * image.tar - executable docker image
-
-For the web application, the zip file must include index.html in the root directory.
+		Use:   "listApplicationBinaries",
+		Short: "Get application binaries",
+		Long: `A list of all binaries related to the given application will be returned
 `,
 		Example: `
-$ c8y applications createBinary --id 12345 --file ./helloworld.zip
-Upload application microservice binary
+$ c8y applications listApplicationBinaries --id 12345
+List all of the binaries related to a Hosted (web) application
 		`,
-		RunE: ccmd.newApplicationBinary,
+		RunE: ccmd.getApplicationBinaryCollection,
 	}
 
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("id", "", "Application id (required)")
-	cmd.Flags().String("file", "", "File to be uploaded as a binary (required)")
 
 	// Required flags
 	cmd.MarkFlagRequired("id")
-	cmd.MarkFlagRequired("file")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd
 }
 
-func (n *newApplicationBinaryCmd) newApplicationBinary(cmd *cobra.Command, args []string) error {
+func (n *getApplicationBinaryCollectionCmd) getApplicationBinaryCollection(cmd *cobra.Command, args []string) error {
 
 	// query parameters
 	queryValue := url.QueryEscape("")
@@ -85,8 +79,6 @@ func (n *newApplicationBinaryCmd) newApplicationBinary(cmd *cobra.Command, args 
 
 	// body
 	body := mapbuilder.NewMapBuilder()
-	body.SetMap(getDataFlag(cmd))
-	getFileFlag(cmd, "file", formData)
 
 	// path parameters
 	pathParameters := make(map[string]string)
@@ -114,7 +106,7 @@ func (n *newApplicationBinaryCmd) newApplicationBinary(cmd *cobra.Command, args 
 	filters := getFilterFlag(cmd, "filter")
 
 	req := c8y.RequestOptions{
-		Method:       "POST",
+		Method:       "GET",
 		Path:         path,
 		Query:        queryValue,
 		Body:         body.GetMap(),
@@ -132,10 +124,10 @@ func (n *newApplicationBinaryCmd) newApplicationBinary(cmd *cobra.Command, args 
 		return err
 	}
 
-	return n.doNewApplicationBinary(req, outputfile, filters)
+	return n.doGetApplicationBinaryCollection(req, outputfile, filters)
 }
 
-func (n *newApplicationBinaryCmd) doNewApplicationBinary(req c8y.RequestOptions, outputfile string, filters *JSONFilters) error {
+func (n *getApplicationBinaryCollectionCmd) doGetApplicationBinaryCollection(req c8y.RequestOptions, outputfile string, filters *JSONFilters) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(globalFlagTimeout)*time.Millisecond)
 	defer cancel()
 	start := time.Now()
@@ -191,7 +183,7 @@ func (n *newApplicationBinaryCmd) doNewApplicationBinary(req c8y.RequestOptions,
 		isJSONResponse := jsonUtilities.IsValidJSON([]byte(*resp.JSONData))
 
 		if isJSONResponse && filters != nil && !globalFlagRaw {
-			responseText = filters.Apply(*resp.JSONData, "")
+			responseText = filters.Apply(*resp.JSONData, "attachments")
 		} else {
 			responseText = []byte(*resp.JSONData)
 		}

@@ -109,7 +109,9 @@ func Execute() {
 	rootCmd.AddCommand(alarms)
 
 	// applications commands
-	rootCmd.AddCommand(newApplicationsRootCmd().getCommand())
+	applications := newApplicationsRootCmd().getCommand()
+	applications.AddCommand(newNewHostedApplicationCmd().getCommand())
+	rootCmd.AddCommand(applications)
 
 	// auditRecords commands
 	rootCmd.AddCommand(newAuditRecordsRootCmd().getCommand())
