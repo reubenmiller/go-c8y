@@ -6,8 +6,8 @@ $OldConfirmPreference = $global:ConfirmPreference
 $global:ConfirmPreference = "None"
 
 if (!(Get-Module "Pester")) {
-    Install-Module "Pester" -MinimumVersion "4.0.0"
-    Import-Module "Pester" -MinimumVersion "4.0.0"
+    Install-Module "Pester" -MinimumVersion "4.0.0" -MaximumVersion "4.100.0"
+    Import-Module "Pester" -MinimumVersion "4.0.0" -MaximumVersion "4.100.0"
 }
 
 if ($Coverage) {
