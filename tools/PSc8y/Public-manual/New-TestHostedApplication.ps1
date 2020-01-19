@@ -1,5 +1,8 @@
 Function New-TestHostedApplication {
-    [cmdletbinding()]
+    [cmdletbinding(
+        SupportsShouldProcess = $true,
+        ConfirmImpact = "High"
+    )]
     Param(
         [string] $Name,
 
