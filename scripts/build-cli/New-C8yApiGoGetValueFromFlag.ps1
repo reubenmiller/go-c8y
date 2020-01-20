@@ -62,6 +62,17 @@
     if ($FixedValue) {
         $Setters."boolean"."header" = "headers.Add(`"${queryParam}`", `"$FixedValue`")"
 
+        # Note: We have to be carefully when assigning type to the body
+        # don't try and convert any types
+        if ($FixedValue -is [string]) {
+            # Fixed value is a string, so change the value to a string
+            $Setters."boolean"."body" = "body.Set(`"${queryParam}`", `"$FixedValue`")"
+        } else {
+            # -match "^(true|false)$"
+            # Fixed value is a boolean, so keep it as a boolean
+            $Setters."boolean"."body" = "body.Set(`"${queryParam}`", $FixedValue)"
+        }
+
         $Definitions."boolean" = @"
     if cmd.Flags().Changed("${prop}") {
         if _, err := cmd.Flags().GetBool("${prop}"); err == nil {

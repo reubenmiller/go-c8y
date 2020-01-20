@@ -93,6 +93,29 @@
                 Write-Warning ("No setter found for [{0}]" -f $iArg.name)
             }
         }
+
+        #
+        # Apply a body template to the data
+        #
+        if ($Specification.bodyTemplate) {
+            switch ($Specification.bodyTemplate.type) {
+                "jsonnet" {
+                    # ApplyLast: true == apply template to the existing json (potentially overriding values)
+                    #            false == Use template as base json, and the existing json will take precendence
+                    $Reverse = "true"
+                    if ($Specification.bodyTemplate.applyLast -eq "true") {
+                        $Reverse = "false"
+                    }
+                    $null = $RESTBodyBuilder.AppendLine("body.MergeJsonnet(```n{0}``, {1})" -f @(
+                        $Specification.bodyTemplate.template,
+                        $Reverse
+                    ))
+                }
+                default {
+                    Write-Warning ("Unsupported templating type [{0}]" -f $Specification.bodyTemplate.type)
+                }
+            }
+        }
     }
 
     #
