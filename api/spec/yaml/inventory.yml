@@ -58,6 +58,10 @@ endpoints:
         type: boolean
         description: include a flat list of all parents and grandparents of the given object
 
+      - name: skipChildrenNames
+        type: boolean
+        description: Don't include the child devices names in the resonse. This can improve the api's response because the names don't need to be retrieved
+
   - name: queryManagedObjectCollection
     method: GET
     description: Get a collection of managedObjects based on Cumulocity query language
