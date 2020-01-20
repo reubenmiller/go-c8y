@@ -18,97 +18,43 @@ import (
 	"github.com/tidwall/pretty"
 )
 
-type getManagedObjectCollectionCmd struct {
+type updateDeviceGroupCmd struct {
 	*baseCmd
 }
 
-func newGetManagedObjectCollectionCmd() *getManagedObjectCollectionCmd {
-	ccmd := &getManagedObjectCollectionCmd{}
+func newUpdateDeviceGroupCmd() *updateDeviceGroupCmd {
+	ccmd := &updateDeviceGroupCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "Get a collection of managedObjects based on filter parameters",
-		Long:  `Get a collection of managedObjects based on filter parameters`,
+		Use:   "updateGroup",
+		Short: "Update device group",
+		Long:  ``,
 		Example: `
-$ c8y inventory list
-Get a list of managed objects
+$ c8y devices updateGroup --id 12345
+Update device group by id
 		`,
-		RunE: ccmd.getManagedObjectCollection,
+		RunE: ccmd.updateDeviceGroup,
 	}
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().StringSlice("device", []string{""}, "List of ids.")
-	cmd.Flags().String("type", "", "ManagedObject type.")
-	cmd.Flags().String("fragmentType", "", "ManagedObject fragment type.")
-	cmd.Flags().String("text", "", "managed objects containing a text value starting with the given text (placeholder {text}). Text value is any alphanumeric string starting with a latin letter (A-Z or a-z).")
-	cmd.Flags().Bool("withParents", false, "include a flat list of all parents and grandparents of the given object")
-	cmd.Flags().Bool("skipChildrenNames", false, "Don't include the child devices names in the resonse. This can improve the api's response because the names don't need to be retrieved")
+	cmd.Flags().StringSlice("id", []string{""}, "Device group ID (required)")
+	cmd.Flags().String("name", "", "Device group name")
+	addDataFlag(cmd)
 
 	// Required flags
+	cmd.MarkFlagRequired("id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd
 }
 
-func (n *getManagedObjectCollectionCmd) getManagedObjectCollection(cmd *cobra.Command, args []string) error {
+func (n *updateDeviceGroupCmd) updateDeviceGroup(cmd *cobra.Command, args []string) error {
 
 	// query parameters
 	queryValue := url.QueryEscape("")
 	query := url.Values{}
-	if cmd.Flags().Changed("device") {
-		deviceInputValues, deviceValue, err := getFormattedDeviceSlice(cmd, args, "device")
-
-		if err != nil {
-			return newUserError("no matching devices found", deviceInputValues, err)
-		}
-
-		if len(deviceValue) == 0 {
-			return newUserError("no matching devices found", deviceInputValues)
-		}
-
-		for _, item := range deviceValue {
-			if item != "" {
-				query.Add("ids", newIDValue(item).GetID())
-			}
-		}
-	}
-	if v, err := cmd.Flags().GetString("type"); err == nil {
-		if v != "" {
-			query.Add("type", url.QueryEscape(v))
-		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "type", err))
-	}
-	if v, err := cmd.Flags().GetString("fragmentType"); err == nil {
-		if v != "" {
-			query.Add("fragmentType", url.QueryEscape(v))
-		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "fragmentType", err))
-	}
-	if v, err := cmd.Flags().GetString("text"); err == nil {
-		if v != "" {
-			query.Add("text", url.QueryEscape(v))
-		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "text", err))
-	}
-	if cmd.Flags().Changed("withParents") {
-		if v, err := cmd.Flags().GetBool("withParents"); err == nil {
-			query.Add("withParents", fmt.Sprintf("%v", v))
-		} else {
-			return newUserError("Flag does not exist")
-		}
-	}
-	if cmd.Flags().Changed("skipChildrenNames") {
-		if v, err := cmd.Flags().GetBool("skipChildrenNames"); err == nil {
-			query.Add("skipChildrenNames", fmt.Sprintf("%v", v))
-		} else {
-			return newUserError("Flag does not exist")
-		}
-	}
 	if cmd.Flags().Changed("pageSize") {
 		if v, err := cmd.Flags().GetInt("pageSize"); err == nil && v > 0 {
 			query.Add("pageSize", fmt.Sprintf("%d", v))
@@ -134,17 +80,42 @@ func (n *getManagedObjectCollectionCmd) getManagedObjectCollection(cmd *cobra.Co
 
 	// body
 	body := mapbuilder.NewMapBuilder()
+	body.SetMap(getDataFlag(cmd))
+	if v, err := cmd.Flags().GetString("name"); err == nil {
+		if v != "" {
+			body.Set("name", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "name", err))
+	}
 
 	// path parameters
 	pathParameters := make(map[string]string)
+	if cmd.Flags().Changed("id") {
+		idInputValues, idValue, err := getFormattedDeviceGroupSlice(cmd, args, "id")
 
-	path := replacePathParameters("inventory/managedObjects", pathParameters)
+		if err != nil {
+			return newUserError("no matching device groups found", idInputValues, err)
+		}
+
+		if len(idValue) == 0 {
+			return newUserError("no matching device groups found", idInputValues)
+		}
+
+		for _, item := range idValue {
+			if item != "" {
+				pathParameters["id"] = newIDValue(item).GetID()
+			}
+		}
+	}
+
+	path := replacePathParameters("inventory/managedObjects/{id}", pathParameters)
 
 	// filter and selectors
 	filters := getFilterFlag(cmd, "filter")
 
 	req := c8y.RequestOptions{
-		Method:       "GET",
+		Method:       "PUT",
 		Path:         path,
 		Query:        queryValue,
 		Body:         body.GetMap(),
@@ -162,10 +133,10 @@ func (n *getManagedObjectCollectionCmd) getManagedObjectCollection(cmd *cobra.Co
 		return err
 	}
 
-	return n.doGetManagedObjectCollection(req, outputfile, filters)
+	return n.doUpdateDeviceGroup(req, outputfile, filters)
 }
 
-func (n *getManagedObjectCollectionCmd) doGetManagedObjectCollection(req c8y.RequestOptions, outputfile string, filters *JSONFilters) error {
+func (n *updateDeviceGroupCmd) doUpdateDeviceGroup(req c8y.RequestOptions, outputfile string, filters *JSONFilters) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(globalFlagTimeout)*time.Millisecond)
 	defer cancel()
 	start := time.Now()
@@ -221,7 +192,7 @@ func (n *getManagedObjectCollectionCmd) doGetManagedObjectCollection(req c8y.Req
 		isJSONResponse := jsonUtilities.IsValidJSON([]byte(*resp.JSONData))
 
 		if isJSONResponse && filters != nil && !globalFlagRaw {
-			responseText = filters.Apply(*resp.JSONData, "managedObjects")
+			responseText = filters.Apply(*resp.JSONData, "")
 		} else {
 			responseText = []byte(*resp.JSONData)
 		}

@@ -49,6 +49,11 @@ Get a list of managed objects by looking up their names
         [switch]
         $WithParents,
 
+        # Don't include the child devices names in the resonse. This can improve the api's response because the names don't need to be retrieved
+        [Parameter()]
+        [switch]
+        $SkipChildrenNames,
+
         # Maximum number of results
         [Parameter()]
         [AllowNull()]
@@ -104,6 +109,9 @@ Get a list of managed objects by looking up their names
         }
         if ($PSBoundParameters.ContainsKey("WithParents")) {
             $Parameters["withParents"] = $WithParents
+        }
+        if ($PSBoundParameters.ContainsKey("SkipChildrenNames")) {
+            $Parameters["skipChildrenNames"] = $SkipChildrenNames
         }
         if ($PSBoundParameters.ContainsKey("PageSize")) {
             $Parameters["pageSize"] = $PageSize

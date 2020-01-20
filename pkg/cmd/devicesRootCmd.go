@@ -22,6 +22,10 @@ func newDevicesRootCmd() *devicesCmd {
 	cmd.AddCommand(newGetSupportedSeriesCmd().getCommand())
 	cmd.AddCommand(newGetSupportedOperationsCmd().getCommand())
 	cmd.AddCommand(newSetDeviceRequiredAvailabilityCmd().getCommand())
+	cmd.AddCommand(newGetDeviceGroupCmd().getCommand())
+	cmd.AddCommand(newUpdateDeviceGroupCmd().getCommand())
+	cmd.AddCommand(newDeleteDeviceGroupCmd().getCommand())
+	cmd.AddCommand(newCreateDeviceGroupCmd().getCommand())
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

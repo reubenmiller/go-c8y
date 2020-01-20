@@ -12,33 +12,33 @@ import (
 	"github.com/tidwall/pretty"
 )
 
-type getDeviceCollectionCmd struct {
+type getDeviceGroupCollectionCmd struct {
 	*baseCmd
 }
 
-func newGetDeviceCollectionCmd() *getDeviceCollectionCmd {
-	ccmd := &getDeviceCollectionCmd{}
+func newGetDeviceGroupCollectionCmd() *getDeviceGroupCollectionCmd {
+	ccmd := &getDeviceGroupCollectionCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "Get a collection of devices based on filter parameters",
-		Long:  `Get a collection of devices based on filter parameters`,
+		Use:   "listDeviceGroups",
+		Short: "Get a collection of device groups based on filter parameters",
+		Long:  `Get a collection of device groups based on filter parameters`,
 		Example: `
-		c8y devices list --name "sensor*" --type myType
+		c8y devices listDeviceGroups --name "MyGroup*"
 
-		Get a collection of devices of type "myType", and their names start with "sensor"
+		Get a collection of device groups with names that start with "MyGroup"
 		`,
-		RunE: ccmd.getDeviceCollection,
+		RunE: ccmd.getDeviceGroupCollection,
 	}
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("name", "", "Device name.")
-	cmd.Flags().String("type", "", "Device type.")
-	cmd.Flags().Bool("agents", false, "Only include agents.")
-	cmd.Flags().String("fragmentType", "", "Device fragment type.")
-	cmd.Flags().String("owner", "", "Device owner.")
+	cmd.Flags().String("name", "", "Device group name.")
+	cmd.Flags().String("type", "", "Device group type.")
+	cmd.Flags().String("fragmentType", "", "Device group fragment type.")
+	cmd.Flags().String("owner", "", "Device group owner.")
 	cmd.Flags().String("query", "", "Additional query filter")
+	cmd.Flags().Bool("excludeRootGroup", false, "Exclude root groups from the list")
 	cmd.Flags().Bool("withParents", false, "include a flat list of all parents and grandparents of the given object")
 
 	// Required flags
@@ -47,7 +47,7 @@ func newGetDeviceCollectionCmd() *getDeviceCollectionCmd {
 	return ccmd
 }
 
-func (n *getDeviceCollectionCmd) getDeviceCollection(cmd *cobra.Command, args []string) error {
+func (n *getDeviceGroupCollectionCmd) getDeviceGroupCollection(cmd *cobra.Command, args []string) error {
 
 	// query parameters
 	queryValue := url.QueryEscape("")
@@ -55,7 +55,7 @@ func (n *getDeviceCollectionCmd) getDeviceCollection(cmd *cobra.Command, args []
 
 	var c8yQueryParts = make([]string, 0)
 
-	c8yQueryParts = append(c8yQueryParts, "(has(c8y_IsDevice) or has(c8y_ModbusDevice))")
+	c8yQueryParts = append(c8yQueryParts, "(has(c8y_IsDeviceGroup))")
 
 	if v, err := cmd.Flags().GetString("name"); err == nil {
 		if v != "" {
@@ -81,15 +81,15 @@ func (n *getDeviceCollectionCmd) getDeviceCollection(cmd *cobra.Command, args []
 		}
 	}
 
-	if v, err := cmd.Flags().GetBool("agents"); err == nil {
-		if v {
-			c8yQueryParts = append(c8yQueryParts, "has(com_cumulocity_model_Agent)")
-		}
-	}
-
 	if v, err := cmd.Flags().GetString("query"); err == nil {
 		if v != "" {
 			c8yQueryParts = append(c8yQueryParts, v)
+		}
+	}
+
+	if v, err := cmd.Flags().GetBool("excludeRootGroup"); err == nil {
+		if v {
+			c8yQueryParts = append(c8yQueryParts, "not(type eq 'c8y_DeviceGroup')")
 		}
 	}
 
@@ -131,10 +131,10 @@ func (n *getDeviceCollectionCmd) getDeviceCollection(cmd *cobra.Command, args []
 
 	path := replacePathParameters("inventory/managedObjects", pathParameters)
 
-	return n.doGetDeviceCollection("GET", path, queryValue, body)
+	return n.doGetDeviceGroupCollection("GET", path, queryValue, body)
 }
 
-func (n *getDeviceCollectionCmd) doGetDeviceCollection(method string, path string, query string, body map[string]interface{}) error {
+func (n *getDeviceGroupCollectionCmd) doGetDeviceGroupCollection(method string, path string, query string, body map[string]interface{}) error {
 	resp, err := client.SendRequest(
 		context.Background(),
 		c8y.RequestOptions{

@@ -129,6 +129,7 @@ func Execute() {
 	devices := newDevicesRootCmd().getCommand()
 	devices.AddCommand(newQueryDeviceCmd().getCommand())
 	devices.AddCommand(newGetDeviceCollectionCmd().getCommand())
+	devices.AddCommand(newGetDeviceGroupCollectionCmd().getCommand())
 	rootCmd.AddCommand(devices)
 
 	// operations commands

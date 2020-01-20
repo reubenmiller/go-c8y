@@ -1,22 +1,17 @@
-﻿Function Get-DeviceCollection {
+Function Get-DeviceGroupCollection {
 <#
 .SYNOPSIS
-Get a collection of devices
+Get a collection of device groups
 
 .EXAMPLE
-Get-DeviceCollection -Name *sensor*
+Get-DeviceGroupCollection -Name *Room*
 
-Get all devices with "sensor" in their name
-
-.EXAMPLE
-Get-DeviceCollection -Name *sensor* -Type *c8y_* -PageSize 100
-
-Get the first 100 devices with "sensor" in their name and has a type matching "c8y_"
+Get all device groups with "Room" in their name
 
 .EXAMPLE
-Get-DeviceCollection -Query "lastUpdated.date gt '2020-01-01T00:00:00Z'"
+Get-DeviceGroupCollection -Query "creationTime.date gt '2020-01-01T00:00:00Z'"
 
-Get a list of devices which have been updated more recently than 2020-01-01
+Get a list of devices groups which have been created more recently than 2020-01-01
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -26,22 +21,22 @@ Get a list of devices which have been updated more recently than 2020-01-01
     [Alias()]
     [OutputType([object])]
     Param(
-        # Device name. Wildcards accepted
+        # Device group name. Wildcards accepted
         [Parameter(Mandatory = $false)]
         [string]
         $Name,
 
-        # Device type.
+        # Device group type.
         [Parameter(Mandatory = $false)]
         [string]
         $Type,
 
-        # Device fragment type.
+        # Device group fragment type.
         [Parameter(Mandatory = $false)]
         [string]
         $FragmentType,
 
-        # Device owner.
+        # Device group owner.
         [Parameter(Mandatory = $false)]
         [string]
         $Owner,
@@ -51,10 +46,10 @@ Get a list of devices which have been updated more recently than 2020-01-01
         [string]
         $Query,
 
-        # Only include agents.
-        [Parameter()]
+        # Exclude root groups from the list
+        [Parameter(Mandatory = $false)]
         [switch]
-        $Agents,
+        $ExcludeRootGroup,
 
         # include a flat list of all parents and grandparents of the given object
         [Parameter()]
@@ -107,8 +102,8 @@ Get a list of devices which have been updated more recently than 2020-01-01
         if ($PSBoundParameters.ContainsKey("Query")) {
             $Parameters["query"] = $Query
         }
-        if ($PSBoundParameters.ContainsKey("Agents")) {
-            $Parameters["agents"] = $Agents
+        if ($PSBoundParameters.ContainsKey("ExcludeRootGroup")) {
+            $Parameters["excludeRootGroup"] = $ExcludeRootGroup
         }
         if ($PSBoundParameters.ContainsKey("WithParents")) {
             $Parameters["withParents"] = $WithParents
@@ -137,10 +132,10 @@ Get a list of devices which have been updated more recently than 2020-01-01
 
         Invoke-Command `
             -Noun "devices" `
-            -Verb "list" `
+            -Verb "listDeviceGroups" `
             -Parameters $Parameters `
-            -Type "application/vnd.com.nsn.cumulocity.managedObjectCollection+json" `
-            -ItemType "application/vnd.com.nsn.cumulocity.managedObject+json" `
+            -Type "application/vnd.com.nsn.cumulocity.customDeviceGroupCollection+json" `
+            -ItemType "application/vnd.com.nsn.cumulocity.customDeviceGroup+json" `
             -ResultProperty "managedObjects" `
             -Raw:$Raw `
             -IncludeAll:$IncludeAll
