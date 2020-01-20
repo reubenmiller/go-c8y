@@ -3,12 +3,32 @@ package mapbuilder
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
+
+	"github.com/google/go-jsonnet"
 )
 
 const (
 	Separator = "."
 )
+
+func evaluateJsonnet(snippets ...string) (string, error) {
+	// Create a JSonnet VM
+	vm := jsonnet.MakeVM()
+
+	if len(snippets) == 0 {
+		return "", fmt.Errorf("requires at least 1 snippet")
+	}
+
+	snippet := strings.Join(snippets, "+")
+
+	// log.Printf("snippet: %s\n", snippet)
+
+	// render the jsonnet
+	out, err := vm.EvaluateSnippet("file", snippet)
+	return out, err
+}
 
 func NewMapBuilder() *MapBuilder {
 	return &MapBuilder{}
@@ -20,9 +40,60 @@ func NewMapBuilderWithInit(body map[string]interface{}) *MapBuilder {
 	}
 }
 
+// NewMapBuilderFromJsonnetSnippet returns a new mapper builder from a jsonnet snippet
+// See https://jsonnet.org/learning/tutorial.html for details on how to create a snippet
+func NewMapBuilderFromJsonnetSnippet(snippet string) (*MapBuilder, error) {
+	jsonStr, err := evaluateJsonnet(snippet)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse snippet. %w", err)
+	}
+
+	return NewMapBuilderFromJSON(jsonStr)
+}
+
+// NewMapBuilderFromJSON returns a new mapper builder object created from json
+func NewMapBuilderFromJSON(data string) (*MapBuilder, error) {
+	body := make(map[string]interface{})
+	if err := json.Unmarshal([]byte(data), &body); err != nil {
+		return nil, err
+	}
+	return NewMapBuilderWithInit(body), nil
+}
+
 // MapBuilder creates body builder
 type MapBuilder struct {
 	body map[string]interface{}
+}
+
+// MergeJsonnet merges the existing body data with a given jsonnet snippet.
+// When reverse is false, then the snippet will be applied to the existing data,
+// when reverse is true, then the given snippet will be the base, and the existing data will be applied to the new snippet.
+func (b *MapBuilder) MergeJsonnet(snippet string, reverse bool) error {
+	existingJSON, err := b.MarshalJSON()
+
+	if err != nil {
+		return fmt.Errorf("failed to marshal existing map data to json. %w", err)
+	}
+
+	var mergedJSON string
+	if reverse {
+		mergedJSON, err = evaluateJsonnet(snippet, string(existingJSON))
+	} else {
+		mergedJSON, err = evaluateJsonnet(string(existingJSON), snippet)
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to merge json. %w", err)
+	}
+
+	body := make(map[string]interface{})
+	if err := json.Unmarshal([]byte(mergedJSON), &body); err != nil {
+		return fmt.Errorf("failed to decode json. %w", err)
+	}
+	b.body = body
+
+	return nil
 }
 
 // SetMap sets a new map to the body. This will remove any existing values in the body
