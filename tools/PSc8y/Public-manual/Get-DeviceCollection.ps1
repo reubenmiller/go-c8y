@@ -139,8 +139,8 @@ Get a list of devices which have been updated more recently than 2020-01-01
             -Noun "devices" `
             -Verb "list" `
             -Parameters $Parameters `
-            -Type "application/vnd.com.nsn.cumulocity.managedObjectCollection+json" `
-            -ItemType "application/vnd.com.nsn.cumulocity.managedObject+json" `
+            -Type "application/vnd.com.nsn.cumulocity.customDeviceCollection+json" `
+            -ItemType "application/vnd.com.nsn.cumulocity.customDevice+json" `
             -ResultProperty "managedObjects" `
             -Raw:$Raw `
             -IncludeAll:$IncludeAll

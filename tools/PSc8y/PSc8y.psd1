@@ -63,6 +63,7 @@ FormatsToProcess = @(
     'format-data/applicationReferences.ps1xml',
     'format-data/applications.ps1xml',
     'format-data/auditRecords.ps1xml',
+    'format-data/devices.ps1xml',
     'format-data/deviceGroups.ps1xml',
     'format-data/events.ps1xml',
     'format-data/identity.ps1xml',

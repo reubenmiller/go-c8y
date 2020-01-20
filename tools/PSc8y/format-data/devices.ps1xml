@@ -2,7 +2,7 @@
 <Configuration>
     <Controls>
         <Control>
-        <Name>Cumulocity-DeviceGroupCollectionFormat</Name>
+        <Name>Cumulocity-DeviceCollectionFormat</Name>
         <CustomControl>
             <CustomEntries>
                 <CustomEntry>
@@ -31,7 +31,7 @@
         <View>
             <Name>Default</Name>
             <ViewSelectedBy>
-                <TypeName>application/vnd.com.nsn.cumulocity.customDeviceGroup+json</TypeName>
+                <TypeName>application/vnd.com.nsn.cumulocity.customDevice+json</TypeName>
             </ViewSelectedBy>
             <TableControl>
                 <TableHeaders>
@@ -45,10 +45,18 @@
                         <Width>25</Width>
                     </TableColumnHeader>
                     <TableColumnHeader>
-                        <Width>20</Width>
+                        <Width>35</Width>
                     </TableColumnHeader>
                     <TableColumnHeader>
-                        <Width>35</Width>
+                        <Width>30</Width>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                        <Label>c8y_ActiveAlarmsStatus</Label>
+                        <Width>30</Width>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                        <Label>c8y_Availability.status</Label>
+                        <Width>40</Width>
                     </TableColumnHeader>
                 </TableHeaders>
                 <TableRowEntries>
@@ -59,9 +67,6 @@
                                 <PropertyName>id</PropertyName>
                             </TableColumnItem>
                             <TableColumnItem>
-                                <PropertyName>lastUpdated</PropertyName>
-                            </TableColumnItem>
-                            <TableColumnItem>
                                 <PropertyName>name</PropertyName>
                             </TableColumnItem>
                             <TableColumnItem>
@@ -69,6 +74,23 @@
                             </TableColumnItem>
                             <TableColumnItem>
                                 <PropertyName>owner</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>lastUpdated</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <ScriptBlock>
+                                    if ($_.c8y_ActiveAlarmsStatus) {
+                                        $_.c8y_ActiveAlarmsStatus
+                                    }
+                                </ScriptBlock>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <ScriptBlock>
+                                    if ($_.c8y_Availability) {
+                                        $_.c8y_Availability.status
+                                    }
+                                </ScriptBlock>
                             </TableColumnItem>
                         </TableColumnItems>
                     </TableRowEntry>
@@ -78,11 +100,11 @@
         <View>
             <Name>Default</Name>
             <ViewSelectedBy>
-                <TypeName>application/vnd.com.nsn.cumulocity.customDeviceGroupCollection+json</TypeName>
+                <TypeName>application/vnd.com.nsn.cumulocity.customDeviceCollection+json</TypeName>
             </ViewSelectedBy>
             <GroupBy>
                 <PropertyName>self</PropertyName>
-                <CustomControlName>Cumulocity-DeviceGroupCollectionFormat</CustomControlName>
+                <CustomControlName>Cumulocity-DeviceCollectionFormat</CustomControlName>
             </GroupBy>
             <TableControl>
                 <TableHeaders>
