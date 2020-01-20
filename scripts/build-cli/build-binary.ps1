@@ -39,7 +39,9 @@ if ($All -or $IsMacOS) {
         return
     }
 
-    chmod +x "$OutputPath"
+    if (Get-Command "chmod" -ErrorAction SilentlyContinue) {
+        chmod +x "$OutputPath"
+    }
 
     # Compress-Archive -Path $OutputPath -DestinationPath "$OutputDir/c8y.macos.zip" -CompressionLevel Optimal -Force
 
@@ -60,7 +62,9 @@ if ($All -or $IsLinux) {
         return
     }
 
-    chmod +x "$OutputPath"
+    if (Get-Command "chmod" -ErrorAction SilentlyContinue) {
+        chmod +x "$OutputPath"
+    }
 
     # Compress-Archive -Path $OutputPath -DestinationPath "$OutputDir/c8y.linux.zip" -Force
 
