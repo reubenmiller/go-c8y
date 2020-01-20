@@ -24,7 +24,7 @@ func newGetDeviceCollectionCmd() *getDeviceCollectionCmd {
 		Short: "Get a collection of devices based on filter parameters",
 		Long:  `Get a collection of devices based on filter parameters`,
 		Example: `
-        c8y devices list --type value --severity MAJOR
+        c8y devices list --name "sensor*" --type myType
 		`,
 		RunE: ccmd.getDeviceCollection,
 	}
