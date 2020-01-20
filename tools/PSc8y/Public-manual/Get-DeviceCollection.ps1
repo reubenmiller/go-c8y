@@ -4,9 +4,19 @@
 Get the active Cumulocity Session
 
 .EXAMPLE
-Get-Session
+Get-DeviceCollection -Name *sensor*
 
-Get the current Cumulocity session
+Get all devices with "sensor" in their name
+
+.EXAMPLE
+Get-DeviceCollection -Name *sensor* -Type *c8y_* -PageSize 100
+
+Get the first 100 devices with "sensor" in their name and has a type matching "c8y_"
+
+.EXAMPLE
+Get-DeviceCollection -Query "lastUpdated.date gt '2020-01-01T00:00:00Z'"
+
+Get a list of devices which have been updated more recently than 2020-01-01
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -16,7 +26,7 @@ Get the current Cumulocity session
     [Alias()]
     [OutputType([object])]
     Param(
-        # Device name.
+        # Device name. Wildcards accepted
         [Parameter(Mandatory = $false)]
         [string]
         $Name,
