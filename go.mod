@@ -10,10 +10,10 @@ require (
 	github.com/araddon/dateparse v0.0.0-20190329160016-74dc0e29b01f
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
 	github.com/fatih/color v1.7.0
+	github.com/google/go-jsonnet v0.14.0
 	github.com/google/go-querystring v1.0.0
 	github.com/gorilla/websocket v1.4.0
 	github.com/howeyc/gopass v0.0.0-20190910152052-7cb4b85ec19c
-	github.com/jeremywohl/flatten v1.0.1 // indirect
 	github.com/karrick/tparse/v2 v2.7.1
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/gommon v0.2.8 // indirect
@@ -26,7 +26,6 @@ require (
 	github.com/pelletier/go-toml v1.4.0 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v0.9.3
-	github.com/reubenmiller/promptui v0.3.3-0.20191108115601-2f95ff728c78
 	github.com/simplereach/timeutils v1.2.0 // indirect
 	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/spf13/afero v1.2.2 // indirect
@@ -41,10 +40,9 @@ require (
 	github.com/valyala/fasttemplate v1.0.1 // indirect
 	go.uber.org/zap v1.10.0
 	golang.org/x/crypto v0.0.0-20191029031824-8986dd9e96cf // indirect
-	golang.org/x/net v0.0.0-20190606173856-1492cefac77f // indirect
+	golang.org/x/lint v0.0.0-20191125180803-fdd1cda4f05f // indirect
 	golang.org/x/sys v0.0.0-20190712062909-fae7ac547cb7 // indirect
 	golang.org/x/text v0.3.2 // indirect
-	golang.org/x/tools v0.0.0-20190422233926-fe54fb35175b // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
