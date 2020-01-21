@@ -409,7 +409,7 @@
 
     # integer
     $Setters."integer"."query" = "query.Add(`"${queryParam}`", v)"
-    $Setters."integer"."path" = "pathParameters[`"${queryParam}`"] = v"
+    $Setters."integer"."path" = "pathParameters[`"${queryParam}`"] = fmt.Sprintf(`"%d`", v)"
     $Setters."integer"."body" = "body.Set(`"${queryParam}`", v)"
     $Definitions."integer" = @"
     if v, err := cmd.Flags().GetInt("${prop}"); err == nil {
