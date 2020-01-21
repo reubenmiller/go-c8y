@@ -347,3 +347,53 @@ endpoints:
         type: json_custom
         required: false
         description: 'Custom properties to be added to the user'
+
+  - name: resetUserPassword
+    description: Reset a user' password
+    descriptionLong: The password can be reset either by issuing a password reset email (default), or be specifying a new password.
+    method: PUT
+    path: user/{tenant}/users/{id}
+    accept: 'application/vnd.com.nsn.cumulocity.user+json'
+    alias:
+        go: resetUserPassword
+        powershell: Reset-UserPassword
+    examples:
+      powershell:
+        - description: Resets a user's password by sending a reset email to the user
+          beforeEach:
+            - $User = PSc8y\New-TestUser
+          command: Reset-UserPassword -Id $User.id
+          afterEach:
+            - PSc8y\Remove-User -Id $User.id
+
+        - description: Resets a user's password by generating a new password
+          beforeEach:
+            - $User = PSc8y\New-TestUser
+          command: Reset-UserPassword -Id $User.id -NewPassword (New-RandomPassword)
+          afterEach:
+            - PSc8y\Remove-User -Id $User.id
+      go:
+        - description: Update a user
+          command: c8y users resetUserPassword --id "myuser"
+    pathParameters:
+      - name: id
+        type: string
+        required: true
+        pipeline: true
+        description: User id
+
+      - name: tenant
+        type: tenant
+        required: false
+        description: Tenant
+    bodyTemplate:
+      type: jsonnet
+      applyLast: true
+      template: >
+        addIfEmptyString(base, "password", {sendPasswordResetEmail: true})
+    body:
+      - name: newPassword
+        type: string
+        property: password
+        required: false
+        description: 'New user password. Min: 6, max: 32 characters. Only Latin1 chars allowed'
