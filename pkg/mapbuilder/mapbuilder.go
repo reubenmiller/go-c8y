@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
+	"os"
 	"strings"
 
 	"github.com/google/go-jsonnet"
@@ -13,20 +15,50 @@ const (
 	Separator = "."
 )
 
-func evaluateJsonnet(snippets ...string) (string, error) {
+func evaluateJsonnet(base string, snippets ...string) (string, error) {
 	// Create a JSonnet VM
 	vm := jsonnet.MakeVM()
 
-	if len(snippets) == 0 {
-		return "", fmt.Errorf("requires at least 1 snippet")
+	var jsonnetImport string
+
+	jsonnetImport += `
+local addIfMissing(obj, srcProp, mixin) = if !std.objectHas(obj, srcProp) then mixin else {};
+local addIfHas(obj, srcProp, destProp, value) = if std.objectHas(obj, srcProp) then {[destProp]: value} else {};
+
+# Add if property does not exist or is empty.
+# If the property is empty then it will be removed!
+local addIfEmptyString(obj, srcProp, mixin) = if !std.objectHas(obj, srcProp) || obj[srcProp] == "" then mixin + {[srcProp]:: false} else {};
+
+# Assert: throw error if given property is not present
+local isMandatory(o, prop) = {
+	assert std.objectHas(o, prop): prop + " is mandatory",
+};
+`
+
+	base = strings.TrimSpace(base)
+
+	// Add closing ";" if required
+	if strings.HasSuffix(base, "}") {
+		base = base + ";"
 	}
 
-	snippet := strings.Join(snippets, "+")
+	jsonnetImport += "\nlocal base = " + base
 
-	// log.Printf("snippet: %s\n", snippet)
+	jsonnetImport += "\nlocal final = "
+	if len(snippets) > 0 {
+		jsonnetImport += strings.Join(append([]string{"base"}, snippets...), " + ") + ";"
+	} else {
+		jsonnetImport += "base" + ";"
+	}
 
-	// render the jsonnet
-	out, err := vm.EvaluateSnippet("file", snippet)
+	jsonnetImport += "\nfinal"
+
+	if strings.ToLower(os.Getenv("C8Y_JSONNET_DEBUG")) == "true" {
+		log.Printf("jsonnet snippet: %s\n", jsonnetImport)
+	}
+
+	// evaluate the jsonnet
+	out, err := vm.EvaluateSnippet("file", jsonnetImport)
 	return out, err
 }
 
