@@ -5,6 +5,9 @@ Write-Verbose "PSScriptRoot: $PSSScriptRoot";
 Import-Module Pester -MinimumVersion "4.0.0" -MaximumVersion "4.100.0"
 Import-Module "$PSScriptRoot/../PSc8y.psd1" -Prefix ""
 
+# Import helper functions
+. "$PSScriptRoot/Get-JSONFromResponse.ps1"
+
 # Get credentials from the environment
 $env:C8Y_USE_ENVIRONMENT = "on"
 
