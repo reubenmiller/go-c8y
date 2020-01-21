@@ -1,16 +1,19 @@
 ﻿# Code generated from specification version 1.0.0: DO NOT EDIT
-Function New-DeviceGroup {
+Function Reset-UserPassword {
 <#
 .SYNOPSIS
-Create device group
+Reset a user' password
+
+.DESCRIPTION
+The password can be reset either by issuing a password reset email (default), or be specifying a new password.
 
 .EXAMPLE
-PS> New-DeviceGroup -Name $GroupName
-Create device group
+PS> Reset-UserPassword -Id $User.id
+Resets a user's password by sending a reset email to the user
 
 .EXAMPLE
-PS> New-DeviceGroup -Name $GroupName -Data @{ "myValue" = @{ value1 = $true } }
-Create device group with custom properties
+PS> Reset-UserPassword -Id $User.id -NewPassword (New-RandomPassword)
+Resets a user's password by generating a new password
 
 
 #>
@@ -21,21 +24,22 @@ Create device group with custom properties
     [Alias()]
     [OutputType([object])]
     Param(
-        # Device group name (required)
-        [Parameter(Mandatory = $true)]
+        # User id (required)
+        [Parameter(Mandatory = $true,
+                   ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true)]
         [string]
-        $Name,
+        $Id,
 
-        # Device group type (c8y_DeviceGroup (root folder) or c8y_DeviceSubGroup (sub folder)). Defaults to c8y_DeviceGroup
-        [Parameter()]
-        [ValidateSet('c8y_DeviceGroup','c8y_DeviceSubGroup')]
-        [string]
-        $Type,
-
-        # Custom group properties.
+        # Tenant
         [Parameter()]
         [object]
-        $Data,
+        $Tenant,
+
+        # New user password. Min: 6, max: 32 characters. Only Latin1 chars allowed
+        [Parameter()]
+        [string]
+        $NewPassword,
 
         # Include raw response including pagination information
         [Parameter()]
@@ -65,14 +69,11 @@ Create device group with custom properties
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("Name")) {
-            $Parameters["name"] = $Name
+        if ($PSBoundParameters.ContainsKey("Tenant")) {
+            $Parameters["tenant"] = $Tenant
         }
-        if ($PSBoundParameters.ContainsKey("Type")) {
-            $Parameters["type"] = $Type
-        }
-        if ($PSBoundParameters.ContainsKey("Data")) {
-            $Parameters["data"] = ConvertTo-JsonArgument $Data
+        if ($PSBoundParameters.ContainsKey("NewPassword")) {
+            $Parameters["newPassword"] = $NewPassword
         }
         if ($PSBoundParameters.ContainsKey("OutputFile")) {
             $Parameters["outputFile"] = $OutputFile
@@ -87,7 +88,10 @@ Create device group with custom properties
     }
 
     Process {
-        foreach ($item in @("")) {
+        foreach ($item in (PSc8y\Expand-Id $Id)) {
+            if ($item) {
+                $Parameters["id"] = if ($item.id) { $item.id } else { $item }
+            }
 
             if (!$Force -and
                 !$WhatIfPreference -and
@@ -99,10 +103,10 @@ Create device group with custom properties
             }
 
             Invoke-Command `
-                -Noun "devices" `
-                -Verb "createGroup" `
+                -Noun "users" `
+                -Verb "resetUserPassword" `
                 -Parameters $Parameters `
-                -Type "application/vnd.com.nsn.cumulocity.customDeviceGroup+json" `
+                -Type "application/vnd.com.nsn.cumulocity.user+json" `
                 -ItemType "" `
                 -ResultProperty "" `
                 -Raw:$Raw `

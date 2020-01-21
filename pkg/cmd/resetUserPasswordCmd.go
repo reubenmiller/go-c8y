@@ -18,42 +18,39 @@ import (
 	"github.com/tidwall/pretty"
 )
 
-type createDeviceGroupCmd struct {
+type resetUserPasswordCmd struct {
 	*baseCmd
 }
 
-func newCreateDeviceGroupCmd() *createDeviceGroupCmd {
-	ccmd := &createDeviceGroupCmd{}
+func newResetUserPasswordCmd() *resetUserPasswordCmd {
+	ccmd := &resetUserPasswordCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "createGroup",
-		Short: "Create device group",
-		Long:  ``,
+		Use:   "resetUserPassword",
+		Short: "Reset a user' password",
+		Long:  `The password can be reset either by issuing a password reset email (default), or be specifying a new password.`,
 		Example: `
-$ c8y devices createGroup --name mygroup
-Create device group
-
-$ c8y devices createGroup --name mygroup --data "custom_value1=1234"
-Create device group with custom properties
+$ c8y users resetUserPassword --id "myuser"
+Update a user
 		`,
-		RunE: ccmd.createDeviceGroup,
+		RunE: ccmd.resetUserPassword,
 	}
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("name", "", "Device group name (required)")
-	cmd.Flags().String("type", "", "Device group type (c8y_DeviceGroup (root folder) or c8y_DeviceSubGroup (sub folder)). Defaults to c8y_DeviceGroup")
-	addDataFlag(cmd)
+	cmd.Flags().String("id", "", "User id (required)")
+	cmd.Flags().String("tenant", "", "Tenant")
+	cmd.Flags().String("newPassword", "", "New user password. Min: 6, max: 32 characters. Only Latin1 chars allowed")
 
 	// Required flags
-	cmd.MarkFlagRequired("name")
+	cmd.MarkFlagRequired("id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd
 }
 
-func (n *createDeviceGroupCmd) createDeviceGroup(cmd *cobra.Command, args []string) error {
+func (n *resetUserPasswordCmd) resetUserPassword(cmd *cobra.Command, args []string) error {
 
 	// query parameters
 	queryValue := url.QueryEscape("")
@@ -84,36 +81,37 @@ func (n *createDeviceGroupCmd) createDeviceGroup(cmd *cobra.Command, args []stri
 	// body
 	body := mapbuilder.NewMapBuilder()
 	body.SetMap(getDataFlag(cmd))
-	if v, err := cmd.Flags().GetString("name"); err == nil {
+	if v, err := cmd.Flags().GetString("newPassword"); err == nil {
 		if v != "" {
-			body.Set("name", v)
+			body.Set("password", v)
 		}
 	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "name", err))
-	}
-	if v, err := cmd.Flags().GetString("type"); err == nil {
-		if v != "" {
-			body.Set("type", v)
-		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "type", err))
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "newPassword", err))
 	}
 	body.MergeJsonnet(`
-{  type: "c8y_DeviceGroup",
-  c8y_IsDeviceGroup: {},
-}
-`, true)
+addIfEmptyString(base, "password", {sendPasswordResetEmail: true})
+`, false)
 
 	// path parameters
 	pathParameters := make(map[string]string)
+	if v, err := cmd.Flags().GetString("id"); err == nil {
+		if v != "" {
+			pathParameters["id"] = v
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "id", err))
+	}
+	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
+		pathParameters["tenant"] = v
+	}
 
-	path := replacePathParameters("inventory/managedObjects", pathParameters)
+	path := replacePathParameters("user/{tenant}/users/{id}", pathParameters)
 
 	// filter and selectors
 	filters := getFilterFlag(cmd, "filter")
 
 	req := c8y.RequestOptions{
-		Method:       "POST",
+		Method:       "PUT",
 		Path:         path,
 		Query:        queryValue,
 		Body:         body.GetMap(),
@@ -131,10 +129,10 @@ func (n *createDeviceGroupCmd) createDeviceGroup(cmd *cobra.Command, args []stri
 		return err
 	}
 
-	return n.doCreateDeviceGroup(req, outputfile, filters)
+	return n.doResetUserPassword(req, outputfile, filters)
 }
 
-func (n *createDeviceGroupCmd) doCreateDeviceGroup(req c8y.RequestOptions, outputfile string, filters *JSONFilters) error {
+func (n *resetUserPasswordCmd) doResetUserPassword(req c8y.RequestOptions, outputfile string, filters *JSONFilters) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(globalFlagTimeout)*time.Millisecond)
 	defer cancel()
 	start := time.Now()
