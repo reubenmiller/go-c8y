@@ -324,14 +324,13 @@ endpoints:
     body:
       - name: name
         type: 'string'
-        required: false
+        required: true
         description: Device group name
 
       - name: type
         description: Device group type (c8y_DeviceGroup (root folder) or c8y_DeviceSubGroup (sub folder)). Defaults to c8y_DeviceGroup
         type: string
         validationSet: [c8y_DeviceGroup, c8y_DeviceSubGroup]
-        # default: c8y_DeviceGroup
 
       - name: data
         type: json
