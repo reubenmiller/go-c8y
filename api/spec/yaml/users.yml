@@ -64,6 +64,49 @@ endpoints:
         required: false
         description: 'User password. Min: 6, max: 32 characters. Only Latin1 chars allowed'
 
+
+  # Inventory Roles
+  - name: getCurrentUserInventoryRoleCollection
+    description: Get the current users inventory roles
+    method: GET
+    path: /user/inventoryroles
+    accept: 'application/vnd.com.nsn.cumulocity.inventoryrolecollection+json'
+    collectionType: 'application/vnd.com.nsn.cumulocity.inventoryrole+json'
+    listProperty: 'roles'
+    alias:
+        go: listInventoryRoles
+        powershell: Get-CurrentUserInventoryRoleCollection
+    examples:
+      powershell:
+        - description: Get the current users inventory roles
+          command: Get-CurrentUserInventoryRoleCollection
+      go:
+        - description: Get the current user
+          command: c8y currentUser listInventoryRoles
+
+  - name: getCurrentUserInventoryRole
+    description: Get a specific inventory role of the current user
+    method: GET
+    path: /user/inventoryroles/{id}
+    accept: 'application/vnd.com.nsn.cumulocity.inventoryrole+json'
+    alias:
+        go: getCurrentUserInventoryRole
+        powershell: Get-CurrentUserInventoryRole
+    examples:
+      powershell:
+        - description: Get an inventory role of the current user (using pipeline)
+          command: Get-CurrentUserInventoryRoleCollection -PageSize 1 | Get-CurrentUserInventoryRole
+      go:
+        - description: Get an inventory role of the current user
+          command: c8y users getCurrentUserInventoryRole --id 12345
+    pathParameters:
+      - name: id
+        type: integer
+        required: true
+        pipeline: true
+        description: 'Role id. Note: lookup by name is not yet supported'
+
+  # Users
   - name: getUserCollection
     method: GET
     description: Get a collection of users based on filter parameters
@@ -108,6 +151,18 @@ endpoints:
       - name: withSubusersCount
         type: boolean
         description: if set to 'true', then each of returned users will contain additional field 'subusersCount' - number of direct subusers (users with corresponding 'owner').
+
+      - name: withApps
+        type: boolean
+        description: Include applications related to the user
+
+      - name: withGroups
+        type: boolean
+        description: Include group information
+
+      - name: withRoles
+        type: boolean
+        description: Include role information
 
 
   - name: newUser
