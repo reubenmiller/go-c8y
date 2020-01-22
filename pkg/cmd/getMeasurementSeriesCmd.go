@@ -41,11 +41,10 @@ Get a list of series [nx_WEA_29_Delta.MDL10FG001] and [nx_WEA_29_Delta.ST9] for 
 	cmd.Flags().StringSlice("device", []string{""}, "Device ID")
 	cmd.Flags().StringSlice("series", []string{""}, "measurement type and series name, e.g. c8y_AccelerationMeasurement.acceleration")
 	cmd.Flags().String("aggregationType", "", "Fragment name from measurement.")
-	cmd.Flags().String("dateFrom", "", "Start date or date and time of measurement occurrence. (required)")
-	cmd.Flags().String("dateTo", "0s", "End date or date and time of measurement occurrence.")
+	cmd.Flags().String("dateFrom", "-7d", "Start date or date and time of measurement occurrence. Defaults to last 7 days")
+	cmd.Flags().String("dateTo", "0s", "End date or date and time of measurement occurrence. Defaults to the current time")
 
 	// Required flags
-	cmd.MarkFlagRequired("dateFrom")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
@@ -92,14 +91,14 @@ func (n *getMeasurementSeriesCmd) getMeasurementSeries(cmd *cobra.Command, args 
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "aggregationType", err))
 	}
-	if cmd.Flags().Changed("dateFrom") {
+	if flagVal, err := cmd.Flags().GetString("dateFrom"); err == nil && flagVal != "" {
 		if v, err := tryGetTimestampFlag(cmd, "dateFrom"); err == nil && v != "" {
 			query.Add("dateFrom", v)
 		} else {
 			return newUserError("invalid date format", err)
 		}
 	}
-	if cmd.Flags().Changed("dateTo") {
+	if flagVal, err := cmd.Flags().GetString("dateTo"); err == nil && flagVal != "" {
 		if v, err := tryGetTimestampFlag(cmd, "dateTo"); err == nil && v != "" {
 			query.Add("dateTo", v)
 		} else {

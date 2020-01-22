@@ -30,7 +30,8 @@ func newGetManagedObjectChildDeviceReferenceCmd() *getManagedObjectChildDeviceRe
 		Short: "Get managed object child device reference",
 		Long:  ``,
 		Example: `
-
+$ c8y inventoryReferences getChildDevice --device 12345 --reference 12345
+Get an existing child device reference
 		`,
 		RunE: ccmd.getManagedObjectChildDeviceReference,
 	}

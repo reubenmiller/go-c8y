@@ -4,6 +4,10 @@ Function New-Tenant {
 .SYNOPSIS
 New tenant
 
+.EXAMPLE
+PS> New-Tenant -Company "mycompany" -Domain "mycompany" -AdminName "admin" -Password "mys3curep9d8"
+Create a new tenant (from the management tenant)
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

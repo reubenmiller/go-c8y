@@ -122,6 +122,9 @@ func Execute() {
 	// currentApplication commands
 	rootCmd.AddCommand(newCurrentApplicationRootCmd().getCommand())
 
+	// databroker commands
+	rootCmd.AddCommand(newDatabrokerRootCmd().getCommand())
+
 	// deviceCredentials commands
 	rootCmd.AddCommand(newDeviceCredentialsRootCmd().getCommand())
 

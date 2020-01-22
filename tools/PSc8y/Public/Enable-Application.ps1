@@ -4,6 +4,10 @@ Function Enable-Application {
 .SYNOPSIS
 Enable application on tenant
 
+.EXAMPLE
+PS> Enable-Application -Tenant mycompany -Application myMicroservice
+Enable an application of a tenant
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -13,7 +17,7 @@ Enable application on tenant
     [Alias()]
     [OutputType([object])]
     Param(
-        # Tenant id
+        # Tenant id. Defaults to current tenant (based on credentials)
         [Parameter()]
         [object]
         $Tenant,

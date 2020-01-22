@@ -4,6 +4,9 @@ Function Update-ManagedObject {
 .SYNOPSIS
 Update inventory
 
+.DESCRIPTION
+Update a managed object by id
+
 .EXAMPLE
 PS> Update-ManagedObject -Id $mo.id -Data @{ com_my_props = @{ value = 1 } }
 Update a managed object

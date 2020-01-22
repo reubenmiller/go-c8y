@@ -4,6 +4,10 @@ Function Get-Tenant {
 .SYNOPSIS
 Get tenant
 
+.EXAMPLE
+PS> Get-Tenant -Id mycompany
+Get a tenant by name (from the management tenant)
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -17,7 +21,7 @@ Get tenant
         [Parameter(ValueFromPipeline=$true,
                    ValueFromPipelineByPropertyName=$true)]
         [object]
-        $Tenant,
+        $Id,
 
         # Include raw response including pagination information
         [Parameter()]
@@ -55,7 +59,7 @@ Get tenant
     }
 
     Process {
-        $Parameters["tenant"] = PSc8y\Expand-Id $Tenant
+        $Parameters["id"] = PSc8y\Expand-Id $Id
 
         if (!$Force -and
             !$WhatIfPreference -and

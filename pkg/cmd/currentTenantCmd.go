@@ -30,7 +30,8 @@ func newCurrentTenantCmd() *currentTenantCmd {
 		Short: "Get current tenant",
 		Long:  ``,
 		Example: `
-
+$ c8y tenants getCurrentTenant
+Get the current tenant (based on your current credentials)
 		`,
 		RunE: ccmd.currentTenant,
 	}

@@ -30,7 +30,8 @@ func newUpdateCurrentApplicationCmd() *updateCurrentApplicationCmd {
 		Short: "Update current application",
 		Long:  `Required authentication with bootstrap user`,
 		Example: `
-
+$ c8y currentApplication update --data "mycustomProp=1"
+Update custom properties of the current application (requires using application credentials)
 		`,
 		RunE: ccmd.updateCurrentApplication,
 	}

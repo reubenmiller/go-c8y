@@ -4,6 +4,10 @@ Function Update-Tenant {
 .SYNOPSIS
 Update tenant
 
+.EXAMPLE
+PS> Update-Tenant -Id mycompany -ContactName "John Smith"
+Update a tenant by name (from the mangement tenant)
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -17,7 +21,7 @@ Update tenant
         [Parameter(ValueFromPipeline=$true,
                    ValueFromPipelineByPropertyName=$true)]
         [object]
-        $Tenant,
+        $Id,
 
         # Company name. Maximum 256 characters (required)
         [Parameter(Mandatory = $true)]
@@ -116,7 +120,7 @@ Update tenant
     }
 
     Process {
-        $Parameters["tenant"] = PSc8y\Expand-Id $Tenant
+        $Parameters["id"] = PSc8y\Expand-Id $Id
 
         if (!$Force -and
             !$WhatIfPreference -and

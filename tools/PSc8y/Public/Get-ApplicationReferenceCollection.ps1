@@ -2,7 +2,11 @@
 Function Get-ApplicationReferenceCollection {
 <#
 .SYNOPSIS
-Enable application on tenant
+Get a collection of application references on a tenant
+
+.EXAMPLE
+PS> Get-ApplicationReferenceCollection -Tenant mycompany
+Get a list of referenced applications on a given tenant (from management tenant)
 
 
 #>

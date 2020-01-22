@@ -4,6 +4,9 @@ Function Remove-ManagedObject {
 .SYNOPSIS
 Delete inventory/s
 
+.DESCRIPTION
+Delete a managed object by id
+
 .EXAMPLE
 PS> Remove-ManagedObject -Id $mo.id
 Delete a managed object

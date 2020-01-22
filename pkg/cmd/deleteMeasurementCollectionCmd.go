@@ -28,7 +28,7 @@ func newDeleteMeasurementCollectionCmd() *deleteMeasurementCollectionCmd {
 	cmd := &cobra.Command{
 		Use:   "deleteCollection",
 		Short: "Delete a collection of measurements",
-		Long:  ``,
+		Long:  `Delete measurements using a filter`,
 		Example: `
 $ c8y measurements deleteCollection --device $Measurement.source.id
 Delete measurement collection for a device
@@ -103,14 +103,14 @@ func (n *deleteMeasurementCollectionCmd) deleteMeasurementCollection(cmd *cobra.
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "fragmentType", err))
 	}
-	if cmd.Flags().Changed("dateFrom") {
+	if flagVal, err := cmd.Flags().GetString("dateFrom"); err == nil && flagVal != "" {
 		if v, err := tryGetTimestampFlag(cmd, "dateFrom"); err == nil && v != "" {
 			query.Add("dateFrom", v)
 		} else {
 			return newUserError("invalid date format", err)
 		}
 	}
-	if cmd.Flags().Changed("dateTo") {
+	if flagVal, err := cmd.Flags().GetString("dateTo"); err == nil && flagVal != "" {
 		if v, err := tryGetTimestampFlag(cmd, "dateTo"); err == nil && v != "" {
 			query.Add("dateTo", v)
 		} else {

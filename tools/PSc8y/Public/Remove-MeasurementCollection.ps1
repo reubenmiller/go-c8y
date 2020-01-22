@@ -4,6 +4,9 @@ Function Remove-MeasurementCollection {
 .SYNOPSIS
 Delete a collection of measurements
 
+.DESCRIPTION
+Delete measurements using a filter
+
 .EXAMPLE
 PS> Remove-MeasurementCollection -Device $Measurement.source.id
 Delete measurement collection for a device

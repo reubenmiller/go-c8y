@@ -113,7 +113,7 @@ func (n *newAlarmCmd) newAlarm(cmd *cobra.Command, args []string) error {
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "type", err))
 	}
-	if cmd.Flags().Changed("time") {
+	if flagVal, err := cmd.Flags().GetString("time"); err == nil && flagVal != "" {
 		if v, err := tryGetTimestampFlag(cmd, "time"); err == nil && v != "" {
 			body.Set("time", decodeC8yTimestamp(v))
 		} else {

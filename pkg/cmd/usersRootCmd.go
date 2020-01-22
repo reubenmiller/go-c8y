@@ -20,6 +20,8 @@ func newUsersRootCmd() *usersCmd {
 	// Subcommands
 	cmd.AddCommand(newGetUserCurrentCmd().getCommand())
 	cmd.AddCommand(newUpdateUserCurrentCmd().getCommand())
+	cmd.AddCommand(newGetCurrentUserInventoryRoleCollectionCmd().getCommand())
+	cmd.AddCommand(newGetCurrentUserInventoryRoleCmd().getCommand())
 	cmd.AddCommand(newGetUserCollectionCmd().getCommand())
 	cmd.AddCommand(newNewUserCmd().getCommand())
 	cmd.AddCommand(newGetUserCmd().getCommand())

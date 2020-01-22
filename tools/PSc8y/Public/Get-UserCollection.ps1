@@ -50,6 +50,21 @@ Get a list of users
         [switch]
         $WithSubusersCount,
 
+        # Include applications related to the user
+        [Parameter()]
+        [switch]
+        $WithApps,
+
+        # Include group information
+        [Parameter()]
+        [switch]
+        $WithGroups,
+
+        # Include role information
+        [Parameter()]
+        [switch]
+        $WithRoles,
+
         # Maximum number of results
         [Parameter()]
         [AllowNull()]
@@ -108,6 +123,15 @@ Get a list of users
         }
         if ($PSBoundParameters.ContainsKey("WithSubusersCount")) {
             $Parameters["withSubusersCount"] = $WithSubusersCount
+        }
+        if ($PSBoundParameters.ContainsKey("WithApps")) {
+            $Parameters["withApps"] = $WithApps
+        }
+        if ($PSBoundParameters.ContainsKey("WithGroups")) {
+            $Parameters["withGroups"] = $WithGroups
+        }
+        if ($PSBoundParameters.ContainsKey("WithRoles")) {
+            $Parameters["withRoles"] = $WithRoles
         }
         if ($PSBoundParameters.ContainsKey("PageSize")) {
             $Parameters["pageSize"] = $PageSize

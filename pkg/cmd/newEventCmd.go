@@ -103,7 +103,7 @@ func (n *newEventCmd) newEvent(cmd *cobra.Command, args []string) error {
 			}
 		}
 	}
-	if cmd.Flags().Changed("time") {
+	if flagVal, err := cmd.Flags().GetString("time"); err == nil && flagVal != "" {
 		if v, err := tryGetTimestampFlag(cmd, "time"); err == nil && v != "" {
 			body.Set("time", decodeC8yTimestamp(v))
 		} else {

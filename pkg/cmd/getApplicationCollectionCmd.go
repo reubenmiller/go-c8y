@@ -27,8 +27,8 @@ func newGetApplicationCollectionCmd() *getApplicationCollectionCmd {
 
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "Get collection of applications",
-		Long:  ``,
+		Short: "Get a collection of applications",
+		Long:  `Get a collection of applications by a given filter`,
 		Example: `
 $ c8y applications list --pageSize 100
 Get applications

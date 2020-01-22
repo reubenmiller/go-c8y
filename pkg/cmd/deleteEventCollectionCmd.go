@@ -28,7 +28,7 @@ func newDeleteEventCollectionCmd() *deleteEventCollectionCmd {
 	cmd := &cobra.Command{
 		Use:   "deleteCollection",
 		Short: "Delete a collection of events",
-		Long:  ``,
+		Long:  `Delete a collection of events by using a filter`,
 		Example: `
 $ c8y events deleteCollection --type my_CustomType --dateFrom "-10d"
 Remove events with type 'my_CustomType' that were created in the last 10 days
@@ -91,14 +91,14 @@ func (n *deleteEventCollectionCmd) deleteEventCollection(cmd *cobra.Command, arg
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "fragmentType", err))
 	}
-	if cmd.Flags().Changed("dateFrom") {
+	if flagVal, err := cmd.Flags().GetString("dateFrom"); err == nil && flagVal != "" {
 		if v, err := tryGetTimestampFlag(cmd, "dateFrom"); err == nil && v != "" {
 			query.Add("dateFrom", v)
 		} else {
 			return newUserError("invalid date format", err)
 		}
 	}
-	if cmd.Flags().Changed("dateTo") {
+	if flagVal, err := cmd.Flags().GetString("dateTo"); err == nil && flagVal != "" {
 		if v, err := tryGetTimestampFlag(cmd, "dateTo"); err == nil && v != "" {
 			query.Add("dateTo", v)
 		} else {

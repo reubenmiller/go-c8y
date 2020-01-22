@@ -2,7 +2,10 @@
 Function Get-Application {
 <#
 .SYNOPSIS
-Get application
+Get an application
+
+.DESCRIPTION
+Get an application by its id
 
 .EXAMPLE
 PS> Get-Application -Id $App.id

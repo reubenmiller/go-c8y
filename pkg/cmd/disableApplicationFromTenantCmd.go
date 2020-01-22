@@ -30,14 +30,15 @@ func newDisableApplicationFromTenantCmd() *disableApplicationFromTenantCmd {
 		Short: "Disable application on tenant",
 		Long:  ``,
 		Example: `
-
+$ c8y tenants disableApplication --tenant "mycompany" --application "myMicroservice"
+Disable an application of a tenant by name
 		`,
 		RunE: ccmd.disableApplicationFromTenant,
 	}
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("tenant", "", "Tenant id")
+	cmd.Flags().String("tenant", "", "Tenant id. Defaults to current tenant (based on credentials)")
 	cmd.Flags().String("application", "", "Application id (required)")
 
 	// Required flags

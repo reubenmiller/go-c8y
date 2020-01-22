@@ -44,6 +44,9 @@ Get a list of users
 	cmd.Flags().String("owner", "", "exact username")
 	cmd.Flags().Bool("onlyDevices", false, "If set to 'true', result will contain only users created during bootstrap process (starting with 'device_'). If flag is absent (or false) the result will not contain 'device_' users.")
 	cmd.Flags().Bool("withSubusersCount", false, "if set to 'true', then each of returned users will contain additional field 'subusersCount' - number of direct subusers (users with corresponding 'owner').")
+	cmd.Flags().Bool("withApps", false, "Include applications related to the user")
+	cmd.Flags().Bool("withGroups", false, "Include group information")
+	cmd.Flags().Bool("withRoles", false, "Include role information")
 
 	// Required flags
 
@@ -88,6 +91,27 @@ func (n *getUserCollectionCmd) getUserCollection(cmd *cobra.Command, args []stri
 	if cmd.Flags().Changed("withSubusersCount") {
 		if v, err := cmd.Flags().GetBool("withSubusersCount"); err == nil {
 			query.Add("withSubusersCount", fmt.Sprintf("%v", v))
+		} else {
+			return newUserError("Flag does not exist")
+		}
+	}
+	if cmd.Flags().Changed("withApps") {
+		if v, err := cmd.Flags().GetBool("withApps"); err == nil {
+			query.Add("withApps", fmt.Sprintf("%v", v))
+		} else {
+			return newUserError("Flag does not exist")
+		}
+	}
+	if cmd.Flags().Changed("withGroups") {
+		if v, err := cmd.Flags().GetBool("withGroups"); err == nil {
+			query.Add("withGroups", fmt.Sprintf("%v", v))
+		} else {
+			return newUserError("Flag does not exist")
+		}
+	}
+	if cmd.Flags().Changed("withRoles") {
+		if v, err := cmd.Flags().GetBool("withRoles"); err == nil {
+			query.Add("withRoles", fmt.Sprintf("%v", v))
 		} else {
 			return newUserError("Flag does not exist")
 		}

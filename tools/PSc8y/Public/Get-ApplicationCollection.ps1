@@ -2,7 +2,10 @@
 Function Get-ApplicationCollection {
 <#
 .SYNOPSIS
-Get collection of applications
+Get a collection of applications
+
+.DESCRIPTION
+Get a collection of applications by a given filter
 
 .EXAMPLE
 PS> Get-ApplicationCollection -PageSize 100

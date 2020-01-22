@@ -4,6 +4,10 @@ Function Get-ChildDeviceReference {
 .SYNOPSIS
 Get managed object child device reference
 
+.EXAMPLE
+PS> Get-ChildDeviceReference -Device $Agent.id -Reference $Ref.id
+Get an existing child device reference
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

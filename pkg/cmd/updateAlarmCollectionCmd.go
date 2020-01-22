@@ -28,7 +28,7 @@ func newUpdateAlarmCollectionCmd() *updateAlarmCollectionCmd {
 	cmd := &cobra.Command{
 		Use:   "updateCollection",
 		Short: "Update a collection of alarms. Currently only the status of alarms can be changed",
-		Long:  ``,
+		Long:  `Update the status of a collection of alarms by using a filter`,
 		Example: `
 $ c8y alarms updateCollection --device mydevice --status ACTIVE --newStatus ACKNOWLEDGED
 Update the status of all active alarms on a device to ACKNOWLEDGED
@@ -97,14 +97,14 @@ func (n *updateAlarmCollectionCmd) updateAlarmCollection(cmd *cobra.Command, arg
 			return newUserError("Flag does not exist")
 		}
 	}
-	if cmd.Flags().Changed("dateFrom") {
+	if flagVal, err := cmd.Flags().GetString("dateFrom"); err == nil && flagVal != "" {
 		if v, err := tryGetTimestampFlag(cmd, "dateFrom"); err == nil && v != "" {
 			query.Add("dateFrom", v)
 		} else {
 			return newUserError("invalid date format", err)
 		}
 	}
-	if cmd.Flags().Changed("dateTo") {
+	if flagVal, err := cmd.Flags().GetString("dateTo"); err == nil && flagVal != "" {
 		if v, err := tryGetTimestampFlag(cmd, "dateTo"); err == nil && v != "" {
 			query.Add("dateTo", v)
 		} else {

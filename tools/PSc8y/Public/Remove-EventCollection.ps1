@@ -4,6 +4,9 @@ Function Remove-EventCollection {
 .SYNOPSIS
 Delete a collection of events
 
+.DESCRIPTION
+Delete a collection of events by using a filter
+
 .EXAMPLE
 PS> Remove-EventCollection -Type my_CustomType -DateFrom "-10d"
 Remove events with type 'my_CustomType' that were created in the last 10 days

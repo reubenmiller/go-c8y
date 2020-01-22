@@ -4,6 +4,9 @@ Function Get-Alarm {
 .SYNOPSIS
 Get alarm/s
 
+.DESCRIPTION
+Get an alarm by its id
+
 .EXAMPLE
 PS> Get-Alarm -Id {{ NewAlarm }}
 Get alarm

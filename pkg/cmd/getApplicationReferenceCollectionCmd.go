@@ -27,10 +27,11 @@ func newGetApplicationReferenceCollectionCmd() *getApplicationReferenceCollectio
 
 	cmd := &cobra.Command{
 		Use:   "listReferences",
-		Short: "Enable application on tenant",
+		Short: "Get a collection of application references on a tenant",
 		Long:  ``,
 		Example: `
-
+$ c8y tenants listReferences --tenant "mycompany"
+Get a list of referenced applications on a given tenant (from management tenant)
 		`,
 		RunE: ccmd.getApplicationReferenceCollection,
 	}

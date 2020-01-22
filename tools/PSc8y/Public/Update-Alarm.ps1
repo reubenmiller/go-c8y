@@ -4,6 +4,9 @@ Function Update-Alarm {
 .SYNOPSIS
 Update an alarm
 
+.DESCRIPTION
+Update an alarm by its id
+
 .EXAMPLE
 PS> Update-Alarm -Id $Alarm.id -Status ACKNOWLEDGED
 Acknowledge an existing alarm

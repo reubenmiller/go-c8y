@@ -20,6 +20,12 @@ Describe -Name "Get-MeasurementSeries" {
         $Response | Should -Not -BeNullOrEmpty
     }
 
+    It "Get measurement series from a device (using pipeline)" {
+        $Response = PSc8y\Get-DeviceCollection -Name $Device.name | Get-MeasurementSeries -Series "c8y_Temperature.T"
+        $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
+    }
+
 
     AfterEach {
         PSc8y\Remove-ManagedObject -Id $Device.id

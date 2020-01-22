@@ -4,6 +4,10 @@ Function Disable-Application {
 .SYNOPSIS
 Disable application on tenant
 
+.EXAMPLE
+PS> Disable-Application -Tenant mycompany -Application myMicroservice
+Disable an application of a tenant
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -13,7 +17,7 @@ Disable application on tenant
     [Alias()]
     [OutputType([object])]
     Param(
-        # Tenant id
+        # Tenant id. Defaults to current tenant (based on credentials)
         [Parameter()]
         [object]
         $Tenant,

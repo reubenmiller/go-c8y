@@ -4,6 +4,10 @@ Function Update-CurrentUser {
 .SYNOPSIS
 Update the current user
 
+.EXAMPLE
+PS> Update-CurrentUser -LastName "Smith"
+Update the current user's lastname
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

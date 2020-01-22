@@ -4,6 +4,10 @@ Function Get-TenantCollection {
 .SYNOPSIS
 Get collection of tenants
 
+.EXAMPLE
+PS> Get-TenantCollection
+Get a list of tenants
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

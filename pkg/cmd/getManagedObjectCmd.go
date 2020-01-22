@@ -27,8 +27,8 @@ func newGetManagedObjectCmd() *getManagedObjectCmd {
 
 	cmd := &cobra.Command{
 		Use:   "get",
-		Short: "Get inventory/s",
-		Long:  ``,
+		Short: "Get managed objects/s",
+		Long:  `Get a managed object by id`,
 		Example: `
 $ c8y inventory get --id 12345
 Get a managed object

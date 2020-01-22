@@ -16,13 +16,8 @@ PS> Get-MeasurementSeries -Device $Measurement2.source.id -Series "c8y_Temperatu
 Get measurement series c8y_Temperature.T on a device
 
 .EXAMPLE
-@{description=Get measurement series from a device (using pipeline)
-beforeEach:
-  - $Device = PSc8y\New-TestDevice
-  - $Measurement2 = New-TestMeasurement -Type "TempReading" -ValueFragmentType "c8y_Temperature" -ValueFragmentSeries "T"
-command: Get-DeviceCollection -Name $Device.name | Get-MeasurementSeries -Series "c8y_Temperature.T"
-afterEach:
-  - PSc8y\Remove-ManagedObject -Id $Device.id}
+PS> Get-DeviceCollection -Name $Device.name | Get-MeasurementSeries -Series "c8y_Temperature.T"
+Get measurement series from a device (using pipeline)
 
 
 #>
@@ -50,12 +45,12 @@ afterEach:
         [string]
         $AggregationType,
 
-        # Start date or date and time of measurement occurrence. (required)
-        [Parameter(Mandatory = $true)]
+        # Start date or date and time of measurement occurrence. Defaults to last 7 days
+        [Parameter()]
         [string]
         $DateFrom,
 
-        # End date or date and time of measurement occurrence.
+        # End date or date and time of measurement occurrence. Defaults to the current time
         [Parameter()]
         [string]
         $DateTo,

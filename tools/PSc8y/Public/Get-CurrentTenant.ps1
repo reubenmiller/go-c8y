@@ -4,6 +4,10 @@ Function Get-CurrentTenant {
 .SYNOPSIS
 Get current tenant
 
+.EXAMPLE
+PS> Get-CurrentTenant
+Get the current tenant (based on your current credentials)
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

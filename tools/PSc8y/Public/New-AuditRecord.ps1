@@ -4,6 +4,9 @@ Function New-AuditRecord {
 .SYNOPSIS
 Create a new audit record
 
+.DESCRIPTION
+Create a new audit record for a given action
+
 .EXAMPLE
 PS> New-AuditRecord -Type "ManagedObject" -Time "0s" -Text "Managed Object updated: my_Prop: value" -Source $Device.id -Activity "Managed Object updated" -Severity "information"
 Create an audit record for a custom managed object update

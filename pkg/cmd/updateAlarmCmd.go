@@ -28,7 +28,7 @@ func newUpdateAlarmCmd() *updateAlarmCmd {
 	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "Update an alarm",
-		Long:  ``,
+		Long:  `Update an alarm by its id`,
 		Example: `
 $ c8y alarms update --id 12345 --status ACKNOWLEDGED
 Acknowledge an existing alarm

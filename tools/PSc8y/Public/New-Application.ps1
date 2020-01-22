@@ -2,7 +2,10 @@
 Function New-Application {
 <#
 .SYNOPSIS
-New application
+Create a new application
+
+.DESCRIPTION
+Create a new application using explicit settings
 
 .EXAMPLE
 PS> New-Application -Name myapp -Type HOSTED -Key "myapp-key" -ContextPath "myapp"

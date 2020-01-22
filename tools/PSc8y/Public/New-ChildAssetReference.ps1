@@ -7,6 +7,10 @@ Create a child asset (device or devicegroup) reference
 .DESCRIPTION
 Create a child asset (device or devicegroup) reference
 
+.EXAMPLE
+PS> New-ChildAssetReference -Group $Group1.id -NewChildGroup $Group2.id
+Create group heirachy (parent group -> child group)
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

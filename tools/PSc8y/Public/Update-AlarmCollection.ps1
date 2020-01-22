@@ -4,6 +4,9 @@ Function Update-AlarmCollection {
 .SYNOPSIS
 Update a collection of alarms. Currently only the status of alarms can be changed
 
+.DESCRIPTION
+Update the status of a collection of alarms by using a filter
+
 .EXAMPLE
 PS> Update-AlarmCollection -Device $Device.id -Status ACTIVE -NewStatus ACKNOWLEDGED
 Update the status of all active alarms on a device to ACKNOWLEDGED

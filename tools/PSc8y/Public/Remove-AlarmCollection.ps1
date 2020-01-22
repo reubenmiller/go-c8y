@@ -4,6 +4,9 @@ Function Remove-AlarmCollection {
 .SYNOPSIS
 Delete a collection of alarms
 
+.DESCRIPTION
+Delete a collection of alarms by a given filter
+
 .EXAMPLE
 PS> Remove-AlarmCollection -Device "{{ randomdevice }}" -Severity MAJOR
 Remove alarms on the device with the severity set to MAJOR

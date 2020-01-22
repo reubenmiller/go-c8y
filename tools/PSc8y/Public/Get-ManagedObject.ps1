@@ -2,7 +2,10 @@
 Function Get-ManagedObject {
 <#
 .SYNOPSIS
-Get inventory/s
+Get managed objects/s
+
+.DESCRIPTION
+Get a managed object by id
 
 .EXAMPLE
 PS> Get-ManagedObject -Id $mo.id

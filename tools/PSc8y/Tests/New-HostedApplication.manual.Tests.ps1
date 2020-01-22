@@ -16,7 +16,6 @@ Describe -Name "New-HostedApplication" {
                 -ResourcesUrl "/subPath" `
                 -Availability "MARKET" `
                 -ContextPath $ContextPath `
-                -InformationVariable "InfoMessages" `
                 -Verbose 2> $VerboseFile
 
             $LASTEXITCODE | Should -Be 0

@@ -7,6 +7,10 @@ Update current application
 .DESCRIPTION
 Required authentication with bootstrap user
 
+.EXAMPLE
+PS> Update-CurrentApplication -Data @{ mycustomProp = @{ value1 = 1}}
+Update custom properties of the current application (requires using application credentials)
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

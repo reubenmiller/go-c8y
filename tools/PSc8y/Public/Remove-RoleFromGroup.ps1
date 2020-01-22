@@ -4,6 +4,10 @@ Function Remove-RoleFromGroup {
 .SYNOPSIS
 Unassign/Remove role from a group
 
+.EXAMPLE
+PS> Remove-RoleFromGroup -Group $UserGroup.id -Role "ROLE_MEASUREMENT_READ"
+Remove a role from the given user group
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -13,11 +17,6 @@ Unassign/Remove role from a group
     [Alias()]
     [OutputType([object])]
     Param(
-        # Tenant
-        [Parameter()]
-        [object]
-        $Tenant,
-
         # Group id (required)
         [Parameter(Mandatory = $true)]
         [object[]]
@@ -27,6 +26,11 @@ Unassign/Remove role from a group
         [Parameter(Mandatory = $true)]
         [object[]]
         $Role,
+
+        # Tenant
+        [Parameter()]
+        [object]
+        $Tenant,
 
         # Include raw response including pagination information
         [Parameter()]
@@ -56,14 +60,14 @@ Unassign/Remove role from a group
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("Tenant")) {
-            $Parameters["tenant"] = $Tenant
-        }
         if ($PSBoundParameters.ContainsKey("Group")) {
             $Parameters["group"] = PSc8y\Expand-Id $Group
         }
         if ($PSBoundParameters.ContainsKey("Role")) {
             $Parameters["role"] = $Role
+        }
+        if ($PSBoundParameters.ContainsKey("Tenant")) {
+            $Parameters["tenant"] = $Tenant
         }
         if ($PSBoundParameters.ContainsKey("OutputFile")) {
             $Parameters["outputFile"] = $OutputFile

@@ -7,6 +7,10 @@ Get current application
 .DESCRIPTION
 Required authentication with bootstrap user
 
+.EXAMPLE
+PS> Get-CurrentApplication
+Get the current application (requires using application credentials)
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

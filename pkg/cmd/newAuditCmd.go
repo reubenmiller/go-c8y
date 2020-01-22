@@ -28,7 +28,7 @@ func newNewAuditCmd() *newAuditCmd {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a new audit record",
-		Long:  ``,
+		Long:  `Create a new audit record for a given action`,
 		Example: `
 $ c8y auditRecords create --type "ManagedObject" --time "0s" --text "Managed Object updated: my_Prop: value" --source $Device.id --activity "Managed Object updated" --severity "information"
 Create an audit record for a custom managed object update
@@ -99,7 +99,7 @@ func (n *newAuditCmd) newAudit(cmd *cobra.Command, args []string) error {
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "type", err))
 	}
-	if cmd.Flags().Changed("time") {
+	if flagVal, err := cmd.Flags().GetString("time"); err == nil && flagVal != "" {
 		if v, err := tryGetTimestampFlag(cmd, "time"); err == nil && v != "" {
 			body.Set("time", decodeC8yTimestamp(v))
 		} else {

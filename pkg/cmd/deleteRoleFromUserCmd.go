@@ -30,16 +30,17 @@ func newDeleteRoleFromUserCmd() *deleteRoleFromUserCmd {
 		Short: "Unassign/Remove role from a user",
 		Long:  ``,
 		Example: `
-
+$ c8y userRoles deleteRoleFromUser --user "myuser" --role "ROLE_MEASUREMENT_READ"
+Remove a role from the given user
 		`,
 		RunE: ccmd.deleteRoleFromUser,
 	}
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("tenant", "", "Tenant")
 	cmd.Flags().StringSlice("user", []string{""}, "User (required)")
 	cmd.Flags().StringSlice("role", []string{""}, "Role name (required)")
+	cmd.Flags().String("tenant", "", "Tenant")
 
 	// Required flags
 	cmd.MarkFlagRequired("user")
@@ -83,9 +84,6 @@ func (n *deleteRoleFromUserCmd) deleteRoleFromUser(cmd *cobra.Command, args []st
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
-		pathParameters["tenant"] = v
-	}
 	if cmd.Flags().Changed("user") {
 		userInputValues, userValue, err := getFormattedUserSlice(cmd, args, "user")
 
@@ -119,6 +117,9 @@ func (n *deleteRoleFromUserCmd) deleteRoleFromUser(cmd *cobra.Command, args []st
 				pathParameters["role"] = newIDValue(item).GetID()
 			}
 		}
+	}
+	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
+		pathParameters["tenant"] = v
 	}
 
 	path := replacePathParameters("/user/{tenant}/users/{user}/roles/{role}", pathParameters)

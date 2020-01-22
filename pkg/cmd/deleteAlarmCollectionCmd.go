@@ -28,7 +28,7 @@ func newDeleteAlarmCollectionCmd() *deleteAlarmCollectionCmd {
 	cmd := &cobra.Command{
 		Use:   "deleteCollection",
 		Short: "Delete a collection of alarms",
-		Long:  ``,
+		Long:  `Delete a collection of alarms by a given filter`,
 		Example: `
 $ c8y alarms deleteCollection --device mydevice --severity MAJOR
 Remove alarms on the device with the severity set to MAJOR
@@ -81,14 +81,14 @@ func (n *deleteAlarmCollectionCmd) deleteAlarmCollection(cmd *cobra.Command, arg
 			}
 		}
 	}
-	if cmd.Flags().Changed("dateFrom") {
+	if flagVal, err := cmd.Flags().GetString("dateFrom"); err == nil && flagVal != "" {
 		if v, err := tryGetTimestampFlag(cmd, "dateFrom"); err == nil && v != "" {
 			query.Add("dateFrom", v)
 		} else {
 			return newUserError("invalid date format", err)
 		}
 	}
-	if cmd.Flags().Changed("dateTo") {
+	if flagVal, err := cmd.Flags().GetString("dateTo"); err == nil && flagVal != "" {
 		if v, err := tryGetTimestampFlag(cmd, "dateTo"); err == nil && v != "" {
 			query.Add("dateTo", v)
 		} else {

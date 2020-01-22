@@ -28,7 +28,7 @@ func newUpdateApplicationCmd() *updateApplicationCmd {
 	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "Update application meta information",
-		Long:  ``,
+		Long:  `Update an application by its id`,
 		Example: `
 $ c8y applications update --id "helloworld-app" --availability MARKET
 Update application availability to MARKET

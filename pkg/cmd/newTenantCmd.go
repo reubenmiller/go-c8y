@@ -30,7 +30,8 @@ func newNewTenantCmd() *newTenantCmd {
 		Short: "New tenant",
 		Long:  ``,
 		Example: `
-
+$ c8y tenants create --company "mycompany" --domain "mycompany" --adminName "admin" --password "mys3curep9d8"
+Create a new tenant (from the management tenant)
 		`,
 		RunE: ccmd.newTenant,
 	}

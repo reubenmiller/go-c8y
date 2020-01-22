@@ -4,6 +4,9 @@ Function Remove-Event {
 .SYNOPSIS
 Delete event/s
 
+.DESCRIPTION
+Delete an event by id
+
 .EXAMPLE
 PS> Remove-Event -Id {{ NewEvent }}
 Delete an event

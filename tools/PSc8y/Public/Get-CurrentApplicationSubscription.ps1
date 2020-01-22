@@ -7,6 +7,10 @@ Get current application subscriptions
 .DESCRIPTION
 Required authentication with bootstrap user
 
+.EXAMPLE
+PS> Get-CurrentApplicationSubscription
+List the current application users/subscriptions
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

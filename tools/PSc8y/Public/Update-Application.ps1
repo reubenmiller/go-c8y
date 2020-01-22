@@ -4,6 +4,9 @@ Function Update-Application {
 .SYNOPSIS
 Update application meta information
 
+.DESCRIPTION
+Update an application by its id
+
 .EXAMPLE
 PS> Update-Application -Id "helloworld-app" -Availability "MARKET"
 Update application availability to MARKET

@@ -4,6 +4,9 @@ Function Get-Event {
 .SYNOPSIS
 Get event/s
 
+.DESCRIPTION
+Get an event by id
+
 .EXAMPLE
 PS> Get-Event -Id {{ NewEvent }}
 Get event

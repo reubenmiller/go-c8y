@@ -4,6 +4,10 @@ Function Remove-RoleFromUser {
 .SYNOPSIS
 Unassign/Remove role from a user
 
+.EXAMPLE
+PS> Remove-RoleFromUser -User $User.id -Role "ROLE_MEASUREMENT_READ"
+Remove a role from the given user
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -13,11 +17,6 @@ Unassign/Remove role from a user
     [Alias()]
     [OutputType([object])]
     Param(
-        # Tenant
-        [Parameter()]
-        [object]
-        $Tenant,
-
         # User (required)
         [Parameter(Mandatory = $true)]
         [object[]]
@@ -27,6 +26,11 @@ Unassign/Remove role from a user
         [Parameter(Mandatory = $true)]
         [object[]]
         $Role,
+
+        # Tenant
+        [Parameter()]
+        [object]
+        $Tenant,
 
         # Include raw response including pagination information
         [Parameter()]
@@ -56,14 +60,14 @@ Unassign/Remove role from a user
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("Tenant")) {
-            $Parameters["tenant"] = $Tenant
-        }
         if ($PSBoundParameters.ContainsKey("User")) {
             $Parameters["user"] = $User
         }
         if ($PSBoundParameters.ContainsKey("Role")) {
             $Parameters["role"] = $Role
+        }
+        if ($PSBoundParameters.ContainsKey("Tenant")) {
+            $Parameters["tenant"] = $Tenant
         }
         if ($PSBoundParameters.ContainsKey("OutputFile")) {
             $Parameters["outputFile"] = $OutputFile

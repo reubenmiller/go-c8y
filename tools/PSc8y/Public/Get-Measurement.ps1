@@ -4,6 +4,9 @@ Function Get-Measurement {
 .SYNOPSIS
 Get measurement/s
 
+.DESCRIPTION
+Get measurements by their ids
+
 .EXAMPLE
 PS> Get-Measurement -Id $Measurement.id
 Get measurement

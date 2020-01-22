@@ -30,14 +30,15 @@ func newDeleteTenantCmd() *deleteTenantCmd {
 		Short: "Delete tenant",
 		Long:  ``,
 		Example: `
-
+$ c8y tenants delete --id "mycompany"
+Delete a tenant by name (from the mangement tenant)
 		`,
 		RunE: ccmd.deleteTenant,
 	}
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("tenant", "", "Tenant id")
+	cmd.Flags().String("id", "", "Tenant id")
 
 	// Required flags
 
@@ -79,11 +80,11 @@ func (n *deleteTenantCmd) deleteTenant(cmd *cobra.Command, args []string) error 
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
-		pathParameters["tenant"] = v
+	if v := getTenantWithDefaultFlag(cmd, "id", client.TenantName); v != "" {
+		pathParameters["id"] = v
 	}
 
-	path := replacePathParameters("/tenant/tenants/{tenant}", pathParameters)
+	path := replacePathParameters("/tenant/tenants/{id}", pathParameters)
 
 	// filter and selectors
 	filters := getFilterFlag(cmd, "filter")

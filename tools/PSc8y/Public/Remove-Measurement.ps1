@@ -4,6 +4,9 @@ Function Remove-Measurement {
 .SYNOPSIS
 Delete measurement/s
 
+.DESCRIPTION
+Delete individual measurements
+
 .EXAMPLE
 PS> Remove-Measurement -id $Measurement.id
 Delete measurement

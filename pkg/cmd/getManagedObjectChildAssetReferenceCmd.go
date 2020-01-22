@@ -30,7 +30,8 @@ func newGetManagedObjectChildAssetReferenceCmd() *getManagedObjectChildAssetRefe
 		Short: "Get managed object child asset reference",
 		Long:  ``,
 		Example: `
-
+$ c8y inventoryReferences getChildAsset --asset 12345 --reference 12345
+Get an existing child asset reference
 		`,
 		RunE: ccmd.getManagedObjectChildAssetReference,
 	}

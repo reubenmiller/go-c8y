@@ -4,6 +4,10 @@ Function Get-ChildAssetReference {
 .SYNOPSIS
 Get managed object child asset reference
 
+.EXAMPLE
+PS> Get-ChildAssetReference -Asset $Agent.id -Reference $Ref.id
+Get an existing child asset reference
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,

@@ -30,7 +30,8 @@ func newNewManagedObjectChildAssetCmd() *newManagedObjectChildAssetCmd {
 		Short: "Create a child asset (device or devicegroup) reference",
 		Long:  `Create a child asset (device or devicegroup) reference`,
 		Example: `
-
+$ c8y inventoryReferences createChildAsset --group 12345 --newChildGroup 43234
+Create group heirachy (parent group -> child group)
 		`,
 		RunE: ccmd.newManagedObjectChildAsset,
 	}
