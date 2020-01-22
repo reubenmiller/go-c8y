@@ -128,6 +128,70 @@
       ]
     },
     {
+      "name": "getMeasurementLatestCollection",
+      "method": "GET",
+      "description": "Get the latest measurement of a specific device",
+      "descriptionLong": "Get the latest measurement of a specific device",
+      "path": "measurement/measurements/one",
+      "accept": "application/vnd.com.nsn.cumulocity.measurementCollection+json",
+      "collectionType": "application/vnd.com.nsn.cumulocity.measurement+json",
+      "listProperty": "measurements",
+      "skip": true,
+      "alias": {
+        "go": "listLatest",
+        "powershell": "Get-MeasurementLatestCollection"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get a list of the latest measurements for a device",
+            "command": "Get-MeasurementLatestCollection"
+          }
+        ],
+        "go": [
+          {
+            "description": "Get a list of the latest measurements for a device",
+            "command": "c8y measurements listLatest"
+          }
+        ]
+      },
+      "headerParameters": [
+        {
+          "name": "csv",
+          "type": "boolean",
+          "description": "Results will be displayed in csv format",
+          "property": "Accept",
+          "value": "text/csv"
+        },
+        {
+          "name": "excel",
+          "type": "boolean",
+          "description": "Results will be displayed in Excel format",
+          "property": "Accept",
+          "value": "application/vnd.ms-excel"
+        },
+        {
+          "name": "unit",
+          "type": "string",
+          "description": "Every measurement fragment which contains 'unit' property will be transformed to use required system of units.",
+          "property": "X-Cumulocity-System-Of-Units",
+          "validationSet": [
+            "imperial",
+            "metric"
+          ]
+        }
+      ],
+      "queryParameters": [
+        {
+          "name": "device",
+          "type": "[]device",
+          "property": "source",
+          "pipeline": true,
+          "description": "Device ID"
+        }
+      ]
+    },
+    {
       "name": "getMeasurementSeries",
       "method": "GET",
       "description": "Get a collection of measurements based on filter parameters",
@@ -162,7 +226,15 @@
             ]
           },
           {
-            "description": "Get measurement series from a device (using pipeline)\nbeforeEach:\n  - $Device = PSc8y\\New-TestDevice\n  - $Measurement2 = New-TestMeasurement -Type \"TempReading\" -ValueFragmentType \"c8y_Temperature\" -ValueFragmentSeries \"T\"\ncommand: Get-DeviceCollection -Name $Device.name | Get-MeasurementSeries -Series \"c8y_Temperature.T\"\nafterEach:\n  - PSc8y\\Remove-ManagedObject -Id $Device.id"
+            "description": "Get measurement series from a device (using pipeline)",
+            "beforeEach": [
+              "$Device = PSc8y\\New-TestDevice",
+              "$Measurement2 = New-TestMeasurement -Type \"TempReading\" -ValueFragmentType \"c8y_Temperature\" -ValueFragmentSeries \"T\""
+            ],
+            "command": "Get-DeviceCollection -Name $Device.name | Get-MeasurementSeries -Series \"c8y_Temperature.T\"",
+            "afterEach": [
+              "PSc8y\\Remove-ManagedObject -Id $Device.id"
+            ]
           }
         ],
         "go": [
@@ -198,21 +270,23 @@
         {
           "name": "dateFrom",
           "type": "datetime",
-          "required": true,
-          "description": "Start date or date and time of measurement occurrence."
+          "default": "-7d",
+          "required": false,
+          "description": "Start date or date and time of measurement occurrence. Defaults to last 7 days"
         },
         {
           "name": "dateTo",
           "type": "datetime",
           "required": false,
           "default": "0s",
-          "description": "End date or date and time of measurement occurrence."
+          "description": "End date or date and time of measurement occurrence. Defaults to the current time"
         }
       ]
     },
     {
       "name": "getMeasurement",
       "description": "Get measurement/s",
+      "descriptionLong": "Get measurements by their ids",
       "method": "GET",
       "path": "measurement/measurements/{id}",
       "accept": "application/vnd.com.nsn.cumulocity.measurement+json",
@@ -305,6 +379,7 @@
     {
       "name": "deleteMeasurement",
       "description": "Delete measurement/s",
+      "descriptionLong": "Delete individual measurements",
       "method": "DELETE",
       "path": "measurement/measurements/{id}",
       "accept": "",
@@ -345,6 +420,7 @@
     {
       "name": "deleteMeasurementCollection",
       "description": "Delete a collection of measurements",
+      "descriptionLong": "Delete measurements using a filter",
       "method": "DELETE",
       "path": "measurement/measurements",
       "accept": "",

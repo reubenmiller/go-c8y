@@ -148,6 +148,7 @@ endpoints:
     method: PUT
     path: alarm/alarms
     description: Update a collection of alarms. Currently only the status of alarms can be changed
+    descriptionLong: Update the status of a collection of alarms by using a filter
     examples:
       powershell:
         - description: Update the status of all active alarms on a device to ACKNOWLEDGED
@@ -208,6 +209,7 @@ endpoints:
 
   - name: getAlarm
     description: 'Get alarm/s'
+    descriptionLong: Get an alarm by its id
     method: GET
     path: alarm/alarms/{id}
     accept: application/vnd.com.nsn.cumulocity.alarm+json
@@ -231,6 +233,7 @@ endpoints:
 
   - name: updateAlarm
     description: Update an alarm
+    descriptionLong: Update an alarm by its id
     examples:
       powershell:
         - description: Acknowledge an existing alarm
@@ -293,6 +296,7 @@ endpoints:
 
   - name: deleteAlarmCollection
     description: 'Delete a collection of alarms'
+    descriptionLong: Delete a collection of alarms by a given filter
     examples:
       powershell:
         - description: Remove alarms on the device with the severity set to MAJOR

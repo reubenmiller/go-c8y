@@ -17,6 +17,14 @@ endpoints:
     alias:
         go: get
         powershell: Get-CurrentApplication
+    examples:
+        powershell:
+          - description: Get the current application (requires using application credentials)
+            skipTest: true
+            command: Get-CurrentApplication
+        go:
+          - description: Get the current application (requires using application credentials)
+            command: c8y currentApplication get
 
 
   - name: updateCurrentApplication
@@ -28,6 +36,14 @@ endpoints:
     alias:
         go: update
         powershell: Update-CurrentApplication
+    examples:
+        powershell:
+          - description: Update custom properties of the current application (requires using application credentials)
+            skipTest: true
+            command: Update-CurrentApplication -Data @{ mycustomProp = @{ value1 = 1}}
+        go:
+          - description: Update custom properties of the current application (requires using application credentials)
+            command: c8y currentApplication update --data "mycustomProp=1"
     body:
       - name: data
         type: json
@@ -83,3 +99,11 @@ endpoints:
     alias:
         go: listSubscriptions
         powershell: Get-CurrentApplicationSubscription
+    examples:
+        powershell:
+          - description: List the current application users/subscriptions
+            skipTest: true
+            command: Get-CurrentApplicationSubscription
+        go:
+          - description: List the current application users/subscriptions
+            command: c8y currentApplication listSubscriptions

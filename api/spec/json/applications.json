@@ -8,7 +8,8 @@
   "endpoints": [
     {
       "name": "getApplicationCollection",
-      "description": "Get collection of applications",
+      "description": "Get a collection of applications",
+      "descriptionLong": "Get a collection of applications by a given filter",
       "method": "GET",
       "path": "/application/applications",
       "accept": "application/vnd.com.nsn.cumulocity.applicationCollection+json",
@@ -48,7 +49,8 @@
     },
     {
       "name": "newApplication",
-      "description": "New application",
+      "description": "Create a new application",
+      "descriptionLong": "Create a new application using explicit settings",
       "method": "POST",
       "path": "/application/applications",
       "accept": "application/vnd.com.nsn.cumulocity.application+json",
@@ -188,7 +190,8 @@
     },
     {
       "name": "getApplication",
-      "description": "Get application",
+      "description": "Get an application",
+      "descriptionLong": "Get an application by its id",
       "method": "GET",
       "path": "/application/applications/{id}",
       "accept": "application/vnd.com.nsn.cumulocity.application+json",
@@ -287,6 +290,7 @@
     {
       "name": "updateApplication",
       "description": "Update application meta information",
+      "descriptionLong": "Update an application by its id",
       "method": "PUT",
       "path": "/application/applications/{id}",
       "accept": "application/vnd.com.nsn.cumulocity.application+json",

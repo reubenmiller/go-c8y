@@ -41,6 +41,20 @@
         "go": "updateCurrentUser",
         "powershell": "Update-CurrentUser"
       },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Update the current user's lastname",
+            "command": "Update-CurrentUser -LastName \"Smith\""
+          }
+        ],
+        "go": [
+          {
+            "description": "Update the current user's lastname",
+            "command": "c8y users updateCurrentUser --lastName \"Smith\""
+          }
+        ]
+      },
       "body": [
         {
           "name": "firstName",
@@ -573,7 +587,7 @@
             "beforeEach": [
               "$User = PSc8y\\New-TestUser"
             ],
-            "command": "Reset-UserPassword -Id $User.id",
+            "command": "Reset-UserPassword -Id $User.id -WhatIf 2>&1",
             "afterEach": [
               "PSc8y\\Remove-User -Id $User.id"
             ]

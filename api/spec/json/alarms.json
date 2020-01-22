@@ -210,6 +210,7 @@
       "method": "PUT",
       "path": "alarm/alarms",
       "description": "Update a collection of alarms. Currently only the status of alarms can be changed",
+      "descriptionLong": "Update the status of a collection of alarms by using a filter",
       "examples": {
         "powershell": [
           {
@@ -304,6 +305,7 @@
     {
       "name": "getAlarm",
       "description": "Get alarm/s",
+      "descriptionLong": "Get an alarm by its id",
       "method": "GET",
       "path": "alarm/alarms/{id}",
       "accept": "application/vnd.com.nsn.cumulocity.alarm+json",
@@ -338,6 +340,7 @@
     {
       "name": "updateAlarm",
       "description": "Update an alarm",
+      "descriptionLong": "Update an alarm by its id",
       "examples": {
         "powershell": [
           {
@@ -430,6 +433,7 @@
     {
       "name": "deleteAlarmCollection",
       "description": "Delete a collection of alarms",
+      "descriptionLong": "Delete a collection of alarms by a given filter",
       "examples": {
         "powershell": [
           {

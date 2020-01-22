@@ -9,6 +9,7 @@
     {
       "name": "newAudit",
       "description": "Create a new audit record",
+      "descriptionLong": "Create a new audit record for a given action",
       "method": "POST",
       "path": "/audit/auditRecords",
       "accept": "application/vnd.com.nsn.cumulocity.auditRecord+json",

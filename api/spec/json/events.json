@@ -104,6 +104,7 @@
     {
       "name": "deleteEventCollection",
       "description": "Delete a collection of events",
+      "descriptionLong": "Delete a collection of events by using a filter",
       "method": "DELETE",
       "path": "event/events",
       "accept": "",
@@ -170,6 +171,7 @@
     {
       "name": "getEvent",
       "description": "Get event/s",
+      "descriptionLong": "Get an event by id",
       "method": "GET",
       "path": "event/events/{id}",
       "accept": "application/vnd.com.nsn.cumulocity.event+json",
@@ -330,6 +332,7 @@
     {
       "name": "deleteEvent",
       "description": "Delete event/s",
+      "descriptionLong": "Delete an event by id",
       "examples": {
         "powershell": [
           {

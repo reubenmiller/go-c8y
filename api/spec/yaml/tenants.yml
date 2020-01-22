@@ -18,6 +18,14 @@ endpoints:
     alias:
         go: list
         powershell: Get-TenantCollection
+    examples:
+        powershell:
+          - description: Get a list of tenants
+            command: Get-TenantCollection
+            skipTest: true
+        go:
+          - description: Get a list of tenants
+            command: c8y tenants list
 
   - name: newTenant
     description: 'New tenant'
@@ -27,7 +35,14 @@ endpoints:
     alias:
         go: create
         powershell: New-Tenant
-
+    examples:
+        powershell:
+          - description: Create a new tenant (from the management tenant)
+            command: New-Tenant -Company "mycompany" -Domain "mycompany" -AdminName "admin" -Password "mys3curep9d8"
+            skipTest: true
+        go:
+          - description: Create a new tenant (from the management tenant)
+            command: c8y tenants create --company "mycompany" --domain "mycompany" --adminName "admin" --password "mys3curep9d8"
     body:
       - name: company
         type: string
@@ -73,13 +88,21 @@ endpoints:
   - name: getTenant
     description: 'Get tenant'
     method: GET
-    path: /tenant/tenants/{tenant}
+    path: /tenant/tenants/{id}
     accept: application/vnd.com.nsn.cumulocity.tenant+json
     alias:
         go: get
         powershell: Get-Tenant
+    examples:
+        powershell:
+          - description: Get a tenant by name (from the management tenant)
+            command: Get-Tenant -Id mycompany
+            skipTest: true
+        go:
+          - description: Get a tenant by name (from the management tenant)
+            command: c8y tenants get --id "mycompany"
     pathParameters:
-      - name: tenant
+      - name: id
         type: tenant
         pipeline: true
         required: false
@@ -88,12 +111,20 @@ endpoints:
   - name: deleteTenant
     description: 'Delete tenant'
     method: DELETE
-    path: /tenant/tenants/{tenant}
+    path: /tenant/tenants/{id}
     alias:
         go: delete
         powershell: Remove-Tenant
+    examples:
+        powershell:
+          - description: Delete a tenant by name (from the mangement tenant)
+            command: Remove-Tenant -Id mycompany
+            skipTest: true
+        go:
+          - description: Delete a tenant by name (from the mangement tenant)
+            command: c8y tenants delete --id "mycompany"
     pathParameters:
-      - name: tenant
+      - name: id
         type: tenant
         pipeline: true
         required: false
@@ -102,13 +133,21 @@ endpoints:
   - name: updateTenant
     description: 'Update tenant'
     method: PUT
-    path: /tenant/tenants/{tenant}
+    path: /tenant/tenants/{id}
     accept: application/vnd.com.nsn.cumulocity.tenant+json
     alias:
         go: update
         powershell: Update-Tenant
+    examples:
+        powershell:
+          - description: Update a tenant by name (from the mangement tenant)
+            command: Update-Tenant -Id mycompany -ContactName "John Smith"
+            skipTest: true
+        go:
+          - description: Update a tenant by name (from the mangement tenant)
+            command: c8y tenants update --id "mycompany" --contactName "John Smith"
     pathParameters:
-      - name: tenant
+      - name: id
         type: tenant
         pipeline: true
         required: false
@@ -159,6 +198,13 @@ endpoints:
     alias:
         go: getCurrentTenant
         powershell: Get-CurrentTenant
+    examples:
+        powershell:
+          - description: Get the current tenant (based on your current credentials)
+            command: Get-CurrentTenant
+        go:
+          - description: Get the current tenant (based on your current credentials)
+            command: c8y tenants getCurrentTenant
 
   - name: enableApplicationOnTenant
     description: 'Enable application on tenant'
@@ -168,11 +214,19 @@ endpoints:
     alias:
         go: enableApplication
         powershell: Enable-Application
+    examples:
+        powershell:
+          - description: Enable an application of a tenant
+            command: Enable-Application -Tenant mycompany -Application myMicroservice
+            skipTest: true
+        go:
+          - description: Enable an application of a tenant by name
+            command: c8y tenants enableApplication --tenant "mycompany" --application "myMicroservice"
     pathParameters:
       - name: tenant
         type: tenant
         required: false
-        description: Tenant id
+        description: Tenant id. Defaults to current tenant (based on credentials)
     body:
       - name: application
         pipeline: true
@@ -188,11 +242,19 @@ endpoints:
     alias:
         go: disableApplication
         powershell: Disable-Application
+    examples:
+        powershell:
+          - description: Disable an application of a tenant
+            command: Disable-Application -Tenant mycompany -Application myMicroservice
+            skipTest: true
+        go:
+          - description: Disable an application of a tenant by name
+            command: c8y tenants disableApplication --tenant "mycompany" --application "myMicroservice"
     pathParameters:
       - name: tenant
         type: tenant
         required: false
-        description: Tenant id
+        description: Tenant id. Defaults to current tenant (based on credentials)
 
       - name: application
         type: application
@@ -201,7 +263,7 @@ endpoints:
         description: Application id
 
   - name: getApplicationReferenceCollection
-    description: 'Enable application on tenant'
+    description: 'Get a collection of application references on a tenant'
     method: GET
     path: /tenant/tenants/{tenant}/applications
     accept: application/vnd.com.nsn.cumulocity.applicationReferenceCollection+json
@@ -210,6 +272,14 @@ endpoints:
     alias:
         go: listReferences
         powershell: Get-ApplicationReferenceCollection
+    examples:
+        powershell:
+          - description: Get a list of referenced applications on a given tenant (from management tenant)
+            command: Get-ApplicationReferenceCollection -Tenant mycompany
+            skipTest: true
+        go:
+          - description: Get a list of referenced applications on a given tenant (from management tenant)
+            command: c8y tenants listReferences --tenant "mycompany"
     pathParameters:
       - name: tenant
         type: tenant
@@ -230,7 +300,6 @@ endpoints:
       powershell:
         - description: Get the Cumulocity backend version
           command: Get-TenantVersion
-
       go:
         - description: Set the required availability of a device by name to 10 minutes
           command: c8y tenants getVersion

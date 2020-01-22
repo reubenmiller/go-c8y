@@ -179,7 +179,8 @@
     },
     {
       "name": "getManagedObject",
-      "description": "Get inventory/s",
+      "description": "Get managed objects/s",
+      "descriptionLong": "Get a managed object by id",
       "method": "GET",
       "path": "inventory/managedObjects/{id}",
       "accept": "application/vnd.com.nsn.cumulocity.inventory+json",
@@ -254,6 +255,7 @@
       "path": "inventory/managedObjects/{id}",
       "accept": "application/vnd.com.nsn.cumulocity.inventory+json",
       "description": "Update inventory",
+      "descriptionLong": "Update a managed object by id",
       "alias": {
         "go": "update",
         "powershell": "Update-ManagedObject"
@@ -314,6 +316,7 @@
     {
       "name": "deleteManagedObject",
       "description": "Delete inventory/s",
+      "descriptionLong": "Delete a managed object by id",
       "method": "DELETE",
       "path": "inventory/managedObjects/{id}",
       "accept": "",

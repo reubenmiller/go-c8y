@@ -208,6 +208,28 @@
         "go": "createChildAsset",
         "powershell": "New-ChildAssetReference"
       },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Create group heirachy (parent group -> child group)",
+            "beforeEach": [
+              "$Group1 = PSc8y\\New-TestDeviceGroup",
+              "$Group2 = PSc8y\\New-TestDeviceGroup"
+            ],
+            "command": "New-ChildAssetReference -Group $Group1.id -NewChildGroup $Group2.id",
+            "afterEach": [
+              "PSc8y\\Remove-ManagedObject -Id $Group2.id",
+              "PSc8y\\Remove-ManagedObject -Id $Group1.id"
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Create group heirachy (parent group -> child group)",
+            "command": "c8y inventoryReferences createChildAsset --group 12345 --newChildGroup 43234"
+          }
+        ]
+      },
       "pathParameters": [
         {
           "name": "group",
@@ -245,6 +267,29 @@
         "go": "getChildDevice",
         "powershell": "Get-ChildDeviceReference"
       },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get an existing child device reference",
+            "beforeEach": [
+              "$Agent = New-TestDevice -AsAgent",
+              "$Device = New-TestDevice",
+              "$Ref = New-ChildDeviceReference -Device $Agent.id -NewChild $Device.id"
+            ],
+            "command": "Get-ChildDeviceReference -Device $Agent.id -Reference $Ref.id",
+            "afterEach": [
+              "Remove-ManagedObject -Id $Device.id",
+              "Remove-ManagedObject -Id $Agent.id"
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Get an existing child device reference",
+            "command": "c8y inventoryReferences getChildDevice --device 12345 --reference 12345"
+          }
+        ]
+      },
       "pathParameters": [
         {
           "name": "device",
@@ -270,6 +315,29 @@
       "alias": {
         "go": "getChildAsset",
         "powershell": "Get-ChildAssetReference"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get an existing child asset reference",
+            "beforeEach": [
+              "$Agent = New-TestDevice -AsAgent",
+              "$Device = New-TestDevice",
+              "$Ref = New-ChildAssetReference -Group $Agent.id -NewChildDevice $Device.id"
+            ],
+            "command": "Get-ChildAssetReference -Asset $Agent.id -Reference $Ref.id",
+            "afterEach": [
+              "Remove-ManagedObject -Id $Device.id",
+              "Remove-ManagedObject -Id $Agent.id"
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Get an existing child asset reference",
+            "command": "c8y inventoryReferences getChildAsset --asset 12345 --reference 12345"
+          }
+        ]
       },
       "pathParameters": [
         {

@@ -83,11 +83,19 @@ endpoints:
     alias:
         go: deleteRoleFromUser
         powershell: Remove-RoleFromUser
+    examples:
+        powershell:
+          - description: Remove a role from the given user
+            beforeEach:
+              - $User = PSc8y\New-TestUser
+              - Add-RoleToUser -User $User.id -Role "ROLE_MEASUREMENT_READ"
+            command: Remove-RoleFromUser -User $User.id -Role "ROLE_MEASUREMENT_READ"
+            afterEach:
+              - PSc8y\Remove-User -Id $User.id
+        go:
+          - description: Remove a role from the given user
+            command: c8y userRoles deleteRoleFromUser --user "myuser" --role "ROLE_MEASUREMENT_READ"
     pathParameters:
-      - name: tenant
-        type: tenant
-        description: Tenant
-
       - name: user
         type: '[]user'
         required: true
@@ -97,6 +105,10 @@ endpoints:
         type: '[]role'
         required: true
         description: Role name
+
+      - name: tenant
+        type: tenant
+        description: Tenant
 
   - name: addRoleToGroup
     description: Add role to a group
@@ -150,11 +162,19 @@ endpoints:
     alias:
         go: deleteRoleFromGroup
         powershell: Remove-RoleFromGroup
+    examples:
+        powershell:
+          - description: Remove a role from the given user group
+            beforeEach:
+              - $UserGroup = PSc8y\New-TestGroup
+              - Add-RoleToGroup -Group $UserGroup.id -Role "ROLE_MEASUREMENT_READ"
+            command: Remove-RoleFromGroup -Group $UserGroup.id -Role "ROLE_MEASUREMENT_READ"
+            afterEach:
+              - PSc8y\Remove-Group -Id $UserGroup.id
+        go:
+          - description: Remove a role from the given user
+            command: c8y userRoles deleteRoleFromGroup --group "myuser" --role "ROLE_MEASUREMENT_READ"
     pathParameters:
-      - name: tenant
-        type: tenant
-        description: Tenant
-
       - name: group
         type: '[]usergroup'
         required: true
@@ -164,6 +184,10 @@ endpoints:
         type: '[]role'
         required: true
         description: Role name, e.g. ROLE_TENANT_MANAGEMENT_ADMIN
+
+      - name: tenant
+        type: tenant
+        description: Tenant
 
 
   - name: getRoleReferenceCollectionFromUser

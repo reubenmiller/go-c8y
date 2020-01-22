@@ -80,6 +80,7 @@ endpoints:
 
   - name: deleteEventCollection
     description: 'Delete a collection of events'
+    descriptionLong: 'Delete a collection of events by using a filter'
     method: DELETE
     path: event/events
     accept: ''
@@ -128,6 +129,7 @@ endpoints:
 
   - name: getEvent
     description: 'Get event/s'
+    descriptionLong: 'Get an event by id'
     method: GET
     path: event/events/{id}
     accept: application/vnd.com.nsn.cumulocity.event+json
@@ -241,6 +243,7 @@ endpoints:
 
   - name: deleteEvent
     description: 'Delete event/s'
+    descriptionLong: 'Delete an event by id'
     examples:
       powershell:
         - description: Delete an event
