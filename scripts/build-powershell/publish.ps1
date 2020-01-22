@@ -47,6 +47,8 @@ try {
 		'PSc8y/report'
 		'PSc8y/tests\.ps1'
 		'PSc8y/Tests'
+		'PSc8y/Public-manual/New-TestMicroservice\.ps1'
+		'PSc8y/Public-manual/New-TestHostedApplication\.ps1'
 	)
 
 	$ProjectDir = Resolve-Path "$PSScriptRoot/../../tools/PSc8y"
@@ -58,7 +60,7 @@ try {
 		| Where-Object {
 			# Normalise path before comparing
 			$Path = $_.FullName -replace "\\", "/"
-			
+
 			$Path -match $exclude
 		} `
 		| Remove-Item -Force -Recurse
