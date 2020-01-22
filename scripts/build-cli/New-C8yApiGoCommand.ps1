@@ -62,7 +62,7 @@
         $null = $ArgumentSources.AddRange(([array]$Specification.options))
     }
 
-    $CommandArgs = foreach ($iArg in $ArgumentSources) {
+    $CommandArgs = foreach ($iArg in (Remove-SkippedParameters $ArgumentSources)) {
         $ArgParams = @{
             Name = $iArg.name
             Type = $iArg.type
@@ -85,7 +85,7 @@
     if ($Specification.body) {
         $null = $RESTBodyBuilder.AppendLine('body.SetMap(getDataFlag(cmd))')
 
-        foreach ($iArg in $Specification.body) {
+        foreach ($iArg in (Remove-SkippedParameters $Specification.body)) {
             $code = New-C8yApiGoGetValueFromFlag -Parameters $iArg -SetterType "body"
             if ($code) {
                 $null = $RESTBodyBuilder.AppendLine($code)
@@ -122,7 +122,7 @@
     # Path Parameters
     #
     $RESTPathBuilder = New-Object System.Text.StringBuilder
-    foreach ($Properties in $Specification.pathParameters) {
+    foreach ($Properties in (Remove-SkippedParameters $Specification.pathParameters)) {
         $code = New-C8yApiGoGetValueFromFlag -Parameters $Properties -SetterType "path"
         if ($code) {
             $null = $RESTPathBuilder.AppendLine($code)
@@ -135,7 +135,7 @@
     $RESTQueryBuilder = New-Object System.Text.StringBuilder
     $null = $RESTQueryBuilder.AppendLine('query := url.Values{}')
     if ($Specification.queryParameters) {
-        foreach ($Properties in $Specification.queryParameters) {
+        foreach ($Properties in (Remove-SkippedParameters $Specification.queryParameters)) {
             $code = New-C8yApiGoGetValueFromFlag -Parameters $Properties -SetterType "query"
             if ($code) {
                 $null = $RESTQueryBuilder.AppendLine($code)
@@ -148,7 +148,7 @@
     #
     $RestHeaderBuilder = New-Object System.Text.StringBuilder
     if ($Specification.headerParameters) {
-        foreach ($iArg in $Specification.headerParameters) {
+        foreach ($iArg in (Remove-SkippedParameters $Specification.headerParameters)) {
             $code = New-C8yApiGoGetValueFromFlag -Parameters $iArg -SetterType "header"
             if ($code) {
                 $null = $RestHeaderBuilder.AppendLine($code)
@@ -384,6 +384,30 @@ func (n *${Name}Cmd) do${NameCamel}(req c8y.RequestOptions, outputfile string, f
 
 	# Auto format code
 	& gofmt -w $File
+}
+
+Function Remove-SkippedParameters {
+<#
+.SYNOPSIS
+Remove skipped parameters. These are parameter which should not be used when generating code.
+#>
+    [cmdletbinding()]
+    Param(
+        [Parameter(
+            Mandatory = $true,
+            Position = 0
+        )]
+        [AllowEmptyCollection()]
+        [AllowNull()]
+        [object[]] $CommandParameters
+    )
+
+    $CommandParameters | Where-Object {
+        if ($_.skip -eq $true) {
+            Write-Verbose ("Skipping parameter [{0}] as it is marked as skip" -f $_.name)
+        }
+        $_.skip -ne $true
+    }
 }
 
 Function Get-C8yGoArgs {
