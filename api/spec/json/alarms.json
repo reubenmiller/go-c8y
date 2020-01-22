@@ -54,7 +54,7 @@
       "path": "alarm/alarms",
       "accept": "application/vnd.com.nsn.cumulocity.alarmCollection+json",
       "collectionType": "application/vnd.com.nsn.cumulocity.alarm+json",
-      "listProperty": "alarms",
+      "collectionProperty": "alarms",
       "alias": {
         "go": "list",
         "powershell": "Get-AlarmCollection"
@@ -238,7 +238,7 @@
         "200": "if the process has completed, all alarms have been updated",
         "202": "if process continues in background"
       },
-      "listProperty": "alarms",
+      "collectionProperty": "alarms",
       "alias": {
         "go": "updateCollection",
         "powershell": "Update-AlarmCollection"

@@ -11,7 +11,7 @@ endpoints:
     method: GET
     path: inventory/managedObjects/{device}/supportedMeasurements
     accept: application/vnd.com.nsn.cumulocity.inventory+json
-    listProperty: c8y_SupportedMeasurements
+    collectionProperty: c8y_SupportedMeasurements
     alias:
         go: getSupportedMeasurements
         powershell: Get-SupportedMeasurements
@@ -49,7 +49,7 @@ endpoints:
     method: GET
     path: inventory/managedObjects/{device}/supportedSeries
     accept: application/vnd.com.nsn.cumulocity.inventory+json
-    listProperty: c8y_SupportedSeries
+    collectionProperty: c8y_SupportedSeries
     alias:
         go: getSupportedSeries
         powershell: Get-SupportedSeries
@@ -87,7 +87,7 @@ endpoints:
     method: GET
     path: inventory/managedObjects/{device}
     accept: application/vnd.com.nsn.cumulocity.inventory+json
-    listProperty: c8y_SupportedOperations
+    collectionProperty: c8y_SupportedOperations
     alias:
         go: getSupportedOperations
         powershell: Get-SupportedOperations

@@ -13,7 +13,7 @@
       "path": "/tenant/tenants",
       "accept": "application/vnd.com.nsn.cumulocity.tenantCollection+json",
       "collectionType": "application/vnd.com.nsn.cumulocity.tenant+json",
-      "listProperty": "tenants",
+      "collectionProperty": "tenants",
       "alias": {
         "go": "list",
         "powershell": "Get-TenantCollection"
@@ -376,7 +376,7 @@
       "path": "/tenant/tenants/{tenant}/applications",
       "accept": "application/vnd.com.nsn.cumulocity.applicationReferenceCollection+json",
       "collectionType": "application/vnd.com.nsn.cumulocity.applicationReference+json",
-      "listProperty": "references",
+      "collectionProperty": "references",
       "alias": {
         "go": "listReferences",
         "powershell": "Get-ApplicationReferenceCollection"
@@ -412,7 +412,7 @@
       "method": "GET",
       "path": "/tenant/system/options/system/version",
       "accept": "application/vnd.com.nsn.cumulocity.option+json",
-      "listProperty": "value",
+      "collectionProperty": "value",
       "alias": {
         "go": "getVersion",
         "powershell": "Get-TenantVersion"

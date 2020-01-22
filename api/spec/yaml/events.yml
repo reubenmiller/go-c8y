@@ -46,7 +46,7 @@ endpoints:
     path: event/events
     accept: application/vnd.com.nsn.cumulocity.eventCollection+json
     collectionType: application/vnd.com.nsn.cumulocity.event+json
-    listProperty: events
+    collectionProperty: events
     alias:
         go: list
         powershell: Get-EventCollection

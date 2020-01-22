@@ -14,7 +14,7 @@ endpoints:
     path: inventory/managedObjects
     accept: application/vnd.com.nsn.cumulocity.managedObjectCollection+json
     collectionType: application/vnd.com.nsn.cumulocity.managedObject+json
-    listProperty: managedObjects
+    collectionProperty: managedObjects
     alias:
         go: list
         powershell: Get-ManagedObjectCollection
@@ -69,7 +69,7 @@ endpoints:
     path: inventory/managedObjects
     accept: application/vnd.com.nsn.cumulocity.managedObjectCollection+json
     collectionType: application/vnd.com.nsn.cumulocity.managedObject+json
-    listProperty: managedObjects
+    collectionProperty: managedObjects
     alias:
         go: find
         powershell: Find-ManagedObjectCollection

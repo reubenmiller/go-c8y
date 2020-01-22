@@ -13,7 +13,7 @@
       "path": "/user/{tenant}/groups",
       "accept": "application/vnd.com.nsn.cumulocity.groupCollection+json",
       "collectionType": "application/vnd.com.nsn.cumulocity.group+json",
-      "listProperty": "groups",
+      "collectionProperty": "groups",
       "alias": {
         "go": "list",
         "powershell": "Get-GroupCollection"
@@ -288,7 +288,7 @@
       "path": "/user/{tenant}/users/{user}/groups",
       "accept": "application/vnd.com.nsn.cumulocity.groupReferenceCollection+json",
       "collectionType": "application/vnd.com.nsn.cumulocity.groupReference+json",
-      "listProperty": "references.group",
+      "collectionProperty": "references.group",
       "alias": {
         "go": "listReferences",
         "powershell": "Get-GroupReferenceCollection"

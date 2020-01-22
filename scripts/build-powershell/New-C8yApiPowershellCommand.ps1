@@ -20,7 +20,7 @@
     $File = Join-Path -Path $OutputDir -ChildPath ("{0}.ps1" -f $CmdletName)
     $ResultType = $Specification.accept
     $ResultItemType = $Specification.collectionType
-    $ResultSelectProperty = $Specification.listProperty
+    $ResultSelectProperty = $Specification.collectionProperty
 
     $Verb = $Specification.alias.go
 

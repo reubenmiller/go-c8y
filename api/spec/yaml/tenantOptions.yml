@@ -18,7 +18,7 @@ endpoints:
     path: /tenant/options
     accept: application/vnd.com.nsn.cumulocity.optionCollection+json
     collectionType: application/vnd.com.nsn.cumulocity.option+json
-    listProperty: options
+    collectionProperty: options
     alias:
         go: list
         powershell: Get-TenantOptionCollection

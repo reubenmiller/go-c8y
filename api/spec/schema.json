@@ -82,9 +82,9 @@
           },
           "collectionType": {
             "type": "string",
-            "description": "Type of the raw response from the platform. The collectionType is the raw response type, and then the listProperty, is the type to be used for the array of items that are represented in the collectionType"
+            "description": "Type of the raw response from the platform. The collectionType is the raw response type, and then the collectionProperty, is the type to be used for the array of items that are represented in the collectionType"
           },
-          "listProperty": {
+          "collectionProperty": {
             "type": "string",
             "description": "Type of each item in the array related to the collectionType"
           },

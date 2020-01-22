@@ -14,7 +14,7 @@ endpoints:
     path: inventory/managedObjects/{device}/childDevices
     accept: application/vnd.com.nsn.cumulocity.managedObjectReferenceCollection+json
     collectionType: application/vnd.com.nsn.cumulocity.managedObject+json
-    listProperty: references.managedObject
+    collectionProperty: references.managedObject
     alias:
         go: listChildDevices
         powershell: Get-ChildDeviceCollection
@@ -57,7 +57,7 @@ endpoints:
     path: inventory/managedObjects/{id}/childAssets
     accept: application/vnd.com.nsn.cumulocity.managedObjectReferenceCollection+json
     collectionType: application/vnd.com.nsn.cumulocity.managedObject+json
-    listProperty: references.managedObject
+    collectionProperty: references.managedObject
     alias:
         go: listChildAssets
         powershell: Get-ChildAssetCollection
@@ -106,7 +106,7 @@ endpoints:
     collectionType: application/vnd.com.nsn.cumulocity.managedObject+json
     description: 'Create a child device reference'
     descriptionLong: 'Create a child device reference'
-    listProperty: managedObject
+    collectionProperty: managedObject
     alias:
         go: createChildDevice
         powershell: New-ChildDeviceReference
@@ -153,7 +153,7 @@ endpoints:
     collectionType: application/vnd.com.nsn.cumulocity.managedObject+json
     description: 'Create a child asset (device or devicegroup) reference'
     descriptionLong: 'Create a child asset (device or devicegroup) reference'
-    listProperty: managedObject
+    collectionProperty: managedObject
     alias:
         go: createChildAsset
         powershell: New-ChildAssetReference

@@ -13,7 +13,7 @@
       "path": "/retention/retentions",
       "accept": "application/vnd.com.nsn.cumulocity.retentionRuleCollection+json",
       "collectionType": "application/vnd.com.nsn.cumulocity.retentionRule+json",
-      "listProperty": "retentionRules",
+      "collectionProperty": "retentionRules",
       "alias": {
         "go": "list",
         "powershell": "Get-RetentionRuleCollection"

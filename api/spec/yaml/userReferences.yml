@@ -89,7 +89,7 @@ endpoints:
     path: /user/{tenant}/groups/{id}/users
     accept: application/vnd.com.nsn.cumulocity.userReferenceCollection+json
     collectionType: application/vnd.com.nsn.cumulocity.user+json
-    listProperty: references.user
+    collectionProperty: references.user
     alias:
         go: getGroupMembership
         powershell: Get-GroupMembership

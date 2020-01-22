@@ -357,7 +357,7 @@ func (n *${Name}Cmd) do${NameCamel}(req c8y.RequestOptions, outputfile string, f
         isJSONResponse := jsonUtilities.IsValidJSON([]byte(*resp.JSONData))
 
         if isJSONResponse && filters != nil && !globalFlagRaw {
-			responseText = filters.Apply(*resp.JSONData, "$($Specification.listProperty)")
+			responseText = filters.Apply(*resp.JSONData, "$($Specification.collectionProperty)")
 		} else {
 			responseText = []byte(*resp.JSONData)
 		}

@@ -14,7 +14,7 @@ endpoints:
     path: identity/globalIds/{device}/externalIds
     accept: application/vnd.com.nsn.cumulocity.externalIdCollection+json
     collectionType: application/vnd.com.nsn.cumulocity.externalId+json
-    listProperty: externalIds
+    collectionProperty: externalIds
     alias:
         go: list
         powershell: Get-ExternalIDCollection
