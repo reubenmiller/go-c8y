@@ -7,8 +7,9 @@
 
 ## Bugs
 
-* Subscription tests are flakey
+* Subscription tests are flaky
 Currently not known
+* Update-User -Id $User; # When an object is provided, then the id is not detected, instead it is just ignored. Piping works, but not when given directly to the object
 
 ## c8y (golang)
 
@@ -76,20 +77,18 @@ Currently not known
 * [ ] Microservice aliases using my-app://health
 
 * [x] Get-DeviceParent (PowerShell only)
-
 * [ ] Get list of firmware. managed object "type eq 'c8y_Firmware'"
-
 * [ ] Adding device management i.e. Update supported operations
-* [ ] Remove PSStatistics property from powershell response
-* [ ] Add device view (ps1xml), Maybe display c8y_Software and/or c8y_Firmware if present
+* [x] Remove PSStatistics property from powershell response
+* [x] Add device view (ps1xml), Maybe display c8y_Software and/or c8y_Firmware if present
 
 
-* [ ] Device Groups
-    * [ ] Get-DeviceGroupCollection
-    * [ ] Get-DeviceGroup
-    * [ ] New-DeviceGroup
-    * [ ] Update-DeviceGroup
-    * [ ] Remove-DeviceGroup
+* [x] Device Groups
+    * [x] Get-DeviceGroupCollection
+    * [x] Get-DeviceGroup
+    * [x] New-DeviceGroup
+    * [x] Update-DeviceGroup
+    * [x] Remove-DeviceGroup
 
 
 * [ ] Device Requests
@@ -100,7 +99,7 @@ Currently not known
     * [ ] New-BulkNewDeviceRequest
 
 * [ ] Applications
-    * [ ] New-HostedApplication?
+    * [x] New-HostedApplication?
     * [ ] New-WebPlugin
     * [ ] Get-WebPlugin
     * [ ] Get Application Tenant Option
@@ -113,38 +112,34 @@ Currently not known
 * [ ] General
     * [x] New-RandomPassword
     * [x] Get-TenantVersion
+    * [x] Open-Website
     * [ ] Copy managed object - custom command? or remove reserved properties
     * [ ] Format C8y Query (helper to allow the user shorthand c8y query language)
-    * [ ] Open-Website
     * [ ] Merge-Object
 
-* [ ] User
-    * [ ] Reset-UserPassword
+* [x] User
+    * [x] Reset-UserPassword
 
-* [ ] Device Control
-    * [ ] Wait-Operation (using websockets if possible...extend notification cmdlet to support waiting for a particular operation)
+* [x] Device Control
+    * [x] Wait-Operation (using websockets if possible...extend notification cmdlet to support waiting for a particular operation)
 
 * [ ] Devices
     * [x] Get Supported Series
     * [x] Get Supported Measurements
     * [x] Get Supported Operations
+    * [x] Set-DeviceRequiredInterval
+    * [x] Get agent collection (Get-DeviceCollection -Agents)
     * [ ] Add-SupportedOperation
     * [ ] Remove-SupportedOperation
-    * [ ] Get agent collection
-    * [x] Set-DeviceRequiredInterval
 
-* [ ] Formatting / Grouping
-    * [ ] Group-Operation
-    * [ ] Group-ManagedObject
-    * [ ] Group-PendingOperation
 
 * [ ] Inventory
     * [ ] Find Data Point (c8y_Kpi ? using query language)
 
-* [ ] 
-    * [ ] 
-    * [ ] 
-    * [ ] 
+* [ ]
+    * [ ]
+    * [ ]
+    * [ ]
 
 ### PSc8y.diagnostics Module
 
@@ -153,8 +148,8 @@ Currently not known
 * [ ] Test-ApiPerformance
 * [ ] Test-Measurement
 * [ ] Test-MeasurementCollection
-* [ ] 
-* [ ] 
+* [ ]
+* [ ]
 
 
 * [ ] Microservice alias
