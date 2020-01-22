@@ -112,7 +112,7 @@
     $Setters."datetime"."path" = "pathParameters[`"${queryParam}`"] = v"
     $Setters."datetime"."body" = "body.Set(`"${queryParam}`", decodeC8yTimestamp(v))"
     $Definitions."datetime" = @"
-    if cmd.Flags().Changed("${prop}") {
+    if flagVal, err := cmd.Flags().GetString("${prop}"); err == nil && flagVal != "" {
         if v, err := tryGetTimestampFlag(cmd, "${prop}"); err == nil && v != "" {
             $($Setters."datetime".$SetterType)
         } else {
