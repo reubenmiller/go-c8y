@@ -67,6 +67,7 @@ FormatsToProcess = @(
     'format-data/deviceGroups.ps1xml',
     'format-data/events.ps1xml',
     'format-data/identity.ps1xml',
+    'format-data/inventoryRoles.ps1xml',
     'format-data/managedObjects.ps1xml',
     'format-data/managedObjectReferences.ps1xml',
     'format-data/measurements.ps1xml',
@@ -100,7 +101,7 @@ AliasesToExport = '*'
 PrivateData = @{
     PSData = @{
         #Prerelease of this module
-        Prerelease = '-alpha10'
+        Prerelease = '-alpha11'
 
         # Tags applied to this module. These help with module discovery in online galleries.
         Tags = @(
