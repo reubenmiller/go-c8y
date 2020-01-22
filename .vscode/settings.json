@@ -25,5 +25,9 @@
         "typescript",
         "typescriptreact",
         "yml"
-    ]
+    ],
+    "yaml.completion": true,
+    "yaml.schemas": {
+        "./api/spec/schema.json": "api/spec/yaml/*.yml",
+    },
 }
