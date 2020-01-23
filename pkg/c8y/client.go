@@ -807,11 +807,14 @@ func (c *Client) hideSensitiveInformationIfActive(message string) string {
 		return message
 	}
 
+	if os.Getenv("USERNAME") != "" {
+		message = strings.ReplaceAll(message, os.Getenv("USERNAME"), "******")
+	}
 	message = strings.ReplaceAll(message, c.TenantName, "{tenant}")
 	message = strings.ReplaceAll(message, c.Username, "{username}")
 	message = strings.ReplaceAll(message, c.Password, "{password}")
 
-	basicAuthMatcher := regexp.MustCompile("(Basic\\s+)[A-Za-z0-9]+")
+	basicAuthMatcher := regexp.MustCompile("(Basic\\s+)[A-Za-z0-9=]+")
 	message = basicAuthMatcher.ReplaceAllString(message, "$1 {base64 tenant/username:password}")
 
 	return message
