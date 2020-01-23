@@ -101,7 +101,7 @@ AliasesToExport = '*'
 PrivateData = @{
     PSData = @{
         #Prerelease of this module
-        Prerelease = '-alpha11'
+        Prerelease = '-alpha12'
 
         # Tags applied to this module. These help with module discovery in online galleries.
         Tags = @(
