@@ -59,8 +59,6 @@ if ($ExistingSession) {
     Write-Host "${ConsoleMessage}`n"
 }
 
-Export-ModuleMember -Alias *
-
 $script:Aliases = @{
     # collections
     alarms = "Get-AlarmCollection"
@@ -93,3 +91,7 @@ $script:Aliases = @{
     # session
     session = "Get-Session"
 }
+
+Register-Alias
+
+Export-ModuleMember -Alias *
