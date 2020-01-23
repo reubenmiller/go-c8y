@@ -4,22 +4,9 @@ Function New-HostedApplication {
 New hosted (web) application
 
 .EXAMPLE
-PS> New-HostedApplication -Name $App.id -File "myapp.zip"
+New-HostedApplication -Name $App.id -File "myapp.zip"
+
 Upload application microservice binary
-
-# WorkFlows
-Set name from a folder ()
-File -> Skip Upload (Skip Activation implied)
-File -> Skip Activation
-
--- Should
-
-1. If file is given then uploaded it. Option -SkipActivation
-
-2. New-HostedApplication -Name "test"
-
-without File
--> Skip Upload is implied
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
