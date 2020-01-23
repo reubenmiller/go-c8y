@@ -96,7 +96,9 @@ func (n *listSessionCmd) listSession(cmd *cobra.Command, args []string) error {
 		if strings.ToLower(os.Getenv(c8y.EnvVarLoggerHideSensitive)) != "true" {
 			return msg
 		}
-		msg = strings.ReplaceAll(msg, os.Getenv("USERNAME"), "******")
+		if os.Getenv("USERNAME") != "" {
+			msg = strings.ReplaceAll(msg, os.Getenv("USERNAME"), "******")
+		}
 		return msg
 	}
 
