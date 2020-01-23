@@ -7,6 +7,242 @@
   },
   "endpoints": [
     {
+      "name": "getDevice",
+      "description": "Get device",
+      "method": "GET",
+      "path": "inventory/managedObjects/{id}",
+      "accept": "application/vnd.com.nsn.cumulocity.customDevice+json",
+      "alias": {
+        "go": "get",
+        "powershell": "Get-Device"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Get device by id",
+            "beforeEach": [
+              "$device = PSc8y\\New-TestDevice"
+            ],
+            "command": "Get-Device -Id $device.id",
+            "afterEach": [
+              "Remove-ManagedObject -Id $device.id"
+            ]
+          },
+          {
+            "description": "Get device by name",
+            "beforeEach": [
+              "$device = PSc8y\\New-TestDevice"
+            ],
+            "command": "Get-Device -Id $device.name",
+            "afterEach": [
+              "Remove-ManagedObject -Id $device.id"
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Get device by id",
+            "command": "c8y devices get --id 12345"
+          }
+        ]
+      },
+      "pathParameters": [
+        {
+          "name": "id",
+          "type": "[]device",
+          "pipeline": true,
+          "required": true,
+          "description": "Device ID"
+        }
+      ]
+    },
+    {
+      "name": "updateDevice",
+      "description": "Update device",
+      "method": "PUT",
+      "path": "inventory/managedObjects/{id}",
+      "accept": "application/vnd.com.nsn.cumulocity.customDevice+json",
+      "alias": {
+        "go": "update",
+        "powershell": "Update-Device"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Update device by id",
+            "beforeEach": [
+              "$device = PSc8y\\New-TestDevice"
+            ],
+            "command": "Update-Device -Id $device.id -NewName \"MyNewName\"",
+            "afterEach": [
+              "Remove-ManagedObject -Id $device.id"
+            ]
+          },
+          {
+            "description": "Update device by name",
+            "beforeEach": [
+              "$device = PSc8y\\New-TestDevice"
+            ],
+            "command": "Update-Device -Id $device.name -NewName \"MyNewName\"",
+            "afterEach": [
+              "Remove-ManagedObject -Id $device.id"
+            ]
+          },
+          {
+            "description": "Update device custom properties",
+            "beforeEach": [
+              "$device = PSc8y\\New-TestDevice"
+            ],
+            "command": "Update-Device -Id $device.name -Data @{ \"myValue\" = @{ value1 = $true } }",
+            "afterEach": [
+              "Remove-ManagedObject -Id $device.id"
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Update device by id",
+            "command": "c8y devices update --id 12345"
+          }
+        ]
+      },
+      "pathParameters": [
+        {
+          "name": "id",
+          "type": "[]device",
+          "pipeline": true,
+          "required": true,
+          "description": "Device ID"
+        }
+      ],
+      "body": [
+        {
+          "name": "newName",
+          "type": "string",
+          "property": "name",
+          "required": false,
+          "description": "Device name"
+        },
+        {
+          "name": "data",
+          "type": "json",
+          "description": "Additional properties of the inventory."
+        }
+      ]
+    },
+    {
+      "name": "deleteDevice",
+      "description": "Delete device",
+      "method": "DELETE",
+      "path": "inventory/managedObjects/{id}",
+      "accept": "",
+      "alias": {
+        "go": "delete",
+        "powershell": "Remove-Device"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Remove device by id",
+            "beforeEach": [
+              "$device = PSc8y\\New-TestDevice"
+            ],
+            "command": "Remove-Device -Id $device.id"
+          },
+          {
+            "description": "Remove device by name",
+            "beforeEach": [
+              "$device = PSc8y\\New-TestDevice"
+            ],
+            "command": "Remove-Device -Id $device.name"
+          }
+        ],
+        "go": [
+          {
+            "description": "Get device by id",
+            "command": "c8y devices delete --id 12345"
+          }
+        ]
+      },
+      "pathParameters": [
+        {
+          "name": "id",
+          "type": "[]device",
+          "pipeline": true,
+          "required": true,
+          "description": "Device ID"
+        }
+      ]
+    },
+    {
+      "name": "createDevice",
+      "description": "Create device",
+      "method": "POST",
+      "path": "inventory/managedObjects",
+      "accept": "application/vnd.com.nsn.cumulocity.customDevice+json",
+      "alias": {
+        "go": "create",
+        "powershell": "New-Device"
+      },
+      "examples": {
+        "powershell": [
+          {
+            "description": "Create device",
+            "beforeEach": [
+              "$DeviceName = PSc8y\\New-RandomString -Prefix \"myDevice\""
+            ],
+            "command": "New-Device -Name $DeviceName",
+            "afterEach": [
+              "Remove-Device -Id $DeviceName"
+            ]
+          },
+          {
+            "description": "Create device with custom properties",
+            "beforeEach": [
+              "$DeviceName = PSc8y\\New-RandomString -Prefix \"myDevice\""
+            ],
+            "command": "New-Device -Name $DeviceName -Data @{ myValue = @{ value1 = $true } }",
+            "afterEach": [
+              "Remove-Device -Id $DeviceName"
+            ]
+          }
+        ],
+        "go": [
+          {
+            "description": "Create device",
+            "command": "c8y devices create --name myDevice"
+          },
+          {
+            "description": "Create device with custom properties",
+            "command": "c8y devices create --name myDevice --data \"custom_value1=1234\""
+          }
+        ]
+      },
+      "bodyTemplate": {
+        "type": "jsonnet",
+        "applyLast": true,
+        "template": "{  c8y_IsDevice: {},\n}\n"
+      },
+      "body": [
+        {
+          "name": "name",
+          "type": "string",
+          "required": true,
+          "description": "Device name"
+        },
+        {
+          "name": "type",
+          "description": "Device type",
+          "type": "string"
+        },
+        {
+          "name": "data",
+          "type": "json",
+          "description": "Custom device properties."
+        }
+      ]
+    },
+    {
       "name": "getSupportedMeasurements",
       "description": "Get supported measurements/s of a device",
       "method": "GET",
