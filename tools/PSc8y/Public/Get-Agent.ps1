@@ -1,45 +1,32 @@
 ﻿# Code generated from specification version 1.0.0: DO NOT EDIT
-Function Update-ManagedObject {
+Function Get-Agent {
 <#
 .SYNOPSIS
-Update inventory
-
-.DESCRIPTION
-Update a managed object by id
+Get agent
 
 .EXAMPLE
-PS> Update-ManagedObject -Id $mo.id -Data @{ com_my_props = @{ value = 1 } }
-Update a managed object
+PS> Get-Agent -Id $agent.id
+Get agent by id
 
 .EXAMPLE
-PS> Get-ManagedObject -Id $mo.id | Update-ManagedObject -Data @{ com_my_props = @{ value = 1 } }
-Update a managed object (using pipeline)
+PS> Get-Agent -Id $agent.name
+Get agent by name
 
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
                    PositionalBinding=$true,
                    HelpUri='',
-                   ConfirmImpact = 'High')]
+                   ConfirmImpact = 'None')]
     [Alias()]
     [OutputType([object])]
     Param(
-        # ManagedObject id (required)
+        # Agent ID (required)
         [Parameter(Mandatory = $true,
                    ValueFromPipeline=$true,
                    ValueFromPipelineByPropertyName=$true)]
-        [string]
+        [object[]]
         $Id,
-
-        # name
-        [Parameter()]
-        [string]
-        $NewName,
-
-        # Additional properties of the inventory.
-        [Parameter()]
-        [object]
-        $Data,
 
         # Include raw response including pagination information
         [Parameter()]
@@ -59,22 +46,11 @@ Update a managed object (using pipeline)
         # Session path
         [Parameter()]
         [string]
-        $Session,
-
-        # Don't prompt for confirmation
-        [Parameter()]
-        [switch]
-        $Force
+        $Session
     )
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("NewName")) {
-            $Parameters["newName"] = $NewName
-        }
-        if ($PSBoundParameters.ContainsKey("Data")) {
-            $Parameters["data"] = ConvertTo-JsonArgument $Data
-        }
         if ($PSBoundParameters.ContainsKey("OutputFile")) {
             $Parameters["outputFile"] = $OutputFile
         }
@@ -103,10 +79,10 @@ Update a managed object (using pipeline)
             }
 
             Invoke-Command `
-                -Noun "inventory" `
-                -Verb "update" `
+                -Noun "agents" `
+                -Verb "get" `
                 -Parameters $Parameters `
-                -Type "application/vnd.com.nsn.cumulocity.inventory+json" `
+                -Type "application/vnd.com.nsn.cumulocity.customAgent+json" `
                 -ItemType "" `
                 -ResultProperty "" `
                 -Raw:$Raw `

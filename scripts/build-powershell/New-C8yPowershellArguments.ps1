@@ -49,6 +49,7 @@
 
     # Type Definition
     $DataType = switch ($Type) {
+        "[]agent" { "object[]" }
         "[]device" { "object[]" }
         "[]devicegroup" { "object[]" }
         "[]role" { "object[]" }

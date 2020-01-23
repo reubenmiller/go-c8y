@@ -18,29 +18,27 @@ import (
 	"github.com/tidwall/pretty"
 )
 
-type updateManagedObjectCmd struct {
+type getAgentCmd struct {
 	*baseCmd
 }
 
-func newUpdateManagedObjectCmd() *updateManagedObjectCmd {
-	ccmd := &updateManagedObjectCmd{}
+func newGetAgentCmd() *getAgentCmd {
+	ccmd := &getAgentCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "update",
-		Short: "Update inventory",
-		Long:  `Update a managed object by id`,
+		Use:   "get",
+		Short: "Get agent",
+		Long:  ``,
 		Example: `
-$ c8y inventory update --id 12345 --newName "my_custom_name" --data "{\"com_my_props\":{}\"value\":1}"
-Update a managed object
+$ c8y agents get --id 12345
+Get agent by id
 		`,
-		RunE: ccmd.updateManagedObject,
+		RunE: ccmd.getAgent,
 	}
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("id", "", "ManagedObject id (required)")
-	cmd.Flags().String("newName", "", "name")
-	addDataFlag(cmd)
+	cmd.Flags().StringSlice("id", []string{""}, "Agent ID (required)")
 
 	// Required flags
 	cmd.MarkFlagRequired("id")
@@ -50,7 +48,7 @@ Update a managed object
 	return ccmd
 }
 
-func (n *updateManagedObjectCmd) updateManagedObject(cmd *cobra.Command, args []string) error {
+func (n *getAgentCmd) getAgent(cmd *cobra.Command, args []string) error {
 
 	// query parameters
 	queryValue := url.QueryEscape("")
@@ -80,23 +78,25 @@ func (n *updateManagedObjectCmd) updateManagedObject(cmd *cobra.Command, args []
 
 	// body
 	body := mapbuilder.NewMapBuilder()
-	body.SetMap(getDataFlag(cmd))
-	if v, err := cmd.Flags().GetString("newName"); err == nil {
-		if v != "" {
-			body.Set("name", v)
-		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "newName", err))
-	}
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v, err := cmd.Flags().GetString("id"); err == nil {
-		if v != "" {
-			pathParameters["id"] = v
+	if cmd.Flags().Changed("id") {
+		idInputValues, idValue, err := getFormattedAgentSlice(cmd, args, "id")
+
+		if err != nil {
+			return newUserError("no matching agents found", idInputValues, err)
 		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "id", err))
+
+		if len(idValue) == 0 {
+			return newUserError("no matching agents found", idInputValues)
+		}
+
+		for _, item := range idValue {
+			if item != "" {
+				pathParameters["id"] = newIDValue(item).GetID()
+			}
+		}
 	}
 
 	path := replacePathParameters("inventory/managedObjects/{id}", pathParameters)
@@ -105,7 +105,7 @@ func (n *updateManagedObjectCmd) updateManagedObject(cmd *cobra.Command, args []
 	filters := getFilterFlag(cmd, "filter")
 
 	req := c8y.RequestOptions{
-		Method:       "PUT",
+		Method:       "GET",
 		Path:         path,
 		Query:        queryValue,
 		Body:         body.GetMap(),
@@ -123,10 +123,10 @@ func (n *updateManagedObjectCmd) updateManagedObject(cmd *cobra.Command, args []
 		return err
 	}
 
-	return n.doUpdateManagedObject(req, outputfile, filters)
+	return n.doGetAgent(req, outputfile, filters)
 }
 
-func (n *updateManagedObjectCmd) doUpdateManagedObject(req c8y.RequestOptions, outputfile string, filters *JSONFilters) error {
+func (n *getAgentCmd) doGetAgent(req c8y.RequestOptions, outputfile string, filters *JSONFilters) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(globalFlagTimeout)*time.Millisecond)
 	defer cancel()
 	start := time.Now()

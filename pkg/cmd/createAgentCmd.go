@@ -18,39 +18,42 @@ import (
 	"github.com/tidwall/pretty"
 )
 
-type updateManagedObjectCmd struct {
+type createAgentCmd struct {
 	*baseCmd
 }
 
-func newUpdateManagedObjectCmd() *updateManagedObjectCmd {
-	ccmd := &updateManagedObjectCmd{}
+func newCreateAgentCmd() *createAgentCmd {
+	ccmd := &createAgentCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "update",
-		Short: "Update inventory",
-		Long:  `Update a managed object by id`,
+		Use:   "create",
+		Short: "Create agent",
+		Long:  ``,
 		Example: `
-$ c8y inventory update --id 12345 --newName "my_custom_name" --data "{\"com_my_props\":{}\"value\":1}"
-Update a managed object
+$ c8y agents create --name myAgent
+Create agent
+
+$ c8y agents create --name myAgent --data "custom_value1=1234"
+Create agent with custom properties
 		`,
-		RunE: ccmd.updateManagedObject,
+		RunE: ccmd.createAgent,
 	}
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("id", "", "ManagedObject id (required)")
-	cmd.Flags().String("newName", "", "name")
+	cmd.Flags().String("name", "", "Agent name (required)")
+	cmd.Flags().String("type", "", "Agent type")
 	addDataFlag(cmd)
 
 	// Required flags
-	cmd.MarkFlagRequired("id")
+	cmd.MarkFlagRequired("name")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd
 }
 
-func (n *updateManagedObjectCmd) updateManagedObject(cmd *cobra.Command, args []string) error {
+func (n *createAgentCmd) createAgent(cmd *cobra.Command, args []string) error {
 
 	// query parameters
 	queryValue := url.QueryEscape("")
@@ -81,31 +84,36 @@ func (n *updateManagedObjectCmd) updateManagedObject(cmd *cobra.Command, args []
 	// body
 	body := mapbuilder.NewMapBuilder()
 	body.SetMap(getDataFlag(cmd))
-	if v, err := cmd.Flags().GetString("newName"); err == nil {
+	if v, err := cmd.Flags().GetString("name"); err == nil {
 		if v != "" {
 			body.Set("name", v)
 		}
 	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "newName", err))
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "name", err))
 	}
+	if v, err := cmd.Flags().GetString("type"); err == nil {
+		if v != "" {
+			body.Set("type", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "type", err))
+	}
+	body.MergeJsonnet(`
+{  c8y_IsDevice: {},
+  com_cumulocity_model_Agent: {},
+}
+`, false)
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v, err := cmd.Flags().GetString("id"); err == nil {
-		if v != "" {
-			pathParameters["id"] = v
-		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "id", err))
-	}
 
-	path := replacePathParameters("inventory/managedObjects/{id}", pathParameters)
+	path := replacePathParameters("inventory/managedObjects", pathParameters)
 
 	// filter and selectors
 	filters := getFilterFlag(cmd, "filter")
 
 	req := c8y.RequestOptions{
-		Method:       "PUT",
+		Method:       "POST",
 		Path:         path,
 		Query:        queryValue,
 		Body:         body.GetMap(),
@@ -123,10 +131,10 @@ func (n *updateManagedObjectCmd) updateManagedObject(cmd *cobra.Command, args []
 		return err
 	}
 
-	return n.doUpdateManagedObject(req, outputfile, filters)
+	return n.doCreateAgent(req, outputfile, filters)
 }
 
-func (n *updateManagedObjectCmd) doUpdateManagedObject(req c8y.RequestOptions, outputfile string, filters *JSONFilters) error {
+func (n *createAgentCmd) doCreateAgent(req c8y.RequestOptions, outputfile string, filters *JSONFilters) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(globalFlagTimeout)*time.Millisecond)
 	defer cancel()
 	start := time.Now()

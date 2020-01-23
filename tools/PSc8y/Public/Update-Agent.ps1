@@ -1,19 +1,20 @@
 ﻿# Code generated from specification version 1.0.0: DO NOT EDIT
-Function Update-ManagedObject {
+Function Update-Agent {
 <#
 .SYNOPSIS
-Update inventory
-
-.DESCRIPTION
-Update a managed object by id
+Update agent
 
 .EXAMPLE
-PS> Update-ManagedObject -Id $mo.id -Data @{ com_my_props = @{ value = 1 } }
-Update a managed object
+PS> Update-Agent -Id $agent.id -NewName "MyNewName"
+Update agent by id
 
 .EXAMPLE
-PS> Get-ManagedObject -Id $mo.id | Update-ManagedObject -Data @{ com_my_props = @{ value = 1 } }
-Update a managed object (using pipeline)
+PS> Update-Agent -Id $agent.name -NewName "MyNewName"
+Update agent by name
+
+.EXAMPLE
+PS> Update-Agent -Id $agent.name -Data @{ "myValue" = @{ value1 = $true } }
+Update agent custom properties
 
 
 #>
@@ -24,14 +25,14 @@ Update a managed object (using pipeline)
     [Alias()]
     [OutputType([object])]
     Param(
-        # ManagedObject id (required)
+        # Agent ID (required)
         [Parameter(Mandatory = $true,
                    ValueFromPipeline=$true,
                    ValueFromPipelineByPropertyName=$true)]
-        [string]
+        [object[]]
         $Id,
 
-        # name
+        # Agent name
         [Parameter()]
         [string]
         $NewName,
@@ -103,10 +104,10 @@ Update a managed object (using pipeline)
             }
 
             Invoke-Command `
-                -Noun "inventory" `
+                -Noun "agents" `
                 -Verb "update" `
                 -Parameters $Parameters `
-                -Type "application/vnd.com.nsn.cumulocity.inventory+json" `
+                -Type "application/vnd.com.nsn.cumulocity.customAgent+json" `
                 -ItemType "" `
                 -ResultProperty "" `
                 -Raw:$Raw `

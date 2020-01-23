@@ -1,7 +1,7 @@
 . $PSScriptRoot/imports.ps1
 
 Describe -Name "New-HostedApplication" {
-    Context "environment" {
+    Context "developer environment 1" {
         BeforeEach {
             $WebAppSource = "$PSScriptRoot/TestData/hosted-application/simple-helloworld"
             $AppName = New-RandomString -Prefix "My App"
@@ -26,12 +26,8 @@ Describe -Name "New-HostedApplication" {
             $application.resourcesUrl | Should -BeExactly "/subPath"
             $application.activeVersionId | Should -BeNullOrEmpty
 
-            # Note: cumulocity.com disables the MARKET option (it is just ignore)
-            # but check that it is included in the request
-            # $application.availability | Should -BeExactly "MARKET"
-            # $VerboseFile | Should -FileContentMatchMultiline 'Body:.+"availability":"MARKET"'
-            $VerboseContents = Get-Content $VerboseFile -Raw
-            $VerboseContents | Should -MatchExactly 'Body:.*"availability":"MARKET"'
+            $BodyInVerbose = Get-JSONFromResponse (Get-Content $VerboseFile -Raw)
+            $BodyInVerbose.availability | Should -BeExactly "MARKET"
 
             $Binaries = Get-ApplicationBinaryCollection -Id $application.id -PageSize 100
             $Binaries | Should -BeNullOrEmpty
@@ -45,7 +41,7 @@ Describe -Name "New-HostedApplication" {
 
     }
 
-    Context "environment" {
+    Context "developer environment 2" {
         $WebAppSource = "$PSScriptRoot/TestData/hosted-application/simple-helloworld"
         $AppName = New-RandomString -Prefix "app"
 

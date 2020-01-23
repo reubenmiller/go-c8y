@@ -1,19 +1,16 @@
 ﻿# Code generated from specification version 1.0.0: DO NOT EDIT
-Function Update-ManagedObject {
+Function Remove-Device {
 <#
 .SYNOPSIS
-Update inventory
-
-.DESCRIPTION
-Update a managed object by id
+Delete device
 
 .EXAMPLE
-PS> Update-ManagedObject -Id $mo.id -Data @{ com_my_props = @{ value = 1 } }
-Update a managed object
+PS> Remove-Device -Id $device.id
+Remove device by id
 
 .EXAMPLE
-PS> Get-ManagedObject -Id $mo.id | Update-ManagedObject -Data @{ com_my_props = @{ value = 1 } }
-Update a managed object (using pipeline)
+PS> Remove-Device -Id $device.name
+Remove device by name
 
 
 #>
@@ -24,22 +21,12 @@ Update a managed object (using pipeline)
     [Alias()]
     [OutputType([object])]
     Param(
-        # ManagedObject id (required)
+        # Device ID (required)
         [Parameter(Mandatory = $true,
                    ValueFromPipeline=$true,
                    ValueFromPipelineByPropertyName=$true)]
-        [string]
+        [object[]]
         $Id,
-
-        # name
-        [Parameter()]
-        [string]
-        $NewName,
-
-        # Additional properties of the inventory.
-        [Parameter()]
-        [object]
-        $Data,
 
         # Include raw response including pagination information
         [Parameter()]
@@ -69,12 +56,6 @@ Update a managed object (using pipeline)
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("NewName")) {
-            $Parameters["newName"] = $NewName
-        }
-        if ($PSBoundParameters.ContainsKey("Data")) {
-            $Parameters["data"] = ConvertTo-JsonArgument $Data
-        }
         if ($PSBoundParameters.ContainsKey("OutputFile")) {
             $Parameters["outputFile"] = $OutputFile
         }
@@ -88,7 +69,7 @@ Update a managed object (using pipeline)
     }
 
     Process {
-        foreach ($item in (PSc8y\Expand-Id $Id)) {
+        foreach ($item in (PSc8y\Expand-Device $Id)) {
             if ($item) {
                 $Parameters["id"] = if ($item.id) { $item.id } else { $item }
             }
@@ -103,10 +84,10 @@ Update a managed object (using pipeline)
             }
 
             Invoke-Command `
-                -Noun "inventory" `
-                -Verb "update" `
+                -Noun "devices" `
+                -Verb "delete" `
                 -Parameters $Parameters `
-                -Type "application/vnd.com.nsn.cumulocity.inventory+json" `
+                -Type "" `
                 -ItemType "" `
                 -ResultProperty "" `
                 -Raw:$Raw `

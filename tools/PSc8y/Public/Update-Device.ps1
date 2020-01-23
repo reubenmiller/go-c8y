@@ -1,19 +1,20 @@
 ﻿# Code generated from specification version 1.0.0: DO NOT EDIT
-Function Update-ManagedObject {
+Function Update-Device {
 <#
 .SYNOPSIS
-Update inventory
-
-.DESCRIPTION
-Update a managed object by id
+Update device
 
 .EXAMPLE
-PS> Update-ManagedObject -Id $mo.id -Data @{ com_my_props = @{ value = 1 } }
-Update a managed object
+PS> Update-Device -Id $device.id -NewName "MyNewName"
+Update device by id
 
 .EXAMPLE
-PS> Get-ManagedObject -Id $mo.id | Update-ManagedObject -Data @{ com_my_props = @{ value = 1 } }
-Update a managed object (using pipeline)
+PS> Update-Device -Id $device.name -NewName "MyNewName"
+Update device by name
+
+.EXAMPLE
+PS> Update-Device -Id $device.name -Data @{ "myValue" = @{ value1 = $true } }
+Update device custom properties
 
 
 #>
@@ -24,14 +25,14 @@ Update a managed object (using pipeline)
     [Alias()]
     [OutputType([object])]
     Param(
-        # ManagedObject id (required)
+        # Device ID (required)
         [Parameter(Mandatory = $true,
                    ValueFromPipeline=$true,
                    ValueFromPipelineByPropertyName=$true)]
-        [string]
+        [object[]]
         $Id,
 
-        # name
+        # Device name
         [Parameter()]
         [string]
         $NewName,
@@ -88,7 +89,7 @@ Update a managed object (using pipeline)
     }
 
     Process {
-        foreach ($item in (PSc8y\Expand-Id $Id)) {
+        foreach ($item in (PSc8y\Expand-Device $Id)) {
             if ($item) {
                 $Parameters["id"] = if ($item.id) { $item.id } else { $item }
             }
@@ -103,10 +104,10 @@ Update a managed object (using pipeline)
             }
 
             Invoke-Command `
-                -Noun "inventory" `
+                -Noun "devices" `
                 -Verb "update" `
                 -Parameters $Parameters `
-                -Type "application/vnd.com.nsn.cumulocity.inventory+json" `
+                -Type "application/vnd.com.nsn.cumulocity.customDevice+json" `
                 -ItemType "" `
                 -ResultProperty "" `
                 -Raw:$Raw `

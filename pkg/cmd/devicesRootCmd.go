@@ -18,6 +18,10 @@ func newDevicesRootCmd() *devicesCmd {
 	}
 
 	// Subcommands
+	cmd.AddCommand(newGetDeviceCmd().getCommand())
+	cmd.AddCommand(newUpdateDeviceCmd().getCommand())
+	cmd.AddCommand(newDeleteDeviceCmd().getCommand())
+	cmd.AddCommand(newCreateDeviceCmd().getCommand())
 	cmd.AddCommand(newGetSupportedMeasurementsCmd().getCommand())
 	cmd.AddCommand(newGetSupportedSeriesCmd().getCommand())
 	cmd.AddCommand(newGetSupportedOperationsCmd().getCommand())

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 	"time"
 
@@ -103,6 +104,12 @@ func Execute() {
 	rootCmd.AddCommand(newGetGenericRestCmd().getCommand())
 
 	// Auto generated commands
+
+	// agents commands
+	agents := newAgentsRootCmd().getCommand()
+	agents.AddCommand(newGetAgentCollectionCmd().getCommand())
+	rootCmd.AddCommand(agents)
+
 	// alarms commands
 	alarms := newAlarmsRootCmd().getCommand()
 	alarms.AddCommand(newSubscribeAlarmCmd().getCommand())
@@ -211,7 +218,7 @@ func initConfig() {
 
 	if globalFlagSessionFile == "" && os.Getenv("C8Y_SESSION") != "" {
 		globalFlagSessionFile = os.Getenv("C8Y_SESSION")
-		Logger.Printf("Using session environment variable: %s\n", globalFlagSessionFile)
+		Logger.Printf("Using session environment variable: %s\n", hideSensitiveInformationIfActive(globalFlagSessionFile))
 	}
 
 	// global session flag has precendence over use environment
@@ -286,7 +293,7 @@ func initConfig() {
 
 	// Try reading session from file
 	if err := viper.ReadInConfig(); err == nil {
-		Logger.Println("Using config file:", viper.ConfigFileUsed())
+		Logger.Println("Using config file:", hideSensitiveInformationIfActive(viper.ConfigFileUsed()))
 		client = c8y.NewClient(
 			httpClient,
 			formatHost(viper.GetString("host")),
@@ -356,4 +363,26 @@ func newHTTPClient(ignoreProxySettings bool) *http.Client {
 	return &http.Client{
 		Transport: tr,
 	}
+}
+
+func hideSensitiveInformationIfActive(message string) string {
+
+	if strings.ToLower(os.Getenv(c8y.EnvVarLoggerHideSensitive)) != "true" {
+		return message
+	}
+
+	if os.Getenv("USERNAME") != "" {
+		message = strings.ReplaceAll(message, os.Getenv("USERNAME"), "******")
+	}
+
+	if client != nil {
+		message = strings.ReplaceAll(message, client.TenantName, "{tenant}")
+		message = strings.ReplaceAll(message, client.Username, "{username}")
+		message = strings.ReplaceAll(message, client.Password, "{password}")
+	}
+
+	basicAuthMatcher := regexp.MustCompile("(Basic\\s+)[A-Za-z0-9=]+")
+	message = basicAuthMatcher.ReplaceAllString(message, "$1 {base64 tenant/username:password}")
+
+	return message
 }

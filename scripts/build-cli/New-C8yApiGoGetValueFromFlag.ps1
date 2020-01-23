@@ -25,6 +25,7 @@
 
     $Definitions = @{}
     $Setters = @{
+        "[]agent" = @{}
         "[]device" = @{}
         "[]devicegroup" = @{}
         "[]role" = @{}
@@ -207,6 +208,30 @@
         for _, item := range ${prop}Value {
             if item != "" {
                 $($Setters."[]device".$SetterType)
+            }
+        }
+    }
+"@
+
+    # agent array
+    $Setters."[]agent"."query" = "query.Add(`"${queryParam}`", newIDValue(item).GetID())"
+    $Setters."[]agent"."path" = "pathParameters[`"${queryParam}`"] = newIDValue(item).GetID()"
+    $Setters."[]agent"."body" = "body.Set(`"${queryParam}`", newIDValue(item).GetID())"
+    $Definitions."[]agent" = @"
+    if cmd.Flags().Changed("${prop}") {
+        ${prop}InputValues, ${prop}Value, err := getFormattedAgentSlice(cmd, args, "${prop}")
+
+        if err != nil {
+            return newUserError("no matching agents found", ${prop}InputValues, err)
+        }
+
+        if len(${prop}Value) == 0 {
+            return newUserError("no matching agents found", ${prop}InputValues)
+        }
+
+        for _, item := range ${prop}Value {
+            if item != "" {
+                $($Setters."[]agent".$SetterType)
             }
         }
     }

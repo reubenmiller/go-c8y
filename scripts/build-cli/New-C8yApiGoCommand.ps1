@@ -533,6 +533,18 @@ Function Get-C8yGoArgs {
             }
         }
 
+        "[]agent" {
+            $SetFlag = if ($UseOption) {
+                "cmd.Flags().StringSliceP(`"${Name}`", []string{`"${Default}`"}, `"${OptionName}`", `"${Description}`")"
+            } else {
+                "cmd.Flags().StringSlice(`"${Name}`", []string{`"${Default}`"}, `"${Description}`")"
+            }
+
+            @{
+                SetFlag = $SetFlag
+            }
+        }
+
         "[]devicegroup" {
             $SetFlag = if ($UseOption) {
                 "cmd.Flags().StringSliceP(`"${Name}`", []string{`"${Default}`"}, `"${OptionName}`", `"${Description}`")"

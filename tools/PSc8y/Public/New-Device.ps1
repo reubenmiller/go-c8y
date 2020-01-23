@@ -1,19 +1,16 @@
 ﻿# Code generated from specification version 1.0.0: DO NOT EDIT
-Function Update-ManagedObject {
+Function New-Device {
 <#
 .SYNOPSIS
-Update inventory
-
-.DESCRIPTION
-Update a managed object by id
+Create device
 
 .EXAMPLE
-PS> Update-ManagedObject -Id $mo.id -Data @{ com_my_props = @{ value = 1 } }
-Update a managed object
+PS> New-Device -Name $DeviceName
+Create device
 
 .EXAMPLE
-PS> Get-ManagedObject -Id $mo.id | Update-ManagedObject -Data @{ com_my_props = @{ value = 1 } }
-Update a managed object (using pipeline)
+PS> New-Device -Name $DeviceName -Data @{ myValue = @{ value1 = $true } }
+Create device with custom properties
 
 
 #>
@@ -24,19 +21,17 @@ Update a managed object (using pipeline)
     [Alias()]
     [OutputType([object])]
     Param(
-        # ManagedObject id (required)
-        [Parameter(Mandatory = $true,
-                   ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true)]
+        # Device name (required)
+        [Parameter(Mandatory = $true)]
         [string]
-        $Id,
+        $Name,
 
-        # name
+        # Device type
         [Parameter()]
         [string]
-        $NewName,
+        $Type,
 
-        # Additional properties of the inventory.
+        # Custom device properties.
         [Parameter()]
         [object]
         $Data,
@@ -69,8 +64,11 @@ Update a managed object (using pipeline)
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("NewName")) {
-            $Parameters["newName"] = $NewName
+        if ($PSBoundParameters.ContainsKey("Name")) {
+            $Parameters["name"] = $Name
+        }
+        if ($PSBoundParameters.ContainsKey("Type")) {
+            $Parameters["type"] = $Type
         }
         if ($PSBoundParameters.ContainsKey("Data")) {
             $Parameters["data"] = ConvertTo-JsonArgument $Data
@@ -88,10 +86,7 @@ Update a managed object (using pipeline)
     }
 
     Process {
-        foreach ($item in (PSc8y\Expand-Id $Id)) {
-            if ($item) {
-                $Parameters["id"] = if ($item.id) { $item.id } else { $item }
-            }
+        foreach ($item in @("")) {
 
             if (!$Force -and
                 !$WhatIfPreference -and
@@ -103,10 +98,10 @@ Update a managed object (using pipeline)
             }
 
             Invoke-Command `
-                -Noun "inventory" `
-                -Verb "update" `
+                -Noun "devices" `
+                -Verb "create" `
                 -Parameters $Parameters `
-                -Type "application/vnd.com.nsn.cumulocity.inventory+json" `
+                -Type "application/vnd.com.nsn.cumulocity.customDevice+json" `
                 -ItemType "" `
                 -ResultProperty "" `
                 -Raw:$Raw `

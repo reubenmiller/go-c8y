@@ -18,29 +18,27 @@ import (
 	"github.com/tidwall/pretty"
 )
 
-type updateManagedObjectCmd struct {
+type getDeviceCmd struct {
 	*baseCmd
 }
 
-func newUpdateManagedObjectCmd() *updateManagedObjectCmd {
-	ccmd := &updateManagedObjectCmd{}
+func newGetDeviceCmd() *getDeviceCmd {
+	ccmd := &getDeviceCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "update",
-		Short: "Update inventory",
-		Long:  `Update a managed object by id`,
+		Use:   "get",
+		Short: "Get device",
+		Long:  ``,
 		Example: `
-$ c8y inventory update --id 12345 --newName "my_custom_name" --data "{\"com_my_props\":{}\"value\":1}"
-Update a managed object
+$ c8y devices get --id 12345
+Get device by id
 		`,
-		RunE: ccmd.updateManagedObject,
+		RunE: ccmd.getDevice,
 	}
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("id", "", "ManagedObject id (required)")
-	cmd.Flags().String("newName", "", "name")
-	addDataFlag(cmd)
+	cmd.Flags().StringSlice("id", []string{""}, "Device ID (required)")
 
 	// Required flags
 	cmd.MarkFlagRequired("id")
@@ -50,7 +48,7 @@ Update a managed object
 	return ccmd
 }
 
-func (n *updateManagedObjectCmd) updateManagedObject(cmd *cobra.Command, args []string) error {
+func (n *getDeviceCmd) getDevice(cmd *cobra.Command, args []string) error {
 
 	// query parameters
 	queryValue := url.QueryEscape("")
@@ -80,23 +78,25 @@ func (n *updateManagedObjectCmd) updateManagedObject(cmd *cobra.Command, args []
 
 	// body
 	body := mapbuilder.NewMapBuilder()
-	body.SetMap(getDataFlag(cmd))
-	if v, err := cmd.Flags().GetString("newName"); err == nil {
-		if v != "" {
-			body.Set("name", v)
-		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "newName", err))
-	}
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v, err := cmd.Flags().GetString("id"); err == nil {
-		if v != "" {
-			pathParameters["id"] = v
+	if cmd.Flags().Changed("id") {
+		idInputValues, idValue, err := getFormattedDeviceSlice(cmd, args, "id")
+
+		if err != nil {
+			return newUserError("no matching devices found", idInputValues, err)
 		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "id", err))
+
+		if len(idValue) == 0 {
+			return newUserError("no matching devices found", idInputValues)
+		}
+
+		for _, item := range idValue {
+			if item != "" {
+				pathParameters["id"] = newIDValue(item).GetID()
+			}
+		}
 	}
 
 	path := replacePathParameters("inventory/managedObjects/{id}", pathParameters)
@@ -105,7 +105,7 @@ func (n *updateManagedObjectCmd) updateManagedObject(cmd *cobra.Command, args []
 	filters := getFilterFlag(cmd, "filter")
 
 	req := c8y.RequestOptions{
-		Method:       "PUT",
+		Method:       "GET",
 		Path:         path,
 		Query:        queryValue,
 		Body:         body.GetMap(),
@@ -123,10 +123,10 @@ func (n *updateManagedObjectCmd) updateManagedObject(cmd *cobra.Command, args []
 		return err
 	}
 
-	return n.doUpdateManagedObject(req, outputfile, filters)
+	return n.doGetDevice(req, outputfile, filters)
 }
 
-func (n *updateManagedObjectCmd) doUpdateManagedObject(req c8y.RequestOptions, outputfile string, filters *JSONFilters) error {
+func (n *getDeviceCmd) doGetDevice(req c8y.RequestOptions, outputfile string, filters *JSONFilters) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(globalFlagTimeout)*time.Millisecond)
 	defer cancel()
 	start := time.Now()

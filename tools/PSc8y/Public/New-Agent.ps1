@@ -1,19 +1,16 @@
 ﻿# Code generated from specification version 1.0.0: DO NOT EDIT
-Function Update-ManagedObject {
+Function New-Agent {
 <#
 .SYNOPSIS
-Update inventory
-
-.DESCRIPTION
-Update a managed object by id
+Create agent
 
 .EXAMPLE
-PS> Update-ManagedObject -Id $mo.id -Data @{ com_my_props = @{ value = 1 } }
-Update a managed object
+PS> New-Agent -Name $AgentName
+Create agent
 
 .EXAMPLE
-PS> Get-ManagedObject -Id $mo.id | Update-ManagedObject -Data @{ com_my_props = @{ value = 1 } }
-Update a managed object (using pipeline)
+PS> New-Agent -Name $AgentName -Data @{ myValue = @{ value1 = $true } }
+Create agent with custom properties
 
 
 #>
@@ -24,19 +21,17 @@ Update a managed object (using pipeline)
     [Alias()]
     [OutputType([object])]
     Param(
-        # ManagedObject id (required)
-        [Parameter(Mandatory = $true,
-                   ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true)]
+        # Agent name (required)
+        [Parameter(Mandatory = $true)]
         [string]
-        $Id,
+        $Name,
 
-        # name
+        # Agent type
         [Parameter()]
         [string]
-        $NewName,
+        $Type,
 
-        # Additional properties of the inventory.
+        # Custom agent properties.
         [Parameter()]
         [object]
         $Data,
@@ -69,8 +64,11 @@ Update a managed object (using pipeline)
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("NewName")) {
-            $Parameters["newName"] = $NewName
+        if ($PSBoundParameters.ContainsKey("Name")) {
+            $Parameters["name"] = $Name
+        }
+        if ($PSBoundParameters.ContainsKey("Type")) {
+            $Parameters["type"] = $Type
         }
         if ($PSBoundParameters.ContainsKey("Data")) {
             $Parameters["data"] = ConvertTo-JsonArgument $Data
@@ -88,10 +86,7 @@ Update a managed object (using pipeline)
     }
 
     Process {
-        foreach ($item in (PSc8y\Expand-Id $Id)) {
-            if ($item) {
-                $Parameters["id"] = if ($item.id) { $item.id } else { $item }
-            }
+        foreach ($item in @("")) {
 
             if (!$Force -and
                 !$WhatIfPreference -and
@@ -103,10 +98,10 @@ Update a managed object (using pipeline)
             }
 
             Invoke-Command `
-                -Noun "inventory" `
-                -Verb "update" `
+                -Noun "agents" `
+                -Verb "create" `
                 -Parameters $Parameters `
-                -Type "application/vnd.com.nsn.cumulocity.inventory+json" `
+                -Type "application/vnd.com.nsn.cumulocity.customAgent+json" `
                 -ItemType "" `
                 -ResultProperty "" `
                 -Raw:$Raw `
