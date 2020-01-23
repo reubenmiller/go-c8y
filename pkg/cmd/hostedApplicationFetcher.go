@@ -50,7 +50,7 @@ func (f *hostedApplicationFetcher) getByName(name string) ([]fetcherResultSet, e
 		},
 	)
 
-	pattern, err := regexp.Compile(name)
+	pattern, err := regexp.Compile(regexp.QuoteMeta(name))
 
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid regex")
