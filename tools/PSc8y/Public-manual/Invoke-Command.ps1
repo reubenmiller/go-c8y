@@ -41,7 +41,12 @@
                         # due to cli parsing, data needs to be sent using "="
                         $null = $args.AddRange(@("--${key}", $Value))
                     } else {
-                        $null = $args.Add("--${key}=$Value")
+                        if ($Value -match " ") {
+                            # $null = $args.AddRange(@("--${key}", "$Value"))
+                            $null = $args.Add("--${key}=`"$Value`"")
+                        } else {
+                            $null = $args.Add("--${key}=$Value")
+                        }
                     }
                 }
             }
@@ -93,6 +98,18 @@
 
     $isJSON = $false
     try {
+        # Hide senstive data in the response
+        if ($env:C8Y_LOGGER_HIDE_SENSITIVE -eq "true") {
+            if ($env:C8Y_TENANT) {
+                $RawResponse = $RawResponse -replace [regex]::Unescape($env:C8Y_TENANT), "{tenant}"
+            }
+            if ($env:C8Y_USERNAME) {
+                # $RawResponse = $RawResponse -replace [regex]::Unescape($env:C8Y_USERNAME), "{username}"
+            }
+            if ($env:C8Y_PASSWORD) {
+                # $RawResponse = $RawResponse -replace [regex]::Unescape($env:C8Y_PASSWORD), "{password}"
+            }
+        }
         $response = $RawResponse | ConvertFrom-Json
         $isJSON = $true
     } catch {
@@ -136,7 +153,7 @@
         ))
     }
 
-    <# 
+    <#
     if ($NestedData) {
         $null = Add-Member -InputObject $NestedData -MemberType NoteProperty -Name "PSStatistics" -Value @{
             pageSize = $response.statistics.pageSize
