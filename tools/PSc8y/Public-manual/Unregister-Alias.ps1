@@ -19,7 +19,7 @@ Register-Alias
 
         if ($Value -is [string]) {
             if (!(Get-Alias -Name $Value -ErrorAction SilentlyContinue)) {
-                Remove-Alias -Name $Alias
+                Remove-Item -Path Alias:$Alias
             }
         }
     }
