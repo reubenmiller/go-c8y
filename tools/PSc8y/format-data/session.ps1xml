@@ -22,6 +22,27 @@
             </CustomEntries>
         </CustomControl>
         </Control>
+        <Control>
+        <Name>Cumulocity-SessionFormat-hide-sensitive</Name>
+        <CustomControl>
+            <CustomEntries>
+                <CustomEntry>
+                    <CustomItem>
+                        <Frame>
+                            <LeftIndent>4</LeftIndent>
+                            <CustomItem>
+                                <Text>path: </Text>
+                                <ExpressionBinding>
+                                    <ScriptBlock>$_.path -replace "$env:USERNAME", "******"</ScriptBlock>
+                                </ExpressionBinding>
+                                <NewLine/>
+                            </CustomItem>
+                        </Frame>
+                    </CustomItem>
+                </CustomEntry>
+            </CustomEntries>
+        </CustomControl>
+        </Control>
     </Controls>
     <ViewDefinitions>
         <View>
@@ -52,6 +73,51 @@
                             <ListItem>
                                 <Label>password</Label>
                                 <ScriptBlock>$_.password -replace ".", "*"</ScriptBlock>
+                            </ListItem>
+                        </ListItems>
+                    </ListEntry>
+                </ListEntries>
+                </ListControl>
+        </View>
+        <View>
+            <Name>Default</Name>
+            <ViewSelectedBy>
+                <TypeName>cumulocity/session-hide-sensitive</TypeName>
+            </ViewSelectedBy>
+            <GroupBy>
+                <PropertyName>path</PropertyName>
+                <CustomControlName>Cumulocity-SessionFormat-hide-sensitive</CustomControlName>
+            </GroupBy>
+            <ListControl>
+                <ListEntries>
+                    <ListEntry>
+                        <ListItems>
+                            <ListItem>
+                                <PropertyName>description</PropertyName>
+                            </ListItem>
+                            <ListItem>
+                                <Label>host</Label>
+                                <ScriptBlock>
+                                    $_.host -replace $_.tenant, "*******"
+                                </ScriptBlock>
+                            </ListItem>
+                            <ListItem>
+                                <Label>tenant</Label>
+                                <ScriptBlock>
+                                    "*******"
+                                </ScriptBlock>
+                            </ListItem>
+                            <ListItem>
+                                <Label>username</Label>
+                                <ScriptBlock>
+                                    "***************"
+                                </ScriptBlock>
+                            </ListItem>
+                            <ListItem>
+                                <Label>password</Label>
+                                <ScriptBlock>
+                                    "************************"
+                                </ScriptBlock>
                             </ListItem>
                         </ListItems>
                     </ListEntry>

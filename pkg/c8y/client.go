@@ -14,6 +14,7 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -86,6 +87,11 @@ type Client struct {
 
 const (
 	defaultUserAgent = "go-client"
+)
+
+var (
+	// EnvVarLoggerHideSensitive environment variable name used to control whethere sensitive session information is logged or not. When set to "true", then the tenant, username, password, base 64 passwords will be obfuscated from the log messages
+	EnvVarLoggerHideSensitive = "C8Y_LOGGER_HIDE_SENSITIVE"
 )
 
 // DecodeJSONBytes decodes json preserving number formatting (especially large integers and scientific notation floats)
@@ -392,7 +398,7 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 			message += fmt.Sprintf("\nBody:\n%s", v)
 		}
 
-		Logger.Println(message)
+		Logger.Println(c.hideSensitiveInformationIfActive(message))
 
 		if command, err := http2curl.GetCurlCommand(req); err == nil {
 			_ = command
@@ -401,7 +407,7 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 		return nil, nil
 	}
 
-	Logger.Infof("Headers: %v", req.Header)
+	Logger.Info(c.hideSensitiveInformationIfActive(fmt.Sprintf("Headers: %v", req.Header)))
 
 	resp, err := c.Do(ctx, req, options.ResponseData)
 
@@ -535,7 +541,7 @@ func (c *Client) SetAuthorization(req *http.Request) {
 	} else {
 		headerUsername = c.Username
 	}
-	Logger.Debugf("current username: %s\n", headerUsername)
+	Logger.Debugf("current username: %s\n", c.hideSensitiveInformationIfActive(headerUsername))
 	req.SetBasicAuth(headerUsername, c.Password)
 }
 
@@ -619,7 +625,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 		req.Header.Set("Authorization", authToken.(string))
 	}
 
-	Logger.Printf("Sending request: %s %s", req.Method, req.URL.String())
+	Logger.Printf("Sending request: %s %s", req.Method, c.hideSensitiveInformationIfActive(req.URL.String()))
 
 	// Log the body (if applicable)
 	if req != nil && req.Body != nil {
@@ -793,4 +799,20 @@ func CheckResponse(r *http.Response) error {
 		DecodeJSONBytes(data, errorResponse)
 	}
 	return errorResponse
+}
+
+func (c *Client) hideSensitiveInformationIfActive(message string) string {
+
+	if strings.ToLower(os.Getenv(EnvVarLoggerHideSensitive)) != "true" {
+		return message
+	}
+
+	message = strings.ReplaceAll(message, c.TenantName, "{tenant}")
+	message = strings.ReplaceAll(message, c.Username, "{username}")
+	message = strings.ReplaceAll(message, c.Password, "{password}")
+
+	basicAuthMatcher := regexp.MustCompile("(Basic\\s+)[A-Za-z0-9]+")
+	message = basicAuthMatcher.ReplaceAllString(message, "$1 {base64 tenant/username:password}")
+
+	return message
 }

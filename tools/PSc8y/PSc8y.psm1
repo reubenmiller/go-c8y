@@ -53,16 +53,10 @@ if ($ExistingSession) {
     Set-EnvironmentVariablesFromSession
 
     # Display current session
+    $ConsoleMessage = $ExistingSession | Out-String
+    $ConsoleMessage = $ConsoleMessage.TrimEnd()
     Write-Host "Current Cumulocity session"
-    Write-Host ""
-    Write-Host ("    Path: {0}" -f $ExistingSession.Path)
-    Write-Host ""
-    Write-Host ("description : {0}" -f $ExistingSession.description)
-    Write-Host ("host        : {0}" -f $ExistingSession.host)
-    Write-Host ("tenant      : {0}" -f $ExistingSession.tenant)
-    Write-Host ("username    : {0}" -f $ExistingSession.username)
-    Write-Host ("password    : {0}" -f ($ExistingSession.password -replace ".", "*"))
-    Write-Host ""
+    Write-Host "${ConsoleMessage}`n"
 }
 
 Export-ModuleMember -Alias *

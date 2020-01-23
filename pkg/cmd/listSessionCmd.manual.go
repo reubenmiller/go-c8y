@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/manifoldco/promptui"
+	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/spf13/cobra"
 )
 
@@ -80,17 +81,37 @@ func (n *listSessionCmd) listSession(cmd *cobra.Command, args []string) error {
 		config.Sessions[i].Index = i + 1
 	}
 
+	// template.Fun
+	funcMap := promptui.FuncMap
+
+	funcMap["hide"] = func(v interface{}) string {
+		if strings.ToLower(os.Getenv(c8y.EnvVarLoggerHideSensitive)) != "true" {
+			return fmt.Sprintf("%v", v)
+		}
+		return "*****"
+	}
+
+	funcMap["hideUser"] = func(v interface{}) string {
+		msg := fmt.Sprintf("%v", v)
+		if strings.ToLower(os.Getenv(c8y.EnvVarLoggerHideSensitive)) != "true" {
+			return msg
+		}
+		msg = strings.ReplaceAll(msg, os.Getenv("USERNAME"), "******")
+		return msg
+	}
+
 	templates := &promptui.SelectTemplates{
 		// Label:    "{{ .Host }}?",
-		Active:   `-> {{ printf "#%02d: %-25s" .Index .Name | cyan }} {{ .Host | magenta }} {{ printf "(%s/" .Tenant | red }}{{ printf "%s)" .Username | red }}`,
-		Inactive: `   {{ printf "#%02d: %-25s" .Index .Name | cyan }} {{ .Host | magenta }} {{ printf "(%s/" .Tenant | red }}{{ printf "%s)" .Username | red }}`,
-		Selected: "{{ .Path }}",
+		Active:   `-> {{ printf "#%02d: %-25s" .Index .Name | cyan }} {{ .Host | hide | magenta }} {{ printf "(%s/" .Tenant | hide | red }}{{ printf "%s)" .Username | hide | red }}`,
+		Inactive: `   {{ printf "#%02d: %-25s" .Index .Name | cyan }} {{ .Host | hide | magenta }} {{ printf "(%s/" .Tenant | hide | red }}{{ printf "%s)" .Username | hide | red }}`,
+		Selected: "{{ .Path | hideUser }}",
+		FuncMap:  funcMap,
 		Details: `
 --------- Details ----------
-{{ "File:" | faint }}	{{ .Path }}
-{{ "Host:" | faint }}	{{ .Host }}
-{{ "Tenant:" | faint }}	{{ .Tenant }}
-{{ "Username:" | faint }}	{{ .Username }}
+{{ "File:" | faint }}	{{ .Path | hideUser }}
+{{ "Host:" | faint }}	{{ .Host | hide }}
+{{ "Tenant:" | faint }}	{{ .Tenant | hide }}
+{{ "Username:" | faint }}	{{ .Username | hide }}
 `,
 	}
 

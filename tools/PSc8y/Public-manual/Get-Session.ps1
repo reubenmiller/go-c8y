@@ -28,5 +28,10 @@ None
     $data = Get-Content -LiteralPath $Path | ConvertFrom-Json
     $data | Add-Member -MemberType NoteProperty -Name "path" -Value $Path -ErrorAction SilentlyContinue
     $data.path = (Resolve-Path $Path).ProviderPath
-    $data | Add-PowershellType "cumulocity/session"
+
+    if ($env:C8Y_LOGGER_HIDE_SENSITIVE -eq "true") {
+        $data | Add-PowershellType "cumulocity/session-hide-sensitive"
+    } else {
+        $data | Add-PowershellType "cumulocity/session"
+    }
 }
