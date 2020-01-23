@@ -19,7 +19,7 @@ type ApplicationService service
 type ApplicationOptions struct {
 	PaginationOptions
 
-	Type string `json:"type,omitempty"`
+	Type string `url:"type,omitempty"`
 }
 
 //  Cumulocity Application Types
