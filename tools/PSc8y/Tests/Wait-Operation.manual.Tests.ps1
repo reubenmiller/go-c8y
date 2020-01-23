@@ -15,13 +15,8 @@ Describe -Name "Wait-Operation" {
     }
 
     It "Wait for operation (using pipeline)" {
-        $StartTime = Get-Date
         $Response = PSc8y\Get-Operation -Id $TestOperation.id | PSc8y\Wait-Operation -TimeoutSec 3 -WarningVariable "warnings"
-
         $warnings | Should -Match "Timeout: Operation is still being processed"
-
-        $Duration = (Get-Date) - $StartTime
-        $Duration.TotalSeconds | Should -BeLessThan 4
         $Response.id | Should -BeExactly $TestOperation.id
     }
 
