@@ -12,7 +12,7 @@
 RootModule = './PSc8y.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0.1'
+ModuleVersion = '1.0.2'
 
 # Supported PSEditions
 CompatiblePSEditions = @(
@@ -101,7 +101,7 @@ AliasesToExport = '*'
 PrivateData = @{
     PSData = @{
         #Prerelease of this module
-        Prerelease = '-alpha14'
+        # Prerelease = '-alpha14'
 
         # Tags applied to this module. These help with module discovery in online galleries.
         Tags = @(
