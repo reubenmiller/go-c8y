@@ -6,7 +6,7 @@ Describe -Name "Get-MicroserviceBootstrapUser" {
 
     }
 
-    It "Get application bootstrap user" {
+    It -Skip "Get application bootstrap user" {
         $Response = PSc8y\Get-MicroserviceBootstrapUser -Id $App.name
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty

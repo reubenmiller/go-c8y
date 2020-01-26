@@ -6,13 +6,13 @@ Describe -Name "Get-Microservice" {
 
     }
 
-    It "Get an microservice by id" {
+    It -Skip "Get an microservice by id" {
         $Response = PSc8y\Get-Microservice -Id $App.id
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
 
-    It "Get an microservice by name" {
+    It -Skip "Get an microservice by name" {
         $Response = PSc8y\Get-Microservice -Id $App.name
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty

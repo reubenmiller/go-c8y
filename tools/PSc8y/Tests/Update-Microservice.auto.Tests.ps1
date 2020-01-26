@@ -6,7 +6,7 @@ Describe -Name "Update-Microservice" {
 
     }
 
-    It "Update microservice availability to MARKET" {
+    It -Skip "Update microservice availability to MARKET" {
         $Response = PSc8y\Update-Microservice -Id $App.id -Availability "MARKET"
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty

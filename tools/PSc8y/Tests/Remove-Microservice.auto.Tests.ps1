@@ -6,12 +6,12 @@ Describe -Name "Remove-Microservice" {
 
     }
 
-    It "Delete a microservice by id" {
+    It -Skip "Delete a microservice by id" {
         $Response = PSc8y\Remove-Microservice -Id $App.id
         $LASTEXITCODE | Should -Be 0
     }
 
-    It "Delete a microservice by name" {
+    It -Skip "Delete a microservice by name" {
         $Response = PSc8y\Remove-Microservice -Id $App.name
         $LASTEXITCODE | Should -Be 0
     }

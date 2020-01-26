@@ -2,7 +2,6 @@
 
 Describe -Name "New-Alarm" {
     BeforeEach {
-        $device = New-TestDevice
         $device = PSc8y\New-TestDevice
 
     }
@@ -21,7 +20,6 @@ Describe -Name "New-Alarm" {
 
 
     AfterEach {
-        Remove-ManagedObject -Id $device.id
         PSc8y\Remove-ManagedObject -Id $device.id
 
     }
