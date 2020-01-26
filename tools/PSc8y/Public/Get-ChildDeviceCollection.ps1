@@ -44,11 +44,6 @@ Get a list of the child devices of an existing device (using pipeline)
         [switch]
         $WithTotalPages,
 
-        # Include all results
-        [Parameter()]
-        [switch]
-        $IncludeAll,
-
         # Include raw response including pagination information
         [Parameter()]
         [switch]
@@ -67,7 +62,12 @@ Get a list of the child devices of an existing device (using pipeline)
         # Session path
         [Parameter()]
         [string]
-        $Session
+        $Session,
+
+        # TimeoutSec timeout in seconds before a request will be aborted
+        [Parameter()]
+        [double]
+        $TimeoutSec
     )
 
     Begin {
@@ -86,6 +86,9 @@ Get a list of the child devices of an existing device (using pipeline)
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
+        }
+        if ($PSBoundParameters.ContainsKey("TimeoutSec")) {
+            $Parameters["timeout"] = $TimeoutSec * 1000
         }
 
     }

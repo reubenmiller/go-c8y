@@ -23,7 +23,8 @@ Remove all pending operations for a given device
         $Agent,
 
         # Device ID
-        [Parameter()]
+        [Parameter(ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true)]
         [object[]]
         $Device,
 
@@ -63,6 +64,11 @@ Remove all pending operations for a given device
         [string]
         $Session,
 
+        # TimeoutSec timeout in seconds before a request will be aborted
+        [Parameter()]
+        [double]
+        $TimeoutSec,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -73,9 +79,6 @@ Remove all pending operations for a given device
         $Parameters = @{}
         if ($PSBoundParameters.ContainsKey("Agent")) {
             $Parameters["agent"] = $Agent
-        }
-        if ($PSBoundParameters.ContainsKey("Device")) {
-            $Parameters["device"] = $Device
         }
         if ($PSBoundParameters.ContainsKey("DateFrom")) {
             $Parameters["dateFrom"] = $DateFrom
@@ -95,31 +98,33 @@ Remove all pending operations for a given device
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
         }
+        if ($PSBoundParameters.ContainsKey("TimeoutSec")) {
+            $Parameters["timeout"] = $TimeoutSec * 1000
+        }
 
     }
 
     Process {
-        foreach ($item in @("")) {
+        $Parameters["device"] = PSc8y\Expand-Id $Device
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
-
-            Invoke-Command `
-                -Noun "operations" `
-                -Verb "deleteCollection" `
-                -Parameters $Parameters `
-                -Type "" `
-                -ItemType "" `
-                -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+        if (!$Force -and
+            !$WhatIfPreference -and
+            !$PSCmdlet.ShouldProcess(
+                (PSc8y\Get-C8ySessionProperty -Name "tenant"),
+                (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
+            )) {
+            continue
         }
+
+        Invoke-Command `
+            -Noun "operations" `
+            -Verb "deleteCollection" `
+            -Parameters $Parameters `
+            -Type "" `
+            -ItemType "" `
+            -ResultProperty "" `
+            -Raw:$Raw `
+            -IncludeAll:$IncludeAll
     }
 
     End {}

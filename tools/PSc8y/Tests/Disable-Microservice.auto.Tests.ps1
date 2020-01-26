@@ -6,7 +6,7 @@ Describe -Name "Disable-Microservice" {
 
     }
 
-    It "Disable (unsubscribe) to a microservice" {
+    It -Skip "Disable (unsubscribe) to a microservice" {
         $Response = PSc8y\Disable-Microservice -Id $App.id
         $LASTEXITCODE | Should -Be 0
     }

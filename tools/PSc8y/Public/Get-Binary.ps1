@@ -46,7 +46,12 @@ Get a binary and save it to a file
         # Session path
         [Parameter()]
         [string]
-        $Session
+        $Session,
+
+        # TimeoutSec timeout in seconds before a request will be aborted
+        [Parameter()]
+        [double]
+        $TimeoutSec
     )
 
     Begin {
@@ -59,6 +64,9 @@ Get a binary and save it to a file
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
+        }
+        if ($PSBoundParameters.ContainsKey("TimeoutSec")) {
+            $Parameters["timeout"] = $TimeoutSec * 1000
         }
 
     }

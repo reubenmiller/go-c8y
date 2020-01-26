@@ -35,7 +35,12 @@ Get the Cumulocity backend version
         # Session path
         [Parameter()]
         [string]
-        $Session
+        $Session,
+
+        # TimeoutSec timeout in seconds before a request will be aborted
+        [Parameter()]
+        [double]
+        $TimeoutSec
     )
 
     Begin {
@@ -48,6 +53,9 @@ Get the Cumulocity backend version
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
+        }
+        if ($PSBoundParameters.ContainsKey("TimeoutSec")) {
+            $Parameters["timeout"] = $TimeoutSec * 1000
         }
 
     }

@@ -46,11 +46,6 @@ List the users within a user group (using pipeline)
         [switch]
         $WithTotalPages,
 
-        # Include all results
-        [Parameter()]
-        [switch]
-        $IncludeAll,
-
         # Include raw response including pagination information
         [Parameter()]
         [switch]
@@ -69,7 +64,12 @@ List the users within a user group (using pipeline)
         # Session path
         [Parameter()]
         [string]
-        $Session
+        $Session,
+
+        # TimeoutSec timeout in seconds before a request will be aborted
+        [Parameter()]
+        [double]
+        $TimeoutSec
     )
 
     Begin {
@@ -91,6 +91,9 @@ List the users within a user group (using pipeline)
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
+        }
+        if ($PSBoundParameters.ContainsKey("TimeoutSec")) {
+            $Parameters["timeout"] = $TimeoutSec * 1000
         }
 
     }

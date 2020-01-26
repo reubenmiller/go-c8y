@@ -53,6 +53,11 @@ Delete a user group (using pipeline)
         [string]
         $Session,
 
+        # TimeoutSec timeout in seconds before a request will be aborted
+        [Parameter()]
+        [double]
+        $TimeoutSec,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -72,6 +77,9 @@ Delete a user group (using pipeline)
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
+        }
+        if ($PSBoundParameters.ContainsKey("TimeoutSec")) {
+            $Parameters["timeout"] = $TimeoutSec * 1000
         }
 
     }

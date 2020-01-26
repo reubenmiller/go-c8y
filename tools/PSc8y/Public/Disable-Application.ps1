@@ -49,6 +49,11 @@ Disable an application of a tenant
         [string]
         $Session,
 
+        # TimeoutSec timeout in seconds before a request will be aborted
+        [Parameter()]
+        [double]
+        $TimeoutSec,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -68,6 +73,9 @@ Disable an application of a tenant
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
+        }
+        if ($PSBoundParameters.ContainsKey("TimeoutSec")) {
+            $Parameters["timeout"] = $TimeoutSec * 1000
         }
 
     }

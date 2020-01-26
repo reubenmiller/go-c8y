@@ -56,7 +56,12 @@ Get tenant summary statistics collection for the last 10 days, only return until
         # Session path
         [Parameter()]
         [string]
-        $Session
+        $Session,
+
+        # TimeoutSec timeout in seconds before a request will be aborted
+        [Parameter()]
+        [double]
+        $TimeoutSec
     )
 
     Begin {
@@ -75,6 +80,9 @@ Get tenant summary statistics collection for the last 10 days, only return until
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
+        }
+        if ($PSBoundParameters.ContainsKey("TimeoutSec")) {
+            $Parameters["timeout"] = $TimeoutSec * 1000
         }
 
     }

@@ -24,8 +24,9 @@ Update multiple operations
     [Alias()]
     [OutputType([object])]
     Param(
-        # Operation id
-        [Parameter(ValueFromPipeline=$true,
+        # Operation id (required)
+        [Parameter(Mandatory = $true,
+                   ValueFromPipeline=$true,
                    ValueFromPipelineByPropertyName=$true)]
         [string]
         $Id,
@@ -66,6 +67,11 @@ Update multiple operations
         [string]
         $Session,
 
+        # TimeoutSec timeout in seconds before a request will be aborted
+        [Parameter()]
+        [double]
+        $TimeoutSec,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -92,30 +98,37 @@ Update multiple operations
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
         }
+        if ($PSBoundParameters.ContainsKey("TimeoutSec")) {
+            $Parameters["timeout"] = $TimeoutSec * 1000
+        }
 
     }
 
     Process {
-        $Parameters["id"] = PSc8y\Expand-Id $Id
+        foreach ($item in (PSc8y\Expand-Id $Id)) {
+            if ($item) {
+                $Parameters["id"] = if ($item.id) { $item.id } else { $item }
+            }
 
-        if (!$Force -and
-            !$WhatIfPreference -and
-            !$PSCmdlet.ShouldProcess(
-                (PSc8y\Get-C8ySessionProperty -Name "tenant"),
-                (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-            )) {
-            continue
+            if (!$Force -and
+                !$WhatIfPreference -and
+                !$PSCmdlet.ShouldProcess(
+                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
+                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
+                )) {
+                continue
+            }
+
+            Invoke-Command `
+                -Noun "operations" `
+                -Verb "update" `
+                -Parameters $Parameters `
+                -Type "application/vnd.com.nsn.cumulocity.operation+json" `
+                -ItemType "" `
+                -ResultProperty "" `
+                -Raw:$Raw `
+                -IncludeAll:$IncludeAll
         }
-
-        Invoke-Command `
-            -Noun "operations" `
-            -Verb "update" `
-            -Parameters $Parameters `
-            -Type "application/vnd.com.nsn.cumulocity.operation+json" `
-            -ItemType "" `
-            -ResultProperty "" `
-            -Raw:$Raw `
-            -IncludeAll:$IncludeAll
     }
 
     End {}

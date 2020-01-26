@@ -6,7 +6,7 @@ Describe -Name "Enable-Microservice" {
 
     }
 
-    It "Enable (subscribe) to a microservice" {
+    It -Skip "Enable (subscribe) to a microservice" {
         $Response = PSc8y\Enable-Microservice -Id $App.id
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty

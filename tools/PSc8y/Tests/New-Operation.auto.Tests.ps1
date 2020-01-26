@@ -2,21 +2,25 @@
 
 Describe -Name "New-Operation" {
     BeforeEach {
-        $TestAgent = PSc8y\New-TestAgent
+        $device = New-TestAgent
 
     }
 
     It "Create operation for a device" {
-        $Response = PSc8y\New-Operation -Device $TestAgent.id -Description "Restart device" -Data @{ c8y_Restart = @{} }
+        $Response = PSc8y\New-Operation -Device $device.id -Description "Restart device" -Data @{ c8y_Restart = @{} }
+        $LASTEXITCODE | Should -Be 0
+        $Response | Should -Not -BeNullOrEmpty
+    }
+
+    It "Create operation for a device (using pipeline)" {
+        $Response = PSc8y\Get-Device $device.id | New-Operation -Description "Restart device" -Data @{ c8y_Restart = @{} }
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
 
 
     AfterEach {
-        if ($TestAgent.id) {
-            PSc8y\Remove-ManagedObject -Id $TestAgent.id -ErrorAction SilentlyContinue
-        }
+        Remove-ManagedObject -Id $device.id
 
     }
 }

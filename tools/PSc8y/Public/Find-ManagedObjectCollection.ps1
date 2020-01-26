@@ -43,11 +43,6 @@ Find all devices with their names starting with 'roomUpperFloor_'
         [switch]
         $WithTotalPages,
 
-        # Include all results
-        [Parameter()]
-        [switch]
-        $IncludeAll,
-
         # Include raw response including pagination information
         [Parameter()]
         [switch]
@@ -66,7 +61,12 @@ Find all devices with their names starting with 'roomUpperFloor_'
         # Session path
         [Parameter()]
         [string]
-        $Session
+        $Session,
+
+        # TimeoutSec timeout in seconds before a request will be aborted
+        [Parameter()]
+        [double]
+        $TimeoutSec
     )
 
     Begin {
@@ -91,6 +91,9 @@ Find all devices with their names starting with 'roomUpperFloor_'
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
+        }
+        if ($PSBoundParameters.ContainsKey("TimeoutSec")) {
+            $Parameters["timeout"] = $TimeoutSec * 1000
         }
 
     }

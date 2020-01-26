@@ -12,8 +12,12 @@ PS> Remove-AlarmCollection -Device "{{ randomdevice }}" -Severity MAJOR
 Remove alarms on the device with the severity set to MAJOR
 
 .EXAMPLE
-PS> Remove-AlarmCollection -Device "{{ randomdevice }}" -DateFrom "-10m" -Status ACTIVE
+PS> Remove-AlarmCollection -Device $device.id -DateFrom "-10m" -Status ACTIVE
 Remove alarms on the device which are active and created in the last 10 minutes
+
+.EXAMPLE
+PS> Get-Device -Id $device.id | PSc8y\Remove-AlarmCollection -DateFrom "-10m" -Status ACTIVE
+Remove alarms on the device which are active and created in the last 10 minutes (using pipeline)
 
 
 #>
@@ -25,7 +29,8 @@ Remove alarms on the device which are active and created in the last 10 minutes
     [OutputType([object])]
     Param(
         # Source device id.
-        [Parameter()]
+        [Parameter(ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true)]
         [object[]]
         $Device,
 
@@ -96,6 +101,11 @@ Remove alarms on the device which are active and created in the last 10 minutes
         [string]
         $Session,
 
+        # TimeoutSec timeout in seconds before a request will be aborted
+        [Parameter()]
+        [double]
+        $TimeoutSec,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -104,9 +114,6 @@ Remove alarms on the device which are active and created in the last 10 minutes
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("Device")) {
-            $Parameters["device"] = $Device
-        }
         if ($PSBoundParameters.ContainsKey("DateFrom")) {
             $Parameters["dateFrom"] = $DateFrom
         }
@@ -143,31 +150,33 @@ Remove alarms on the device which are active and created in the last 10 minutes
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
         }
+        if ($PSBoundParameters.ContainsKey("TimeoutSec")) {
+            $Parameters["timeout"] = $TimeoutSec * 1000
+        }
 
     }
 
     Process {
-        foreach ($item in @("")) {
+        $Parameters["device"] = PSc8y\Expand-Id $Device
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
-
-            Invoke-Command `
-                -Noun "alarms" `
-                -Verb "deleteCollection" `
-                -Parameters $Parameters `
-                -Type "" `
-                -ItemType "" `
-                -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+        if (!$Force -and
+            !$WhatIfPreference -and
+            !$PSCmdlet.ShouldProcess(
+                (PSc8y\Get-C8ySessionProperty -Name "tenant"),
+                (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
+            )) {
+            continue
         }
+
+        Invoke-Command `
+            -Noun "alarms" `
+            -Verb "deleteCollection" `
+            -Parameters $Parameters `
+            -Type "" `
+            -ItemType "" `
+            -ResultProperty "" `
+            -Raw:$Raw `
+            -IncludeAll:$IncludeAll
     }
 
     End {}

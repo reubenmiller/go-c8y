@@ -45,11 +45,6 @@ List all of the binaries related to a Hosted (web) application (using pipeline)
         [switch]
         $WithTotalPages,
 
-        # Include all results
-        [Parameter()]
-        [switch]
-        $IncludeAll,
-
         # Include raw response including pagination information
         [Parameter()]
         [switch]
@@ -68,7 +63,12 @@ List all of the binaries related to a Hosted (web) application (using pipeline)
         # Session path
         [Parameter()]
         [string]
-        $Session
+        $Session,
+
+        # TimeoutSec timeout in seconds before a request will be aborted
+        [Parameter()]
+        [double]
+        $TimeoutSec
     )
 
     Begin {
@@ -87,6 +87,9 @@ List all of the binaries related to a Hosted (web) application (using pipeline)
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
+        }
+        if ($PSBoundParameters.ContainsKey("TimeoutSec")) {
+            $Parameters["timeout"] = $TimeoutSec * 1000
         }
 
     }

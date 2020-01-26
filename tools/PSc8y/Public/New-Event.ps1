@@ -8,8 +8,12 @@ Create event
 Create event
 
 .EXAMPLE
-PS> New-Event -Device "{{ randomdevice }}" -Type c8y_TestAlarm -Time "-0s" -Text "Test event"
+PS> New-Event -Device $device.id -Type c8y_TestAlarm -Text "Test event"
 Create a new event for a device
+
+.EXAMPLE
+PS> Get-Device -Id $device.id | PSc8y\New-Event -Type c8y_TestAlarm -Time "-0s" -Text "Test event"
+Create a new event for a device (using pipeline)
 
 
 #>
@@ -21,12 +25,14 @@ Create a new event for a device
     [OutputType([object])]
     Param(
         # The ManagedObject which is the source of this event. (required)
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $true,
+                   ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true)]
         [object[]]
         $Device,
 
-        # Time of the event. (required)
-        [Parameter(Mandatory = $true)]
+        # Time of the event.
+        [Parameter()]
         [string]
         $Time,
 
@@ -65,6 +71,11 @@ Create a new event for a device
         [string]
         $Session,
 
+        # TimeoutSec timeout in seconds before a request will be aborted
+        [Parameter()]
+        [double]
+        $TimeoutSec,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -73,9 +84,6 @@ Create a new event for a device
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("Device")) {
-            $Parameters["device"] = $Device
-        }
         if ($PSBoundParameters.ContainsKey("Time")) {
             $Parameters["time"] = $Time
         }
@@ -97,11 +105,17 @@ Create a new event for a device
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
         }
+        if ($PSBoundParameters.ContainsKey("TimeoutSec")) {
+            $Parameters["timeout"] = $TimeoutSec * 1000
+        }
 
     }
 
     Process {
-        foreach ($item in @("")) {
+        foreach ($item in (PSc8y\Expand-Device $Device)) {
+            if ($item) {
+                $Parameters["device"] = if ($item.id) { $item.id } else { $item }
+            }
 
             if (!$Force -and
                 !$WhatIfPreference -and

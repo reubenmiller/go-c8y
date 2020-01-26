@@ -11,6 +11,10 @@ Update the status of a collection of alarms by using a filter
 PS> Update-AlarmCollection -Device $Device.id -Status ACTIVE -NewStatus ACKNOWLEDGED
 Update the status of all active alarms on a device to ACKNOWLEDGED
 
+.EXAMPLE
+PS> Get-Device -Id $Device.id | PSc8y\Update-AlarmCollection -Status ACTIVE -NewStatus ACKNOWLEDGED
+Update the status of all active alarms on a device to ACKNOWLEDGED (using pipeline)
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -21,7 +25,8 @@ Update the status of all active alarms on a device to ACKNOWLEDGED
     [OutputType([object])]
     Param(
         # The ManagedObject that the alarm originated from
-        [Parameter()]
+        [Parameter(ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true)]
         [object[]]
         $Device,
 
@@ -78,6 +83,11 @@ Update the status of all active alarms on a device to ACKNOWLEDGED
         [string]
         $Session,
 
+        # TimeoutSec timeout in seconds before a request will be aborted
+        [Parameter()]
+        [double]
+        $TimeoutSec,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -86,9 +96,6 @@ Update the status of all active alarms on a device to ACKNOWLEDGED
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("Device")) {
-            $Parameters["device"] = $Device
-        }
         if ($PSBoundParameters.ContainsKey("Status")) {
             $Parameters["status"] = $Status
         }
@@ -116,31 +123,33 @@ Update the status of all active alarms on a device to ACKNOWLEDGED
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
         }
+        if ($PSBoundParameters.ContainsKey("TimeoutSec")) {
+            $Parameters["timeout"] = $TimeoutSec * 1000
+        }
 
     }
 
     Process {
-        foreach ($item in @("")) {
+        $Parameters["device"] = PSc8y\Expand-Id $Device
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
-
-            Invoke-Command `
-                -Noun "alarms" `
-                -Verb "updateCollection" `
-                -Parameters $Parameters `
-                -Type "" `
-                -ItemType "" `
-                -ResultProperty "alarms" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+        if (!$Force -and
+            !$WhatIfPreference -and
+            !$PSCmdlet.ShouldProcess(
+                (PSc8y\Get-C8ySessionProperty -Name "tenant"),
+                (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
+            )) {
+            continue
         }
+
+        Invoke-Command `
+            -Noun "alarms" `
+            -Verb "updateCollection" `
+            -Parameters $Parameters `
+            -Type "" `
+            -ItemType "" `
+            -ResultProperty "alarms" `
+            -Raw:$Raw `
+            -IncludeAll:$IncludeAll
     }
 
     End {}

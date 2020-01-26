@@ -12,6 +12,10 @@ PS> Update-Alarm -Id $Alarm.id -Status ACKNOWLEDGED
 Acknowledge an existing alarm
 
 .EXAMPLE
+PS> Get-Alarm -Id $Alarm.id | PSc8y\Update-Alarm -Status ACKNOWLEDGED
+Acknowledge an existing alarm (using pipeline)
+
+.EXAMPLE
 PS> Update-Alarm -Id $Alarm.id -Severity CRITICAL
 Update severity of an existing alarm to CRITICAL
 
@@ -73,6 +77,11 @@ Update severity of an existing alarm to CRITICAL
         [string]
         $Session,
 
+        # TimeoutSec timeout in seconds before a request will be aborted
+        [Parameter()]
+        [double]
+        $TimeoutSec,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -101,6 +110,9 @@ Update severity of an existing alarm to CRITICAL
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
+        }
+        if ($PSBoundParameters.ContainsKey("TimeoutSec")) {
+            $Parameters["timeout"] = $TimeoutSec * 1000
         }
 
     }

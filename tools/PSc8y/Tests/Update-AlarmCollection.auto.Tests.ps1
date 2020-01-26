@@ -12,6 +12,11 @@ Describe -Name "Update-AlarmCollection" {
         $LASTEXITCODE | Should -Be 0
     }
 
+    It "Update the status of all active alarms on a device to ACKNOWLEDGED (using pipeline)" {
+        $Response = PSc8y\Get-Device -Id $Device.id | PSc8y\Update-AlarmCollection -Status ACTIVE -NewStatus ACKNOWLEDGED
+        $LASTEXITCODE | Should -Be 0
+    }
+
 
     AfterEach {
         PSc8y\Remove-ManagedObject -Id $Device.id

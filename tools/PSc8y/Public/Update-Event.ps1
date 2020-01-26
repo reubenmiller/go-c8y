@@ -15,6 +15,10 @@ Update the text field of an existing event
 PS> Update-Event -Id $Event.id -Data @{ my_event = @{ active = $true } }
 Update custom properties of an existing event
 
+.EXAMPLE
+PS> Get-Event -Id $Event.id | Update-Event -Data @{ my_event = @{ active = $true } }
+Update custom properties of an existing event (using pipeline)
+
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
@@ -61,6 +65,11 @@ Update custom properties of an existing event
         [string]
         $Session,
 
+        # TimeoutSec timeout in seconds before a request will be aborted
+        [Parameter()]
+        [double]
+        $TimeoutSec,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -69,9 +78,6 @@ Update custom properties of an existing event
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("Id")) {
-            $Parameters["id"] = $Id
-        }
         if ($PSBoundParameters.ContainsKey("Text")) {
             $Parameters["text"] = $Text
         }
@@ -87,11 +93,17 @@ Update custom properties of an existing event
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
         }
+        if ($PSBoundParameters.ContainsKey("TimeoutSec")) {
+            $Parameters["timeout"] = $TimeoutSec * 1000
+        }
 
     }
 
     Process {
         foreach ($item in (PSc8y\Expand-Id $Id)) {
+            if ($item) {
+                $Parameters["id"] = if ($item.id) { $item.id } else { $item }
+            }
 
             if (!$Force -and
                 !$WhatIfPreference -and

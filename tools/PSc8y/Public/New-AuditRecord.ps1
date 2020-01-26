@@ -25,8 +25,8 @@ Create an audit record for a custom managed object update
         [string]
         $Type,
 
-        # Time of the audit record. (required)
-        [Parameter(Mandatory = $true)]
+        # Time of the audit record.
+        [Parameter()]
         [string]
         $Time,
 
@@ -86,6 +86,11 @@ Create an audit record for a custom managed object update
         [string]
         $Session,
 
+        # TimeoutSec timeout in seconds before a request will be aborted
+        [Parameter()]
+        [double]
+        $TimeoutSec,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -129,6 +134,9 @@ Create an audit record for a custom managed object update
         }
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
+        }
+        if ($PSBoundParameters.ContainsKey("TimeoutSec")) {
+            $Parameters["timeout"] = $TimeoutSec * 1000
         }
 
     }

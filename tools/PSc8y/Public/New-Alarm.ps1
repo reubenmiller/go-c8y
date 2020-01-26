@@ -8,8 +8,12 @@ Create a new alarm
 Create a new alarm
 
 .EXAMPLE
-PS> New-Alarm -Device "{{ randomdevice }}" -Type c8y_TestAlarm -Time "-0s" -Text "Test alarm" -Severity MAJOR
+PS> New-Alarm -Device $device.id -Type c8y_TestAlarm -Time "-0s" -Text "Test alarm" -Severity MAJOR
 Create a new alarm for device
+
+.EXAMPLE
+PS> Get-Device -Id $device.id | PSc8y\New-Alarm -Type c8y_TestAlarm -Time "-0s" -Text "Test alarm" -Severity MAJOR
+Create a new alarm for device (using pipeline)
 
 
 #>
@@ -21,7 +25,9 @@ Create a new alarm for device
     [OutputType([object])]
     Param(
         # The ManagedObject that the alarm originated from (required)
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $true,
+                   ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true)]
         [object[]]
         $Device,
 
@@ -30,8 +36,8 @@ Create a new alarm for device
         [string]
         $Type,
 
-        # Time of the alarm. (required)
-        [Parameter(Mandatory = $true)]
+        # Time of the alarm.
+        [Parameter()]
         [string]
         $Time,
 
@@ -77,6 +83,11 @@ Create a new alarm for device
         [string]
         $Session,
 
+        # TimeoutSec timeout in seconds before a request will be aborted
+        [Parameter()]
+        [double]
+        $TimeoutSec,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -85,9 +96,6 @@ Create a new alarm for device
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("Device")) {
-            $Parameters["device"] = $Device
-        }
         if ($PSBoundParameters.ContainsKey("Type")) {
             $Parameters["type"] = $Type
         }
@@ -115,11 +123,17 @@ Create a new alarm for device
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
         }
+        if ($PSBoundParameters.ContainsKey("TimeoutSec")) {
+            $Parameters["timeout"] = $TimeoutSec * 1000
+        }
 
     }
 
     Process {
-        foreach ($item in @("")) {
+        foreach ($item in (PSc8y\Expand-Device $Device)) {
+            if ($item) {
+                $Parameters["device"] = if ($item.id) { $item.id } else { $item }
+            }
 
             if (!$Force -and
                 !$WhatIfPreference -and

@@ -8,8 +8,12 @@ Create a new operation
 Create a new operation
 
 .EXAMPLE
-PS> New-Operation -Device "{{ randomagent }}" -Description "Restart device" -Data @{ c8y_Restart = @{} }
+PS> New-Operation -Device $device.id -Description "Restart device" -Data @{ c8y_Restart = @{} }
 Create operation for a device
+
+.EXAMPLE
+PS> Get-Device $device.id | New-Operation -Description "Restart device" -Data @{ c8y_Restart = @{} }
+Create operation for a device (using pipeline)
 
 
 #>
@@ -21,7 +25,9 @@ Create operation for a device
     [OutputType([object])]
     Param(
         # Identifies the target device on which this operation should be performed. (required)
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $true,
+                   ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true)]
         [object[]]
         $Device,
 
@@ -55,6 +61,11 @@ Create operation for a device
         [string]
         $Session,
 
+        # TimeoutSec timeout in seconds before a request will be aborted
+        [Parameter()]
+        [double]
+        $TimeoutSec,
+
         # Don't prompt for confirmation
         [Parameter()]
         [switch]
@@ -63,9 +74,6 @@ Create operation for a device
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("Device")) {
-            $Parameters["device"] = $Device
-        }
         if ($PSBoundParameters.ContainsKey("Description")) {
             $Parameters["description"] = $Description
         }
@@ -81,11 +89,17 @@ Create operation for a device
         if ($PSBoundParameters.ContainsKey("Session")) {
             $Parameters["session"] = $Session
         }
+        if ($PSBoundParameters.ContainsKey("TimeoutSec")) {
+            $Parameters["timeout"] = $TimeoutSec * 1000
+        }
 
     }
 
     Process {
-        foreach ($item in @("")) {
+        foreach ($item in (PSc8y\Expand-Device $Device)) {
+            if ($item) {
+                $Parameters["device"] = if ($item.id) { $item.id } else { $item }
+            }
 
             if (!$Force -and
                 !$WhatIfPreference -and
