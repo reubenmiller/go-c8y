@@ -137,11 +137,11 @@
           {
             "description": "Create a new alarm for device",
             "beforeEach": [
-              "$device = New-TestDevice"
+              "$device = PSc8y\\New-TestDevice"
             ],
             "command": "New-Alarm -Device $device.id -Type c8y_TestAlarm -Time \"-0s\" -Text \"Test alarm\" -Severity MAJOR",
             "afterEach": [
-              "Remove-ManagedObject -Id $device.id"
+              "PSc8y\\Remove-ManagedObject -Id $device.id"
             ]
           },
           {
