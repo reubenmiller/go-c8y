@@ -307,6 +307,19 @@ func initConfig() {
 		client = c8y.NewClientFromEnvironment(httpClient, true)
 	}
 
+	//
+	// Timeout setting preference
+	// 1. User provideds --timeout argument
+	// 2. "timeout" is set in the session.json file (and value is greater than 0)
+	// 3. C8Y_TIMEOUT is set and greater than 0
+	if !rootCmd.Flags().Changed("timeout") {
+		timeout := viper.GetUint("timeout")
+		if timeout > 0 {
+			globalFlagTimeout = timeout
+			Logger.Debugf("timeout: %v", timeout)
+		}
+	}
+
 	// Should we use the tenant in the name or not
 	if viper.IsSet("useTenantPrefix") {
 		client.UseTenantInUsername = viper.GetBool("useTenantPrefix")
