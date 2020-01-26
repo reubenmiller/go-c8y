@@ -40,6 +40,11 @@ Get a list of alarms with page size of 100
         # Uri query parameters
         [hashtable] $QueryParameters,
 
+        # Timeout in seconds
+        [Parameter()]
+        [double]
+        $TimeoutSec,
+
         # Pretty print json response
         [Parameter()]
         [switch]
@@ -110,7 +115,13 @@ Get a list of alarms with page size of 100
             # Convert hashtables, psobject etc.
             $null = $c8yargs.AddRange(@("--data", (ConvertTo-JsonArgument $Data)))
         }
-        
+
+    }
+
+    if ($TimeoutSec) {
+        # Convert to milliseconds (cast to an integer)
+        [int] $TimeoutInMS = $TimeoutSec * 1000
+        $null = $c8yargs.AddRange(@("--timeout", $TimeoutInMS))
     }
 
     if ($InFile) {
@@ -142,6 +153,8 @@ Get a list of alarms with page size of 100
     if ($WhatIfPreference) {
         $null = $c8yargs.Add("--dry")
     }
+
+    Write-Verbose ("{0} {1}" -f $c8y, ($c8yargs -join " "))
 
     & $c8y $c8yargs
 }

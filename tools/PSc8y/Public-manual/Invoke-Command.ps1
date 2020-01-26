@@ -21,7 +21,12 @@
 
         [switch] $IncludeAll,
 
-        [switch] $Raw
+        [switch] $Raw,
+
+        # Timeout in seconds
+        [Parameter()]
+        [double]
+        $TimeoutSec
     )
 
     $args = New-Object System.Collections.ArrayList
@@ -53,6 +58,8 @@
         }
     }
 
+
+
     $null = $args.Add("--pretty=false")
 
     if ($WhatIfPreference) {
@@ -61,6 +68,12 @@
 
     if ($VerbosePreference) {
         $null = $args.Add("--verbose")
+    }
+
+    if ($TimeoutSec) {
+        # Convert to milliseconds (cast to an integer)
+        [int] $TimeoutInMS = $TimeoutSec * 1000
+        $null = $args.AddRange(@("--timeout", $TimeoutInMS))
     }
 
     # Include all pagination results
