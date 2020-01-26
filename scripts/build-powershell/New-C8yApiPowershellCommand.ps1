@@ -297,6 +297,18 @@
     $null = $BeginParameterBuilder.AppendLine("            `$Parameters[`"session`"] = `$Session")
     $null = $BeginParameterBuilder.AppendLine("        }")
 
+    # Timeout (in seconds)
+    $TimeoutSecParam = New-Object System.Text.StringBuilder
+    $null = $TimeoutSecParam.AppendLine('        # TimeoutSec timeout in seconds before a request will be aborted')
+    $null = $TimeoutSecParam.AppendLine('        [Parameter()]')
+    $null = $TimeoutSecParam.AppendLine('        [double]')
+    $null = $TimeoutSecParam.Append('        $TimeoutSec')
+    $null = $CmdletParameters.Add($TimeoutSecParam)
+
+    $null = $BeginParameterBuilder.AppendLine("        if (`$PSBoundParameters.ContainsKey(`"TimeoutSec`")) {")
+    $null = $BeginParameterBuilder.AppendLine("            `$Parameters[`"timeout`"] = `$TimeoutSec * 1000")
+    $null = $BeginParameterBuilder.AppendLine("        }")
+
     # Force parameter
     if ($Specification.method -match "(POST|PUT|DELETE)") {
         $ForceParam = New-Object System.Text.StringBuilder
