@@ -106,6 +106,7 @@ endpoints:
           beforeEach:
             - $App = New-TestMicroservice -SkipUpload -SkipSubscription
           command: Get-Microservice -Id $App.id
+          skipTest: true
           afterEach:
             - Remove-Microservice -Id $App.id
 
@@ -113,6 +114,7 @@ endpoints:
           beforeEach:
             - $App = New-TestMicroservice -SkipUpload -SkipSubscription
           command: Get-Microservice -Id $App.name
+          skipTest: true
           afterEach:
             - Remove-Microservice -Id $App.id
       go:
@@ -139,11 +141,13 @@ endpoints:
           beforeEach:
             - $App = New-TestMicroservice -SkipUpload -SkipSubscription
           command: Remove-Microservice -Id $App.id
+          skipTest: true
 
         - description: Delete a microservice by name
           beforeEach:
             - $App = New-TestMicroservice -SkipUpload -SkipSubscription
           command: Remove-Microservice -Id $App.name
+          skipTest: true
       go:
         - description: Delete an microservice by id
           command: c8y microservices delete --id 12345
@@ -172,6 +176,7 @@ endpoints:
           beforeEach:
             - $App = New-TestMicroservice -SkipUpload -SkipSubscription
           command: Update-Microservice -Id $App.id -Availability "MARKET"
+          skipTest: true
           afterEach:
             - Remove-Microservice -Id $App.id
       go:
@@ -266,6 +271,7 @@ endpoints:
           beforeEach:
             - $App = New-TestMicroservice -SkipUpload -SkipSubscription
           command: Get-MicroserviceBootstrapUser -Id $App.name
+          skipTest: true
           afterEach:
             - Remove-Microservice -Id $App.id
 

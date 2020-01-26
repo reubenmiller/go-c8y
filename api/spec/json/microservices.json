@@ -143,6 +143,7 @@
               "$App = New-TestMicroservice -SkipUpload -SkipSubscription"
             ],
             "command": "Get-Microservice -Id $App.id",
+            "skipTest": true,
             "afterEach": [
               "Remove-Microservice -Id $App.id"
             ]
@@ -153,6 +154,7 @@
               "$App = New-TestMicroservice -SkipUpload -SkipSubscription"
             ],
             "command": "Get-Microservice -Id $App.name",
+            "skipTest": true,
             "afterEach": [
               "Remove-Microservice -Id $App.id"
             ]
@@ -192,14 +194,16 @@
             "beforeEach": [
               "$App = New-TestMicroservice -SkipUpload -SkipSubscription"
             ],
-            "command": "Remove-Microservice -Id $App.id"
+            "command": "Remove-Microservice -Id $App.id",
+            "skipTest": true
           },
           {
             "description": "Delete a microservice by name",
             "beforeEach": [
               "$App = New-TestMicroservice -SkipUpload -SkipSubscription"
             ],
-            "command": "Remove-Microservice -Id $App.name"
+            "command": "Remove-Microservice -Id $App.name",
+            "skipTest": true
           }
         ],
         "go": [
@@ -241,6 +245,7 @@
               "$App = New-TestMicroservice -SkipUpload -SkipSubscription"
             ],
             "command": "Update-Microservice -Id $App.id -Availability \"MARKET\"",
+            "skipTest": true,
             "afterEach": [
               "Remove-Microservice -Id $App.id"
             ]
@@ -366,6 +371,7 @@
               "$App = New-TestMicroservice -SkipUpload -SkipSubscription"
             ],
             "command": "Get-MicroserviceBootstrapUser -Id $App.name",
+            "skipTest": true,
             "afterEach": [
               "Remove-Microservice -Id $App.id"
             ]
