@@ -118,7 +118,18 @@ endpoints:
     examples:
       powershell:
         - description: Create operation for a device
-          command: 'New-Operation -Device "{{ randomagent }}" -Description "Restart device" -Data @{ c8y_Restart = @{} }'
+          beforeEach:
+            - $device = New-TestAgent
+          command: 'New-Operation -Device $device.id -Description "Restart device" -Data @{ c8y_Restart = @{} }'
+          afterEach:
+            - Remove-ManagedObject -Id $device.id
+
+        - description: Create operation for a device (using pipeline)
+          beforeEach:
+            - $device = New-TestAgent
+          command: 'Get-Device $device.id | New-Operation -Description "Restart device" -Data @{ c8y_Restart = @{} }'
+          afterEach:
+            - Remove-ManagedObject -Id $device.id
 
       go:
         - description: Create operation for a device
@@ -131,6 +142,7 @@ endpoints:
         type: '[]device'
         property: deviceId
         required: true
+        pipeline: true
         description: Identifies the target device on which this operation should be performed.
 
       - name: description
@@ -190,6 +202,7 @@ endpoints:
         type: string
         description: Operation id
         pipeline: true
+        required: true
 
   - name: deleteOperationCollection
     description: 'Delete a collection of operations'
@@ -217,6 +230,7 @@ endpoints:
         type: '[]device'
         property: deviceId
         description: Device ID
+        pipeline: true
 
       - name: dateFrom
         type: datetime

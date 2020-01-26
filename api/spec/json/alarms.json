@@ -136,7 +136,23 @@
         "powershell": [
           {
             "description": "Create a new alarm for device",
-            "command": "New-Alarm -Device \"{{ randomdevice }}\" -Type c8y_TestAlarm -Time \"-0s\" -Text \"Test alarm\" -Severity MAJOR"
+            "beforeEach": [
+              "$device = New-TestDevice"
+            ],
+            "command": "New-Alarm -Device $device.id -Type c8y_TestAlarm -Time \"-0s\" -Text \"Test alarm\" -Severity MAJOR",
+            "afterEach": [
+              "Remove-ManagedObject -Id $device.id"
+            ]
+          },
+          {
+            "description": "Create a new alarm for device (using pipeline)",
+            "beforeEach": [
+              "$device = PSc8y\\New-TestDevice"
+            ],
+            "command": "Get-Device -Id $device.id | PSc8y\\New-Alarm -Type c8y_TestAlarm -Time \"-0s\" -Text \"Test alarm\" -Severity MAJOR",
+            "afterEach": [
+              "PSc8y\\Remove-ManagedObject -Id $device.id"
+            ]
           }
         ],
         "go": [
@@ -155,6 +171,7 @@
           "name": "device",
           "type": "[]device",
           "required": true,
+          "pipeline": true,
           "property": "source.id",
           "description": "The ManagedObject that the alarm originated from"
         },
@@ -167,7 +184,8 @@
         {
           "name": "time",
           "type": "datetime",
-          "required": true,
+          "required": false,
+          "default": "0s",
           "description": "Time of the alarm."
         },
         {
@@ -223,6 +241,17 @@
             "afterEach": [
               "PSc8y\\Remove-ManagedObject -Id $Device.id"
             ]
+          },
+          {
+            "description": "Update the status of all active alarms on a device to ACKNOWLEDGED (using pipeline)",
+            "command": "Get-Device -Id $Device.id | PSc8y\\Update-AlarmCollection -Status ACTIVE -NewStatus ACKNOWLEDGED",
+            "beforeEach": [
+              "$Device = PSc8y\\New-TestDevice",
+              "$Alarm = PSc8y\\New-Alarm -Device $Device.id -Type c8y_TestAlarm -Time \"-0s\" -Text \"Test alarm\" -Severity MAJOR"
+            ],
+            "afterEach": [
+              "PSc8y\\Remove-ManagedObject -Id $Device.id"
+            ]
           }
         ],
         "go": [
@@ -262,6 +291,7 @@
           "name": "device",
           "type": "[]device",
           "property": "source",
+          "pipeline": true,
           "description": "The ManagedObject that the alarm originated from"
         },
         {
@@ -355,6 +385,17 @@
             ]
           },
           {
+            "description": "Acknowledge an existing alarm (using pipeline)",
+            "beforeEach": [
+              "$Device = New-TestDevice",
+              "$Alarm = New-TestAlarm -Device $Device.id"
+            ],
+            "command": "Get-Alarm -Id $Alarm.id | PSc8y\\Update-Alarm -Status ACKNOWLEDGED",
+            "afterEach": [
+              "Remove-ManagedObject -Id $Device.id"
+            ]
+          },
+          {
             "description": "Update severity of an existing alarm to CRITICAL",
             "beforeEach": [
               "$Device = New-TestDevice",
@@ -438,11 +479,33 @@
         "powershell": [
           {
             "description": "Remove alarms on the device with the severity set to MAJOR",
-            "command": "Remove-AlarmCollection -Device \"{{ randomdevice }}\" -Severity MAJOR"
+            "beforeEach": [
+              "$device = New-TestDevice"
+            ],
+            "command": "Remove-AlarmCollection -Device \"{{ randomdevice }}\" -Severity MAJOR",
+            "afterEach": [
+              "Remove-ManagedObject -Id $device.id"
+            ]
           },
           {
             "description": "Remove alarms on the device which are active and created in the last 10 minutes",
-            "command": "Remove-AlarmCollection -Device \"{{ randomdevice }}\" -DateFrom \"-10m\" -Status ACTIVE"
+            "beforeEach": [
+              "$device = New-TestDevice"
+            ],
+            "command": "Remove-AlarmCollection -Device $device.id -DateFrom \"-10m\" -Status ACTIVE",
+            "afterEach": [
+              "Remove-ManagedObject -Id $device.id"
+            ]
+          },
+          {
+            "description": "Remove alarms on the device which are active and created in the last 10 minutes (using pipeline)",
+            "beforeEach": [
+              "$device = New-TestDevice"
+            ],
+            "command": "Get-Device -Id $device.id | PSc8y\\Remove-AlarmCollection -DateFrom \"-10m\" -Status ACTIVE",
+            "afterEach": [
+              "Remove-ManagedObject -Id $device.id"
+            ]
           }
         ],
         "go": [
@@ -468,6 +531,7 @@
           "name": "device",
           "type": "[]device",
           "property": "source",
+          "pipeline": true,
           "description": "Source device id."
         },
         {

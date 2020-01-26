@@ -160,7 +160,23 @@
         "powershell": [
           {
             "description": "Create operation for a device",
-            "command": "New-Operation -Device \"{{ randomagent }}\" -Description \"Restart device\" -Data @{ c8y_Restart = @{} }"
+            "beforeEach": [
+              "$device = New-TestAgent"
+            ],
+            "command": "New-Operation -Device $device.id -Description \"Restart device\" -Data @{ c8y_Restart = @{} }",
+            "afterEach": [
+              "Remove-ManagedObject -Id $device.id"
+            ]
+          },
+          {
+            "description": "Create operation for a device (using pipeline)",
+            "beforeEach": [
+              "$device = New-TestAgent"
+            ],
+            "command": "Get-Device $device.id | New-Operation -Description \"Restart device\" -Data @{ c8y_Restart = @{} }",
+            "afterEach": [
+              "Remove-ManagedObject -Id $device.id"
+            ]
           }
         ],
         "go": [
@@ -180,6 +196,7 @@
           "type": "[]device",
           "property": "deviceId",
           "required": true,
+          "pipeline": true,
           "description": "Identifies the target device on which this operation should be performed."
         },
         {
@@ -262,7 +279,8 @@
           "name": "id",
           "type": "string",
           "description": "Operation id",
-          "pipeline": true
+          "pipeline": true,
+          "required": true
         }
       ]
     },
@@ -301,7 +319,8 @@
           "name": "device",
           "type": "[]device",
           "property": "deviceId",
-          "description": "Device ID"
+          "description": "Device ID",
+          "pipeline": true
         },
         {
           "name": "dateFrom",

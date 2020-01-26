@@ -410,6 +410,7 @@
               "$App = New-TestMicroservice -SkipUpload -SkipSubscription"
             ],
             "command": "Enable-Microservice -Id $App.id",
+            "skipTest": true,
             "afterEach": [
               "Remove-Microservice -Id $App.id"
             ]
@@ -461,6 +462,7 @@
             "beforeEach": [
               "$App = New-TestMicroservice -SkipUpload"
             ],
+            "skipTest": true,
             "command": "Disable-Microservice -Id $App.id",
             "afterEach": [
               "Remove-Microservice -Id $App.id"

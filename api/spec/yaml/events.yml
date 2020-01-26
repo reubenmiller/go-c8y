@@ -159,7 +159,18 @@ endpoints:
     examples:
       powershell:
         - description: Create a new event for a device
-          command: New-Event -Device "{{ randomdevice }}" -Type c8y_TestAlarm -Time "-0s" -Text "Test event"
+          beforeEach:
+            - $device = New-TestDevice
+          command: New-Event -Device $device.id -Type c8y_TestAlarm -Text "Test event"
+          afterEach:
+            - Remove-ManagedObject -Id $device.id
+
+        - description: Create a new event for a device (using pipeline)
+          beforeEach:
+            - $device = New-TestDevice
+          command: Get-Device -Id $device.id | PSc8y\New-Event -Type c8y_TestAlarm -Time "-0s" -Text "Test event"
+          afterEach:
+            - Remove-ManagedObject -Id $device.id
 
       go:
         - description: Create a new event for a device
@@ -171,12 +182,14 @@ endpoints:
       - name: device
         type: '[]device'
         required: true
+        pipeline: true
         property: source.id
         description: The ManagedObject which is the source of this event.
 
       - name: time
         type: datetime
-        required: true
+        required: false
+        default: "0s"
         description: Time of the event.
 
       - name: type
@@ -217,6 +230,14 @@ endpoints:
           afterEach:
             - Remove-ManagedObject -Id $Device.id
 
+        - description: Update custom properties of an existing event (using pipeline)
+          beforeEach:
+            - $Device = New-TestDevice
+            - $Event = New-TestEvent -Device $Device.id
+          command: Get-Event -Id $Event.id | Update-Event -Data @{ my_event = @{ active = $true } }
+          afterEach:
+            - Remove-ManagedObject -Id $Device.id
+
       go:
         - description: Update the text field of an existing event
           command: c8y events update --id 12345 --text "example text 1"
@@ -230,6 +251,7 @@ endpoints:
       - name: id
         type: string
         required: true
+        pipeline: true
         description: Event id
     body:
       - name: text
@@ -262,6 +284,7 @@ endpoints:
       - name: id
         type: string
         required: true
+        pipeline: true
         description: Event id
 
   #

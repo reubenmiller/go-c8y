@@ -37,7 +37,8 @@ endpoints:
 
       - name: time
         type: datetime
-        required: true
+        required: false
+        default: "0s"
         description: Time of the audit record.
 
       - name: text

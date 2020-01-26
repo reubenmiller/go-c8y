@@ -237,6 +237,7 @@ endpoints:
       - name: id
         type: string
         required: true
+        pipeline: true
         description: Measurement id
 
   - name: newMeasurement
@@ -331,6 +332,7 @@ endpoints:
       - name: device
         type: '[]device'
         property: source
+        pipeline: true
         description: Device ID
 
       - name: type
