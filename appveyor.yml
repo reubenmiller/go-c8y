@@ -20,7 +20,7 @@ environment:
   # nuget api key used to publish to PowerShell Gallery
   nuget_apikey:
     secure: rfFg7q0kl5loV6mXquG73NKa5NEAtLKyKHhQJy0TiwIXdeMHYhqGqZCl5sb/7Hpz
-  
+
   C8Y_HOST:
     secure: 1mpbPj8TYp5TrBamoABxWATQWb1t1BIsdyos8N8R60QOVB1puaWvH/yuw+0ClWjk
   C8Y_TENANT:
@@ -29,6 +29,8 @@ environment:
     secure: 7nnf6/dt+mNSq5pVZrdXBw==
   C8Y_PASSWORD:
     secure: olAYnZxd7FOGGVMy0pgrTcl+LcNGEtraxIkPJftUndk=
+  # Max timeout for each request (in milliseconds)
+  C8Y_TIMEOUT: 30000
 image:
   - Visual Studio 2019
   - Ubuntu
@@ -70,7 +72,7 @@ for:
     matrix:
       only:
         - image: macos
-  
+
     on_success:
       # publish to Powershell Gallery
     - ps: ./scripts/build-powershell/publish.ps1
