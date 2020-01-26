@@ -246,13 +246,13 @@
 
         #
         # Include option to expand pagination results
-        #
-        $IncludeAllParam = New-Object System.Text.StringBuilder
-        $null = $IncludeAllParam.AppendLine('        # Include all results')
-        $null = $IncludeAllParam.AppendLine('        [Parameter()]')
-        $null = $IncludeAllParam.AppendLine('        [switch]')
-        $null = $IncludeAllParam.Append('        $IncludeAll')
-        $null = $CmdletParameters.Add($IncludeAllParam)
+        # TODO: implement pagination results expansion in go
+        # $IncludeAllParam = New-Object System.Text.StringBuilder
+        # $null = $IncludeAllParam.AppendLine('        # Include all results')
+        # $null = $IncludeAllParam.AppendLine('        [Parameter()]')
+        # $null = $IncludeAllParam.AppendLine('        [switch]')
+        # $null = $IncludeAllParam.Append('        $IncludeAll')
+        # $null = $CmdletParameters.Add($IncludeAllParam)
     }
 
     $RawParam = New-Object System.Text.StringBuilder
