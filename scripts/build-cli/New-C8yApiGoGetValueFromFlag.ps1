@@ -97,7 +97,7 @@
 "@
     }
 
-    # Boolean
+    # source
     $Setters."source"."query" = "query.Add(`"${queryParam}`", v)"
     $Setters."source"."path" = "pathParameters[`"${queryParam}`"] = v"
     $Setters."source"."body" = "body.Set(`"${queryParam}`", v)"
