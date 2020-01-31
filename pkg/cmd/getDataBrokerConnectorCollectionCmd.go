@@ -162,7 +162,7 @@ func (n *getDataBrokerConnectorCollectionCmd) doGetDataBrokerConnectorCollection
 		isJSONResponse := jsonUtilities.IsValidJSON([]byte(*resp.JSONData))
 
 		if isJSONResponse && filters != nil && !globalFlagRaw {
-			responseText = filters.Apply(*resp.JSONData, "databroker")
+			responseText = filters.Apply(*resp.JSONData, "connectors")
 		} else {
 			responseText = []byte(*resp.JSONData)
 		}

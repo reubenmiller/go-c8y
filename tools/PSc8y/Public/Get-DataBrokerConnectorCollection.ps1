@@ -97,7 +97,7 @@ Get a list of data broker connectors
                 -Parameters $Parameters `
                 -Type "application/vnd.com.nsn.cumulocity.databrokerConnectorCollection+json" `
                 -ItemType "application/vnd.com.nsn.cumulocity.databrokerConnector+json" `
-                -ResultProperty "databroker" `
+                -ResultProperty "connectors" `
                 -Raw:$Raw `
                 -IncludeAll:$IncludeAll
         }
