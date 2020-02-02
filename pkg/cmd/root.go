@@ -260,7 +260,7 @@ func initConfig() {
 
 		} else {
 			Logger.Debugf(
-				"using existing env variables. HTTP_PROXY [%s], http_proxy [%s], HTTPS_PROXY [%s], https_proxy [%s], NO_PROXY [%s], no_proxy [%s]",
+				"Using existing env variables. HTTP_PROXY [%s], http_proxy [%s], HTTPS_PROXY [%s], https_proxy [%s], NO_PROXY [%s], no_proxy [%s]",
 				os.Getenv("HTTP_PROXY"),
 				os.Getenv("http_proxy"),
 				os.Getenv("HTTPS_PROXY"),
@@ -325,7 +325,7 @@ func initConfig() {
 		client.UseTenantInUsername = viper.GetBool("useTenantPrefix")
 	}
 
-	Logger.Printf("use tenant prefix: %v", client.UseTenantInUsername)
+	Logger.Printf("Use tenant prefix: %v", client.UseTenantInUsername)
 
 	// Add the realtime client
 	client.Realtime = c8y.NewRealtimeClient(
