@@ -1,5 +1,5 @@
 ﻿# Code generated from specification version 1.0.0: DO NOT EDIT
-Function New-ExternalID {
+Function New-ExternalId {
 <#
 .SYNOPSIS
 Create a new external id
@@ -8,7 +8,7 @@ Create a new external id
 Create a new external id
 
 .EXAMPLE
-PS> New-ExternalID -Device {{ randomdevice }} -Type "my_SerialNumber" -Name "myserialnumber"
+PS> New-ExternalId -Device {{ randomdevice }} -Type "my_SerialNumber" -Name "myserialnumber"
 Get external identity
 
 

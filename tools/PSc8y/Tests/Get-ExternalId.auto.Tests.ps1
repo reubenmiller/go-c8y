@@ -3,7 +3,7 @@
 Describe -Name "Get-ExternalId" {
     BeforeEach {
         $Device = PSc8y\New-TestDevice
-        $ExternalID = PSc8y\New-ExternalID -Device $Device.id -Type "my_SerialNumber" -Name "myserialnumber"
+        $ExternalID = PSc8y\New-ExternalId -Device $Device.id -Type "my_SerialNumber" -Name "myserialnumber"
 
     }
 

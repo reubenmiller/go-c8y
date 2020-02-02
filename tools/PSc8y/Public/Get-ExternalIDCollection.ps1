@@ -1,5 +1,5 @@
 ﻿# Code generated from specification version 1.0.0: DO NOT EDIT
-Function Get-ExternalIDCollection {
+Function Get-ExternalIdCollection {
 <#
 .SYNOPSIS
 Get a collection of external ids based on filter parameters

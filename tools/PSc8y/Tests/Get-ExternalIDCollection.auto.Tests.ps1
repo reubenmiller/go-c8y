@@ -1,10 +1,10 @@
 ﻿. $PSScriptRoot/imports.ps1
 
-Describe -Name "Get-ExternalIDCollection" {
+Describe -Name "Get-ExternalIdCollection" {
     BeforeEach {
         $Device = New-TestDevice
         $ExtName = New-RandomString -Prefix "IMEI"
-        $ExternalID = PSc8y\New-ExternalID -Device $Device.id -Type "my_SerialNumber" -Name "$ExtName"
+        $ExternalID = PSc8y\New-ExternalId -Device $Device.id -Type "my_SerialNumber" -Name "$ExtName"
 
     }
 

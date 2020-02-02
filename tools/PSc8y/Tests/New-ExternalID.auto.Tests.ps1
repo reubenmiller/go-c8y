@@ -1,13 +1,13 @@
 ﻿. $PSScriptRoot/imports.ps1
 
-Describe -Name "New-ExternalID" {
+Describe -Name "New-ExternalId" {
     BeforeEach {
         $TestDevice = PSc8y\New-TestDevice
 
     }
 
     It "Get external identity" {
-        $Response = PSc8y\New-ExternalID -Device $TestDevice.id -Type "my_SerialNumber" -Name "myserialnumber"
+        $Response = PSc8y\New-ExternalId -Device $TestDevice.id -Type "my_SerialNumber" -Name "myserialnumber"
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
