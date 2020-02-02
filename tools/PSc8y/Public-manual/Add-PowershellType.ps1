@@ -7,7 +7,7 @@ Add a powershell type name to a powershell object
 This allows a custom type name to be given to powershell objects, so that the view formatting can be used (i.e. .ps1xml)
 
 .EXAMPLE
-$data | Add-C8yPowershellType -Type "customType1"
+$data | Add-PowershellType -Type "customType1"
 
 .OUTPUTS Object[]
 #>
