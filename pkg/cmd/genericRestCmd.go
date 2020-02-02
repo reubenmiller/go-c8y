@@ -20,6 +20,8 @@ import (
 
 type getGenericRestCmd struct {
 	*baseCmd
+
+	flagHost string
 }
 
 func newGetGenericRestCmd() *getGenericRestCmd {
@@ -46,6 +48,7 @@ func newGetGenericRestCmd() *getGenericRestCmd {
 	cmd.Flags().StringSliceP("header", "H", nil, "headers. i.e. --header \"Accept: value\"")
 	cmd.Flags().String("accept", "", "accept (header)")
 	cmd.Flags().String("contentType", "", "content type (header)")
+	cmd.Flags().StringVar(&ccmd.flagHost, "host", "", "host to use for the rest request. If empty, then the session's host will be used")
 	cmd.Flags().Bool("ignoreAcceptHeader", false, "Without the accept header")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
@@ -132,6 +135,11 @@ func (n *getGenericRestCmd) getGenericRest(cmd *cobra.Command, args []string) er
 func (n *getGenericRestCmd) doDataGenericRest(method string, path string, header http.Header, data map[string]interface{}, formData map[string]io.Reader, ignoreAcceptHeader, dryRun bool, filters *JSONFilters) error {
 	baseURL, _ := url.Parse(path)
 
+	var host string
+	if n.flagHost != "" {
+		host = n.flagHost
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(globalFlagTimeout)*time.Millisecond)
 	defer cancel()
 	start := time.Now()
@@ -139,7 +147,7 @@ func (n *getGenericRestCmd) doDataGenericRest(method string, path string, header
 		ctx,
 		c8y.RequestOptions{
 			Method:       method,
-			Host:         baseURL.Host,
+			Host:         host,
 			Path:         baseURL.Path,
 			Query:        baseURL.RawQuery,
 			Body:         data,
@@ -195,7 +203,7 @@ func (n *getGenericRestCmd) doDataGenericRest(method string, path string, header
 		var responseText []byte
 		isJSONResponse := jsonUtilities.IsValidJSON([]byte(*resp.JSONData))
 
-		Logger.Debugf("isJson: %v", isJSONResponse)
+		Logger.Debugf("Response is json: %v", isJSONResponse)
 
 		if filters != nil && !globalFlagRaw && isJSONResponse {
 			dataKey := ""

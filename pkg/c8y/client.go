@@ -372,8 +372,20 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 	}
 
 	if options.Host != "" {
-		Logger.Printf("Using alternative host %s", options.Host)
-		req.Host = options.Host
+		host := options.Host
+		if !strings.HasPrefix(options.Host, "https://") && !strings.HasPrefix(options.Host, "http://") {
+			host = "https://" + options.Host
+		}
+		baseURL, err := url.Parse(host)
+
+		if err != nil {
+			Logger.Warningf("Ignoring invalid host %s. %s", host, err)
+		} else {
+			req.URL.Host = baseURL.Host
+			req.URL.Scheme = baseURL.Scheme
+			Logger.Printf("Using alternative host %s://%s", req.URL.Scheme, req.URL.Host)
+		}
+
 	}
 
 	if err != nil {
@@ -541,7 +553,7 @@ func (c *Client) SetAuthorization(req *http.Request) {
 	} else {
 		headerUsername = c.Username
 	}
-	Logger.Debugf("current username: %s\n", c.hideSensitiveInformationIfActive(headerUsername))
+	Logger.Debugf("Current username: %s\n", c.hideSensitiveInformationIfActive(headerUsername))
 	req.SetBasicAuth(headerUsername, c.Password)
 }
 

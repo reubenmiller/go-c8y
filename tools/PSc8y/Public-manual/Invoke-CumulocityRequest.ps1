@@ -28,6 +28,9 @@ Get a list of alarms with page size of 100
             Position = 0)]
         [string] $Uri,
 
+        # HostName to use which overrides the given host
+        [string] $HostName,
+
         # Rest Method. Defaults to GET
         [Microsoft.PowerShell.Commands.WebRequestMethod] $Method,
 
@@ -116,6 +119,10 @@ Get a list of alarms with page size of 100
             $null = $c8yargs.AddRange(@("--data", (ConvertTo-JsonArgument $Data)))
         }
 
+    }
+
+    if ($HostName) {
+        $null = $c8yargs.AddRange(@("--host", $HostName))
     }
 
     if ($TimeoutSec) {
