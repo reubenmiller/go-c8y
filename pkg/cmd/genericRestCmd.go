@@ -219,7 +219,7 @@ func (n *getGenericRestCmd) doDataGenericRest(method string, path string, header
 			}
 
 			if dataKey != "" {
-				Logger.Debugf("data property: %s", dataKey)
+				Logger.Debugf("Data property: %s", dataKey)
 			}
 			responseText = filters.Apply(*resp.JSONData, dataKey)
 		} else {
