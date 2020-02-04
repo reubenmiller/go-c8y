@@ -61,7 +61,8 @@ func isArray(value string) ([]string, bool) {
 
 // parseJSON converts either a
 func parseJSONStructure(value string, data map[string]interface{}) error {
-	if err := json.Unmarshal([]byte(value), &data); err != nil {
+	rdr := strings.NewReader(value)
+	if err := c8y.DecodeJSONReader(rdr, &data); err != nil {
 		return errors.Wrap(err, "invalid json")
 	}
 	return nil
