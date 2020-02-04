@@ -19,7 +19,6 @@ func newInventoryRootCmd() *inventoryCmd {
 
 	// Subcommands
 	cmd.AddCommand(newGetManagedObjectCollectionCmd().getCommand())
-	cmd.AddCommand(newQueryManagedObjectCollectionCmd().getCommand())
 	cmd.AddCommand(newNewManagedObjectCmd().getCommand())
 	cmd.AddCommand(newGetManagedObjectCmd().getCommand())
 	cmd.AddCommand(newUpdateManagedObjectCmd().getCommand())

@@ -25,6 +25,11 @@ Find all devices with their names starting with 'roomUpperFloor_'
         [string]
         $Query,
 
+        # ManagedObject sort results by.
+        [Parameter(Mandatory = $false)]
+        [string]
+        $OrderBy,
+
         # include a flat list of all parents and grandparents of the given object
         [Parameter()]
         [switch]
@@ -73,6 +78,9 @@ Find all devices with their names starting with 'roomUpperFloor_'
         $Parameters = @{}
         if ($PSBoundParameters.ContainsKey("Query")) {
             $Parameters["query"] = $Query
+        }
+        if ($PSBoundParameters.ContainsKey("OrderBy")) {
+            $Parameters["orderBy"] = $OrderBy
         }
         if ($PSBoundParameters.ContainsKey("WithParents")) {
             $Parameters["withParents"] = $WithParents

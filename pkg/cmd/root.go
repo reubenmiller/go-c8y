@@ -158,6 +158,7 @@ func Execute() {
 	// inventory commands
 	inventory := newInventoryRootCmd().getCommand()
 	inventory.AddCommand(newSubscribeManagedObjectCmd().getCommand())
+	inventory.AddCommand(newQueryManagedObjectCollectionCmd().getCommand())
 	rootCmd.AddCommand(inventory)
 
 	// inventoryReferences commands

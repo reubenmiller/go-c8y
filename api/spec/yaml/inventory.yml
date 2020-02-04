@@ -64,6 +64,7 @@ endpoints:
 
   - name: queryManagedObjectCollection
     method: GET
+    skip: true
     description: Get a collection of managedObjects based on Cumulocity query language
     descriptionLong: Get a collection of managedObjects based on Cumulocity query language
     path: inventory/managedObjects

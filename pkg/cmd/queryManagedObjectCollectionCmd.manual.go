@@ -39,6 +39,7 @@ Get a list of managed objects
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("query", "", "ManagedObject query. (required)")
+	cmd.Flags().String("orderBy", "", "Order the results by the given parameter. i.e. 'id asc'")
 	cmd.Flags().Bool("withParents", false, "include a flat list of all parents and grandparents of the given object")
 
 	// Required flags
@@ -54,9 +55,21 @@ func (n *queryManagedObjectCollectionCmd) queryManagedObjectCollection(cmd *cobr
 	// query parameters
 	queryValue := url.QueryEscape("")
 	query := url.Values{}
+	orderBy := ""
+	if v, err := cmd.Flags().GetString("orderBy"); err == nil {
+		if v != "" {
+			orderBy = v
+		}
+	}
 	if v, err := cmd.Flags().GetString("query"); err == nil {
 		if v != "" {
-			query.Add("query", url.QueryEscape(v))
+			c8yQuery := fmt.Sprintf("$filter=%s", url.QueryEscape(v))
+
+			if orderBy != "" {
+				c8yQuery = c8yQuery + fmt.Sprintf("+$orderby=%s", url.QueryEscape(orderBy))
+			}
+
+			query.Add("query", c8yQuery)
 		}
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "query", err))
