@@ -87,6 +87,7 @@ $script:Aliases = @{
     tojson = "ConvertTo-Json"
     fromjson = "ConvertFrom-Json"
     rest = "Invoke-CumulocityRequest"
+    base64ToUtf8 = "ConvertFrom-Base64ToUtf8"
 
     # session
     session = "Get-Session"
