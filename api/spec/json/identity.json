@@ -46,6 +46,7 @@
           "name": "device",
           "type": "[]device",
           "required": true,
+          "pipeline": true,
           "description": "Device id"
         }
       ]
