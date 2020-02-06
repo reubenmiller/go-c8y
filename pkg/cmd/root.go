@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"path"
 	"regexp"
 	"strings"
 	"time"
@@ -281,7 +280,7 @@ func initConfig() {
 		// Search config in home directory with name ".cumulocity" (without extension).
 		viper.AddConfigPath(".")
 
-		viper.AddConfigPath(path.Join(home, ".cumulocity"))
+		viper.AddConfigPath(home)
 
 		if globalFlagSessionFile != "" {
 			viper.SetConfigName(globalFlagSessionFile)
@@ -304,6 +303,7 @@ func initConfig() {
 			true,
 		)
 	} else {
+		Logger.Printf("Error reading config file. %s", err)
 		// Fallback to reading session from environment variables
 		client = c8y.NewClientFromEnvironment(httpClient, true)
 	}
