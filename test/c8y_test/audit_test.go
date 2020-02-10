@@ -57,7 +57,7 @@ func TestAuditService_CreateAuditRecord(t *testing.T) {
 	)
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
-	testingutils.Equals(t, auditRecord, auditRecord2)
+	testingutils.Equals(t, auditRecord.ID, auditRecord2.ID)
 
 }
 
