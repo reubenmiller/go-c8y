@@ -29,14 +29,14 @@ endpoints:
         - description: List the users within a user group
           command: c8y userReferences addUserToGroup --group 1 --user myuser
     pathParameters:
-      - name: tenant
-        type: tenant
-        description: Tenant
-
       - name: group
         type: '[]usergroup'
         required: true
         description: Group ID
+
+      - name: tenant
+        type: tenant
+        description: Tenant
 
     body:
       - name: user
@@ -69,10 +69,6 @@ endpoints:
         - description: List the users within a user group
           command: c8y userReferences deleteUserFromGroup --group 1 --user myuser
     pathParameters:
-      - name: tenant
-        type: tenant
-        description: Tenant
-
       - name: group
         type: '[]usergroup'
         required: true
@@ -83,35 +79,39 @@ endpoints:
         required: true
         description: User id/username
 
+      - name: tenant
+        type: tenant
+        description: Tenant
+
   - name: getUsersInGroup
     description: Get all users in a group
     method: GET
     path: /user/{tenant}/groups/{id}/users
     accept: application/vnd.com.nsn.cumulocity.userReferenceCollection+json
     collectionType: application/vnd.com.nsn.cumulocity.user+json
-    collectionProperty: references.user
+    collectionProperty: references.#.user
     alias:
-        go: getGroupMembership
-        powershell: Get-GroupMembership
+        go: listGroupMembership
+        powershell: Get-GroupMembershipCollection
     examples:
       powershell:
         - description: List the users within a user group
           beforeEach:
             - $Group = Get-GroupByName -Name "business"
-          command: Get-GroupMembership -Id $Group.id
+          command: Get-GroupMembershipCollection -Id $Group.id
 
         - description: List the users within a user group (using pipeline)
-          command: Get-GroupByName -Name "business" | Get-GroupMembership
+          command: Get-GroupByName -Name "business" | Get-GroupMembershipCollection
       go:
         - description: List the users within a user group
-          command: c8y userReferences getGroupMembership --group 1
+          command: c8y userReferences listGroupMembership --group 1
     pathParameters:
-      - name: tenant
-        type: tenant
-        description: Tenant
-
       - name: id
         type: '[]usergroup'
         required: true
         pipeline: true
         description: Group ID
+
+      - name: tenant
+        type: tenant
+        description: Tenant

@@ -39,15 +39,15 @@
       },
       "pathParameters": [
         {
-          "name": "tenant",
-          "type": "tenant",
-          "description": "Tenant"
-        },
-        {
           "name": "group",
           "type": "[]usergroup",
           "required": true,
           "description": "Group ID"
+        },
+        {
+          "name": "tenant",
+          "type": "tenant",
+          "description": "Tenant"
         }
       ],
       "body": [
@@ -95,11 +95,6 @@
       },
       "pathParameters": [
         {
-          "name": "tenant",
-          "type": "tenant",
-          "description": "Tenant"
-        },
-        {
           "name": "group",
           "type": "[]usergroup",
           "required": true,
@@ -110,6 +105,11 @@
           "type": "[]user",
           "required": true,
           "description": "User id/username"
+        },
+        {
+          "name": "tenant",
+          "type": "tenant",
+          "description": "Tenant"
         }
       ]
     },
@@ -120,10 +120,10 @@
       "path": "/user/{tenant}/groups/{id}/users",
       "accept": "application/vnd.com.nsn.cumulocity.userReferenceCollection+json",
       "collectionType": "application/vnd.com.nsn.cumulocity.user+json",
-      "collectionProperty": "references.user",
+      "collectionProperty": "references.#.user",
       "alias": {
-        "go": "getGroupMembership",
-        "powershell": "Get-GroupMembership"
+        "go": "listGroupMembership",
+        "powershell": "Get-GroupMembershipCollection"
       },
       "examples": {
         "powershell": [
@@ -132,32 +132,32 @@
             "beforeEach": [
               "$Group = Get-GroupByName -Name \"business\""
             ],
-            "command": "Get-GroupMembership -Id $Group.id"
+            "command": "Get-GroupMembershipCollection -Id $Group.id"
           },
           {
             "description": "List the users within a user group (using pipeline)",
-            "command": "Get-GroupByName -Name \"business\" | Get-GroupMembership"
+            "command": "Get-GroupByName -Name \"business\" | Get-GroupMembershipCollection"
           }
         ],
         "go": [
           {
             "description": "List the users within a user group",
-            "command": "c8y userReferences getGroupMembership --group 1"
+            "command": "c8y userReferences listGroupMembership --group 1"
           }
         ]
       },
       "pathParameters": [
-        {
-          "name": "tenant",
-          "type": "tenant",
-          "description": "Tenant"
-        },
         {
           "name": "id",
           "type": "[]usergroup",
           "required": true,
           "pipeline": true,
           "description": "Group ID"
+        },
+        {
+          "name": "tenant",
+          "type": "tenant",
+          "description": "Tenant"
         }
       ]
     }
