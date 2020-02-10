@@ -20,7 +20,12 @@
     $File = Join-Path -Path $OutputDir -ChildPath ("{0}.ps1" -f $CmdletName)
     $ResultType = $Specification.accept
     $ResultItemType = $Specification.collectionType
+
     $ResultSelectProperty = $Specification.collectionProperty
+    if ($ResultSelectProperty) {
+        # Replace ".[]." syntax with "." as powershell handles nested access of arrays natively
+        $ResultSelectProperty = $ResultSelectProperty -replace "\.#\.", "."
+    }
 
     $Verb = $Specification.alias.go
 
