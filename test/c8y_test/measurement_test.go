@@ -367,7 +367,6 @@ func TestMeasurementService_GetMeasurement_DeleteMeasurement(t *testing.T) {
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
 	testingutils.Equals(t, meas.ID, meas2.ID)
-	testingutils.Equals(t, meas.Item.Raw, meas2.Item.Raw)
 
 	// Remove measurement
 	resp, err = client.Measurement.Delete(
