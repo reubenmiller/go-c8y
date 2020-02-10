@@ -280,49 +280,6 @@
           "description": "name"
         }
       ]
-    },
-    {
-      "name": "getGroupReferenceCollection",
-      "description": "Get information about all groups of a user",
-      "method": "GET",
-      "path": "/user/{tenant}/users/{user}/groups",
-      "accept": "application/vnd.com.nsn.cumulocity.groupReferenceCollection+json",
-      "collectionType": "application/vnd.com.nsn.cumulocity.groupReference+json",
-      "collectionProperty": "references.group",
-      "alias": {
-        "go": "listReferences",
-        "powershell": "Get-GroupReferenceCollection"
-      },
-      "examples": {
-        "powershell": [
-          {
-            "description": "Get a list of groups that a user belongs to",
-            "beforeEach": [
-              "$User = PSc8y\\Get-CurrentUser"
-            ],
-            "command": "Get-GroupReferenceCollection -User $User.id"
-          }
-        ],
-        "go": [
-          {
-            "description": "Get a list of groups that a user belongs to",
-            "command": "c8y userGroups listReferences --user \"myuser\""
-          }
-        ]
-      },
-      "pathParameters": [
-        {
-          "name": "tenant",
-          "type": "tenant",
-          "description": "Tenant"
-        },
-        {
-          "name": "user",
-          "type": "[]user",
-          "required": true,
-          "description": "User"
-        }
-      ]
     }
   ]
 }

@@ -459,3 +459,37 @@ endpoints:
         property: password
         required: false
         description: 'New user password. Min: 6, max: 32 characters. Only Latin1 chars allowed'
+
+  #
+  # Groups References
+  # https://cumulocity.com/guides/reference/users/#group-reference-collection
+  #
+  - name: getUserMembershipCollection
+    description: Get information about all groups that a user is a member of
+    method: GET
+    path: /user/{tenant}/users/{id}/groups
+    accept: 'application/vnd.com.nsn.cumulocity.groupReferenceCollection+json'
+    collectionType: application/vnd.com.nsn.cumulocity.groupReference+json
+    collectionProperty: references.#.group
+    alias:
+        go: listUserMembership
+        powershell: Get-UserMembershipCollection
+    examples:
+      powershell:
+        - description: Get a list of groups that a user belongs to
+          beforeEach:
+            - $User = PSc8y\Get-CurrentUser
+          command: Get-UserMembershipCollection -Id $User.id
+      go:
+        - description: Get a list of groups that a user belongs to
+          command: c8y users listUserMembership --id "myuser"
+    pathParameters:
+      - name: id
+        type: '[]user'
+        required: true
+        pipeline: true
+        description: User
+
+      - name: tenant
+        type: tenant
+        description: Tenant
