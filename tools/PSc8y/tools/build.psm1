@@ -70,7 +70,7 @@ function Update-ModuleManifestFunctions {
     $ManifestFunctionExportString = "FunctionsToExport = @(`n`t$formatedFunctionNames)`n"
 
     # Do the string replacement in the manifest file with the formated function names.
-    $ManifestFileContent = $ManifestFileContent.Replace('FunctionsToExport = @()', $ManifestFunctionExportString)
+    $ManifestFileContent = $ManifestFileContent.Replace('FunctionsToExport = "*"', $ManifestFunctionExportString)
     Set-Content -Path "$ManifestFile" -Value $ManifestFileContent
 }
 function Remove-ModuleManifestFunctions ($Path) {

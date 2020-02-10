@@ -5,6 +5,7 @@ $RootFolder = $PSScriptRoot
 $PublicManual  = @( Get-ChildItem -Path $RootFolder\Public-manual\ -Filter *.ps1 -Recurse -ErrorAction SilentlyContinue )
 $Public  = @( Get-ChildItem -Path $RootFolder\Public\ -Filter *.ps1 -Recurse -ErrorAction SilentlyContinue )
 $Private = @( Get-ChildItem -Path $RootFolder\Private\ -Filter *.ps1 -Recurse -ErrorAction SilentlyContinue )
+$script:Dependencies = & { Join-Path -Path $PSScriptRoot -ChildPath "Dependencies" }
 
 
 Foreach($import in @($PublicManual + $Public + $Private))

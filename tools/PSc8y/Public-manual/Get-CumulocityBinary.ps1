@@ -12,12 +12,11 @@ Returns the fullname of the path to the Cumulocity binary
     [OutputType([String])]
     Param()
 
-    $RootPath = "$PSScriptRoot/Dependencies"
     if ($IsLinux) {
-        Resolve-Path "$RootPath/c8y.linux"
+        Resolve-Path "$script:Dependencies/c8y.linux"
     } elseif ($IsMacOS) {
-        Resolve-Path "$RootPath/c8y.macos"
+        Resolve-Path "$script:Dependencies/c8y.macos"
     } else {
-        Resolve-Path "$RootPath/c8y.windows.exe"
+        Resolve-Path "$script:Dependencies/c8y.windows.exe"
     }
 }
