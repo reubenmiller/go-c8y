@@ -38,8 +38,8 @@ List the users within a user group
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("tenant", "", "Tenant")
 	cmd.Flags().StringSlice("group", []string{""}, "Group ID (required)")
+	cmd.Flags().String("tenant", "", "Tenant")
 	cmd.Flags().StringSlice("user", []string{""}, "User id (required)")
 
 	// Required flags
@@ -102,9 +102,6 @@ func (n *addUserToGroupCmd) addUserToGroup(cmd *cobra.Command, args []string) er
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
-		pathParameters["tenant"] = v
-	}
 	if cmd.Flags().Changed("group") {
 		groupInputValues, groupValue, err := getFormattedGroupSlice(cmd, args, "group")
 
@@ -121,6 +118,9 @@ func (n *addUserToGroupCmd) addUserToGroup(cmd *cobra.Command, args []string) er
 				pathParameters["group"] = newIDValue(item).GetID()
 			}
 		}
+	}
+	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
+		pathParameters["tenant"] = v
 	}
 
 	path := replacePathParameters("/user/{tenant}/groups/{group}/users", pathParameters)

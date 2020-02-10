@@ -1,38 +1,44 @@
 ﻿# Code generated from specification version 1.0.0: DO NOT EDIT
-Function Add-UserToGroup {
+Function Get-UserMembership {
 <#
 .SYNOPSIS
-Get user
+Get information about all groups that a user is a member of
 
 .EXAMPLE
-PS> Add-UserToGroup -Group $Group.id -User $User.id
-Add a user to a user group
+PS> Get-UserMembership -User $User.id
+Get a list of groups that a user belongs to
 
 
 #>
     [cmdletbinding(SupportsShouldProcess = $true,
                    PositionalBinding=$true,
                    HelpUri='',
-                   ConfirmImpact = 'High')]
+                   ConfirmImpact = 'None')]
     [Alias()]
     [OutputType([object])]
     Param(
-        # Group ID (required)
-        [Parameter(Mandatory = $true)]
-        [object[]]
-        $Group,
-
         # Tenant
         [Parameter()]
         [object]
         $Tenant,
 
-        # User id (required)
-        [Parameter(Mandatory = $true,
-                   ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true)]
+        # User (required)
+        [Parameter(Mandatory = $true)]
         [object[]]
         $User,
+
+        # Maximum number of results
+        [Parameter()]
+        [AllowNull()]
+        [AllowEmptyString()]
+        [ValidateRange(1,2000)]
+        [int]
+        $PageSize,
+
+        # Include total pages statistic
+        [Parameter()]
+        [switch]
+        $WithTotalPages,
 
         # Include raw response including pagination information
         [Parameter()]
@@ -57,21 +63,22 @@ Add a user to a user group
         # TimeoutSec timeout in seconds before a request will be aborted
         [Parameter()]
         [double]
-        $TimeoutSec,
-
-        # Don't prompt for confirmation
-        [Parameter()]
-        [switch]
-        $Force
+        $TimeoutSec
     )
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("Group")) {
-            $Parameters["group"] = PSc8y\Expand-Id $Group
-        }
         if ($PSBoundParameters.ContainsKey("Tenant")) {
             $Parameters["tenant"] = $Tenant
+        }
+        if ($PSBoundParameters.ContainsKey("User")) {
+            $Parameters["user"] = $User
+        }
+        if ($PSBoundParameters.ContainsKey("PageSize")) {
+            $Parameters["pageSize"] = $PageSize
+        }
+        if ($PSBoundParameters.ContainsKey("WithTotalPages") -and $WithTotalPages) {
+            $Parameters["withTotalPages"] = $WithTotalPages
         }
         if ($PSBoundParameters.ContainsKey("OutputFile")) {
             $Parameters["outputFile"] = $OutputFile
@@ -89,10 +96,7 @@ Add a user to a user group
     }
 
     Process {
-        foreach ($item in (PSc8y\Expand-User $User)) {
-            if ($item) {
-                $Parameters["user"] = if ($item.id) { $item.id } else { $item }
-            }
+        foreach ($item in @("")) {
 
             if (!$Force -and
                 !$WhatIfPreference -and
@@ -104,12 +108,12 @@ Add a user to a user group
             }
 
             Invoke-Command `
-                -Noun "userReferences" `
-                -Verb "addUserToGroup" `
+                -Noun "userGroups" `
+                -Verb "getUserMembership" `
                 -Parameters $Parameters `
-                -Type "application/vnd.com.nsn.cumulocity.userReference+json" `
-                -ItemType "" `
-                -ResultProperty "" `
+                -Type "application/vnd.com.nsn.cumulocity.groupReferenceCollection+json" `
+                -ItemType "application/vnd.com.nsn.cumulocity.groupReference+json" `
+                -ResultProperty "references.group" `
                 -Raw:$Raw `
                 -IncludeAll:$IncludeAll
         }

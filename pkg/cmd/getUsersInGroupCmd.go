@@ -26,11 +26,11 @@ func newGetUsersInGroupCmd() *getUsersInGroupCmd {
 	ccmd := &getUsersInGroupCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "getGroupMembership",
+		Use:   "listGroupMembership",
 		Short: "Get all users in a group",
 		Long:  ``,
 		Example: `
-$ c8y userReferences getGroupMembership --group 1
+$ c8y userReferences listGroupMembership --group 1
 List the users within a user group
 		`,
 		RunE: ccmd.getUsersInGroup,
@@ -38,8 +38,8 @@ List the users within a user group
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("tenant", "", "Tenant")
 	cmd.Flags().StringSlice("id", []string{""}, "Group ID (required)")
+	cmd.Flags().String("tenant", "", "Tenant")
 
 	// Required flags
 	cmd.MarkFlagRequired("id")
@@ -82,9 +82,6 @@ func (n *getUsersInGroupCmd) getUsersInGroup(cmd *cobra.Command, args []string) 
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
-		pathParameters["tenant"] = v
-	}
 	if cmd.Flags().Changed("id") {
 		idInputValues, idValue, err := getFormattedGroupSlice(cmd, args, "id")
 
@@ -101,6 +98,9 @@ func (n *getUsersInGroupCmd) getUsersInGroup(cmd *cobra.Command, args []string) 
 				pathParameters["id"] = newIDValue(item).GetID()
 			}
 		}
+	}
+	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
+		pathParameters["tenant"] = v
 	}
 
 	path := replacePathParameters("/user/{tenant}/groups/{id}/users", pathParameters)
@@ -186,7 +186,7 @@ func (n *getUsersInGroupCmd) doGetUsersInGroup(req c8y.RequestOptions, outputfil
 		isJSONResponse := jsonUtilities.IsValidJSON([]byte(*resp.JSONData))
 
 		if isJSONResponse && filters != nil && !globalFlagRaw {
-			responseText = filters.Apply(*resp.JSONData, "references.user")
+			responseText = filters.Apply(*resp.JSONData, "references.#.user")
 		} else {
 			responseText = []byte(*resp.JSONData)
 		}

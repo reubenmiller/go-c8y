@@ -29,6 +29,7 @@ func newUsersRootCmd() *usersCmd {
 	cmd.AddCommand(newDeleteUserCmd().getCommand())
 	cmd.AddCommand(newUpdateUserCmd().getCommand())
 	cmd.AddCommand(newResetUserPasswordCmd().getCommand())
+	cmd.AddCommand(newGetUserMembershipCollectionCmd().getCommand())
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

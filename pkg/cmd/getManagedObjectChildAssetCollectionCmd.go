@@ -199,7 +199,7 @@ func (n *getManagedObjectChildAssetCollectionCmd) doGetManagedObjectChildAssetCo
 		isJSONResponse := jsonUtilities.IsValidJSON([]byte(*resp.JSONData))
 
 		if isJSONResponse && filters != nil && !globalFlagRaw {
-			responseText = filters.Apply(*resp.JSONData, "references.managedObject")
+			responseText = filters.Apply(*resp.JSONData, "references.#.managedObject")
 		} else {
 			responseText = []byte(*resp.JSONData)
 		}

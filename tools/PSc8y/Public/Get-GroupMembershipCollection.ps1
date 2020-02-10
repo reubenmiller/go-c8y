@@ -1,12 +1,16 @@
 ﻿# Code generated from specification version 1.0.0: DO NOT EDIT
-Function Get-GroupReferenceCollection {
+Function Get-GroupMembershipCollection {
 <#
 .SYNOPSIS
-Get information about all groups of a user
+Get all users in a group
 
 .EXAMPLE
-PS> Get-GroupReferenceCollection -User $User.id
-Get a list of groups that a user belongs to
+PS> Get-GroupMembershipCollection -Id $Group.id
+List the users within a user group
+
+.EXAMPLE
+PS> Get-GroupByName -Name "business" | Get-GroupMembershipCollection
+List the users within a user group (using pipeline)
 
 
 #>
@@ -17,15 +21,17 @@ Get a list of groups that a user belongs to
     [Alias()]
     [OutputType([object])]
     Param(
+        # Group ID (required)
+        [Parameter(Mandatory = $true,
+                   ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true)]
+        [object[]]
+        $Id,
+
         # Tenant
         [Parameter()]
         [object]
         $Tenant,
-
-        # User (required)
-        [Parameter(Mandatory = $true)]
-        [object[]]
-        $User,
 
         # Maximum number of results
         [Parameter()]
@@ -71,9 +77,6 @@ Get a list of groups that a user belongs to
         if ($PSBoundParameters.ContainsKey("Tenant")) {
             $Parameters["tenant"] = $Tenant
         }
-        if ($PSBoundParameters.ContainsKey("User")) {
-            $Parameters["user"] = $User
-        }
         if ($PSBoundParameters.ContainsKey("PageSize")) {
             $Parameters["pageSize"] = $PageSize
         }
@@ -96,7 +99,10 @@ Get a list of groups that a user belongs to
     }
 
     Process {
-        foreach ($item in @("")) {
+        foreach ($item in (PSc8y\Expand-Id $Id)) {
+            if ($item) {
+                $Parameters["id"] = if ($item.id) { $item.id } else { $item }
+            }
 
             if (!$Force -and
                 !$WhatIfPreference -and
@@ -108,12 +114,12 @@ Get a list of groups that a user belongs to
             }
 
             Invoke-Command `
-                -Noun "userGroups" `
-                -Verb "listReferences" `
+                -Noun "userReferences" `
+                -Verb "listGroupMembership" `
                 -Parameters $Parameters `
-                -Type "application/vnd.com.nsn.cumulocity.groupReferenceCollection+json" `
-                -ItemType "application/vnd.com.nsn.cumulocity.groupReference+json" `
-                -ResultProperty "references.group" `
+                -Type "application/vnd.com.nsn.cumulocity.userReferenceCollection+json" `
+                -ItemType "application/vnd.com.nsn.cumulocity.user+json" `
+                -ResultProperty "references.user" `
                 -Raw:$Raw `
                 -IncludeAll:$IncludeAll
         }

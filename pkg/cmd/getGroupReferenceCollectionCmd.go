@@ -26,11 +26,11 @@ func newGetGroupReferenceCollectionCmd() *getGroupReferenceCollectionCmd {
 	ccmd := &getGroupReferenceCollectionCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "listReferences",
-		Short: "Get information about all groups of a user",
+		Use:   "getUserMembership",
+		Short: "Get information about all groups that a user is a member of",
 		Long:  ``,
 		Example: `
-$ c8y userGroups listReferences --user "myuser"
+$ c8y userGroups getUserMembership --user "myuser"
 Get a list of groups that a user belongs to
 		`,
 		RunE: ccmd.getGroupReferenceCollection,

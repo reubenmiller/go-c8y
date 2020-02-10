@@ -24,7 +24,6 @@ func newUserGroupsRootCmd() *userGroupsCmd {
 	cmd.AddCommand(newGetGroupByNameCmd().getCommand())
 	cmd.AddCommand(newDeleteGroupCmd().getCommand())
 	cmd.AddCommand(newUpdateGroupCmd().getCommand())
-	cmd.AddCommand(newGetGroupReferenceCollectionCmd().getCommand())
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

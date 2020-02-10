@@ -18,37 +18,38 @@ import (
 	"github.com/tidwall/pretty"
 )
 
-type getManagedObjectChildDeviceCollectionCmd struct {
+type getUserMembershipCollectionCmd struct {
 	*baseCmd
 }
 
-func newGetManagedObjectChildDeviceCollectionCmd() *getManagedObjectChildDeviceCollectionCmd {
-	ccmd := &getManagedObjectChildDeviceCollectionCmd{}
+func newGetUserMembershipCollectionCmd() *getUserMembershipCollectionCmd {
+	ccmd := &getUserMembershipCollectionCmd{}
 
 	cmd := &cobra.Command{
-		Use:   "listChildDevices",
-		Short: "Get a collection of managedObjects child references",
-		Long:  `Get a collection of managedObjects child references`,
+		Use:   "listUserMembership",
+		Short: "Get information about all groups that a user is a member of",
+		Long:  ``,
 		Example: `
-$ c8y inventoryReferences listChildDevices --device 12345
-Get a list of the child devices of an existing device
+$ c8y users listUserMembership --id "myuser"
+Get a list of groups that a user belongs to
 		`,
-		RunE: ccmd.getManagedObjectChildDeviceCollection,
+		RunE: ccmd.getUserMembershipCollection,
 	}
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().StringSlice("device", []string{""}, "Device. (required)")
+	cmd.Flags().StringSlice("id", []string{""}, "User (required)")
+	cmd.Flags().String("tenant", "", "Tenant")
 
 	// Required flags
-	cmd.MarkFlagRequired("device")
+	cmd.MarkFlagRequired("id")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 
 	return ccmd
 }
 
-func (n *getManagedObjectChildDeviceCollectionCmd) getManagedObjectChildDeviceCollection(cmd *cobra.Command, args []string) error {
+func (n *getUserMembershipCollectionCmd) getUserMembershipCollection(cmd *cobra.Command, args []string) error {
 
 	// query parameters
 	queryValue := url.QueryEscape("")
@@ -81,25 +82,28 @@ func (n *getManagedObjectChildDeviceCollectionCmd) getManagedObjectChildDeviceCo
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if cmd.Flags().Changed("device") {
-		deviceInputValues, deviceValue, err := getFormattedDeviceSlice(cmd, args, "device")
+	if cmd.Flags().Changed("id") {
+		idInputValues, idValue, err := getFormattedUserSlice(cmd, args, "id")
 
 		if err != nil {
-			return newUserError("no matching devices found", deviceInputValues, err)
+			return newUserError("no matching users found", idInputValues, err)
 		}
 
-		if len(deviceValue) == 0 {
-			return newUserError("no matching devices found", deviceInputValues)
+		if len(idValue) == 0 {
+			return newUserError("no matching users found", idInputValues)
 		}
 
-		for _, item := range deviceValue {
+		for _, item := range idValue {
 			if item != "" {
-				pathParameters["device"] = newIDValue(item).GetID()
+				pathParameters["id"] = newIDValue(item).GetID()
 			}
 		}
 	}
+	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
+		pathParameters["tenant"] = v
+	}
 
-	path := replacePathParameters("inventory/managedObjects/{device}/childDevices", pathParameters)
+	path := replacePathParameters("/user/{tenant}/users/{id}/groups", pathParameters)
 
 	// filter and selectors
 	filters := getFilterFlag(cmd, "filter")
@@ -123,10 +127,10 @@ func (n *getManagedObjectChildDeviceCollectionCmd) getManagedObjectChildDeviceCo
 		return err
 	}
 
-	return n.doGetManagedObjectChildDeviceCollection(req, outputfile, filters)
+	return n.doGetUserMembershipCollection(req, outputfile, filters)
 }
 
-func (n *getManagedObjectChildDeviceCollectionCmd) doGetManagedObjectChildDeviceCollection(req c8y.RequestOptions, outputfile string, filters *JSONFilters) error {
+func (n *getUserMembershipCollectionCmd) doGetUserMembershipCollection(req c8y.RequestOptions, outputfile string, filters *JSONFilters) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(globalFlagTimeout)*time.Millisecond)
 	defer cancel()
 	start := time.Now()
@@ -182,7 +186,7 @@ func (n *getManagedObjectChildDeviceCollectionCmd) doGetManagedObjectChildDevice
 		isJSONResponse := jsonUtilities.IsValidJSON([]byte(*resp.JSONData))
 
 		if isJSONResponse && filters != nil && !globalFlagRaw {
-			responseText = filters.Apply(*resp.JSONData, "references.#.managedObject")
+			responseText = filters.Apply(*resp.JSONData, "references.#.group")
 		} else {
 			responseText = []byte(*resp.JSONData)
 		}

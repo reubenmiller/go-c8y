@@ -17,11 +17,6 @@ Add a user to a user group
     [Alias()]
     [OutputType([object])]
     Param(
-        # Tenant
-        [Parameter()]
-        [object]
-        $Tenant,
-
         # Group ID (required)
         [Parameter(Mandatory = $true)]
         [object[]]
@@ -31,6 +26,11 @@ Add a user to a user group
         [Parameter(Mandatory = $true)]
         [object[]]
         $User,
+
+        # Tenant
+        [Parameter()]
+        [object]
+        $Tenant,
 
         # Include raw response including pagination information
         [Parameter()]
@@ -65,14 +65,14 @@ Add a user to a user group
 
     Begin {
         $Parameters = @{}
-        if ($PSBoundParameters.ContainsKey("Tenant")) {
-            $Parameters["tenant"] = $Tenant
-        }
         if ($PSBoundParameters.ContainsKey("Group")) {
             $Parameters["group"] = PSc8y\Expand-Id $Group
         }
         if ($PSBoundParameters.ContainsKey("User")) {
             $Parameters["user"] = $User
+        }
+        if ($PSBoundParameters.ContainsKey("Tenant")) {
+            $Parameters["tenant"] = $Tenant
         }
         if ($PSBoundParameters.ContainsKey("OutputFile")) {
             $Parameters["outputFile"] = $OutputFile
