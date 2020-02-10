@@ -31,7 +31,7 @@ Describe -Name "New-ManagedObject" {
 }
 "@
 
-        $Response = PSc8y\New-ManagedObject -Name "testMO" -Type $type -Data $rawjson -Verbose
+        $Response = PSc8y\New-ManagedObject -Name "testMO" -Type $type -Data $rawjson
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
@@ -41,4 +41,3 @@ Describe -Name "New-ManagedObject" {
 
     }
 }
-
