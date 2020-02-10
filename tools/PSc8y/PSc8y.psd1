@@ -81,21 +81,19 @@ FormatsToProcess = @(
     'format-data/tenants.ps1xml',
     'format-data/tenantStatistics.ps1xml',
     'format-data/userGroups.ps1xml',
+    'format-data/userGroupMembership.ps1xml',
     'format-data/users.ps1xml',
     'format-data/userReferences.ps1xml'
 )
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = '*'
+FunctionsToExport = @()
 
-# Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
-CmdletsToExport = '*'
 
-# Variables to export from this module
-VariablesToExport = '*'
+# VariablesToExport = '*'
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-AliasesToExport = '*'
+# AliasesToExport = '*'
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
 PrivateData = @{

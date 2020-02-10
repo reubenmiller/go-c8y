@@ -1,5 +1,5 @@
 ﻿Function Get-CumulocityBinary {
-<# 
+<#
 .SYNOPSIS
 Get the full path to the Cumulocity Binary which is compatible with the current Operating system
 
@@ -12,7 +12,7 @@ Returns the fullname of the path to the Cumulocity binary
     [OutputType([String])]
     Param()
 
-    $RootPath = "$PSScriptRoot/../Dependencies"
+    $RootPath = "$PSScriptRoot/Dependencies"
     if ($IsLinux) {
         Resolve-Path "$RootPath/c8y.linux"
     } elseif ($IsMacOS) {
