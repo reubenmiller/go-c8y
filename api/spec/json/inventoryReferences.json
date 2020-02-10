@@ -14,7 +14,7 @@
       "path": "inventory/managedObjects/{device}/childDevices",
       "accept": "application/vnd.com.nsn.cumulocity.managedObjectReferenceCollection+json",
       "collectionType": "application/vnd.com.nsn.cumulocity.managedObject+json",
-      "collectionProperty": "references.managedObject",
+      "collectionProperty": "references.#.managedObject",
       "alias": {
         "go": "listChildDevices",
         "powershell": "Get-ChildDeviceCollection"
@@ -73,7 +73,7 @@
       "path": "inventory/managedObjects/{id}/childAssets",
       "accept": "application/vnd.com.nsn.cumulocity.managedObjectReferenceCollection+json",
       "collectionType": "application/vnd.com.nsn.cumulocity.managedObject+json",
-      "collectionProperty": "references.managedObject",
+      "collectionProperty": "references.#.managedObject",
       "alias": {
         "go": "listChildAssets",
         "powershell": "Get-ChildAssetCollection"
