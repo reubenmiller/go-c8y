@@ -82,14 +82,6 @@ Get the current users inventory roles
     Process {
         foreach ($item in @("")) {
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
 
             Invoke-Command `
                 -Noun "users" `
@@ -98,8 +90,7 @@ Get the current users inventory roles
                 -Type "application/vnd.com.nsn.cumulocity.inventoryrolecollection+json" `
                 -ItemType "application/vnd.com.nsn.cumulocity.inventoryrole+json" `
                 -ResultProperty "roles" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

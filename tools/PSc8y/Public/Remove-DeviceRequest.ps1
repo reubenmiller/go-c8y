@@ -97,8 +97,7 @@ Delete a new device request
                 -Type "" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

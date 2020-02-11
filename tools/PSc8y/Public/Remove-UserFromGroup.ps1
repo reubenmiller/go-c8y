@@ -108,8 +108,7 @@ Add a user to a user group
                 -Type "" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

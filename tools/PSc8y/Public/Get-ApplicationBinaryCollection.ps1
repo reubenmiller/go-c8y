@@ -100,14 +100,6 @@ List all of the binaries related to a Hosted (web) application (using pipeline)
                 $Parameters["id"] = if ($item.id) { $item.id } else { $item }
             }
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
 
             Invoke-Command `
                 -Noun "applications" `
@@ -116,8 +108,7 @@ List all of the binaries related to a Hosted (web) application (using pipeline)
                 -Type "application/vnd.com.nsn.cumulocity.customAttachmentCollection+json" `
                 -ItemType "application/vnd.com.nsn.cumulocity.customBinaryAttachment+json" `
                 -ResultProperty "attachments" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

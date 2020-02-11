@@ -139,8 +139,7 @@ Remove events from a device
                 -Type "" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

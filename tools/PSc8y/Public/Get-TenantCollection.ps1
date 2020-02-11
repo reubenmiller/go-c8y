@@ -82,14 +82,6 @@ Get a list of tenants
     Process {
         foreach ($item in @("")) {
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
 
             Invoke-Command `
                 -Noun "tenants" `
@@ -98,8 +90,7 @@ Get a list of tenants
                 -Type "application/vnd.com.nsn.cumulocity.tenantCollection+json" `
                 -ItemType "application/vnd.com.nsn.cumulocity.tenant+json" `
                 -ResultProperty "tenants" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

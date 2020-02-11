@@ -79,14 +79,6 @@ Get user group by its name
     Process {
         foreach ($item in @("")) {
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
 
             Invoke-Command `
                 -Noun "userGroups" `
@@ -95,8 +87,7 @@ Get user group by its name
                 -Type "application/vnd.com.nsn.cumulocity.group+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

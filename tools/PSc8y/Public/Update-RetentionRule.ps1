@@ -155,8 +155,7 @@ Update a retention rule (using pipeline)
                 -Type "application/vnd.com.nsn.cumulocity.retentionRule+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

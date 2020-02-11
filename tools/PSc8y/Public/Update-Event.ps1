@@ -121,8 +121,7 @@ Update custom properties of an existing event (using pipeline)
                 -Type "application/vnd.com.nsn.cumulocity.event+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

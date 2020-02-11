@@ -108,8 +108,7 @@ Remove a role from the given user group
                 -Type "" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

@@ -114,8 +114,7 @@ Add a role to a group using wildcards (using pipeline)
                 -Type "application/vnd.com.nsn.cumulocity.roleReference+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

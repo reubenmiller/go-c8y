@@ -63,14 +63,6 @@ Get the Cumulocity backend version
     Process {
         foreach ($item in @("")) {
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
 
             Invoke-Command `
                 -Noun "tenants" `
@@ -79,8 +71,7 @@ Get the Cumulocity backend version
                 -Type "application/vnd.com.nsn.cumulocity.option+json" `
                 -ItemType "" `
                 -ResultProperty "value" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

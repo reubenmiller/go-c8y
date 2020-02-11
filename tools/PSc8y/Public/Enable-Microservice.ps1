@@ -102,8 +102,7 @@ Enable (subscribe) to a microservice
                 -Type "application/vnd.com.nsn.cumulocity.applicationReference+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

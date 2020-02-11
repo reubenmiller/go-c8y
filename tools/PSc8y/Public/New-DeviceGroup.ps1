@@ -113,8 +113,7 @@ Create device group with custom properties
                 -Type "application/vnd.com.nsn.cumulocity.customDeviceGroup+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

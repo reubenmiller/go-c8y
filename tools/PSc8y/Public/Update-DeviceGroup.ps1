@@ -118,8 +118,7 @@ Update device group custom properties
                 -Type "application/vnd.com.nsn.cumulocity.customDeviceGroup+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

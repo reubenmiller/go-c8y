@@ -133,8 +133,7 @@ Create a new event for a device (using pipeline)
                 -Type "application/vnd.com.nsn.cumulocity.event+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

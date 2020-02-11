@@ -118,8 +118,7 @@ Update agent custom properties
                 -Type "application/vnd.com.nsn.cumulocity.customAgent+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

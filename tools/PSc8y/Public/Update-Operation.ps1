@@ -126,8 +126,7 @@ Update multiple operations
                 -Type "application/vnd.com.nsn.cumulocity.operation+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

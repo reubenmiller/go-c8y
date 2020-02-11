@@ -110,8 +110,7 @@ Add a user to a user group
                 -Type "application/vnd.com.nsn.cumulocity.userReference+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

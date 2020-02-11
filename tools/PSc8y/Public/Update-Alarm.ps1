@@ -139,8 +139,7 @@ Update severity of an existing alarm to CRITICAL
                 -Type "application/vnd.com.nsn.cumulocity.alarm+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

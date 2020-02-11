@@ -73,14 +73,6 @@ Get an inventory role of the current user (using pipeline)
                 $Parameters["id"] = if ($item.id) { $item.id } else { $item }
             }
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
 
             Invoke-Command `
                 -Noun "users" `
@@ -89,8 +81,7 @@ Get an inventory role of the current user (using pipeline)
                 -Type "application/vnd.com.nsn.cumulocity.inventoryrole+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

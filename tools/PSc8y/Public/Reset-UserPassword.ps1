@@ -117,8 +117,7 @@ Resets a user's password by generating a new password
                 -Type "application/vnd.com.nsn.cumulocity.user+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

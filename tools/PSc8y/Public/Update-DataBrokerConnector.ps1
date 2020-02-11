@@ -111,8 +111,7 @@ Change the status of a specific data broker connector by given connector id
                 -Type "application/vnd.com.nsn.cumulocity.databrokerConnector+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

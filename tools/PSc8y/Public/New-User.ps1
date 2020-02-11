@@ -165,8 +165,7 @@ Create a user
                 -Type "application/vnd.com.nsn.cumulocity.user+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

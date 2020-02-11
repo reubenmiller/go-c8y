@@ -113,8 +113,7 @@ Create group heirachy (parent group -> child group)
                 -Type "application/vnd.com.nsn.cumulocity.managedObjectReference+json" `
                 -ItemType "application/vnd.com.nsn.cumulocity.managedObject+json" `
                 -ResultProperty "managedObject" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

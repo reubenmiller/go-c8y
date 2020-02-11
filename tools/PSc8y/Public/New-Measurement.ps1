@@ -121,8 +121,7 @@ Create measurement
                 -Type "application/vnd.com.nsn.cumulocity.measurement+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

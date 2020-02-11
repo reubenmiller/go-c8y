@@ -160,8 +160,7 @@ Create an audit record for a custom managed object update
                 -Type "application/vnd.com.nsn.cumulocity.auditRecord+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

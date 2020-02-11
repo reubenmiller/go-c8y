@@ -133,8 +133,7 @@ Create a retention rule to delete all alarms after 180 days
                 -Type "application/vnd.com.nsn.cumulocity.retentionRule+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

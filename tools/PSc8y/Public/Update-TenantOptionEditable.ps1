@@ -113,8 +113,7 @@ Update editable property for an existing tenant option
                 -Type "application/vnd.com.nsn.cumulocity.option+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

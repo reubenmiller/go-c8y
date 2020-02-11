@@ -77,14 +77,6 @@ Get the supported operations of a device (using pipeline)
                 $Parameters["device"] = if ($item.id) { $item.id } else { $item }
             }
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
 
             Invoke-Command `
                 -Noun "devices" `
@@ -93,8 +85,7 @@ Get the supported operations of a device (using pipeline)
                 -Type "application/vnd.com.nsn.cumulocity.inventory+json" `
                 -ItemType "" `
                 -ResultProperty "c8y_SupportedOperations" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

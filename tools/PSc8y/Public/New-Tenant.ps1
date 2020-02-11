@@ -149,8 +149,7 @@ Create a new tenant (from the management tenant)
                 -Type "application/vnd.com.nsn.cumulocity.tenant+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

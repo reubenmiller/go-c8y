@@ -102,8 +102,7 @@ Update a binary related to an event
                 -Type "application/vnd.com.nsn.cumulocity.event+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

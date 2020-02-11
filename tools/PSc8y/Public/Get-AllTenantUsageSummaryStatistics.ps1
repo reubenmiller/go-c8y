@@ -87,14 +87,6 @@ Get tenant summary statistics collection for the last 10 days, only return until
     Process {
         foreach ($item in @("")) {
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
 
             Invoke-Command `
                 -Noun "tenantStatistics" `
@@ -103,8 +95,7 @@ Get tenant summary statistics collection for the last 10 days, only return until
                 -Type "application/json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

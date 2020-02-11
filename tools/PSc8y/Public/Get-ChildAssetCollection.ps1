@@ -105,14 +105,6 @@ Get a list of the child assets of an existing group
     Process {
         foreach ($item in @("")) {
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
 
             Invoke-Command `
                 -Noun "inventoryReferences" `
@@ -121,8 +113,7 @@ Get a list of the child assets of an existing group
                 -Type "application/vnd.com.nsn.cumulocity.managedObjectReferenceCollection+json" `
                 -ItemType "application/vnd.com.nsn.cumulocity.managedObject+json" `
                 -ResultProperty "references.managedObject" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

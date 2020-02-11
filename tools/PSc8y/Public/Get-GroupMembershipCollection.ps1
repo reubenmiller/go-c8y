@@ -104,14 +104,6 @@ List the users within a user group (using pipeline)
                 $Parameters["id"] = if ($item.id) { $item.id } else { $item }
             }
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
 
             Invoke-Command `
                 -Noun "userReferences" `
@@ -120,8 +112,7 @@ List the users within a user group (using pipeline)
                 -Type "application/vnd.com.nsn.cumulocity.userReferenceCollection+json" `
                 -ItemType "application/vnd.com.nsn.cumulocity.user+json" `
                 -ResultProperty "references.user" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

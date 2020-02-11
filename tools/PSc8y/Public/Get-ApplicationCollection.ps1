@@ -94,14 +94,6 @@ Get applications
     Process {
         foreach ($item in @("")) {
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
 
             Invoke-Command `
                 -Noun "applications" `
@@ -110,8 +102,7 @@ Get applications
                 -Type "application/vnd.com.nsn.cumulocity.applicationCollection+json" `
                 -ItemType "application/vnd.com.nsn.cumulocity.application+json" `
                 -ResultProperty "applications" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

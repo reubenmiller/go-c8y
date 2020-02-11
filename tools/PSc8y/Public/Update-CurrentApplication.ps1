@@ -160,8 +160,7 @@ Update custom properties of the current application (requires using application 
                 -Type "application/vnd.com.nsn.cumulocity.application+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

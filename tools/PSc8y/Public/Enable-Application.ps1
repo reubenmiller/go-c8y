@@ -102,8 +102,7 @@ Enable an application of a tenant
                 -Type "application/vnd.com.nsn.cumulocity.applicationReference+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

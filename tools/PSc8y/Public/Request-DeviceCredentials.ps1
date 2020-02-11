@@ -97,8 +97,7 @@ Request credentials for a new device
                 -Type "application/vnd.com.nsn.cumulocity.deviceCredentials+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

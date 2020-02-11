@@ -110,8 +110,7 @@ Upload application microservice binary
                 -Type "application/vnd.com.nsn.cumulocity.managedObject+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

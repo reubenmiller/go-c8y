@@ -106,14 +106,6 @@ Get tenant statistics collection for the last 10 days, only return until the las
     Process {
         foreach ($item in @("")) {
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
 
             Invoke-Command `
                 -Noun "tenantStatistics" `
@@ -122,8 +114,7 @@ Get tenant statistics collection for the last 10 days, only return until the las
                 -Type "application/vnd.com.nsn.cumulocity.tenantUsageStatisticsCollection+json" `
                 -ItemType "application/vnd.com.nsn.cumulocity.tenantUsageStatisticsSummary+json" `
                 -ResultProperty "usageStatistics" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

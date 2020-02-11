@@ -135,8 +135,7 @@ Update microservice availability to MARKET
                 -Type "application/vnd.com.nsn.cumulocity.application+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

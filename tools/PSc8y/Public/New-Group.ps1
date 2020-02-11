@@ -100,8 +100,7 @@ Create a user group
                 -Type "application/vnd.com.nsn.cumulocity.group+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

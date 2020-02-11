@@ -109,8 +109,7 @@ Assign a device as a child device to an existing device (using pipeline)
                 -Type "application/vnd.com.nsn.cumulocity.managedObjectReference+json" `
                 -ItemType "application/vnd.com.nsn.cumulocity.managedObject+json" `
                 -ResultProperty "managedObject" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

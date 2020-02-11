@@ -109,8 +109,7 @@ Set the required availability of a device (using pipeline)
                 -Type "application/vnd.com.nsn.cumulocity.inventory+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

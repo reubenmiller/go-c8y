@@ -97,8 +97,7 @@ Register a new device
                 -Type "application/vnd.com.nsn.cumulocity.newDeviceRequest+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

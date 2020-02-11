@@ -82,14 +82,6 @@ Get a list of data broker connectors
     Process {
         foreach ($item in @("")) {
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
 
             Invoke-Command `
                 -Noun "databroker" `
@@ -98,8 +90,7 @@ Get a list of data broker connectors
                 -Type "application/vnd.com.nsn.cumulocity.databrokerConnectorCollection+json" `
                 -ItemType "application/vnd.com.nsn.cumulocity.databrokerConnector+json" `
                 -ResultProperty "connectors" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

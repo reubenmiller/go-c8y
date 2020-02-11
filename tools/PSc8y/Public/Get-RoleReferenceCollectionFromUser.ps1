@@ -98,14 +98,6 @@ Get a list of role references for a user
     Process {
         foreach ($item in @("")) {
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
 
             Invoke-Command `
                 -Noun "userRoles" `
@@ -114,8 +106,7 @@ Get a list of role references for a user
                 -Type "application/vnd.com.nsn.cumulocity.roleReferenceCollection+json" `
                 -ItemType "application/vnd.com.nsn.cumulocity.roleReference+json" `
                 -ResultProperty "references" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

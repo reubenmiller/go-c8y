@@ -157,14 +157,6 @@ Get a list of users
     Process {
         foreach ($item in @("")) {
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
 
             Invoke-Command `
                 -Noun "users" `
@@ -173,8 +165,7 @@ Get a list of users
                 -Type "application/vnd.com.nsn.cumulocity.userCollection+json" `
                 -ItemType "application/vnd.com.nsn.cumulocity.user+json" `
                 -ResultProperty "users" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

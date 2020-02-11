@@ -102,8 +102,7 @@ Update an existing binary file
                 -Type "application/vnd.com.nsn.cumulocity.managedObject+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

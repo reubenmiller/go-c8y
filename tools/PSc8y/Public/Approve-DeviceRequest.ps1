@@ -106,8 +106,7 @@ Approve a new device request
                 -Type "application/vnd.com.nsn.cumulocity.newDeviceRequest+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

@@ -111,8 +111,7 @@ Get external identity
                 -Type "application/vnd.com.nsn.cumulocity.externalId+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

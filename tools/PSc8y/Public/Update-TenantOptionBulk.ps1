@@ -100,8 +100,7 @@ Update multiple tenant options
                 -Type "application/vnd.com.nsn.cumulocity.option+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

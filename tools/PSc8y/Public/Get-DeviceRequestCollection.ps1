@@ -85,14 +85,6 @@ Get a list of new device requests
     Process {
         foreach ($item in @("")) {
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
 
             Invoke-Command `
                 -Noun "deviceCredentials" `
@@ -101,8 +93,7 @@ Get a list of new device requests
                 -Type "application/vnd.com.nsn.cumulocity.newDeviceRequestCollection+json" `
                 -ItemType "application/vnd.com.nsn.cumulocity.newDeviceRequest+json" `
                 -ResultProperty "newDeviceRequests" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

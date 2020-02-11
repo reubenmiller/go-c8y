@@ -133,8 +133,7 @@ Update the current user's lastname
                 -Type "application/vnd.com.nsn.cumulocity.currentUser+json" `
                 -ItemType "" `
                 -ResultProperty "" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 

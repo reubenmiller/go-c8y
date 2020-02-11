@@ -95,14 +95,6 @@ Get a list of external ids
                 $Parameters["device"] = if ($item.id) { $item.id } else { $item }
             }
 
-            if (!$Force -and
-                !$WhatIfPreference -and
-                !$PSCmdlet.ShouldProcess(
-                    (PSc8y\Get-C8ySessionProperty -Name "tenant"),
-                    (Format-ConfirmationMessage -Name $PSCmdlet.MyInvocation.InvocationName -InputObject $item)
-                )) {
-                continue
-            }
 
             Invoke-Command `
                 -Noun "identity" `
@@ -111,8 +103,7 @@ Get a list of external ids
                 -Type "application/vnd.com.nsn.cumulocity.externalIdCollection+json" `
                 -ItemType "application/vnd.com.nsn.cumulocity.externalId+json" `
                 -ResultProperty "externalIds" `
-                -Raw:$Raw `
-                -IncludeAll:$IncludeAll
+                -Raw:$Raw
         }
     }
 
