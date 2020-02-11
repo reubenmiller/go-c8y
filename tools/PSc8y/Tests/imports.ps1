@@ -5,6 +5,10 @@ Write-Verbose "PSScriptRoot: $PSSScriptRoot";
 Import-Module Pester -MinimumVersion "4.0.0" -MaximumVersion "4.100.0"
 Import-Module "$PSScriptRoot/../dist/PSc8y/PSc8y.psd1" -Prefix "" -Force
 
+# Import local functions which are only used in tests
+. "$PSScriptRoot/../Public-manual/New-TestHostedApplication.ps1"
+. "$PSScriptRoot/../Public-manual/New-TestMicroservice.ps1"
+
 # Import helper functions
 . "$PSScriptRoot/Get-JSONFromResponse.ps1"
 

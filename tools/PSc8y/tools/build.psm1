@@ -8,7 +8,7 @@ $script:TempPath = [System.IO.Path]::GetTempPath()
 $script:PublicFunctions = @( Get-ChildItem -Path $ModuleRoot\Public\*.ps1 -ErrorAction SilentlyContinue ) +
                           @(
     Get-ChildItem -Path $ModuleRoot\Public-manual\*.ps1 -ErrorAction SilentlyContinue `
-        | Where-Object { $_.Name -ne "New-TestMicroservice.ps1" -or $_.Name -ne "New-TestHostedApplication.ps1" }
+        | Where-Object { $_.Name -ne "New-TestMicroservice.ps1" -and $_.Name -ne "New-TestHostedApplication.ps1" }
 )
 $script:PrivateFunctions = @( Get-ChildItem -Path $ModuleRoot\Private\*.ps1 -ErrorAction SilentlyContinue )
 
