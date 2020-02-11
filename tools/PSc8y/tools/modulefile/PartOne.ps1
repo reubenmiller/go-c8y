@@ -5,7 +5,7 @@
 #
 #########################################################################################
 
-Microsoft.PowerShell.Core\Set-StrictMode -Version Latest
+#Microsoft.PowerShell.Core\Set-StrictMode -Version Latest
 
 #region script variables
 
