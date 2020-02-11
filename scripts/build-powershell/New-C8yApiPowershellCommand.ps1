@@ -449,7 +449,7 @@ $($BeginParameterBuilder -join "`n")
     }
 
     Process {
-$(New-Body2 -Noun $Noun -PipelineTemplateFormat $PipelineTemplateFormat -IteratorVariable $IteratorVariable -SetParameters $ProcessParameterBuilder -Verb $Verb -IteratorType $IteratorType -ResultType $ResultType -ResultItemType $ResultItemType -ResultSelectProperty $ResultSelectProperty)
+$(New-Body2 -Noun $Noun -PipelineTemplateFormat $PipelineTemplateFormat -ConfirmImpact $CmdletConfirmImpact -IteratorVariable $IteratorVariable -SetParameters $ProcessParameterBuilder -Verb $Verb -IteratorType $IteratorType -ResultType $ResultType -ResultItemType $ResultItemType -ResultSelectProperty $ResultSelectProperty)
     }
 
     End {}
@@ -471,7 +471,8 @@ Function New-Body2 {
         [string] $ResultSelectProperty,
         [string] $IteratorType,
         [string] $IteratorVariable,
-        [string] $PipelineTemplateType
+        [string] $PipelineTemplateType,
+        [string] $ConfirmImpact
     )
 
     $Target = "(PSc8y\Get-C8ySessionProperty -Name `"tenant`")"
@@ -479,9 +480,9 @@ Function New-Body2 {
 
     $ExpandFunction = Get-IteratorFunction -Type $IteratorType -Variable $IteratorVariable
 
-    $Template1 = @"
-        foreach (`$item in $ExpandFunction) {
-$SetParameters
+    $ConfirmationStatement = ""    
+    if ($ConfirmImpact -ne "None") {
+        $ConfirmationStatement = @"
             if (!`$Force -and
                 !`$WhatIfPreference -and
                 !`$PSCmdlet.ShouldProcess(
@@ -491,6 +492,13 @@ $SetParameters
                 continue
             }
 
+"@
+    }
+
+    $Template1 = @"
+        foreach (`$item in $ExpandFunction) {
+$SetParameters
+$ConfirmationStatement
             Invoke-Command ``
                 -Noun "$Noun" ``
                 -Verb "$Verb" ``
@@ -498,8 +506,7 @@ $SetParameters
                 -Type "$ResultType" ``
                 -ItemType "$ResultItemType" ``
                 -ResultProperty "$ResultSelectProperty" ``
-                -Raw:`$Raw ``
-                -IncludeAll:`$IncludeAll
+                -Raw:`$Raw
         }
 "@
         $Template2 = @"
