@@ -60,7 +60,7 @@ function Update-ModuleManifestFunctions {
 
     # FunctionsToExport string needs to be array definition with function names surrounded by quotes.
     $formatedFunctionNames = @()
-    foreach ($function in $PublicFunctions.basename) {
+    foreach ($function in $PublicFunctions.BaseName) {
         $function = "`'$function`'"
         $formatedFunctionNames += $function
     }
@@ -71,7 +71,7 @@ function Update-ModuleManifestFunctions {
 
     # Do the string replacement in the manifest file with the formated function names.
     $ManifestFileContent = $ManifestFileContent.Replace('FunctionsToExport = "*"', $ManifestFunctionExportString)
-    Set-Content -Path "$ManifestFile" -Value $ManifestFileContent
+    Set-Content -Path "$ManifestFile" -Value $ManifestFileContent.TrimEnd()
 }
 function Remove-ModuleManifestFunctions ($Path) {
     # Utility method to remove the list of functions from a manifest. This is specific to this modules manifest and
@@ -85,9 +85,9 @@ function Remove-ModuleManifestFunctions ($Path) {
 
     $functionsExportString = $arrFile[$functionsStartPos..$functionsEndPos] | Out-String
 
-    $rawFile = $rawFile.Replace($functionsExportString, "FunctionsToExport = @()`n")
+    $rawFile = $rawFile.Replace($functionsExportString, "FunctionsToExport = `"*`"`n")
 
-    Set-Content -Path $Path -Value $rawFile
+    Set-Content -Path $Path -Value $rawFile.TrimEnd()
 }
 
 function Publish-ModuleArtifacts {
