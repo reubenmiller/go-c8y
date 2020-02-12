@@ -42,7 +42,7 @@ try {
 		Exit 1
 	}
 
-	Write-Host "Publishing module"
+	Write-Host "Publishing module from folder [$ArtifactFolder]"
 	## Publish module to PowerShell Gallery
 	$publishParams = @{
 		Path        = $ArtifactFolder

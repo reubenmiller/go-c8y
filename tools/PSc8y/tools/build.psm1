@@ -129,5 +129,5 @@ function Export-ProductionModule {
     Update-ModuleManifestFunctions
     Publish-ModuleArtifacts
 
-    Join-Path -Path $TempPath -ChildPath $ModuleName
+    Join-Path -Path $ArtifactRoot -ChildPath $ModuleName
 }
