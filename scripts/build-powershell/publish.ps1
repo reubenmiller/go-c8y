@@ -2,7 +2,7 @@
 Param()
 $ErrorActionPreference = 'Stop'
 
-Import-Module "$PSScriptRoot\..\..\tools\PSc8y\tools\build.psm1" -Force
+Import-Module "$PSScriptRoot/../../tools/PSc8y/tools/build.psm1" -Force
 
 # PowerShellGet 2.2.3 required to run correctly on MacOS
 try {
