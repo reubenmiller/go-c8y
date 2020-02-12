@@ -23,7 +23,7 @@ foreach ($iFile in $SpecFiles) {
 & "$PSScriptRoot/../build-cli/build-binary.ps1" -OutputDir "$BaseDir/Dependencies" -All
 
 # Build PowerShell Module
-Import-Module "$PSScriptRoot\..\..\Tools\PSc8y\tools\build.psm1" -Force
+Import-Module "$PSScriptRoot/../../tools/PSc8y/tools/build.psm1" -Force
 Export-ProductionModule
 
 Write-Host "Build successful! $BaseDir"
