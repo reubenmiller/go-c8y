@@ -480,7 +480,7 @@ Function New-Body2 {
 
     $ExpandFunction = Get-IteratorFunction -Type $IteratorType -Variable $IteratorVariable
 
-    $ConfirmationStatement = ""    
+    $ConfirmationStatement = ""
     if ($ConfirmImpact -ne "None") {
         $ConfirmationStatement = @"
             if (!`$Force -and
@@ -552,6 +552,7 @@ Function Get-IteratorFunction {
         "[]roleself" { "(PSc8y\Expand-Id $Variable)" }
         "[]tenant" { "(PSc8y\Expand-Tenant $Variable)" }
         "[]userself" { "(PSc8y\Expand-User $Variable)" }
+        "[]user" { "(PSc8y\Expand-User $Variable)" }
         "application" { "(PSc8y\Expand-Application $Variable)" }
         "microservice" { "(PSc8y\Expand-Microservice $Variable)" }
         "device" { "(PSc8y\Expand-Device $Variable)" }
