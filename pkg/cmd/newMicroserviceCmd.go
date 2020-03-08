@@ -164,11 +164,13 @@ func (n *newMicroserviceCmd) doProcedure(cmd *cobra.Command, args []string) erro
 	// Upload binary
 	if !skipUpload {
 		Logger.Infof("uploading binary [id=%s]", application.ID)
-		_, err := client.Application.CreateBinary(context.Background(), n.file, application.ID)
+		if !globalFlagDryRun {
+			_, err := client.Application.CreateBinary(context.Background(), n.file, application.ID)
 
-		if err != nil {
-			// handle error
-			n.cmd.PrintErrf("failed to uploaded file. %s", err)
+			if err != nil {
+				// handle error
+				n.cmd.PrintErrf("failed to uploaded file. %s", err)
+			}
 		}
 	} else {
 		//
@@ -188,7 +190,7 @@ func (n *newMicroserviceCmd) doProcedure(cmd *cobra.Command, args []string) erro
 			manifestFile = n.file
 		} else if strings.HasSuffix(n.file, ".zip") {
 			if val, err := GetManifestFile(n.file); err != nil {
-
+				Logger.Warningf("failed to get manifest file from microservice. %s", err)
 			} else {
 				manifestFile = val
 			}
@@ -196,21 +198,23 @@ func (n *newMicroserviceCmd) doProcedure(cmd *cobra.Command, args []string) erro
 
 		if v, err := jsonUtilities.DecodeJSONFile(manifestFile); err != nil {
 			// todo: handle error
+			Logger.Warningf("failed to decode manifest file. file=%s, err=%s", manifestFile, err)
 		} else {
 			manifestContents = v
 		}
 
-		if values, ok := manifestContents["requiredRoles"].([]string); !ok {
+		if values, ok := manifestContents["requiredRoles"].([]string); ok {
 			requiredRoles = append(requiredRoles, values...)
 		}
 
 		// Read the Cumulocity.json file, and upload
-		Logger.Infof("updating application details [id=%s]", application.ID)
-		client.Application.Update(context.Background(), application.ID, &c8y.Application{
-			RequiredRoles: requiredRoles,
-			// manifest: manifestContents,
-		})
-
+		Logger.Infof("updating application details [id=%s], requiredRoles=%s", application.ID, strings.Join(requiredRoles, ","))
+		if !globalFlagDryRun {
+			client.Application.Update(context.Background(), application.ID, &c8y.Application{
+				RequiredRoles: requiredRoles,
+				// manifest: manifestContents,
+			})
+		}
 	}
 
 	// TODO: check if already subscribed
@@ -218,13 +222,15 @@ func (n *newMicroserviceCmd) doProcedure(cmd *cobra.Command, args []string) erro
 	// App subscription
 	if !n.skipSubscription {
 		Logger.Infof("Subscribing to application")
-		_, resp, err := client.Tenant.AddApplicationReference(context.Background(), client.TenantName, application.Self)
+		if !globalFlagDryRun {
+			_, resp, err := client.Tenant.AddApplicationReference(context.Background(), client.TenantName, application.Self)
 
-		if err != nil {
-			if resp != nil && resp.StatusCode == 409 {
-				Logger.Infof("microservice is already enabled")
-			} else {
-				return fmt.Errorf("failed to subscribe to application. %s", err)
+			if err != nil {
+				if resp != nil && resp.StatusCode == 409 {
+					Logger.Infof("microservice is already enabled")
+				} else {
+					return fmt.Errorf("failed to subscribe to application. %s", err)
+				}
 			}
 		}
 	}
