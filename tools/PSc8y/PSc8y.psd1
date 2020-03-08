@@ -59,17 +59,19 @@ RequiredModules = @()
 
 # Format files (.ps1xml) to be loaded when importing this module
 FormatsToProcess = @(
+	'format-data/agents.ps1xml',
     'format-data/alarms.ps1xml',
     'format-data/applicationReferences.ps1xml',
     'format-data/applications.ps1xml',
     'format-data/auditRecords.ps1xml',
-    'format-data/devices.ps1xml',
+    'format-data/deviceCredentials.ps1xml',
     'format-data/deviceGroups.ps1xml',
+    'format-data/devices.ps1xml',
     'format-data/events.ps1xml',
     'format-data/identity.ps1xml',
     'format-data/inventoryRoles.ps1xml',
-    'format-data/managedObjects.ps1xml',
     'format-data/managedObjectReferences.ps1xml',
+    'format-data/managedObjects.ps1xml',
     'format-data/measurements.ps1xml',
     'format-data/microservices.ps1xml',
     'format-data/operations.ps1xml',
@@ -80,10 +82,10 @@ FormatsToProcess = @(
     'format-data/session.ps1xml',
     'format-data/tenants.ps1xml',
     'format-data/tenantStatistics.ps1xml',
-    'format-data/userGroups.ps1xml',
     'format-data/userGroupMembership.ps1xml',
-    'format-data/users.ps1xml',
-    'format-data/userReferences.ps1xml'
+    'format-data/userGroups.ps1xml',
+    'format-data/userReferences.ps1xml',
+    'format-data/users.ps1xml'
 )
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
