@@ -2,7 +2,7 @@
 
 Describe -Name "Get-ApplicationBinaryCollection" {
     Context "existing web application" {
-        $application = New-TestHostedApplication -ErrorAction SilentlyContinue
+        $application = New-TestHostedApplication
 
         It -Skip "Gets a list of binaries for a given application" {
             $application.id | Should -Not -BeNullOrEmpty
