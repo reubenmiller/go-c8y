@@ -2,9 +2,10 @@
 
 Describe -Name "Get-ApplicationBinaryCollection" {
     Context "existing web application" {
-        $application = New-TestHostedApplication
+        $application = New-TestHostedApplication -ErrorAction SilentlyContinue
 
         It -Skip "Gets a list of binaries for a given application" {
+            $application.id | Should -Not -BeNullOrEmpty
             [array] $response = Get-ApplicationBinaryCollection -Id $application.id
 
             $LASTEXITCODE | Should -Be 0
@@ -14,6 +15,8 @@ Describe -Name "Get-ApplicationBinaryCollection" {
             $application.activeVersionId | Should -BeExactly $response[0].id
         }
 
-        PSc8y\Remove-Application -Id $application.id
+        if ($application) {
+            PSc8y\Remove-Application -Id $application.id
+        }
     }
 }
