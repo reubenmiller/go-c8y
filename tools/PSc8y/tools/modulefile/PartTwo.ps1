@@ -75,8 +75,25 @@ Register-Alias
 # allow -Session params to be tab-completed
 $Manifest = Test-ModuleManifest -Path $PSScriptRoot\PSc8y.psd1
 
+$ModulePrefix = $Manifest.Prefix
+
 $commandsWithSessionParameter = @( $Manifest.ExportedFunctions.Keys ) `
-    | ForEach-Object { Get-Item "function:\$_" } `
+    | ForEach-Object {
+        # Note: Different PowerShell version handle internal function names 
+        # slightly differenty (some with prefix sometimes without), so we always
+        # look for both of them.
+        #
+        $Name = "$_"
+        $NameWithoutPrefix = $Name.Replace("-${ModulePrefix}", "-")
+
+        if (Test-Path "Function:\$Name") {
+            Get-Item "Function:\$Name"
+        } elseif (Test-Path "Function:\$NameWithoutPrefix") {
+            Get-Item "Function:\$NameWithoutPrefix"
+        } else {
+            throw "Could not find function '$Name'"
+        }
+    } `
     | Where-Object { $_.Parameters.ContainsKey("Session") }
 
 try {
