@@ -408,6 +408,7 @@
               "$MicroserviceZip = \"$PSScriptRoot/TestData/microservice/helloworld.zip\""
             ],
             "command": "New-ApplicationBinary -Id $App.id -File $MicroserviceZip",
+            "skipTest": true,
             "afterEach": [
               "Remove-Application -Id $App.id"
             ]
@@ -459,6 +460,7 @@
               "$app = New-TestHostedApplication"
             ],
             "command": "Get-ApplicationBinaryCollection -Id $App.id",
+            "skipTest": true,
             "afterEach": [
               "Remove-Application -Id $app.id"
             ]
@@ -469,6 +471,7 @@
               "$app = New-TestHostedApplication"
             ],
             "command": "Get-Application $App.id | Get-ApplicationBinaryCollection",
+            "skipTest": true,
             "afterEach": [
               "Remove-Application -Id $app.id"
             ]
