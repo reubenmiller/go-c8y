@@ -4,12 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net/url"
-	"path"
 
-	"github.com/pkg/errors"
 	"github.com/tidwall/gjson"
-	"go.uber.org/zap"
 )
 
 // ApplicationService provides the service provider for the Cumulocity Application API
@@ -262,34 +258,15 @@ func (s *ApplicationService) GetCurrentApplicationSubscriptions(ctx context.Cont
 //  * image.tar - executable docker image
 //
 // For the web application, the zip file must include index.html in the root directory.
-// For the custom Apama rule application, the zip file must consist of a single .mon file.
+// For the custom Apama rule application, the zip file must consist of a single .zip file.
 func (s *ApplicationService) CreateBinary(ctx context.Context, filename string, ID string) (*Response, error) {
-	client := s.client
-
 	values := map[string]io.Reader{
-		"file": mustOpen(filename), // lets assume its this file
+		"file": mustOpen(filename),
 	}
 
-	// set binary api
-	u, _ := url.Parse(client.BaseURL.String())
-	u.Path = path.Join(u.Path, "/application/applications/"+ID+"/binaries")
-
-	req, err := prepareMultipartRequest("POST", u.String(), values)
-	s.client.SetAuthorization(req)
-
-	req.Header.Set("Accept", "application/json")
-
-	if err != nil {
-		err = errors.Wrap(err, "Could not create binary upload request object")
-		zap.S().Error(err)
-		return nil, err
-	}
-
-	resp, err := client.Do(ctx, req, nil)
-
-	if err != nil {
-		return resp, err
-	}
-
-	return resp, nil
+	return s.client.SendRequest(ctx, RequestOptions{
+		Accept:   "application/json",
+		Path:     "/application/applications/" + ID + "/binaries",
+		FormData: values,
+	})
 }
