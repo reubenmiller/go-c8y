@@ -314,7 +314,7 @@
         {
           "name": "password",
           "type": "string",
-          "required": true,
+          "required": false,
           "description": "User password. Min: 6, max: 32 characters. Only Latin1 chars allowed"
         },
         {
@@ -367,17 +367,17 @@
       },
       "pathParameters": [
         {
+          "name": "id",
+          "type": "[]user",
+          "required": true,
+          "pipeline": true,
+          "description": "User id"
+        },
+        {
           "name": "tenant",
           "type": "tenant",
           "required": false,
           "description": "Tenant"
-        },
-        {
-          "name": "id",
-          "type": "string",
-          "required": true,
-          "pipeline": true,
-          "description": "User id"
         }
       ]
     },
@@ -501,17 +501,17 @@
       },
       "pathParameters": [
         {
+          "name": "id",
+          "type": "[]user",
+          "required": true,
+          "pipeline": true,
+          "description": "User id"
+        },
+        {
           "name": "tenant",
           "type": "tenant",
           "required": false,
           "description": "Tenant"
-        },
-        {
-          "name": "id",
-          "type": "string",
-          "required": true,
-          "pipeline": true,
-          "description": "User id"
         }
       ],
       "body": [
@@ -613,7 +613,7 @@
       "pathParameters": [
         {
           "name": "id",
-          "type": "string",
+          "type": "[]user",
           "required": true,
           "pipeline": true,
           "description": "User id"

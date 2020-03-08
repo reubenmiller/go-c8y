@@ -230,7 +230,7 @@ endpoints:
 
       - name: password
         type: string
-        required: true
+        required: false
         description: 'User password. Min: 6, max: 32 characters. Only Latin1 chars allowed'
 
       # TODO: Only set value if it has changed!
@@ -266,16 +266,16 @@ endpoints:
         - description: Get a user
           command: c8y users get --id "myuser"
     pathParameters:
+      - name: id
+        type: '[]user'
+        required: true
+        pipeline: true
+        description: User id
+
       - name: tenant
         type: tenant
         required: false
         description: Tenant
-
-      - name: id
-        type: string
-        required: true
-        pipeline: true
-        description: User id
 
   - name: getUserByName
     description: Get user by username
@@ -356,16 +356,16 @@ endpoints:
         - description: Update a user
           command: c8y users update --id "myuser" --firstName "Simon"
     pathParameters:
+      - name: id
+        type: '[]user'
+        required: true
+        pipeline: true
+        description: User id
+
       - name: tenant
         type: tenant
         required: false
         description: Tenant
-
-      - name: id
-        type: string
-        required: true
-        pipeline: true
-        description: User id
     body:
       - name: firstName
         type: string
@@ -439,7 +439,7 @@ endpoints:
           command: c8y users resetUserPassword --id "myuser"
     pathParameters:
       - name: id
-        type: string
+        type: '[]user'
         required: true
         pipeline: true
         description: User id
