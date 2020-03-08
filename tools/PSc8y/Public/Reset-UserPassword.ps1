@@ -28,7 +28,7 @@ Resets a user's password by generating a new password
         [Parameter(Mandatory = $true,
                    ValueFromPipeline=$true,
                    ValueFromPipelineByPropertyName=$true)]
-        [string]
+        [object[]]
         $Id,
 
         # Tenant
@@ -96,7 +96,7 @@ Resets a user's password by generating a new password
     }
 
     Process {
-        foreach ($item in (PSc8y\Expand-Id $Id)) {
+        foreach ($item in (PSc8y\Expand-User $Id)) {
             if ($item) {
                 $Parameters["id"] = if ($item.id) { $item.id } else { $item }
             }

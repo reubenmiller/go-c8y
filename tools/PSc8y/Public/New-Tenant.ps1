@@ -27,12 +27,6 @@ Create a new tenant (from the management tenant)
         [string]
         $Domain,
 
-        # The tenant ID. Will be auto-generated if not present.
-        [Parameter(ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true)]
-        [string]
-        $Id,
-
         # Username of the tenant administrator
         [Parameter()]
         [string]
@@ -51,7 +45,12 @@ Create a new tenant (from the management tenant)
         # An international contact phone number
         [Parameter()]
         [string]
-        $Contact_phone,
+        $ContactPhone,
+
+        # The tenant ID. This should be left bank unless you know what you are doing. Will be auto-generated if not present.
+        [Parameter()]
+        [string]
+        $TenantId,
 
         # A set of custom properties of the tenant
         [Parameter()]
@@ -97,9 +96,6 @@ Create a new tenant (from the management tenant)
         if ($PSBoundParameters.ContainsKey("Domain")) {
             $Parameters["domain"] = $Domain
         }
-        if ($PSBoundParameters.ContainsKey("Id")) {
-            $Parameters["id"] = $Id
-        }
         if ($PSBoundParameters.ContainsKey("AdminName")) {
             $Parameters["adminName"] = $AdminName
         }
@@ -109,8 +105,11 @@ Create a new tenant (from the management tenant)
         if ($PSBoundParameters.ContainsKey("ContactName")) {
             $Parameters["contactName"] = $ContactName
         }
-        if ($PSBoundParameters.ContainsKey("Contact_phone")) {
-            $Parameters["contact_phone"] = $Contact_phone
+        if ($PSBoundParameters.ContainsKey("ContactPhone")) {
+            $Parameters["contactPhone"] = $ContactPhone
+        }
+        if ($PSBoundParameters.ContainsKey("TenantId")) {
+            $Parameters["tenantId"] = $TenantId
         }
         if ($PSBoundParameters.ContainsKey("Data")) {
             $Parameters["data"] = ConvertTo-JsonArgument $Data
@@ -131,7 +130,7 @@ Create a new tenant (from the management tenant)
     }
 
     Process {
-        foreach ($item in (PSc8y\Expand-Id $Id)) {
+        foreach ($item in @("")) {
 
             if (!$Force -and
                 !$WhatIfPreference -and

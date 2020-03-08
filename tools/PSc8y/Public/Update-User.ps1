@@ -17,17 +17,17 @@ Update a user
     [Alias()]
     [OutputType([object])]
     Param(
-        # Tenant
-        [Parameter()]
-        [object]
-        $Tenant,
-
         # User id (required)
         [Parameter(Mandatory = $true,
                    ValueFromPipeline=$true,
                    ValueFromPipelineByPropertyName=$true)]
-        [string]
+        [object[]]
         $Id,
+
+        # Tenant
+        [Parameter()]
+        [object]
+        $Tenant,
 
         # User first name
         [Parameter()]
@@ -146,7 +146,7 @@ Update a user
     }
 
     Process {
-        foreach ($item in (PSc8y\Expand-Id $Id)) {
+        foreach ($item in (PSc8y\Expand-User $Id)) {
             if ($item) {
                 $Parameters["id"] = if ($item.id) { $item.id } else { $item }
             }

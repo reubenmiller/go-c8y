@@ -39,16 +39,15 @@ Update a tenant by name (from the mangement tenant)
 	cmd.SilenceUsage = true
 
 	cmd.Flags().String("id", "", "Tenant id")
-	cmd.Flags().String("company", "", "Company name. Maximum 256 characters (required)")
+	cmd.Flags().String("company", "", "Company name. Maximum 256 characters")
 	cmd.Flags().String("domain", "", "Domain name to be used for the tenant. Maximum 256 characters (required)")
 	cmd.Flags().String("adminName", "", "Username of the tenant administrator")
 	cmd.Flags().String("adminPass", "", "Password of the tenant administrator")
 	cmd.Flags().String("contactName", "", "A contact name, for example an administrator, of the tenant")
-	cmd.Flags().String("contact_phone", "", "An international contact phone number")
+	cmd.Flags().String("contactPhone", "", "An international contact phone number")
 	addDataFlag(cmd)
 
 	// Required flags
-	cmd.MarkFlagRequired("company")
 	cmd.MarkFlagRequired("domain")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
@@ -122,12 +121,12 @@ func (n *updateTenantCmd) updateTenant(cmd *cobra.Command, args []string) error 
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "contactName", err))
 	}
-	if v, err := cmd.Flags().GetString("contact_phone"); err == nil {
+	if v, err := cmd.Flags().GetString("contactPhone"); err == nil {
 		if v != "" {
 			body.Set("contact_phone", v)
 		}
 	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "contact_phone", err))
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "contactPhone", err))
 	}
 
 	// path parameters

@@ -40,11 +40,11 @@ Create a new tenant (from the management tenant)
 
 	cmd.Flags().String("company", "", "Company name. Maximum 256 characters (required)")
 	cmd.Flags().String("domain", "", "Domain name to be used for the tenant. Maximum 256 characters (required)")
-	cmd.Flags().String("id", "", "The tenant ID. Will be auto-generated if not present.")
 	cmd.Flags().String("adminName", "", "Username of the tenant administrator")
 	cmd.Flags().String("adminPass", "", "Password of the tenant administrator")
 	cmd.Flags().String("contactName", "", "A contact name, for example an administrator, of the tenant")
-	cmd.Flags().String("contact_phone", "", "An international contact phone number")
+	cmd.Flags().String("contactPhone", "", "An international contact phone number")
+	cmd.Flags().String("tenantId", "", "The tenant ID. This should be left bank unless you know what you are doing. Will be auto-generated if not present.")
 	addDataFlag(cmd)
 
 	// Required flags
@@ -101,13 +101,6 @@ func (n *newTenantCmd) newTenant(cmd *cobra.Command, args []string) error {
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "domain", err))
 	}
-	if v, err := cmd.Flags().GetString("id"); err == nil {
-		if v != "" {
-			body.Set("id", v)
-		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "id", err))
-	}
 	if v, err := cmd.Flags().GetString("adminName"); err == nil {
 		if v != "" {
 			body.Set("adminName", v)
@@ -129,12 +122,19 @@ func (n *newTenantCmd) newTenant(cmd *cobra.Command, args []string) error {
 	} else {
 		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "contactName", err))
 	}
-	if v, err := cmd.Flags().GetString("contact_phone"); err == nil {
+	if v, err := cmd.Flags().GetString("contactPhone"); err == nil {
 		if v != "" {
 			body.Set("contact_phone", v)
 		}
 	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "contact_phone", err))
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "contactPhone", err))
+	}
+	if v, err := cmd.Flags().GetString("tenantId"); err == nil {
+		if v != "" {
+			body.Set("tenantId", v)
+		}
+	} else {
+		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "tenantId", err))
 	}
 
 	// path parameters

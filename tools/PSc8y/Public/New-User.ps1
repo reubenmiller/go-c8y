@@ -52,8 +52,8 @@ Create a user
         [switch]
         $Enabled,
 
-        # User password. Min: 6, max: 32 characters. Only Latin1 chars allowed (required)
-        [Parameter(Mandatory = $true)]
+        # User password. Min: 6, max: 32 characters. Only Latin1 chars allowed
+        [Parameter()]
         [string]
         $Password,
 

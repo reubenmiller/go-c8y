@@ -45,13 +45,12 @@ Create a user
 	cmd.Flags().String("phone", "", "User phone number. Format: '+[country code][number]', has to be a valid MSISDN")
 	cmd.Flags().String("email", "", "User email address")
 	cmd.Flags().Bool("enabled", false, "User activation status (true/false)")
-	cmd.Flags().String("password", "", "User password. Min: 6, max: 32 characters. Only Latin1 chars allowed (required)")
+	cmd.Flags().String("password", "", "User password. Min: 6, max: 32 characters. Only Latin1 chars allowed")
 	cmd.Flags().Bool("sendPasswordResetEmail", false, "User activation status (true/false)")
 	cmd.Flags().String("customProperties", "", "Custom properties to be added to the user")
 
 	// Required flags
 	cmd.MarkFlagRequired("userName")
-	cmd.MarkFlagRequired("password")
 
 	ccmd.baseCmd = newBaseCmd(cmd)
 

@@ -38,8 +38,8 @@ Get a user
 
 	cmd.SilenceUsage = true
 
+	cmd.Flags().StringSlice("id", []string{""}, "User id (required)")
 	cmd.Flags().String("tenant", "", "Tenant")
-	cmd.Flags().String("id", "", "User id (required)")
 
 	// Required flags
 	cmd.MarkFlagRequired("id")
@@ -82,15 +82,25 @@ func (n *getUserCmd) getUser(cmd *cobra.Command, args []string) error {
 
 	// path parameters
 	pathParameters := make(map[string]string)
+	if cmd.Flags().Changed("id") {
+		idInputValues, idValue, err := getFormattedUserSlice(cmd, args, "id")
+
+		if err != nil {
+			return newUserError("no matching users found", idInputValues, err)
+		}
+
+		if len(idValue) == 0 {
+			return newUserError("no matching users found", idInputValues)
+		}
+
+		for _, item := range idValue {
+			if item != "" {
+				pathParameters["id"] = newIDValue(item).GetID()
+			}
+		}
+	}
 	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
 		pathParameters["tenant"] = v
-	}
-	if v, err := cmd.Flags().GetString("id"); err == nil {
-		if v != "" {
-			pathParameters["id"] = v
-		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "id", err))
 	}
 
 	path := replacePathParameters("user/{tenant}/users/{id}", pathParameters)

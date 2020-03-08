@@ -23,8 +23,8 @@ Update a tenant by name (from the mangement tenant)
         [object]
         $Id,
 
-        # Company name. Maximum 256 characters (required)
-        [Parameter(Mandatory = $true)]
+        # Company name. Maximum 256 characters
+        [Parameter()]
         [string]
         $Company,
 
@@ -51,7 +51,7 @@ Update a tenant by name (from the mangement tenant)
         # An international contact phone number
         [Parameter()]
         [string]
-        $Contact_phone,
+        $ContactPhone,
 
         # A set of custom properties of the tenant
         [Parameter()]
@@ -106,8 +106,8 @@ Update a tenant by name (from the mangement tenant)
         if ($PSBoundParameters.ContainsKey("ContactName")) {
             $Parameters["contactName"] = $ContactName
         }
-        if ($PSBoundParameters.ContainsKey("Contact_phone")) {
-            $Parameters["contact_phone"] = $Contact_phone
+        if ($PSBoundParameters.ContainsKey("ContactPhone")) {
+            $Parameters["contactPhone"] = $ContactPhone
         }
         if ($PSBoundParameters.ContainsKey("Data")) {
             $Parameters["data"] = ConvertTo-JsonArgument $Data

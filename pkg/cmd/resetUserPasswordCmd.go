@@ -38,7 +38,7 @@ Update a user
 
 	cmd.SilenceUsage = true
 
-	cmd.Flags().String("id", "", "User id (required)")
+	cmd.Flags().StringSlice("id", []string{""}, "User id (required)")
 	cmd.Flags().String("tenant", "", "Tenant")
 	cmd.Flags().String("newPassword", "", "New user password. Min: 6, max: 32 characters. Only Latin1 chars allowed")
 
@@ -94,12 +94,22 @@ addIfEmptyString(base, "password", {sendPasswordResetEmail: true})
 
 	// path parameters
 	pathParameters := make(map[string]string)
-	if v, err := cmd.Flags().GetString("id"); err == nil {
-		if v != "" {
-			pathParameters["id"] = v
+	if cmd.Flags().Changed("id") {
+		idInputValues, idValue, err := getFormattedUserSlice(cmd, args, "id")
+
+		if err != nil {
+			return newUserError("no matching users found", idInputValues, err)
 		}
-	} else {
-		return newUserError(fmt.Sprintf("Flag [%s] does not exist. %s", "id", err))
+
+		if len(idValue) == 0 {
+			return newUserError("no matching users found", idInputValues)
+		}
+
+		for _, item := range idValue {
+			if item != "" {
+				pathParameters["id"] = newIDValue(item).GetID()
+			}
+		}
 	}
 	if v := getTenantWithDefaultFlag(cmd, "tenant", client.TenantName); v != "" {
 		pathParameters["tenant"] = v
