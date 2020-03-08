@@ -107,7 +107,7 @@ func getMicroserviceSlice(cmd *cobra.Command, args []string, name string) ([]str
 
 	results, _ := getFetchedResultsAsString(refs)
 
-	return values, results, nil
+	return results, results, nil
 }
 
 // findMicroservices returns microservices given either an id or search text
