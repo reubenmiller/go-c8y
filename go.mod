@@ -14,6 +14,7 @@ require (
 	github.com/google/go-querystring v1.0.0
 	github.com/gorilla/websocket v1.4.0
 	github.com/howeyc/gopass v0.0.0-20190910152052-7cb4b85ec19c
+	github.com/jeremywohl/flatten v1.0.1 // indirect
 	github.com/karrick/tparse/v2 v2.7.1
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/gommon v0.2.8 // indirect
