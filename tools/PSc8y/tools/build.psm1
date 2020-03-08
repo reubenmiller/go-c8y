@@ -129,5 +129,9 @@ function Export-ProductionModule {
     Update-ModuleManifestFunctions
     Publish-ModuleArtifacts
 
-    Join-Path -Path $ArtifactRoot -ChildPath $ModuleName
+    $ExportPath = Join-Path -Path $ArtifactRoot -ChildPath $ModuleName
+
+    Write-Host "`n    Created module in: ${ExportPath}`n" -ForegroundColor Gray
+
+    $ExportPath
 }
