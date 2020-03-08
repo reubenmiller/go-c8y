@@ -54,11 +54,6 @@ endpoints:
         required: true
         description: Domain name to be used for the tenant. Maximum 256 characters
 
-      - name: id
-        type: string
-        required: false
-        description: The tenant ID. Will be auto-generated if not present.
-
       - name: adminName
         type: string
         required: false
@@ -74,10 +69,16 @@ endpoints:
         required: false
         description: A contact name, for example an administrator, of the tenant
 
-      - name: contact_phone
+      - name: contactPhone
         type: string
         required: false
+        property: contact_phone
         description: An international contact phone number
+
+      - name: tenantId
+        type: string
+        required: false
+        description: The tenant ID. This should be left bank unless you know what you are doing. Will be auto-generated if not present.
 
       - name: data
         type: json
@@ -156,7 +157,7 @@ endpoints:
     body:
       - name: company
         type: string
-        required: true
+        required: false
         description: Company name. Maximum 256 characters
 
       - name: domain
@@ -179,8 +180,9 @@ endpoints:
         required: false
         description: A contact name, for example an administrator, of the tenant
 
-      - name: contact_phone
+      - name: contactPhone
         type: string
+        property: contact_phone
         required: false
         description: An international contact phone number
 
