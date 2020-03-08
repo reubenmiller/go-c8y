@@ -99,7 +99,7 @@ Delete a user group (using pipeline)
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "userGroups" `
                 -Verb "delete" `
                 -Parameters $Parameters `

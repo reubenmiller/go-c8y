@@ -111,7 +111,7 @@ Update device custom properties
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "devices" `
                 -Verb "update" `
                 -Parameters $Parameters `

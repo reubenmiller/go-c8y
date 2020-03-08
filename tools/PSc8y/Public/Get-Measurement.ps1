@@ -77,7 +77,7 @@ Get measurement
             }
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "measurements" `
                 -Verb "get" `
                 -Parameters $Parameters `

@@ -99,7 +99,7 @@ Get a list of role references for a user group
         foreach ($item in @("")) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "userRoles" `
                 -Verb "getRoleReferenceCollectionFromGroup" `
                 -Parameters $Parameters `

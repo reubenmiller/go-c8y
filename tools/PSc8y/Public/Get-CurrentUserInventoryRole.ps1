@@ -74,7 +74,7 @@ Get an inventory role of the current user (using pipeline)
             }
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "users" `
                 -Verb "getCurrentUserInventoryRole" `
                 -Parameters $Parameters `

@@ -82,7 +82,7 @@ Get a user
             }
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "users" `
                 -Verb "get" `
                 -Parameters $Parameters `

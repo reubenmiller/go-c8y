@@ -91,7 +91,7 @@ Remove device by name
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "devices" `
                 -Verb "delete" `
                 -Parameters $Parameters `

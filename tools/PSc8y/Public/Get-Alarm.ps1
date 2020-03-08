@@ -77,7 +77,7 @@ Get alarm
             }
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "alarms" `
                 -Verb "get" `
                 -Parameters $Parameters `

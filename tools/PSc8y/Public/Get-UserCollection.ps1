@@ -158,7 +158,7 @@ Get a list of users
         foreach ($item in @("")) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "users" `
                 -Verb "list" `
                 -Parameters $Parameters `

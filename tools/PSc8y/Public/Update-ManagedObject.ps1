@@ -110,7 +110,7 @@ Update a managed object (using pipeline)
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "inventory" `
                 -Verb "update" `
                 -Parameters $Parameters `

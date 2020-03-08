@@ -95,7 +95,7 @@ Disable (unsubscribe) to a microservice
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "microservices" `
                 -Verb "disable" `
                 -Parameters $Parameters `

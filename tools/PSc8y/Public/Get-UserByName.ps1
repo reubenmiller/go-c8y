@@ -80,7 +80,7 @@ Get a user by name
         foreach ($item in @("")) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "users" `
                 -Verb "getUserByName" `
                 -Parameters $Parameters `

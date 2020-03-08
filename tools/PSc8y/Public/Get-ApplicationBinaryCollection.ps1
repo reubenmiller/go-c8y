@@ -101,7 +101,7 @@ List all of the binaries related to a Hosted (web) application (using pipeline)
             }
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "applications" `
                 -Verb "listApplicationBinaries" `
                 -Parameters $Parameters `

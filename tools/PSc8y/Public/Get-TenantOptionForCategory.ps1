@@ -91,7 +91,7 @@ Get a list of options for a category
         foreach ($item in @("")) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "tenantOptions" `
                 -Verb "getForCategory" `
                 -Parameters $Parameters `

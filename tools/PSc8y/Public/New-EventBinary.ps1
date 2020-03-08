@@ -95,7 +95,7 @@ Add a binary to an event
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "events" `
                 -Verb "createBinary" `
                 -Parameters $Parameters `

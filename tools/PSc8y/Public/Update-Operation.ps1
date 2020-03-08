@@ -119,7 +119,7 @@ Update multiple operations
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "operations" `
                 -Verb "update" `
                 -Parameters $Parameters `

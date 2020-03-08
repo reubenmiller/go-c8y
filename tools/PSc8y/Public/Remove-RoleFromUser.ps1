@@ -101,7 +101,7 @@ Remove a role from the given user
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "userRoles" `
                 -Verb "deleteRoleFromUser" `
                 -Parameters $Parameters `

@@ -83,7 +83,7 @@ Get the current users inventory roles
         foreach ($item in @("")) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "users" `
                 -Verb "listInventoryRoles" `
                 -Parameters $Parameters `

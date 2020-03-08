@@ -1,16 +1,16 @@
-Function Install-CumulocityBinary {
+Function Install-ClientBinary {
     <# 
 .SYNOPSIS
 Install the Cumulocity cli binary (c8y) so it is accessible from everywhere in consoles (assuming /usr/local/bin is in the $PATH variable)
 
 .EXAMPLE
-Install-CumulocityBinary
+Install-ClientBinary
 
 On Linux/MacOS, this installs the cumulocity binary to /usr/local/bin
 On Windows this will throw a warning
 
 .EXAMPLE
-Install-CumulocityBinary -InstallPath /usr/bin
+Install-ClientBinary -InstallPath /usr/bin
 
 Install the Cumulocity binary to /usr/bin
 
@@ -23,7 +23,7 @@ Install the Cumulocity binary to /usr/bin
         [string] $InstallPath = $env:C8Y_INSTALL_PATH
     )
 
-    $binary = Get-CumulocityBinary
+    $binary = Get-ClientBinary
 
     if (!$binary -or !(Test-Path $binary)) {
         Write-Error "Could not find c8y binary"

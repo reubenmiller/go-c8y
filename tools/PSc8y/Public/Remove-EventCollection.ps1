@@ -132,7 +132,7 @@ Remove events from a device
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "events" `
                 -Verb "deleteCollection" `
                 -Parameters $Parameters `

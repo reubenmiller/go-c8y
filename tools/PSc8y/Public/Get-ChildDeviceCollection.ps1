@@ -100,7 +100,7 @@ Get a list of the child devices of an existing device (using pipeline)
             }
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "inventoryReferences" `
                 -Verb "listChildDevices" `
                 -Parameters $Parameters `

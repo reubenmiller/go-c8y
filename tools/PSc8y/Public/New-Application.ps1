@@ -162,7 +162,7 @@ Create new hosted application
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "applications" `
                 -Verb "create" `
                 -Parameters $Parameters `

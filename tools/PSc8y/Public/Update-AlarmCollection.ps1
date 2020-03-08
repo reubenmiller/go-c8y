@@ -141,7 +141,7 @@ Update the status of all active alarms on a device to ACKNOWLEDGED (using pipeli
             continue
         }
 
-        Invoke-Command `
+        Invoke-ClientCommand `
             -Noun "alarms" `
             -Verb "updateCollection" `
             -Parameters $Parameters `

@@ -110,7 +110,7 @@ Create operation for a device (using pipeline)
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "operations" `
                 -Verb "create" `
                 -Parameters $Parameters `

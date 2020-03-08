@@ -95,7 +95,7 @@ Update an existing binary file
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "binaries" `
                 -Verb "update" `
                 -Parameters $Parameters `

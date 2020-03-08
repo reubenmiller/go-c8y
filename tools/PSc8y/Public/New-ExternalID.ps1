@@ -104,7 +104,7 @@ Get external identity
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "identity" `
                 -Verb "create" `
                 -Parameters $Parameters `

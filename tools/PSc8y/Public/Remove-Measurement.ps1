@@ -90,7 +90,7 @@ Delete measurement
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "measurements" `
                 -Verb "delete" `
                 -Parameters $Parameters `

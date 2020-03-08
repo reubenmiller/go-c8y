@@ -37,7 +37,7 @@ String
             }
 
             default {
-                $Binary = Get-CumulocityBinary
+                $Binary = Get-ClientBinary
                 $args = New-Object System.Collections.ArrayList
                 $null = $args.AddRange(@("sessions", "list"))
 

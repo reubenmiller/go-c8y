@@ -103,7 +103,7 @@ Upload application microservice binary
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "applications" `
                 -Verb "createBinary" `
                 -Parameters $Parameters `

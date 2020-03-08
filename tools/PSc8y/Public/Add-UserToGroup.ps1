@@ -103,7 +103,7 @@ Add a user to a user group
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "userReferences" `
                 -Verb "addUserToGroup" `
                 -Parameters $Parameters `

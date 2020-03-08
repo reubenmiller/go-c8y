@@ -122,7 +122,7 @@ Get measurement series from a device (using pipeline)
             continue
         }
 
-        Invoke-Command `
+        Invoke-ClientCommand `
             -Noun "measurements" `
             -Verb "getSeries" `
             -Parameters $Parameters `

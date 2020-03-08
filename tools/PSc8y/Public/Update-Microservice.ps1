@@ -128,7 +128,7 @@ Update microservice availability to MARKET
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "microservices" `
                 -Verb "update" `
                 -Parameters $Parameters `

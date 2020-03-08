@@ -153,7 +153,7 @@ Update custom properties of the current application (requires using application 
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "currentApplication" `
                 -Verb "update" `
                 -Parameters $Parameters `

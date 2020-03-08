@@ -1,4 +1,4 @@
-Function Set-CumulocityConsoleSetting {
+Function Set-ClientConsoleSetting {
 <#
 .SYNOPSIS
 Set console settings to be used by the cli tool
@@ -9,7 +9,7 @@ When using -HideSensitive, the following information will be obfuscated when sho
 (tenant, username, password, base64 credentials)
 
 .EXAMPLE
-Set-CumulocityConsoleSetting -HideSensitive
+Set-ClientConsoleSetting -HideSensitive
 
 Hide any sensitive session information on the console. Settings like (tenant, username, password, base64 credentials)
 #>

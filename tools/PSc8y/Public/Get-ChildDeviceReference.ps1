@@ -82,7 +82,7 @@ Get an existing child device reference
             }
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "inventoryReferences" `
                 -Verb "getChildDevice" `
                 -Parameters $Parameters `

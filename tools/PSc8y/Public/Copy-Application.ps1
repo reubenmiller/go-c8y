@@ -95,7 +95,7 @@ Copy an existing application
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "applications" `
                 -Verb "copy" `
                 -Parameters $Parameters `

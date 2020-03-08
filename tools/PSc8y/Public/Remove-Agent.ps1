@@ -91,7 +91,7 @@ Remove agent by name
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "agents" `
                 -Verb "delete" `
                 -Parameters $Parameters `

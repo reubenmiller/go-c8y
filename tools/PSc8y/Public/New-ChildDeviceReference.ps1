@@ -102,7 +102,7 @@ Assign a device as a child device to an existing device (using pipeline)
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "inventoryReferences" `
                 -Verb "createChildDevice" `
                 -Parameters $Parameters `

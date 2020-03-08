@@ -139,7 +139,7 @@ Update a tenant by name (from the mangement tenant)
             continue
         }
 
-        Invoke-Command `
+        Invoke-ClientCommand `
             -Noun "tenants" `
             -Verb "update" `
             -Parameters $Parameters `

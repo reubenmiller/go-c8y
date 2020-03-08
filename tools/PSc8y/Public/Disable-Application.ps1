@@ -95,7 +95,7 @@ Disable an application of a tenant
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "tenants" `
                 -Verb "disableApplication" `
                 -Parameters $Parameters `

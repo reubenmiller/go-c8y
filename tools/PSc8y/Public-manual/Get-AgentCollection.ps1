@@ -127,7 +127,7 @@ Get a list of agents which have been updated more recently than 2020-01-01
             continue
         }
 
-        Invoke-Command `
+        Invoke-ClientCommand `
             -Noun "agents" `
             -Verb "list" `
             -Parameters $Parameters `

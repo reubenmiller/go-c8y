@@ -78,7 +78,7 @@ Get the supported measurement series of a device (using pipeline)
             }
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "devices" `
                 -Verb "getSupportedSeries" `
                 -Parameters $Parameters `

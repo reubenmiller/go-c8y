@@ -1,4 +1,4 @@
-﻿Function Invoke-Command {
+﻿Function Invoke-ClientCommand {
     [cmdletbinding()]
     Param(
         [Parameter(
@@ -83,7 +83,7 @@
 
     $null = $args.Add("--raw")
 
-    $c8ycli = Get-CumulocityBinary
+    $c8ycli = Get-ClientBinary
     Write-Verbose ("$c8ycli {0}" -f $args -join " ")
 
     try {

@@ -83,7 +83,7 @@ Get a list of binaries
         foreach ($item in @("")) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "binaries" `
                 -Verb "list" `
                 -Parameters $Parameters `

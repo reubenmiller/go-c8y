@@ -134,7 +134,7 @@ Delete measurement collection for a device
             continue
         }
 
-        Invoke-Command `
+        Invoke-ClientCommand `
             -Noun "measurements" `
             -Verb "deleteCollection" `
             -Parameters $Parameters `

@@ -107,7 +107,7 @@ Update a user group (using pipeline)
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "userGroups" `
                 -Verb "update" `
                 -Parameters $Parameters `

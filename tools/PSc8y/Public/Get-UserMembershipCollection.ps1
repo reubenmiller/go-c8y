@@ -101,7 +101,7 @@ Get a list of groups that a user belongs to
             }
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "users" `
                 -Verb "listUserMembership" `
                 -Parameters $Parameters `

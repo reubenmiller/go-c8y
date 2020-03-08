@@ -114,7 +114,7 @@ Update custom properties of an existing event (using pipeline)
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "events" `
                 -Verb "update" `
                 -Parameters $Parameters `

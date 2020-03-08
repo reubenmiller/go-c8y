@@ -91,7 +91,7 @@ Delete a retention rule (using pipeline)
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "retentionRules" `
                 -Verb "delete" `
                 -Parameters $Parameters `

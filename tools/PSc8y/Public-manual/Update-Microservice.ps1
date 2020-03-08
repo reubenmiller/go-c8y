@@ -88,7 +88,7 @@ Upload application microservice binary
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "microservices" `
                 -Verb "update" `
                 -Parameters $Parameters `

@@ -78,7 +78,7 @@ Get the supported measurements of a device (using pipeline)
             }
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "devices" `
                 -Verb "getSupportedMeasurements" `
                 -Parameters $Parameters `

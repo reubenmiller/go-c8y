@@ -78,7 +78,7 @@ Get device group by name
             }
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "devices" `
                 -Verb "getGroup" `
                 -Parameters $Parameters `

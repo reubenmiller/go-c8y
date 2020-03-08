@@ -93,7 +93,7 @@ Get a managed object with parent references
             }
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "inventory" `
                 -Verb "get" `
                 -Parameters $Parameters `

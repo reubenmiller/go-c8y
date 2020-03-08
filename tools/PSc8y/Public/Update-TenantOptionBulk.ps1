@@ -93,7 +93,7 @@ Update multiple tenant options
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "tenantOptions" `
                 -Verb "updateBulk" `
                 -Parameters $Parameters `

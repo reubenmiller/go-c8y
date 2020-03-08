@@ -95,7 +95,7 @@ Unassign a child device from its parent device
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "inventoryReferences" `
                 -Verb "deleteChildDevice" `
                 -Parameters $Parameters `

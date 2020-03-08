@@ -106,7 +106,7 @@ Create group heirachy (parent group -> child group)
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "inventoryReferences" `
                 -Verb "createChildAsset" `
                 -Parameters $Parameters `

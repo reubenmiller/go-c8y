@@ -135,7 +135,7 @@ Get a list of devices which have been updated more recently than 2020-01-01
             continue
         }
 
-        Invoke-Command `
+        Invoke-ClientCommand `
             -Noun "devices" `
             -Verb "list" `
             -Parameters $Parameters `

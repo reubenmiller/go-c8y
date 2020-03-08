@@ -47,7 +47,7 @@
             $NoTenantPrefix
         )
     
-        $Binary = Get-CumulocityBinary
+        $Binary = Get-ClientBinary
     
         if (!$Credential -or ($Credential -eq [System.Management.Automation.PSCredential]::Empty)) {
             $Credential = Get-Credential -Message "Enter the API credentials for the $Tenant C8Y Tenant    (leave-out the the tenant prefix)" -ErrorAction SilentlyContinue

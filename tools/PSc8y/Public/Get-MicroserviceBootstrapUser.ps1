@@ -74,7 +74,7 @@ Get application bootstrap user
             }
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "microservices" `
                 -Verb "getBootstrapUser" `
                 -Parameters $Parameters `

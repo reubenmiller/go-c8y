@@ -104,7 +104,7 @@ Create a managed object
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "inventory" `
                 -Verb "create" `
                 -Parameters $Parameters `

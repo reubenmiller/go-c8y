@@ -78,7 +78,7 @@ Get a tenant by name (from the management tenant)
             continue
         }
 
-        Invoke-Command `
+        Invoke-ClientCommand `
             -Noun "tenants" `
             -Verb "get" `
             -Parameters $Parameters `

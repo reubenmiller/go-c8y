@@ -91,7 +91,7 @@ Get tenant summary statistics collection for the last 10 days, only return until
         foreach ($item in @("")) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "tenantStatistics" `
                 -Verb "listSummaryForTenant" `
                 -Parameters $Parameters `

@@ -103,7 +103,7 @@ Get the health status of the myapp microservice
             }
         }
 
-        $c8ycli = Get-CumulocityBinary
+        $c8ycli = Get-ClientBinary
     }
 
     Process {

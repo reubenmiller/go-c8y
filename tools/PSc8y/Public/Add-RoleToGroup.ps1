@@ -107,7 +107,7 @@ Add a role to a group using wildcards (using pipeline)
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "userRoles" `
                 -Verb "addRoleToGroup" `
                 -Parameters $Parameters `

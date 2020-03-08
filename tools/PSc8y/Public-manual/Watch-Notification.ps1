@@ -83,7 +83,7 @@ Watch all measurements for 90 seconds
             continue
         }
 
-        Invoke-Command `
+        Invoke-ClientCommand `
             -Noun "realtime" `
             -Verb "subscribe" `
             -Parameters $Parameters `

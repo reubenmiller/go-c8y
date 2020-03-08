@@ -105,7 +105,7 @@ Create device with custom properties
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "devices" `
                 -Verb "create" `
                 -Parameters $Parameters `

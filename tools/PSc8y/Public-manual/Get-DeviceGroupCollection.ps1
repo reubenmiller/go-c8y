@@ -130,7 +130,7 @@ Get a list of devices groups which have been created more recently than 2020-01-
             continue
         }
 
-        Invoke-Command `
+        Invoke-ClientCommand `
             -Noun "devices" `
             -Verb "listDeviceGroups" `
             -Parameters $Parameters `

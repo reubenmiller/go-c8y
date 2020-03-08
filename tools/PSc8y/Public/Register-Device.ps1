@@ -90,7 +90,7 @@ Register a new device
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "deviceCredentials" `
                 -Verb "registerNewDevice" `
                 -Parameters $Parameters `

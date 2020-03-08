@@ -90,7 +90,7 @@ Delete a new device request
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "deviceCredentials" `
                 -Verb "deleteNewDeviceRequest" `
                 -Parameters $Parameters `

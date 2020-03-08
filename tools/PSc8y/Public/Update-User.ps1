@@ -160,7 +160,7 @@ Update a user
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "users" `
                 -Verb "update" `
                 -Parameters $Parameters `

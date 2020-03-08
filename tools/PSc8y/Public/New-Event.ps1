@@ -126,7 +126,7 @@ Create a new event for a device (using pipeline)
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "events" `
                 -Verb "create" `
                 -Parameters $Parameters `

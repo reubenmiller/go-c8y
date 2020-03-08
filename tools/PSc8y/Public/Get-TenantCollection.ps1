@@ -83,7 +83,7 @@ Get a list of tenants
         foreach ($item in @("")) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "tenants" `
                 -Verb "list" `
                 -Parameters $Parameters `

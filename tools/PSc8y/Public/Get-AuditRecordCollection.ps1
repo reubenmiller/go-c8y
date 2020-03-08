@@ -153,7 +153,7 @@ Get a list of audit records related to an operation
             continue
         }
 
-        Invoke-Command `
+        Invoke-ClientCommand `
             -Noun "auditRecords" `
             -Verb "list" `
             -Parameters $Parameters `

@@ -95,7 +95,7 @@ Enable (subscribe) to a microservice
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "microservices" `
                 -Verb "enable" `
                 -Parameters $Parameters `

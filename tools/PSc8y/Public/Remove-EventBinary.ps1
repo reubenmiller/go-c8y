@@ -87,7 +87,7 @@ Delete an binary attached to an event
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "events" `
                 -Verb "deleteBinary" `
                 -Parameters $Parameters `

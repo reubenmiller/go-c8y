@@ -85,7 +85,7 @@ Watch all operations for a device
             continue
         }
 
-        Invoke-Command `
+        Invoke-ClientCommand `
             -Noun "operations" `
             -Verb "subscribe" `
             -Parameters $Parameters `

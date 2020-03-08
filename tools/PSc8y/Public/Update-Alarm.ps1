@@ -132,7 +132,7 @@ Update severity of an existing alarm to CRITICAL
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "alarms" `
                 -Verb "update" `
                 -Parameters $Parameters `

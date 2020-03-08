@@ -83,7 +83,7 @@ Get a list of data broker connectors
         foreach ($item in @("")) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "databroker" `
                 -Verb "list" `
                 -Parameters $Parameters `

@@ -106,7 +106,7 @@ Delete a managed object and all child devices
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "inventory" `
                 -Verb "delete" `
                 -Parameters $Parameters `

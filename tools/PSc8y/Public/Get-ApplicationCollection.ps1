@@ -95,7 +95,7 @@ Get applications
         foreach ($item in @("")) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "applications" `
                 -Verb "list" `
                 -Parameters $Parameters `

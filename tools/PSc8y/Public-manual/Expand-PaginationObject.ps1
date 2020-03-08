@@ -4,7 +4,7 @@ Function Expand-PaginationObject {
     Expand a Cumulocity pagination result
 
   .EXAMPLE
-    Invoke-CumulocityRequest -Uri "/inventory/managedObjects" -QueryParameters @{ pageSize = 2000 } -Raw | ConvertFrom-Json | Expand-PaginationObject
+    Invoke-ClientRequest -Uri "/inventory/managedObjects" -QueryParameters @{ pageSize = 2000 } -Raw | ConvertFrom-Json | Expand-PaginationObject
 
     Get all managed objects in the platform (rest requests will be done in chunks of 2000)
 
@@ -108,7 +108,7 @@ Function Expand-PaginationObject {
     if ($Result.next) {
       while (!$Done) {
         Write-Verbose "Requesting next item: (iteration $Iteration)"
-        $Result = Invoke-CumulocityRequest -Method Get -Uri $Result.next -Raw | ConvertFrom-Json
+        $Result = Invoke-ClientRequest -Method Get -Uri $Result.next -Raw | ConvertFrom-Json
 
         # Detect the type of c8y object
         $Prop = Get-ResultProperty -InputObject $Result

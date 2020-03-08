@@ -95,7 +95,7 @@ Enable an application of a tenant
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "tenants" `
                 -Verb "enableApplication" `
                 -Parameters $Parameters `

@@ -74,7 +74,7 @@ Get an audit record by id
             }
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "auditRecords" `
                 -Verb "get" `
                 -Parameters $Parameters `

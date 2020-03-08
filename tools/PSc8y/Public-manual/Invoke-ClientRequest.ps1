@@ -1,20 +1,20 @@
-﻿Function Invoke-CumulocityRequest {
+﻿Function Invoke-ClientRequest {
 <#
 .SYNOPSIS
 Send a rest request using the c8y
 
 .EXAMPLE
-Invoke-CumulocityRequest -Uri "/inventory/managedObjects" -Method "post" -Data "name=test"
+Invoke-ClientRequest -Uri "/inventory/managedObjects" -Method "post" -Data "name=test"
 
 Create a new managed object with the name "test"
 
 .EXAMPLE
-Invoke-CumulocityRequest -Uri "/alarm/alarms" -QueryParameters @{ pageSize = "100" }
+Invoke-ClientRequest -Uri "/alarm/alarms" -QueryParameters @{ pageSize = "100" }
 
 Get a list of alarms with page size of 100
 
 .EXAMPLE
-Invoke-CumulocityRequest -Uri "/alarm/alarms?pageSize=100"
+Invoke-ClientRequest -Uri "/alarm/alarms?pageSize=100"
 
 Get a list of alarms with page size of 100
 #>
@@ -74,7 +74,7 @@ Get a list of alarms with page size of 100
         $Session
     )
 
-    $c8y = Get-CumulocityBinary
+    $c8y = Get-ClientBinary
 
     $c8yargs = New-Object System.Collections.ArrayList
 

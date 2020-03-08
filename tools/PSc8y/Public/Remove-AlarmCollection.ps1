@@ -168,7 +168,7 @@ Remove alarms on the device which are active and created in the last 10 minutes 
             continue
         }
 
-        Invoke-Command `
+        Invoke-ClientCommand `
             -Noun "alarms" `
             -Verb "deleteCollection" `
             -Parameters $Parameters `

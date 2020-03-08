@@ -107,7 +107,7 @@ Add a role to a user using wildcards (using pipeline)
             continue
         }
 
-        Invoke-Command `
+        Invoke-ClientCommand `
             -Noun "userRoles" `
             -Verb "addRoleTouser" `
             -Parameters $Parameters `

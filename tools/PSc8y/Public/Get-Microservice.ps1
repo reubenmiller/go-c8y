@@ -78,7 +78,7 @@ Get an microservice by name
             }
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "microservices" `
                 -Verb "get" `
                 -Parameters $Parameters `

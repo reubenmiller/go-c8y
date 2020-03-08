@@ -74,7 +74,7 @@ Get a data broker connector
             }
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "databroker" `
                 -Verb "get" `
                 -Parameters $Parameters `

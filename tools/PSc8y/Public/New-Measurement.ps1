@@ -114,7 +114,7 @@ Create measurement
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "measurements" `
                 -Verb "create" `
                 -Parameters $Parameters `

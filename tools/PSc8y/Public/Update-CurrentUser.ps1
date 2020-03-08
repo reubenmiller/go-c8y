@@ -126,7 +126,7 @@ Update the current user's lastname
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "users" `
                 -Verb "updateCurrentUser" `
                 -Parameters $Parameters `

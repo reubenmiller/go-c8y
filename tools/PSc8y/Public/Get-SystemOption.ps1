@@ -80,7 +80,7 @@ Get system option value
         foreach ($item in @("")) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "systemOptions" `
                 -Verb "get" `
                 -Parameters $Parameters `

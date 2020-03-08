@@ -95,7 +95,7 @@ Upload microservice binary
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "microservices" `
                 -Verb "createBinary" `
                 -Parameters $Parameters `

@@ -88,7 +88,7 @@ Watch all types of notifications for a device for 90 seconds
             continue
         }
 
-        Invoke-Command `
+        Invoke-ClientCommand `
             -Noun "realtime" `
             -Verb "subscribeAll" `
             -Parameters $Parameters `

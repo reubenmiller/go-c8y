@@ -105,7 +105,7 @@ Create agent with custom properties
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "agents" `
                 -Verb "create" `
                 -Parameters $Parameters `

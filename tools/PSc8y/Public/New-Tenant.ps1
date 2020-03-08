@@ -141,7 +141,7 @@ Create a new tenant (from the management tenant)
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "tenants" `
                 -Verb "create" `
                 -Parameters $Parameters `

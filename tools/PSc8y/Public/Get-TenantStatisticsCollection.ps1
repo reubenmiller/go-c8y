@@ -107,7 +107,7 @@ Get tenant statistics collection for the last 10 days, only return until the las
         foreach ($item in @("")) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "tenantStatistics" `
                 -Verb "list" `
                 -Parameters $Parameters `

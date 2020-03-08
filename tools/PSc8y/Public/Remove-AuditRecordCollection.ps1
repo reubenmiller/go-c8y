@@ -128,7 +128,7 @@ Delete audit records from a device
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "auditRecords" `
                 -Verb "deleteCollection" `
                 -Parameters $Parameters `

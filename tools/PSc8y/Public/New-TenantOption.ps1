@@ -101,7 +101,7 @@ Create a tenant option
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "tenantOptions" `
                 -Verb "create" `
                 -Parameters $Parameters `

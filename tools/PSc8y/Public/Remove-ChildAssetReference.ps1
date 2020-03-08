@@ -103,7 +103,7 @@ Unassign a child device from its parent asset
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "inventoryReferences" `
                 -Verb "deleteChildAsset" `
                 -Parameters $Parameters `

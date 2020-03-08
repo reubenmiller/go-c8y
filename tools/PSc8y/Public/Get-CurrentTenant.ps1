@@ -64,7 +64,7 @@ Get the current tenant (based on your current credentials)
         foreach ($item in @("")) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "tenants" `
                 -Verb "getCurrentTenant" `
                 -Parameters $Parameters `

@@ -96,7 +96,7 @@ Get a list of external ids
             }
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "identity" `
                 -Verb "list" `
                 -Parameters $Parameters `

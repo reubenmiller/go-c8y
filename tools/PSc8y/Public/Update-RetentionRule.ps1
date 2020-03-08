@@ -148,7 +148,7 @@ Update a retention rule (using pipeline)
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "retentionRules" `
                 -Verb "update" `
                 -Parameters $Parameters `

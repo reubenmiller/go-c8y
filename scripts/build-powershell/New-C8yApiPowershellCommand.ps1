@@ -499,7 +499,7 @@ Function New-Body2 {
         foreach (`$item in $ExpandFunction) {
 $SetParameters
 $ConfirmationStatement
-            Invoke-Command ``
+            Invoke-ClientCommand ``
                 -Noun "$Noun" ``
                 -Verb "$Verb" ``
                 -Parameters `$Parameters ``
@@ -520,7 +520,7 @@ $SetParameters
             continue
         }
 
-        Invoke-Command ``
+        Invoke-ClientCommand ``
             -Noun "$Noun" ``
             -Verb "$Verb" ``
             -Parameters `$Parameters ``

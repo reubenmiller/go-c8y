@@ -80,7 +80,7 @@ Get a tenant option
         foreach ($item in @("")) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "tenantOptions" `
                 -Verb "get" `
                 -Parameters $Parameters `

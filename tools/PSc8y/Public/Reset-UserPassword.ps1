@@ -110,7 +110,7 @@ Resets a user's password by generating a new password
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "users" `
                 -Verb "resetUserPassword" `
                 -Parameters $Parameters `

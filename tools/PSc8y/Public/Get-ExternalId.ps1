@@ -80,7 +80,7 @@ Get external identity
         foreach ($item in @("")) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "identity" `
                 -Verb "get" `
                 -Parameters $Parameters `

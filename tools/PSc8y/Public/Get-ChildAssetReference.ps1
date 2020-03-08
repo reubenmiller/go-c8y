@@ -82,7 +82,7 @@ Get an existing child asset reference
             }
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "inventoryReferences" `
                 -Verb "getChildAsset" `
                 -Parameters $Parameters `

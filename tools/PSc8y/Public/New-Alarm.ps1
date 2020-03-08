@@ -144,7 +144,7 @@ Create a new alarm for device (using pipeline)
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "alarms" `
                 -Verb "create" `
                 -Parameters $Parameters `

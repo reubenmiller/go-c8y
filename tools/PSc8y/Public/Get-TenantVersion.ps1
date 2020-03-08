@@ -64,7 +64,7 @@ Get the Cumulocity backend version
         foreach ($item in @("")) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "tenants" `
                 -Verb "getVersion" `
                 -Parameters $Parameters `

@@ -85,7 +85,7 @@ Watch all managedObjects for a device
             continue
         }
 
-        Invoke-Command `
+        Invoke-ClientCommand `
             -Noun "inventory" `
             -Verb "subscribe" `
             -Parameters $Parameters `

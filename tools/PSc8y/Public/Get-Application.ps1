@@ -81,7 +81,7 @@ Get an application by name
             }
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "applications" `
                 -Verb "get" `
                 -Parameters $Parameters `

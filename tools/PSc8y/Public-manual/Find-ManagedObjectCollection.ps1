@@ -118,7 +118,7 @@ Find all devices with their names starting with 'roomUpperFloor_'
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "inventory" `
                 -Verb "find" `
                 -Parameters $Parameters `

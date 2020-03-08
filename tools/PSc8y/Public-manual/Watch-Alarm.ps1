@@ -85,7 +85,7 @@ Watch all alarms for a device
             continue
         }
 
-        Invoke-Command `
+        Invoke-ClientCommand `
             -Noun "alarms" `
             -Verb "subscribe" `
             -Parameters $Parameters `

@@ -106,7 +106,7 @@ Create device group with custom properties
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "devices" `
                 -Verb "createGroup" `
                 -Parameters $Parameters `

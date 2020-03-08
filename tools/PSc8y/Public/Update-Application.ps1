@@ -163,7 +163,7 @@ Update application availability to MARKET
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "applications" `
                 -Verb "update" `
                 -Parameters $Parameters `

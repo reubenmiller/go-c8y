@@ -77,7 +77,7 @@ Get a new device request
             }
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "deviceCredentials" `
                 -Verb "getNewDeviceRequest" `
                 -Parameters $Parameters `

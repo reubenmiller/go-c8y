@@ -182,7 +182,7 @@ Get active alarms from a device (using pipeline)
             continue
         }
 
-        Invoke-Command `
+        Invoke-ClientCommand `
             -Noun "alarms" `
             -Verb "list" `
             -Parameters $Parameters `

@@ -105,7 +105,7 @@ List the users within a user group (using pipeline)
             }
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "userReferences" `
                 -Verb "listGroupMembership" `
                 -Parameters $Parameters `

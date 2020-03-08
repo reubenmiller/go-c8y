@@ -93,7 +93,7 @@ Delete a tenant option
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "tenantOptions" `
                 -Verb "delete" `
                 -Parameters $Parameters `

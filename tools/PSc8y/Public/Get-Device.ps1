@@ -78,7 +78,7 @@ Get device by name
             }
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "devices" `
                 -Verb "get" `
                 -Parameters $Parameters `

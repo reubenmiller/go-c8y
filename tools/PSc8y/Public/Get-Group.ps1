@@ -86,7 +86,7 @@ Get a user group
             continue
         }
 
-        Invoke-Command `
+        Invoke-ClientCommand `
             -Noun "userGroups" `
             -Verb "get" `
             -Parameters $Parameters `

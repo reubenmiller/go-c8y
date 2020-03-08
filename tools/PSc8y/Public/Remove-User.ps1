@@ -95,7 +95,7 @@ Delete a user
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "users" `
                 -Verb "delete" `
                 -Parameters $Parameters `

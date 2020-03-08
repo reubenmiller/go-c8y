@@ -80,7 +80,7 @@ Get user group by its name
         foreach ($item in @("")) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "userGroups" `
                 -Verb "getByName" `
                 -Parameters $Parameters `

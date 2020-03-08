@@ -83,7 +83,7 @@ Get a list of tenant options
         foreach ($item in @("")) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "tenantOptions" `
                 -Verb "list" `
                 -Parameters $Parameters `

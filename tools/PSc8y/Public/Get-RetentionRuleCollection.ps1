@@ -83,7 +83,7 @@ Get a list of retention rules
         foreach ($item in @("")) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "retentionRules" `
                 -Verb "list" `
                 -Parameters $Parameters `

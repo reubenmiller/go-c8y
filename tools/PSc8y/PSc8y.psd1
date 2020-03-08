@@ -260,8 +260,8 @@ FunctionsToExport = @(
 	'Get-AgentCollection',
 	'Get-AssetParent',
 	'Get-C8ySessionProperty',
-	'Get-CumulocityBinary',
-	'Get-CumulocityBinaryVersion',
+	'Get-ClientBinary',
+	'Get-ClientBinaryVersion',
 	'Get-CurrentTenantApplications',
 	'Get-DeviceBootstrapCredential',
 	'Get-DeviceCollection',
@@ -269,9 +269,9 @@ FunctionsToExport = @(
 	'Get-DeviceParent',
 	'Get-Session',
 	'Get-SessionCollection',
-	'Install-CumulocityBinary',
-	'Invoke-Command',
-	'Invoke-CumulocityRequest',
+	'Install-ClientBinary',
+	'Invoke-ClientCommand',
+	'Invoke-ClientRequest',
 	'Invoke-CustomRestMethod',
 	'Invoke-CustomRestRequest',
 	'New-HostedApplication',
@@ -291,7 +291,7 @@ FunctionsToExport = @(
 	'New-TestUser',
 	'Open-Website',
 	'Register-Alias',
-	'Set-CumulocityConsoleSetting',
+	'Set-ClientConsoleSetting',
 	'Set-Session',
 	'Test-Json',
 	'Unregister-Alias',
@@ -350,6 +350,6 @@ PrivateData = @{
 # HelpInfoURI = ''
 
 # Default prefix for commands exported from this module. Override the default prefix using Import-Module -Prefix.
-DefaultCommandPrefix = ''
+DefaultCommandPrefix = 'C8y'
 
 }

@@ -95,7 +95,7 @@ Update a binary related to an event
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "events" `
                 -Verb "updateBinary" `
                 -Parameters $Parameters `

@@ -90,7 +90,7 @@ Delete an event
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "events" `
                 -Verb "delete" `
                 -Parameters $Parameters `

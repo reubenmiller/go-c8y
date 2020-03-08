@@ -85,7 +85,7 @@ Watch all measurements for a device
             continue
         }
 
-        Invoke-Command `
+        Invoke-ClientCommand `
             -Noun "measurements" `
             -Verb "subscribe" `
             -Parameters $Parameters `

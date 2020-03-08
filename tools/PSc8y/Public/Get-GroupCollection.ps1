@@ -91,7 +91,7 @@ Get a list of user groups for the current tenant
         foreach ($item in @("")) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "userGroups" `
                 -Verb "list" `
                 -Parameters $Parameters `

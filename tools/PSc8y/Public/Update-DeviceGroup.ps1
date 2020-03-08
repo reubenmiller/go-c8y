@@ -111,7 +111,7 @@ Update device group custom properties
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "devices" `
                 -Verb "updateGroup" `
                 -Parameters $Parameters `

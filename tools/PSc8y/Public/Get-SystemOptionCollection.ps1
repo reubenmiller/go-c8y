@@ -86,7 +86,7 @@ Get a list of system options
         foreach ($item in @("")) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "systemOptions" `
                 -Verb "list" `
                 -Parameters $Parameters `

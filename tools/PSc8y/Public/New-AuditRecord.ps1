@@ -153,7 +153,7 @@ Create an audit record for a custom managed object update
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "auditRecords" `
                 -Verb "create" `
                 -Parameters $Parameters `

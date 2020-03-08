@@ -126,7 +126,7 @@ Create a retention rule to delete all alarms after 180 days
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "retentionRules" `
                 -Verb "create" `
                 -Parameters $Parameters `

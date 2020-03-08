@@ -92,7 +92,7 @@ Get microservices
         foreach ($item in @("")) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "microservices" `
                 -Verb "list" `
                 -Parameters $Parameters `

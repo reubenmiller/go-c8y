@@ -86,7 +86,7 @@ List the current application users/subscriptions
         foreach ($item in @("")) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "currentApplication" `
                 -Verb "listSubscriptions" `
                 -Parameters $Parameters `

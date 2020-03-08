@@ -86,7 +86,7 @@ Get a list of new device requests
         foreach ($item in @("")) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "deviceCredentials" `
                 -Verb "listNewDeviceRequests" `
                 -Parameters $Parameters `

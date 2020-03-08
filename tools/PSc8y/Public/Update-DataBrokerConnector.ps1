@@ -104,7 +104,7 @@ Change the status of a specific data broker connector by given connector id
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "databroker" `
                 -Verb "update" `
                 -Parameters $Parameters `

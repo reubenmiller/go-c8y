@@ -78,7 +78,7 @@ Get agent by name
             }
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "agents" `
                 -Verb "get" `
                 -Parameters $Parameters `

@@ -77,7 +77,7 @@ Get event
         foreach ($item in (PSc8y\Expand-Id $Id)) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "events" `
                 -Verb "get" `
                 -Parameters $Parameters `

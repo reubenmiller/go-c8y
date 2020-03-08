@@ -87,7 +87,7 @@ Delete a binary
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "binaries" `
                 -Verb "deleteBinary" `
                 -Parameters $Parameters `

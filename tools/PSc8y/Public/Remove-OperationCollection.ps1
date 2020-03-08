@@ -116,7 +116,7 @@ Remove all pending operations for a given device
             continue
         }
 
-        Invoke-Command `
+        Invoke-ClientCommand `
             -Noun "operations" `
             -Verb "deleteCollection" `
             -Parameters $Parameters `

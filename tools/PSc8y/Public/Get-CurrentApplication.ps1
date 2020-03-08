@@ -67,7 +67,7 @@ Get the current application (requires using application credentials)
         foreach ($item in @("")) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "currentApplication" `
                 -Verb "get" `
                 -Parameters $Parameters `

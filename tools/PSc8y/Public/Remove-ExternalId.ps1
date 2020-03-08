@@ -93,7 +93,7 @@ Delete external identity
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "identity" `
                 -Verb "delete" `
                 -Parameters $Parameters `

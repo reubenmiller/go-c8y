@@ -111,7 +111,7 @@ Update agent custom properties
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "agents" `
                 -Verb "update" `
                 -Parameters $Parameters `

@@ -145,7 +145,7 @@ Get operations from a device (using pipeline)
             continue
         }
 
-        Invoke-Command `
+        Invoke-ClientCommand `
             -Noun "operations" `
             -Verb "list" `
             -Parameters $Parameters `

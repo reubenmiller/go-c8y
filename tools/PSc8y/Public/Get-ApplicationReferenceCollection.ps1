@@ -97,7 +97,7 @@ Get a list of referenced applications on a given tenant (from management tenant)
             continue
         }
 
-        Invoke-Command `
+        Invoke-ClientCommand `
             -Noun "tenants" `
             -Verb "listReferences" `
             -Parameters $Parameters `

@@ -90,7 +90,7 @@ Request credentials for a new device
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "deviceCredentials" `
                 -Verb "requestDeviceCredentials" `
                 -Parameters $Parameters `

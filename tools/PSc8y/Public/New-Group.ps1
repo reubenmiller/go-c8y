@@ -93,7 +93,7 @@ Create a user group
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "userGroups" `
                 -Verb "create" `
                 -Parameters $Parameters `

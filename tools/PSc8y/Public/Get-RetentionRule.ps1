@@ -74,7 +74,7 @@ Get a retention rule
             }
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "retentionRules" `
                 -Verb "get" `
                 -Parameters $Parameters `

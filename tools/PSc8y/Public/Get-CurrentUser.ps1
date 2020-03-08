@@ -64,7 +64,7 @@ Get the current user
         foreach ($item in @("")) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "users" `
                 -Verb "getCurrentUser" `
                 -Parameters $Parameters `

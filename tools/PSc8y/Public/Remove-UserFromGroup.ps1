@@ -101,7 +101,7 @@ Add a user to a user group
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "userReferences" `
                 -Verb "deleteUserFromGroup" `
                 -Parameters $Parameters `

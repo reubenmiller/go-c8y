@@ -94,7 +94,7 @@ Delete a microservice by name
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "microservices" `
                 -Verb "delete" `
                 -Parameters $Parameters `

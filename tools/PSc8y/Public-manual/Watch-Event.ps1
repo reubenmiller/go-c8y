@@ -85,7 +85,7 @@ Watch all events for a device
             continue
         }
 
-        Invoke-Command `
+        Invoke-ClientCommand `
             -Noun "events" `
             -Verb "subscribe" `
             -Parameters $Parameters `

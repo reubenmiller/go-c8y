@@ -74,7 +74,7 @@ Get operation by id
             }
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "operations" `
                 -Verb "get" `
                 -Parameters $Parameters `

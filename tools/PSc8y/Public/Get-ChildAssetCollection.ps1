@@ -106,7 +106,7 @@ Get a list of the child assets of an existing group
         foreach ($item in @("")) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "inventoryReferences" `
                 -Verb "listChildAssets" `
                 -Parameters $Parameters `

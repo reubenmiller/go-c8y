@@ -83,7 +83,7 @@ Get a list of roles
         foreach ($item in @("")) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "userRoles" `
                 -Verb "list" `
                 -Parameters $Parameters `

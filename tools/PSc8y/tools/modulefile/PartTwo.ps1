@@ -14,10 +14,10 @@ if (!(Test-Path $HomePath)) {
 if ($script:IsLinux -or $script:IsMacOS) {
     # silence errors
     if ($env:PSC8Y_INSTALL_ON_IMPORT -match "true|1|on") {
-        Install-CumulocityBinary -ErrorAction SilentlyContinue
+        Install-ClientBinary -ErrorAction SilentlyContinue
     } else {
         # Make c8y executable
-        $binary = Get-CumulocityBinary
+        $binary = Get-ClientBinary
         & chmod +x $binary
     }
 }
@@ -61,7 +61,7 @@ $script:Aliases = @{
     json = "ConvertTo-Json"
     tojson = "ConvertTo-Json"
     fromjson = "ConvertFrom-Json"
-    rest = "Invoke-CumulocityRequest"
+    rest = "Invoke-ClientRequest"
     base64ToUtf8 = "ConvertFrom-Base64ToUtf8"
 
     # session

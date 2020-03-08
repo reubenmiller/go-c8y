@@ -94,7 +94,7 @@ Delete an application by name
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "applications" `
                 -Verb "delete" `
                 -Parameters $Parameters `

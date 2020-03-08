@@ -1,15 +1,15 @@
 ﻿. $PSScriptRoot/imports.ps1
 
-Describe -Name "Invoke-CumulocityRequest" {
+Describe -Name "Invoke-ClientRequest" {
 
     It "gets a list of applications (defaults to GET method)" {
-        $Response = Invoke-CumulocityRequest -Uri "/application/applications"
+        $Response = Invoke-ClientRequest -Uri "/application/applications"
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
 
     It "should accept query parameters" {
-        $Response = Invoke-CumulocityRequest -Uri "/alarm/alarms" -QueryParameters @{
+        $Response = Invoke-ClientRequest -Uri "/alarm/alarms" -QueryParameters @{
             pageSize = "1";
         } -Whatif 2>&1
         $LASTEXITCODE | Should -Be 0
@@ -18,7 +18,7 @@ Describe -Name "Invoke-CumulocityRequest" {
     }
 
     It "should return the raw json text when using -Raw" {
-        $Response = Invoke-CumulocityRequest -Uri "/inventory/managedObjects" -QueryParameters @{
+        $Response = Invoke-ClientRequest -Uri "/inventory/managedObjects" -QueryParameters @{
             pageSize = "2";
         } `
         -Raw
@@ -31,7 +31,7 @@ Describe -Name "Invoke-CumulocityRequest" {
     }
 
     It "should return the array of managed objects and not the raw response when not using -Raw" {
-        $Response = Invoke-CumulocityRequest -Uri "/inventory/managedObjects" -QueryParameters @{
+        $Response = Invoke-ClientRequest -Uri "/inventory/managedObjects" -QueryParameters @{
             pageSize = "2";
         }
         $LASTEXITCODE | Should -Be 0
@@ -41,7 +41,7 @@ Describe -Name "Invoke-CumulocityRequest" {
     }
 
     It "should accept query parameters and return the raw response" {
-        $Response = Invoke-CumulocityRequest -Uri "/alarm/alarms" -QueryParameters @{
+        $Response = Invoke-ClientRequest -Uri "/alarm/alarms" -QueryParameters @{
             pageSize = "1";
         } -Whatif 2>&1
         $LASTEXITCODE | Should -Be 0
@@ -50,7 +50,7 @@ Describe -Name "Invoke-CumulocityRequest" {
     }
 
     It "post an inventory managed object from a string" {
-        $Response = Invoke-CumulocityRequest -Uri "/inventory/managedObjects" -Method "post" -Data "name=test"
+        $Response = Invoke-ClientRequest -Uri "/inventory/managedObjects" -Method "post" -Data "name=test"
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
 
@@ -63,7 +63,7 @@ Describe -Name "Invoke-CumulocityRequest" {
     }
 
     It "post an inventory managed object from a string with pretty print" {
-        $Response = Invoke-CumulocityRequest `
+        $Response = Invoke-ClientRequest `
             -Uri "/inventory/managedObjects" `
             -Method "post" `
             -Data "name=test" `
@@ -82,7 +82,7 @@ Describe -Name "Invoke-CumulocityRequest" {
     It "Uploads a file to the inventory api" {
         $Text = "äüöp01!"
         $TestFile = New-TestFile -InputObject $Text
-        $Response = Invoke-CumulocityRequest -Uri "inventory/binaries" -Method "post" -InFile $TestFile
+        $Response = Invoke-ClientRequest -Uri "inventory/binaries" -Method "post" -InFile $TestFile
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
 
@@ -110,7 +110,7 @@ Describe -Name "Invoke-CumulocityRequest" {
     }
 }
 "@
-        $Response = Invoke-CumulocityRequest `
+        $Response = Invoke-ClientRequest `
             -Uri "/inventory/managedObjects" `
             -Method "post" `
             -Data $jsonText
@@ -127,7 +127,7 @@ Describe -Name "Invoke-CumulocityRequest" {
     }
 
     It "post an inventory managed object using hashtable" {
-        $Response = Invoke-CumulocityRequest `
+        $Response = Invoke-ClientRequest `
             -Uri "/inventory/managedObjects" `
             -Method "post" `
             -Data @{

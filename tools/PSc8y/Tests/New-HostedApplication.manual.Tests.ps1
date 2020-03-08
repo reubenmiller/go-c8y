@@ -54,7 +54,7 @@ Describe -Name "New-HostedApplication" {
             $application.resourcesUrl | Should -BeExactly "/"
             $application.activeVersionId | Should -MatchExactly "^\d+$"
 
-            $webResponse = Invoke-CumulocityRequest -Uri "apps/$AppName"
+            $webResponse = Invoke-ClientRequest -Uri "apps/$AppName"
             $LASTEXITCODE | Should -BeExactly 0
             $webResponse | Out-String | Should -BeLike "*Hi there. This is a test web application*"
         }
@@ -79,7 +79,7 @@ Describe -Name "New-HostedApplication" {
             $applicationAfterUpdate.activeVersionId | Should -MatchExactly "^\d+$"
             $applicationAfterUpdate.activeVersionId | Should -Not -BeExactly $application.activeVersionId
 
-            $webResponse = Invoke-CumulocityRequest -Uri "apps/$AppName"
+            $webResponse = Invoke-ClientRequest -Uri "apps/$AppName"
             $webResponse | Out-String | Should -BeLike "*Hi there. This is a test web application*"
         }
 
@@ -96,7 +96,7 @@ Describe -Name "New-HostedApplication" {
             $applicationAfterUpdate.activeVersionId | Should -MatchExactly "^\d+$"
             $applicationAfterUpdate.activeVersionId | Should -BeExactly $application.activeVersionId
 
-            $webResponse = Invoke-CumulocityRequest -Uri "apps/$AppName"
+            $webResponse = Invoke-ClientRequest -Uri "apps/$AppName"
             $webResponse | Out-String | Should -BeLike "*Hi there. This is a test web application*"
         }
 

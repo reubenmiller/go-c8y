@@ -85,7 +85,7 @@ Upload a log file
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "binaries" `
                 -Verb "create" `
                 -Parameters $Parameters `

@@ -138,7 +138,7 @@ Get a list of managed objects by looking up their names
         foreach ($item in @("")) {
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "inventory" `
                 -Verb "list" `
                 -Parameters $Parameters `

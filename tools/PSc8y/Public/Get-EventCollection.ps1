@@ -148,7 +148,7 @@ Get events from a device (using pipeline)
             continue
         }
 
-        Invoke-Command `
+        Invoke-ClientCommand `
             -Noun "events" `
             -Verb "list" `
             -Parameters $Parameters `

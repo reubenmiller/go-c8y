@@ -91,7 +91,7 @@ Remove device group by name
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "devices" `
                 -Verb "deleteGroup" `
                 -Parameters $Parameters `

@@ -74,7 +74,7 @@ Download a binary related to an event
             }
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "events" `
                 -Verb "downloadBinary" `
                 -Parameters $Parameters `

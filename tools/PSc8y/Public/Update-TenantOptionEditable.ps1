@@ -106,7 +106,7 @@ Update editable property for an existing tenant option
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "tenantOptions" `
                 -Verb "updateEdit" `
                 -Parameters $Parameters `

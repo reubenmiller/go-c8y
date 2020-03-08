@@ -78,7 +78,7 @@ Get the supported operations of a device (using pipeline)
             }
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "devices" `
                 -Verb "getSupportedOperations" `
                 -Parameters $Parameters `

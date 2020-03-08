@@ -158,7 +158,7 @@ Create a user
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "users" `
                 -Verb "create" `
                 -Parameters $Parameters `

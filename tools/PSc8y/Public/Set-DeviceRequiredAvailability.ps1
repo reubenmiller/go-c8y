@@ -102,7 +102,7 @@ Set the required availability of a device (using pipeline)
                 continue
             }
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "devices" `
                 -Verb "setRequiredAvailability" `
                 -Parameters $Parameters `

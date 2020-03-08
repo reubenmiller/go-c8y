@@ -78,7 +78,7 @@ Get a binary and save it to a file
             }
 
 
-            Invoke-Command `
+            Invoke-ClientCommand `
                 -Noun "binaries" `
                 -Verb "get" `
                 -Parameters $Parameters `
