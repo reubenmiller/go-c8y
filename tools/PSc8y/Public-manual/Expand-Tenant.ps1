@@ -34,9 +34,11 @@ Get all the tenant object (with app in their name). Note the Expand cmdlet won't
     Process {
         [array] $AllTenants = foreach ($iTenant in $InputObject)
         {
-            if (($iTenant -is [string]) -or ($iTenant -match "^\d+$"))
+            if ("$iTenant".Contains("*"))
             {
-                Get-Tenant -Tenant $iTenant -WhatIf:$false
+                Get-TenantCollection -PageSize 2000 | Where-Object {
+                    $_.id -like $iTenant
+                } -WhatIf:$false
             }
             else
             {
