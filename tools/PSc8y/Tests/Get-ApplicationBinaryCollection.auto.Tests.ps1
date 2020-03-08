@@ -6,13 +6,13 @@ Describe -Name "Get-ApplicationBinaryCollection" {
 
     }
 
-    It "List all of the binaries related to a Hosted (web) application" {
+    It -Skip "List all of the binaries related to a Hosted (web) application" {
         $Response = PSc8y\Get-ApplicationBinaryCollection -Id $App.id
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty
     }
 
-    It "List all of the binaries related to a Hosted (web) application (using pipeline)" {
+    It -Skip "List all of the binaries related to a Hosted (web) application (using pipeline)" {
         $Response = PSc8y\Get-Application $App.id | Get-ApplicationBinaryCollection
         $LASTEXITCODE | Should -Be 0
         $Response | Should -Not -BeNullOrEmpty

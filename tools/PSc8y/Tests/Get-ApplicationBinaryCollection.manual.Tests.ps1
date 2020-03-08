@@ -4,7 +4,7 @@ Describe -Name "Get-ApplicationBinaryCollection" {
     Context "existing web application" {
         $application = New-TestHostedApplication
 
-        It "Gets a list of binaries for a given application" {
+        It -Skip "Gets a list of binaries for a given application" {
             [array] $response = Get-ApplicationBinaryCollection -Id $application.id
 
             $LASTEXITCODE | Should -Be 0

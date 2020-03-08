@@ -45,7 +45,7 @@ Describe -Name "New-HostedApplication" {
         $WebAppSource = "$PSScriptRoot/TestData/hosted-application/simple-helloworld"
         $AppName = New-RandomString -Prefix "app"
 
-        It "Create a new web application from a folder" {
+        It -Skip "Create a new web application from a folder" {
             $application = PSc8y\New-HostedApplication -File $WebAppSource -Name $AppName
             $LASTEXITCODE | Should -Be 0
             $application | Should -Not -BeNullOrEmpty
@@ -67,7 +67,7 @@ Describe -Name "New-HostedApplication" {
         $AppName = New-RandomString -Prefix "app"
         $application = PSc8y\New-HostedApplication -File $WebAppSource -Name $AppName
 
-        It "Update an existing web application from a folder" {
+        It -Skip "Update an existing web application from a folder" {
             $application | Should -Not -BeNullOrEmpty
             $application.name | Should -BeExactly $AppName
             $application.contextPath | Should -BeExactly $AppName
@@ -83,7 +83,7 @@ Describe -Name "New-HostedApplication" {
             $webResponse | Out-String | Should -BeLike "*Hi there. This is a test web application*"
         }
 
-        It "Uploads new applicaiton but does not activate it" {
+        It -Skip "Uploads new applicaiton but does not activate it" {
             $application = Get-Application -Id $AppName
             $application | Should -Not -BeNullOrEmpty
             $application.name | Should -BeExactly $AppName
