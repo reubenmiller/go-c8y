@@ -393,31 +393,12 @@ func (s *InventoryService) CreateBinary(ctx context.Context, filename string, pr
 		"object": bytes.NewReader(metadataBytes),
 	}
 
-	// set binary api
-	u, _ := url.Parse(client.BaseURL.String())
-	u.Path = path.Join(u.Path, "/inventory/binaries")
-
-	req, err := prepareMultipartRequest("POST", u.String(), values)
-	s.client.SetAuthorization(req)
-
-	req.Header.Set("Accept", "application/json")
-
-	if err != nil {
-		err = errors.Wrap(err, "Could not create binary upload request object")
-		zap.S().Error(err)
-		return nil, nil, err
-	}
-
-	data := new(ManagedObject)
-	resp, err := client.Do(ctx, req, data)
-
-	if err != nil {
-		return nil, resp, err
-	}
-
-	data.Item = *resp.JSON
-
-	return data, resp, nil
+	return s.client.SendRequest(ctx, RequestOptions{
+		Method:   "POST",
+		Accept:   "application/json",
+		Path:     "/inventory/binaries",
+		FormData: values,
+	})
 }
 
 // UpdateBinary updates an existing binary under the inventory managed objects

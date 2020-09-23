@@ -48,7 +48,7 @@ type Application struct {
 	Owner             *ApplicationOwner `json:"owner,omitempty"`
 
 	// Hosted application
-	ActiveVersionId string `json:"activeVersionId,omitempty"`
+	ActiveVersionID string `json:"activeVersionId,omitempty"`
 
 	// Microservice roles
 	RequiredRoles []string `json:"requiredRoles,omitempty"`
@@ -258,13 +258,14 @@ func (s *ApplicationService) GetCurrentApplicationSubscriptions(ctx context.Cont
 //  * image.tar - executable docker image
 //
 // For the web application, the zip file must include index.html in the root directory.
-// For the custom Apama rule application, the zip file must consist of a single .zip file.
+// For the custom Apama rule application, the zip file must consist of a single .mon file.
 func (s *ApplicationService) CreateBinary(ctx context.Context, filename string, ID string) (*Response, error) {
 	values := map[string]io.Reader{
 		"file": mustOpen(filename),
 	}
 
 	return s.client.SendRequest(ctx, RequestOptions{
+		Method:   "POST",
 		Accept:   "application/json",
 		Path:     "/application/applications/" + ID + "/binaries",
 		FormData: values,
