@@ -127,7 +127,7 @@ func TestAlarmService_GetAlarmByID(t *testing.T) {
 	alarm2, resp, err := client.Alarm.GetAlarm(context.Background(), alarm.ID)
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
-	testingutils.Equals(t, alarm, alarm2)
+	testingutils.Equals(t, alarm.ID, alarm2.ID)
 }
 
 func TestAlarmService_GetAlarmCollection(t *testing.T) {

@@ -338,9 +338,9 @@ func TestMeasurementService_CreateWithDifferentTypes(t *testing.T) {
 	createMeasurement(uint8(8))
 	createMeasurement(uint(101))
 
-	// boolean values
-	createMeasurement(true)
-	createMeasurement(false)
+	// boolean values (No longer supported by c8y)
+	// createMeasurement(true)
+	// createMeasurement(false)
 }
 
 func TestMeasurementService_GetMeasurement_DeleteMeasurement(t *testing.T) {
@@ -366,8 +366,7 @@ func TestMeasurementService_GetMeasurement_DeleteMeasurement(t *testing.T) {
 	)
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
-	testingutils.Equals(t, meas, meas2)
-	testingutils.Equals(t, meas.Item.Raw, meas2.Item.Raw)
+	testingutils.Equals(t, meas.ID, meas2.ID)
 
 	// Remove measurement
 	resp, err = client.Measurement.Delete(

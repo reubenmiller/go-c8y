@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -189,7 +188,7 @@ func (s *EventService) CreateBinary(ctx context.Context, filename string, ID str
 	u, _ := url.Parse(client.BaseURL.String())
 	u.Path = path.Join(u.Path, "/event/events/"+ID+"/binaries")
 
-	req, err := prepareMultipartRequest(u.String(), "POST", values)
+	req, err := prepareMultipartRequest("POST", u.String(), values)
 	s.client.SetAuthorization(req)
 
 	req.Header.Set("Accept", "application/json")
@@ -225,7 +224,7 @@ type EventBinary struct {
 func (s *EventService) UpdateBinary(ctx context.Context, ID, filename string) (*EventBinary, *Response, error) {
 	binarydata, err := os.Open(filename)
 	if err != nil {
-		log.Fatal(err)
+		Logger.Fatal(err)
 	}
 	defer binarydata.Close()
 

@@ -18,6 +18,10 @@ type OperationCollectionOptions struct {
 
 	DeviceID string `url:"deviceId,omitempty"`
 
+	DateFrom string `url:"dateFrom,omitempty"`
+
+	DateTo string `url:"dateTo,omitempty"`
+
 	// Pagination options
 	PaginationOptions
 }

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"math"
 	"net/http"
 	"net/url"
@@ -160,7 +159,7 @@ func getC8yExtension(tenant, username, password string) c8yExtensionMessage {
 	}
 }
 
-func getRealtimURL(host string) *url.URL {
+func getRealtimeURL(host string) *url.URL {
 	c8yhost, _ := url.Parse(host)
 
 	if c8yhost.Scheme == "http" {
@@ -190,7 +189,7 @@ func NewRealtimeClient(host string, wsDialer *websocket.Dialer, tenant, username
 	}
 
 	// Convert url to a websocket
-	websocketURL := getRealtimURL(host)
+	websocketURL := getRealtimeURL(host)
 
 	client := &RealtimeClient{
 		url:       websocketURL,
@@ -244,9 +243,9 @@ func (c *RealtimeClient) IsConnected() bool {
 // the background polling loop.
 func (c *RealtimeClient) Close() error {
 	if err := c.disconnect(); err != nil {
-		log.Printf("Failed to disconnect. %s", err)
+		Logger.Printf("Failed to disconnect. %s", err)
 	}
-	log.Printf("Killing go routine")
+	Logger.Printf("Killing go routine")
 	c.tomb.Killf("Close")
 	return nil
 }
@@ -273,7 +272,7 @@ func (c *RealtimeClient) disconnect() error {
 }
 
 func (c *RealtimeClient) createWebsocket() error {
-	log.Printf("Establishing connection to %s", c.url.String())
+	Logger.Printf("Establishing connection to %s", c.url.String())
 	ws, _, err := c.dialer.Dial(c.url.String(), nil)
 
 	if err != nil {
@@ -302,7 +301,7 @@ func (c *RealtimeClient) reconnect() error {
 	interval := MinimumRetryInterval
 
 	for !connected {
-		log.Printf("Retrying in %ds", interval)
+		Logger.Printf("Retrying in %ds", interval)
 		<-time.After(time.Duration(interval) * time.Second)
 		c.ws.Close()
 		err := c.createWebsocket()
@@ -313,13 +312,13 @@ func (c *RealtimeClient) reconnect() error {
 		}
 
 		if err := c.Connect(); err != nil {
-			log.Printf("Failed to get advice from server. %s", err)
+			Logger.Printf("Failed to get advice from server. %s", err)
 		} else {
 			connected = true
 		}
 	}
 
-	log.Println("Restablished connection, any subscriptions will be also be resubmitted")
+	Logger.Println("Restablished connection, any subscriptions will be also be resubmitted")
 
 	c.reactivateSubscriptions()
 	return nil
@@ -330,7 +329,7 @@ func (c *RealtimeClient) connect() chan error {
 	if c.dialer == nil {
 		panic("Missing dialer for realtime client")
 	}
-	log.Printf("Establishing connection to %s", c.url.String())
+	Logger.Printf("Establishing connection to %s", c.url.String())
 	ws, _, err := c.dialer.Dial(c.url.String(), nil)
 
 	if err != nil {
@@ -365,13 +364,13 @@ func (c *RealtimeClient) worker() error {
 			err := c.ws.ReadJSON(&messages)
 
 			if err != nil {
-				log.Printf("wc ReadJSON: error=%s, message=%v", err, messages)
+				Logger.Printf("wc ReadJSON: error=%s, message=%v", err, messages)
 
 				if !c.IsConnected() {
-					log.Println("Connection has been closed by the client")
+					Logger.Println("Connection has been closed by the client")
 					return
 				}
-				log.Println("Handling connection error. You need to reconnect")
+				Logger.Println("Handling connection error. You need to reconnect")
 
 				go c.reconnect()
 				return
@@ -380,7 +379,7 @@ func (c *RealtimeClient) worker() error {
 			for _, message := range messages {
 				if strings.HasPrefix(message.Channel, "/meta") {
 					if messageText, err := json.Marshal(message); err == nil {
-						log.Printf("ws (recv): %s : %s", message.Channel, messageText)
+						Logger.Printf("ws (recv): %s : %s", message.Channel, messageText)
 					}
 				}
 
@@ -392,19 +391,19 @@ func (c *RealtimeClient) worker() error {
 						c.connected = true
 						c.mtx.Unlock()
 					} else {
-						log.Panicf("No clientID present in handshake. Check that the tenant, usename and password is correct. Raw Message: %v", message)
+						Logger.Panicf("No clientID present in handshake. Check that the tenant, usename and password is correct. Raw Message: %v", message)
 					}
 
 				case "/meta/subscribe":
 					if message.Successful {
-						log.Printf("Successfully subscribed to channel %s", message.Subscription)
+						Logger.Printf("Successfully subscribed to channel %s", message.Subscription)
 					} else {
-						log.Printf("Failed to subscribe to channel %s", message.Subscription)
+						Logger.Printf("Failed to subscribe to channel %s", message.Subscription)
 					}
 
 				case "/meta/unsubscribe":
 					if message.Successful {
-						log.Printf("Successfully unsubscribed to channel %s", message.Subscription)
+						Logger.Printf("Successfully unsubscribed to channel %s", message.Subscription)
 					}
 
 				case "/meta/connect":
@@ -420,12 +419,12 @@ func (c *RealtimeClient) worker() error {
 						}
 						switch message.Advice.Reconnect {
 						case "handshake":
-							log.Printf("Scheduling sending of new handshake to server with %d ms delay", retryDelay)
+							Logger.Printf("Scheduling sending of new handshake to server with %d ms delay", retryDelay)
 							time.AfterFunc(time.Duration(retryDelay)*time.Millisecond, func() {
 								c.handshake()
 							})
 						case "retry":
-							log.Printf("Resending /meta/connect heartbeat with %d ms delay", retryDelay)
+							Logger.Printf("Resending /meta/connect heartbeat with %d ms delay", retryDelay)
 							time.AfterFunc(time.Duration(retryDelay)*time.Millisecond, func() {
 								c.sendMeta()
 							})
@@ -453,7 +452,7 @@ func (c *RealtimeClient) worker() error {
 
 				case "/meta/disconnect":
 					if message.Successful {
-						log.Printf("Successfully disconnected with server")
+						Logger.Printf("Successfully disconnected with server")
 					}
 
 				default:
@@ -464,7 +463,7 @@ func (c *RealtimeClient) worker() error {
 
 				// remove the message from the queue
 				if message.ID != "" {
-					log.Printf("Removing message from pending requests: %s", message.ID)
+					Logger.Printf("Removing message from pending requests: %s", message.ID)
 					c.pendingRequests.Delete(message.ID)
 					c.logRemainingResponses()
 				}
@@ -479,12 +478,12 @@ func (c *RealtimeClient) worker() error {
 			return nil
 
 		case <-interrupt:
-			log.Println("interrupt")
+			Logger.Println("interrupt")
 
 			// Cleanly close the connection by sending a close message and then
 			// waiting (with timeout) for the server to close the connection.
 			if err := c.Disconnect(); err != nil {
-				log.Println("Failed to send disconnect to server:", err)
+				Logger.Println("Failed to send disconnect to server:", err)
 				return err
 			}
 
@@ -589,7 +588,7 @@ func RealtimeOperations(id ...string) string {
 
 // Subscribe setup a subscription to the given element
 func (c *RealtimeClient) Subscribe(pattern string, out chan<- *Message) chan error {
-	log.Println("Subscribing to ", pattern)
+	Logger.Println("Subscribing to ", pattern)
 
 	glob, err := ohmyglob.Compile(pattern, nil)
 	if err != nil {
@@ -669,7 +668,7 @@ func (c *RealtimeClient) UnsubscribeAll() chan error {
 
 // Unsubscribe unsubscribe to a given pattern
 func (c *RealtimeClient) Unsubscribe(pattern string) chan error {
-	log.Println("unsubscribing to ", pattern)
+	Logger.Println("unsubscribing to ", pattern)
 
 	message := &request{
 		ID:           c.nextMessageID(),
@@ -689,9 +688,9 @@ func (c *RealtimeClient) nextMessageID() string {
 
 func (c *RealtimeClient) logMessage(r *request) {
 	if text, err := json.Marshal(r); err == nil {
-		log.Printf("ws (send): %s : %s", r.Channel, text)
+		Logger.Printf("ws (send): %s : %s", r.Channel, text)
 	} else {
-		log.Printf("Could not marshal message for sending. %s", err)
+		Logger.Printf("Could not marshal message for sending. %s", err)
 	}
 }
 
@@ -701,7 +700,7 @@ func (c *RealtimeClient) logRemainingResponses() {
 		ids = append(ids, key.(string))
 		return true
 	})
-	log.Printf("Pending messages ids: %s", strings.Join(ids, ","))
+	Logger.Printf("Pending messages ids: %s", strings.Join(ids, ","))
 }
 
 // WaitForMessages waits for a server response related to the list of message ids
@@ -731,7 +730,7 @@ func (c *RealtimeClient) WaitForMessage(ID string) chan error {
 
 	waitInterval := 10 * time.Second
 
-	log.Printf("Waiting for message: id=%s", ID)
+	Logger.Printf("Waiting for message: id=%s", ID)
 
 	go func() {
 		ticker := time.NewTicker(200 * time.Millisecond)
@@ -744,9 +743,9 @@ func (c *RealtimeClient) WaitForMessage(ID string) chan error {
 		for {
 			select {
 			case <-ticker.C:
-				// log.Printf("Checking if ID has been removed")
+				// Logger.Printf("Checking if ID has been removed")
 				if _, exists := c.pendingRequests.Load(ID); !exists {
-					log.Printf("Received message %s", ID)
+					Logger.Printf("Received message %s", ID)
 					out <- nil
 					return
 				}
@@ -774,7 +773,7 @@ func (c *RealtimeClient) writeHandler() {
 		case message, ok := <-c.send:
 			if !ok {
 				// The send channel has been closed
-				log.Println("Channel has been closed")
+				Logger.Println("Channel has been closed")
 				return
 			}
 
@@ -790,7 +789,7 @@ func (c *RealtimeClient) writeHandler() {
 
 			if c.ws != nil {
 				if err := c.ws.WriteJSON([]request{*message}); err != nil {
-					log.Printf("Failed to send JSON message. %s", err)
+					Logger.Printf("Failed to send JSON message. %s", err)
 				}
 			}
 
@@ -801,11 +800,11 @@ func (c *RealtimeClient) writeHandler() {
 				// If the pong is not received in the minimum time, then the connection will be reset
 				c.ws.SetWriteDeadline(time.Now().Add(writeWait))
 				if err := c.ws.WriteMessage(websocket.PingMessage, nil); err != nil {
-					log.Println("Failed to send ping message to server")
+					Logger.Println("Failed to send ping message to server")
 					go c.reconnect()
 					break
 				}
-				log.Println("Sent ping successfully")
+				Logger.Println("Sent ping successfully")
 			}
 		}
 	}

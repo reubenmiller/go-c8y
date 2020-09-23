@@ -3,7 +3,6 @@ package c8y
 import (
 	"context"
 	"errors"
-	"log"
 	"time"
 
 	"github.com/tidwall/gjson"
@@ -152,7 +151,7 @@ func (s *DeviceCredentialsService) PollNewDeviceRequest(ctx context.Context, dev
 				return
 
 			case <-ticker.C:
-				log.Printf("Polling for device request")
+				Logger.Printf("Polling for device request")
 				deviceRequest, _, err := s.GetNewDeviceRequest(ctx, deviceID)
 				if err != nil {
 					continue
