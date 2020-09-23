@@ -19,9 +19,6 @@ type Hub struct {
 	// Return a channel of channels
 	getChannels chan chan string
 
-	// Called when a client is removed
-	onRemove func(string)
-
 	channels sync.Map
 }
 
