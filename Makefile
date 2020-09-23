@@ -8,7 +8,7 @@ C8Y_PKGS = $$(go list ./... | grep -v /vendor/)
 GOMOD=$(GOCMD) mod
 
 ENV_FILE ?= c8y.env
-include $(ENV_FILE)
+-include $(ENV_FILE)
 export $(shell sed 's/=.*//' $(ENV_FILE) 2>/dev/null)
 
 .PHONY: all check-path test race docs install tsurud
