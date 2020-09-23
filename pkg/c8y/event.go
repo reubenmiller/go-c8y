@@ -6,9 +6,11 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 
+	"github.com/pkg/errors"
 	"github.com/tidwall/gjson"
 	"go.uber.org/zap"
 )
@@ -176,16 +178,35 @@ func (s *EventService) DownloadBinary(ctx context.Context, ID string) (filepath 
 
 // CreateBinary uploads a binary that should be associated with an event. Size of attachment cannot exceed 50MB
 func (s *EventService) CreateBinary(ctx context.Context, filename string, ID string) (*EventBinary, *Response, error) {
+	client := s.client
+
 	values := map[string]io.Reader{
-		"file": mustOpen(filename),
+		"file": mustOpen(filename), // lets assume its this file
 	}
 
-	return s.client.SendRequest(ctx, RequestOptions{
-		Method:   "POST",
-		Accept:   "application/json",
-		Path:     "/event/events/" + ID + "/binaries",
-		FormData: values,
-	})
+	// set binary api
+	u, _ := url.Parse(client.BaseURL.String())
+	u.Path = path.Join(u.Path, "/event/events/"+ID+"/binaries")
+
+	req, err := prepareMultipartRequest("POST", u.String(), values)
+	s.client.SetAuthorization(req)
+
+	req.Header.Set("Accept", "application/json")
+
+	if err != nil {
+		err = errors.Wrap(err, "Could not create binary upload request object")
+		zap.S().Error(err)
+		return nil, nil, err
+	}
+
+	data := new(EventBinary)
+	resp, err := client.Do(ctx, req, data)
+
+	if err != nil {
+		return nil, resp, err
+	}
+
+	return data, resp, nil
 }
 
 // EventBinary binary object associated with an event
