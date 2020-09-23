@@ -102,8 +102,8 @@ func TestAuditService_GetAuditRecords(t *testing.T) {
 		searchOptions,
 	)
 
-	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
+	testingutils.Assert(t, err != nil, "deleting audit records is not allowed")
+	testingutils.Equals(t, http.StatusMethodNotAllowed, resp.StatusCode)
 
 	data2, resp, err := client.Audit.GetAuditRecords(
 		context.Background(),

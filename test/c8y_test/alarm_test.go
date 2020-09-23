@@ -208,6 +208,7 @@ func TestAlarmService_BulkUpdateAlarms(t *testing.T) {
 		testingutils.Ok(t, err)
 		testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
 		testingutils.Assert(t, alarmObj != nil, "Alarm should not be nil", alarmObj)
+		time.Sleep(1 * time.Second)
 		return alarmObj
 	}
 
@@ -252,20 +253,23 @@ func TestAlarmService_BulkUpdateAlarms(t *testing.T) {
 	testingutils.Assert(t, resp.StatusCode == http.StatusAccepted || resp.StatusCode == http.StatusOK, "Accepted or OK")
 
 	// Filter by Source and Severity
+	// dateFrom, dateTo = c8y.GetDateRange("1min")
 	alarmCollection, resp, err := client.Alarm.GetAlarms(
 		context.Background(),
 		&c8y.AlarmCollectionOptions{
 			Source: testDevice.ID,
 			Status: "CLEARED",
+			DateTo: time.Now().Format(time.RFC3339),
 		},
 	)
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
 	testingutils.Equals(t, 3, len(alarmCollection.Alarms))
-	testingutils.Equals(t, alarm1.ID, alarmCollection.Alarms[0].ID)
-	testingutils.Equals(t, alarm2.ID, alarmCollection.Alarms[1].ID)
-	testingutils.Equals(t, alarm3.ID, alarmCollection.Alarms[2].ID)
 
+	// should be in reverse order
+	testingutils.Equals(t, alarm1.ID, alarmCollection.Alarms[2].ID)
+	testingutils.Equals(t, alarm2.ID, alarmCollection.Alarms[1].ID)
+	testingutils.Equals(t, alarm3.ID, alarmCollection.Alarms[0].ID)
 }
 
 func TestAlarmService_RemoveAlarmCollection(t *testing.T) {
