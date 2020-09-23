@@ -150,6 +150,7 @@ func TestAlarmService_GetAlarmCollection(t *testing.T) {
 		testingutils.Ok(t, err)
 		testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
 		testingutils.Assert(t, alarmObj != nil, "Alarm should not be nil", alarmObj)
+		time.Sleep(1000 * time.Millisecond)
 		return alarmObj
 	}
 
