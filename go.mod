@@ -1,5 +1,7 @@
 module github.com/reubenmiller/go-c8y
 
+replace github.com/reubenmiller/go-c8y/pkg/c8y => ./pkg/c8y
+
 replace github.com/reubenmiller/go-c8y/pkg/microservice => ./pkg/microservice
 
 replace github.com/reubenmiller/go-c8y/test/c8y_test => ./test/c8y_test
