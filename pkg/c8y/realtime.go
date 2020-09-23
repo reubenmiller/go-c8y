@@ -643,7 +643,7 @@ func (c *RealtimeClient) reactivateSubscriptions() {
 }
 
 // UnsubscribeAll unsubscribes to all of the subscribed channels.
-// The channel related to the subscriptin is left open, and will be
+// The channel related to the subscription is left open, and will be
 // reused if another call with the same pattern is made to Subscribe()
 func (c *RealtimeClient) UnsubscribeAll() chan error {
 	ids := []string{}

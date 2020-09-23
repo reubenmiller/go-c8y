@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 )
 
-// AlarmBuilder represents a alarm where the mandatory properies are set via its constructor NewAlarmBuilder
+// AlarmBuilder represents a alarm where the mandatory properties are set via its constructor NewAlarmBuilder
 type AlarmBuilder struct {
 	data map[string]interface{}
 }

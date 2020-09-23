@@ -393,7 +393,7 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 	}
 
 	if options.DryRun {
-		// Show infromation about the request i.e. url, headers, body etc.
+		// Show information about the request i.e. url, headers, body etc.
 		message := fmt.Sprintf("What If: Sending [%s] request to [%s]\n", req.Method, req.URL)
 
 		if len(req.Header) > 0 {
