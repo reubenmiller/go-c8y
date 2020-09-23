@@ -164,15 +164,18 @@ func TestAlarmService_GetAlarmCollection(t *testing.T) {
 		&c8y.AlarmCollectionOptions{
 			Source:   testDevice.ID,
 			Severity: "MAJOR",
+			DateTo:   time.Now().Format(time.RFC3339Nano),
 		},
 	)
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
 	testingutils.Equals(t, 3, len(alarmCollection.Alarms))
 	testingutils.Equals(t, 3, len(alarmCollection.Items))
-	testingutils.Equals(t, alarm1.ID, alarmCollection.Alarms[0].ID)
+
+	// alarms will be in reverse order due to dateFrom filtering
+	testingutils.Equals(t, alarm1.ID, alarmCollection.Alarms[2].ID)
 	testingutils.Equals(t, alarm2.ID, alarmCollection.Alarms[1].ID)
-	testingutils.Equals(t, alarm3.ID, alarmCollection.Alarms[2].ID)
+	testingutils.Equals(t, alarm3.ID, alarmCollection.Alarms[0].ID)
 
 	// Filter by Source and Type
 	alarmCollection, resp, err = client.Alarm.GetAlarms(
