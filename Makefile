@@ -4,7 +4,7 @@
 
 GOCMD=go
 BUILD_DIR = build
-C8Y_PKGS = $$(go list ./... | grep -v /vendor/)
+C8Y_PKGS = $$(go list ./... | grep -v /vendor/ | grep -v /test/)
 GOMOD=$(GOCMD) mod
 
 ENV_FILE ?= c8y.env
@@ -71,8 +71,8 @@ metalint:
 	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
 	go install $(C8Y_PKGS)
 	go test -i $(C8Y_PKGS)
-	echo "$(C8Y_PKGS)" | sed 's|github.com/tsuru/tsuru/|./|' | xargs -t -n 4 \
-		time golangci-lint run -c ./.golangci.yml
+	echo "$(C8Y_PKGS)" | sed 's|github.com/reubenmiller/go-c8y/|./|' | xargs -t -n 4 \
+		golangci-lint run -c ./.golangci.yml
 
 race:
 	go test $(GO_EXTRAFLAGS) -race -i $(C8Y_PKGS)
