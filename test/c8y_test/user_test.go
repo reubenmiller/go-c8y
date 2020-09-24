@@ -387,8 +387,22 @@ func TestUserService_AssignRoleToGroup(t *testing.T) {
 	)
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
-	testingutils.Assert(t, group.Name != "", "Group name should not be empty")
-	testingutils.Assert(t, group.GetID() != "", "Group ID should be greater than 0")
+
+	testingutils.Assert(t, group != nil, "Group should not be empty")
+	if group != nil {
+		testingutils.Assert(t, group.Name != "", "Group name should not be empty")
+		testingutils.Assert(t, group.GetID() != "", "Group ID should be greater than 0")
+	}
+
+	// Remove if role from group if necessary
+	// don't worry about the response
+	if group != nil && roleCollection != nil && len(roleCollection.Roles) > 0 {
+		_, _ = client.User.UnassignRoleFromGroup(
+			context.Background(),
+			group.GetID(),
+			roleCollection.Roles[0].Name,
+		)
+	}
 
 	// Assign role to user
 	roleRef, resp, err := client.User.AssignRoleToGroup(
