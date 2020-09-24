@@ -136,8 +136,8 @@ func (s *DeviceCredentialsService) PollNewDeviceRequest(ctx context.Context, dev
 	ticker := time.NewTicker(interval)
 	timeoutTimer := time.NewTimer(timeout)
 
-	done := make(chan struct{}, 0)
-	err := make(chan error, 0)
+	done := make(chan struct{})
+	err := make(chan error)
 
 	go func() {
 		defer func() {

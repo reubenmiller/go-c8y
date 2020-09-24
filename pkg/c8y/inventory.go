@@ -105,15 +105,15 @@ type ManagedObject struct {
 
 // Device is a subset of a managed object
 type Device struct {
-	ManagedObject
 	DeviceFragment
+	ManagedObject
 }
 
 // Agent is a subset of a managed object
 type Agent struct {
-	ManagedObject
 	DeviceFragment
 	AgentFragment
+	ManagedObject
 }
 
 // NewDevice returns a simple device managed object

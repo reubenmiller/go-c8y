@@ -64,10 +64,8 @@ type RealtimeClient struct {
 	tomb      *tomb.Tomb
 	messages  chan *Message
 	connected bool
-	http      *http.Client
 	dialer    *websocket.Dialer
 	ws        *websocket.Conn
-	interval  time.Duration
 	extension interface{}
 	tenant    string
 	username  string
@@ -227,6 +225,9 @@ func (c *RealtimeClient) Connect() error {
 		}
 
 		err = <-c.getAdvice()
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -549,13 +550,6 @@ func getRealtimeID(id ...string) string {
 	return "*"
 }
 
-func getDurationWithDefault(d ...time.Duration) time.Duration {
-	if len(d) == 0 {
-		return 30 * time.Second
-	}
-	return d[0]
-}
-
 // RealtimeAlarms subscribes to events on alarms objects from the CEP realtime engine
 func RealtimeAlarms(id ...string) string {
 	return "/alarms/" + getRealtimeID(id...)
@@ -639,7 +633,6 @@ func (c *RealtimeClient) reactivateSubscriptions() {
 	}
 
 	c.WaitForMessages(ids...)
-	return
 }
 
 // UnsubscribeAll unsubscribes to all of the subscribed channels.

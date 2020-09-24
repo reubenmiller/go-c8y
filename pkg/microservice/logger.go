@@ -64,7 +64,9 @@ func ConfigureLogger(logger *zap.Logger, logPath string) {
 		),
 	)
 
-	logger = zap.New(core)
+	if logger != nil {
+		logger = zap.New(core)
+	}
 
 	//
 	// Allow accessing the logger using the zap global logger

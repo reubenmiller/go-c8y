@@ -170,7 +170,7 @@ func (m *Microservice) RegisterMicroserviceAgent() error {
 		// Get existing configuration
 		m.CheckForNewConfiguration()
 
-		if existingConfig, err := m.GetConfiguration(); err == nil {
+		if existingConfig, configErr := m.GetConfiguration(); configErr == nil {
 			zap.L().Info("Loading existing configuration from the platform")
 			m.UpdateApplicationConfiguration(existingConfig)
 		}

@@ -9,7 +9,7 @@ import (
 // GetDateRange returns the dateFrom and dateTo based on an interval string, i.e. 1d, is 1 day
 func GetDateRange(dateInterval string) (string, string) {
 
-	pattern := regexp.MustCompile("^(\\d+)\\s*([a-zA-Z]+)$")
+	pattern := regexp.MustCompile(`^(\d+)\s*([a-zA-Z]+)$`)
 	result := pattern.FindStringSubmatch(dateInterval)
 
 	if len(result) == 0 {

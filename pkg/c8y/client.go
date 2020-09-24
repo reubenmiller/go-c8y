@@ -234,12 +234,6 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 	return c
 }
 
-func (c *Client) setTransport(transport *http.Transport) {
-	c.clientMu.Lock()
-	defer c.clientMu.Unlock()
-	c.client.Transport = transport
-}
-
 // addOptions adds the parameters in opt as URL query parameters to s. opt
 // must be a struct whose fields may contain "url" tags.
 func addOptions(s string, opt interface{}) (string, error) {
@@ -298,13 +292,13 @@ type RequestOptions struct {
 	Host         string
 	Path         string
 	Accept       string
-	IgnoreAccept bool
 	ContentType  string
 	Query        interface{} // Use string if you want
 	Body         interface{}
-	FormData     map[string]io.Reader
 	ResponseData interface{}
+	FormData     map[string]io.Reader
 	Header       http.Header
+	IgnoreAccept bool
 	DryRun       bool
 }
 
@@ -376,10 +370,11 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 		if !strings.HasPrefix(options.Host, "https://") && !strings.HasPrefix(options.Host, "http://") {
 			host = "https://" + options.Host
 		}
-		baseURL, err := url.Parse(host)
+		baseURL, parseErr := url.Parse(host)
 
-		if err != nil {
-			Logger.Warningf("Ignoring invalid host %s. %s", host, err)
+		if parseErr != nil {
+			Logger.Warningf("Ignoring invalid host %s. %s", host, parseErr)
+			err = parseErr
 		} else {
 			req.URL.Host = baseURL.Host
 			req.URL.Scheme = baseURL.Scheme
@@ -406,13 +401,13 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 			}
 		}
 
-		if v, err := json.MarshalIndent(options.Body, " ", "  "); err == nil && !bytes.Equal(v, []byte("null")) {
+		if v, parseErr := json.MarshalIndent(options.Body, " ", "  "); parseErr == nil && !bytes.Equal(v, []byte("null")) {
 			message += fmt.Sprintf("\nBody:\n%s", v)
 		}
 
 		Logger.Println(c.hideSensitiveInformationIfActive(message))
 
-		if command, err := http2curl.GetCurlCommand(req); err == nil {
+		if command, curlErr := http2curl.GetCurlCommand(req); curlErr == nil {
 			_ = command
 			// Logger.Printf("curl: %s\n", strings.ReplaceAll(command.String(), "\"", "\\\""))
 		}
@@ -604,18 +599,6 @@ func newResponse(r *http.Response) *Response {
 	return response
 }
 
-type apiCategory string
-
-// category returns the rate limit category of the endpoint, determined by Request.URL.Path.
-func category(path string) apiCategory {
-	switch {
-	default:
-		return "unknown"
-	case strings.HasPrefix(path, "/measurement/"):
-		return "measurement"
-	}
-}
-
 func withContext(ctx context.Context, req *http.Request) *http.Request {
 	return req.WithContext(ctx)
 }
@@ -637,7 +620,9 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 		req.Header.Set("Authorization", authToken.(string))
 	}
 
-	Logger.Printf("Sending request: %s %s", req.Method, c.hideSensitiveInformationIfActive(req.URL.String()))
+	if req != nil {
+		Logger.Printf("Sending request: %s %s", req.Method, c.hideSensitiveInformationIfActive(req.URL.String()))
+	}
 
 	// Log the body (if applicable)
 	if req != nil && req.Body != nil {
@@ -670,7 +655,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 
 		// If the error type is *url.Error, sanitize its URL before returning.
 		if e, ok := err.(*url.Error); ok {
-			if url, err := url.Parse(e.URL); err == nil {
+			if url, parseErr := url.Parse(e.URL); parseErr == nil {
 				e.URL = sanitizeURL(url).String()
 				return nil, e
 			}
@@ -826,7 +811,7 @@ func (c *Client) hideSensitiveInformationIfActive(message string) string {
 	message = strings.ReplaceAll(message, c.Username, "{username}")
 	message = strings.ReplaceAll(message, c.Password, "{password}")
 
-	basicAuthMatcher := regexp.MustCompile("(Basic\\s+)[A-Za-z0-9=]+")
+	basicAuthMatcher := regexp.MustCompile(`(Basic\s+)[A-Za-z0-9=]+`)
 	message = basicAuthMatcher.ReplaceAllString(message, "$1 {base64 tenant/username:password}")
 
 	return message

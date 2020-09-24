@@ -278,7 +278,7 @@ func (d *MeasurementSeriesAggregateGroup) UnmarshalJSON(data []byte) error {
 // GetMeasurementSeries returns the measurement series for a given source and variables
 // The data is returned in a user friendly format to make it easier to use the data
 func (s *MeasurementService) GetMeasurementSeries(ctx context.Context, opt *MeasurementSeriesOptions) (*MeasurementSeriesGroup, *Response, error) {
-	u := fmt.Sprintf("measurement/measurements/series")
+	u := "measurement/measurements/series"
 
 	queryParams, err := addOptions("", opt)
 	if err != nil {
