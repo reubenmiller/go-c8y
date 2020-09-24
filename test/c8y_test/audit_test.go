@@ -45,10 +45,14 @@ func TestAuditService_CreateAuditRecord(t *testing.T) {
 
 	auditRecord, resp, err := client.Audit.Create(context.Background(), recordInput)
 	testingutils.Ok(t, err)
+
 	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
-	testingutils.Assert(t, auditRecord.ID != "", "Audit record id should not be empty")
-	testingutils.Equals(t, "Test audit record 1", auditRecord.Text)
 	testingutils.Assert(t, auditRecord != nil, "Audit record should not be empty")
+
+	if auditRecord != nil {
+		testingutils.Assert(t, auditRecord.ID != "", "Audit record id should not be empty")
+		testingutils.Equals(t, "Test audit record 1", auditRecord.Text)
+	}
 
 	// Retrieve audit record by its ID
 	auditRecord2, resp, err := client.Audit.GetAuditRecord(

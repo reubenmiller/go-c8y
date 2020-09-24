@@ -321,7 +321,7 @@ func TestUserService_GetRoles(t *testing.T) {
 func TestUserService_AssignRoleToUser(t *testing.T) {
 	client := createTestClient()
 
-	roleCollection, resp, err := client.User.GetRoles(
+	roleCollection, _, err := client.User.GetRoles(
 		context.Background(),
 		&c8y.RoleOptions{
 			PaginationOptions: *c8y.NewPaginationOptions(100),
@@ -372,7 +372,7 @@ func TestUserService_AssignRoleToUser(t *testing.T) {
 func TestUserService_AssignRoleToGroup(t *testing.T) {
 	client := createTestClient()
 
-	roleCollection, resp, err := client.User.GetRoles(
+	roleCollection, _, err := client.User.GetRoles(
 		context.Background(),
 		&c8y.RoleOptions{
 			PaginationOptions: *c8y.NewPaginationOptions(100),

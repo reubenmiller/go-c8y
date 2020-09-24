@@ -44,10 +44,12 @@ func TestEventService_CreateEvent(t *testing.T) {
 	testingutils.Assert(t, event != nil, "Event object should not be empty")
 
 	// Get the event
-	event2, resp, err := client.Event.GetEvent(context.Background(), event.ID)
-	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
-	testingutils.Equals(t, event.ID, event2.ID)
+	if event != nil {
+		event2, resp, err := client.Event.GetEvent(context.Background(), event.ID)
+		testingutils.Ok(t, err)
+		testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+		testingutils.Equals(t, event.ID, event2.ID)
+	}
 }
 
 func TestEventService_GetEvents(t *testing.T) {
@@ -149,7 +151,7 @@ func TestEventService_DeleteEvents(t *testing.T) {
 	createEventType1()
 	createEventType2()
 
-	col, resp, err := client.Event.GetEvents(
+	col, _, err := client.Event.GetEvents(
 		context.Background(),
 		&c8y.EventCollectionOptions{
 			Source: testDevice.ID,
@@ -158,7 +160,7 @@ func TestEventService_DeleteEvents(t *testing.T) {
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, 4, len(col.Events))
 
-	resp, err = client.Event.DeleteEvents(
+	resp, err := client.Event.DeleteEvents(
 		context.Background(),
 		&c8y.EventCollectionOptions{
 			Type: eventType1,

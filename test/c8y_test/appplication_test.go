@@ -87,7 +87,7 @@ func TestApplicationService_GetApplication(t *testing.T) {
 
 	applicationName := "cockpit"
 
-	apps, resp, err := client.Application.GetApplicationsByName(
+	apps, _, err := client.Application.GetApplicationsByName(
 		context.Background(),
 		applicationName,
 		nil,

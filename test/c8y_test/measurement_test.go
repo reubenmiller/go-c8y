@@ -97,19 +97,21 @@ func TestMeasurementService_GetMeasurements(t *testing.T) {
 
 	testingutils.Equals(t, 1, len(measCollection.Items))
 
-	log.Printf("json result: %s\n", *resp.JSONData)
+	if resp != nil {
+		log.Printf("json result: %s\n", *resp.JSONData)
 
-	totalmeasurements := resp.JSON.Get("measurements.#").Int()
+		totalmeasurements := resp.JSON.Get("measurements.#").Int()
 
-	if totalmeasurements != 1 {
-		t.Errorf("expected more than 0 measurements. want: %d, got: %d", 1, totalmeasurements)
+		if totalmeasurements != 1 {
+			t.Errorf("expected more than 0 measurements. want: %d, got: %d", 1, totalmeasurements)
+		}
+		value := resp.JSON.Get("measurements.0.id")
+
+		if !value.Exists() {
+			t.Errorf("expected id to exist. Wanted: Existing but go: no exist")
+		}
+		log.Printf("JSON value: %s", value)
 	}
-	value := resp.JSON.Get("measurements.0.id")
-
-	if !value.Exists() {
-		t.Errorf("expected id to exist. Wanted: Existing but go: no exist")
-	}
-	log.Printf("JSON value: %s", value)
 }
 
 // TestMeasurementService_MarshalMeasurement tests the custom json marshalling function for the
@@ -359,6 +361,10 @@ func TestMeasurementService_GetMeasurement_DeleteMeasurement(t *testing.T) {
 	meas, _, err := client.Measurement.Create(context.Background(), *measurement1)
 	testingutils.Ok(t, err)
 	testingutils.Assert(t, meas != nil, "Measurement shouldn't be nil")
+
+	if meas == nil {
+		return
+	}
 
 	meas2, resp, err := client.Measurement.GetMeasurement(
 		context.Background(),
