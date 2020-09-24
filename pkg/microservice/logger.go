@@ -64,7 +64,7 @@ func ConfigureLogger(logger *zap.Logger, logPath string) {
 		),
 	)
 
-	if logger != nil {
+	if logger == nil {
 		logger = zap.New(core)
 	}
 
