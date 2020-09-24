@@ -24,7 +24,7 @@ func TestTenantService_GetTenantStatisticsSummary(t *testing.T) {
 	)
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
-	testingutils.Assert(t, summary.StorageSize > 0, "Storage size should be greater than 0")
+	testingutils.Assert(t, summary.StorageSize >= 0, "Storage size should be greater than or equal to 0")
 	testingutils.Assert(t, summary.RequestCount > 0, "Request count should be greater than 0")
 }
 
@@ -43,7 +43,8 @@ func TestTenantService_GetTenantStatistics(t *testing.T) {
 	)
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
-	testingutils.Equals(t, 10, len(statistics.UsageStatistics))
+	testingutils.Assert(t, len(statistics.UsageStatistics) <= 10, "At most 10 days should be returned")
+	testingutils.Assert(t, len(statistics.UsageStatistics) > 0, "At least 1 day should be returned")
 }
 
 func TestTenantService_GetAllTenantsStatisticsSummary(t *testing.T) {
@@ -77,6 +78,7 @@ func TestTenantService_GetCurrentTenant(t *testing.T) {
 }
 
 func TestTenantService_GetTenantsWithNoSubtenants(t *testing.T) {
+	t.Skip("Requires a multi tenant Cumulocity installation")
 	client := createTestClient()
 	tenantCollection, resp, err := client.Tenant.GetTenants(
 		context.Background(),

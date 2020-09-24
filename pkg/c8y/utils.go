@@ -7,9 +7,10 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"path/filepath"
 )
 
-func prepareMultipartRequest(url string, method string, values map[string]io.Reader) (req *http.Request, err error) {
+func prepareMultipartRequest(method string, url string, values map[string]io.Reader) (req *http.Request, err error) {
 	// Prepare a form that you will submit to that URL.
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
@@ -20,7 +21,7 @@ func prepareMultipartRequest(url string, method string, values map[string]io.Rea
 		}
 		// Add an image file
 		if x, ok := r.(*os.File); ok {
-			if fw, err = w.CreateFormFile(key, x.Name()); err != nil {
+			if fw, err = w.CreateFormFile(key, filepath.Base(x.Name())); err != nil {
 				return
 			}
 		} else {

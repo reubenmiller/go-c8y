@@ -4,15 +4,15 @@ import "github.com/reubenmiller/go-c8y/pkg/c8y"
 
 // AgentManagedObject is the agent representation of the microservice which is stored in Inventory
 type AgentManagedObject struct {
-	c8y.ManagedObject
-
-	AgentConfiguration       *AgentConfiguration      `json:"c8y_Configuration,omitempty"`
-	AgentInformation         *AgentInformation        `json:"c8y_Hardware,omitempty"`
-	AgentSupportedOperations AgentSupportedOperations `json:"c8y_SupportedOperations,omitempty"`
-
 	// Fragments
 	c8y.AgentFragment
 	c8y.DeviceFragment
+
+	c8y.ManagedObject
+
+	AgentSupportedOperations AgentSupportedOperations `json:"c8y_SupportedOperations,omitempty"`
+	AgentConfiguration       *AgentConfiguration      `json:"c8y_Configuration,omitempty"`
+	AgentInformation         *AgentInformation        `json:"c8y_Hardware,omitempty"`
 }
 
 // AgentConfiguration fragment containing the raw agent configuration string which can be edited by the user in the Device Manager application
@@ -38,7 +38,6 @@ func (ops AgentSupportedOperations) AddOperations(operations []string) {
 			ops = append(ops, op)
 		}
 	}
-	return
 }
 
 // Exists returns true if the given operation already exists

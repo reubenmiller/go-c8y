@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -158,7 +157,7 @@ func (d *MeasurementSeriesGroup) UnmarshalJSON(data []byte) error {
 	c8ySeries.Get("series").ForEach(func(_, serie gjson.Result) bool {
 		v := &MeasurementSerieDefinition{}
 		if err := json.Unmarshal([]byte(serie.String()), &v); err != nil {
-			log.Printf("Could not unmarshal series definition. %s", serie.String())
+			Logger.Printf("Could not unmarshal series definition. %s", serie.String())
 		}
 
 		seriesDefinitions = append(seriesDefinitions, *v)
@@ -219,7 +218,7 @@ func (d *MeasurementSeriesAggregateGroup) UnmarshalJSON(data []byte) error {
 	c8ySeries.Get("series").ForEach(func(_, serie gjson.Result) bool {
 		v := &MeasurementSerieDefinition{}
 		if err := json.Unmarshal([]byte(serie.String()), &v); err != nil {
-			log.Printf("Could not unmarshal series definition. %s", serie.String())
+			Logger.Printf("Could not unmarshal series definition. %s", serie.String())
 		}
 
 		seriesDefinitions = append(seriesDefinitions, *v)
@@ -235,8 +234,8 @@ func (d *MeasurementSeriesAggregateGroup) UnmarshalJSON(data []byte) error {
 	var allSeries []MeasurementSeriesAggregateValueGroup
 	c8ySeries.Get("values").ForEach(func(key, values gjson.Result) bool {
 
-		log.Printf("Key: %s\n", key)
-		log.Printf("Values: %s\n", values)
+		Logger.Printf("Key: %s\n", key)
+		Logger.Printf("Values: %s\n", values)
 
 		timestamp, err := time.Parse(time.RFC3339, key.Str)
 
@@ -251,11 +250,11 @@ func (d *MeasurementSeriesAggregateGroup) UnmarshalJSON(data []byte) error {
 
 		index := 0
 		values.ForEach(func(_, value gjson.Result) bool {
-			log.Printf("Current value: %s\n", value)
+			Logger.Printf("Current value: %s\n", value)
 			v := &MeasurementAggregateValue{}
 			json.Unmarshal([]byte(value.String()), &v)
 
-			log.Printf("Full Value: %v\n", v)
+			Logger.Printf("Full Value: %v\n", v)
 
 			seriesValues.Values[index] = *v
 			index++
@@ -279,14 +278,14 @@ func (d *MeasurementSeriesAggregateGroup) UnmarshalJSON(data []byte) error {
 // GetMeasurementSeries returns the measurement series for a given source and variables
 // The data is returned in a user friendly format to make it easier to use the data
 func (s *MeasurementService) GetMeasurementSeries(ctx context.Context, opt *MeasurementSeriesOptions) (*MeasurementSeriesGroup, *Response, error) {
-	u := fmt.Sprintf("measurement/measurements/series")
+	u := "measurement/measurements/series"
 
 	queryParams, err := addOptions("", opt)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	log.Printf("query Parameters: %s\n", queryParams)
+	Logger.Printf("query Parameters: %s\n", queryParams)
 
 	req, err := s.client.NewRequest("GET", u, queryParams, nil)
 	if err != nil {

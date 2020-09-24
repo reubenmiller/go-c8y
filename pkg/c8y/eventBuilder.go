@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 )
 
-// EventBuilder represents a custom event where the mandatory properies are set via its constructor NewEventBuilder
+// EventBuilder represents a custom event where the mandatory properties are set via its constructor NewEventBuilder
 type EventBuilder struct {
 	data map[string]interface{}
 }

@@ -97,19 +97,21 @@ func TestMeasurementService_GetMeasurements(t *testing.T) {
 
 	testingutils.Equals(t, 1, len(measCollection.Items))
 
-	log.Printf("json result: %s\n", *resp.JSONData)
+	if resp != nil {
+		log.Printf("json result: %s\n", *resp.JSONData)
 
-	totalmeasurements := resp.JSON.Get("measurements.#").Int()
+		totalmeasurements := resp.JSON.Get("measurements.#").Int()
 
-	if totalmeasurements != 1 {
-		t.Errorf("expected more than 0 measurements. want: %d, got: %d", 1, totalmeasurements)
+		if totalmeasurements != 1 {
+			t.Errorf("expected more than 0 measurements. want: %d, got: %d", 1, totalmeasurements)
+		}
+		value := resp.JSON.Get("measurements.0.id")
+
+		if !value.Exists() {
+			t.Errorf("expected id to exist. Wanted: Existing but go: no exist")
+		}
+		log.Printf("JSON value: %s", value)
 	}
-	value := resp.JSON.Get("measurements.0.id")
-
-	if !value.Exists() {
-		t.Errorf("expected id to exist. Wanted: Existing but go: no exist")
-	}
-	log.Printf("JSON value: %s", value)
 }
 
 // TestMeasurementService_MarshalMeasurement tests the custom json marshalling function for the
@@ -338,9 +340,9 @@ func TestMeasurementService_CreateWithDifferentTypes(t *testing.T) {
 	createMeasurement(uint8(8))
 	createMeasurement(uint(101))
 
-	// boolean values
-	createMeasurement(true)
-	createMeasurement(false)
+	// boolean values (No longer supported by c8y)
+	// createMeasurement(true)
+	// createMeasurement(false)
 }
 
 func TestMeasurementService_GetMeasurement_DeleteMeasurement(t *testing.T) {
@@ -360,14 +362,17 @@ func TestMeasurementService_GetMeasurement_DeleteMeasurement(t *testing.T) {
 	testingutils.Ok(t, err)
 	testingutils.Assert(t, meas != nil, "Measurement shouldn't be nil")
 
+	if meas == nil {
+		return
+	}
+
 	meas2, resp, err := client.Measurement.GetMeasurement(
 		context.Background(),
 		meas.ID,
 	)
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
-	testingutils.Equals(t, meas, meas2)
-	testingutils.Equals(t, meas.Item.Raw, meas2.Item.Raw)
+	testingutils.Equals(t, meas.ID, meas2.ID)
 
 	// Remove measurement
 	resp, err = client.Measurement.Delete(

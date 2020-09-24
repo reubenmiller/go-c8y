@@ -1,7 +1,6 @@
 package c8y_test
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/pkg/errors"
@@ -18,7 +17,7 @@ func NewDummyFile(name string, contents string) (filepath string) {
 
 	defer f.Close()
 
-	f.WriteString(fmt.Sprintf("%s", contents))
+	f.WriteString(contents)
 
 	if err := f.Sync(); err != nil {
 		panic(errors.Wrap(err, "Failed to fill file with dummy information"))

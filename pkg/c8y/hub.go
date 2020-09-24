@@ -19,9 +19,6 @@ type Hub struct {
 	// Return a channel of channels
 	getChannels chan chan string
 
-	// Called when a client is removed
-	onRemove func(string)
-
 	channels sync.Map
 }
 
@@ -62,7 +59,7 @@ func (h *Hub) run() {
 			}
 		case message := <-h.broadcast:
 			for client := range h.clients {
-				if (client.isWildcard || client.glob.String() == message.Channel) && !client.disabled {
+				if ((client.isWildcard && client.glob.MatchString(message.Channel)) || client.glob.String() == message.Channel) && !client.disabled {
 					client.out <- message
 				}
 			}

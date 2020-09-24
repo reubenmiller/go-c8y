@@ -113,7 +113,7 @@ func TestUserService_GetGroupByName(t *testing.T) {
 	// Get group by id
 	groupByID, resp, err := client.User.GetGroup(
 		context.Background(),
-		group.ID,
+		group.GetID(),
 	)
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
@@ -167,14 +167,14 @@ func TestUserService_AddUserToGroup(t *testing.T) {
 	)
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
-	testingutils.Assert(t, group.ID > 0, "ID should be greater than 0")
+	testingutils.Assert(t, group.GetID() != "", "ID should be greater than 0")
 
 	//
 	// Add user to group
 	userRef, resp, err := client.User.AddUserToGroup(
 		context.Background(),
 		currentUser,
-		group.ID,
+		group.GetID(),
 	)
 
 	testingutils.Ok(t, err)
@@ -184,7 +184,7 @@ func TestUserService_AddUserToGroup(t *testing.T) {
 	// Get the users in the group
 	userReferences, resp, err := client.User.GetUsersByGroup(
 		context.Background(),
-		group.ID,
+		group.GetID(),
 		&c8y.UserOptions{
 			PaginationOptions: *c8y.NewPaginationOptions(100),
 		},
@@ -198,7 +198,7 @@ func TestUserService_AddUserToGroup(t *testing.T) {
 	resp, err = client.User.RemoveUserFromGroup(
 		context.Background(),
 		currentUser.Username,
-		group.ID,
+		group.GetID(),
 	)
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
@@ -231,7 +231,7 @@ func TestUserService_GetUsersByGroup(t *testing.T) {
 	_, resp, err = client.User.AddUserToGroup(
 		context.Background(),
 		currentUser,
-		group.ID,
+		group.GetID(),
 	)
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
@@ -239,7 +239,7 @@ func TestUserService_GetUsersByGroup(t *testing.T) {
 	// Get users in group
 	userReferences, resp, err := client.User.GetUsersByGroup(
 		context.Background(),
-		group.ID,
+		group.GetID(),
 		&c8y.UserOptions{
 			PaginationOptions: *c8y.NewPaginationOptions(100),
 		},
@@ -252,7 +252,7 @@ func TestUserService_GetUsersByGroup(t *testing.T) {
 	// Update temp group
 	updatedGroup, resp, err := client.User.UpdateGroup(
 		context.Background(),
-		group.ID,
+		group.GetID(),
 		&c8y.Group{
 			Name: "CustomCIGroup-UpdatedName",
 		},
@@ -264,7 +264,7 @@ func TestUserService_GetUsersByGroup(t *testing.T) {
 	// Remove temp group
 	resp, err = client.User.DeleteGroup(
 		context.Background(),
-		group.ID,
+		group.GetID(),
 	)
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
@@ -321,7 +321,7 @@ func TestUserService_GetRoles(t *testing.T) {
 func TestUserService_AssignRoleToUser(t *testing.T) {
 	client := createTestClient()
 
-	roleCollection, resp, err := client.User.GetRoles(
+	roleCollection, _, err := client.User.GetRoles(
 		context.Background(),
 		&c8y.RoleOptions{
 			PaginationOptions: *c8y.NewPaginationOptions(100),
@@ -372,7 +372,7 @@ func TestUserService_AssignRoleToUser(t *testing.T) {
 func TestUserService_AssignRoleToGroup(t *testing.T) {
 	client := createTestClient()
 
-	roleCollection, resp, err := client.User.GetRoles(
+	roleCollection, _, err := client.User.GetRoles(
 		context.Background(),
 		&c8y.RoleOptions{
 			PaginationOptions: *c8y.NewPaginationOptions(100),
@@ -387,13 +387,27 @@ func TestUserService_AssignRoleToGroup(t *testing.T) {
 	)
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
-	testingutils.Assert(t, group.Name != "", "Group name should not be empty")
-	testingutils.Assert(t, group.ID > 0, "Group ID should be greater than 0")
+
+	testingutils.Assert(t, group != nil, "Group should not be empty")
+	if group != nil {
+		testingutils.Assert(t, group.Name != "", "Group name should not be empty")
+		testingutils.Assert(t, group.GetID() != "", "Group ID should be greater than 0")
+	}
+
+	// Remove if role from group if necessary
+	// don't worry about the response
+	if group != nil && roleCollection != nil && len(roleCollection.Roles) > 0 {
+		_, _ = client.User.UnassignRoleFromGroup(
+			context.Background(),
+			group.GetID(),
+			roleCollection.Roles[0].Name,
+		)
+	}
 
 	// Assign role to user
 	roleRef, resp, err := client.User.AssignRoleToGroup(
 		context.Background(),
-		group.ID,
+		group.GetID(),
 		roleCollection.Roles[0].Self,
 	)
 	testingutils.Ok(t, err)
@@ -403,7 +417,7 @@ func TestUserService_AssignRoleToGroup(t *testing.T) {
 	// Get roles by user
 	groupRoleCollection, resp, err := client.User.GetRolesByGroup(
 		context.Background(),
-		group.ID,
+		group.GetID(),
 		&c8y.RoleOptions{
 			PaginationOptions: *c8y.NewPaginationOptions(100),
 		},
@@ -423,7 +437,7 @@ func TestUserService_AssignRoleToGroup(t *testing.T) {
 	// Unassign role to user
 	resp, err = client.User.UnassignRoleFromGroup(
 		context.Background(),
-		group.ID,
+		group.GetID(),
 		roleRef.Role.Name,
 	)
 	testingutils.Ok(t, err)

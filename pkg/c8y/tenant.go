@@ -145,18 +145,18 @@ type Tenant struct {
 	Status                 string                          `json:"status,omitempty"`
 	AdminName              string                          `json:"adminName,omitempty"`
 	AdminEmail             string                          `json:"adminEmail,omitempty"`
-	AllowCreateTenants     bool                            `json:"allowCreateTenants,omitempty"`
-	StorageLimitPerDevice  int64                           `json:"storageLimitPerDevice,omitempty"`
 	AdminPassword          string                          `json:"adminPassword,omitempty"`
-	SendPasswordResetEmail bool                            `json:"sendPasswordResetEmail,omitempty"`
 	Domain                 string                          `json:"domain,omitempty"`
 	Company                string                          `json:"company,omitempty"`
 	ContactName            string                          `json:"contactName,omitempty"`
 	ContactPhone           string                          `json:"contactPhone,omitempty"`
-	Applications           *ApplicationReferenceCollection `json:"applications,omitempty"`
-	OwnedApplications      *ApplicationReferenceCollection `json:"ownedApplications,omitempty"`
 	CustomProperties       interface{}                     `json:"customProperties,omitempty"`
 	Parent                 string                          `json:"parent,omitempty"`
+	StorageLimitPerDevice  int64                           `json:"storageLimitPerDevice,omitempty"`
+	Applications           *ApplicationReferenceCollection `json:"applications,omitempty"`
+	OwnedApplications      *ApplicationReferenceCollection `json:"ownedApplications,omitempty"`
+	AllowCreateTenants     bool                            `json:"allowCreateTenants,omitempty"`
+	SendPasswordResetEmail bool                            `json:"sendPasswordResetEmail,omitempty"`
 }
 
 // NewTenant returns a tenant object with the required fields

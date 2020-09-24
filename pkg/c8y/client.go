@@ -9,16 +9,18 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"reflect"
+	"regexp"
 	"strings"
 	"sync"
 
 	"github.com/google/go-querystring/query"
 	"github.com/tidwall/gjson"
+	"moul.io/http2curl"
 )
 
 // ContextAuthTokenKey todo
@@ -87,6 +89,11 @@ const (
 	defaultUserAgent = "go-client"
 )
 
+var (
+	// EnvVarLoggerHideSensitive environment variable name used to control whethere sensitive session information is logged or not. When set to "true", then the tenant, username, password, base 64 passwords will be obfuscated from the log messages
+	EnvVarLoggerHideSensitive = "C8Y_LOGGER_HIDE_SENSITIVE"
+)
+
 // DecodeJSONBytes decodes json preserving number formatting (especially large integers and scientific notation floats)
 func DecodeJSONBytes(v []byte, dst interface{}) error {
 	return DecodeJSONReader(bytes.NewReader(v), dst)
@@ -124,7 +131,7 @@ func DecodeJSONReader(r io.Reader, dst interface{}) error {
 // If no service user is found for the set tenant, then nil is returned
 func (c *Client) NewRealtimeClientFromServiceUser(tenant string) *RealtimeClient {
 	if len(c.ServiceUsers) == 0 {
-		log.Panic("No service users found")
+		Logger.Panic("No service users found")
 	}
 	for _, user := range c.ServiceUsers {
 		if tenant == user.Tenant || tenant == "" {
@@ -192,7 +199,7 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 
 	var realtimeClient *RealtimeClient
 	if !skipRealtimeClient {
-		log.Printf("Creating realtime client %s\n", fmtURL)
+		Logger.Printf("Creating realtime client %s\n", fmtURL)
 		realtimeClient = NewRealtimeClient(fmtURL, nil, tenant, username, password)
 	}
 
@@ -289,6 +296,10 @@ type RequestOptions struct {
 	Query        interface{} // Use string if you want
 	Body         interface{}
 	ResponseData interface{}
+	FormData     map[string]io.Reader
+	Header       http.Header
+	IgnoreAccept bool
+	DryRun       bool
 }
 
 // SendRequest creates and sends a request
@@ -303,34 +314,107 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 			if v, err := addOptions("", options.Query); err == nil {
 				queryParams = v
 			} else {
-				log.Printf("ERROR: Could not convert query parameter interface{} to a string. %s", err)
+				Logger.Printf("ERROR: Could not convert query parameter interface{} to a string. %s", err)
 				return nil, err
 			}
 		}
 	}
 
-	req, err := c.NewRequest(options.Method, options.Path, queryParams, options.Body)
+	var req *http.Request
+	var err error
 
-	if req.Header.Get("Accept") == "" {
-		acceptType := "application/json"
-		if options.Accept != "" {
-			acceptType = options.Accept
+	if len(options.FormData) > 0 {
+		Logger.Printf("Sending multipart form-data")
+		// Process FormData (for multipart/form-data requests)
+		// TODO: Somehow use the c.NewRequet function as it provides
+		// the authentication required for the request
+		u, _ := url.Parse(c.BaseURL.String())
+		u.Path = path.Join(u.Path, options.Path)
+		req, err = prepareMultipartRequest(options.Method, u.String(), options.FormData)
+		c.SetAuthorization(req)
+	} else {
+		// Normal request
+		req, err = c.NewRequest(options.Method, options.Path, queryParams, options.Body)
+	}
+
+	if !options.IgnoreAccept {
+		if req.Header.Get("Accept") == "" {
+			acceptType := "application/json"
+			if options.Accept != "" {
+				acceptType = options.Accept
+			}
+			req.Header.Set("Accept", acceptType)
 		}
-		req.Header.Set("Accept", acceptType)
+	} else {
+		req.Header.Del("Accept")
 	}
 
 	if options.ContentType != "" {
 		req.Header.Set("Content-Type", options.ContentType)
 	}
 
+	if options.Header != nil {
+		for name, values := range options.Header {
+			// Delete any existing header
+			req.Header.Del(name)
+
+			// Transfer the values
+			for _, value := range values {
+				req.Header.Add(name, value)
+			}
+		}
+	}
+
 	if options.Host != "" {
-		log.Printf("Using alternative host %s", options.Host)
-		req.Host = options.Host
+		host := options.Host
+		if !strings.HasPrefix(options.Host, "https://") && !strings.HasPrefix(options.Host, "http://") {
+			host = "https://" + options.Host
+		}
+		baseURL, parseErr := url.Parse(host)
+
+		if parseErr != nil {
+			Logger.Warningf("Ignoring invalid host %s. %s", host, parseErr)
+			err = parseErr
+		} else {
+			req.URL.Host = baseURL.Host
+			req.URL.Scheme = baseURL.Scheme
+			Logger.Printf("Using alternative host %s://%s", req.URL.Scheme, req.URL.Host)
+		}
+
 	}
 
 	if err != nil {
 		return nil, err
 	}
+
+	if options.DryRun {
+		// Show information about the request i.e. url, headers, body etc.
+		message := fmt.Sprintf("What If: Sending [%s] request to [%s]\n", req.Method, req.URL)
+
+		if len(req.Header) > 0 {
+			message += "\nHeaders:\n"
+		}
+
+		for key, val := range req.Header {
+			if len(val) > 0 {
+				message += fmt.Sprintf("%s: %s\n", key, val[0])
+			}
+		}
+
+		if v, parseErr := json.MarshalIndent(options.Body, " ", "  "); parseErr == nil && !bytes.Equal(v, []byte("null")) {
+			message += fmt.Sprintf("\nBody:\n%s", v)
+		}
+
+		Logger.Println(c.hideSensitiveInformationIfActive(message))
+
+		if command, curlErr := http2curl.GetCurlCommand(req); curlErr == nil {
+			_ = command
+			// Logger.Printf("curl: %s\n", strings.ReplaceAll(command.String(), "\"", "\\\""))
+		}
+		return nil, nil
+	}
+
+	Logger.Info(c.hideSensitiveInformationIfActive(fmt.Sprintf("Headers: %v", req.Header)))
 
 	resp, err := c.Do(ctx, req, options.ResponseData)
 
@@ -373,6 +457,9 @@ func (c *Client) SetJSONItems(resp *Response, v interface{}) error {
 	case *EventBinary:
 		t.Item = *resp.JSON
 
+	case *GroupCollection:
+		t.Items = resp.JSON.Get("groups").Array()
+
 	case *Identity:
 		t.Item = *resp.JSON
 
@@ -393,10 +480,17 @@ func (c *Client) SetJSONItems(resp *Response, v interface{}) error {
 	case *OperationCollection:
 		t.Items = resp.JSON.Get("operations").Array()
 
+	case *RoleCollection:
+		t.Items = resp.JSON.Get("roles").Array()
+
 	case *TenantOption:
 		t.Item = *resp.JSON
 	case *TenantOptionCollection:
 		t.Items = resp.JSON.Get("options").Array()
+
+	case *UserCollection:
+		t.Items = resp.JSON.Get("users").Array()
+
 	}
 
 	return nil
@@ -434,7 +528,9 @@ func (c *Client) NewRequest(method, path string, query string, body interface{})
 		return nil, err
 	}
 	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
+		if strings.ToUpper(method) != "GET" {
+			req.Header.Set("Content-Type", "application/json")
+		}
 	}
 
 	c.SetAuthorization(req)
@@ -452,6 +548,7 @@ func (c *Client) SetAuthorization(req *http.Request) {
 	} else {
 		headerUsername = c.Username
 	}
+	Logger.Debugf("Current username: %s\n", c.hideSensitiveInformationIfActive(headerUsername))
 	req.SetBasicAuth(headerUsername, c.Password)
 }
 
@@ -502,18 +599,6 @@ func newResponse(r *http.Response) *Response {
 	return response
 }
 
-type apiCategory string
-
-// category returns the rate limit category of the endpoint, determined by Request.URL.Path.
-func category(path string) apiCategory {
-	switch {
-	default:
-		return "unknown"
-	case strings.HasPrefix(path, "/measurement/"):
-		return "measurement"
-	}
-}
-
 func withContext(ctx context.Context, req *http.Request) *http.Request {
 	return req.WithContext(ctx)
 }
@@ -531,26 +616,28 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 
 	// Check if an authorization key is provided in the context, if so then override the c8y authentication
 	if authToken := ctx.Value(GetContextAuthTokenKey()); authToken != nil {
-		log.Printf("Overriding basic auth provided in the context\n")
+		Logger.Printf("Overriding basic auth provided in the context\n")
 		req.Header.Set("Authorization", authToken.(string))
 	}
 
-	log.Printf("Sending request: %s %s", req.Method, req.URL.String())
+	if req != nil {
+		Logger.Printf("Sending request: %s %s", req.Method, c.hideSensitiveInformationIfActive(req.URL.String()))
+	}
 
 	// Log the body (if applicable)
 	if req != nil && req.Body != nil {
 		switch v := req.Body.(type) {
 		case *os.File:
 			// Only log the file name
-			log.Printf("Body (file): %s", v.Name())
+			Logger.Printf("Body (file): %s", v.Name())
 		default:
-			// Don't print out multie part forms, but everything else is fine.
+			// Don't print out multi part forms, but everything else is fine.
 			if !strings.Contains(req.Header.Get("Content-Type"), "multipart/form-data") {
 				// bodyBytes, _ := ioutil.ReadAll(io.LimitReader(v, 4096))
 				bodyBytes, _ := ioutil.ReadAll(v)
 				req.Body.Close() //  must close
 				req.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-				log.Printf("Body: %s", bodyBytes)
+				Logger.Printf("Body: %s", bodyBytes)
 			}
 		}
 	}
@@ -559,7 +646,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 	if err != nil {
 		// If we got an error, and the context has been canceled,
 		// the context's error is probably more useful.
-		log.Printf("ERROR: Request failed. %s", err)
+		Logger.Printf("ERROR: Request failed. %s", err)
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
@@ -568,7 +655,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 
 		// If the error type is *url.Error, sanitize its URL before returning.
 		if e, ok := err.(*url.Error); ok {
-			if url, err := url.Parse(e.URL); err == nil {
+			if url, parseErr := url.Parse(e.URL); parseErr == nil {
 				e.URL = sanitizeURL(url).String()
 				return nil, e
 			}
@@ -585,7 +672,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 	if err != nil {
 		// even though there was an error, we still return the response
 		// in case the caller wants to inspect it further
-		log.Printf("Invalid response received from server. %s", err)
+		Logger.Printf("Invalid response received from server. %s", err)
 		return response, err
 	}
 
@@ -596,13 +683,13 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 			err = DecodeJSONReader(resp.Body, v)
 
 			if err == io.EOF {
-				log.Printf("Error decoding body. %s", err)
+				Logger.Printf("Error decoding body. %s", err)
 				err = nil // ignore EOF errors caused by empty response body
 			}
 		}
 	}
 
-	log.Println(fmt.Sprintf("Status code: %v", response.StatusCode))
+	Logger.Println(fmt.Sprintf("Status code: %v", response.StatusCode))
 
 	return response, err
 }
@@ -709,4 +796,23 @@ func CheckResponse(r *http.Response) error {
 		DecodeJSONBytes(data, errorResponse)
 	}
 	return errorResponse
+}
+
+func (c *Client) hideSensitiveInformationIfActive(message string) string {
+
+	if strings.ToLower(os.Getenv(EnvVarLoggerHideSensitive)) != "true" {
+		return message
+	}
+
+	if os.Getenv("USERNAME") != "" {
+		message = strings.ReplaceAll(message, os.Getenv("USERNAME"), "******")
+	}
+	message = strings.ReplaceAll(message, c.TenantName, "{tenant}")
+	message = strings.ReplaceAll(message, c.Username, "{username}")
+	message = strings.ReplaceAll(message, c.Password, "{password}")
+
+	basicAuthMatcher := regexp.MustCompile(`(Basic\s+)[A-Za-z0-9=]+`)
+	message = basicAuthMatcher.ReplaceAllString(message, "$1 {base64 tenant/username:password}")
+
+	return message
 }

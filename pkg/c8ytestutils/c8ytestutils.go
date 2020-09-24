@@ -105,7 +105,6 @@ func CheckRequiredConfiguration(config *viper.Viper, props ...string) {
 	if len(missingProps) > 0 {
 		panic(fmt.Sprintf("Missing required properties. %s", strings.Join(missingProps, ",")))
 	}
-	return
 }
 
 // BootstrapApplication creates an application

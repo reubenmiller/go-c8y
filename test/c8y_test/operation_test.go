@@ -63,7 +63,7 @@ func TestOperationService_UpdateOperation(t *testing.T) {
 	testingutils.Ok(t, err)
 
 	createOp := operationFactory(client, device.ID)
-	op1, resp, err := createOp()
+	op1, _, err := createOp()
 
 	testingutils.Ok(t, err)
 
