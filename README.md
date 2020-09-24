@@ -2,7 +2,7 @@
 
 Unofficial Go client for [Cumulocity](http://cumulocity.com/guides/reference/rest-implementation/).
 
-![tests](https://github.com/reubenmiller/go-c8y/workflows/build/badge.svg)
+![tests](https://github.com/reubenmiller/go-c8y/workflows/tests/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/reubenmiller/go-c8y)](https://goreportcard.com/report/github.com/reubenmiller/go-c8y)
 [![Documentation c8y](https://godoc.org/github.com/reubenmiller/go-c8y/pkg/c8y?status.svg)](https://godoc.org/github.com/reubenmiller/go-c8y/pkg/c8y)
 [![Documentation microservice ](https://godoc.org/github.com/reubenmiller/go-c8y/pkg/microservice?status.svg)](https://godoc.org/github.com/reubenmiller/go-c8y/pkg/microservice)
