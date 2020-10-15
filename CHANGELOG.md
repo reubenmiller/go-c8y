@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+* Dry option improvements
+    * Removed unnecessary indentation when displaying body in prettified json
+    * Added dry output of form data information for PUT and POST requests
+    * Dry run now displays `Body: (empty)` for PUT and POST requests when the input body is set to `nil`
+
+* Added support for non-json type bodies
+
 ## Released
 
 ### v0.8.0

@@ -401,8 +401,29 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 			}
 		}
 
-		if v, parseErr := json.MarshalIndent(options.Body, " ", "  "); parseErr == nil && !bytes.Equal(v, []byte("null")) {
-			message += fmt.Sprintf("\nBody:\n%s", v)
+		if options.Body != nil {
+			if v, parseErr := json.MarshalIndent(options.Body, "", "  "); parseErr == nil && !bytes.Equal(v, []byte("null")) {
+				message += fmt.Sprintf("\nBody:\n%s", v)
+			} else {
+				// TODO: check if this can display body reader as string?
+				message += fmt.Sprintf("\nBody:\n%v", options.Body)
+			}
+		} else {
+			message += "\nBody: (empty)\n"
+		}
+
+		if options.FormData != nil {
+			message += "\nForm Data:\n"
+			for key, formData := range options.FormData {
+				if key == "file" {
+					message += fmt.Sprintf("%s: (file contents)\n", key)
+				} else {
+					buf := new(strings.Builder)
+					if _, err := io.Copy(buf, formData); err == nil {
+						message += fmt.Sprintf("%s: %s\n", key, buf.String())
+					}
+				}
+			}
 		}
 
 		Logger.Println(c.hideSensitiveInformationIfActive(message))
@@ -513,6 +534,12 @@ func (c *Client) NewRequest(method, path string, query string, body interface{})
 	if body != nil {
 		switch v := body.(type) {
 		case *os.File:
+			buf = v
+		case string:
+			buf = bytes.NewBufferString(v)
+		case []byte:
+			buf = bytes.NewBuffer(v)
+		case io.ReadWriter:
 			buf = v
 		default:
 			buf = new(bytes.Buffer)
