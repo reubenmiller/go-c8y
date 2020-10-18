@@ -15,6 +15,7 @@ import (
 	"path"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -59,6 +60,11 @@ type Client struct {
 	// Password for Cumulocity Authentication
 	Password string
 
+	// Authorization method
+	AuthorizationMethod string
+
+	Cookies []*http.Cookie
+
 	UseTenantInUsername bool
 
 	// Microservice bootstrap and service users
@@ -92,6 +98,11 @@ const (
 var (
 	// EnvVarLoggerHideSensitive environment variable name used to control whethere sensitive session information is logged or not. When set to "true", then the tenant, username, password, base 64 passwords will be obfuscated from the log messages
 	EnvVarLoggerHideSensitive = "C8Y_LOGGER_HIDE_SENSITIVE"
+)
+
+const (
+	AuthMethodOAuth2Internal = "OAUTH2_INTERNAL"
+	AuthMethodBasic          = "BASIC"
 )
 
 // DecodeJSONBytes decodes json preserving number formatting (especially large integers and scientific notation floats)
@@ -567,8 +578,8 @@ func (c *Client) NewRequest(method, path string, query string, body interface{})
 	return req, nil
 }
 
-// SetAuthorization sets the configured authorization to the given request. By default it will set the Basic Authorization header
-func (c *Client) SetAuthorization(req *http.Request) {
+// SetBasicAuthorization sets the configured authorization to the given request. By default it will set the Basic Authorization header
+func (c *Client) SetBasicAuthorization(req *http.Request) {
 	var headerUsername string
 	if c.UseTenantInUsername {
 		headerUsername = fmt.Sprintf("%s/%s", c.TenantName, c.Username)
@@ -577,6 +588,82 @@ func (c *Client) SetAuthorization(req *http.Request) {
 	}
 	Logger.Debugf("Current username: %s\n", c.hideSensitiveInformationIfActive(headerUsername))
 	req.SetBasicAuth(headerUsername, c.Password)
+}
+
+// SetAuthorization sets the configured authorization to the given request. By default it will set the Basic Authorization header
+func (c *Client) SetAuthorization(req *http.Request) {
+	switch c.AuthorizationMethod {
+	case AuthMethodOAuth2Internal:
+		c.addOAuth2ToRequest(req)
+	case AuthMethodBasic:
+		fallthrough
+	default:
+		c.SetBasicAuthorization(req)
+	}
+}
+
+func (c *Client) SetCookies(cookies []*http.Cookie) {
+	c.Cookies = cookies
+}
+
+func (c *Client) addOAuth2ToRequest(req *http.Request) {
+	if c.Cookies == nil {
+		return
+	}
+
+	cookieValues := make([]string, 0)
+	for _, cookie := range c.Cookies {
+		if cookie.Name == "XSRF-TOKEN" {
+			req.Header.Set("X-"+cookie.Name, cookie.Value)
+		} else {
+			cookieValues = append(cookieValues, fmt.Sprintf("%s=%s", cookie.Name, cookie.Value))
+		}
+	}
+
+	if len(cookieValues) > 0 {
+		req.Header.Add("Cookie", strings.Join(cookieValues, "; "))
+	}
+}
+
+func (c *Client) LoginUsingOAuth2(ctx context.Context) error {
+
+	data := url.Values{}
+	data.Set("grant_type", "PASSWORD")
+	data.Set("username", c.Username)
+	data.Set("password", c.Password)
+	data.Set("tfa_code", "undefined")
+
+	headers := http.Header{}
+	headers.Add("Content-Length", strconv.Itoa(len(data.Encode())))
+
+	options := &RequestOptions{
+		Method:      "POST",
+		Path:        "/tenant/oauth",
+		Query:       fmt.Sprintf("tenant_id=%s", c.TenantName),
+		Accept:      "*/*",
+		Header:      headers,
+		ContentType: "application/x-www-form-urlencoded;charset=UTF-8",
+		Body:        data.Encode(),
+	}
+
+	resp, err := c.SendRequest(
+		ctx,
+		*options,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	c.Cookies = resp.Cookies()
+
+	// test
+	c.AuthorizationMethod = AuthMethodOAuth2Internal
+	if _, _, err := c.User.GetCurrentUser(ctx); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Response is a Cumulocity API response. This wraps the standard http.Response
