@@ -603,6 +603,8 @@ func (c *Client) SetAuthorization(req *http.Request) {
 }
 
 func (c *Client) SetCookies(cookies []*http.Cookie) {
+	c.clientMu.Lock()
+	defer c.clientMu.Unlock()
 	c.Cookies = cookies
 }
 
@@ -655,7 +657,7 @@ func (c *Client) LoginUsingOAuth2(ctx context.Context) error {
 		return err
 	}
 
-	c.Cookies = resp.Cookies()
+	c.SetCookies(resp.Cookies())
 
 	// test
 	c.AuthorizationMethod = AuthMethodOAuth2Internal
