@@ -308,18 +308,19 @@ func NewBasicAuthString(tenant, username, password string) string {
 
 // RequestOptions struct which contains the options to be used with the SendRequest function
 type RequestOptions struct {
-	Method       string
-	Host         string
-	Path         string
-	Accept       string
-	ContentType  string
-	Query        interface{} // Use string if you want
-	Body         interface{}
-	ResponseData interface{}
-	FormData     map[string]io.Reader
-	Header       http.Header
-	IgnoreAccept bool
-	DryRun       bool
+	Method           string
+	Host             string
+	Path             string
+	Accept           string
+	ContentType      string
+	Query            interface{} // Use string if you want
+	Body             interface{}
+	ResponseData     interface{}
+	FormData         map[string]io.Reader
+	Header           http.Header
+	IgnoreAccept     bool
+	NoAuthentication bool
+	DryRun           bool
 }
 
 // SendRequest creates and sends a request
@@ -351,10 +352,16 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 		u, _ := url.Parse(c.BaseURL.String())
 		u.Path = path.Join(u.Path, options.Path)
 		req, err = prepareMultipartRequest(options.Method, u.String(), options.FormData)
-		c.SetAuthorization(req)
+		if !options.NoAuthentication {
+			c.SetAuthorization(req)
+		}
 	} else {
 		// Normal request
-		req, err = c.NewRequest(options.Method, options.Path, queryParams, options.Body)
+		if options.NoAuthentication {
+			req, err = c.NewRequestWithoutAuth(options.Method, options.Path, queryParams, options.Body)
+		} else {
+			req, err = c.NewRequest(options.Method, options.Path, queryParams, options.Body)
+		}
 	}
 
 	if !options.IgnoreAccept {
@@ -581,6 +588,55 @@ func (c *Client) NewRequest(method, path string, query string, body interface{})
 	}
 
 	c.SetAuthorization(req)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", c.UserAgent)
+	req.Header.Set("X-APPLICATION", "go-client")
+	return req, nil
+}
+
+// NewRequestWithoutAuth returns a request with the required additional base url, accept and user-agent.NewRequest
+func (c *Client) NewRequestWithoutAuth(method, path string, query string, body interface{}) (*http.Request, error) {
+	if !strings.HasSuffix(c.BaseURL.Path, "/") {
+		return nil, fmt.Errorf("BaseURL must have a trailing slash, but %q does not", c.BaseURL)
+	}
+
+	rel := &url.URL{Path: path}
+	if query != "" {
+		rel.RawQuery = query
+	}
+
+	u := c.BaseURL.ResolveReference(rel)
+
+	var buf io.ReadWriter
+	if body != nil {
+		switch v := body.(type) {
+		case *os.File:
+			buf = v
+		case string:
+			buf = bytes.NewBufferString(v)
+		case []byte:
+			buf = bytes.NewBuffer(v)
+		case io.ReadWriter:
+			buf = v
+		default:
+			buf = new(bytes.Buffer)
+			err := json.NewEncoder(buf).Encode(body)
+
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	req, err := http.NewRequest(method, u.String(), buf)
+	if err != nil {
+		return nil, err
+	}
+	if body != nil {
+		if strings.ToUpper(method) != "GET" {
+			req.Header.Set("Content-Type", "application/json")
+		}
+	}
+
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgent)
 	req.Header.Set("X-APPLICATION", "go-client")
