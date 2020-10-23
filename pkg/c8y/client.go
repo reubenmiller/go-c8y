@@ -696,7 +696,7 @@ func (c *Client) addOAuth2ToRequest(req *http.Request) {
 }
 
 // LoginUsingOAuth2 login to Cumulocity using OAuth2 and save the cookies from the response
-func (c *Client) LoginUsingOAuth2(ctx context.Context) error {
+func (c *Client) LoginUsingOAuth2(ctx context.Context, initRequest ...string) error {
 
 	data := url.Values{}
 	data.Set("grant_type", "PASSWORD")
@@ -719,6 +719,13 @@ func (c *Client) LoginUsingOAuth2(ctx context.Context) error {
 		Header:      headers,
 		ContentType: "application/x-www-form-urlencoded;charset=UTF-8",
 		Body:        data.Encode(),
+	}
+
+	if len(initRequest) > 0 {
+		if v, err := url.Parse(initRequest[0]); err == nil {
+			options.Path = v.Path
+			options.Query = v.RawQuery
+		}
 	}
 
 	resp, err := c.SendRequest(
