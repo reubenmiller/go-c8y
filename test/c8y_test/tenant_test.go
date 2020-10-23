@@ -171,3 +171,13 @@ func TestTenantService_GetApplicationReferences(t *testing.T) {
 	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
 	testingutils.Assert(t, len(appReferenceCollection.References) > 0, "Should have at least 1 application reference")
 }
+
+func TestTenantService_GetTenantLoginOptions(t *testing.T) {
+	client := createTestClient()
+	loginOptions, resp, err := client.Tenant.GetLoginOptions(context.Background())
+
+	testingutils.Ok(t, err)
+	testingutils.Assert(t, resp != nil, "response should not be empty")
+	testingutils.Assert(t, len(loginOptions.LoginOptions) > 0, "Shoud have at least 1 login option")
+	testingutils.Assert(t, loginOptions.Self != "", "self link should not be empty")
+}
