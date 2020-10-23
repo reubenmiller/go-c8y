@@ -646,7 +646,7 @@ func (c *Client) NewRequestWithoutAuth(method, path string, query string, body i
 // SetBasicAuthorization sets the configured authorization to the given request. By default it will set the Basic Authorization header
 func (c *Client) SetBasicAuthorization(req *http.Request) {
 	var headerUsername string
-	if c.UseTenantInUsername {
+	if c.UseTenantInUsername && c.TenantName != "" {
 		headerUsername = fmt.Sprintf("%s/%s", c.TenantName, c.Username)
 	} else {
 		headerUsername = c.Username
