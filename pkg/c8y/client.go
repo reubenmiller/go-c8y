@@ -60,6 +60,9 @@ type Client struct {
 	// Password for Cumulocity Authentication
 	Password string
 
+	// TFACode (Two Factor Authentication) code.
+	TFACode string
+
 	// Authorization method
 	AuthorizationMethod string
 
@@ -101,8 +104,14 @@ var (
 )
 
 const (
+	// AuthMethodOAuth2Internal OAuth2 internal mode
 	AuthMethodOAuth2Internal = "OAUTH2_INTERNAL"
-	AuthMethodBasic          = "BASIC"
+
+	// AuthMethodBasic Basic authentication
+	AuthMethodBasic = "BASIC"
+
+	// AuthMethodNone no authentication
+	AuthMethodNone = "NONE"
 )
 
 // DecodeJSONBytes decodes json preserving number formatting (especially large integers and scientific notation floats)
@@ -595,6 +604,8 @@ func (c *Client) SetAuthorization(req *http.Request) {
 	switch c.AuthorizationMethod {
 	case AuthMethodOAuth2Internal:
 		c.addOAuth2ToRequest(req)
+	case AuthMethodNone:
+		break
 	case AuthMethodBasic:
 		fallthrough
 	default:
@@ -602,6 +613,7 @@ func (c *Client) SetAuthorization(req *http.Request) {
 	}
 }
 
+// SetCookies set the cookies to use for all rest requests
 func (c *Client) SetCookies(cookies []*http.Cookie) {
 	c.clientMu.Lock()
 	defer c.clientMu.Unlock()
@@ -627,13 +639,18 @@ func (c *Client) addOAuth2ToRequest(req *http.Request) {
 	}
 }
 
+// LoginUsingOAuth2 login to Cumulocity using OAuth2 and save the cookies from the response
 func (c *Client) LoginUsingOAuth2(ctx context.Context) error {
 
 	data := url.Values{}
 	data.Set("grant_type", "PASSWORD")
 	data.Set("username", c.Username)
 	data.Set("password", c.Password)
-	data.Set("tfa_code", "undefined")
+	tfaCode := "undefined"
+	if c.TFACode != "" {
+		tfaCode = c.TFACode
+	}
+	data.Set("tfa_code", tfaCode)
 
 	headers := http.Header{}
 	headers.Add("Content-Length", strconv.Itoa(len(data.Encode())))
