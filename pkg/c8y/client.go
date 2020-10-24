@@ -15,6 +15,7 @@ import (
 	"path"
 	"reflect"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -427,6 +428,8 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 		for key := range req.Header {
 			headerNames = append(headerNames, key)
 		}
+
+		sort.Strings(headerNames)
 
 		for _, key := range headerNames {
 			val := req.Header[key]
