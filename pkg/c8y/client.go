@@ -439,7 +439,7 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 			message += "\nBody: (empty)\n"
 		}
 
-		if options.FormData != nil {
+		if options.FormData != nil && len(options.FormData) > 0 {
 			message += "\nForm Data:\n"
 			for key, formData := range options.FormData {
 				if key == "file" {
@@ -721,7 +721,7 @@ func (c *Client) LoginUsingOAuth2(ctx context.Context, initRequest ...string) er
 		Body:        data.Encode(),
 	}
 
-	if len(initRequest) > 0 {
+	if len(initRequest) > 0 && initRequest[0] != "" {
 		if v, err := url.Parse(initRequest[0]); err == nil {
 			options.Path = v.Path
 			options.Query = v.RawQuery
