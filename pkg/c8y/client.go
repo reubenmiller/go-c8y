@@ -422,10 +422,15 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 			message += "\nHeaders:\n"
 		}
 
-		for key, val := range req.Header {
-			if len(val) > 0 {
-				message += fmt.Sprintf("%s: %s\n", key, val[0])
-			}
+		// sort header names
+		headerNames := make([]string, 0, len(req.Header))
+		for key := range req.Header {
+			headerNames = append(headerNames, key)
+		}
+
+		for _, key := range headerNames {
+			val := req.Header[key]
+			message += fmt.Sprintf("%s: %s\n", key, val[0])
 		}
 
 		if options.Body != nil {
