@@ -232,7 +232,7 @@ func (c *RealtimeClient) SetRequestHeader(header http.Header) {
 
 // SetCookies sets the cookies used for outgoing requests
 func (c *RealtimeClient) SetCookies(cookies []*http.Cookie) error {
-	if c.dialer != nil {
+	if c.dialer == nil {
 		return fmt.Errorf("Dialer is nil")
 	}
 
