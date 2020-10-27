@@ -436,7 +436,7 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 			message += fmt.Sprintf("%s: %s\n", key, val[0])
 		}
 
-		if options.Body != nil {
+		if options.Body != nil && req.Method != http.MethodGet {
 			if v, parseErr := json.MarshalIndent(options.Body, "", "  "); parseErr == nil && !bytes.Equal(v, []byte("null")) {
 				message += fmt.Sprintf("\nBody:\n%s", v)
 			} else {
@@ -675,6 +675,16 @@ func (c *Client) SetAuthorization(req *http.Request) {
 	default:
 		c.SetBasicAuthorization(req)
 	}
+}
+
+// GetXSRFToken returns the XSRF Token if found in the configured cookies
+func (c *Client) GetXSRFToken(cookies []*http.Cookie) string {
+	for _, cookie := range c.Cookies {
+		if strings.ToUpper(cookie.Name) == "XSRF-TOKEN" {
+			return cookie.Value
+		}
+	}
+	return ""
 }
 
 // SetCookies set the cookies to use for all rest requests
