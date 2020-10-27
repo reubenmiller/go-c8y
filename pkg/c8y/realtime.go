@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"os"
 	"os/signal"
@@ -20,6 +21,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/obeattie/ohmyglob"
 	"github.com/tidwall/gjson"
+	"golang.org/x/net/publicsuffix"
 	tomb "gopkg.in/tomb.v2"
 )
 
@@ -223,6 +225,21 @@ func NewRealtimeClient(host string, wsDialer *websocket.Dialer, tenant, username
 // SetRequestHeader sets the header to use when estabilishing the realtime connection.
 func (c *RealtimeClient) SetRequestHeader(header http.Header) {
 	c.requestHeader = header
+}
+
+// SetCookieJar sets the cookies used for outgoing requests
+func (c *RealtimeClient) SetCookieJar(cookies []*http.Cookie) error {
+	if c.dialer != nil {
+		return fmt.Errorf("Dialer is nil")
+	}
+
+	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
+	if err != nil {
+		return fmt.Errorf("Failed to create cookie jar: %w", err)
+	}
+	jar.SetCookies(c.url, cookies)
+	c.dialer.Jar = jar
+	return nil
 }
 
 // SetXSRFToken set the token required for authentication via OAUTH
