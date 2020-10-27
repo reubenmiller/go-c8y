@@ -678,7 +678,7 @@ func (c *Client) SetAuthorization(req *http.Request) {
 }
 
 // GetXSRFToken returns the XSRF Token if found in the configured cookies
-func (c *Client) GetXSRFToken(cookies []*http.Cookie) string {
+func (c *Client) GetXSRFToken() string {
 	for _, cookie := range c.Cookies {
 		if strings.ToUpper(cookie.Name) == "XSRF-TOKEN" {
 			return cookie.Value
