@@ -62,6 +62,7 @@ const (
 type RealtimeClient struct {
 	mtx           sync.RWMutex
 	url           *url.URL
+	c8yurl        *url.URL
 	clientID      string
 	tomb          *tomb.Tomb
 	messages      chan *Message
@@ -201,6 +202,7 @@ func NewRealtimeClient(host string, wsDialer *websocket.Dialer, tenant, username
 
 	// Convert url to a websocket
 	websocketURL := getRealtimeURL(host)
+	c8yurl, _ := url.Parse(host)
 
 	client := &RealtimeClient{
 		url:       websocketURL,
@@ -208,6 +210,7 @@ func NewRealtimeClient(host string, wsDialer *websocket.Dialer, tenant, username
 		messages:  make(chan *Message, 100),
 		extension: getC8yExtension(tenant, username, password),
 
+		c8yurl:   c8yurl,
 		tenant:   tenant,
 		username: username,
 		password: password,
@@ -227,8 +230,8 @@ func (c *RealtimeClient) SetRequestHeader(header http.Header) {
 	c.requestHeader = header
 }
 
-// SetCookieJar sets the cookies used for outgoing requests
-func (c *RealtimeClient) SetCookieJar(cookies []*http.Cookie) error {
+// SetCookies sets the cookies used for outgoing requests
+func (c *RealtimeClient) SetCookies(cookies []*http.Cookie) error {
 	if c.dialer != nil {
 		return fmt.Errorf("Dialer is nil")
 	}
@@ -237,7 +240,7 @@ func (c *RealtimeClient) SetCookieJar(cookies []*http.Cookie) error {
 	if err != nil {
 		return fmt.Errorf("Failed to create cookie jar: %w", err)
 	}
-	jar.SetCookies(c.url, cookies)
+	jar.SetCookies(c.c8yurl, cookies)
 	c.dialer.Jar = jar
 	return nil
 }
