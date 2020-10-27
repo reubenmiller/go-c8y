@@ -58,19 +58,20 @@ const (
 
 // RealtimeClient allows connecting to a Bayeux server and subscribing to channels.
 type RealtimeClient struct {
-	mtx       sync.RWMutex
-	url       *url.URL
-	clientID  string
-	tomb      *tomb.Tomb
-	messages  chan *Message
-	connected bool
-	dialer    *websocket.Dialer
-	ws        *websocket.Conn
-	extension interface{}
-	tenant    string
-	username  string
-	password  string
-	requestID uint64
+	mtx           sync.RWMutex
+	url           *url.URL
+	clientID      string
+	tomb          *tomb.Tomb
+	messages      chan *Message
+	connected     bool
+	dialer        *websocket.Dialer
+	ws            *websocket.Conn
+	extension     interface{}
+	tenant        string
+	username      string
+	password      string
+	requestID     uint64
+	requestHeader http.Header
 
 	send chan *request
 
@@ -145,7 +146,8 @@ type c8yExtensionMessage struct {
 }
 
 type comCumulocityAuthn struct {
-	Token string `json:"token"`
+	Token     string `json:"token,omitempty"`
+	XSRFToken string `json:"xsrfToken,omitempty"`
 }
 
 func getC8yExtension(tenant, username, password string) c8yExtensionMessage {
@@ -153,6 +155,15 @@ func getC8yExtension(tenant, username, password string) c8yExtensionMessage {
 		ComCumulocityAuthn: comCumulocityAuthn{
 			// Always use the tenant name as prefix in the c8y username!!! This ensures you connect to the correct tenant!
 			Token: base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s/%s:%s", tenant, username, password))),
+		},
+	}
+}
+
+func getC8yExtensionFromXSRFToken(token string) c8yExtensionMessage {
+	return c8yExtensionMessage{
+		ComCumulocityAuthn: comCumulocityAuthn{
+			// Always use the tenant name as prefix in the c8y username!!! This ensures you connect to the correct tenant!
+			XSRFToken: token,
 		},
 	}
 }
@@ -207,6 +218,16 @@ func NewRealtimeClient(host string, wsDialer *websocket.Dialer, tenant, username
 	go client.hub.run()
 	go client.writeHandler()
 	return client
+}
+
+// SetRequestHeader sets the header to use when estabilishing the realtime connection.
+func (c *RealtimeClient) SetRequestHeader(header http.Header) {
+	c.requestHeader = header
+}
+
+// SetXSRFToken set the token required for authentication via OAUTH
+func (c *RealtimeClient) SetXSRFToken(token string) {
+	c.extension = getC8yExtensionFromXSRFToken(token)
 }
 
 // TenantName returns the tenant name used in the client
@@ -274,7 +295,7 @@ func (c *RealtimeClient) disconnect() error {
 
 func (c *RealtimeClient) createWebsocket() error {
 	Logger.Printf("Establishing connection to %s", c.url.String())
-	ws, _, err := c.dialer.Dial(c.url.String(), nil)
+	ws, _, err := c.dialer.Dial(c.url.String(), c.requestHeader)
 
 	if err != nil {
 		return err
@@ -331,7 +352,7 @@ func (c *RealtimeClient) connect() chan error {
 		panic("Missing dialer for realtime client")
 	}
 	Logger.Printf("Establishing connection to %s", c.url.String())
-	ws, _, err := c.dialer.Dial(c.url.String(), nil)
+	ws, _, err := c.dialer.Dial(c.url.String(), c.requestHeader)
 
 	if err != nil {
 		panic(err)
