@@ -759,10 +759,11 @@ func (c *Client) LoginUsingOAuth2(ctx context.Context, initRequest ...string) er
 
 	// test
 	c.AuthorizationMethod = AuthMethodOAuth2Internal
-	if _, _, err := c.User.GetCurrentUser(ctx); err != nil {
+	tenant, _, err := c.Tenant.GetCurrentTenant(ctx)
+	if err != nil {
 		return err
 	}
-
+	c.TenantName = tenant.Name
 	return nil
 }
 
