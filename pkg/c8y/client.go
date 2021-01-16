@@ -436,7 +436,7 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 			message += fmt.Sprintf("%s: %s\n", key, val[0])
 		}
 
-		if options.Body != nil && req.Method != http.MethodGet {
+		if options.Body != nil && (req.Method == http.MethodPost || req.Method == http.MethodPut || req.Method == http.MethodPatch) {
 			if v, parseErr := json.MarshalIndent(options.Body, "", "  "); parseErr == nil && !bytes.Equal(v, []byte("null")) {
 				message += fmt.Sprintf("\nBody:\n%s", v)
 			} else {
@@ -659,7 +659,7 @@ func (c *Client) SetBasicAuthorization(req *http.Request) {
 	} else {
 		headerUsername = c.Username
 	}
-	Logger.Debugf("Current username: %s\n", c.hideSensitiveInformationIfActive(headerUsername))
+	Logger.Infof("Current username: %s\n", c.hideSensitiveInformationIfActive(headerUsername))
 	req.SetBasicAuth(headerUsername, c.Password)
 }
 

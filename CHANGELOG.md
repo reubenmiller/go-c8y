@@ -9,6 +9,8 @@
 
 * Added support for non-json type bodies
 
+* Write log output `Body: (empty)` in the dry run if the request method is not PUT, PATCH or POST even if a body is provided
+
 ## Released
 
 ### v0.8.0
