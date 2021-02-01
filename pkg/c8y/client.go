@@ -365,6 +365,10 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 		}
 	}
 
+	if err != nil {
+		return nil, err
+	}
+
 	if !options.IgnoreAccept {
 		if req.Header.Get("Accept") == "" {
 			acceptType := "application/json"

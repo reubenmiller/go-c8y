@@ -11,6 +11,8 @@
 
 * Write log output `Body: (empty)` in the dry run if the request method is not PUT, PATCH or POST even if a body is provided
 
+* Prevent nil panic by checking for an error when creating a new request
+
 ## Released
 
 ### v0.8.0
