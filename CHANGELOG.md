@@ -14,6 +14,7 @@
 * Prevent nil panic by checking for an error when creating a new request
 
 * Hide OAuth2 authorization cookie value and Xsrf Token when hide sensitive information is enabled
+* Hide Host path when hide sensitive information is enabled
 
 ## Released
 
