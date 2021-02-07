@@ -1033,5 +1033,11 @@ func (c *Client) hideSensitiveInformationIfActive(message string) string {
 	basicAuthMatcher := regexp.MustCompile(`(Basic\s+)[A-Za-z0-9=]+`)
 	message = basicAuthMatcher.ReplaceAllString(message, "$1 {base64 tenant/username:password}")
 
+	oauthMatcher := regexp.MustCompile(`(authorization=)[^\s]+`)
+	message = oauthMatcher.ReplaceAllString(message, "$1{OAuth2Token}")
+
+	xsrfTokenMatcher := regexp.MustCompile(`(?i)((X-)?Xsrf-Token:)\s*[^\s]+`)
+	message = xsrfTokenMatcher.ReplaceAllString(message, "$1{xsrfToken}")
+
 	return message
 }
