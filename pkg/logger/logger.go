@@ -1,6 +1,8 @@
 package logger
 
 import (
+	"io"
+
 	"github.com/op/go-logging"
 )
 
@@ -43,6 +45,30 @@ func NewDummyLogger(name string) *Logger {
 
 func NewLogger(name string) *Logger {
 	gologger := logging.MustGetLogger(name)
+	return &Logger{
+		Logger: gologger,
+	}
+}
+
+// NewCustomLogger returns a new custom logger writing it to a given writer
+func NewCustomLogger(name string, w io.Writer, level int, customFormatter ...logging.Formatter) *Logger {
+	gologger := logging.MustGetLogger(name)
+	backend := logging.NewLogBackend(w, "", 0)
+
+	if level < 0 {
+		level = int(logging.INFO)
+	}
+
+	logFormat := logging.DefaultFormatter
+	if len(customFormatter) > 0 {
+		logFormat = customFormatter[0]
+	}
+
+	backend1Leveled := logging.AddModuleLevel(logging.NewBackendFormatter(backend, logFormat))
+
+	backend1Leveled.SetLevel(logging.Level(level), "")
+	gologger.SetBackend(backend1Leveled)
+
 	return &Logger{
 		Logger: gologger,
 	}
