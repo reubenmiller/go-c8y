@@ -1037,7 +1037,7 @@ func (c *Client) hideSensitiveInformationIfActive(message string) string {
 	message = oauthMatcher.ReplaceAllString(message, "$1{OAuth2Token}")
 
 	xsrfTokenMatcher := regexp.MustCompile(`(?i)((X-)?Xsrf-Token:)\s*[^\s]+`)
-	message = xsrfTokenMatcher.ReplaceAllString(message, "$1{xsrfToken}")
+	message = xsrfTokenMatcher.ReplaceAllString(message, "$1 {xsrfToken}")
 
 	return message
 }
