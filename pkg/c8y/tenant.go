@@ -99,7 +99,6 @@ type TenantLoginOption struct {
 	TFAStrategy          string `json:"tfaStrategy,omitempty"`
 	InitRequest          string `json:"initRequest,omitempty"`
 	GrantType            string `json:"grantType,omitempty"`
-	EnforceStrength      string `json:"enforceStrength,omitempty"`
 	VisibleOnLoginPage   bool   `json:"visibleOnLoginPage"`
 }
 
