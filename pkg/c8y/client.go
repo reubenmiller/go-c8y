@@ -960,26 +960,23 @@ func (e *Error) Error() string {
 An ErrorResponse reports one or more errors caused by an API request.
 */
 type ErrorResponse struct {
-	Response *http.Response // HTTP response that caused this error
-	Message  string         `json:"message"` // error message
-	Errors   []Error        `json:"errors"`  // more detail on individual errors
-	// Block is only populated on certain types of errors such as code 451.
-	// See https://developer.github.com/changes/2016-03-17-the-451-status-code-is-now-supported/
-	// for more information.
-	Block *struct {
-		Reason    string     `json:"reason,omitempty"`
-		CreatedAt *Timestamp `json:"created_at,omitempty"`
-	} `json:"block,omitempty"`
-	// Most errors will also include a documentation_url field pointing
-	// to some content that might help you resolve the error, see
-	// https://developer.github.com/v3/#client-errors
-	DocumentationURL string `json:"documentation_url,omitempty"`
+	Response  *http.Response // HTTP response that caused this error
+	ErrorType string         `json:"error,omitempty"`   // Error type formatted as "<<resource type>>/<<error name>>"". For example, an object not found in the inventory is reported as "inventory/notFound".
+	Message   string         `json:"message,omitempty"` // error message
+	Info      string         `json:"info,omitempty"`    // URL to an error description on the Internet.
+
+	// Error details. Only available in DEBUG mode.
+	Details *struct {
+		ExpectionClass      string `json:"expectionClass,omitempty"`
+		ExceptionMessage    string `json:"exceptionMessage,omitempty"`
+		ExpectionStackTrace string `json:"expectionStackTrace,omitempty"`
+	} `json:"details,omitempty"`
 }
 
 func (r *ErrorResponse) Error() string {
-	return fmt.Sprintf("%v %v: %d %v %+v",
+	return fmt.Sprintf("%v %v: %d %v %v",
 		r.Response.Request.Method, sanitizeURL(r.Response.Request.URL),
-		r.Response.StatusCode, r.Message, r.Errors)
+		r.Response.StatusCode, r.ErrorType, r.Message)
 }
 
 // AcceptedError occurs when Cumulocity returns 202 Accepted response with an
