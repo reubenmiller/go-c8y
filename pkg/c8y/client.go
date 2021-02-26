@@ -960,7 +960,7 @@ func (e *Error) Error() string {
 An ErrorResponse reports one or more errors caused by an API request.
 */
 type ErrorResponse struct {
-	Response  *http.Response // HTTP response that caused this error
+	Response  *http.Response `json:"-"`                 // HTTP response that caused this error
 	ErrorType string         `json:"error,omitempty"`   // Error type formatted as "<<resource type>>/<<error name>>"". For example, an object not found in the inventory is reported as "inventory/notFound".
 	Message   string         `json:"message,omitempty"` // error message
 	Info      string         `json:"info,omitempty"`    // URL to an error description on the Internet.
