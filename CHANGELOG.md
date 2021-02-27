@@ -16,6 +16,7 @@
 * Hide OAuth2 authorization cookie value and Xsrf Token when hide sensitive information is enabled
 * Hide Host path when hide sensitive information is enabled
 * Removed `EnforceStrength` in login options as it has changed from string to bool which was causing a parsing error.
+* Added common request options (only supports DryRun for now)
 
 ## Released
 

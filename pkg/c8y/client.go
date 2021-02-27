@@ -33,6 +33,11 @@ func GetContextAuthTokenKey() ContextAuthTokenKey {
 	return ContextAuthTokenKey("authToken")
 }
 
+// DefaultRequestOptions default request options which are added to each outgoing request
+type DefaultRequestOptions struct {
+	DryRun bool
+}
+
 type service struct {
 	client *Client
 }
@@ -70,6 +75,8 @@ type Client struct {
 	Cookies []*http.Cookie
 
 	UseTenantInUsername bool
+
+	requestOptions DefaultRequestOptions
 
 	// Microservice bootstrap and service users
 	BootstrapUser ServiceUser
@@ -419,7 +426,7 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 		return nil, err
 	}
 
-	if options.DryRun {
+	if options.DryRun || c.requestOptions.DryRun {
 		// Show information about the request i.e. url, headers, body etc.
 		message := fmt.Sprintf("What If: Sending [%s] request to [%s]\n", req.Method, req.URL)
 
@@ -769,6 +776,13 @@ func (c *Client) LoginUsingOAuth2(ctx context.Context, initRequest ...string) er
 	}
 	c.TenantName = tenant.Name
 	return nil
+}
+
+// SetRequestOptions sets default request options to use in all requests
+func (c *Client) SetRequestOptions(options DefaultRequestOptions) {
+	c.clientMu.Lock()
+	defer c.clientMu.Unlock()
+	c.requestOptions = options
 }
 
 // Response is a Cumulocity API response. This wraps the standard http.Response
