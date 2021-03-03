@@ -329,6 +329,7 @@ type RequestOptions struct {
 	IgnoreAccept     bool
 	NoAuthentication bool
 	DryRun           bool
+	DryRunResponse   bool
 }
 
 // SendRequest creates and sends a request
@@ -477,6 +478,14 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 		if command, curlErr := http2curl.GetCurlCommand(req); curlErr == nil {
 			_ = command
 			// Logger.Printf("curl: %s\n", strings.ReplaceAll(command.String(), "\"", "\\\""))
+		}
+
+		if options.DryRunResponse {
+			return &Response{
+				Response: &http.Response{
+					Request: req,
+				},
+			}, nil
 		}
 		return nil, nil
 	}
