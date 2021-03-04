@@ -151,7 +151,7 @@ func (s *DeviceCredentialsService) PollNewDeviceRequest(ctx context.Context, dev
 				return
 
 			case <-ticker.C:
-				Logger.Printf("Polling for device request")
+				Logger.Infof("Polling for device request")
 				deviceRequest, _, err := s.GetNewDeviceRequest(ctx, deviceID)
 				if err != nil {
 					continue

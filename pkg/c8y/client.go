@@ -159,7 +159,7 @@ func DecodeJSONReader(r io.Reader, dst interface{}) error {
 // If no service user is found for the set tenant, then nil is returned
 func (c *Client) NewRealtimeClientFromServiceUser(tenant string) *RealtimeClient {
 	if len(c.ServiceUsers) == 0 {
-		Logger.Panic("No service users found")
+		Logger.Fatal("No service users found")
 	}
 	for _, user := range c.ServiceUsers {
 		if tenant == user.Tenant || tenant == "" {
@@ -227,7 +227,7 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 
 	var realtimeClient *RealtimeClient
 	if !skipRealtimeClient {
-		Logger.Printf("Creating realtime client %s\n", fmtURL)
+		Logger.Infof("Creating realtime client %s\n", fmtURL)
 		realtimeClient = NewRealtimeClient(fmtURL, nil, tenant, username, password)
 	}
 
@@ -335,6 +335,11 @@ type RequestOptions struct {
 // SendRequest creates and sends a request
 func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Response, error) {
 
+	localLogger := Logger
+	// if options.Logger == nil {
+	// 	localLogger = *options.Logger
+	// }
+
 	queryParams := ""
 
 	if options.Query != nil {
@@ -344,7 +349,7 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 			if v, err := addOptions("", options.Query); err == nil {
 				queryParams = v
 			} else {
-				Logger.Printf("ERROR: Could not convert query parameter interface{} to a string. %s", err)
+				localLogger.Infof("ERROR: Could not convert query parameter interface{} to a string. %s", err)
 				return nil, err
 			}
 		}
@@ -354,9 +359,9 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 	var err error
 
 	if len(options.FormData) > 0 {
-		Logger.Printf("Sending multipart form-data")
+		localLogger.Infof("Sending multipart form-data")
 		// Process FormData (for multipart/form-data requests)
-		// TODO: Somehow use the c.NewRequet function as it provides
+		// TODO: Somehow use the c.NewRequest function as it provides
 		// the authentication required for the request
 		u, _ := url.Parse(c.BaseURL.String())
 		u.Path = path.Join(u.Path, options.Path)
@@ -413,12 +418,12 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 		baseURL, parseErr := url.Parse(host)
 
 		if parseErr != nil {
-			Logger.Warningf("Ignoring invalid host %s. %s", host, parseErr)
+			localLogger.Warnf("Ignoring invalid host %s. %s", host, parseErr)
 			err = parseErr
 		} else {
 			req.URL.Host = baseURL.Host
 			req.URL.Scheme = baseURL.Scheme
-			Logger.Printf("Using alternative host %s://%s", req.URL.Scheme, req.URL.Host)
+			localLogger.Infof("Using alternative host %s://%s", req.URL.Scheme, req.URL.Host)
 		}
 
 	}
@@ -473,11 +478,11 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 			}
 		}
 
-		Logger.Println(c.hideSensitiveInformationIfActive(message))
+		localLogger.Info(c.hideSensitiveInformationIfActive(message))
 
 		if command, curlErr := http2curl.GetCurlCommand(req); curlErr == nil {
 			_ = command
-			// Logger.Printf("curl: %s\n", strings.ReplaceAll(command.String(), "\"", "\\\""))
+			// localLogger.Infof("curl: %s\n", strings.ReplaceAll(command.String(), "\"", "\\\""))
 		}
 
 		if options.DryRunResponse {
@@ -490,7 +495,7 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 		return nil, nil
 	}
 
-	Logger.Info(c.hideSensitiveInformationIfActive(fmt.Sprintf("Headers: %v", req.Header)))
+	localLogger.Info(c.hideSensitiveInformationIfActive(fmt.Sprintf("Headers: %v", req.Header)))
 
 	resp, err := c.Do(ctx, req, options.ResponseData)
 
@@ -858,12 +863,12 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 
 	// Check if an authorization key is provided in the context, if so then override the c8y authentication
 	if authToken := ctx.Value(GetContextAuthTokenKey()); authToken != nil {
-		Logger.Printf("Overriding basic auth provided in the context\n")
+		Logger.Infof("Overriding basic auth provided in the context\n")
 		req.Header.Set("Authorization", authToken.(string))
 	}
 
 	if req != nil {
-		Logger.Printf("Sending request: %s %s", req.Method, c.hideSensitiveInformationIfActive(req.URL.String()))
+		Logger.Infof("Sending request: %s %s", req.Method, c.hideSensitiveInformationIfActive(req.URL.String()))
 	}
 
 	// Log the body (if applicable)
@@ -871,7 +876,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 		switch v := req.Body.(type) {
 		case *os.File:
 			// Only log the file name
-			Logger.Printf("Body (file): %s", v.Name())
+			Logger.Infof("Body (file): %s", v.Name())
 		default:
 			// Don't print out multi part forms, but everything else is fine.
 			if !strings.Contains(req.Header.Get("Content-Type"), "multipart/form-data") {
@@ -879,7 +884,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 				bodyBytes, _ := ioutil.ReadAll(v)
 				req.Body.Close() //  must close
 				req.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-				Logger.Printf("Body: %s", bodyBytes)
+				Logger.Infof("Body: %s", bodyBytes)
 			}
 		}
 	}
@@ -888,7 +893,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 	if err != nil {
 		// If we got an error, and the context has been canceled,
 		// the context's error is probably more useful.
-		Logger.Printf("ERROR: Request failed. %s", err)
+		Logger.Infof("ERROR: Request failed. %s", err)
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
@@ -914,7 +919,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 	if err != nil {
 		// even though there was an error, we still return the response
 		// in case the caller wants to inspect it further
-		Logger.Printf("Invalid response received from server. %s", err)
+		Logger.Infof("Invalid response received from server. %s", err)
 		return response, err
 	}
 
@@ -925,13 +930,13 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 			err = DecodeJSONReader(resp.Body, v)
 
 			if err == io.EOF {
-				Logger.Printf("Error decoding body. %s", err)
+				Logger.Infof("Error decoding body. %s", err)
 				err = nil // ignore EOF errors caused by empty response body
 			}
 		}
 	}
 
-	Logger.Println(fmt.Sprintf("Status code: %v", response.StatusCode))
+	Logger.Info(fmt.Sprintf("Status code: %v", response.StatusCode))
 
 	return response, err
 }

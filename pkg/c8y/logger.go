@@ -5,7 +5,7 @@ import (
 )
 
 // Logger used within the c8y client
-var Logger *logger.Logger
+var Logger logger.Logger
 
 func init() {
 	Logger = logger.NewLogger("c8y")

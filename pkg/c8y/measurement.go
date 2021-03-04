@@ -157,7 +157,7 @@ func (d *MeasurementSeriesGroup) UnmarshalJSON(data []byte) error {
 	c8ySeries.Get("series").ForEach(func(_, serie gjson.Result) bool {
 		v := &MeasurementSerieDefinition{}
 		if err := json.Unmarshal([]byte(serie.String()), &v); err != nil {
-			Logger.Printf("Could not unmarshal series definition. %s", serie.String())
+			Logger.Infof("Could not unmarshal series definition. %s", serie.String())
 		}
 
 		seriesDefinitions = append(seriesDefinitions, *v)
@@ -218,7 +218,7 @@ func (d *MeasurementSeriesAggregateGroup) UnmarshalJSON(data []byte) error {
 	c8ySeries.Get("series").ForEach(func(_, serie gjson.Result) bool {
 		v := &MeasurementSerieDefinition{}
 		if err := json.Unmarshal([]byte(serie.String()), &v); err != nil {
-			Logger.Printf("Could not unmarshal series definition. %s", serie.String())
+			Logger.Infof("Could not unmarshal series definition. %s", serie.String())
 		}
 
 		seriesDefinitions = append(seriesDefinitions, *v)
@@ -234,8 +234,8 @@ func (d *MeasurementSeriesAggregateGroup) UnmarshalJSON(data []byte) error {
 	var allSeries []MeasurementSeriesAggregateValueGroup
 	c8ySeries.Get("values").ForEach(func(key, values gjson.Result) bool {
 
-		Logger.Printf("Key: %s\n", key)
-		Logger.Printf("Values: %s\n", values)
+		Logger.Infof("Key: %s\n", key)
+		Logger.Infof("Values: %s\n", values)
 
 		timestamp, err := time.Parse(time.RFC3339, key.Str)
 
@@ -250,11 +250,11 @@ func (d *MeasurementSeriesAggregateGroup) UnmarshalJSON(data []byte) error {
 
 		index := 0
 		values.ForEach(func(_, value gjson.Result) bool {
-			Logger.Printf("Current value: %s\n", value)
+			Logger.Infof("Current value: %s\n", value)
 			v := &MeasurementAggregateValue{}
 			json.Unmarshal([]byte(value.String()), &v)
 
-			Logger.Printf("Full Value: %v\n", v)
+			Logger.Infof("Full Value: %v\n", v)
 
 			seriesValues.Values[index] = *v
 			index++
@@ -285,7 +285,7 @@ func (s *MeasurementService) GetMeasurementSeries(ctx context.Context, opt *Meas
 		return nil, nil, err
 	}
 
-	Logger.Printf("query Parameters: %s\n", queryParams)
+	Logger.Infof("query Parameters: %s\n", queryParams)
 
 	req, err := s.client.NewRequest("GET", u, queryParams, nil)
 	if err != nil {

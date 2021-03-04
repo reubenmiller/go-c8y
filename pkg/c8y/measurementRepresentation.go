@@ -240,7 +240,7 @@ func (m MeasurementRepresentation) MarshalJSON() ([]byte, error) {
 	}
 
 	o := []byte(fmt.Sprintf("{%s}", strings.Join(parts, ",")))
-	Logger.Printf("%s\n", o)
+	Logger.Infof("%s\n", o)
 
 	return o, nil
 }

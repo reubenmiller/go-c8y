@@ -13,7 +13,7 @@ func GetDateRange(dateInterval string) (string, string) {
 	result := pattern.FindStringSubmatch(dateInterval)
 
 	if len(result) == 0 {
-		Logger.Println("Invalid date interval. Using default '1d'")
+		Logger.Info("Invalid date interval. Using default '1d'")
 		result = []string{"-", "1", "d"}
 	}
 
