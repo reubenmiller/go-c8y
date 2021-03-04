@@ -15,3 +15,8 @@ func init() {
 func SilenceLogger() {
 	Logger = logger.NewDummyLogger("c8y")
 }
+
+// UnsilenceLogger enables the logger (opposite of Silence logger)
+func UnsilenceLogger() {
+	Logger = logger.NewLogger("c8y")
+}
