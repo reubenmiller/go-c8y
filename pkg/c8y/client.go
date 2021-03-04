@@ -227,7 +227,7 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 
 	var realtimeClient *RealtimeClient
 	if !skipRealtimeClient {
-		Logger.Infof("Creating realtime client %s\n", fmtURL)
+		Logger.Infof("Creating realtime client %s", fmtURL)
 		realtimeClient = NewRealtimeClient(fmtURL, nil, tenant, username, password)
 	}
 
@@ -482,7 +482,7 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 
 		if command, curlErr := http2curl.GetCurlCommand(req); curlErr == nil {
 			_ = command
-			// localLogger.Infof("curl: %s\n", strings.ReplaceAll(command.String(), "\"", "\\\""))
+			// localLogger.Infof("curl: %s", strings.ReplaceAll(command.String(), "\"", "\\\""))
 		}
 
 		if options.DryRunResponse {
@@ -684,7 +684,7 @@ func (c *Client) SetBasicAuthorization(req *http.Request) {
 	} else {
 		headerUsername = c.Username
 	}
-	Logger.Infof("Current username: %s\n", c.hideSensitiveInformationIfActive(headerUsername))
+	Logger.Infof("Current username: %s", c.hideSensitiveInformationIfActive(headerUsername))
 	req.SetBasicAuth(headerUsername, c.Password)
 }
 
@@ -863,7 +863,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 
 	// Check if an authorization key is provided in the context, if so then override the c8y authentication
 	if authToken := ctx.Value(GetContextAuthTokenKey()); authToken != nil {
-		Logger.Infof("Overriding basic auth provided in the context\n")
+		Logger.Infof("Overriding basic auth provided in the context")
 		req.Header.Set("Authorization", authToken.(string))
 	}
 

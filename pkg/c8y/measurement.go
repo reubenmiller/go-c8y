@@ -234,8 +234,8 @@ func (d *MeasurementSeriesAggregateGroup) UnmarshalJSON(data []byte) error {
 	var allSeries []MeasurementSeriesAggregateValueGroup
 	c8ySeries.Get("values").ForEach(func(key, values gjson.Result) bool {
 
-		Logger.Infof("Key: %s\n", key)
-		Logger.Infof("Values: %s\n", values)
+		Logger.Infof("Key: %s", key)
+		Logger.Infof("Values: %s", values)
 
 		timestamp, err := time.Parse(time.RFC3339, key.Str)
 
@@ -250,11 +250,11 @@ func (d *MeasurementSeriesAggregateGroup) UnmarshalJSON(data []byte) error {
 
 		index := 0
 		values.ForEach(func(_, value gjson.Result) bool {
-			Logger.Infof("Current value: %s\n", value)
+			Logger.Infof("Current value: %s", value)
 			v := &MeasurementAggregateValue{}
 			json.Unmarshal([]byte(value.String()), &v)
 
-			Logger.Infof("Full Value: %v\n", v)
+			Logger.Infof("Full Value: %v", v)
 
 			seriesValues.Values[index] = *v
 			index++
@@ -285,7 +285,7 @@ func (s *MeasurementService) GetMeasurementSeries(ctx context.Context, opt *Meas
 		return nil, nil, err
 	}
 
-	Logger.Infof("query Parameters: %s\n", queryParams)
+	Logger.Infof("query Parameters: %s", queryParams)
 
 	req, err := s.client.NewRequest("GET", u, queryParams, nil)
 	if err != nil {
