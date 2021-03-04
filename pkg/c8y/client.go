@@ -884,7 +884,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 				bodyBytes, _ := ioutil.ReadAll(v)
 				req.Body.Close() //  must close
 				req.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-				Logger.Infof("Body: %s", bodyBytes)
+				Logger.Infof("Body: %s", bytes.TrimSpace(bodyBytes))
 			}
 		}
 	}
