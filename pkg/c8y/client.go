@@ -36,6 +36,9 @@ func GetContextAuthTokenKey() ContextAuthTokenKey {
 // DefaultRequestOptions default request options which are added to each outgoing request
 type DefaultRequestOptions struct {
 	DryRun bool
+
+	// disable the printing of dry run log entries
+	DisableDryRunLogs bool
 }
 
 type service struct {
@@ -478,7 +481,9 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 			}
 		}
 
-		localLogger.Info(c.hideSensitiveInformationIfActive(message))
+		if !c.requestOptions.DisableDryRunLogs {
+			localLogger.Info(c.hideSensitiveInformationIfActive(message))
+		}
 
 		if command, curlErr := http2curl.GetCurlCommand(req); curlErr == nil {
 			_ = command
