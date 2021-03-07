@@ -22,7 +22,6 @@ import (
 
 	"github.com/google/go-querystring/query"
 	"github.com/tidwall/gjson"
-	"moul.io/http2curl"
 )
 
 // ContextAuthTokenKey todo
@@ -37,11 +36,11 @@ func GetContextAuthTokenKey() ContextAuthTokenKey {
 type DefaultRequestOptions struct {
 	DryRun bool
 
-	// DisableDryRunLogs disable the printing of dry run log entries
-	DisableDryRunLogs bool
-
 	// DryRunResponse return a mock response when using dry run
 	DryRunResponse bool
+
+	// DryRunHandler called when a request should be called
+	DryRunHandler func(options *RequestOptions, req *http.Request)
 }
 
 type service struct {
@@ -440,57 +439,10 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 
 	if options.DryRun || c.requestOptions.DryRun {
 		// Show information about the request i.e. url, headers, body etc.
-		message := fmt.Sprintf("What If: Sending [%s] request to [%s]\n", req.Method, req.URL)
-
-		if len(req.Header) > 0 {
-			message += "\nHeaders:\n"
-		}
-
-		// sort header names
-		headerNames := make([]string, 0, len(req.Header))
-		for key := range req.Header {
-			headerNames = append(headerNames, key)
-		}
-
-		sort.Strings(headerNames)
-
-		for _, key := range headerNames {
-			val := req.Header[key]
-			message += fmt.Sprintf("%s: %s\n", key, val[0])
-		}
-
-		if options.Body != nil && (req.Method == http.MethodPost || req.Method == http.MethodPut || req.Method == http.MethodPatch) {
-			if v, parseErr := json.MarshalIndent(options.Body, "", "  "); parseErr == nil && !bytes.Equal(v, []byte("null")) {
-				message += fmt.Sprintf("\nBody:\n%s", v)
-			} else {
-				// TODO: check if this can display body reader as string?
-				message += fmt.Sprintf("\nBody:\n%v", options.Body)
-			}
+		if c.requestOptions.DryRunHandler != nil {
+			c.requestOptions.DryRunHandler(&options, req)
 		} else {
-			message += "\nBody: (empty)\n"
-		}
-
-		if options.FormData != nil && len(options.FormData) > 0 {
-			message += "\nForm Data:\n"
-			for key, formData := range options.FormData {
-				if key == "file" {
-					message += fmt.Sprintf("%s: (file contents)\n", key)
-				} else {
-					buf := new(strings.Builder)
-					if _, err := io.Copy(buf, formData); err == nil {
-						message += fmt.Sprintf("%s: %s\n", key, buf.String())
-					}
-				}
-			}
-		}
-
-		if !c.requestOptions.DisableDryRunLogs {
-			localLogger.Info(c.hideSensitiveInformationIfActive(message))
-		}
-
-		if command, curlErr := http2curl.GetCurlCommand(req); curlErr == nil {
-			_ = command
-			// localLogger.Infof("curl: %s", strings.ReplaceAll(command.String(), "\"", "\\\""))
+			c.DefaultDryRunHandler(&options, req)
 		}
 
 		if options.DryRunResponse || c.requestOptions.DryRunResponse {
@@ -1076,4 +1028,54 @@ func (c *Client) hideSensitiveInformationIfActive(message string) string {
 	message = xsrfTokenMatcher.ReplaceAllString(message, "$1 {xsrfToken}")
 
 	return message
+}
+
+// DefaultDryRunHandler is the default dry run handler
+func (c *Client) DefaultDryRunHandler(options *RequestOptions, req *http.Request) {
+	// Show information about the request i.e. url, headers, body etc.
+	message := fmt.Sprintf("What If: Sending [%s] request to [%s]\n", req.Method, req.URL)
+
+	if len(req.Header) > 0 {
+		message += "\nHeaders:\n"
+	}
+
+	// sort header names
+	headerNames := make([]string, 0, len(req.Header))
+	for key := range req.Header {
+		headerNames = append(headerNames, key)
+	}
+
+	sort.Strings(headerNames)
+
+	for _, key := range headerNames {
+		val := req.Header[key]
+		message += fmt.Sprintf("%s: %s\n", key, val[0])
+	}
+
+	if options.Body != nil && (req.Method == http.MethodPost || req.Method == http.MethodPut || req.Method == http.MethodPatch) {
+		if v, parseErr := json.MarshalIndent(options.Body, "", "  "); parseErr == nil && !bytes.Equal(v, []byte("null")) {
+			message += fmt.Sprintf("\nBody:\n%s", v)
+		} else {
+			// TODO: check if this can display body reader as string?
+			message += fmt.Sprintf("\nBody:\n%v", options.Body)
+		}
+	} else {
+		message += "\nBody: (empty)\n"
+	}
+
+	if options.FormData != nil && len(options.FormData) > 0 {
+		message += "\nForm Data:\n"
+		for key, formData := range options.FormData {
+			if key == "file" {
+				message += fmt.Sprintf("%s: (file contents)\n", key)
+			} else {
+				buf := new(strings.Builder)
+				if _, err := io.Copy(buf, formData); err == nil {
+					message += fmt.Sprintf("%s: %s\n", key, buf.String())
+				}
+			}
+		}
+	}
+
+	Logger.Info(c.hideSensitiveInformationIfActive(message))
 }

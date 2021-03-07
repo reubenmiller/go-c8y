@@ -44,7 +44,6 @@ require (
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
-	moul.io/http2curl v1.0.0
 )
 
 replace github.com/reubenmiller/go-c8y/pkg/c8y => ./pkg/c8y
