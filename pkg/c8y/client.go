@@ -447,7 +447,11 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 	// Check for single request overrides
 	if ctxOptions := ctx.Value(GetContextCommonOptionsKey()); ctxOptions != nil {
 		if ctxOptions, ok := ctxOptions.(CommonOptions); ok {
-			Logger.Infof("Overriding common options provided in the context. dryRun=%b", ctxOptions.DryRun)
+
+			Logger.Debugf(
+				"Overriding common options provided in the context. dryRun=%s",
+				strconv.FormatBool(ctxOptions.DryRun),
+			)
 			dryRun = ctxOptions.DryRun
 		}
 	}
