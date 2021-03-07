@@ -442,16 +442,14 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 		return nil, err
 	}
 
-	dryRun := c.requestOptions.DryRun
+	dryRun := c.requestOptions.DryRun || options.DryRun
 
 	// Check for single request overrides
 	if ctxOptions := ctx.Value(GetContextCommonOptionsKey()); ctxOptions != nil {
-		Logger.Infof("Overriding basic auth provided in the context")
 		if ctxOptions, ok := ctxOptions.(CommonOptions); ok {
+			Logger.Infof("Overriding common options provided in the context. dryRun=%b", ctxOptions.DryRun)
 			dryRun = ctxOptions.DryRun
 		}
-	} else {
-		dryRun = options.DryRun
 	}
 
 	if dryRun {
