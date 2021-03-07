@@ -37,8 +37,11 @@ func GetContextAuthTokenKey() ContextAuthTokenKey {
 type DefaultRequestOptions struct {
 	DryRun bool
 
-	// disable the printing of dry run log entries
+	// DisableDryRunLogs disable the printing of dry run log entries
 	DisableDryRunLogs bool
+
+	// DryRunResponse return a mock response when using dry run
+	DryRunResponse bool
 }
 
 type service struct {
@@ -490,7 +493,7 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 			// localLogger.Infof("curl: %s", strings.ReplaceAll(command.String(), "\"", "\\\""))
 		}
 
-		if options.DryRunResponse {
+		if options.DryRunResponse || c.requestOptions.DryRunResponse {
 			return &Response{
 				Response: &http.Response{
 					Request: req,
