@@ -32,6 +32,14 @@ func GetContextAuthTokenKey() ContextAuthTokenKey {
 	return ContextAuthTokenKey("authToken")
 }
 
+// ContextCommonOptionsKey todo
+type ContextCommonOptionsKey string
+
+// GetContextCommonOptionsKey common optinos key used to override request options for a single request
+func GetContextCommonOptionsKey() ContextCommonOptionsKey {
+	return ContextCommonOptionsKey("commonOptions")
+}
+
 // DefaultRequestOptions default request options which are added to each outgoing request
 type DefaultRequestOptions struct {
 	DryRun bool
@@ -341,9 +349,6 @@ type RequestOptions struct {
 func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Response, error) {
 
 	localLogger := Logger
-	// if options.Logger == nil {
-	// 	localLogger = *options.Logger
-	// }
 
 	queryParams := ""
 
@@ -437,7 +442,19 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 		return nil, err
 	}
 
-	if options.DryRun || c.requestOptions.DryRun {
+	dryRun := c.requestOptions.DryRun
+
+	// Check for single request overrides
+	if ctxOptions := ctx.Value(GetContextCommonOptionsKey()); ctxOptions != nil {
+		Logger.Infof("Overriding basic auth provided in the context")
+		if ctxOptions, ok := ctxOptions.(CommonOptions); ok {
+			dryRun = ctxOptions.DryRun
+		}
+	} else {
+		dryRun = options.DryRun
+	}
+
+	if dryRun {
 		// Show information about the request i.e. url, headers, body etc.
 		if c.requestOptions.DryRunHandler != nil {
 			c.requestOptions.DryRunHandler(&options, req)

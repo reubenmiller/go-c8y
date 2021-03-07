@@ -97,3 +97,8 @@ func (s *ContextService) ServiceUserFromRequest(req *http.Request) context.Conte
 
 	return s.ServiceUserContext(tenant, false)
 }
+
+// CommonOptions create common options for a single request
+func (s *ContextService) CommonOptions(opts CommonOptions) context.Context {
+	return context.WithValue(context.Background(), GetContextCommonOptionsKey(), opts)
+}
