@@ -20,6 +20,8 @@
 * Added DryRunResponse option to return a fake response containing the Request that would have been sent
 * Added `UnsilenceLogger` to re-enable logger output after using `SilenceLogger`
 * Removed newline endings in log messages
+* Fixed invalid options for `GetNewDeviceRequests`
+* Added additional properties (owner, tenantId, creationTime) to `NewDeviceRequest`
 
 ## Released
 
