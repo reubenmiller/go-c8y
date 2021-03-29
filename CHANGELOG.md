@@ -22,6 +22,7 @@
 * Removed newline endings in log messages
 * Fixed invalid options for `GetNewDeviceRequests`
 * Added additional properties (owner, tenantId, creationTime) to `NewDeviceRequest`
+* Added support for using bearer authorization
 
 ## Released
 

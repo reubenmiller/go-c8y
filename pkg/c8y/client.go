@@ -79,6 +79,9 @@ type Client struct {
 	// Password for Cumulocity Authentication
 	Password string
 
+	// Token for bearer authorization
+	Token string
+
 	// TFACode (Two Factor Authentication) code.
 	TFACode string
 
@@ -671,6 +674,7 @@ func (c *Client) SetBasicAuthorization(req *http.Request) {
 func (c *Client) SetAuthorization(req *http.Request) {
 	switch c.AuthorizationMethod {
 	case AuthMethodOAuth2Internal:
+		c.SetBearerAuthorization(req)
 		c.addOAuth2ToRequest(req)
 	case AuthMethodNone:
 		break
@@ -696,6 +700,20 @@ func (c *Client) SetCookies(cookies []*http.Cookie) {
 	c.clientMu.Lock()
 	defer c.clientMu.Unlock()
 	c.Cookies = cookies
+}
+
+// SetToken sets the Bearer auth token to use for all rest requests
+func (c *Client) SetToken(v string) {
+	c.clientMu.Lock()
+	defer c.clientMu.Unlock()
+	c.Token = v
+}
+
+// SetBearerAuthorization set bearer authorization header
+func (c *Client) SetBearerAuthorization(req *http.Request) {
+	if c.Token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.Token)
+	}
 }
 
 func (c *Client) addOAuth2ToRequest(req *http.Request) {
