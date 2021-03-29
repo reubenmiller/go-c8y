@@ -779,6 +779,14 @@ func (c *Client) LoginUsingOAuth2(ctx context.Context, initRequest ...string) er
 
 	c.SetCookies(resp.Cookies())
 
+	// read authorization token from cookies
+	for _, cookie := range resp.Cookies() {
+		if strings.EqualFold(cookie.Name, "authorization") {
+			c.SetToken(cookie.Value)
+			break
+		}
+	}
+
 	// test
 	c.AuthorizationMethod = AuthMethodOAuth2Internal
 	tenant, _, err := c.Tenant.GetCurrentTenant(ctx)
