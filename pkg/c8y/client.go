@@ -1059,12 +1059,16 @@ func (c *Client) hideSensitiveInformationIfActive(message string) string {
 	message = strings.ReplaceAll(message, c.TenantName, "{tenant}")
 	message = strings.ReplaceAll(message, c.Username, "{username}")
 	message = strings.ReplaceAll(message, c.Password, "{password}")
+	message = strings.ReplaceAll(message, c.Token, "{token}")
 	if c.BaseURL != nil {
 		message = strings.ReplaceAll(message, strings.TrimRight(c.BaseURL.Host, "/"), "{host}")
 	}
 
 	basicAuthMatcher := regexp.MustCompile(`(Basic\s+)[A-Za-z0-9=]+`)
 	message = basicAuthMatcher.ReplaceAllString(message, "$1 {base64 tenant/username:password}")
+
+	bearerAuthMatcher := regexp.MustCompile(`(Bearer\s+)\S+`)
+	message = bearerAuthMatcher.ReplaceAllString(message, "$1 {token}")
 
 	oauthMatcher := regexp.MustCompile(`(authorization=)[^\s]+`)
 	message = oauthMatcher.ReplaceAllString(message, "$1{OAuth2Token}")
