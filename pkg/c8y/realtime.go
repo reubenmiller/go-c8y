@@ -162,6 +162,14 @@ func getC8yExtension(tenant, username, password string) c8yExtensionMessage {
 	}
 }
 
+func getC8yExtensionFromToken(token string) c8yExtensionMessage {
+	return c8yExtensionMessage{
+		ComCumulocityAuthn: comCumulocityAuthn{
+			Token: token,
+		},
+	}
+}
+
 func getC8yExtensionFromXSRFToken(token string) c8yExtensionMessage {
 	return c8yExtensionMessage{
 		ComCumulocityAuthn: comCumulocityAuthn{
@@ -248,6 +256,11 @@ func (c *RealtimeClient) SetCookies(cookies []*http.Cookie) error {
 // SetXSRFToken set the token required for authentication via OAUTH
 func (c *RealtimeClient) SetXSRFToken(token string) {
 	c.extension = getC8yExtensionFromXSRFToken(token)
+}
+
+// SetBearerToken set the token required for authentication via OAUTH
+func (c *RealtimeClient) SetBearerToken(token string) {
+	c.extension = getC8yExtensionFromToken(token)
 }
 
 // TenantName returns the tenant name used in the client
