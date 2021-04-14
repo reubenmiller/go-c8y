@@ -23,6 +23,7 @@
 * Fixed invalid options for `GetNewDeviceRequests`
 * Added additional properties (owner, tenantId, creationTime) to `NewDeviceRequest`
 * Added support for using bearer authorization
+* Fixed bug when hiding tokens when it is empty
 
 ## Released
 
