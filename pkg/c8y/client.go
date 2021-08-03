@@ -115,6 +115,7 @@ type Client struct {
 	Microservice      *MicroserviceService
 	Retention         *RetentionRuleService
 	TenantOptions     *TenantOptionsService
+	Software          *InventorySoftwareService
 	User              *UserService
 }
 
@@ -274,6 +275,7 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 	c.Context = (*ContextService)(&c.common)
 	c.Retention = (*RetentionRuleService)(&c.common)
 	c.TenantOptions = (*TenantOptionsService)(&c.common)
+	c.Software = (*InventorySoftwareService)(&c.common)
 	c.User = (*UserService)(&c.common)
 	return c
 }

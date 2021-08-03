@@ -13,6 +13,7 @@ import (
 	"path"
 
 	"github.com/pkg/errors"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/contentType"
 
 	"github.com/tidwall/gjson"
 	"go.uber.org/zap"
@@ -97,6 +98,10 @@ type ManagedObject struct {
 	Owner            string              `json:"owner,omitempty"`
 	DeviceParents    *ParentDevices      `json:"deviceParents,omitempty"`
 	ChildDevices     *ChildDevices       `json:"childDevices,omitempty"`
+	AdditionParents  *AdditionParents    `json:"additionParents,omitempty"`
+	AssetParents     *AssetParents       `json:"assetParents,omitempty"`
+	ChildAdditions   *ChildAdditions     `json:"childAdditions,omitempty"`
+	ChildAssets      *ChildAssets        `json:"childAssets,omitempty"`
 	Kpi              *Kpi                `json:"c8y_Kpi,omitempty"`
 	C8yConfiguration *AgentConfiguration `json:"c8y_Configuration,omitempty"`
 
@@ -152,6 +157,26 @@ type ParentDevices struct {
 	References []ManagedObjectReference `json:"references"`
 }
 
+type AdditionParents struct {
+	Self       string                   `json:"self"`
+	References []ManagedObjectReference `json:"references"`
+}
+
+type AssetParents struct {
+	Self       string                   `json:"self"`
+	References []ManagedObjectReference `json:"references"`
+}
+
+type ChildAssets struct {
+	Self       string                   `json:"self"`
+	References []ManagedObjectReference `json:"references"`
+}
+
+type ChildAdditions struct {
+	Self       string                   `json:"self"`
+	References []ManagedObjectReference `json:"references"`
+}
+
 // ManagedObjectCollection todo
 type ManagedObjectCollection struct {
 	*BaseResponse
@@ -178,8 +203,8 @@ type ManagedObjectReferencesCollection struct {
 
 // ManagedObjectReference Managed object reference
 type ManagedObjectReference struct {
-	Self          string        `json:"self"`
-	ManagedObject ManagedObject `json:"managedObject"`
+	Self          string        `json:"self,omitempty"`
+	ManagedObject ManagedObject `json:"managedObject,omitempty"`
 }
 
 // GetDevicesByName returns managed object devices by filter by a name
@@ -504,4 +529,36 @@ func (s *InventoryService) ExpandCollection(ctx context.Context, col *ManagedObj
 		i++
 	}
 	return
+}
+
+// CreateChildAddition create a new managed object as a child addition to an existing managed object
+func (s *InventoryService) CreateChildAddition(ctx context.Context, ID string, body interface{}) (*ManagedObject, *Response, error) {
+	data := new(ManagedObject)
+
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "POST",
+		Path:         "inventory/managedObjects/" + ID + "/childAdditions",
+		ContentType:  contentType.ContentTypeManagedObject,
+		Body:         body,
+		ResponseData: data,
+	})
+	return data, resp, err
+}
+
+// AddChildAddition add a managed object as a child addition to an existing managed object
+func (s *InventoryService) AddChildAddition(ctx context.Context, ID, childID string) (*ManagedObject, *Response, error) {
+	data := new(ManagedObject)
+
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method: "POST",
+		Accept: contentType.ContentTypeJSON,
+		Path:   "inventory/managedObjects/" + ID + "/childAdditions",
+		Body: &ManagedObjectReference{
+			ManagedObject: ManagedObject{
+				ID: childID,
+			},
+		},
+		ResponseData: data,
+	})
+	return data, resp, err
 }
