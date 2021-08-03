@@ -69,14 +69,15 @@ func NewSoftwareVersion(name string) *SoftwareVersion {
 func GetProperties(filename string, global bool) map[string]interface{} {
 	props := make(map[string]interface{})
 	if global {
-
 		props["c8y_Global"] = map[string]interface{}{}
 	}
-	props["name"] = filepath.Base(filename)
+
 	mimeType := mime.TypeByExtension(filepath.Ext(filename))
 	if mimeType == "" {
 		mimeType = "application/octet-stream"
 	}
+	props["name"] = filepath.Base(filename)
+	props["type"] = mimeType
 	return props
 }
 
