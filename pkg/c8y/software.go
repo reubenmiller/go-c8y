@@ -83,28 +83,10 @@ func GetProperties(filename string, global bool) map[string]interface{} {
 // CreateVersion upload a binary and creates a software version referencing it
 // THe URL can be left blank in the software version as it will be automatically set if a filename is provided
 func (s *InventorySoftwareService) CreateVersion(ctx context.Context, softwareID, filename string, version SoftwareVersion) (*ManagedObject, *Response, error) {
-	// Upload file
-	binaryProps := GetProperties(filename, true)
-	binary, resp, err := s.client.Inventory.CreateBinary(ctx, filename, binaryProps)
-	if err != nil {
-		return binary, resp, err
-	}
-
-	// Create software version (as child addition of software)
-	if binary != nil {
-		version.Software.URL = binary.Self
-	}
-	mo, resp, err := s.client.Inventory.CreateChildAddition(ctx, softwareID, version)
-
-	if err != nil {
-		return mo, resp, err
-	}
-
-	// Add binary as child addition to software version managed object
-	if childMO, childResp, childErr := s.client.Inventory.AddChildAddition(ctx, mo.ID, binary.ID); err != nil {
-		return childMO, childResp, childErr
-	}
-	return mo, resp, err
+	return s.client.Inventory.CreateChildAdditionWithBinary(ctx, softwareID, filename, func(binaryURL string) interface{} {
+		version.Software.URL = binaryURL
+		return version
+	})
 }
 
 // GetSoftwareByName returns software packages by name

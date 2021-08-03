@@ -562,3 +562,30 @@ func (s *InventoryService) AddChildAddition(ctx context.Context, ID, childID str
 	})
 	return data, resp, err
 }
+
+// CreateChildAdditionWithBinary create a child addition with a child binary upload a binary and creates a software version referencing it
+func (s *InventoryService) CreateChildAdditionWithBinary(ctx context.Context, parentID, filename string, bodyFunc func(binaryURL string) interface{}) (*ManagedObject, *Response, error) {
+	// Upload file
+	binaryProps := GetProperties(filename, true)
+	binary, resp, err := s.client.Inventory.CreateBinary(ctx, filename, binaryProps)
+	if err != nil {
+		return binary, resp, err
+	}
+
+	// Create software version (as child addition of software)
+	var body interface{}
+	if binary != nil {
+		body = bodyFunc(binary.Self)
+	}
+	mo, resp, err := s.client.Inventory.CreateChildAddition(ctx, parentID, body)
+
+	if err != nil {
+		return mo, resp, err
+	}
+
+	// Add binary as child addition to software version managed object
+	if childMO, childResp, childErr := s.client.Inventory.AddChildAddition(ctx, mo.ID, binary.ID); err != nil {
+		return childMO, childResp, childErr
+	}
+	return mo, resp, err
+}
