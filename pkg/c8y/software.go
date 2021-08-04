@@ -28,14 +28,6 @@ type SoftwareFragment struct {
 	URL     string `json:"url"`
 }
 
-type InventoryDefaults struct {
-	ID    string `json:"id,omitempty"`
-	Name  string `json:"name,omitempty"`
-	Type  string `json:"type,omitempty"`
-	Self  string `json:"self,omitempty"`
-	Owner string `json:"owner,omitempty"`
-}
-
 // Software is the general Inventory Managed Object data structure
 type Software struct {
 	ManagedObject

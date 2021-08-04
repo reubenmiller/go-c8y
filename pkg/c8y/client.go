@@ -116,6 +116,7 @@ type Client struct {
 	Retention         *RetentionRuleService
 	TenantOptions     *TenantOptionsService
 	Software          *InventorySoftwareService
+	Firmware          *InventoryFirmwareService
 	User              *UserService
 }
 
@@ -276,6 +277,7 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 	c.Retention = (*RetentionRuleService)(&c.common)
 	c.TenantOptions = (*TenantOptionsService)(&c.common)
 	c.Software = (*InventorySoftwareService)(&c.common)
+	c.Firmware = (*InventoryFirmwareService)(&c.common)
 	c.User = (*UserService)(&c.common)
 	return c
 }
