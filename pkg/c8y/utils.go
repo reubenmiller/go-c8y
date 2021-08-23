@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func prepareMultipartRequest(method string, url string, values map[string]io.Reader) (req *http.Request, err error) {
@@ -108,4 +109,11 @@ func mustOpen(f string) *os.File {
 		panic(err)
 	}
 	return r
+}
+
+// IsID check if a string is most likely an id
+func IsID(v string) bool {
+	isNotDigit := func(c rune) bool { return c < '0' || c > '9' }
+	value := strings.TrimSpace(v)
+	return strings.IndexFunc(value, isNotDigit) <= -1
 }
