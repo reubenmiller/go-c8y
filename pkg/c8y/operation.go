@@ -22,6 +22,12 @@ type OperationCollectionOptions struct {
 
 	DateTo string `url:"dateTo,omitempty"`
 
+	BulkOperationId string `url:"bulkOperationId,omitempty"`
+
+	FragmentType string `url:"fragmentType,omitempty"`
+
+	Revert bool `url:"revert,omitempty"`
+
 	// Pagination options
 	PaginationOptions
 }
