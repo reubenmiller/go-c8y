@@ -572,7 +572,7 @@ func (s *InventoryService) CreateChildAdditionWithBinary(ctx context.Context, pa
 		return binary, resp, err
 	}
 
-	// Create software version (as child addition of software)
+	// Create managed object (as child addition of software)
 	var body interface{}
 	if binary != nil {
 		body = bodyFunc(binary.Self)
@@ -583,7 +583,34 @@ func (s *InventoryService) CreateChildAdditionWithBinary(ctx context.Context, pa
 		return mo, resp, err
 	}
 
-	// Add binary as child addition to software version managed object
+	// Add binary as child addition to managed object
+	if childMO, childResp, childErr := s.client.Inventory.AddChildAddition(ctx, mo.ID, binary.ID); err != nil {
+		return childMO, childResp, childErr
+	}
+	return mo, resp, err
+}
+
+// CreateWithBinary create managed object which also has a binary linked as a child addition so that the binary is deleted when the parent maanaged object is deleted
+func (s *InventoryService) CreateWithBinary(ctx context.Context, parentID, filename string, bodyFunc func(binaryURL string) interface{}) (*ManagedObject, *Response, error) {
+	// Upload file
+	binaryProps := GetProperties(filename, true)
+	binary, resp, err := s.client.Inventory.CreateBinary(ctx, filename, binaryProps)
+	if err != nil {
+		return binary, resp, err
+	}
+
+	// Create managed object
+	var body interface{}
+	if binary != nil {
+		body = bodyFunc(binary.Self)
+	}
+	mo, resp, err := s.client.Inventory.Create(ctx, body)
+
+	if err != nil {
+		return mo, resp, err
+	}
+
+	// Add binary as child addition to managed object
 	if childMO, childResp, childErr := s.client.Inventory.AddChildAddition(ctx, mo.ID, binary.ID); err != nil {
 		return childMO, childResp, childErr
 	}
