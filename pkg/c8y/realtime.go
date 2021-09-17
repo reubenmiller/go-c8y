@@ -30,7 +30,7 @@ const (
 	// MINIMUMVERSION supported Bayeux version
 	MINIMUMVERSION = "1.0"
 
-	// MinimumRetryDelay is the minimum retry delay in milliseconds to wait before sending another /connect/meta message
+	// MinimumRetryDelay is the minimum retry delay in milliseconds to wait before sending another /meta/connect message
 	MinimumRetryDelay int64 = 500
 )
 
@@ -166,7 +166,7 @@ func getRealtimeURL(host string) *url.URL {
 		c8yhost.Scheme = "wss"
 	}
 
-	c8yhost.Path = "/cep/realtime"
+	c8yhost.Path = "/notification/realtime"
 
 	return c8yhost
 }
