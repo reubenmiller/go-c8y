@@ -28,9 +28,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1 // indirect
-	github.com/tidwall/gjson v1.2.1
-	github.com/tidwall/match v1.0.1 // indirect
-	github.com/tidwall/pretty v0.0.0-20190325153808-1166b9ac2b65 // indirect
+	github.com/tidwall/gjson v1.6.5
 	github.com/valyala/fasttemplate v1.0.1 // indirect
 	go.uber.org/zap v1.10.0
 	golang.org/x/net v0.0.0-20200822124328-c89045814202 // indirect
