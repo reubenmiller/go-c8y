@@ -85,7 +85,7 @@ func (s *InventorySoftwareService) CreateVersion(ctx context.Context, softwareID
 // GetSoftwareByName returns software packages by name
 func (s *InventorySoftwareService) GetSoftwareByName(ctx context.Context, name string, paging *PaginationOptions) (*ManagedObjectCollection, *Response, error) {
 	opt := &ManagedObjectOptions{
-		Query:             fmt.Sprintf("$filter=(name eq '%s') and type eq '%s' $orderby=name,creationTime", name, FragmentSoftware),
+		Query:             fmt.Sprintf("$filter=(name eq '%s') and type eq '%s' $orderby=creationTime,name", name, FragmentSoftware),
 		PaginationOptions: *paging,
 	}
 	return s.client.Inventory.GetManagedObjects(ctx, opt)
@@ -106,7 +106,7 @@ func (s *InventorySoftwareService) GetSoftwareVersionsByName(ctx context.Context
 	}
 
 	opt := &ManagedObjectOptions{
-		Query:             fmt.Sprintf("$filter=(c8y_Software.name eq '%s') and bygroupid(%s) $orderby=name,creationTime", name, software),
+		Query:             fmt.Sprintf("$filter=(c8y_Software.version eq '%s') and bygroupid(%s) $orderby=creationTime,c8y_Software.version", name, software),
 		PaginationOptions: *paging,
 	}
 	return s.client.Inventory.GetManagedObjects(ctx, opt)
