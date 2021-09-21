@@ -102,7 +102,12 @@ func (s *InventorySoftwareService) GetSoftwareVersionsByName(ctx context.Context
 		if err != nil {
 			return nil, resp, err
 		}
-		software = softwareMO.ManagedObjects[0].ID
+		if len(softwareMO.ManagedObjects) == 0 {
+			return nil, resp, ErrNotFound
+		}
+		if len(softwareMO.ManagedObjects) > 0 {
+			software = softwareMO.ManagedObjects[0].ID
+		}
 	}
 
 	opt := &ManagedObjectOptions{

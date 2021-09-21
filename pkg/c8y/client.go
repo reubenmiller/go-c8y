@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -23,6 +24,8 @@ import (
 	"github.com/google/go-querystring/query"
 	"github.com/tidwall/gjson"
 )
+
+var ErrNotFound = errors.New("item: not found")
 
 // ContextAuthTokenKey todo
 type ContextAuthTokenKey string
