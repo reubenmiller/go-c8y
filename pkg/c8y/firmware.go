@@ -75,10 +75,11 @@ func (s *InventoryFirmwareService) GetFirmwareByName(ctx context.Context, name s
 }
 
 // GetFirmwareVersionsByName returns firmware package versions by name
-func (s *InventoryFirmwareService) GetFirmwareVersionsByName(ctx context.Context, firmwareID string, name string, paging *PaginationOptions) (*ManagedObjectCollection, *Response, error) {
+func (s *InventoryFirmwareService) GetFirmwareVersionsByName(ctx context.Context, firmwareID string, name string, withParents bool, paging *PaginationOptions) (*ManagedObjectCollection, *Response, error) {
 	opt := &ManagedObjectOptions{
 		Query:             fmt.Sprintf("(c8y_Firmware.version eq '%s') and bygroupid(%s) $orderby=creationTime,c8y_Firmware.version", name, firmwareID),
 		PaginationOptions: *paging,
+		WithParents:       withParents,
 	}
 	return s.client.Inventory.GetManagedObjects(ctx, opt)
 }

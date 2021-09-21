@@ -93,7 +93,7 @@ func (s *InventorySoftwareService) GetSoftwareByName(ctx context.Context, name s
 
 // GetSoftwareVersionsByName returns software package versions by name
 // software: can also be referenced by name
-func (s *InventorySoftwareService) GetSoftwareVersionsByName(ctx context.Context, software string, name string, paging *PaginationOptions) (*ManagedObjectCollection, *Response, error) {
+func (s *InventorySoftwareService) GetSoftwareVersionsByName(ctx context.Context, software string, name string, withParents bool, paging *PaginationOptions) (*ManagedObjectCollection, *Response, error) {
 
 	if !IsID(software) {
 		// Lookup software via name
@@ -108,6 +108,7 @@ func (s *InventorySoftwareService) GetSoftwareVersionsByName(ctx context.Context
 	opt := &ManagedObjectOptions{
 		Query:             fmt.Sprintf("$filter=(c8y_Software.version eq '%s') and bygroupid(%s) $orderby=creationTime,c8y_Software.version", name, software),
 		PaginationOptions: *paging,
+		WithParents:       withParents,
 	}
 	return s.client.Inventory.GetManagedObjects(ctx, opt)
 }
