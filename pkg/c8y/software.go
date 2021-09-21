@@ -85,16 +85,28 @@ func (s *InventorySoftwareService) CreateVersion(ctx context.Context, softwareID
 // GetSoftwareByName returns software packages by name
 func (s *InventorySoftwareService) GetSoftwareByName(ctx context.Context, name string, paging *PaginationOptions) (*ManagedObjectCollection, *Response, error) {
 	opt := &ManagedObjectOptions{
-		Query:             fmt.Sprintf("(name eq '%s') and type eq '%s'", name, FragmentSoftware),
+		Query:             fmt.Sprintf("$filter=(name eq '%s') and type eq '%s'+$orderby=name,creationTime", name, FragmentSoftware),
 		PaginationOptions: *paging,
 	}
 	return s.client.Inventory.GetManagedObjects(ctx, opt)
 }
 
 // GetSoftwareVersionsByName returns software package versions by name
-func (s *InventorySoftwareService) GetSoftwareVersionsByName(ctx context.Context, softwareID string, name string, paging *PaginationOptions) (*ManagedObjectCollection, *Response, error) {
+// software: can also be referenced by name
+func (s *InventorySoftwareService) GetSoftwareVersionsByName(ctx context.Context, software string, name string, paging *PaginationOptions) (*ManagedObjectCollection, *Response, error) {
+
+	if !IsID(software) {
+		// Lookup software via name
+		softwareMO, resp, err := s.GetSoftwareByName(ctx, software, NewPaginationOptions(2))
+
+		if err != nil {
+			return nil, resp, err
+		}
+		software = softwareMO.ManagedObjects[0].ID
+	}
+
 	opt := &ManagedObjectOptions{
-		Query:             fmt.Sprintf("(name eq '%s') and bygroupid(%s)", name, softwareID),
+		Query:             fmt.Sprintf("$filter=(c8y_Software.name eq '%s') and bygroupid(%s)+$orderby=name,creationTime", name, software),
 		PaginationOptions: *paging,
 	}
 	return s.client.Inventory.GetManagedObjects(ctx, opt)
