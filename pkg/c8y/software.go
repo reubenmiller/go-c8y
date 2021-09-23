@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"mime"
+	"net/url"
 	"path/filepath"
 )
 
@@ -84,8 +85,12 @@ func (s *InventorySoftwareService) CreateVersion(ctx context.Context, softwareID
 
 // GetSoftwareByName returns software packages by name
 func (s *InventorySoftwareService) GetSoftwareByName(ctx context.Context, name string, paging *PaginationOptions) (*ManagedObjectCollection, *Response, error) {
+	if paging == nil {
+		paging = NewPaginationOptions(100)
+	}
+
 	opt := &ManagedObjectOptions{
-		Query:             fmt.Sprintf("$filter=(name eq '%s') and type eq '%s' $orderby=creationTime,name", name, FragmentSoftware),
+		Query:             fmt.Sprintf("$filter=(name eq '%s') and type eq '%s' $orderby=name,creationTime", url.QueryEscape(name), FragmentSoftware),
 		PaginationOptions: *paging,
 	}
 	return s.client.Inventory.GetManagedObjects(ctx, opt)
@@ -94,7 +99,9 @@ func (s *InventorySoftwareService) GetSoftwareByName(ctx context.Context, name s
 // GetSoftwareVersionsByName returns software package versions by name
 // software: can also be referenced by name
 func (s *InventorySoftwareService) GetSoftwareVersionsByName(ctx context.Context, software string, name string, withParents bool, paging *PaginationOptions) (*ManagedObjectCollection, *Response, error) {
-
+	if paging == nil {
+		paging = NewPaginationOptions(100)
+	}
 	if !IsID(software) {
 		// Lookup software via name
 		softwareMO, resp, err := s.GetSoftwareByName(ctx, software, NewPaginationOptions(2))
@@ -111,7 +118,7 @@ func (s *InventorySoftwareService) GetSoftwareVersionsByName(ctx context.Context
 	}
 
 	opt := &ManagedObjectOptions{
-		Query:             fmt.Sprintf("$filter=(c8y_Software.version eq '%s') and bygroupid(%s) $orderby=creationTime,c8y_Software.version", name, software),
+		Query:             fmt.Sprintf("$filter=(c8y_Software.version eq '%s') and bygroupid(%s) $orderby=c8y_Software.version,creationTime", url.QueryEscape(name), software),
 		PaginationOptions: *paging,
 		WithParents:       withParents,
 	}
