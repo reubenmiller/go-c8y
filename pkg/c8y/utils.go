@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"mime"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -116,4 +117,19 @@ func IsID(v string) bool {
 	isNotDigit := func(c rune) bool { return c < '0' || c > '9' }
 	value := strings.TrimSpace(v)
 	return strings.IndexFunc(value, isNotDigit) <= -1
+}
+
+func GetProperties(filename string, global bool) map[string]interface{} {
+	props := make(map[string]interface{})
+	if global {
+		props["c8y_Global"] = map[string]interface{}{}
+	}
+
+	mimeType := mime.TypeByExtension(filepath.Ext(filename))
+	if mimeType == "" {
+		mimeType = "application/octet-stream"
+	}
+	props["name"] = filepath.Base(filename)
+	props["type"] = mimeType
+	return props
 }

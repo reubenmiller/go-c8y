@@ -3,8 +3,6 @@ package c8y
 import (
 	"context"
 	"fmt"
-	"mime"
-	"path/filepath"
 )
 
 const FragmentSoftware = "c8y_Software"
@@ -12,15 +10,6 @@ const FragmentSoftwareBinary = "c8y_SoftwareBinary"
 
 // InventorySoftwareService responsible for all inventory api calls
 type InventorySoftwareService service
-
-// SoftwareOptions managed object options which can be given with the managed object request
-type SoftwareOptions struct {
-	WithParents bool `url:"withParents,omitempty"`
-
-	Query string `url:"query,omitempty"`
-
-	PaginationOptions
-}
 
 // AgentFragment is the special agent fragment used to identify managed objects which are representations of an Agent.
 type SoftwareFragment struct {
@@ -56,21 +45,6 @@ func NewSoftwareVersion(name string) *SoftwareVersion {
 			Type: FragmentSoftwareBinary,
 		},
 	}
-}
-
-func GetProperties(filename string, global bool) map[string]interface{} {
-	props := make(map[string]interface{})
-	if global {
-		props["c8y_Global"] = map[string]interface{}{}
-	}
-
-	mimeType := mime.TypeByExtension(filepath.Ext(filename))
-	if mimeType == "" {
-		mimeType = "application/octet-stream"
-	}
-	props["name"] = filepath.Base(filename)
-	props["type"] = mimeType
-	return props
 }
 
 // CreateVersion upload a binary and creates a software version referencing it
