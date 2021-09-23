@@ -65,7 +65,7 @@ func (s *InventoryFirmwareService) GetFirmwareByName(ctx context.Context, name s
 	}
 
 	opt := &ManagedObjectOptions{
-		Query:             fmt.Sprintf("(name eq '%s') and type eq '%s' $orderby=name,creationTime", name, FragmentFirmware),
+		Query:             fmt.Sprintf("$filter=(name eq '%s') and type eq '%s' $orderby=name,creationTime", name, FragmentFirmware),
 		PaginationOptions: *paging,
 	}
 	return s.client.Inventory.GetManagedObjects(ctx, opt)
@@ -94,7 +94,7 @@ func (s *InventoryFirmwareService) GetFirmwareVersionsByName(ctx context.Context
 	}
 
 	opt := &ManagedObjectOptions{
-		Query:             fmt.Sprintf("(c8y_Firmware.version eq '%s') and bygroupid(%s) $orderby=c8y_Firmware.version,creationTime", name, firmware),
+		Query:             fmt.Sprintf("$filter=(c8y_Firmware.version eq '%s') and bygroupid(%s) $orderby=c8y_Firmware.version,creationTime", name, firmware),
 		PaginationOptions: *paging,
 		WithParents:       withParents,
 	}
