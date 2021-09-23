@@ -11,15 +11,6 @@ const FragmentFirmwareBinary = "c8y_FirmwareBinary"
 // InventoryFirmwareService responsible for all inventory api calls
 type InventoryFirmwareService service
 
-// FirmwareOptions managed object options which can be given with the managed object request
-type FirmwareOptions struct {
-	WithParents bool `url:"withParents,omitempty"`
-
-	Query string `url:"query,omitempty"`
-
-	PaginationOptions
-}
-
 // AgentFragment is the special agent fragment used to identify managed objects which are representations of an Agent.
 type FirmwareFragment struct {
 	Version string `json:"version"`
@@ -31,6 +22,7 @@ type Firmware struct {
 	ManagedObject
 }
 
+// FirmwareVersion firmware version details
 type FirmwareVersion struct {
 	ManagedObject
 
@@ -47,6 +39,7 @@ func NewFirmware(name string) *Firmware {
 	}
 }
 
+// NewFirmwareVersion returns a firmware version
 func NewFirmwareVersion(name string) *FirmwareVersion {
 	return &FirmwareVersion{
 		ManagedObject: ManagedObject{
@@ -67,17 +60,41 @@ func (s *InventoryFirmwareService) CreateVersion(ctx context.Context, firmwareID
 
 // GetFirmwareByName returns firmware packages by name
 func (s *InventoryFirmwareService) GetFirmwareByName(ctx context.Context, name string, paging *PaginationOptions) (*ManagedObjectCollection, *Response, error) {
+	if paging == nil {
+		paging = NewPaginationOptions(100)
+	}
+
 	opt := &ManagedObjectOptions{
-		Query:             fmt.Sprintf("(name eq '%s') and type eq '%s' $orderby=creationTime,name", name, FragmentFirmware),
+		Query:             fmt.Sprintf("(name eq '%s') and type eq '%s' $orderby=name,creationTime", name, FragmentFirmware),
 		PaginationOptions: *paging,
 	}
 	return s.client.Inventory.GetManagedObjects(ctx, opt)
 }
 
 // GetFirmwareVersionsByName returns firmware package versions by name
-func (s *InventoryFirmwareService) GetFirmwareVersionsByName(ctx context.Context, firmwareID string, name string, withParents bool, paging *PaginationOptions) (*ManagedObjectCollection, *Response, error) {
+// firmware: can also be referenced by name
+func (s *InventoryFirmwareService) GetFirmwareVersionsByName(ctx context.Context, firmware string, name string, withParents bool, paging *PaginationOptions) (*ManagedObjectCollection, *Response, error) {
+	if paging == nil {
+		paging = NewPaginationOptions(100)
+	}
+
+	if !IsID(firmware) {
+		// Lookup via name
+		collection, resp, err := s.GetFirmwareByName(ctx, firmware, NewPaginationOptions(2))
+
+		if err != nil {
+			return nil, resp, err
+		}
+		if len(collection.ManagedObjects) == 0 {
+			return nil, resp, ErrNotFound
+		}
+		if len(collection.ManagedObjects) > 0 {
+			firmware = collection.ManagedObjects[0].ID
+		}
+	}
+
 	opt := &ManagedObjectOptions{
-		Query:             fmt.Sprintf("(c8y_Firmware.version eq '%s') and bygroupid(%s) $orderby=creationTime,c8y_Firmware.version", name, firmwareID),
+		Query:             fmt.Sprintf("(c8y_Firmware.version eq '%s') and bygroupid(%s) $orderby=c8y_Firmware.version,creationTime", name, firmware),
 		PaginationOptions: *paging,
 		WithParents:       withParents,
 	}
