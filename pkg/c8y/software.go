@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"mime"
-	"net/url"
 	"path/filepath"
 )
 
@@ -90,7 +89,7 @@ func (s *InventorySoftwareService) GetSoftwareByName(ctx context.Context, name s
 	}
 
 	opt := &ManagedObjectOptions{
-		Query:             fmt.Sprintf("$filter=(name eq '%s') and type eq '%s' $orderby=name,creationTime", url.QueryEscape(name), FragmentSoftware),
+		Query:             fmt.Sprintf("$filter=(name eq '%s') and type eq '%s' $orderby=name,creationTime", name, FragmentSoftware),
 		PaginationOptions: *paging,
 	}
 	return s.client.Inventory.GetManagedObjects(ctx, opt)
@@ -118,7 +117,7 @@ func (s *InventorySoftwareService) GetSoftwareVersionsByName(ctx context.Context
 	}
 
 	opt := &ManagedObjectOptions{
-		Query:             fmt.Sprintf("$filter=(c8y_Software.version eq '%s') and bygroupid(%s) $orderby=c8y_Software.version,creationTime", url.QueryEscape(name), software),
+		Query:             fmt.Sprintf("$filter=(c8y_Software.version eq '%s') and bygroupid(%s) $orderby=c8y_Software.version,creationTime", name, software),
 		PaginationOptions: *paging,
 		WithParents:       withParents,
 	}
