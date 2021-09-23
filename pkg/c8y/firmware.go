@@ -3,6 +3,7 @@ package c8y
 import (
 	"context"
 	"fmt"
+	"net/url"
 )
 
 const FragmentFirmware = "c8y_Firmware"
@@ -68,7 +69,7 @@ func (s *InventoryFirmwareService) CreateVersion(ctx context.Context, firmwareID
 // GetFirmwareByName returns firmware packages by name
 func (s *InventoryFirmwareService) GetFirmwareByName(ctx context.Context, name string, paging *PaginationOptions) (*ManagedObjectCollection, *Response, error) {
 	opt := &ManagedObjectOptions{
-		Query:             fmt.Sprintf("(name eq '%s') and type eq '%s' $orderby=creationTime,name", name, FragmentFirmware),
+		Query:             fmt.Sprintf("(name eq '%s') and type eq '%s' $orderby=creationTime,name", url.QueryEscape(name), FragmentFirmware),
 		PaginationOptions: *paging,
 	}
 	return s.client.Inventory.GetManagedObjects(ctx, opt)
@@ -77,7 +78,7 @@ func (s *InventoryFirmwareService) GetFirmwareByName(ctx context.Context, name s
 // GetFirmwareVersionsByName returns firmware package versions by name
 func (s *InventoryFirmwareService) GetFirmwareVersionsByName(ctx context.Context, firmwareID string, name string, withParents bool, paging *PaginationOptions) (*ManagedObjectCollection, *Response, error) {
 	opt := &ManagedObjectOptions{
-		Query:             fmt.Sprintf("(c8y_Firmware.version eq '%s') and bygroupid(%s) $orderby=creationTime,c8y_Firmware.version", name, firmwareID),
+		Query:             fmt.Sprintf("(c8y_Firmware.version eq '%s') and bygroupid(%s) $orderby=creationTime,c8y_Firmware.version", url.QueryEscape(name), firmwareID),
 		PaginationOptions: *paging,
 		WithParents:       withParents,
 	}
