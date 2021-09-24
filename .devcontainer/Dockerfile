@@ -3,7 +3,7 @@
 # Licensed under the MIT License. See https://go.microsoft.com/fwlink/?linkid=2090316 for license information.
 #-------------------------------------------------------------------------------------------------------------
 
-FROM golang:1
+FROM golang:1.17
 
 # Avoid warnings by switching to noninteractive
 ENV DEBIAN_FRONTEND=noninteractive
@@ -33,8 +33,8 @@ RUN wget https://packages.microsoft.com/config/debian/10/packages-microsoft-prod
     # Build Go tools w/module support
     && mkdir -p /tmp/gotools \
     && cd /tmp/gotools \
-    && GOPATH=/tmp/gotools GO111MODULE=on go get -v golang.org/x/tools/gopls@latest 2>&1 \
-    && GOPATH=/tmp/gotools GO111MODULE=on go get -v \
+    && GOPATH=/tmp/gotools GO111MODULE=on go install -v golang.org/x/tools/gopls@latest 2>&1 \
+    && GOPATH=/tmp/gotools GO111MODULE=on go get -u -v \
         honnef.co/go/tools/...@latest \
         golang.org/x/tools/cmd/gorename@latest \
         golang.org/x/tools/cmd/goimports@latest \
@@ -56,16 +56,8 @@ RUN wget https://packages.microsoft.com/config/debian/10/packages-microsoft-prod
         github.com/mgechev/revive@latest  \
         github.com/go-delve/delve/cmd/dlv@latest 2>&1 \
     #
-    # Build Go tools w/o module support
-    && GOPATH=/tmp/gotools go get -v github.com/alecthomas/gometalinter 2>&1 \
-    #
-    # Build gocode-gomod
-    && GOPATH=/tmp/gotools go get -x -d github.com/stamblerre/gocode 2>&1 \
-    && GOPATH=/tmp/gotools go build -o gocode-gomod github.com/stamblerre/gocode \
-    #
     # Install Go tools
     && mv /tmp/gotools/bin/* /usr/local/bin/ \
-    && mv gocode-gomod /usr/local/bin/ \
     #
     # Install golangci-lint
     && curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /usr/local/bin 2>&1 \
@@ -94,8 +86,41 @@ RUN wget https://packages.microsoft.com/config/debian/10/packages-microsoft-prod
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/* /tmp/gotools
 
+
+# Add additional tools like go-c8y-cli
+RUN sh -c "curl https://reubenmiller.jfrog.io/artifactory/api/security/keypair/public/repositories/c8y-debian | apt-key add -" \
+    && sh -c "echo 'deb https://reubenmiller.jfrog.io/artifactory/c8y-debian stable main' >> /etc/apt/sources.list" \
+    #
+    # install
+    && apt-get update \
+    && apt-get install -y \
+        go-c8y-cli \
+        jq \
+        zsh \
+    #
+    # Load go-c8y-cli plugin
+    && echo 'source "/etc/go-c8y-cli/shell/c8y.plugin.zsh"' >> /home/$USERNAME/.zshrc \
+    && chown -R ${USERNAME}:${USERNAME} /home/$USERNAME/.zshrc \
+    #
+    # Change default shell
+    && usermod -s /usr/bin/zsh $USERNAME \
+    #
+    # Fix go permissions
+    && chown -R ${USERNAME}:${USERNAME} /go \
+    #
+    # Clean up
+    && apt-get autoremove -y \
+    && apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/*
+
+
 # Update this to "on" or "off" as appropriate
 ENV GO111MODULE=auto
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
 
 # Switch back to dialog for any ad-hoc use of apt-get
 ENV DEBIAN_FRONTEND=dialog
+
+# Use non-root user by default
+USER $USERNAME
