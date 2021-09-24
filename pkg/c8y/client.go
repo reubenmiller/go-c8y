@@ -176,6 +176,9 @@ func DecodeJSONReader(r io.Reader, dst interface{}) error {
 	return decoder.Decode(&dst)
 }
 
+// ClientOption represents an argument to NewClient
+type ClientOption = func(http.RoundTripper) http.RoundTripper
+
 // NewRealtimeClientFromServiceUser returns a realtime client using a microservice's service user for a specified tenant
 // If no service user is found for the set tenant, then nil is returned
 func (c *Client) NewRealtimeClientFromServiceUser(tenant string) *RealtimeClient {
@@ -211,6 +214,40 @@ func NewClientUsingBootstrapUserFromEnvironment(httpClient *http.Client, baseURL
 	client := NewClient(httpClient, baseURL, tenant, username, password, skipRealtimeClient)
 	client.Microservice.SetServiceUsers()
 	return client
+}
+
+// NewHTTPClient initializes an http.Client which can be then provided to the NewClient
+func NewHTTPClient(opts ...ClientOption) *http.Client {
+	tr := http.DefaultTransport
+	for _, opt := range opts {
+		tr = opt(tr)
+	}
+	return &http.Client{Transport: tr}
+}
+
+// ReplaceTripper substitutes the underlying RoundTripper with a custom one
+func ReplaceTripper(tr http.RoundTripper) ClientOption {
+	return func(http.RoundTripper) http.RoundTripper {
+		return tr
+	}
+}
+
+// WithInsecureSkipVerify sets the ssl verify settings to control if ssl certificates are verified or not
+// Useful when using self-signed certificates in a trusted environment. Should only be used if you know you
+// can trust the server, otherwise just leave verify enabled.
+func WithInsecureSkipVerify(skipVerify bool) ClientOption {
+	return func(tr http.RoundTripper) http.RoundTripper {
+		tr.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: skipVerify}
+		return tr
+	}
+}
+
+type funcTripper struct {
+	roundTrip func(*http.Request) (*http.Response, error)
+}
+
+func (tr funcTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	return tr.roundTrip(req)
 }
 
 // NewClient returns a new Cumulocity API client. If a nil httpClient is
