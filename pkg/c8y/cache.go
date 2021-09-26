@@ -16,6 +16,8 @@ import (
 	"time"
 )
 
+const TimeFormat = "Mon, 02 Jan 2006 15:04:05 GMT"
+
 type Cachable func(*http.Request) bool
 
 func NewCachedClient(httpClient *http.Client, cacheDir string, cacheTTL time.Duration, isCachable Cachable, keyOptions KeyOptions) *http.Client {
@@ -173,6 +175,12 @@ func (fs *fileStorage) read(key string) (*http.Response, error) {
 	}
 
 	res, err := http.ReadResponse(bufio.NewReader(body), nil)
+	if res.Header.Get("ETag") == "" {
+		res.Header.Set("ETag", key)
+	}
+	if res.Header.Get("Last-Modified") == "" {
+		res.Header.Set("Last-Modified", stat.ModTime().UTC().Format(TimeFormat))
+	}
 	return res, err
 }
 
