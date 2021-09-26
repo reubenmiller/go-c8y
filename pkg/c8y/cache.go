@@ -164,7 +164,7 @@ func (fs *fileStorage) read(key string) (*http.Response, error) {
 		return nil, errors.New("cache expired")
 	}
 
-	Logger.Infof("Using cached response. file=%s, age=%s, ttl=%s", cacheFile, age, fs.ttl)
+	Logger.Infof("Using cached response. file: %s, age: %s, ttl: %s", cacheFile, age, fs.ttl)
 
 	body := &bytes.Buffer{}
 	_, err = io.Copy(body, f)
