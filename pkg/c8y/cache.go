@@ -18,7 +18,7 @@ import (
 
 type Cachable func(*http.Request) bool
 
-func NewCachedClient(httpClient *http.Client, cacheDir string, cacheTTL time.Duration, isCachable Cachable) *http.Client {
+func NewCachedClient(httpClient *http.Client, cacheDir string, cacheTTL time.Duration, isCachable Cachable, keyOptions KeyOptions) *http.Client {
 	if cacheDir == "" {
 		cacheDir = filepath.Join(os.TempDir(), "go-c8y-cache")
 	}
@@ -26,7 +26,7 @@ func NewCachedClient(httpClient *http.Client, cacheDir string, cacheTTL time.Dur
 		isCachable = isCacheableRequest
 	}
 	return &http.Client{
-		Transport: CacheResponse(cacheTTL, cacheDir, isCachable)(httpClient.Transport),
+		Transport: CacheResponse(cacheTTL, cacheDir, isCachable, keyOptions)(httpClient.Transport),
 	}
 }
 
@@ -47,7 +47,7 @@ func isCacheableResponse(res *http.Response) bool {
 }
 
 // CacheResponse produces a RoundTripper that caches HTTP responses to disk for a specified amount of time
-func CacheResponse(ttl time.Duration, dir string, isCachable Cachable) ClientOption {
+func CacheResponse(ttl time.Duration, dir string, isCachable Cachable, keyOptions KeyOptions) ClientOption {
 	fs := fileStorage{
 		dir: dir,
 		ttl: ttl,
@@ -61,7 +61,7 @@ func CacheResponse(ttl time.Duration, dir string, isCachable Cachable) ClientOpt
 				return tr.RoundTrip(req)
 			}
 
-			key, keyErr := cacheKey(req)
+			key, keyErr := cacheKey(req, keyOptions)
 			if keyErr == nil {
 				if res, err := fs.read(key); err == nil {
 					res.Request = req
@@ -92,12 +92,29 @@ type readCloser struct {
 	io.Closer
 }
 
-func cacheKey(req *http.Request) (string, error) {
+// KeyOptions Cache key generation options
+type KeyOptions struct {
+	// ExcludeAuth excludes Authorization header value
+	ExcludeAuth bool
+
+	// ExcludeHost excludes Host from the full URL value
+	ExcludeHost bool
+}
+
+func cacheKey(req *http.Request, opt KeyOptions) (string, error) {
 	h := sha256.New()
 	fmt.Fprintf(h, "%s:", req.Method)
-	fmt.Fprintf(h, "%s:", req.URL.String())
+	if opt.ExcludeHost {
+		// only include path and query
+		fmt.Fprintf(h, "%s:", req.URL.RequestURI())
+	} else {
+		fmt.Fprintf(h, "%s:", req.URL.String())
+	}
 	fmt.Fprintf(h, "%s:", req.Header.Get("Accept"))
-	fmt.Fprintf(h, "%s:", req.Header.Get("Authorization"))
+
+	if !opt.ExcludeAuth {
+		fmt.Fprintf(h, "%s:", req.Header.Get("Authorization"))
+	}
 
 	if req.Body != nil {
 		var bodyCopy io.ReadCloser
