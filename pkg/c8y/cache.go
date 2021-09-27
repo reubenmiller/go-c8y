@@ -20,7 +20,7 @@ const TimeFormat = "Mon, 02 Jan 2006 15:04:05 GMT"
 
 type Cachable func(*http.Request) bool
 
-func NewCachedClient(httpClient *http.Client, cacheDir string, cacheTTL time.Duration, isCachable Cachable, keyOptions KeyOptions) *http.Client {
+func NewCachedClient(httpClient *http.Client, cacheDir string, cacheTTL time.Duration, isCachable Cachable, opts CacheOptions) *http.Client {
 	if cacheDir == "" {
 		cacheDir = filepath.Join(os.TempDir(), "go-c8y-cache")
 	}
@@ -28,7 +28,7 @@ func NewCachedClient(httpClient *http.Client, cacheDir string, cacheTTL time.Dur
 		isCachable = isCacheableRequest
 	}
 	return &http.Client{
-		Transport: CacheResponse(cacheTTL, cacheDir, isCachable, keyOptions)(httpClient.Transport),
+		Transport: CacheResponse(cacheTTL, cacheDir, isCachable, opts)(httpClient.Transport),
 	}
 }
 
@@ -49,7 +49,7 @@ func isCacheableResponse(res *http.Response) bool {
 }
 
 // CacheResponse produces a RoundTripper that caches HTTP responses to disk for a specified amount of time
-func CacheResponse(ttl time.Duration, dir string, isCachable Cachable, keyOptions KeyOptions) ClientOption {
+func CacheResponse(ttl time.Duration, dir string, isCachable Cachable, options CacheOptions) ClientOption {
 	fs := fileStorage{
 		dir: dir,
 		ttl: ttl,
@@ -63,8 +63,9 @@ func CacheResponse(ttl time.Duration, dir string, isCachable Cachable, keyOption
 				return tr.RoundTrip(req)
 			}
 
-			key, keyErr := cacheKey(req, keyOptions)
-			if keyErr == nil {
+			key, keyErr := cacheKey(req, options)
+			// Ignore read from cache in write only mode
+			if keyErr == nil && options.Mode != StoreModeWrite {
 				if res, err := fs.read(key); err == nil {
 					res.Request = req
 					return res, nil
@@ -94,16 +95,29 @@ type readCloser struct {
 	io.Closer
 }
 
-// KeyOptions Cache key generation options
-type KeyOptions struct {
+type StoreMode int
+
+const (
+	// StoreModeReadWrite read and write to cache
+	StoreModeReadWrite StoreMode = 0
+
+	// StoreModeWrite only write to cache, don't read from it.
+	StoreModeWrite StoreMode = 1
+)
+
+// CacheOptions Cache key generation options
+type CacheOptions struct {
 	// ExcludeAuth excludes Authorization header value
 	ExcludeAuth bool
 
 	// ExcludeHost excludes Host from the full URL value
 	ExcludeHost bool
+
+	// Mode cache store mode which controls the read and writes into cache
+	Mode StoreMode
 }
 
-func cacheKey(req *http.Request, opt KeyOptions) (string, error) {
+func cacheKey(req *http.Request, opt CacheOptions) (string, error) {
 	h := sha256.New()
 	fmt.Fprintf(h, "%s:", req.Method)
 	if opt.ExcludeHost {

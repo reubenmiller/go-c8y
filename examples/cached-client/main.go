@@ -16,7 +16,7 @@ func main() {
 	cacheDir := filepath.Join(os.TempDir(), "go-c8y-cache")
 	httpClient := c8y.NewCachedClient(c8y.NewHTTPClient(
 		c8y.WithInsecureSkipVerify(false),
-	), cacheDir, 5*time.Second, nil)
+	), cacheDir, 5*time.Second, nil, c8y.CacheOptions{})
 	client := c8y.NewClientFromEnvironment(httpClient, false)
 
 	// Get list of alarms with MAJOR Severity
