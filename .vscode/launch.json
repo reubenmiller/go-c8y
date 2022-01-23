@@ -19,6 +19,7 @@
             "mode": "auto",
             "program": "${fileDirname}",
             "env": {},
+            "envFile": "${workspaceFolder}/c8y.env",
             "args": []
         },
         {

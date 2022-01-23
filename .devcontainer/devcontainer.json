@@ -4,12 +4,11 @@
 	"runArgs": [ "--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined" ],
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	"forwardPorts": [9000],
+	"forwardPorts": [9000, 6060],
 
 	// Use 'settings' to set *default* container specific settings.json values on container create. 
 	// You can edit these settings after create using File > Preferences > Settings > Remote.
 	"settings": { 
-		"terminal.integrated.shell.linux": "/bin/bash",
 		"go.gopath": "/go",
 		"go.goroot": "/usr/local/go",
 		// "go.inferGopath": true,

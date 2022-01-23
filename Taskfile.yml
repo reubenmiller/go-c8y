@@ -1,0 +1,36 @@
+version: '3'
+
+env:
+  ENV: testing
+  GO111MODULE: on
+
+dotenv: ['c8y.env', '{{.ENV}}/c8y.env', '{{.HOME}}/c8y.env']
+
+tasks:
+  test:
+    desc: Test all packages
+    cmds:
+      - task: test-c8y
+      - task: test-microservice
+
+  test-c8y:
+    desc: Test c8y package
+    cmds:
+      - go test -v -timeout 30m github.com/reubenmiller/go-c8y/test/c8y_test
+
+  test-microservice:
+    desc: Test microservice package
+    cmds:
+      - go test -v -timeout 30m github.com/reubenmiller/go-c8y/test/microservice_test
+
+  lint:
+    desc: Linting
+    cmds:
+      - go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
+      - golangci-lint run -c .golangci.yml
+
+  docs:
+    desc: Launch go doc webserver
+    cmds:
+      - go install golang.org/x/tools/cmd/godoc
+      - godoc -http=":6060"

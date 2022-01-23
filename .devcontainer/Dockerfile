@@ -108,6 +108,11 @@ RUN sh -c "curl https://reubenmiller.jfrog.io/artifactory/api/security/keypair/p
     # Fix go permissions
     && chown -R ${USERNAME}:${USERNAME} /go \
     #
+    # Install task runner (and completions)
+    && sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin \
+    && curl -L -o /usr/local/share/zsh/site-functions/_task https://raw.githubusercontent.com/sawadashota/go-task-completions/master/_task \
+    && autoload -U compinit && compinit \
+    #
     # Clean up
     && apt-get autoremove -y \
     && apt-get clean -y \
