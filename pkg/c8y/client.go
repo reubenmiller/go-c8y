@@ -390,6 +390,7 @@ type RequestOptions struct {
 	NoAuthentication bool
 	DryRun           bool
 	DryRunResponse   bool
+	PrepareRequest   func(*http.Request) (*http.Request, error)
 }
 
 // SendRequest creates and sends a request
@@ -523,6 +524,12 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 
 	localLogger.Info(c.hideSensitiveInformationIfActive(fmt.Sprintf("Headers: %v", req.Header)))
 
+	if options.PrepareRequest != nil {
+		req, err = options.PrepareRequest(req)
+		if err != nil {
+			return nil, err
+		}
+	}
 	resp, err := c.Do(ctx, req, options.ResponseData)
 
 	c.SetJSONItems(resp, options.ResponseData)
