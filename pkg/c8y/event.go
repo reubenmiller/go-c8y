@@ -180,8 +180,13 @@ func (s *EventService) DownloadBinary(ctx context.Context, ID string) (filepath 
 func (s *EventService) CreateBinary(ctx context.Context, filename string, ID string) (*EventBinary, *Response, error) {
 	client := s.client
 
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	values := map[string]io.Reader{
-		"file": mustOpen(filename), // lets assume its this file
+		"file": file,
 	}
 
 	// set binary api

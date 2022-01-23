@@ -104,14 +104,6 @@ func Upload(client *http.Client, url string, values map[string]io.Reader) (err e
 	return
 }
 
-func mustOpen(f string) *os.File {
-	r, err := os.Open(f)
-	if err != nil {
-		panic(err)
-	}
-	return r
-}
-
 // IsID check if a string is most likely an id
 func IsID(v string) bool {
 	isNotDigit := func(c rune) bool { return c < '0' || c > '9' }

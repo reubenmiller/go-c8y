@@ -413,8 +413,13 @@ func (s *InventoryService) CreateBinary(ctx context.Context, filename string, pr
 		return nil, nil, err
 	}
 
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	values := map[string]io.Reader{
-		"file":   mustOpen(filename), // lets assume its this file
+		"file":   file,
 		"object": bytes.NewReader(metadataBytes),
 	}
 

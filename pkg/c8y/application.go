@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/tidwall/gjson"
 )
@@ -260,8 +261,12 @@ func (s *ApplicationService) GetCurrentApplicationSubscriptions(ctx context.Cont
 // For the web application, the zip file must include index.html in the root directory.
 // For the custom Apama rule application, the zip file must consist of a single .mon file.
 func (s *ApplicationService) CreateBinary(ctx context.Context, filename string, ID string) (*Response, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
 	values := map[string]io.Reader{
-		"file": mustOpen(filename),
+		"file": file,
 	}
 
 	return s.client.SendRequest(ctx, RequestOptions{
