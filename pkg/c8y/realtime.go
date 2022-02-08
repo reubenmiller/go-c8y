@@ -343,15 +343,18 @@ func (c *RealtimeClient) reconnect() error {
 	connected := false
 
 	c.mtx.Lock()
-	c.tomb.Kill(errors.New("websocket died"))
+	if c.tomb != nil {
+		c.tomb.Kill(errors.New("websocket died"))
+	}
 	c.tomb = nil
 	c.connected = false
+	c.mtx.Unlock()
+
 	// Remove all pending requests
 	c.pendingRequests.Range(func(key, value interface{}) bool {
 		c.pendingRequests.Delete(key)
 		return true
 	})
-	c.mtx.Unlock()
 
 	interval := MinimumRetryInterval
 
@@ -390,6 +393,9 @@ func (c *RealtimeClient) connect() chan error {
 	if err != nil {
 		panic(err)
 	}
+
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
 
 	c.ws = ws
 
