@@ -1164,7 +1164,7 @@ func (c *Client) DefaultDryRunHandler(options *RequestOptions, req *http.Request
 		message += fmt.Sprintf("%s: %s\n", key, val[0])
 	}
 
-	if options.Body != nil && (req.Method == http.MethodPost || req.Method == http.MethodPut || req.Method == http.MethodPatch) {
+	if options.Body != nil && (req.Method == http.MethodPost || req.Method == http.MethodPut || req.Method == http.MethodPatch || req.Method == http.MethodDelete) {
 		if v, parseErr := json.MarshalIndent(options.Body, "", "  "); parseErr == nil && !bytes.Equal(v, []byte("null")) {
 			message += fmt.Sprintf("\nBody:\n%s", v)
 		} else {
