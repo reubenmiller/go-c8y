@@ -27,6 +27,23 @@ import (
 
 var ErrNotFound = errors.New("item: not found")
 
+var MethodsWithBody = []string{
+	http.MethodDelete,
+	http.MethodPatch,
+	http.MethodPost,
+	http.MethodPut,
+}
+
+// Check if method supports a body with the request
+func RequestSupportsBody(method string) bool {
+	for _, v := range MethodsWithBody {
+		if strings.EqualFold(method, v) {
+			return true
+		}
+	}
+	return false
+}
+
 // ContextAuthTokenKey todo
 type ContextAuthTokenKey string
 
@@ -1164,7 +1181,7 @@ func (c *Client) DefaultDryRunHandler(options *RequestOptions, req *http.Request
 		message += fmt.Sprintf("%s: %s\n", key, val[0])
 	}
 
-	if options.Body != nil && (req.Method == http.MethodPost || req.Method == http.MethodPut || req.Method == http.MethodPatch || req.Method == http.MethodDelete) {
+	if options.Body != nil && RequestSupportsBody(req.Method) {
 		if v, parseErr := json.MarshalIndent(options.Body, "", "  "); parseErr == nil && !bytes.Equal(v, []byte("null")) {
 			message += fmt.Sprintf("\nBody:\n%s", v)
 		} else {
