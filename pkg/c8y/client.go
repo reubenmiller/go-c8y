@@ -410,28 +410,81 @@ type RequestOptions struct {
 	PrepareRequest   func(*http.Request) (*http.Request, error)
 }
 
-// SendRequest creates and sends a request
-func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Response, error) {
+func (r *RequestOptions) GetPath() (string, error) {
+	prefixPath := ""
+	if r.Host != "" {
+		if u, err := url.Parse(r.Host); err == nil {
+			prefixPath = u.Path
+		}
+	}
 
-	localLogger := Logger
+	tempURL, err := url.Parse(r.Path)
+	if err != nil {
+		return "", err
+	}
 
-	queryParams := ""
+	tempURL.Path = path.Join(prefixPath, tempURL.Path)
+	return tempURL.Path, nil
+}
 
-	if options.Query != nil {
-		if v, ok := options.Query.(string); ok {
-			queryParams = v
-		} else {
-			if v, err := addOptions("", options.Query); err == nil {
-				queryParams = v
+func (r *RequestOptions) GetEscapedPath() (string, error) {
+	p, err := r.GetPath()
+	if err != nil {
+		return "", err
+	}
+	return strings.ReplaceAll(url.PathEscape(p), "%2F", "/"), nil
+}
+
+func (r *RequestOptions) GetQuery() (string, error) {
+	tempURL, err := url.Parse(r.Path)
+	if err != nil {
+		return "", err
+	}
+
+	queryParams := tempURL.Query()
+
+	if r.Query != nil {
+		queryPart, ok := r.Query.(string)
+		if !ok {
+			if v, err := addOptions("", r.Query); err == nil {
+				queryPart = v
 			} else {
-				localLogger.Infof("ERROR: Could not convert query parameter interface{} to a string. %s", err)
-				return nil, err
+				return "", err
+			}
+		}
+
+		if queryPart != "" {
+			query, _ := url.ParseQuery(queryPart)
+
+			for key, query := range query {
+				for _, qValue := range query {
+					queryParams.Add(key, qValue)
+				}
 			}
 		}
 	}
 
-	var req *http.Request
+	return queryParams.Encode(), nil
+	// return queryParams.Encode(), nil
+}
+
+// SendRequest creates and sends a request
+func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Response, error) {
+
+	localLogger := Logger
 	var err error
+
+	currentPath, err := options.GetPath()
+	if err != nil {
+		return nil, err
+	}
+
+	currentQuery, err := options.GetQuery()
+	if err != nil {
+		return nil, err
+	}
+
+	var req *http.Request
 
 	if len(options.FormData) > 0 {
 		localLogger.Infof("Sending multipart form-data")
@@ -439,7 +492,7 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 		// TODO: Somehow use the c.NewRequest function as it provides
 		// the authentication required for the request
 		u, _ := url.Parse(c.BaseURL.String())
-		u.Path = path.Join(u.Path, options.Path)
+		u.Path = path.Join(u.Path, currentPath)
 		req, err = prepareMultipartRequest(options.Method, u.String(), options.FormData)
 		if err != nil {
 			return nil, err
@@ -450,9 +503,9 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 	} else {
 		// Normal request
 		if options.NoAuthentication {
-			req, err = c.NewRequestWithoutAuth(options.Method, options.Path, queryParams, options.Body)
+			req, err = c.NewRequestWithoutAuth(options.Method, currentPath, currentQuery, options.Body)
 		} else {
-			req, err = c.NewRequest(options.Method, options.Path, queryParams, options.Body)
+			req, err = c.NewRequest(options.Method, currentPath, currentQuery, options.Body)
 		}
 	}
 

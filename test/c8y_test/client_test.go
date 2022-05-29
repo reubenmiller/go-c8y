@@ -47,3 +47,30 @@ func TestInventoryService_DecodeJSONManagedObjects(t *testing.T) {
 		t.Errorf("Could not decode json. want: nil, got: %s", err)
 	}
 }
+
+func Test_SendRequest(t *testing.T) {
+	options := c8y.RequestOptions{
+		Host:   "https://c8y.example/base/",
+		Method: "GET",
+		Path:   "/path/with space?query=test eq%20'me'",
+		Query:  "pageSize=100&another=%20again ",
+	}
+
+	currentPath, err := options.GetEscapedPath()
+	if err != nil {
+		t.Errorf("Invalid path. want: nil, got: %s", err)
+	}
+
+	if currentPath != "/base/path/with%20space" {
+		t.Errorf("Path does not match. %s", currentPath)
+	}
+
+	currentQuery, err := options.GetQuery()
+	if err != nil {
+		t.Errorf("Invalid query. want: nil, got: %s", err)
+	}
+
+	if currentQuery != "another=+again+&pageSize=100&query=test+eq+%27me%27" {
+		t.Errorf("Query does not match. %s", currentQuery)
+	}
+}
