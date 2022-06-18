@@ -138,6 +138,7 @@ type Client struct {
 	Software          *InventorySoftwareService
 	Firmware          *InventoryFirmwareService
 	User              *UserService
+	DeviceCertificate *DeviceCertificateService
 }
 
 const (
@@ -321,6 +322,7 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 	c.common.client = c
 	c.Alarm = (*AlarmService)(&c.common)
 	c.Audit = (*AuditService)(&c.common)
+	c.DeviceCertificate = (*DeviceCertificateService)(&c.common)
 	c.DeviceCredentials = (*DeviceCredentialsService)(&c.common)
 	c.Measurement = (*MeasurementService)(&c.common)
 	c.Operation = (*OperationService)(&c.common)
