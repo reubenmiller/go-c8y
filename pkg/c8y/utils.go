@@ -17,13 +17,27 @@ func prepareMultipartRequest(method string, url string, values map[string]io.Rea
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
 	for key, r := range values {
+
+		if key == "filename" {
+			// Ignore filename as it is used to name the uploaded file
+			continue
+		}
+
 		var fw io.Writer
 		if x, ok := r.(io.Closer); ok {
 			defer x.Close()
 		}
 		// Add an image file
 		if x, ok := r.(*os.File); ok {
-			if fw, err = w.CreateFormFile(key, filepath.Base(x.Name())); err != nil {
+
+			// Check if manual filename field was provided, otherwise use the basename
+			filename := filepath.Base(x.Name())
+			if manual_filename, ok := values["filename"]; ok {
+				if b, err := io.ReadAll(manual_filename); err == nil {
+					filename = string(b)
+				}
+			}
+			if fw, err = w.CreateFormFile(key, filename); err != nil {
 				return
 			}
 		} else {
