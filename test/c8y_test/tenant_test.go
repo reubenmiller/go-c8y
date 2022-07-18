@@ -23,7 +23,7 @@ func TestTenantService_GetTenantStatisticsSummary(t *testing.T) {
 		},
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Assert(t, summary.StorageSize >= 0, "Storage size should be greater than or equal to 0")
 	testingutils.Assert(t, summary.RequestCount > 0, "Request count should be greater than 0")
 }
@@ -42,7 +42,7 @@ func TestTenantService_GetTenantStatistics(t *testing.T) {
 		},
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Assert(t, len(statistics.UsageStatistics) <= 10, "At most 10 days should be returned")
 	testingutils.Assert(t, len(statistics.UsageStatistics) > 0, "At least 1 day should be returned")
 }
@@ -62,7 +62,7 @@ func TestTenantService_GetAllTenantsStatisticsSummary(t *testing.T) {
 		},
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Assert(t, len(summaries) > 0, "At least 1 summary should be returned")
 	testingutils.Assert(t, summaries[0].DeviceCount > 0, "Request count should be greater than 0")
 }
@@ -72,7 +72,7 @@ func TestTenantService_GetCurrentTenant(t *testing.T) {
 	tenant, resp, err := client.Tenant.GetCurrentTenant(context.Background())
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, client.TenantName, tenant.Name)
 	testingutils.Assert(t, tenant.DomainName != "", "Domain name should not be empty")
 }
@@ -86,7 +86,7 @@ func TestTenantService_GetTenantsWithNoSubtenants(t *testing.T) {
 	)
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Assert(t, len(tenantCollection.Tenants) >= 0, "Should be an array")
 }
 
@@ -106,7 +106,7 @@ func TestTenantService_CRUDTenant(t *testing.T) {
 		tenantInput,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
 	testingutils.Equals(t, company, tenant.Company)
 	testingutils.Equals(t, domain, tenant.Domain)
 
@@ -117,7 +117,7 @@ func TestTenantService_CRUDTenant(t *testing.T) {
 		tenant.ID,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, company, tenantByID.Company)
 	testingutils.Equals(t, domain, tenantByID.Domain)
 
@@ -133,7 +133,7 @@ func TestTenantService_CRUDTenant(t *testing.T) {
 	)
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, "Homer", updatedTenant.ContactName)
 	testingutils.Equals(t, "SUSPENDED", updatedTenant.Status)
 
@@ -147,7 +147,7 @@ func TestTenantService_CRUDTenant(t *testing.T) {
 		)
 
 		testingutils.Ok(t, err)
-		testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
+		testingutils.Equals(t, http.StatusNoContent, resp.StatusCode())
 	*/
 }
 
@@ -159,7 +159,7 @@ func TestTenantService_GetApplicationReferences(t *testing.T) {
 		context.Background(),
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 
 	appReferenceCollection, resp, err := client.Tenant.GetApplicationReferences(
 		context.Background(),
@@ -168,7 +168,7 @@ func TestTenantService_GetApplicationReferences(t *testing.T) {
 	)
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Assert(t, len(appReferenceCollection.References) > 0, "Should have at least 1 application reference")
 }
 

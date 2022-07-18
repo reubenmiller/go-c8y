@@ -20,7 +20,7 @@ func TestIdentityService_Create(t *testing.T) {
 	identity, resp, err := client.Identity.Create(context.Background(), testDevice.ID, "test_Type", identityName)
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
 	testingutils.Equals(t, testDevice.ID, identity.ManagedObject.ID)
 	testingutils.Equals(t, "test_Type", identity.Type)
 	testingutils.Equals(t, identityName, identity.ExternalID)
@@ -28,7 +28,7 @@ func TestIdentityService_Create(t *testing.T) {
 	// Get identity object
 	identity, resp, err = client.Identity.GetExternalID(context.Background(), "test_Type", identityName)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, testDevice.ID, identity.ManagedObject.ID)
 
 	moID := identity.Item.Get("managedObject.id").String()
@@ -45,7 +45,7 @@ func TestIdentityService_GetExternalID(t *testing.T) {
 	)
 
 	testingutils.Assert(t, err != nil, "Error should not be nil")
-	testingutils.Equals(t, http.StatusNotFound, resp.StatusCode)
+	testingutils.Equals(t, http.StatusNotFound, resp.StatusCode())
 	testingutils.Equals(t, "", identity.Type)
 }
 
@@ -68,7 +68,7 @@ func TestIdentityService_Delete(t *testing.T) {
 	)
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
 	testingutils.Equals(t, identityType, identity.Type)
 	testingutils.Equals(t, externalID, identity.ExternalID)
 
@@ -81,7 +81,7 @@ func TestIdentityService_Delete(t *testing.T) {
 		externalID,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
+	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode())
 
 	//
 	// Check that is is really was deleted
@@ -93,6 +93,6 @@ func TestIdentityService_Delete(t *testing.T) {
 	)
 
 	testingutils.Assert(t, err != nil, "Error should not be nil")
-	testingutils.Equals(t, http.StatusNotFound, resp.StatusCode)
+	testingutils.Equals(t, http.StatusNotFound, resp.StatusCode())
 	testingutils.Equals(t, "", identity2.Type)
 }

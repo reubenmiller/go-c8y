@@ -41,7 +41,7 @@ func TestAlarmBuilder_CreateAlarm(t *testing.T) {
 		builder,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
 	testingutils.Equals(t, testDevice.ID, alarm.Source.ID)
 	testingutils.Equals(t, "testType", alarm.Type)
 	testingutils.Equals(t, "Custom Event 1", alarm.Text)

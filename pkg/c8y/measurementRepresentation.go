@@ -34,11 +34,11 @@ func (s *MeasurementService) NewMeasurementSourceByName(ctx context.Context, nam
 	totalFound := len(devices.ManagedObjects)
 
 	if totalFound == 0 {
-		return nil, fmt.Errorf("Not matching devices found. The query must return exactly 1 device")
+		return nil, fmt.Errorf("no matching devices found. The query must return exactly 1 device")
 	}
 
 	if totalFound > 1 {
-		return nil, fmt.Errorf("More than 1 device was found. The query must return exactly 1 device. Name: %s", name)
+		return nil, fmt.Errorf("more than 1 device was found. The query must return exactly 1 device. Name: %s", name)
 	}
 
 	source := &MeasurementSource{
@@ -188,7 +188,7 @@ func (m ValueFragmentType) MarshalJSON() ([]byte, error) {
 			// This will rely on the user to add marshaling flags to it
 			b, err := json.Marshal(value)
 			if err != nil {
-				return nil, fmt.Errorf("Could not marshal value. %s", err)
+				return nil, fmt.Errorf("could not marshal value. %s", err)
 			}
 			valueStr = string(b)
 		}
@@ -231,12 +231,12 @@ func (m MeasurementRepresentation) MarshalJSON() ([]byte, error) {
 
 		b, err := json.Marshal(valueFragmentType)
 		if err != nil {
-			return nil, fmt.Errorf("Could not marshal valueFragmentType. %s", err)
+			return nil, fmt.Errorf("could not marshal valueFragmentType. %s", err)
 		}
 
 		// Remove the "{" and "}" object brackets from the returned result as we need to merge the
 		// object properties to the overall measurement.
-		parts = append(parts, fmt.Sprintf("%s", b[1:len(b)-1]))
+		parts = append(parts, string(b[1:len(b)-1]))
 	}
 
 	o := []byte(fmt.Sprintf("{%s}", strings.Join(parts, ",")))

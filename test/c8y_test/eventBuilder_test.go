@@ -41,7 +41,7 @@ func TestEventBuilder_CreateEvent(t *testing.T) {
 		builder,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
 	testingutils.Equals(t, testDevice.ID, event.Source.ID)
 	testingutils.Equals(t, "testType", event.Type)
 	testingutils.Equals(t, "Custom Event 1", event.Text)

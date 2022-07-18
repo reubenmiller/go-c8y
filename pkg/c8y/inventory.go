@@ -363,24 +363,10 @@ func (s *InventoryService) DownloadBinary(ctx context.Context, ID string) (filep
 
 	req.Header.Set("Accept", "*/*")
 
-	// Get the data
-	resp, err := client.Do(ctx, req, nil)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	// Check server response
-	if resp.StatusCode != http.StatusOK {
-		err = fmt.Errorf("bad status: %s", resp.Status)
-		return
-	}
-
 	// Create the file
 	tempDir, err := ioutil.TempDir("", "go-c8y_")
-
 	if err != nil {
-		err = fmt.Errorf("Could not create temp folder. %s", err)
+		err = fmt.Errorf("could not create temp folder. %s", err)
 		return
 	}
 
@@ -392,10 +378,16 @@ func (s *InventoryService) DownloadBinary(ctx context.Context, ID string) (filep
 	}
 	defer out.Close()
 
-	// Writer the body to file
-	_, err = io.Copy(out, resp.Body)
+	// Get the data
+	resp, err := client.Do(ctx, req, out)
 	if err != nil {
-		filepath = ""
+		os.RemoveAll(tempDir)
+		return "", err
+	}
+
+	// Check server response
+	if resp.StatusCode() != http.StatusOK {
+		err = fmt.Errorf("bad status: %s", resp.Response.Status)
 		return
 	}
 
@@ -444,7 +436,7 @@ func (s *InventoryService) CreateBinary(ctx context.Context, filename string, pr
 		return nil, resp, err
 	}
 
-	data.Item = *resp.JSON
+	data.Item = resp.JSON()
 
 	return data, resp, nil
 }

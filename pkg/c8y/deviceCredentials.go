@@ -164,7 +164,7 @@ func (s *DeviceCredentialsService) PollNewDeviceRequest(ctx context.Context, dev
 				}
 
 			case <-timeoutTimer.C:
-				err <- errors.New("Timeout waiting for device request to reach ACCEPTED state")
+				err <- errors.New("timeout waiting for device request to reach ACCEPTED state")
 				return
 			}
 		}

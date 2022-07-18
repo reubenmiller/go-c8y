@@ -22,7 +22,7 @@ func TestUserService_GetUsers(t *testing.T) {
 		},
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Assert(t, len(users.Users) > 0, "At least 1 user should be present")
 }
 
@@ -34,7 +34,7 @@ func TestUserService_GetUser(t *testing.T) {
 		client.Username,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, user.ID, client.Username)
 }
 
@@ -46,7 +46,7 @@ func TestUserService_GetUserByUsername(t *testing.T) {
 		client.Username,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, user.ID, client.Username)
 }
 
@@ -63,7 +63,7 @@ func TestUserService_CRUD(t *testing.T) {
 		userInput,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
 	testingutils.Equals(t, userInput.Username, user.ID) // Id is the same as the username
 	testingutils.Equals(t, userInput.Username, user.Username)
 	testingutils.Equals(t, userInput.FirstName, user.FirstName)
@@ -82,7 +82,7 @@ func TestUserService_CRUD(t *testing.T) {
 		},
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, "Alfred", updatedUser.FirstName)
 	testingutils.Equals(t, "Peabody", updatedUser.LastName)
 	testingutils.Equals(t, "+61 7 1234 5678", updatedUser.Phone)
@@ -94,7 +94,7 @@ func TestUserService_CRUD(t *testing.T) {
 		user.ID,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
+	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode())
 }
 
 func TestUserService_GetGroupByName(t *testing.T) {
@@ -106,7 +106,7 @@ func TestUserService_GetGroupByName(t *testing.T) {
 	)
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, "admins", group.Name)
 
 	//
@@ -116,7 +116,7 @@ func TestUserService_GetGroupByName(t *testing.T) {
 		group.GetID(),
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, "admins", groupByID.Name)
 }
 
@@ -128,7 +128,7 @@ func TestUserService_GetCurrentUser(t *testing.T) {
 	)
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, client.Username, user.Username)
 }
 
@@ -144,7 +144,7 @@ func TestUserService_UpdateCurrentUser(t *testing.T) {
 	)
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, client.Username, user.Username)
 	testingutils.Equals(t, randomFirstName, user.FirstName)
 }
@@ -166,7 +166,7 @@ func TestUserService_AddUserToGroup(t *testing.T) {
 		"Cockpit User",
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Assert(t, group.GetID() != "", "ID should be greater than 0")
 
 	//
@@ -178,7 +178,7 @@ func TestUserService_AddUserToGroup(t *testing.T) {
 	)
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
 	testingutils.Assert(t, userRef.Self != "", "Self link should not be empty")
 
 	// Get the users in the group
@@ -190,7 +190,7 @@ func TestUserService_AddUserToGroup(t *testing.T) {
 		},
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Assert(t, len(userReferences.References) > 0, "Should be at least 1 user")
 
 	//
@@ -201,7 +201,7 @@ func TestUserService_AddUserToGroup(t *testing.T) {
 		group.GetID(),
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
+	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode())
 }
 
 func TestUserService_GetUsersByGroup(t *testing.T) {
@@ -214,7 +214,7 @@ func TestUserService_GetUsersByGroup(t *testing.T) {
 	)
 	testingutils.Ok(t, err)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 
 	// Create temp group
 	group, resp, err := client.User.CreateGroup(
@@ -224,7 +224,7 @@ func TestUserService_GetUsersByGroup(t *testing.T) {
 		},
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
 	testingutils.Equals(t, "CustomCIGroup", group.Name)
 
 	// Add user to temp group
@@ -234,7 +234,7 @@ func TestUserService_GetUsersByGroup(t *testing.T) {
 		group.GetID(),
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
 
 	// Get users in group
 	userReferences, resp, err := client.User.GetUsersByGroup(
@@ -245,7 +245,7 @@ func TestUserService_GetUsersByGroup(t *testing.T) {
 		},
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Assert(t, len(userReferences.References) > 0, "Should be at least one user")
 	testingutils.Equals(t, userReferences.References[0].User.Username, currentUser.Username)
 
@@ -258,7 +258,7 @@ func TestUserService_GetUsersByGroup(t *testing.T) {
 		},
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, "CustomCIGroup-UpdatedName", updatedGroup.Name)
 
 	// Remove temp group
@@ -267,7 +267,7 @@ func TestUserService_GetUsersByGroup(t *testing.T) {
 		group.GetID(),
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
+	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode())
 }
 
 func TestUserService_GetGroups(t *testing.T) {
@@ -280,7 +280,7 @@ func TestUserService_GetGroups(t *testing.T) {
 		},
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Assert(t, len(groupCollection.Groups) > 0, "Should have at least 1 group reference")
 	testingutils.Assert(t, groupCollection.Groups[0].Name != "", "Group reference name should not be empty")
 }
@@ -296,7 +296,7 @@ func TestUserService_GetGroupsByUser(t *testing.T) {
 		},
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Assert(t, len(groupCollection.References) > 0, "Should have at least 1 group reference")
 	testingutils.Assert(t, groupCollection.References[0].Group.Name != "", "Group reference name should not be empty")
 }
@@ -311,7 +311,7 @@ func TestUserService_GetRoles(t *testing.T) {
 		},
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Assert(t, len(roleCollection.Roles) > 0, "Should return at least 1 role")
 	testingutils.Assert(t, roleCollection.Roles[0].Name != "", "Name should not be empty")
 	testingutils.Assert(t, roleCollection.Roles[0].ID != "", "ID should not be empty")
@@ -336,7 +336,7 @@ func TestUserService_AssignRoleToUser(t *testing.T) {
 		roleCollection.Roles[0].Self,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
 	testingutils.Equals(t, roleCollection.Roles[0].Name, roleRef.Role.Name)
 
 	// Get roles by user
@@ -348,7 +348,7 @@ func TestUserService_AssignRoleToUser(t *testing.T) {
 		},
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Assert(t, len(userRoleCollection.References) > 0, "Should have at least 1 reference")
 	// Check if the role has been assigned to the user
 	roleExists := false
@@ -366,7 +366,7 @@ func TestUserService_AssignRoleToUser(t *testing.T) {
 		roleRef.Role.Name,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
+	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode())
 }
 
 func TestUserService_AssignRoleToGroup(t *testing.T) {
@@ -386,7 +386,7 @@ func TestUserService_AssignRoleToGroup(t *testing.T) {
 		"devices",
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 
 	testingutils.Assert(t, group != nil, "Group should not be empty")
 	if group != nil {
@@ -411,7 +411,7 @@ func TestUserService_AssignRoleToGroup(t *testing.T) {
 		roleCollection.Roles[0].Self,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
 	testingutils.Equals(t, roleCollection.Roles[0].Name, roleRef.Role.Name)
 
 	// Get roles by user
@@ -423,7 +423,7 @@ func TestUserService_AssignRoleToGroup(t *testing.T) {
 		},
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Assert(t, len(groupRoleCollection.References) > 0, "Should have at least 1 reference")
 	// Check if the role has been assigned to the user
 	roleExists := false
@@ -441,5 +441,5 @@ func TestUserService_AssignRoleToGroup(t *testing.T) {
 		roleRef.Role.Name,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
+	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode())
 }

@@ -22,7 +22,6 @@ import (
 	"sync"
 
 	"github.com/google/go-querystring/query"
-	"github.com/tidwall/gjson"
 )
 
 var ErrNotFound = errors.New("item: not found")
@@ -620,65 +619,64 @@ func (c *Client) SetJSONItems(resp *Response, v interface{}) error {
 	if resp == nil {
 		return nil
 	}
-	// data.Item = gjson.Parse(resp.JSON.Raw)
 
 	switch t := v.(type) {
 	case *Alarm:
-		t.Item = *resp.JSON
+		t.Item = resp.JSON()
 	case *AlarmCollection:
-		t.Items = resp.JSON.Get("alarms").Array()
+		t.Items = resp.JSON("alarms").Array()
 
 	case *Application:
-		t.Item = *resp.JSON
+		t.Item = resp.JSON()
 	case *ApplicationCollection:
-		t.Items = resp.JSON.Get("applications").Array()
+		t.Items = resp.JSON("applications").Array()
 
 	case *AuditRecord:
-		t.Item = *resp.JSON
+		t.Item = resp.JSON()
 	case *AuditRecordCollection:
-		t.Items = resp.JSON.Get("auditRecords").Array()
+		t.Items = resp.JSON("auditRecords").Array()
 
 	case *Event:
-		t.Item = *resp.JSON
+		t.Item = resp.JSON()
 	case *EventCollection:
-		t.Items = resp.JSON.Get("events").Array()
+		t.Items = resp.JSON("events").Array()
 
 	case *EventBinary:
-		t.Item = *resp.JSON
+		t.Item = resp.JSON()
 
 	case *GroupCollection:
-		t.Items = resp.JSON.Get("groups").Array()
+		t.Items = resp.JSON("groups").Array()
 
 	case *Identity:
-		t.Item = *resp.JSON
+		t.Item = resp.JSON()
 
 	case *ManagedObject:
-		t.Item = *resp.JSON
+		t.Item = resp.JSON()
 	case *ManagedObjectCollection:
-		t.Items = resp.JSON.Get("managedObjects").Array()
+		t.Items = resp.JSON("managedObjects").Array()
 
 	case *Measurement:
-		t.Item = *resp.JSON
+		t.Item = resp.JSON()
 	case *Measurements:
-		t.Items = resp.JSON.Get("measurements").Array()
+		t.Items = resp.JSON("measurements").Array()
 	case *MeasurementCollection:
-		t.Items = resp.JSON.Get("measurements").Array()
+		t.Items = resp.JSON("measurements").Array()
 
 	case *Operation:
-		t.Item = *resp.JSON
+		t.Item = resp.JSON()
 	case *OperationCollection:
-		t.Items = resp.JSON.Get("operations").Array()
+		t.Items = resp.JSON("operations").Array()
 
 	case *RoleCollection:
-		t.Items = resp.JSON.Get("roles").Array()
+		t.Items = resp.JSON("roles").Array()
 
 	case *TenantOption:
-		t.Item = *resp.JSON
+		t.Item = resp.JSON()
 	case *TenantOptionCollection:
-		t.Items = resp.JSON.Get("options").Array()
+		t.Items = resp.JSON("options").Array()
 
 	case *UserCollection:
-		t.Items = resp.JSON.Get("users").Array()
+		t.Items = resp.JSON("users").Array()
 
 	}
 
@@ -930,53 +928,6 @@ func (c *Client) SetRequestOptions(options DefaultRequestOptions) {
 	c.requestOptions = options
 }
 
-// Response is a Cumulocity API response. This wraps the standard http.Response
-// returned from Cumulocity and provides convenient access to things like
-// pagination links.
-type Response struct {
-	*http.Response
-
-	// JSONData raw json response
-	JSONData *string
-
-	// JSON
-	JSON *gjson.Result
-}
-
-// DecodeJSON returns the json response decoded into the given interface
-func (r *Response) DecodeJSON(v interface{}) error {
-	if r.JSON == nil {
-		return fmt.Errorf("JSON object does not exist (i.e. is nil)")
-	}
-	err := DecodeJSONBytes([]byte(r.JSON.Raw), v)
-
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// newResponse creates a new Response for the provided http.Response.
-// r must not be nil.
-func newResponse(r *http.Response) *Response {
-	response := &Response{Response: r}
-
-	// Copy the r.Body into another reader, so it is left "untouched"
-	// https://stackoverflow.com/questions/23070876/reading-body-of-http-request-without-modifying-request-state
-	buf, _ := ioutil.ReadAll(r.Body)
-	rdr1 := ioutil.NopCloser(bytes.NewBuffer(buf))
-	rdr2 := ioutil.NopCloser(bytes.NewBuffer(buf))
-	bodyBytes, _ := ioutil.ReadAll(rdr1)
-	bodyString := string(bodyBytes)
-	response.JSONData = &bodyString
-
-	jsonObject := gjson.Parse(bodyString)
-	response.JSON = &jsonObject
-
-	r.Body = rdr2
-	return response
-}
-
 func withContext(ctx context.Context, req *http.Request) *http.Request {
 	return req.WithContext(ctx)
 }
@@ -1056,9 +1007,11 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 
 	if v != nil {
 		if w, ok := v.(io.Writer); ok {
-			io.Copy(w, resp.Body)
+			io.Copy(w, response.Response.Body)
 		} else {
-			err = DecodeJSONReader(resp.Body, v)
+			buf, _ := ioutil.ReadAll(response.Response.Body)
+			response.body = buf
+			err = response.DecodeJSON(v)
 
 			if err == io.EOF {
 				Logger.Infof("Error decoding body. %s", err)
@@ -1067,7 +1020,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 		}
 	}
 
-	Logger.Info(fmt.Sprintf("Status code: %v", response.StatusCode))
+	Logger.Info(fmt.Sprintf("Status code: %v", response.StatusCode()))
 
 	return response, err
 }

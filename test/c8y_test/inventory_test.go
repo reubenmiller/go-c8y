@@ -55,8 +55,8 @@ func TestInventoryService_AuthenticationToken(t *testing.T) {
 	ctx := c8y.NewAuthorizationContext("test", "something", "value")
 	_, resp, err := client.Inventory.GetDevices(ctx, opt)
 
-	if resp.StatusCode != 401 {
-		t.Errorf("Expected unauthorized access response. want: 401, got: %d", resp.StatusCode)
+	if resp.StatusCode() != 401 {
+		t.Errorf("Expected unauthorized access response. want: 401, got: %d", resp.StatusCode())
 	}
 
 	if err == nil {
@@ -85,7 +85,7 @@ func TestInventoryService_CreateUpdateDeleteBinary(t *testing.T) {
 	binary1, resp, err := client.Inventory.CreateBinary(context.Background(), testfile1, fileProperties)
 	testingutils.Ok(t, err)
 	testingutils.Assert(t, binary1.ID != "", "Binary ID should not be an empty string")
-	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
 
 	// Download the binary, and check if it matches the file that was uploaded exactly
 	downloadedBinary1, err := client.Inventory.DownloadBinary(context.Background(), binary1.ID)
@@ -110,11 +110,11 @@ func TestInventoryService_CreateUpdateDeleteBinary(t *testing.T) {
 	// Delete the binary
 	resp, err = client.Inventory.DeleteBinary(context.Background(), binary2.ID)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
+	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode())
 
 	// Check if the managed object was deleted
 	_, resp, err = client.Inventory.GetManagedObject(context.Background(), binary2.ID, nil)
-	testingutils.Equals(t, http.StatusNotFound, resp.StatusCode)
+	testingutils.Equals(t, http.StatusNotFound, resp.StatusCode())
 	testingutils.Assert(t, err != nil, "Error should contain additional information about the request")
 
 	// Check if the binary was deleted

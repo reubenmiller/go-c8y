@@ -241,12 +241,12 @@ func (c *RealtimeClient) SetRequestHeader(header http.Header) {
 // SetCookies sets the cookies used for outgoing requests
 func (c *RealtimeClient) SetCookies(cookies []*http.Cookie) error {
 	if c.dialer == nil {
-		return fmt.Errorf("Dialer is nil")
+		return fmt.Errorf("dialer is nil")
 	}
 
 	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
 	if err != nil {
-		return fmt.Errorf("Failed to create cookie jar: %w", err)
+		return fmt.Errorf("failed to create cookie jar: %w", err)
 	}
 	jar.SetCookies(c.c8yurl, cookies)
 	c.dialer.Jar = jar
@@ -548,7 +548,7 @@ func (c *RealtimeClient) worker() error {
 				return err
 			}
 
-			return fmt.Errorf("Stopping websocket")
+			return fmt.Errorf("stopping websocket")
 		}
 	}
 }
@@ -574,7 +574,7 @@ func (c *RealtimeClient) handshake() chan error {
 
 func (c *RealtimeClient) sendMeta() error {
 	if c.ws == nil {
-		return fmt.Errorf("Websocket is nil")
+		return fmt.Errorf("websocket is nil")
 	}
 	message := &request{
 		ID:             c.nextMessageID(),
@@ -651,7 +651,7 @@ func (c *RealtimeClient) Subscribe(pattern string, out chan<- *Message) chan err
 			fmt.Println("Closing channel")
 			close(out)
 		}()
-		errCh <- fmt.Errorf("Invalid pattern: %s", err)
+		errCh <- fmt.Errorf("invalid pattern: %s", err)
 		return errCh
 	}
 

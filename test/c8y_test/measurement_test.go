@@ -98,14 +98,14 @@ func TestMeasurementService_GetMeasurements(t *testing.T) {
 	testingutils.Equals(t, 1, len(measCollection.Items))
 
 	if resp != nil {
-		log.Printf("json result: %s\n", *resp.JSONData)
+		log.Printf("json result: %s\n", resp.Body())
 
-		totalmeasurements := resp.JSON.Get("measurements.#").Int()
+		totalmeasurements := resp.JSON("measurements.#").Int()
 
 		if totalmeasurements != 1 {
 			t.Errorf("expected more than 0 measurements. want: %d, got: %d", 1, totalmeasurements)
 		}
-		value := resp.JSON.Get("measurements.0.id")
+		value := resp.JSON("measurements.0.id")
 
 		if !value.Exists() {
 			t.Errorf("expected id to exist. Wanted: Existing but go: no exist")
@@ -207,8 +207,8 @@ func TestMeasurementService_Create(t *testing.T) {
 
 	data, resp, err := client.Measurement.Create(context.Background(), *m)
 
-	if resp.StatusCode != 201 {
-		t.Errorf("Unexpected server return code. wanted: 201, got: %d", resp.StatusCode)
+	if resp.StatusCode() != 201 {
+		t.Errorf("Unexpected server return code. wanted: 201, got: %d", resp.StatusCode())
 	}
 
 	if err != nil {
@@ -238,8 +238,8 @@ func TestMeasurementService_CreateWithDifferentTypes(t *testing.T) {
 
 		data, resp, err := client.Measurement.Create(context.Background(), *m)
 
-		if resp.StatusCode != 201 {
-			t.Errorf("Unexpected server return code. wanted: 201, got: %d", resp.StatusCode)
+		if resp.StatusCode() != 201 {
+			t.Errorf("Unexpected server return code. wanted: 201, got: %d", resp.StatusCode())
 		}
 		if err != nil {
 			t.Errorf("Unexpected error when creating measurement. wanted: nil, got: %s", err)
@@ -371,7 +371,7 @@ func TestMeasurementService_GetMeasurement_DeleteMeasurement(t *testing.T) {
 		meas.ID,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, meas.ID, meas2.ID)
 
 	// Remove measurement
@@ -381,7 +381,7 @@ func TestMeasurementService_GetMeasurement_DeleteMeasurement(t *testing.T) {
 	)
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
+	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode())
 
 	// Check if the measurement has been deleted
 	meas3, resp, err := client.Measurement.GetMeasurement(
@@ -389,7 +389,7 @@ func TestMeasurementService_GetMeasurement_DeleteMeasurement(t *testing.T) {
 		meas2.ID,
 	)
 	testingutils.Assert(t, err != nil, "Error should not be nil")
-	testingutils.Equals(t, http.StatusNotFound, resp.StatusCode)
+	testingutils.Equals(t, http.StatusNotFound, resp.StatusCode())
 	testingutils.Assert(t, meas3.ID == "", "ID should be empty when the object is not found")
 }
 
@@ -404,12 +404,12 @@ func TestMeasurementService_DeleteMeasurements(t *testing.T) {
 
 	meas1, resp, err := createMeasVariable1(1.0)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
 	testingutils.Assert(t, meas1.ID != "", "ID should not be empty")
 
 	meas2, resp, err := createMeasVariable2(2.0)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
 	testingutils.Assert(t, meas2.ID != "", "ID should not be empty")
 
 	searchOptions := &c8y.MeasurementCollectionOptions{
@@ -422,7 +422,7 @@ func TestMeasurementService_DeleteMeasurements(t *testing.T) {
 		searchOptions,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, 2, len(measCol1.Measurements))
 
 	// Delete the measurements
@@ -432,7 +432,7 @@ func TestMeasurementService_DeleteMeasurements(t *testing.T) {
 	)
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
+	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode())
 
 	// Check that the measurements have been removed
 	deletedMeas1, resp, err := client.Measurement.GetMeasurement(
@@ -440,7 +440,7 @@ func TestMeasurementService_DeleteMeasurements(t *testing.T) {
 		meas1.ID,
 	)
 	testingutils.Assert(t, err != nil, "Error should not be nil")
-	testingutils.Equals(t, http.StatusNotFound, resp.StatusCode)
+	testingutils.Equals(t, http.StatusNotFound, resp.StatusCode())
 	testingutils.Equals(t, "", deletedMeas1.ID)
 
 	// Check that the measurements have been removed
@@ -449,7 +449,7 @@ func TestMeasurementService_DeleteMeasurements(t *testing.T) {
 		meas1.ID,
 	)
 	testingutils.Assert(t, err != nil, "Error should not be nil")
-	testingutils.Equals(t, http.StatusNotFound, resp.StatusCode)
+	testingutils.Equals(t, http.StatusNotFound, resp.StatusCode())
 	testingutils.Equals(t, "", deletedMeas2.ID)
 }
 
@@ -490,6 +490,6 @@ func TestMeasurementService_CreateMeasurements(t *testing.T) {
 		measValues,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
 	testingutils.Equals(t, 2, len(measurements.Measurements))
 }
