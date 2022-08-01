@@ -14,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/tidwall/gjson"
 )
 
 const TimeFormat = "Mon, 02 Jan 2006 15:04:05 GMT"
@@ -115,6 +117,9 @@ type CacheOptions struct {
 
 	// Mode cache store mode which controls the read and writes into cache
 	Mode StoreMode
+
+	// BodyKeys Only cache on specific json keys on the body
+	BodyKeys []string
 }
 
 func cacheKey(req *http.Request, opt CacheOptions) (string, error) {
@@ -136,8 +141,26 @@ func cacheKey(req *http.Request, opt CacheOptions) (string, error) {
 		var bodyCopy io.ReadCloser
 		req.Body, bodyCopy = copyStream(req.Body)
 		defer bodyCopy.Close()
-		if _, err := io.Copy(h, bodyCopy); err != nil {
-			return "", err
+
+		if len(opt.BodyKeys) > 0 && strings.Contains(req.Header.Get("Accept"), "json") && strings.Contains(req.Header.Get("Accept"), "application") {
+			bodyBytes, err := ioutil.ReadAll(bodyCopy)
+
+			if err != nil {
+				return "", err
+			}
+
+			fragments := gjson.GetManyBytes(bodyBytes, opt.BodyKeys...)
+
+			for i, fragment := range fragments {
+				if fragment.Exists() {
+					fmt.Fprintf(h, "%s:%s", opt.BodyKeys[i], fragment.Raw)
+				}
+			}
+
+		} else {
+			if _, err := io.Copy(h, bodyCopy); err != nil {
+				return "", err
+			}
 		}
 	}
 
