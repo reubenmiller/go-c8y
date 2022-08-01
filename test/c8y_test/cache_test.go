@@ -35,6 +35,93 @@ func createCachedClient(keys []string) *c8y.Client {
 	return client
 }
 
+func Test_CachedClientWithMissingBodyKeys(t *testing.T) {
+
+	parameters := []struct {
+		Keys  []string
+		Body1 map[string]interface{}
+		Body2 map[string]interface{}
+	}{
+		{
+			[]string{"name", "complex.arrays.#"},
+
+			map[string]interface{}{
+				"name": "test_device_100",
+				"complex": map[string]interface{}{
+					"arrays": []string{"item1", "item2"},
+				},
+			},
+			map[string]interface{}{
+				"name": "test_device_100",
+				"complex": map[string]interface{}{
+					"arrays": []string{"item3", "item4", "item5"},
+				},
+			},
+		},
+		{
+			[]string{"name", "complex.arrays"},
+
+			map[string]interface{}{
+				"name": "test_device_100",
+				"complex": map[string]interface{}{
+					"arrays": []string{"item1", "item2"},
+				},
+			},
+			map[string]interface{}{
+				"name": "test_device_100",
+				"complex": map[string]interface{}{
+					"arrays": []string{"item1", "item2", "item3"},
+				},
+			},
+		},
+		{
+			[]string{"name", "index"},
+			map[string]interface{}{
+				"name":  "test_device_100",
+				"other": false,
+				"index": 101,
+			},
+			map[string]interface{}{
+				"name":  "test_device_100",
+				"other": true,
+				"index": 102,
+			},
+		},
+		{
+			[]string{"name", "index"},
+			map[string]interface{}{
+				"name":  "test_device_100",
+				"other": false,
+				"index": 101,
+			},
+			map[string]interface{}{
+				"name":  "test_device_100",
+				"other": true,
+			},
+		},
+	}
+
+	for _, params := range parameters {
+		client := createCachedClient(params.Keys)
+
+		_, resp1, err := client.Inventory.Create(context.Background(), params.Body1)
+		if err != nil {
+			t.Error(err)
+		}
+		defer client.Inventory.Delete(context.Background(), resp1.JSON("id").String())
+
+		_, resp2, err := client.Inventory.Create(context.Background(), params.Body2)
+		if err != nil {
+			t.Error(err)
+		}
+		defer client.Inventory.Delete(context.Background(), resp2.JSON("id").String())
+
+		if resp2.JSON("id").String() == resp1.JSON("id").String() {
+			t.Errorf("Expected customDate to match. wanted: %s, got: %s", resp1.JSON(), resp2.JSON())
+		}
+	}
+}
+
 func Test_CachedClientWithSelectKeys(t *testing.T) {
 
 	parameters := []struct {
