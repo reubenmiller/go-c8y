@@ -22,6 +22,7 @@ import (
 	"sync"
 
 	"github.com/google/go-querystring/query"
+	"github.com/reubenmiller/go-c8y/pkg/jsonUtilities"
 )
 
 var ErrNotFound = errors.New("item: not found")
@@ -993,8 +994,6 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 		return nil, err
 	}
 
-	defer resp.Body.Close()
-
 	response := newResponse(resp)
 
 	err = CheckResponse(resp)
@@ -1006,16 +1005,20 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 	}
 
 	if v != nil {
+		defer resp.Body.Close()
+
 		if w, ok := v.(io.Writer); ok {
-			io.Copy(w, response.Response.Body)
+			_, err = io.Copy(w, response.Response.Body)
 		} else {
 			buf, _ := ioutil.ReadAll(response.Response.Body)
 			response.body = buf
-			err = response.DecodeJSON(v)
 
-			if err == io.EOF {
-				Logger.Infof("Error decoding body. %s", err)
-				err = nil // ignore EOF errors caused by empty response body
+			if jsonUtilities.IsValidJSON(buf) {
+				err = response.DecodeJSON(v)
+				if err == io.EOF {
+					Logger.Infof("Error decoding body. %s", err)
+					err = nil // ignore EOF errors caused by empty response body
+				}
 			}
 		}
 	}
