@@ -1021,6 +1021,10 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 				}
 			}
 		}
+	} else {
+		defer resp.Body.Close()
+		buf, _ := ioutil.ReadAll(response.Response.Body)
+		response.body = buf
 	}
 
 	Logger.Info(fmt.Sprintf("Status code: %v", response.StatusCode()))
