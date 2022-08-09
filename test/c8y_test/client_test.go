@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 )
 
@@ -72,5 +73,21 @@ func Test_SendRequest(t *testing.T) {
 
 	if currentQuery != "another=+again+&pageSize=100&query=test+eq+%27me%27" {
 		t.Errorf("Query does not match. %s", currentQuery)
+	}
+}
+
+func Test_SendRequest_Get(t *testing.T) {
+	client := createTestClient()
+
+	options := c8y.RequestOptions{
+		Method: "GET",
+		Path:   "/inventory/managedObjects",
+	}
+	resp, err := client.SendRequest(context.Background(), options)
+
+	testingutils.Ok(t, err)
+
+	if len(resp.Body()) == 0 {
+		t.Errorf("received empty body. got=0, wanted=!0")
 	}
 }

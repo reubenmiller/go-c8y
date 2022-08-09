@@ -50,9 +50,15 @@ func (s *SetupConfiguration) NewClient() *c8y.Client {
 	tenant := config.GetString("c8y.tenant")
 	username := config.GetString("c8y.username")
 	password := config.GetString("c8y.password")
+	token := config.GetString("c8y.token")
 
 	log.Printf("Host=%s, Tenant=%s, Username=%s, Password=%s\n", host, tenant, username, password)
 	client := c8y.NewClient(nil, host, tenant, username, password, false)
+
+	if token != "" {
+		client.SetToken(token)
+		client.AuthorizationMethod = c8y.AuthMethodOAuth2Internal
+	}
 	return client
 }
 
@@ -81,12 +87,13 @@ func readConfig() *viper.Viper {
 	config.BindEnv("c8y.username", "C8Y_BOOTSTRAP_USER")
 	config.BindEnv("c8y.username", "C8Y_USER")
 	config.BindEnv("c8y.password", "C8Y_BOOTSTRAP_PASSWORD")
+	config.BindEnv("c8y.token", "C8Y_TOKEN")
 
 	requiredProperties := []string{
 		"c8y.host",
 		"c8y.tenant",
 		"c8y.username",
-		"c8y.password",
+		// "c8y.password",
 	}
 
 	CheckRequiredConfiguration(config, requiredProperties...)
