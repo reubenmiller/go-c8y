@@ -47,7 +47,7 @@ func isCacheableRequest(req *http.Request) bool {
 }
 
 func isCacheableResponse(res *http.Response) bool {
-	return res.StatusCode < 500 && res.StatusCode != 403
+	return res.StatusCode < 300
 }
 
 // CacheResponse produces a RoundTripper that caches HTTP responses to disk for a specified amount of time
