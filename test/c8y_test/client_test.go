@@ -3,10 +3,17 @@ package c8y_test
 import (
 	"context"
 	"encoding/json"
+	"io"
+	"mime"
+	"net/http"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/vbauerster/mpb/v6"
+	"github.com/vbauerster/mpb/v6/decor"
 )
 
 // TestInventoryService_DecodeJSONManagedObject tests whether individual managed objects can be decoded into custom objects
@@ -84,6 +91,67 @@ func Test_SendRequest_Get(t *testing.T) {
 		Path:   "/inventory/managedObjects",
 	}
 	resp, err := client.SendRequest(context.Background(), options)
+
+	testingutils.Ok(t, err)
+
+	if len(resp.Body()) == 0 {
+		t.Errorf("received empty body. got=0, wanted=!0")
+	}
+}
+
+func Test_CustomBodyWriter(t *testing.T) {
+	client := createTestClient()
+
+	options := c8y.RequestOptions{
+		Method: "GET",
+		Path:   "/inventory/managedObjects",
+	}
+
+	progressOut := new(strings.Builder)
+
+	progress := mpb.New(
+		mpb.WithOutput(progressOut),
+		mpb.WithRefreshRate(120*time.Millisecond),
+		mpb.WithWidth(180),
+	)
+
+	createReader := func(response *http.Response) io.Reader {
+		basename := "download"
+		_, params, err := mime.ParseMediaType(response.Header.Get("Content-Disposition"))
+		if err == nil {
+			if filename, ok := params["filename"]; ok {
+				basename = filename
+			}
+		}
+		bar := progress.AddBar(response.ContentLength,
+			mpb.PrependDecorators(
+				decor.Name("elapsed", decor.WC{W: len("elapsed") + 1, C: decor.DidentRight}),
+				decor.Elapsed(decor.ET_STYLE_MMSS, decor.WC{W: 8, C: decor.DidentRight}),
+				decor.Name(basename, decor.WC{W: len(basename) + 1, C: decor.DidentRight}),
+			),
+			mpb.AppendDecorators(
+				decor.Percentage(decor.WC{W: 6, C: decor.DidentRight}),
+				decor.CountersKibiByte("% .2f / % .2f"),
+			),
+		)
+
+		proxyReader := bar.ProxyReader(response.Body)
+		response.Body = proxyReader
+		return proxyReader
+	}
+
+	contextOptions := c8y.CommonOptions{
+		OnResponse: createReader,
+	}
+	ctx := context.WithValue(context.Background(), c8y.GetContextCommonOptionsKey(), contextOptions)
+	resp, err := client.SendRequest(ctx, options)
+
+	progress.Wait()
+
+	out := progressOut.String()
+	if out == "" {
+		t.Errorf("Progress bar should not be empty. got=%s'", out)
+	}
 
 	testingutils.Ok(t, err)
 

@@ -1004,6 +1004,14 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 		return response, err
 	}
 
+	if ctxOptions := ctx.Value(GetContextCommonOptionsKey()); ctxOptions != nil {
+		if ctxOptions, ok := ctxOptions.(CommonOptions); ok {
+			if ctxOptions.OnResponse != nil {
+				ctxOptions.OnResponse(response.Response)
+			}
+		}
+	}
+
 	if v != nil {
 		defer resp.Body.Close()
 

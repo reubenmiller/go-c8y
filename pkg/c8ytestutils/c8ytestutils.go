@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"net/http"
 	"os"
 	"strings"
 	"sync"
@@ -42,6 +43,13 @@ type SetupConfiguration struct {
 	BootstrapClient *c8y.Client
 }
 
+func WithCompression(enable bool) c8y.ClientOption {
+	return func(tr http.RoundTripper) http.RoundTripper {
+		tr.(*http.Transport).DisableCompression = !enable
+		return tr
+	}
+}
+
 // NewClient returns a new test client
 func (s *SetupConfiguration) NewClient() *c8y.Client {
 	config := readConfig()
@@ -53,7 +61,11 @@ func (s *SetupConfiguration) NewClient() *c8y.Client {
 	token := config.GetString("c8y.token")
 
 	log.Printf("Host=%s, Tenant=%s, Username=%s, Password=%s\n", host, tenant, username, password)
-	client := c8y.NewClient(nil, host, tenant, username, password, false)
+
+	httpclient := c8y.NewHTTPClient(
+		WithCompression(false),
+	)
+	client := c8y.NewClient(httpclient, host, tenant, username, password, false)
 
 	if token != "" {
 		client.SetToken(token)
