@@ -960,6 +960,8 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 		case *os.File:
 			// Only log the file name
 			Logger.Infof("Body (file): %s", v.Name())
+		case io.ReadCloser:
+			Logger.Infof("Body (proxy): %v", v)
 		default:
 			// Don't print out multi part forms, but everything else is fine.
 			if !strings.Contains(req.Header.Get("Content-Type"), "multipart/form-data") {
