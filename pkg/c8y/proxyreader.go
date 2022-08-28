@@ -21,17 +21,22 @@ func (r ProxyReader) Close() error {
 }
 
 func (r ProxyReader) GetValue() string {
+	if r.value == nil {
+		return "<nil>"
+	}
 	return fmt.Sprintf("%s", r.value)
 }
 
 func NewStringReader(v string) *ProxyReader {
 	return &ProxyReader{
 		reader: strings.NewReader(v),
+		value:  v,
 	}
 }
 
 func NewByteReader(v []byte) *ProxyReader {
 	return &ProxyReader{
 		reader: bytes.NewReader(v),
+		value:  v,
 	}
 }
