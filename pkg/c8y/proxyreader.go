@@ -27,6 +27,13 @@ func (r ProxyReader) GetValue() string {
 	return fmt.Sprintf("%s", r.value)
 }
 
+func NewProxyReader(r io.Reader) *ProxyReader {
+	return &ProxyReader{
+		reader: r,
+		value:  nil,
+	}
+}
+
 func NewStringReader(v string) *ProxyReader {
 	return &ProxyReader{
 		reader: strings.NewReader(v),
