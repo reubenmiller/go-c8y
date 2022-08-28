@@ -963,7 +963,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 			// Only log the file name
 			Logger.Infof("Body (file): %s", v.Name())
 		case *ProxyReader:
-			Logger.Infof("Body (reader): %s", v.GetValue())
+			Logger.Infof("Body: %s", v.GetValue())
 		default:
 			// Don't print out multi part forms, but everything else is fine.
 			if !strings.Contains(req.Header.Get("Content-Type"), "multipart/form-data") {
