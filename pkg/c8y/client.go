@@ -697,24 +697,25 @@ func (c *Client) NewRequest(method, path string, query string, body interface{})
 
 	u := c.BaseURL.ResolveReference(rel)
 
-	var buf io.ReadWriter
+	var buf io.Reader
 	if body != nil {
 		switch v := body.(type) {
 		case *os.File:
 			buf = v
 		case string:
-			buf = bytes.NewBufferString(v)
+			buf = NewStringReader(v)
 		case []byte:
-			buf = bytes.NewBuffer(v)
-		case io.ReadWriter:
+			buf = NewByteReader(v)
+		case io.Reader:
 			buf = v
 		default:
-			buf = new(bytes.Buffer)
-			err := json.NewEncoder(buf).Encode(body)
+			jsonbuf := new(bytes.Buffer)
+			err := json.NewEncoder(jsonbuf).Encode(body)
 
 			if err != nil {
 				return nil, err
 			}
+			buf = NewStringReader(jsonbuf.String())
 		}
 	}
 	req, err := http.NewRequest(method, u.String(), buf)
@@ -747,24 +748,25 @@ func (c *Client) NewRequestWithoutAuth(method, path string, query string, body i
 
 	u := c.BaseURL.ResolveReference(rel)
 
-	var buf io.ReadWriter
+	var buf io.Reader
 	if body != nil {
 		switch v := body.(type) {
 		case *os.File:
 			buf = v
 		case string:
-			buf = bytes.NewBufferString(v)
+			buf = NewStringReader(v)
 		case []byte:
-			buf = bytes.NewBuffer(v)
-		case io.ReadWriter:
+			buf = NewByteReader(v)
+		case io.Reader:
 			buf = v
 		default:
-			buf = new(bytes.Buffer)
-			err := json.NewEncoder(buf).Encode(body)
+			jsonbuf := new(bytes.Buffer)
+			err := json.NewEncoder(jsonbuf).Encode(body)
 
 			if err != nil {
 				return nil, err
 			}
+			buf = NewStringReader(jsonbuf.String())
 		}
 	}
 	req, err := http.NewRequest(method, u.String(), buf)
@@ -960,8 +962,8 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 		case *os.File:
 			// Only log the file name
 			Logger.Infof("Body (file): %s", v.Name())
-		case io.ReadCloser:
-			Logger.Infof("Body (proxy): %s", v)
+		case *ProxyReader:
+			Logger.Infof("Body (reader): %s", v.GetValue())
 		default:
 			// Don't print out multi part forms, but everything else is fine.
 			if !strings.Contains(req.Header.Get("Content-Type"), "multipart/form-data") {
