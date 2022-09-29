@@ -1,9 +1,7 @@
 package c8y
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -13,6 +11,7 @@ import (
 	"path"
 
 	"github.com/pkg/errors"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/binary"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/contentType"
 
 	"github.com/tidwall/gjson"
@@ -44,15 +43,30 @@ type ManagedObjectOptions struct {
 }
 
 // BinaryObjectOptions managed object options which can be given with the managed object request
-type BinaryObjectOptions struct {
-	Type string `url:"type,omitempty"`
+type ManagedObjectDeleteOptions struct {
+	// When set to true and the managed object is a device or group, all the hierarchy will be deleted
+	Cascade *bool `url:"cascade,omitempty"`
 
-	FragmentType string `url:"fragmentType,omitempty"`
+	// When set to true all the hierarchy will be deleted without checking the type of managed object. It takes precedence over the parameter cascade
+	ForceCascade *bool `url:"forceCascade,omitempty"`
 
-	// Read-only collection of managed objects fetched for a given list of ids (placeholder {ids}),for example "?ids=41,43,68".
-	Ids []string `url:"ids,omitempty"`
+	// When set to true and the managed object is a device, it deletes the associated device user (credentials)
+	DeviceUser *bool `url:"withDeviceUser,omitempty"`
+}
 
-	PaginationOptions
+func (o *ManagedObjectDeleteOptions) WithCascade(v bool) *ManagedObjectDeleteOptions {
+	o.Cascade = &v
+	return o
+}
+
+func (o *ManagedObjectDeleteOptions) WithForceCascade(v bool) *ManagedObjectDeleteOptions {
+	o.ForceCascade = &v
+	return o
+}
+
+func (o *ManagedObjectDeleteOptions) WithDeviceUser(v bool) *ManagedObjectDeleteOptions {
+	o.DeviceUser = &v
+	return o
 }
 
 // EmptyFragment fragment used for special c8y fragments, i.e. c8y_IsDevice etc.
@@ -340,6 +354,17 @@ func (s *InventoryService) Delete(ctx context.Context, ID string) (*Response, er
 	return resp, err
 }
 
+// Delete a managed object with additional options
+func (s *InventoryService) DeleteWithOptions(ctx context.Context, ID string, options *ManagedObjectDeleteOptions) (*Response, error) {
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method: "DELETE",
+		Path:   "inventory/managedObjects/" + ID,
+		Query:  options,
+	})
+
+	return resp, err
+}
+
 // DownloadBinary downloads a binary by its ID
 func (s *InventoryService) DownloadBinary(ctx context.Context, ID string) (filepath string, err error) {
 	// set binary api
@@ -395,24 +420,13 @@ func (s *InventoryService) DownloadBinary(ctx context.Context, ID string) (filep
 }
 
 // CreateBinary uploads a given binary to Cumulocity under the inventory managed objects
-func (s *InventoryService) CreateBinary(ctx context.Context, filename string, properties interface{}) (*ManagedObject, *Response, error) {
+func (s *InventoryService) CreateBinary(ctx context.Context, binaryFile binary.MultiPartReader) (*ManagedObject, *Response, error) {
 	client := s.client
-	metadataBytes, err := json.Marshal(properties)
+
+	values, err := binaryFile.GetMultiPartBody()
 
 	if err != nil {
-		err = errors.Wrap(err, "Failed to marshal properties")
-		zap.S().Error(err)
 		return nil, nil, err
-	}
-
-	file, err := os.Open(filename)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	values := map[string]io.Reader{
-		"file":   file,
-		"object": bytes.NewReader(metadataBytes),
 	}
 
 	// set binary api
@@ -442,18 +456,12 @@ func (s *InventoryService) CreateBinary(ctx context.Context, filename string, pr
 }
 
 // UpdateBinary updates an existing binary under the inventory managed objects
-func (s *InventoryService) UpdateBinary(ctx context.Context, ID, filename string) (*ManagedObject, *Response, error) {
-	binarydata, err := os.Open(filename)
-	if err != nil {
-		Logger.Fatal(err)
-	}
-	defer binarydata.Close()
-
+func (s *InventoryService) UpdateBinary(ctx context.Context, ID string, file io.Reader) (*ManagedObject, *Response, error) {
 	data := new(ManagedObject)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "PUT",
 		Path:         "inventory/binaries/" + ID,
-		Body:         binarydata,
+		Body:         file,
 		ResponseData: data,
 	})
 	return data, resp, err
@@ -469,7 +477,7 @@ func (s *InventoryService) DeleteBinary(ctx context.Context, ID string) (*Respon
 }
 
 // GetBinaries returns a list of managed object binaries
-func (s *InventoryService) GetBinaries(ctx context.Context, opt *BinaryObjectOptions) (*ManagedObjectCollection, *Response, error) {
+func (s *InventoryService) GetBinaries(ctx context.Context, opt *ManagedObjectOptions) (*ManagedObjectCollection, *Response, error) {
 	data := new(ManagedObjectCollection)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "GET",
@@ -560,10 +568,9 @@ func (s *InventoryService) AddChildAddition(ctx context.Context, ID, childID str
 }
 
 // CreateChildAdditionWithBinary create a child addition with a child binary upload a binary and creates a software version referencing it
-func (s *InventoryService) CreateChildAdditionWithBinary(ctx context.Context, parentID, filename string, bodyFunc func(binaryURL string) interface{}) (*ManagedObject, *Response, error) {
+func (s *InventoryService) CreateChildAdditionWithBinary(ctx context.Context, parentID string, binaryFile binary.MultiPartReader, bodyFunc func(binaryURL string) interface{}) (*ManagedObject, *Response, error) {
 	// Upload file
-	binaryProps := GetProperties(filename, true)
-	binary, resp, err := s.client.Inventory.CreateBinary(ctx, filename, binaryProps)
+	binary, resp, err := s.client.Inventory.CreateBinary(ctx, binaryFile)
 	if err != nil {
 		return binary, resp, err
 	}
@@ -587,10 +594,9 @@ func (s *InventoryService) CreateChildAdditionWithBinary(ctx context.Context, pa
 }
 
 // CreateWithBinary create managed object which also has a binary linked as a child addition so that the binary is deleted when the parent maanaged object is deleted
-func (s *InventoryService) CreateWithBinary(ctx context.Context, filename string, bodyFunc func(binaryURL string) interface{}) (*ManagedObject, *Response, error) {
+func (s *InventoryService) CreateWithBinary(ctx context.Context, binaryFile binary.MultiPartReader, bodyFunc func(binaryURL string) interface{}) (*ManagedObject, *Response, error) {
 	// Upload file
-	binaryProps := GetProperties(filename, true)
-	binary, resp, err := s.client.Inventory.CreateBinary(ctx, filename, binaryProps)
+	binary, resp, err := s.client.Inventory.CreateBinary(ctx, binaryFile)
 	if err != nil {
 		return binary, resp, err
 	}

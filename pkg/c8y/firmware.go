@@ -3,6 +3,8 @@ package c8y
 import (
 	"context"
 	"fmt"
+
+	"github.com/reubenmiller/go-c8y/pkg/c8y/binary"
 )
 
 const FragmentFirmware = "c8y_Firmware"
@@ -51,8 +53,8 @@ func NewFirmwareVersion(name string) *FirmwareVersion {
 
 // CreateVersion upload a binary and creates a firmware version referencing it
 // THe URL can be left blank in the firmware version as it will be automatically set if a filename is provided
-func (s *InventoryFirmwareService) CreateVersion(ctx context.Context, firmwareID, filename string, version FirmwareVersion) (*ManagedObject, *Response, error) {
-	return s.client.Inventory.CreateChildAdditionWithBinary(ctx, firmwareID, filename, func(binaryURL string) interface{} {
+func (s *InventoryFirmwareService) CreateVersion(ctx context.Context, firmwareID string, binaryFile binary.MultiPartReader, version FirmwareVersion) (*ManagedObject, *Response, error) {
+	return s.client.Inventory.CreateChildAdditionWithBinary(ctx, firmwareID, binaryFile, func(binaryURL string) interface{} {
 		version.Firmware.URL = binaryURL
 		return version
 	})

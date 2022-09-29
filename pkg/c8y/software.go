@@ -3,6 +3,8 @@ package c8y
 import (
 	"context"
 	"fmt"
+
+	"github.com/reubenmiller/go-c8y/pkg/c8y/binary"
 )
 
 const FragmentSoftware = "c8y_Software"
@@ -49,8 +51,8 @@ func NewSoftwareVersion(name string) *SoftwareVersion {
 
 // CreateVersion upload a binary and creates a software version referencing it
 // THe URL can be left blank in the software version as it will be automatically set if a filename is provided
-func (s *InventorySoftwareService) CreateVersion(ctx context.Context, softwareID, filename string, version SoftwareVersion) (*ManagedObject, *Response, error) {
-	return s.client.Inventory.CreateChildAdditionWithBinary(ctx, softwareID, filename, func(binaryURL string) interface{} {
+func (s *InventorySoftwareService) CreateVersion(ctx context.Context, softwareID string, binaryFile binary.MultiPartReader, version SoftwareVersion) (*ManagedObject, *Response, error) {
+	return s.client.Inventory.CreateChildAdditionWithBinary(ctx, softwareID, binaryFile, func(binaryURL string) interface{} {
 		version.Software.URL = binaryURL
 		return version
 	})
