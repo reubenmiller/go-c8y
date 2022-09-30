@@ -420,7 +420,7 @@ func (s *InventoryService) DownloadBinary(ctx context.Context, ID string) (filep
 }
 
 // CreateBinary uploads a given binary to Cumulocity under the inventory managed objects
-func (s *InventoryService) CreateBinary(ctx context.Context, binaryFile binary.MultiPartReader) (*ManagedObject, *Response, error) {
+func (s *InventoryService) CreateBinary(ctx context.Context, binaryFile binary.MultiPartReader, middleware ...RequestMiddleware) (*ManagedObject, *Response, error) {
 	client := s.client
 
 	values, err := binaryFile.GetMultiPartBody()
@@ -444,7 +444,7 @@ func (s *InventoryService) CreateBinary(ctx context.Context, binaryFile binary.M
 	req.Header.Set("Accept", "application/json")
 
 	data := new(ManagedObject)
-	resp, err := client.Do(ctx, req, data)
+	resp, err := client.Do(ctx, req, data, middleware...)
 
 	if err != nil {
 		return nil, resp, err
@@ -568,9 +568,9 @@ func (s *InventoryService) AddChildAddition(ctx context.Context, ID, childID str
 }
 
 // CreateChildAdditionWithBinary create a child addition with a child binary upload a binary and creates a software version referencing it
-func (s *InventoryService) CreateChildAdditionWithBinary(ctx context.Context, parentID string, binaryFile binary.MultiPartReader, bodyFunc func(binaryURL string) interface{}) (*ManagedObject, *Response, error) {
+func (s *InventoryService) CreateChildAdditionWithBinary(ctx context.Context, parentID string, binaryFile binary.MultiPartReader, bodyFunc func(binaryURL string) interface{}, middlware ...RequestMiddleware) (*ManagedObject, *Response, error) {
 	// Upload file
-	binary, resp, err := s.client.Inventory.CreateBinary(ctx, binaryFile)
+	binary, resp, err := s.client.Inventory.CreateBinary(ctx, binaryFile, middlware...)
 	if err != nil {
 		return binary, resp, err
 	}
@@ -594,9 +594,9 @@ func (s *InventoryService) CreateChildAdditionWithBinary(ctx context.Context, pa
 }
 
 // CreateWithBinary create managed object which also has a binary linked as a child addition so that the binary is deleted when the parent maanaged object is deleted
-func (s *InventoryService) CreateWithBinary(ctx context.Context, binaryFile binary.MultiPartReader, bodyFunc func(binaryURL string) interface{}) (*ManagedObject, *Response, error) {
+func (s *InventoryService) CreateWithBinary(ctx context.Context, binaryFile binary.MultiPartReader, bodyFunc func(binaryURL string) interface{}, middlware ...RequestMiddleware) (*ManagedObject, *Response, error) {
 	// Upload file
-	binary, resp, err := s.client.Inventory.CreateBinary(ctx, binaryFile)
+	binary, resp, err := s.client.Inventory.CreateBinary(ctx, binaryFile, middlware...)
 	if err != nil {
 		return binary, resp, err
 	}

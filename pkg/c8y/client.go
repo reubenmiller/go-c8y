@@ -943,7 +943,7 @@ func withContext(ctx context.Context, req *http.Request) *http.Request {
 //
 // The provided ctx must be non-nil. If it is canceled or times out,
 // ctx.Err() will be returned.
-func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Response, error) {
+func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}, middleware ...RequestMiddleware) (*Response, error) {
 	req = withContext(ctx, req)
 
 	// Check if an authorization key is provided in the context, if so then override the c8y authentication
@@ -973,6 +973,14 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 				req.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 				Logger.Infof("Body: %s", bytes.TrimSpace(bodyBytes))
 			}
+		}
+	}
+
+	var err error
+	for _, opt := range middleware {
+		req, err = opt(req)
+		if err != nil {
+			return nil, err
 		}
 	}
 

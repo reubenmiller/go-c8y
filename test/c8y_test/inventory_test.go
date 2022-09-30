@@ -232,7 +232,7 @@ func decodeAnsi(v string) string {
 func TestInventoryService_CreateBinaryWithProgressBar(t *testing.T) {
 	client := createTestClient()
 	BarFiller := "[━━ ]"
-	testfile1 := NewDummyFile("testfile1.txt", "test contents 1")
+	testfile1 := NewDummyFileWithSize("testfile1.txt", 10_000_000)
 	defer os.Remove(testfile1)
 
 	output := bytes.NewBufferString("")
@@ -266,12 +266,15 @@ func TestInventoryService_CreateBinaryWithProgressBar(t *testing.T) {
 		),
 	)
 	binaryFile, err := binary.NewBinaryFile(
-		binary.WithReader(bar.ProxyReader(file)),
+		binary.WithReader(file),
 		binary.WithFileProperties(testfile1),
 	)
 	testingutils.Ok(t, err)
 
-	_, resp, err := client.Inventory.CreateBinary(context.Background(), binaryFile)
+	_, resp, err := client.Inventory.CreateBinary(context.Background(), binaryFile, func(r *http.Request) (*http.Request, error) {
+		r.Body = bar.ProxyReader(r.Body)
+		return r, nil
+	})
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, resp.StatusCode(), 201)
 
