@@ -41,7 +41,7 @@ type Notification2Subscription struct {
 	ID                 string                          `json:"id,omitempty"`
 	Self               string                          `json:"self,omitempty"`
 	Context            string                          `json:"context,omitempty"`
-	FragmentsToCopy    string                          `json:"fragmentsToCopy,omitempty"`
+	FragmentsToCopy    []string                        `json:"fragmentsToCopy,omitempty"`
 	Source             *Source                         `json:"source,omitempty"`
 	Subscription       string                          `json:"subscription,omitempty"`
 	SubscriptionFilter Notification2SubscriptionFilter `json:"subscriptionFilter,omitempty"`
