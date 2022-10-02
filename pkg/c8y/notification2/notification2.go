@@ -46,6 +46,14 @@ const (
 	pingPeriod = (pongWait * 9) / 10
 )
 
+func SetLogger(log logger.Logger) {
+	if log == nil {
+		Logger = logger.NewDummyLogger("notification2")
+	} else {
+		Logger = log
+	}
+}
+
 // Notification2Client is a client used for the notification2 interface
 type Notification2Client struct {
 	mtx          sync.RWMutex
@@ -172,12 +180,12 @@ func (c *Notification2Client) IsConnected() bool {
 // Close the connection
 func (c *Notification2Client) Close() error {
 	if err := c.disconnect(); err != nil {
-		Logger.Infof("Failed to disconnect. %s", err)
+		Logger.Warnf("Failed to disconnect. %s", err)
 	}
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 	if c.tomb != nil {
-		Logger.Infof("Killing worker")
+		Logger.Debugf("Stopping worker")
 		c.tomb.Killf("Close")
 		c.tomb = nil
 	}
@@ -211,7 +219,7 @@ func (c *Notification2Client) createWebsocket() (*websocket.Conn, error) {
 		c.Subscription.Token = token
 	}
 
-	Logger.Infof("Establishing connection to %s", c.Endpoint())
+	Logger.Debugf("Establishing connection to %s", c.Endpoint())
 	ws, _, err := c.dialer.Dial(c.URL(), nil)
 
 	if err != nil {
@@ -227,7 +235,7 @@ func (c *Notification2Client) reconnect() error {
 	interval := MinimumRetryInterval
 
 	for !connected {
-		Logger.Infof("Retrying in %ds", interval)
+		Logger.Warnf("Retrying in %ds", interval)
 		<-time.After(time.Duration(interval) * time.Second)
 		err := c.connect()
 
@@ -337,7 +345,7 @@ func (c *Notification2Client) writeHandler() {
 }
 
 func (c *Notification2Client) Register(pattern string, out chan<- Message) {
-	Logger.Infof("Subscribing to %s", pattern)
+	Logger.Debugf("Subscribing to %s", pattern)
 
 	c.hub.register <- &ClientSubscription{
 		Pattern:  pattern,
@@ -347,7 +355,7 @@ func (c *Notification2Client) Register(pattern string, out chan<- Message) {
 }
 
 func (c *Notification2Client) SendMessageAck(messageIdentifier []byte) error {
-	Logger.Infof("Sending message ack: %s", messageIdentifier)
+	Logger.Debugf("Sending message ack: %s", messageIdentifier)
 	return c.ws.WriteMessage(websocket.TextMessage, messageIdentifier)
 }
 
@@ -364,17 +372,14 @@ func (c *Notification2Client) worker() error {
 		for {
 			messageType, rawMessage, err := c.ws.ReadMessage()
 
-			Logger.Infof("Received message: %s", rawMessage)
+			Logger.Debugf("Received message: %s", rawMessage)
 
 			if err != nil {
 				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway) {
-					fmt.Printf("error %v", err)
+					Logger.Infof("error %v", err)
 				}
 
-				Logger.Infof("read err:", err)
-				Logger.Info(rawMessage)
-
-				Logger.Infof("err: %s", err)
+				Logger.Warnf("err: %s", err)
 				go c.reconnect()
 				break
 			}
@@ -384,10 +389,10 @@ func (c *Notification2Client) worker() error {
 
 				c.hub.broadcast <- *message
 
-				Logger.Infof("message id: %s", message.Identifier)
-				Logger.Infof("message description: %s", message.Description)
-				Logger.Infof("message action: %s", message.Action)
-				Logger.Infof("message payload: %s", message.Payload)
+				Logger.Debugf("message id: %s", message.Identifier)
+				Logger.Debugf("message description: %s", message.Description)
+				Logger.Debugf("message action: %s", message.Action)
+				Logger.Debugf("message payload: %s", message.Payload)
 			}
 		}
 	}()
