@@ -66,7 +66,7 @@ type Subscription struct {
 	Consumer string `json:"consumer,omitempty"`
 	Token    string `json:"token,omitempty"`
 
-	TokenRenewel func(string) (string, error)
+	TokenRenewal func(string) (string, error)
 }
 
 type ClientSubscription struct {
@@ -203,8 +203,8 @@ func (c *Notification2Client) disconnect() error {
 
 func (c *Notification2Client) createWebsocket() (*websocket.Conn, error) {
 
-	if c.Subscription.TokenRenewel != nil {
-		token, err := c.Subscription.TokenRenewel(c.Subscription.Token)
+	if c.Subscription.TokenRenewal != nil {
+		token, err := c.Subscription.TokenRenewal(c.Subscription.Token)
 		if err != nil {
 			return nil, err
 		}

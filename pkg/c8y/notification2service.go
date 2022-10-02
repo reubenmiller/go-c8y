@@ -169,10 +169,9 @@ func (s *Notification2Service) DeleteSubscriptionBySource(ctx context.Context, o
 }
 
 type Notification2ClientOptions struct {
-	Token        string
-	Consumer     string
-	Options      Notification2TokenOptions
-	TokenRenewal func(string) (string, error)
+	Token    string
+	Consumer string
+	Options  Notification2TokenOptions
 }
 
 type Notification2TokenClaim struct {
@@ -330,7 +329,7 @@ func (s *Notification2Service) CreateClient(ctx context.Context, opt Notificatio
 	}
 
 	client := notification2.NewNotification2Client(s.client.BaseURL.Host, nil, notification2.Subscription{
-		TokenRenewel: func(v string) (string, error) {
+		TokenRenewal: func(v string) (string, error) {
 			return s.RenewToken(ctx, Notification2ClientOptions{
 				Token: v,
 			})
