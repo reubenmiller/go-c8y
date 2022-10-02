@@ -3,6 +3,7 @@ module github.com/reubenmiller/go-c8y
 require (
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
+	github.com/golang-jwt/jwt/v4 v4.4.2
 	github.com/google/go-cmp v0.5.7 // indirect
 	github.com/google/go-jsonnet v0.18.0
 	github.com/google/go-querystring v1.1.0

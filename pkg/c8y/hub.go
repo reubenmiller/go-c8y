@@ -22,7 +22,7 @@ type Hub struct {
 	channels sync.Map
 }
 
-func newHub() *Hub {
+func NewHub() *Hub {
 	return &Hub{
 		broadcast:  make(chan *Message),
 		register:   make(chan *subscription),
@@ -43,7 +43,7 @@ func (h *Hub) GetActiveChannels() []string {
 	return channels
 }
 
-func (h *Hub) run() {
+func (h *Hub) Run() {
 	for {
 		select {
 		case client := <-h.register:

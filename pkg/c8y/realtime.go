@@ -225,10 +225,10 @@ func NewRealtimeClient(host string, wsDialer *websocket.Dialer, tenant, username
 
 		send: make(chan *request),
 
-		hub: newHub(),
+		hub: NewHub(),
 	}
 
-	go client.hub.run()
+	go client.hub.Run()
 	go client.writeHandler()
 	return client
 }
@@ -642,7 +642,7 @@ func RealtimeOperations(id ...string) string {
 
 // Subscribe setup a subscription to the given element
 func (c *RealtimeClient) Subscribe(pattern string, out chan<- *Message) chan error {
-	Logger.Info("Subscribing to ", pattern)
+	Logger.Infof("Subscribing to %s", pattern)
 
 	glob, err := ohmyglob.Compile(pattern, nil)
 	if err != nil {
@@ -721,7 +721,7 @@ func (c *RealtimeClient) UnsubscribeAll() chan error {
 
 // Unsubscribe unsubscribe to a given pattern
 func (c *RealtimeClient) Unsubscribe(pattern string) chan error {
-	Logger.Info("unsubscribing to ", pattern)
+	Logger.Infof("unsubscribing to %s", pattern)
 
 	message := &request{
 		ID:           c.nextMessageID(),
