@@ -248,7 +248,7 @@ func (c *Notification2Client) reconnect() error {
 		connected = true
 	}
 
-	Logger.Info("Restablished connection")
+	Logger.Warn("Reestablished connection")
 	return nil
 }
 
