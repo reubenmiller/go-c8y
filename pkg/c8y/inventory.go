@@ -314,6 +314,30 @@ func (s *InventoryService) GetChildDevices(ctx context.Context, id string, opt *
 	return data, resp, err
 }
 
+// GetChildAdditions returns a list of child additions related to a given managed object
+func (s *InventoryService) GetChildAdditions(ctx context.Context, id string, opt *ManagedObjectOptions) (*ManagedObjectReferencesCollection, *Response, error) {
+	data := new(ManagedObjectReferencesCollection)
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "GET",
+		Path:         fmt.Sprintf("inventory/managedObjects/%s/childAdditions", id),
+		Query:        opt,
+		ResponseData: data,
+	})
+	return data, resp, err
+}
+
+// GetChildAssets returns a list of child assets related to a given managed object
+func (s *InventoryService) GetChildAssets(ctx context.Context, id string, opt *ManagedObjectOptions) (*ManagedObjectReferencesCollection, *Response, error) {
+	data := new(ManagedObjectReferencesCollection)
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "GET",
+		Path:         fmt.Sprintf("inventory/managedObjects/%s/childAssets", id),
+		Query:        opt,
+		ResponseData: data,
+	})
+	return data, resp, err
+}
+
 // Update updates a managed object
 // Link: http://cumulocity.com/guides/reference/inventory
 func (s *InventoryService) Update(ctx context.Context, ID string, body interface{}) (*ManagedObject, *Response, error) {

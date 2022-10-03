@@ -342,3 +342,44 @@ func TestInventoryService_CreateChildAdditionWithBinary(t *testing.T) {
 	testingutils.Equals(t, "testfile1.txt", binary.Name)
 	testingutils.Equals(t, strings.ReplaceAll(binary.Self, "managedObjects", "binaries"), childURL)
 }
+
+func TestInventoryService_GetChildAdditions(t *testing.T) {
+	client := createTestClient()
+
+	device, err := TestEnvironment.NewRandomTestDevice()
+	testingutils.Ok(t, err)
+	opts := (&c8y.ManagedObjectDeleteOptions{}).WithCascade(true)
+	defer client.Inventory.DeleteWithOptions(context.Background(), device.ID, opts)
+
+	child01, _, err := client.Inventory.CreateChildAddition(
+		context.Background(),
+		device.ID,
+		map[string]interface{}{
+			"name": "ntp",
+			"type": "c8y_Service",
+		},
+	)
+	testingutils.Ok(t, err)
+
+	child02, _, err := client.Inventory.CreateChildAddition(
+		context.Background(),
+		device.ID,
+		map[string]interface{}{
+			"name": "mosquitto",
+			"type": "c8y_Service",
+		},
+	)
+	testingutils.Ok(t, err)
+	testingutils.Assert(t, child02.ID != "", "Id is not empty")
+
+	items, _, err := client.Inventory.GetChildAdditions(
+		context.Background(),
+		device.ID,
+		&c8y.ManagedObjectOptions{
+			Query: "$filter=(type eq 'c8y_Service' and name eq 'ntp')",
+		},
+	)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, 1, len(items.References))
+	testingutils.Equals(t, items.References[0].ManagedObject.ID, child01.ID)
+}
