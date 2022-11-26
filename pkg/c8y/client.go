@@ -804,6 +804,9 @@ func (c *Client) NewRequestWithoutAuth(method, path string, query string, body i
 
 func (c *Client) SetHostHeader(req *http.Request) {
 	if req != nil && c.Domain != "" && c.Domain != req.URL.Host {
+		// setting the Host header actualy does nothing however
+		// it makes the setting visible when logging
+		req.Header.Set("Host", c.Domain)
 		req.Host = c.Domain
 	}
 }
