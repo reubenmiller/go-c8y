@@ -87,6 +87,9 @@ type Client struct {
 	// always be specified with a trailing slash.
 	BaseURL *url.URL
 
+	// Domain. This can be different to the BaseURL when using a proxy or a custom alias
+	Domain string
+
 	// User agent used when communicating with the Cumulocity API.
 	UserAgent string
 
@@ -187,8 +190,8 @@ func DecodeJSONFile(filepath string, dst interface{}) error {
 // Note: Decode with the UseNumber() set so large or
 // scientific notation numbers are not wrongly converted to integers!
 // i.e. otherwise this conversion will happen (which causes a problem with mongodb!)
-//  	9.2233720368547758E+18 --> 9223372036854776000
 //
+//	9.2233720368547758E+18 --> 9223372036854776000
 func DecodeJSONReader(r io.Reader, dst interface{}) error {
 	decoder := json.NewDecoder(r)
 	decoder.UseNumber()
@@ -219,7 +222,6 @@ func (c *Client) NewRealtimeClientFromServiceUser(tenant string) *RealtimeClient
 // C8Y_TENANT - Tenant name e.g. mycompany
 // C8Y_USER - Username e.g. myuser@mycompany.com
 // C8Y_PASSWORD - Password
-//
 func NewClientFromEnvironment(httpClient *http.Client, skipRealtimeClient bool) *Client {
 	baseURL := os.Getenv("C8Y_HOST")
 	tenant, username, password := GetServiceUserFromEnvironment()
@@ -504,6 +506,7 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 		if !options.NoAuthentication {
 			c.SetAuthorization(req)
 		}
+		c.SetHostHeader(req)
 	} else {
 		// Normal request
 		if options.NoAuthentication {
@@ -734,7 +737,18 @@ func (c *Client) NewRequest(method, path string, query string, body interface{})
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgent)
 	req.Header.Set("X-APPLICATION", "go-client")
+	c.SetHostHeader(req)
 	return req, nil
+}
+
+// Set the domain which will be used to set the Host header manually. Set the domain if it differs from the BaseURL
+func (c *Client) SetDomain(v string) {
+	if !strings.Contains(v, "://") {
+		v = "https://" + v
+	}
+	if domain, err := url.Parse(v); err == nil {
+		c.Domain = domain.Host
+	}
 }
 
 // NewRequestWithoutAuth returns a request with the required additional base url, accept and user-agent.NewRequest
@@ -784,7 +798,14 @@ func (c *Client) NewRequestWithoutAuth(method, path string, query string, body i
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgent)
 	req.Header.Set("X-APPLICATION", "go-client")
+	c.SetHostHeader(req)
 	return req, nil
+}
+
+func (c *Client) SetHostHeader(req *http.Request) {
+	if req != nil && c.Domain != "" && c.Domain != req.URL.Host {
+		req.Header.Set("Host", c.Domain)
+	}
 }
 
 // SetBasicAuthorization sets the configured authorization to the given request. By default it will set the Basic Authorization header
@@ -1071,17 +1092,18 @@ func sanitizeURL(uri *url.URL) *url.URL {
 /*
 An Error reports more details on an individual error in an ErrorResponse.
 These are the possible validation error codes:
-    missing:
-        resource does not exist
-    missing_field:
-        a required field on a resource has not been set
-    invalid:
-        the formatting of a field is invalid
-    already_exists:
-        another resource has the same valid as this field
-    custom:
-        some resources return this (e.g. github.User.CreateKey()), additional
-        information is set in the Message field of the Error
+
+	missing:
+	    resource does not exist
+	missing_field:
+	    a required field on a resource has not been set
+	invalid:
+	    the formatting of a field is invalid
+	already_exists:
+	    another resource has the same valid as this field
+	custom:
+	    some resources return this (e.g. github.User.CreateKey()), additional
+	    information is set in the Message field of the Error
 */
 type Error struct {
 	Resource     string `json:"resource"` // resource on which the error occurred
@@ -1138,7 +1160,6 @@ func (*AcceptedError) Error() string {
 // API error responses are expected to have either no response
 // body, or a JSON response body that maps to ErrorResponse. Any other
 // response body will be silently ignored.
-//
 func CheckResponse(r *http.Response) error {
 	if r.StatusCode == http.StatusAccepted {
 		return &AcceptedError{}
