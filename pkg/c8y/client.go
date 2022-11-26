@@ -1204,6 +1204,9 @@ func (c *Client) hideSensitiveInformationIfActive(message string) string {
 	if c.BaseURL != nil {
 		message = strings.ReplaceAll(message, strings.TrimRight(c.BaseURL.Host, "/"), "{host}")
 	}
+	if c.Domain != "" {
+		message = strings.ReplaceAll(message, c.Domain, "{domain}")
+	}
 
 	basicAuthMatcher := regexp.MustCompile(`(Basic\s+)[A-Za-z0-9=]+`)
 	message = basicAuthMatcher.ReplaceAllString(message, "$1 {base64 tenant/username:password}")
