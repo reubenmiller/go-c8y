@@ -4,8 +4,6 @@ require (
 	github.com/araddon/dateparse v0.0.0-20190329160016-74dc0e29b01f
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
-	github.com/golang/protobuf v1.4.2 // indirect
-	github.com/google/go-cmp v0.5.2 // indirect
 	github.com/google/go-jsonnet v0.16.0
 	github.com/google/go-querystring v1.0.0
 	github.com/gorilla/websocket v1.4.2
@@ -20,7 +18,7 @@ require (
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7
 	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v0.9.3
+	github.com/prometheus/client_golang v1.11.1
 	github.com/simplereach/timeutils v1.2.0 // indirect
 	github.com/spf13/afero v1.4.0 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
@@ -34,7 +32,6 @@ require (
 	github.com/valyala/fasttemplate v1.0.1 // indirect
 	go.uber.org/zap v1.10.0
 	golang.org/x/net v0.0.0-20200822124328-c89045814202 // indirect
-	golang.org/x/sys v0.0.0-20200923182605-d9f96fdee20d // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/ini.v1 v1.61.0 // indirect
