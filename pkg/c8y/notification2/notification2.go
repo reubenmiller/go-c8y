@@ -289,7 +289,6 @@ func (c *Notification2Client) connect() error {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
-	ws.SetReadDeadline(time.Now().Add(60 * time.Second))
 	c.ws = ws
 	if c.tomb == nil {
 		c.tomb = &tomb.Tomb{}
@@ -389,11 +388,6 @@ func (c *Notification2Client) worker() error {
 	c.ws.SetPongHandler(func(appData string) error {
 		Logger.Debugf("Pong handler. %v", appData)
 		c.ws.SetReadDeadline(time.Now().Add(c.Options.GetPongDuration()))
-		return nil
-	})
-
-	c.ws.SetPingHandler(func(appData string) error {
-		Logger.Debugf("Ping handler. %v", appData)
 		return nil
 	})
 
