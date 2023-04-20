@@ -38,20 +38,39 @@ const (
 	RetryBackoffFactor float64 = 2
 )
 
-const (
-	writeWait = 10 * time.Second
-
-	pongWait = 30 * time.Second
-
-	pingPeriod = (pongWait * 9) / 10
-)
-
 func SetLogger(log logger.Logger) {
 	if log == nil {
 		Logger = logger.NewDummyLogger("notification2")
 	} else {
 		Logger = log
 	}
+}
+
+type Notification2ClientOptions struct {
+	PingPeriod time.Duration
+	PongWait   time.Duration
+	WriteWait  time.Duration
+}
+
+func (o *Notification2ClientOptions) GetWriteDuration() time.Duration {
+	if o.WriteWait == 0 {
+		return 60 * time.Second
+	}
+	return o.WriteWait
+}
+
+func (o *Notification2ClientOptions) GetPongDuration() time.Duration {
+	if o.PongWait == 0 {
+		return 60 * time.Second
+	}
+	return o.PongWait
+}
+
+func (o *Notification2ClientOptions) GetPingDuration() time.Duration {
+	if o.PingPeriod == 0 {
+		return 60 * time.Second
+	}
+	return o.PingPeriod
 }
 
 // Notification2Client is a client used for the notification2 interface
@@ -65,6 +84,7 @@ type Notification2Client struct {
 	dialer       *websocket.Dialer
 	ws           *websocket.Conn
 	Subscription Subscription
+	Options      Notification2ClientOptions
 
 	hub  *Hub
 	send chan []byte
@@ -119,13 +139,13 @@ func getEndpoint(host string, subscription Subscription) *url.URL {
 }
 
 // NewNotification2Client initialises a new notification2 client used to subscribe to realtime notifications from Cumulocity
-func NewNotification2Client(host string, wsDialer *websocket.Dialer, subscription Subscription) *Notification2Client {
+func NewNotification2Client(host string, wsDialer *websocket.Dialer, subscription Subscription, options Notification2ClientOptions) *Notification2Client {
 	if wsDialer == nil {
 		// Default client ignores self signed certificates (to enable compatibility to the edge which uses self signed certs)
 		wsDialer = &websocket.Dialer{
 			Proxy:             http.ProxyFromEnvironment,
 			HandshakeTimeout:  45 * time.Second,
-			EnableCompression: true,
+			EnableCompression: false,
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
 			},
@@ -138,6 +158,7 @@ func NewNotification2Client(host string, wsDialer *websocket.Dialer, subscriptio
 		dialer:       wsDialer,
 		messages:     make(chan *Message, 100),
 		Subscription: subscription,
+		Options:      options,
 
 		send: make(chan []byte),
 
@@ -226,7 +247,7 @@ func (c *Notification2Client) createWebsocket() (*websocket.Conn, error) {
 		Logger.Warnf("Failed to establish connection. %s", err)
 		return ws, err
 	}
-	Logger.Debugf("Established websocket connection. %s", err)
+	Logger.Debug("Established websocket connection")
 	return ws, nil
 }
 
@@ -309,7 +330,7 @@ func parseMessage(raw []byte) *Message {
 }
 
 func (c *Notification2Client) writeHandler() {
-	ticker := time.NewTicker(pingPeriod)
+	ticker := time.NewTicker(c.Options.GetPingDuration())
 
 	defer func() {
 		ticker.Stop()
@@ -335,9 +356,9 @@ func (c *Notification2Client) writeHandler() {
 			if c.ws != nil {
 				// A websocket ping should initiate a websocket pong response from the server
 				// If the pong is not received in the minimum time, then the connection will be reset
-				c.ws.SetWriteDeadline(time.Now().Add(writeWait))
+				c.ws.SetWriteDeadline(time.Now().Add(c.Options.GetWriteDuration()))
 				if err := c.ws.WriteMessage(websocket.PingMessage, nil); err != nil {
-					Logger.Warnf("Failed to send ping message to server")
+					Logger.Warnf("Failed to send ping message to server. %s", err)
 					// go c.reconnect()
 					return
 				}
@@ -367,7 +388,7 @@ func (c *Notification2Client) worker() error {
 
 	c.ws.SetPongHandler(func(appData string) error {
 		Logger.Debugf("Pong handler. %v", appData)
-		c.ws.SetReadDeadline(time.Now().Add(pongWait))
+		c.ws.SetReadDeadline(time.Now().Add(c.Options.GetPongDuration()))
 		return nil
 	})
 
