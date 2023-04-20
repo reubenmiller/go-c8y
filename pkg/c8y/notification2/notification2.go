@@ -61,7 +61,7 @@ func (o *Notification2ClientOptions) GetWriteDuration() time.Duration {
 
 func (o *Notification2ClientOptions) GetPongDuration() time.Duration {
 	if o.PongWait == 0 {
-		return 60 * time.Second
+		return 120 * time.Second
 	}
 	return o.PongWait
 }
@@ -345,6 +345,7 @@ func (c *Notification2Client) writeHandler() {
 			}
 
 			if c.ws != nil {
+				c.ws.SetWriteDeadline(time.Now().Add(c.Options.GetWriteDuration()))
 				if err := c.ws.WriteMessage(websocket.TextMessage, message); err != nil {
 					Logger.Warnf("Failed to send message. %s", err)
 				}
@@ -355,7 +356,7 @@ func (c *Notification2Client) writeHandler() {
 			if c.ws != nil {
 				// A websocket ping should initiate a websocket pong response from the server
 				// If the pong is not received in the minimum time, then the connection will be reset
-				// c.ws.SetWriteDeadline(time.Now().Add(c.Options.GetWriteDuration()))
+				c.ws.SetWriteDeadline(time.Now().Add(c.Options.GetWriteDuration()))
 				if err := c.ws.WriteMessage(websocket.PingMessage, nil); err != nil {
 					Logger.Warnf("Failed to send ping message to server. %s", err)
 					// go c.reconnect()
@@ -379,14 +380,16 @@ func (c *Notification2Client) Register(pattern string, out chan<- Message) {
 
 func (c *Notification2Client) SendMessageAck(messageIdentifier []byte) error {
 	Logger.Debugf("Sending message ack: %s", messageIdentifier)
+	c.ws.SetWriteDeadline(time.Now().Add(c.Options.GetWriteDuration()))
 	return c.ws.WriteMessage(websocket.TextMessage, messageIdentifier)
 }
 
 func (c *Notification2Client) worker() error {
 	done := make(chan struct{})
 
-	c.ws.SetPongHandler(func(appData string) error {
-		Logger.Debugf("Pong handler. %v", appData)
+	c.ws.SetReadDeadline(time.Now().Add(c.Options.GetPongDuration()))
+	c.ws.SetPongHandler(func(string) error {
+		Logger.Debug("Received pong message")
 		c.ws.SetReadDeadline(time.Now().Add(c.Options.GetPongDuration()))
 		return nil
 	})
@@ -430,5 +433,6 @@ func (c *Notification2Client) worker() error {
 // Unsubscribe unsubscribe to a given pattern
 func (c *Notification2Client) Unsubscribe() error {
 	Logger.Info("unsubscribing")
+	c.ws.SetWriteDeadline(time.Now().Add(c.Options.GetWriteDuration()))
 	return c.ws.WriteMessage(websocket.TextMessage, []byte("unsubscribe_subscriber"))
 }
