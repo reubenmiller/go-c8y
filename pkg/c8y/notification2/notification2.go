@@ -266,6 +266,7 @@ func (c *Notification2Client) connect() error {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
+	ws.SetReadDeadline(time.Now().Add(60 * time.Second))
 	c.ws = ws
 	if c.tomb == nil {
 		c.tomb = &tomb.Tomb{}
