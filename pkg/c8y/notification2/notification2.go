@@ -125,7 +125,7 @@ func NewNotification2Client(host string, wsDialer *websocket.Dialer, subscriptio
 		wsDialer = &websocket.Dialer{
 			Proxy:             http.ProxyFromEnvironment,
 			HandshakeTimeout:  45 * time.Second,
-			EnableCompression: false,
+			EnableCompression: true,
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
 			},
