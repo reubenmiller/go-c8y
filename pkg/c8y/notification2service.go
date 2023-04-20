@@ -169,9 +169,10 @@ func (s *Notification2Service) DeleteSubscriptionBySource(ctx context.Context, o
 }
 
 type Notification2ClientOptions struct {
-	Token    string
-	Consumer string
-	Options  Notification2TokenOptions
+	Token             string
+	Consumer          string
+	Options           Notification2TokenOptions
+	ConnectionOptions notification2.ConnectionOptions
 }
 
 type Notification2TokenClaim struct {
@@ -325,7 +326,7 @@ func (s *Notification2Service) RenewToken(ctx context.Context, opt Notification2
 //	}
 //
 // ```
-func (s *Notification2Service) CreateClient(ctx context.Context, opt Notification2ClientOptions, websocketOpts notification2.Notification2ClientOptions) (*notification2.Notification2Client, error) {
+func (s *Notification2Service) CreateClient(ctx context.Context, opt Notification2ClientOptions) (*notification2.Notification2Client, error) {
 	// Validate token against expected subscriptions
 	token, err := s.RenewToken(ctx, opt)
 	if err != nil {
@@ -340,6 +341,6 @@ func (s *Notification2Service) CreateClient(ctx context.Context, opt Notificatio
 		},
 		Consumer: opt.Consumer,
 		Token:    token,
-	}, websocketOpts)
+	}, opt.ConnectionOptions)
 	return client, nil
 }
