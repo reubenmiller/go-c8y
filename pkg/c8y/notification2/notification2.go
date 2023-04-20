@@ -47,9 +47,10 @@ func SetLogger(log logger.Logger) {
 }
 
 type Notification2ClientOptions struct {
-	PingPeriod time.Duration
-	PongWait   time.Duration
-	WriteWait  time.Duration
+	// Send pings to client with this interval. Must be less than pongWait.
+	PingInterval time.Duration
+	PongWait     time.Duration
+	WriteWait    time.Duration
 }
 
 func (o *Notification2ClientOptions) GetWriteDuration() time.Duration {
@@ -67,10 +68,10 @@ func (o *Notification2ClientOptions) GetPongDuration() time.Duration {
 }
 
 func (o *Notification2ClientOptions) GetPingDuration() time.Duration {
-	if o.PingPeriod == 0 {
+	if o.PingInterval == 0 {
 		return 60 * time.Second
 	}
-	return o.PingPeriod
+	return o.PingInterval
 }
 
 // Notification2Client is a client used for the notification2 interface
