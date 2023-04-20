@@ -356,7 +356,7 @@ func (c *Notification2Client) writeHandler() {
 			if c.ws != nil {
 				// A websocket ping should initiate a websocket pong response from the server
 				// If the pong is not received in the minimum time, then the connection will be reset
-				c.ws.SetWriteDeadline(time.Now().Add(c.Options.GetWriteDuration()))
+				// c.ws.SetWriteDeadline(time.Now().Add(c.Options.GetWriteDuration()))
 				if err := c.ws.WriteMessage(websocket.PingMessage, nil); err != nil {
 					Logger.Warnf("Failed to send ping message to server. %s", err)
 					// go c.reconnect()
