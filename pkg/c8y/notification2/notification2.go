@@ -38,14 +38,6 @@ const (
 	RetryBackoffFactor float64 = 2
 )
 
-const (
-	writeWait = 10 * time.Second
-
-	pongWait = 300 * time.Second
-
-	pingPeriod = (pongWait * 9) / 10
-)
-
 func SetLogger(log logger.Logger) {
 	if log == nil {
 		Logger = logger.NewDummyLogger("notification2")
@@ -54,17 +46,47 @@ func SetLogger(log logger.Logger) {
 	}
 }
 
+type ConnectionOptions struct {
+	// Send pings to client with this interval. Must be less than pongWait.
+	PingInterval time.Duration
+	PongWait     time.Duration
+	WriteWait    time.Duration
+	Insecure     bool
+}
+
+func (o *ConnectionOptions) GetWriteDuration() time.Duration {
+	if o.WriteWait == 0 {
+		return 60 * time.Second
+	}
+	return o.WriteWait
+}
+
+func (o *ConnectionOptions) GetPongDuration() time.Duration {
+	if o.PongWait == 0 {
+		return 120 * time.Second
+	}
+	return o.PongWait
+}
+
+func (o *ConnectionOptions) GetPingDuration() time.Duration {
+	if o.PingInterval == 0 {
+		return 60 * time.Second
+	}
+	return o.PingInterval
+}
+
 // Notification2Client is a client used for the notification2 interface
 type Notification2Client struct {
-	mtx          sync.RWMutex
-	host         string
-	url          *url.URL
-	tomb         *tomb.Tomb
-	messages     chan *Message
-	connected    bool
-	dialer       *websocket.Dialer
-	ws           *websocket.Conn
-	Subscription Subscription
+	mtx               sync.RWMutex
+	host              string
+	url               *url.URL
+	tomb              *tomb.Tomb
+	messages          chan *Message
+	connected         bool
+	dialer            *websocket.Dialer
+	ws                *websocket.Conn
+	Subscription      Subscription
+	ConnectionOptions ConnectionOptions
 
 	hub  *Hub
 	send chan []byte
@@ -119,25 +141,26 @@ func getEndpoint(host string, subscription Subscription) *url.URL {
 }
 
 // NewNotification2Client initialises a new notification2 client used to subscribe to realtime notifications from Cumulocity
-func NewNotification2Client(host string, wsDialer *websocket.Dialer, subscription Subscription) *Notification2Client {
+func NewNotification2Client(host string, wsDialer *websocket.Dialer, subscription Subscription, options ConnectionOptions) *Notification2Client {
 	if wsDialer == nil {
 		// Default client ignores self signed certificates (to enable compatibility to the edge which uses self signed certs)
 		wsDialer = &websocket.Dialer{
 			Proxy:             http.ProxyFromEnvironment,
-			HandshakeTimeout:  10 * time.Second,
+			HandshakeTimeout:  45 * time.Second,
 			EnableCompression: false,
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
+				InsecureSkipVerify: options.Insecure,
 			},
 		}
 	}
 
 	client := &Notification2Client{
-		host:         host,
-		url:          getEndpoint(host, subscription),
-		dialer:       wsDialer,
-		messages:     make(chan *Message, 100),
-		Subscription: subscription,
+		host:              host,
+		url:               getEndpoint(host, subscription),
+		dialer:            wsDialer,
+		messages:          make(chan *Message, 100),
+		Subscription:      subscription,
+		ConnectionOptions: options,
 
 		send: make(chan []byte),
 
@@ -223,8 +246,10 @@ func (c *Notification2Client) createWebsocket() (*websocket.Conn, error) {
 	ws, _, err := c.dialer.Dial(c.URL(), nil)
 
 	if err != nil {
+		Logger.Warnf("Failed to establish connection. %s", err)
 		return ws, err
 	}
+	Logger.Debug("Established websocket connection")
 	return ws, nil
 }
 
@@ -306,7 +331,7 @@ func parseMessage(raw []byte) *Message {
 }
 
 func (c *Notification2Client) writeHandler() {
-	ticker := time.NewTicker(pingPeriod)
+	ticker := time.NewTicker(c.ConnectionOptions.GetPingDuration())
 
 	defer func() {
 		ticker.Stop()
@@ -322,6 +347,7 @@ func (c *Notification2Client) writeHandler() {
 			}
 
 			if c.ws != nil {
+				c.ws.SetWriteDeadline(time.Now().Add(c.ConnectionOptions.GetWriteDuration()))
 				if err := c.ws.WriteMessage(websocket.TextMessage, message); err != nil {
 					Logger.Warnf("Failed to send message. %s", err)
 				}
@@ -332,9 +358,9 @@ func (c *Notification2Client) writeHandler() {
 			if c.ws != nil {
 				// A websocket ping should initiate a websocket pong response from the server
 				// If the pong is not received in the minimum time, then the connection will be reset
-				c.ws.SetWriteDeadline(time.Now().Add(writeWait))
+				c.ws.SetWriteDeadline(time.Now().Add(c.ConnectionOptions.GetWriteDuration()))
 				if err := c.ws.WriteMessage(websocket.PingMessage, nil); err != nil {
-					Logger.Warnf("Failed to send ping message to server")
+					Logger.Warnf("Failed to send ping message to server. %s", err)
 					// go c.reconnect()
 					return
 				}
@@ -356,14 +382,17 @@ func (c *Notification2Client) Register(pattern string, out chan<- Message) {
 
 func (c *Notification2Client) SendMessageAck(messageIdentifier []byte) error {
 	Logger.Debugf("Sending message ack: %s", messageIdentifier)
+	c.ws.SetWriteDeadline(time.Now().Add(c.ConnectionOptions.GetWriteDuration()))
 	return c.ws.WriteMessage(websocket.TextMessage, messageIdentifier)
 }
 
 func (c *Notification2Client) worker() error {
 	done := make(chan struct{})
 
+	c.ws.SetReadDeadline(time.Now().Add(c.ConnectionOptions.GetPongDuration()))
 	c.ws.SetPongHandler(func(string) error {
-		c.ws.SetReadDeadline(time.Now().Add(pongWait))
+		Logger.Debug("Received pong message")
+		c.ws.SetReadDeadline(time.Now().Add(c.ConnectionOptions.GetPongDuration()))
 		return nil
 	})
 
@@ -372,7 +401,7 @@ func (c *Notification2Client) worker() error {
 		for {
 			messageType, rawMessage, err := c.ws.ReadMessage()
 
-			Logger.Debugf("Received message: %s", rawMessage)
+			Logger.Debugf("Received message: type=%d, message=%s, err=%s", messageType, rawMessage, err)
 
 			if err != nil {
 				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway) {
@@ -406,5 +435,6 @@ func (c *Notification2Client) worker() error {
 // Unsubscribe unsubscribe to a given pattern
 func (c *Notification2Client) Unsubscribe() error {
 	Logger.Info("unsubscribing")
+	c.ws.SetWriteDeadline(time.Now().Add(c.ConnectionOptions.GetWriteDuration()))
 	return c.ws.WriteMessage(websocket.TextMessage, []byte("unsubscribe_subscriber"))
 }

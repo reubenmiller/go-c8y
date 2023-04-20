@@ -169,9 +169,10 @@ func (s *Notification2Service) DeleteSubscriptionBySource(ctx context.Context, o
 }
 
 type Notification2ClientOptions struct {
-	Token    string
-	Consumer string
-	Options  Notification2TokenOptions
+	Token             string
+	Consumer          string
+	Options           Notification2TokenOptions
+	ConnectionOptions notification2.ConnectionOptions
 }
 
 type Notification2TokenClaim struct {
@@ -288,38 +289,42 @@ func (s *Notification2Service) RenewToken(ctx context.Context, opt Notification2
 
 // Create a notification2 client to subscribe to new options
 //
-// Example
+// # Example
 //
 // ```
-// notifClient, err := client.Notification2.CreateClient(context.Background(), c8y.Notification2ClientOptions{
-//     Token:    os.Getenv("NOTIFICATION2_TOKEN"),
-//     Consumer: *consumer,
-//     Options: &c8y.Notification2TokenOptions{
-//     	   ExpiresInMinutes: 2,
-//     	   Subscription:     *subscription,
-//     	   Subscriber:       *subscriber,
-//     },
-// })
-// if err != nil {
-//     panic(err)
-// }
+//
+//	notifClient, err := client.Notification2.CreateClient(context.Background(), c8y.Notification2ClientOptions{
+//	    Token:    os.Getenv("NOTIFICATION2_TOKEN"),
+//	    Consumer: *consumer,
+//	    Options: &c8y.Notification2TokenOptions{
+//	    	   ExpiresInMinutes: 2,
+//	    	   Subscription:     *subscription,
+//	    	   Subscriber:       *subscriber,
+//	    },
+//	})
+//
+//	if err != nil {
+//	    panic(err)
+//	}
+//
 // messagesCh := make(chan notifications2.Message)
 // notifClient.Register("*", messagesCh)
 // signalCh := make(chan os.Signal, 1)
 // signal.Notify(signalCh, os.Interrupt)
 //
-// for {
-//   select {
-//   case msg := <-messagesCh:
-//	      log.Printf("Received message. %s", msg.Payload)
-//        notifClient.SendMessageAck(msg.Identifier)
+//	for {
+//	  select {
+//	  case msg := <-messagesCh:
+//		      log.Printf("Received message. %s", msg.Payload)
+//	       notifClient.SendMessageAck(msg.Identifier)
 //
-//   case <-signalCh:
-//   	// Enable ctrl-c to stop
-//   	notificationClient.Close()
-//   	return
-//   }
-// }
+//	  case <-signalCh:
+//	  	// Enable ctrl-c to stop
+//	  	notificationClient.Close()
+//	  	return
+//	  }
+//	}
+//
 // ```
 func (s *Notification2Service) CreateClient(ctx context.Context, opt Notification2ClientOptions) (*notification2.Notification2Client, error) {
 	// Validate token against expected subscriptions
@@ -336,6 +341,6 @@ func (s *Notification2Service) CreateClient(ctx context.Context, opt Notificatio
 		},
 		Consumer: opt.Consumer,
 		Token:    token,
-	})
+	}, opt.ConnectionOptions)
 	return client, nil
 }
