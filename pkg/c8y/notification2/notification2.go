@@ -223,8 +223,10 @@ func (c *Notification2Client) createWebsocket() (*websocket.Conn, error) {
 	ws, _, err := c.dialer.Dial(c.URL(), nil)
 
 	if err != nil {
+		Logger.Warnf("Failed to establish connection. %s", err)
 		return ws, err
 	}
+	Logger.Debugf("Established websocket connection. %s", err)
 	return ws, nil
 }
 
@@ -363,8 +365,14 @@ func (c *Notification2Client) SendMessageAck(messageIdentifier []byte) error {
 func (c *Notification2Client) worker() error {
 	done := make(chan struct{})
 
-	c.ws.SetPongHandler(func(string) error {
+	c.ws.SetPongHandler(func(appData string) error {
+		Logger.Debugf("Pong handler. %v", appData)
 		c.ws.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
+
+	c.ws.SetPingHandler(func(appData string) error {
+		Logger.Debugf("Ping handler. %v", appData)
 		return nil
 	})
 
