@@ -402,7 +402,7 @@ func (c *Notification2Client) worker() error {
 		for {
 			messageType, rawMessage, err := c.ws.ReadMessage()
 
-			Logger.Debugf("Received message: %s", rawMessage)
+			Logger.Debugf("Received message: type=%d, message=%s, err=%s", messageType, rawMessage, err)
 
 			if err != nil {
 				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway) {
