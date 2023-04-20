@@ -124,7 +124,7 @@ func NewNotification2Client(host string, wsDialer *websocket.Dialer, subscriptio
 		// Default client ignores self signed certificates (to enable compatibility to the edge which uses self signed certs)
 		wsDialer = &websocket.Dialer{
 			Proxy:             http.ProxyFromEnvironment,
-			HandshakeTimeout:  10 * time.Second,
+			HandshakeTimeout:  45 * time.Second,
 			EnableCompression: false,
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
