@@ -108,7 +108,7 @@ func getEndpoint(host string, subscription Subscription) *url.URL {
 		fullHost = "wss" + host[index:]
 	}
 	c8yhost, _ := url.Parse(fullHost)
-	c8yhost.Path = "/notification2/consumer/"
+	c8yhost.Path = "/notification2/consumer"
 	c8yhost.RawQuery = "token=" + subscription.Token
 
 	if subscription.Consumer != "" {
