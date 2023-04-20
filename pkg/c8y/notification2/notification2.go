@@ -41,7 +41,7 @@ const (
 const (
 	writeWait = 10 * time.Second
 
-	pongWait = 300 * time.Second
+	pongWait = 30 * time.Second
 
 	pingPeriod = (pongWait * 9) / 10
 )
