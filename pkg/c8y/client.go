@@ -1258,12 +1258,20 @@ func (c *Client) DefaultDryRunHandler(options *RequestOptions, req *http.Request
 
 	if options.FormData != nil && len(options.FormData) > 0 {
 		message += "\nForm Data:\n"
-		for key, formData := range options.FormData {
+
+		// Sort formdata keys
+		keys := make([]string, 0, len(options.FormData))
+		for key := range options.FormData {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+
+		for _, key := range keys {
 			if key == "file" {
 				message += fmt.Sprintf("%s: (file contents)\n", key)
 			} else {
 				buf := new(strings.Builder)
-				if _, err := io.Copy(buf, formData); err == nil {
+				if _, err := io.Copy(buf, options.FormData[key]); err == nil {
 					message += fmt.Sprintf("%s: %s\n", key, buf.String())
 				}
 			}
