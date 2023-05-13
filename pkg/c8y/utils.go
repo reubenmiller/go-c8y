@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -15,8 +16,16 @@ func prepareMultipartRequest(method string, url string, values map[string]io.Rea
 	// Prepare a form that you will submit to that URL.
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
-	for key, r := range values {
 
+	// Sort formdata keys
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	for _, key := range keys {
+		r := values[key]
 		if key == "filename" {
 			// Ignore filename as it is used to name the uploaded file
 			continue
