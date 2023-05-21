@@ -3,7 +3,6 @@ package microservice
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
@@ -78,7 +77,7 @@ func (m *Microservice) GetLogFileHandler(c echo.Context) error {
 		}
 		text = getLastLineWithSeek(filepath, int64(lines))
 	} else {
-		b, err := ioutil.ReadFile(filepath)
+		b, err := os.ReadFile(filepath)
 
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, echo.Map{

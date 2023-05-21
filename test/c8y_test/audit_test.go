@@ -46,7 +46,7 @@ func TestAuditService_CreateAuditRecord(t *testing.T) {
 	auditRecord, resp, err := client.Audit.Create(context.Background(), recordInput)
 	testingutils.Ok(t, err)
 
-	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
 	testingutils.Assert(t, auditRecord != nil, "Audit record should not be empty")
 
 	if auditRecord != nil {
@@ -60,7 +60,7 @@ func TestAuditService_CreateAuditRecord(t *testing.T) {
 		auditRecord.ID,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, auditRecord.ID, auditRecord2.ID)
 
 }
@@ -93,7 +93,7 @@ func TestAuditService_GetAuditRecords(t *testing.T) {
 	)
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, 3, len(data.AuditRecords))
 
 	// Delete the audit records
@@ -107,7 +107,7 @@ func TestAuditService_GetAuditRecords(t *testing.T) {
 	)
 
 	testingutils.Assert(t, err != nil, "deleting audit records is not allowed")
-	testingutils.Equals(t, http.StatusMethodNotAllowed, resp.StatusCode)
+	testingutils.Equals(t, http.StatusMethodNotAllowed, resp.StatusCode())
 
 	data2, resp, err := client.Audit.GetAuditRecords(
 		context.Background(),
@@ -118,6 +118,6 @@ func TestAuditService_GetAuditRecords(t *testing.T) {
 	)
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, 1, len(data2.AuditRecords))
 }

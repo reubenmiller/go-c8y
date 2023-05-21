@@ -23,7 +23,7 @@ func TestRetentionRuleService_CRUDRetentionRule(t *testing.T) {
 	)
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
 	testingutils.Assert(t, retentionRule.ID != "", "Rention Rule should have an non-empty id")
 
 	//
@@ -34,7 +34,7 @@ func TestRetentionRuleService_CRUDRetentionRule(t *testing.T) {
 	)
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, retentionRule.ID, retrievedRR1.ID)
 
 	//
@@ -46,7 +46,7 @@ func TestRetentionRuleService_CRUDRetentionRule(t *testing.T) {
 		},
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Assert(t, len(rules.RetentionRules) > 0, "Should have at least 1 data retention rule")
 
 	//
@@ -56,5 +56,5 @@ func TestRetentionRuleService_CRUDRetentionRule(t *testing.T) {
 		retentionRule.ID,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
+	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode())
 }

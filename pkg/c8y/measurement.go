@@ -136,18 +136,16 @@ type MeasurementAggregateValue struct {
 
 // UnmarshalJSON converts the Cumulocity measurement Series response to a format which is easier to parse.
 //
-//
-// {
-//     "series": [ "c8y_Temperature.A", "c8y_Temperature.B" ],
-//     "unit": [ "degC", "degC" ],
-//     "truncated": true,
-//     "values": [
-//         { "timestamp": "2018-11-11T23:20:00.000+01:00", values: [0.0001, 0.1001] },
-//         { "timestamp": "2018-11-11T23:20:01.000+01:00", values: [0.1234, 2.2919] },
-//         { "timestamp": "2018-11-11T23:20:02.000+01:00", values: [0.8370, 4.8756] }
-//     ]
-// }
-//
+//	{
+//	    "series": [ "c8y_Temperature.A", "c8y_Temperature.B" ],
+//	    "unit": [ "degC", "degC" ],
+//	    "truncated": true,
+//	    "values": [
+//	        { "timestamp": "2018-11-11T23:20:00.000+01:00", values: [0.0001, 0.1001] },
+//	        { "timestamp": "2018-11-11T23:20:01.000+01:00", values: [0.1234, 2.2919] },
+//	        { "timestamp": "2018-11-11T23:20:02.000+01:00", values: [0.8370, 4.8756] }
+//	    ]
+//	}
 func (d *MeasurementSeriesGroup) UnmarshalJSON(data []byte) error {
 	c8ySeries := gjson.ParseBytes(data)
 
@@ -157,7 +155,7 @@ func (d *MeasurementSeriesGroup) UnmarshalJSON(data []byte) error {
 	c8ySeries.Get("series").ForEach(func(_, serie gjson.Result) bool {
 		v := &MeasurementSerieDefinition{}
 		if err := json.Unmarshal([]byte(serie.String()), &v); err != nil {
-			Logger.Printf("Could not unmarshal series definition. %s", serie.String())
+			Logger.Infof("Could not unmarshal series definition. %s", serie.String())
 		}
 
 		seriesDefinitions = append(seriesDefinitions, *v)
@@ -218,7 +216,7 @@ func (d *MeasurementSeriesAggregateGroup) UnmarshalJSON(data []byte) error {
 	c8ySeries.Get("series").ForEach(func(_, serie gjson.Result) bool {
 		v := &MeasurementSerieDefinition{}
 		if err := json.Unmarshal([]byte(serie.String()), &v); err != nil {
-			Logger.Printf("Could not unmarshal series definition. %s", serie.String())
+			Logger.Infof("Could not unmarshal series definition. %s", serie.String())
 		}
 
 		seriesDefinitions = append(seriesDefinitions, *v)
@@ -234,8 +232,8 @@ func (d *MeasurementSeriesAggregateGroup) UnmarshalJSON(data []byte) error {
 	var allSeries []MeasurementSeriesAggregateValueGroup
 	c8ySeries.Get("values").ForEach(func(key, values gjson.Result) bool {
 
-		Logger.Printf("Key: %s\n", key)
-		Logger.Printf("Values: %s\n", values)
+		Logger.Infof("Key: %s", key)
+		Logger.Infof("Values: %s", values)
 
 		timestamp, err := time.Parse(time.RFC3339, key.Str)
 
@@ -250,11 +248,11 @@ func (d *MeasurementSeriesAggregateGroup) UnmarshalJSON(data []byte) error {
 
 		index := 0
 		values.ForEach(func(_, value gjson.Result) bool {
-			Logger.Printf("Current value: %s\n", value)
+			Logger.Infof("Current value: %s", value)
 			v := &MeasurementAggregateValue{}
 			json.Unmarshal([]byte(value.String()), &v)
 
-			Logger.Printf("Full Value: %v\n", v)
+			Logger.Infof("Full Value: %v", v)
 
 			seriesValues.Values[index] = *v
 			index++
@@ -285,7 +283,7 @@ func (s *MeasurementService) GetMeasurementSeries(ctx context.Context, opt *Meas
 		return nil, nil, err
 	}
 
-	Logger.Printf("query Parameters: %s\n", queryParams)
+	Logger.Infof("query Parameters: %s", queryParams)
 
 	req, err := s.client.NewRequest("GET", u, queryParams, nil)
 	if err != nil {
@@ -329,7 +327,6 @@ func (s *MeasurementService) Delete(ctx context.Context, ID string) (*Response, 
 // timestamp,c8y_Temperature.A,c8y_Temperature.B
 // 2018-11-23T00:45:39+01:00,60.699993,44.300003
 // 2018-11-23T01:45:39+01:00,67.63333,47.199997
-//
 func (d *MeasurementSeriesGroup) MarshalCSV(delimiter string) ([]byte, error) {
 
 	useDelimiter := delimiter

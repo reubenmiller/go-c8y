@@ -6,22 +6,42 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
 	"path"
 	"reflect"
 	"regexp"
+	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/google/go-querystring/query"
-	"github.com/tidwall/gjson"
-	"moul.io/http2curl"
+	"github.com/reubenmiller/go-c8y/pkg/jsonUtilities"
 )
+
+var ErrNotFound = errors.New("item: not found")
+
+var MethodsWithBody = []string{
+	http.MethodDelete,
+	http.MethodPatch,
+	http.MethodPost,
+	http.MethodPut,
+}
+
+// Check if method supports a body with the request
+func RequestSupportsBody(method string) bool {
+	for _, v := range MethodsWithBody {
+		if strings.EqualFold(method, v) {
+			return true
+		}
+	}
+	return false
+}
 
 // ContextAuthTokenKey todo
 type ContextAuthTokenKey string
@@ -29,6 +49,25 @@ type ContextAuthTokenKey string
 // GetContextAuthTokenKey authentication key used to override the given Basic Authentication token
 func GetContextAuthTokenKey() ContextAuthTokenKey {
 	return ContextAuthTokenKey("authToken")
+}
+
+// ContextCommonOptionsKey todo
+type ContextCommonOptionsKey string
+
+// GetContextCommonOptionsKey common optinos key used to override request options for a single request
+func GetContextCommonOptionsKey() ContextCommonOptionsKey {
+	return ContextCommonOptionsKey("commonOptions")
+}
+
+// DefaultRequestOptions default request options which are added to each outgoing request
+type DefaultRequestOptions struct {
+	DryRun bool
+
+	// DryRunResponse return a mock response when using dry run
+	DryRunResponse bool
+
+	// DryRunHandler called when a request should be called
+	DryRunHandler func(options *RequestOptions, req *http.Request)
 }
 
 type service struct {
@@ -47,6 +86,9 @@ type Client struct {
 	// always be specified with a trailing slash.
 	BaseURL *url.URL
 
+	// Domain. This can be different to the BaseURL when using a proxy or a custom alias
+	Domain string
+
 	// User agent used when communicating with the Cumulocity API.
 	UserAgent string
 
@@ -59,7 +101,20 @@ type Client struct {
 	// Password for Cumulocity Authentication
 	Password string
 
+	// Token for bearer authorization
+	Token string
+
+	// TFACode (Two Factor Authentication) code.
+	TFACode string
+
+	// Authorization method
+	AuthorizationMethod string
+
+	Cookies []*http.Cookie
+
 	UseTenantInUsername bool
+
+	requestOptions DefaultRequestOptions
 
 	// Microservice bootstrap and service users
 	BootstrapUser ServiceUser
@@ -80,9 +135,13 @@ type Client struct {
 	Application       *ApplicationService
 	Identity          *IdentityService
 	Microservice      *MicroserviceService
+	Notification2     *Notification2Service
 	Retention         *RetentionRuleService
 	TenantOptions     *TenantOptionsService
+	Software          *InventorySoftwareService
+	Firmware          *InventoryFirmwareService
 	User              *UserService
+	DeviceCertificate *DeviceCertificateService
 }
 
 const (
@@ -92,6 +151,17 @@ const (
 var (
 	// EnvVarLoggerHideSensitive environment variable name used to control whethere sensitive session information is logged or not. When set to "true", then the tenant, username, password, base 64 passwords will be obfuscated from the log messages
 	EnvVarLoggerHideSensitive = "C8Y_LOGGER_HIDE_SENSITIVE"
+)
+
+const (
+	// AuthMethodOAuth2Internal OAuth2 internal mode
+	AuthMethodOAuth2Internal = "OAUTH2_INTERNAL"
+
+	// AuthMethodBasic Basic authentication
+	AuthMethodBasic = "BASIC"
+
+	// AuthMethodNone no authentication
+	AuthMethodNone = "NONE"
 )
 
 // DecodeJSONBytes decodes json preserving number formatting (especially large integers and scientific notation floats)
@@ -107,7 +177,7 @@ func DecodeJSONFile(filepath string, dst interface{}) error {
 	}
 
 	defer fp.Close()
-	buf, err := ioutil.ReadAll(fp)
+	buf, err := io.ReadAll(fp)
 	if err != nil {
 		return err
 	}
@@ -119,19 +189,22 @@ func DecodeJSONFile(filepath string, dst interface{}) error {
 // Note: Decode with the UseNumber() set so large or
 // scientific notation numbers are not wrongly converted to integers!
 // i.e. otherwise this conversion will happen (which causes a problem with mongodb!)
-//  	9.2233720368547758E+18 --> 9223372036854776000
 //
+//	9.2233720368547758E+18 --> 9223372036854776000
 func DecodeJSONReader(r io.Reader, dst interface{}) error {
 	decoder := json.NewDecoder(r)
 	decoder.UseNumber()
 	return decoder.Decode(&dst)
 }
 
+// ClientOption represents an argument to NewClient
+type ClientOption = func(http.RoundTripper) http.RoundTripper
+
 // NewRealtimeClientFromServiceUser returns a realtime client using a microservice's service user for a specified tenant
 // If no service user is found for the set tenant, then nil is returned
 func (c *Client) NewRealtimeClientFromServiceUser(tenant string) *RealtimeClient {
 	if len(c.ServiceUsers) == 0 {
-		Logger.Panic("No service users found")
+		Logger.Fatal("No service users found")
 	}
 	for _, user := range c.ServiceUsers {
 		if tenant == user.Tenant || tenant == "" {
@@ -148,7 +221,6 @@ func (c *Client) NewRealtimeClientFromServiceUser(tenant string) *RealtimeClient
 // C8Y_TENANT - Tenant name e.g. mycompany
 // C8Y_USER - Username e.g. myuser@mycompany.com
 // C8Y_PASSWORD - Password
-//
 func NewClientFromEnvironment(httpClient *http.Client, skipRealtimeClient bool) *Client {
 	baseURL := os.Getenv("C8Y_HOST")
 	tenant, username, password := GetServiceUserFromEnvironment()
@@ -162,6 +234,40 @@ func NewClientUsingBootstrapUserFromEnvironment(httpClient *http.Client, baseURL
 	client := NewClient(httpClient, baseURL, tenant, username, password, skipRealtimeClient)
 	client.Microservice.SetServiceUsers()
 	return client
+}
+
+// NewHTTPClient initializes an http.Client which can be then provided to the NewClient
+func NewHTTPClient(opts ...ClientOption) *http.Client {
+	tr := http.DefaultTransport
+	for _, opt := range opts {
+		tr = opt(tr)
+	}
+	return &http.Client{Transport: tr}
+}
+
+// ReplaceTripper substitutes the underlying RoundTripper with a custom one
+func ReplaceTripper(tr http.RoundTripper) ClientOption {
+	return func(http.RoundTripper) http.RoundTripper {
+		return tr
+	}
+}
+
+// WithInsecureSkipVerify sets the ssl verify settings to control if ssl certificates are verified or not
+// Useful when using self-signed certificates in a trusted environment. Should only be used if you know you
+// can trust the server, otherwise just leave verify enabled.
+func WithInsecureSkipVerify(skipVerify bool) ClientOption {
+	return func(tr http.RoundTripper) http.RoundTripper {
+		tr.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: skipVerify}
+		return tr
+	}
+}
+
+type funcTripper struct {
+	roundTrip func(*http.Request) (*http.Response, error)
+}
+
+func (tr funcTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	return tr.roundTrip(req)
 }
 
 // NewClient returns a new Cumulocity API client. If a nil httpClient is
@@ -199,7 +305,7 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 
 	var realtimeClient *RealtimeClient
 	if !skipRealtimeClient {
-		Logger.Printf("Creating realtime client %s\n", fmtURL)
+		Logger.Infof("Creating realtime client %s", fmtURL)
 		realtimeClient = NewRealtimeClient(fmtURL, nil, tenant, username, password)
 	}
 
@@ -218,6 +324,7 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 	c.common.client = c
 	c.Alarm = (*AlarmService)(&c.common)
 	c.Audit = (*AuditService)(&c.common)
+	c.DeviceCertificate = (*DeviceCertificateService)(&c.common)
 	c.DeviceCredentials = (*DeviceCredentialsService)(&c.common)
 	c.Measurement = (*MeasurementService)(&c.common)
 	c.Operation = (*OperationService)(&c.common)
@@ -227,9 +334,12 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 	c.Application = (*ApplicationService)(&c.common)
 	c.Identity = (*IdentityService)(&c.common)
 	c.Microservice = (*MicroserviceService)(&c.common)
+	c.Notification2 = (*Notification2Service)(&c.common)
 	c.Context = (*ContextService)(&c.common)
 	c.Retention = (*RetentionRuleService)(&c.common)
 	c.TenantOptions = (*TenantOptionsService)(&c.common)
+	c.Software = (*InventorySoftwareService)(&c.common)
+	c.Firmware = (*InventoryFirmwareService)(&c.common)
 	c.User = (*UserService)(&c.common)
 	return c
 }
@@ -288,53 +398,125 @@ func NewBasicAuthString(tenant, username, password string) string {
 
 // RequestOptions struct which contains the options to be used with the SendRequest function
 type RequestOptions struct {
-	Method       string
-	Host         string
-	Path         string
-	Accept       string
-	ContentType  string
-	Query        interface{} // Use string if you want
-	Body         interface{}
-	ResponseData interface{}
-	FormData     map[string]io.Reader
-	Header       http.Header
-	IgnoreAccept bool
-	DryRun       bool
+	Method           string
+	Host             string
+	Path             string
+	Accept           string
+	ContentType      string
+	Query            interface{} // Use string if you want
+	Body             interface{}
+	ResponseData     interface{}
+	FormData         map[string]io.Reader
+	Header           http.Header
+	IgnoreAccept     bool
+	NoAuthentication bool
+	DryRun           bool
+	DryRunResponse   bool
+	PrepareRequest   func(*http.Request) (*http.Request, error)
+}
+
+func (r *RequestOptions) GetPath() (string, error) {
+	prefixPath := ""
+	if r.Host != "" {
+		if u, err := url.Parse(r.Host); err == nil {
+			prefixPath = u.Path
+		}
+	}
+
+	tempURL, err := url.Parse(r.Path)
+	if err != nil {
+		return "", err
+	}
+
+	tempURL.Path = path.Join(prefixPath, tempURL.Path)
+	return tempURL.Path, nil
+}
+
+func (r *RequestOptions) GetEscapedPath() (string, error) {
+	p, err := r.GetPath()
+	if err != nil {
+		return "", err
+	}
+	return strings.ReplaceAll(url.PathEscape(p), "%2F", "/"), nil
+}
+
+func (r *RequestOptions) GetQuery() (string, error) {
+	tempURL, err := url.Parse(r.Path)
+	if err != nil {
+		return "", err
+	}
+
+	queryParams := tempURL.Query()
+
+	if r.Query != nil {
+		queryPart, ok := r.Query.(string)
+		if !ok {
+			if v, err := addOptions("", r.Query); err == nil {
+				queryPart = v
+			} else {
+				return "", err
+			}
+		}
+
+		if queryPart != "" {
+			query, _ := url.ParseQuery(queryPart)
+
+			for key, query := range query {
+				for _, qValue := range query {
+					queryParams.Add(key, qValue)
+				}
+			}
+		}
+	}
+
+	return queryParams.Encode(), nil
+	// return queryParams.Encode(), nil
 }
 
 // SendRequest creates and sends a request
 func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Response, error) {
 
-	queryParams := ""
+	localLogger := Logger
+	var err error
 
-	if options.Query != nil {
-		if v, ok := options.Query.(string); ok {
-			queryParams = v
-		} else {
-			if v, err := addOptions("", options.Query); err == nil {
-				queryParams = v
-			} else {
-				Logger.Printf("ERROR: Could not convert query parameter interface{} to a string. %s", err)
-				return nil, err
-			}
-		}
+	currentPath, err := options.GetPath()
+	if err != nil {
+		return nil, err
+	}
+
+	currentQuery, err := options.GetQuery()
+	if err != nil {
+		return nil, err
 	}
 
 	var req *http.Request
-	var err error
 
 	if len(options.FormData) > 0 {
-		Logger.Printf("Sending multipart form-data")
+		localLogger.Infof("Sending multipart form-data")
 		// Process FormData (for multipart/form-data requests)
-		// TODO: Somehow use the c.NewRequet function as it provides
+		// TODO: Somehow use the c.NewRequest function as it provides
 		// the authentication required for the request
 		u, _ := url.Parse(c.BaseURL.String())
-		u.Path = path.Join(u.Path, options.Path)
+		u.Path = path.Join(u.Path, currentPath)
 		req, err = prepareMultipartRequest(options.Method, u.String(), options.FormData)
-		c.SetAuthorization(req)
+		if err != nil {
+			return nil, err
+		}
+		if !options.NoAuthentication {
+			c.SetAuthorization(req)
+		}
+		c.SetHostHeader(req)
 	} else {
 		// Normal request
-		req, err = c.NewRequest(options.Method, options.Path, queryParams, options.Body)
+		if options.NoAuthentication {
+			req, err = c.NewRequestWithoutAuth(options.Method, currentPath, currentQuery, options.Body)
+		} else {
+			req, err = c.NewRequest(options.Method, currentPath, currentQuery, options.Body)
+		}
+	}
+
+	if err != nil {
+		return nil, err
 	}
 
 	if !options.IgnoreAccept {
@@ -373,12 +555,12 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 		baseURL, parseErr := url.Parse(host)
 
 		if parseErr != nil {
-			Logger.Warningf("Ignoring invalid host %s. %s", host, parseErr)
+			localLogger.Warnf("Ignoring invalid host %s. %s", host, parseErr)
 			err = parseErr
 		} else {
 			req.URL.Host = baseURL.Host
 			req.URL.Scheme = baseURL.Scheme
-			Logger.Printf("Using alternative host %s://%s", req.URL.Scheme, req.URL.Host)
+			localLogger.Infof("Using alternative host %s://%s", req.URL.Scheme, req.URL.Host)
 		}
 
 	}
@@ -387,35 +569,46 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 		return nil, err
 	}
 
-	if options.DryRun {
+	dryRun := c.requestOptions.DryRun || options.DryRun
+
+	// Check for single request overrides
+	if ctxOptions := ctx.Value(GetContextCommonOptionsKey()); ctxOptions != nil {
+		if ctxOptions, ok := ctxOptions.(CommonOptions); ok {
+
+			Logger.Debugf(
+				"Overriding common options provided in the context. dryRun=%s",
+				strconv.FormatBool(ctxOptions.DryRun),
+			)
+			dryRun = ctxOptions.DryRun
+		}
+	}
+
+	if dryRun {
 		// Show information about the request i.e. url, headers, body etc.
-		message := fmt.Sprintf("What If: Sending [%s] request to [%s]\n", req.Method, req.URL)
-
-		if len(req.Header) > 0 {
-			message += "\nHeaders:\n"
+		if c.requestOptions.DryRunHandler != nil {
+			c.requestOptions.DryRunHandler(&options, req)
+		} else {
+			c.DefaultDryRunHandler(&options, req)
 		}
 
-		for key, val := range req.Header {
-			if len(val) > 0 {
-				message += fmt.Sprintf("%s: %s\n", key, val[0])
-			}
-		}
-
-		if v, parseErr := json.MarshalIndent(options.Body, " ", "  "); parseErr == nil && !bytes.Equal(v, []byte("null")) {
-			message += fmt.Sprintf("\nBody:\n%s", v)
-		}
-
-		Logger.Println(c.hideSensitiveInformationIfActive(message))
-
-		if command, curlErr := http2curl.GetCurlCommand(req); curlErr == nil {
-			_ = command
-			// Logger.Printf("curl: %s\n", strings.ReplaceAll(command.String(), "\"", "\\\""))
+		if options.DryRunResponse || c.requestOptions.DryRunResponse {
+			return &Response{
+				Response: &http.Response{
+					Request: req,
+				},
+			}, nil
 		}
 		return nil, nil
 	}
 
-	Logger.Info(c.hideSensitiveInformationIfActive(fmt.Sprintf("Headers: %v", req.Header)))
+	localLogger.Info(c.hideSensitiveInformationIfActive(fmt.Sprintf("Headers: %v", req.Header)))
 
+	if options.PrepareRequest != nil {
+		req, err = options.PrepareRequest(req)
+		if err != nil {
+			return nil, err
+		}
+	}
 	resp, err := c.Do(ctx, req, options.ResponseData)
 
 	c.SetJSONItems(resp, options.ResponseData)
@@ -431,65 +624,64 @@ func (c *Client) SetJSONItems(resp *Response, v interface{}) error {
 	if resp == nil {
 		return nil
 	}
-	// data.Item = gjson.Parse(resp.JSON.Raw)
 
 	switch t := v.(type) {
 	case *Alarm:
-		t.Item = *resp.JSON
+		t.Item = resp.JSON()
 	case *AlarmCollection:
-		t.Items = resp.JSON.Get("alarms").Array()
+		t.Items = resp.JSON("alarms").Array()
 
 	case *Application:
-		t.Item = *resp.JSON
+		t.Item = resp.JSON()
 	case *ApplicationCollection:
-		t.Items = resp.JSON.Get("applications").Array()
+		t.Items = resp.JSON("applications").Array()
 
 	case *AuditRecord:
-		t.Item = *resp.JSON
+		t.Item = resp.JSON()
 	case *AuditRecordCollection:
-		t.Items = resp.JSON.Get("auditRecords").Array()
+		t.Items = resp.JSON("auditRecords").Array()
 
 	case *Event:
-		t.Item = *resp.JSON
+		t.Item = resp.JSON()
 	case *EventCollection:
-		t.Items = resp.JSON.Get("events").Array()
+		t.Items = resp.JSON("events").Array()
 
 	case *EventBinary:
-		t.Item = *resp.JSON
+		t.Item = resp.JSON()
 
 	case *GroupCollection:
-		t.Items = resp.JSON.Get("groups").Array()
+		t.Items = resp.JSON("groups").Array()
 
 	case *Identity:
-		t.Item = *resp.JSON
+		t.Item = resp.JSON()
 
 	case *ManagedObject:
-		t.Item = *resp.JSON
+		t.Item = resp.JSON()
 	case *ManagedObjectCollection:
-		t.Items = resp.JSON.Get("managedObjects").Array()
+		t.Items = resp.JSON("managedObjects").Array()
 
 	case *Measurement:
-		t.Item = *resp.JSON
+		t.Item = resp.JSON()
 	case *Measurements:
-		t.Items = resp.JSON.Get("measurements").Array()
+		t.Items = resp.JSON("measurements").Array()
 	case *MeasurementCollection:
-		t.Items = resp.JSON.Get("measurements").Array()
+		t.Items = resp.JSON("measurements").Array()
 
 	case *Operation:
-		t.Item = *resp.JSON
+		t.Item = resp.JSON()
 	case *OperationCollection:
-		t.Items = resp.JSON.Get("operations").Array()
+		t.Items = resp.JSON("operations").Array()
 
 	case *RoleCollection:
-		t.Items = resp.JSON.Get("roles").Array()
+		t.Items = resp.JSON("roles").Array()
 
 	case *TenantOption:
-		t.Item = *resp.JSON
+		t.Item = resp.JSON()
 	case *TenantOptionCollection:
-		t.Items = resp.JSON.Get("options").Array()
+		t.Items = resp.JSON("options").Array()
 
 	case *UserCollection:
-		t.Items = resp.JSON.Get("users").Array()
+		t.Items = resp.JSON("users").Array()
 
 	}
 
@@ -509,18 +701,25 @@ func (c *Client) NewRequest(method, path string, query string, body interface{})
 
 	u := c.BaseURL.ResolveReference(rel)
 
-	var buf io.ReadWriter
+	var buf io.Reader
 	if body != nil {
 		switch v := body.(type) {
 		case *os.File:
 			buf = v
+		case string:
+			buf = NewStringReader(v)
+		case []byte:
+			buf = NewByteReader(v)
+		case io.Reader:
+			buf = v
 		default:
-			buf = new(bytes.Buffer)
-			err := json.NewEncoder(buf).Encode(body)
+			jsonbuf := new(bytes.Buffer)
+			err := json.NewEncoder(jsonbuf).Encode(body)
 
 			if err != nil {
 				return nil, err
 			}
+			buf = NewStringReader(jsonbuf.String())
 		}
 	}
 	req, err := http.NewRequest(method, u.String(), buf)
@@ -537,66 +736,224 @@ func (c *Client) NewRequest(method, path string, query string, body interface{})
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgent)
 	req.Header.Set("X-APPLICATION", "go-client")
+	c.SetHostHeader(req)
 	return req, nil
 }
 
-// SetAuthorization sets the configured authorization to the given request. By default it will set the Basic Authorization header
-func (c *Client) SetAuthorization(req *http.Request) {
+// Set the domain which will be used to set the Host header manually. Set the domain if it differs from the BaseURL
+func (c *Client) SetDomain(v string) {
+	if !strings.Contains(v, "://") {
+		v = "https://" + v
+	}
+	if domain, err := url.Parse(v); err == nil {
+		c.Domain = domain.Host
+	}
+}
+
+// NewRequestWithoutAuth returns a request with the required additional base url, accept and user-agent.NewRequest
+func (c *Client) NewRequestWithoutAuth(method, path string, query string, body interface{}) (*http.Request, error) {
+	if !strings.HasSuffix(c.BaseURL.Path, "/") {
+		return nil, fmt.Errorf("BaseURL must have a trailing slash, but %q does not", c.BaseURL)
+	}
+
+	rel := &url.URL{Path: path}
+	if query != "" {
+		rel.RawQuery = query
+	}
+
+	u := c.BaseURL.ResolveReference(rel)
+
+	var buf io.Reader
+	if body != nil {
+		switch v := body.(type) {
+		case *os.File:
+			buf = v
+		case string:
+			buf = NewStringReader(v)
+		case []byte:
+			buf = NewByteReader(v)
+		case io.Reader:
+			buf = v
+		default:
+			jsonbuf := new(bytes.Buffer)
+			err := json.NewEncoder(jsonbuf).Encode(body)
+
+			if err != nil {
+				return nil, err
+			}
+			buf = NewStringReader(jsonbuf.String())
+		}
+	}
+	req, err := http.NewRequest(method, u.String(), buf)
+	if err != nil {
+		return nil, err
+	}
+	if body != nil {
+		if strings.ToUpper(method) != "GET" {
+			req.Header.Set("Content-Type", "application/json")
+		}
+	}
+
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", c.UserAgent)
+	req.Header.Set("X-APPLICATION", "go-client")
+	c.SetHostHeader(req)
+	return req, nil
+}
+
+func (c *Client) SetHostHeader(req *http.Request) {
+	if req != nil && c.Domain != "" && c.Domain != req.URL.Host {
+		// setting the Host header actually does nothing however
+		// it makes the setting visible when logging
+		req.Header.Set("Host", c.Domain)
+		req.Host = c.Domain
+	}
+}
+
+// SetBasicAuthorization sets the configured authorization to the given request. By default it will set the Basic Authorization header
+func (c *Client) SetBasicAuthorization(req *http.Request) {
 	var headerUsername string
-	if c.UseTenantInUsername {
+	if c.UseTenantInUsername && c.TenantName != "" {
 		headerUsername = fmt.Sprintf("%s/%s", c.TenantName, c.Username)
 	} else {
 		headerUsername = c.Username
 	}
-	Logger.Debugf("Current username: %s\n", c.hideSensitiveInformationIfActive(headerUsername))
+	Logger.Infof("Current username: %s", c.hideSensitiveInformationIfActive(headerUsername))
 	req.SetBasicAuth(headerUsername, c.Password)
 }
 
-// Response is a Cumulocity API response. This wraps the standard http.Response
-// returned from Cumulocity and provides convenient access to things like
-// pagination links.
-type Response struct {
-	*http.Response
-
-	// JSONData raw json response
-	JSONData *string
-
-	// JSON
-	JSON *gjson.Result
+// SetAuthorization sets the configured authorization to the given request. By default it will set the Basic Authorization header
+func (c *Client) SetAuthorization(req *http.Request) {
+	switch c.AuthorizationMethod {
+	case AuthMethodOAuth2Internal:
+		c.SetBearerAuthorization(req)
+		c.addOAuth2ToRequest(req)
+	case AuthMethodNone:
+		break
+	case AuthMethodBasic:
+		fallthrough
+	default:
+		c.SetBasicAuthorization(req)
+	}
 }
 
-// DecodeJSON returns the json response decoded into the given interface
-func (r *Response) DecodeJSON(v interface{}) error {
-	if r.JSON == nil {
-		return fmt.Errorf("JSON object does not exist (i.e. is nil)")
+// GetXSRFToken returns the XSRF Token if found in the configured cookies
+func (c *Client) GetXSRFToken() string {
+	for _, cookie := range c.Cookies {
+		if strings.ToUpper(cookie.Name) == "XSRF-TOKEN" {
+			return cookie.Value
+		}
 	}
-	err := DecodeJSONBytes([]byte(r.JSON.Raw), v)
+	return ""
+}
+
+// SetCookies set the cookies to use for all rest requests
+func (c *Client) SetCookies(cookies []*http.Cookie) {
+	c.clientMu.Lock()
+	defer c.clientMu.Unlock()
+	c.Cookies = cookies
+}
+
+// SetToken sets the Bearer auth token to use for all rest requests
+func (c *Client) SetToken(v string) {
+	c.clientMu.Lock()
+	defer c.clientMu.Unlock()
+	c.Token = v
+}
+
+// SetBearerAuthorization set bearer authorization header
+func (c *Client) SetBearerAuthorization(req *http.Request) {
+	if c.Token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.Token)
+	}
+}
+
+func (c *Client) addOAuth2ToRequest(req *http.Request) {
+	if c.Cookies == nil {
+		return
+	}
+
+	cookieValues := make([]string, 0)
+	for _, cookie := range c.Cookies {
+		if cookie.Name == "XSRF-TOKEN" {
+			req.Header.Set("X-"+cookie.Name, cookie.Value)
+		} else {
+			cookieValues = append(cookieValues, fmt.Sprintf("%s=%s", cookie.Name, cookie.Value))
+		}
+	}
+
+	if len(cookieValues) > 0 {
+		req.Header.Add("Cookie", strings.Join(cookieValues, "; "))
+	}
+}
+
+// LoginUsingOAuth2 login to Cumulocity using OAuth2 and save the cookies from the response
+func (c *Client) LoginUsingOAuth2(ctx context.Context, initRequest ...string) error {
+
+	data := url.Values{}
+	data.Set("grant_type", "PASSWORD")
+	data.Set("username", c.Username)
+	data.Set("password", c.Password)
+	tfaCode := "undefined"
+	if c.TFACode != "" {
+		tfaCode = c.TFACode
+	}
+	data.Set("tfa_code", tfaCode)
+
+	headers := http.Header{}
+	headers.Add("Content-Length", strconv.Itoa(len(data.Encode())))
+
+	options := &RequestOptions{
+		Method:      "POST",
+		Path:        "/tenant/oauth",
+		Query:       fmt.Sprintf("tenant_id=%s", c.TenantName),
+		Accept:      "*/*",
+		Header:      headers,
+		ContentType: "application/x-www-form-urlencoded;charset=UTF-8",
+		Body:        data.Encode(),
+	}
+
+	if len(initRequest) > 0 && initRequest[0] != "" {
+		if v, err := url.Parse(initRequest[0]); err == nil {
+			options.Path = v.Path
+			options.Query = v.RawQuery
+		}
+	}
+
+	resp, err := c.SendRequest(
+		ctx,
+		*options,
+	)
 
 	if err != nil {
 		return err
 	}
+
+	c.SetCookies(resp.Cookies())
+
+	// read authorization token from cookies
+	for _, cookie := range resp.Cookies() {
+		if strings.EqualFold(cookie.Name, "authorization") {
+			c.SetToken(cookie.Value)
+			break
+		}
+	}
+
+	// test
+	c.AuthorizationMethod = AuthMethodOAuth2Internal
+	tenant, _, err := c.Tenant.GetCurrentTenant(ctx)
+	if err != nil {
+		return err
+	}
+	c.TenantName = tenant.Name
 	return nil
 }
 
-// newResponse creates a new Response for the provided http.Response.
-// r must not be nil.
-func newResponse(r *http.Response) *Response {
-	response := &Response{Response: r}
-
-	// Copy the r.Body into another reader, so it is left "untouched"
-	// https://stackoverflow.com/questions/23070876/reading-body-of-http-request-without-modifying-request-state
-	buf, _ := ioutil.ReadAll(r.Body)
-	rdr1 := ioutil.NopCloser(bytes.NewBuffer(buf))
-	rdr2 := ioutil.NopCloser(bytes.NewBuffer(buf))
-	bodyBytes, _ := ioutil.ReadAll(rdr1)
-	bodyString := string(bodyBytes)
-	response.JSONData = &bodyString
-
-	jsonObject := gjson.Parse(bodyString)
-	response.JSON = &jsonObject
-
-	r.Body = rdr2
-	return response
+// SetRequestOptions sets default request options to use in all requests
+func (c *Client) SetRequestOptions(options DefaultRequestOptions) {
+	c.clientMu.Lock()
+	defer c.clientMu.Unlock()
+	c.requestOptions = options
 }
 
 func withContext(ctx context.Context, req *http.Request) *http.Request {
@@ -611,17 +968,17 @@ func withContext(ctx context.Context, req *http.Request) *http.Request {
 //
 // The provided ctx must be non-nil. If it is canceled or times out,
 // ctx.Err() will be returned.
-func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Response, error) {
+func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}, middleware ...RequestMiddleware) (*Response, error) {
 	req = withContext(ctx, req)
 
 	// Check if an authorization key is provided in the context, if so then override the c8y authentication
 	if authToken := ctx.Value(GetContextAuthTokenKey()); authToken != nil {
-		Logger.Printf("Overriding basic auth provided in the context\n")
+		Logger.Infof("Overriding basic auth provided in the context")
 		req.Header.Set("Authorization", authToken.(string))
 	}
 
 	if req != nil {
-		Logger.Printf("Sending request: %s %s", req.Method, c.hideSensitiveInformationIfActive(req.URL.String()))
+		Logger.Infof("Sending request: %s %s", req.Method, c.hideSensitiveInformationIfActive(req.URL.String()))
 	}
 
 	// Log the body (if applicable)
@@ -629,16 +986,26 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 		switch v := req.Body.(type) {
 		case *os.File:
 			// Only log the file name
-			Logger.Printf("Body (file): %s", v.Name())
+			Logger.Infof("Body (file): %s", v.Name())
+		case *ProxyReader:
+			Logger.Infof("Body: %s", v.GetValue())
 		default:
 			// Don't print out multi part forms, but everything else is fine.
 			if !strings.Contains(req.Header.Get("Content-Type"), "multipart/form-data") {
-				// bodyBytes, _ := ioutil.ReadAll(io.LimitReader(v, 4096))
-				bodyBytes, _ := ioutil.ReadAll(v)
+				// bodyBytes, _ := io.ReadAll(io.LimitReader(v, 4096))
+				bodyBytes, _ := io.ReadAll(v)
 				req.Body.Close() //  must close
-				req.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-				Logger.Printf("Body: %s", bodyBytes)
+				req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+				Logger.Infof("Body: %s", bytes.TrimSpace(bodyBytes))
 			}
+		}
+	}
+
+	var err error
+	for _, opt := range middleware {
+		req, err = opt(req)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -646,7 +1013,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 	if err != nil {
 		// If we got an error, and the context has been canceled,
 		// the context's error is probably more useful.
-		Logger.Printf("ERROR: Request failed. %s", err)
+		Logger.Infof("ERROR: Request failed. %s", err)
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
@@ -664,32 +1031,48 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}) (*Res
 		return nil, err
 	}
 
-	defer resp.Body.Close()
-
 	response := newResponse(resp)
 
 	err = CheckResponse(resp)
 	if err != nil {
 		// even though there was an error, we still return the response
 		// in case the caller wants to inspect it further
-		Logger.Printf("Invalid response received from server. %s", err)
+		Logger.Infof("Invalid response received from server. %s", err)
 		return response, err
 	}
 
-	if v != nil {
-		if w, ok := v.(io.Writer); ok {
-			io.Copy(w, resp.Body)
-		} else {
-			err = DecodeJSONReader(resp.Body, v)
-
-			if err == io.EOF {
-				Logger.Printf("Error decoding body. %s", err)
-				err = nil // ignore EOF errors caused by empty response body
+	if ctxOptions := ctx.Value(GetContextCommonOptionsKey()); ctxOptions != nil {
+		if ctxOptions, ok := ctxOptions.(CommonOptions); ok {
+			if ctxOptions.OnResponse != nil {
+				ctxOptions.OnResponse(response.Response)
 			}
 		}
 	}
 
-	Logger.Println(fmt.Sprintf("Status code: %v", response.StatusCode))
+	if v != nil {
+		defer resp.Body.Close()
+
+		if w, ok := v.(io.Writer); ok {
+			_, err = io.Copy(w, response.Response.Body)
+		} else {
+			buf, _ := io.ReadAll(response.Response.Body)
+			response.body = buf
+
+			if jsonUtilities.IsValidJSON(buf) {
+				err = response.DecodeJSON(v)
+				if err == io.EOF {
+					Logger.Infof("Error decoding body. %s", err)
+					err = nil // ignore EOF errors caused by empty response body
+				}
+			}
+		}
+	} else {
+		defer resp.Body.Close()
+		buf, _ := io.ReadAll(response.Response.Body)
+		response.body = buf
+	}
+
+	Logger.Info(fmt.Sprintf("Status code: %v", response.StatusCode()))
 
 	return response, err
 }
@@ -711,17 +1094,18 @@ func sanitizeURL(uri *url.URL) *url.URL {
 /*
 An Error reports more details on an individual error in an ErrorResponse.
 These are the possible validation error codes:
-    missing:
-        resource does not exist
-    missing_field:
-        a required field on a resource has not been set
-    invalid:
-        the formatting of a field is invalid
-    already_exists:
-        another resource has the same valid as this field
-    custom:
-        some resources return this (e.g. github.User.CreateKey()), additional
-        information is set in the Message field of the Error
+
+	missing:
+	    resource does not exist
+	missing_field:
+	    a required field on a resource has not been set
+	invalid:
+	    the formatting of a field is invalid
+	already_exists:
+	    another resource has the same valid as this field
+	custom:
+	    some resources return this (e.g. github.User.CreateKey()), additional
+	    information is set in the Message field of the Error
 */
 type Error struct {
 	Resource     string `json:"resource"` // resource on which the error occurred
@@ -741,26 +1125,23 @@ func (e *Error) Error() string {
 An ErrorResponse reports one or more errors caused by an API request.
 */
 type ErrorResponse struct {
-	Response *http.Response // HTTP response that caused this error
-	Message  string         `json:"message"` // error message
-	Errors   []Error        `json:"errors"`  // more detail on individual errors
-	// Block is only populated on certain types of errors such as code 451.
-	// See https://developer.github.com/changes/2016-03-17-the-451-status-code-is-now-supported/
-	// for more information.
-	Block *struct {
-		Reason    string     `json:"reason,omitempty"`
-		CreatedAt *Timestamp `json:"created_at,omitempty"`
-	} `json:"block,omitempty"`
-	// Most errors will also include a documentation_url field pointing
-	// to some content that might help you resolve the error, see
-	// https://developer.github.com/v3/#client-errors
-	DocumentationURL string `json:"documentation_url,omitempty"`
+	Response  *http.Response `json:"-"`                 // HTTP response that caused this error
+	ErrorType string         `json:"error,omitempty"`   // Error type formatted as "<<resource type>>/<<error name>>"". For example, an object not found in the inventory is reported as "inventory/notFound".
+	Message   string         `json:"message,omitempty"` // error message
+	Info      string         `json:"info,omitempty"`    // URL to an error description on the Internet.
+
+	// Error details. Only available in DEBUG mode.
+	Details *struct {
+		ExpectionClass      string `json:"expectionClass,omitempty"`
+		ExceptionMessage    string `json:"exceptionMessage,omitempty"`
+		ExpectionStackTrace string `json:"expectionStackTrace,omitempty"`
+	} `json:"details,omitempty"`
 }
 
 func (r *ErrorResponse) Error() string {
-	return fmt.Sprintf("%v %v: %d %v %+v",
+	return fmt.Sprintf("%v %v: %d %v %v",
 		r.Response.Request.Method, sanitizeURL(r.Response.Request.URL),
-		r.Response.StatusCode, r.Message, r.Errors)
+		r.Response.StatusCode, r.ErrorType, r.Message)
 }
 
 // AcceptedError occurs when Cumulocity returns 202 Accepted response with an
@@ -781,7 +1162,6 @@ func (*AcceptedError) Error() string {
 // API error responses are expected to have either no response
 // body, or a JSON response body that maps to ErrorResponse. Any other
 // response body will be silently ignored.
-//
 func CheckResponse(r *http.Response) error {
 	if r.StatusCode == http.StatusAccepted {
 		return &AcceptedError{}
@@ -790,7 +1170,7 @@ func CheckResponse(r *http.Response) error {
 		return nil
 	}
 	errorResponse := &ErrorResponse{Response: r}
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 
 	if err == nil && data != nil {
 		DecodeJSONBytes(data, errorResponse)
@@ -807,12 +1187,95 @@ func (c *Client) hideSensitiveInformationIfActive(message string) string {
 	if os.Getenv("USERNAME") != "" {
 		message = strings.ReplaceAll(message, os.Getenv("USERNAME"), "******")
 	}
-	message = strings.ReplaceAll(message, c.TenantName, "{tenant}")
-	message = strings.ReplaceAll(message, c.Username, "{username}")
-	message = strings.ReplaceAll(message, c.Password, "{password}")
+	if c.TenantName != "" {
+		message = strings.ReplaceAll(message, c.TenantName, "{tenant}")
+	}
+	if c.Username != "" {
+		message = strings.ReplaceAll(message, c.Username, "{username}")
+	}
+	if c.Password != "" {
+		message = strings.ReplaceAll(message, c.Password, "{password}")
+	}
+	if c.Token != "" {
+		message = strings.ReplaceAll(message, c.Token, "{token}")
+	}
+
+	if c.BaseURL != nil {
+		message = strings.ReplaceAll(message, strings.TrimRight(c.BaseURL.Host, "/"), "{host}")
+	}
+	if c.Domain != "" {
+		message = strings.ReplaceAll(message, c.Domain, "{domain}")
+	}
 
 	basicAuthMatcher := regexp.MustCompile(`(Basic\s+)[A-Za-z0-9=]+`)
 	message = basicAuthMatcher.ReplaceAllString(message, "$1 {base64 tenant/username:password}")
 
+	// bearerAuthMatcher := regexp.MustCompile(`(Bearer\s+)\S+`)
+	// message = bearerAuthMatcher.ReplaceAllString(message, "$1 {token}")
+
+	oauthMatcher := regexp.MustCompile(`(authorization=)[^\s]+`)
+	message = oauthMatcher.ReplaceAllString(message, "$1{OAuth2Token}")
+
+	xsrfTokenMatcher := regexp.MustCompile(`(?i)((X-)?Xsrf-Token:)\s*[^\s]+`)
+	message = xsrfTokenMatcher.ReplaceAllString(message, "$1 {xsrfToken}")
+
 	return message
+}
+
+// DefaultDryRunHandler is the default dry run handler
+func (c *Client) DefaultDryRunHandler(options *RequestOptions, req *http.Request) {
+	// Show information about the request i.e. url, headers, body etc.
+	message := fmt.Sprintf("What If: Sending [%s] request to [%s]\n", req.Method, req.URL)
+
+	if len(req.Header) > 0 {
+		message += "\nHeaders:\n"
+	}
+
+	// sort header names
+	headerNames := make([]string, 0, len(req.Header))
+	for key := range req.Header {
+		headerNames = append(headerNames, key)
+	}
+
+	sort.Strings(headerNames)
+
+	for _, key := range headerNames {
+		val := req.Header[key]
+		message += fmt.Sprintf("%s: %s\n", key, val[0])
+	}
+
+	if options.Body != nil && RequestSupportsBody(req.Method) {
+		if v, parseErr := json.MarshalIndent(options.Body, "", "  "); parseErr == nil && !bytes.Equal(v, []byte("null")) {
+			message += fmt.Sprintf("\nBody:\n%s", v)
+		} else {
+			// TODO: check if this can display body reader as string?
+			message += fmt.Sprintf("\nBody:\n%v", options.Body)
+		}
+	} else {
+		message += "\nBody: (empty)\n"
+	}
+
+	if options.FormData != nil && len(options.FormData) > 0 {
+		message += "\nForm Data:\n"
+
+		// Sort formdata keys
+		keys := make([]string, 0, len(options.FormData))
+		for key := range options.FormData {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+
+		for _, key := range keys {
+			if key == "file" {
+				message += fmt.Sprintf("%s: (file contents)\n", key)
+			} else {
+				buf := new(strings.Builder)
+				if _, err := io.Copy(buf, options.FormData[key]); err == nil {
+					message += fmt.Sprintf("%s: %s\n", key, buf.String())
+				}
+			}
+		}
+	}
+
+	Logger.Info(c.hideSensitiveInformationIfActive(message))
 }

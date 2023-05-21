@@ -9,7 +9,7 @@ import (
 // TenantOptionsService does something
 type TenantOptionsService service
 
-// TenantOption is a setting used to customise a tenant
+// TenantOption is a setting used to customize a tenant
 type TenantOption struct {
 	Category string `json:"category,omitempty"`
 	Key      string `json:"key,omitempty"`
@@ -144,4 +144,9 @@ func (s *TenantOptionsService) GetSystemOption(ctx context.Context, category, ke
 		ResponseData: data,
 	})
 	return data, resp, err
+}
+
+// GetVersion returns Cumulocity version information
+func (s *TenantOptionsService) GetVersion(ctx context.Context) (*TenantOption, *Response, error) {
+	return s.GetSystemOption(ctx, "system", "version")
 }

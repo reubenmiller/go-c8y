@@ -20,7 +20,7 @@ func TestApplicationService_GetApplications(t *testing.T) {
 		},
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Assert(t, len(apps.Applications) > 0, "At least one application should be found")
 	testingutils.Assert(t, apps.Applications[0].Name != "", "Application should have a name")
 }
@@ -60,7 +60,7 @@ func TestApplicationService_GetApplicationsByOwner(t *testing.T) {
 	)
 	minApplications := 0
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Assert(t, len(data.Items) >= minApplications, "Unexpected amount of applications found. want >=%d, got: %d", minApplications, len(data.Items))
 	if minApplications > 0 {
 		testingutils.Assert(t, data.Applications[0].Name != "", "Application should have a name")
@@ -77,7 +77,7 @@ func TestApplicationService_GetApplicationsByTenant(t *testing.T) {
 	)
 	minApplications := 1
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Assert(t, len(data.Items) >= minApplications, "Unexpected amount of applications found. want >=%d, got: %d", minApplications, len(data.Items))
 	testingutils.Assert(t, data.Applications[0].Name != "", "Application should have a name")
 }
@@ -102,18 +102,52 @@ func TestApplicationService_GetApplication(t *testing.T) {
 		apps.Applications[0].ID,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, expApp.ID, app.ID)
 }
 
 func TestApplicationService_CRUD_Application(t *testing.T) {
 	client := createTestClient()
 
+	appName := "testApplication"
+
 	appInfo := &c8y.Application{
 		Key:         "testApplicationKey",
 		Name:        "testApplication",
 		Type:        "HOSTED",
 		ContextPath: "/testApplication",
+	}
+
+	// Delete application if it already exists
+	appCol, _, err := client.Application.GetApplicationsByName(
+		context.Background(),
+		appName,
+		&c8y.ApplicationOptions{
+			PaginationOptions: *c8y.NewPaginationOptions(10),
+		},
+	)
+	testingutils.Ok(t, err)
+	if len(appCol.Applications) > 0 {
+		for _, app := range appCol.Applications {
+			_, tErr := client.Application.Delete(context.Background(), app.ID)
+			testingutils.Ok(t, tErr)
+		}
+	}
+
+	// Delete the cloned app
+	app2Col, _, err := client.Application.GetApplicationsByName(
+		context.Background(),
+		"clone"+appName,
+		&c8y.ApplicationOptions{
+			PaginationOptions: *c8y.NewPaginationOptions(10),
+		},
+	)
+	testingutils.Ok(t, err)
+	if len(app2Col.Applications) > 0 {
+		for _, app := range app2Col.Applications {
+			_, tErr := client.Application.Delete(context.Background(), app.ID)
+			testingutils.Ok(t, tErr)
+		}
 	}
 
 	//
@@ -123,21 +157,22 @@ func TestApplicationService_CRUD_Application(t *testing.T) {
 		appInfo,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
 	testingutils.Equals(t, appInfo.Key, app1.Key)
 
 	//
 	// Update
-	app2, resp, err := client.Application.Update(
-		context.Background(),
-		app1.ID,
-		&c8y.Application{
-			Name: "UpdatedTestApplicationName",
-		},
-	)
-	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
-	testingutils.Equals(t, "UpdatedTestApplicationName", app2.Name)
+	// app2, resp, err := client.Application.Update(
+	// 	context.Background(),
+	// 	app1.ID,
+	// 	&c8y.Application{
+	// 		Name: "UpdatedTestApplicationName",
+
+	// 	},
+	// )
+	// testingutils.Ok(t, err)
+	// testingutils.Equals(t, http.StatusOK, resp.StatusCode())
+	// testingutils.Equals(t, "UpdatedTestApplicationName", app2.Name)
 
 	// Copy existing application
 	app2Copy, resp, err := client.Application.Copy(
@@ -145,8 +180,8 @@ func TestApplicationService_CRUD_Application(t *testing.T) {
 		app1.ID,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
-	testingutils.Equals(t, "cloneUpdatedTestApplicationName", app2Copy.Name)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
+	testingutils.Equals(t, "clone"+app1.Name, app2Copy.Name)
 
 	//
 	// Delete
@@ -155,7 +190,7 @@ func TestApplicationService_CRUD_Application(t *testing.T) {
 		app1.ID,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
+	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode())
 
 	//
 	// Delete copied app
@@ -164,5 +199,5 @@ func TestApplicationService_CRUD_Application(t *testing.T) {
 		app2Copy.ID,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
+	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode())
 }

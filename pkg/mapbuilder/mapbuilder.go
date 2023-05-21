@@ -58,7 +58,7 @@ local isMandatory(o, prop) = {
 	}
 
 	// evaluate the jsonnet
-	out, err := vm.EvaluateSnippet("file", jsonnetImport)
+	out, err := vm.EvaluateAnonymousSnippet("file", jsonnetImport)
 	return out, err
 }
 

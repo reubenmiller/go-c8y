@@ -27,7 +27,7 @@ func TestTenantOptionsService_CRUD_Option(t *testing.T) {
 		},
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, category, option.Category)
 	testingutils.Equals(t, optionKey, option.Key)
 	testingutils.Equals(t, optionValue, option.Value)
@@ -41,7 +41,7 @@ func TestTenantOptionsService_CRUD_Option(t *testing.T) {
 	)
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, category, option2.Category)
 	testingutils.Equals(t, optionKey, option2.Key)
 	testingutils.Equals(t, optionValue, option2.Value)
@@ -57,7 +57,7 @@ func TestTenantOptionsService_CRUD_Option(t *testing.T) {
 	)
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, category, option3.Category)
 	testingutils.Equals(t, optionKey, option3.Key)
 	testingutils.Equals(t, optionValue2, option3.Value)
@@ -83,7 +83,7 @@ func TestTenantOptionsService_CRUD_Options(t *testing.T) {
 	)
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, "value1", options["prop1"])
 	testingutils.Equals(t, "value2", options["prop2"])
 	testingutils.Equals(t, "value3", options["prop3"])
@@ -96,7 +96,7 @@ func TestTenantOptionsService_CRUD_Options(t *testing.T) {
 	)
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, "value1", options2["prop1"])
 	testingutils.Equals(t, "value2", options2["prop2"])
 	testingutils.Equals(t, "value3", options2["prop3"])
@@ -119,7 +119,7 @@ func TestTenantOptionsService_GetOptions(t *testing.T) {
 		settings,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 
 	//
 	// Get options by category
@@ -128,7 +128,7 @@ func TestTenantOptionsService_GetOptions(t *testing.T) {
 		category,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, "value1", filteredOptionsByCategory["prop1"])
 	testingutils.Equals(t, "value2", filteredOptionsByCategory["prop2"])
 
@@ -141,7 +141,7 @@ func TestTenantOptionsService_GetOptions(t *testing.T) {
 		c8y.NewPaginationOptions(100),
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Assert(t, len(allOptions.Options) >= 2, "Should be at least 2 options")
 
 	filteredOptions := map[string]string{}

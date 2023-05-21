@@ -84,6 +84,24 @@ type TenantUsageStatisticsSummaryExtended struct {
 	AlarmsCreatedCount                int64     `json:"alarmsCreatedCount,omitempty"`
 }
 
+// TenantLoginOptions tenant login options
+type TenantLoginOptions struct {
+	Self         string              `json:"self"`
+	LoginOptions []TenantLoginOption `json:"loginOptions"`
+}
+
+// TenantLoginOption tenant login option
+type TenantLoginOption struct {
+	ID                   string `json:"id"`
+	Self                 string `json:"self"`
+	Type                 string `json:"type"`
+	UserManagementSource string `json:"userManagementSource,omitempty"`
+	TFAStrategy          string `json:"tfaStrategy,omitempty"`
+	InitRequest          string `json:"initRequest,omitempty"`
+	GrantType            string `json:"grantType,omitempty"`
+	VisibleOnLoginPage   bool   `json:"visibleOnLoginPage"`
+}
+
 // GetTenantStatisticsSummary returns summary of requests and database usage from the start of this month until now.
 func (s *TenantService) GetTenantStatisticsSummary(ctx context.Context, opt *TenantSummaryOptions) (*TenantSummary, *Response, error) {
 	data := new(TenantSummary)
@@ -92,6 +110,18 @@ func (s *TenantService) GetTenantStatisticsSummary(ctx context.Context, opt *Ten
 		Path:         "tenant/statistics/summary",
 		Query:        opt,
 		ResponseData: data,
+	})
+	return data, resp, err
+}
+
+// GetLoginOptions returns the login options available for the tenant
+func (s *TenantService) GetLoginOptions(ctx context.Context) (*TenantLoginOptions, *Response, error) {
+	data := new(TenantLoginOptions)
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:           "GET",
+		Path:             "tenant/loginOptions",
+		NoAuthentication: true,
+		ResponseData:     data,
 	})
 	return data, resp, err
 }

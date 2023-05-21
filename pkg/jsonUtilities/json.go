@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -66,7 +66,7 @@ func DecodeJSONFile(filename string) (map[string]interface{}, error) {
 
 	contents := make(map[string]interface{})
 
-	b, err := ioutil.ReadAll(jsonFile)
+	b, err := io.ReadAll(jsonFile)
 	if err != nil {
 		return nil, fmt.Errorf("%w", ErrReadFile)
 	}

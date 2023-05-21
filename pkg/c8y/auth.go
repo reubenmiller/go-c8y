@@ -32,7 +32,7 @@ func DecodeBasicAuth(auth string, host string) (*ServiceUser, error) {
 	if strings.Contains(username, "/") {
 		usernameParts := strings.SplitN(username, "/", 2)
 		if len(usernameParts) != 2 {
-			return nil, errors.New("Username does not contain the tenant name")
+			return nil, errors.New("username does not contain the tenant name")
 		}
 		tenant = usernameParts[0]
 		username = usernameParts[1]
@@ -41,7 +41,7 @@ func DecodeBasicAuth(auth string, host string) (*ServiceUser, error) {
 		if parts := strings.Split(host, "."); len(parts) > 0 {
 			tenant = parts[0]
 		} else {
-			return nil, errors.New("Could not detect tenant name from host url")
+			return nil, errors.New("could not detect tenant name from host url")
 		}
 	}
 	user := &ServiceUser{

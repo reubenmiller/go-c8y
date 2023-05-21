@@ -29,8 +29,8 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/smtp"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -110,7 +110,7 @@ func getTLSConfig(pemFileDirPaths []string, hostName string) (config *tls.Config
 
 		// Put together all the PEM files to decode them as a whole byte slice.
 		for _, pfp := range pemFilePaths {
-			if bytes, e = ioutil.ReadFile(pfp); e == nil {
+			if bytes, e = os.ReadFile(pfp); e == nil {
 				pemEncodedContent = append(pemEncodedContent, bytes...)
 			} else {
 				return nil, fmt.Errorf("cannot read file: %s: %s", pfp, e.Error())

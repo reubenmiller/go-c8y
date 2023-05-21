@@ -52,7 +52,7 @@ func (c *Configuration) InitConfiguration() {
 	config.BindEnv("c8y.microservice.isolation", c8y.EnvironmentMicroserviceIsolation)
 
 	// Set proxy settings if defined. Otherwise the existing HTTP_PROXY and HTTPS_PROXY settings
-	// will be honoured
+	// will be honored
 	proxyHost := config.GetString("http.proxyHost")
 	proxyPort := config.GetString("http.proxyPort")
 

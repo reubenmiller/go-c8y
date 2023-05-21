@@ -34,11 +34,11 @@ func (s *MeasurementService) NewMeasurementSourceByName(ctx context.Context, nam
 	totalFound := len(devices.ManagedObjects)
 
 	if totalFound == 0 {
-		return nil, fmt.Errorf("Not matching devices found. The query must return exactly 1 device")
+		return nil, fmt.Errorf("no matching devices found. The query must return exactly 1 device")
 	}
 
 	if totalFound > 1 {
-		return nil, fmt.Errorf("More than 1 device was found. The query must return exactly 1 device. Name: %s", name)
+		return nil, fmt.Errorf("more than 1 device was found. The query must return exactly 1 device. Name: %s", name)
 	}
 
 	source := &MeasurementSource{
@@ -59,11 +59,12 @@ type MeasurementSource struct {
 // FragmentName is a fragment name which can be added to a measurement object.
 // These are commonly used to tag particular measurements with additional information
 // In JSON a fragment name will look like this:
-// {
-//   ...
-//   customMarker: {},
-//   ...
-// }
+//
+//	{
+//	  ...
+//	  customMarker: {},
+//	  ...
+//	}
 type FragmentName string
 
 // NewFragmentNameSeries returns a new array of fragment names will can be appended to a particular measurement
@@ -137,7 +138,7 @@ type MeasurementRepresentation struct {
 	ValueFragmentTypes []ValueFragmentType `json:"-"`
 }
 
-// MarshalJSON custom marshalling of the Value Fragment Type representation in a measurement
+// MarshalJSON custom marshaling of the Value Fragment Type representation in a measurement
 func (m ValueFragmentType) MarshalJSON() ([]byte, error) {
 	buffer := bytes.NewBufferString("{")
 
@@ -184,11 +185,11 @@ func (m ValueFragmentType) MarshalJSON() ([]byte, error) {
 			valueStr = setMeasurementValue(v, value.Unit)
 
 		default:
-			// Try marshalling it if it is a complex object.
+			// Try marshaling it if it is a complex object.
 			// This will rely on the user to add marshaling flags to it
 			b, err := json.Marshal(value)
 			if err != nil {
-				return nil, fmt.Errorf("Could not marshal value. %s", err)
+				return nil, fmt.Errorf("could not marshal value. %s", err)
 			}
 			valueStr = string(b)
 		}
@@ -204,7 +205,7 @@ func (m ValueFragmentType) MarshalJSON() ([]byte, error) {
 }
 
 // MarshalJSON converts the Measurement Representation to a json string
-// A custom marshalling is required as the meausurement object is structured
+// A custom marshaling is required as the meausurement object is structured
 // differently to the official Cumulocity Measurement structure to make it easier to handle
 func (m MeasurementRepresentation) MarshalJSON() ([]byte, error) {
 	// Collect the json property strings, then join all of the parts together at the end
@@ -231,16 +232,16 @@ func (m MeasurementRepresentation) MarshalJSON() ([]byte, error) {
 
 		b, err := json.Marshal(valueFragmentType)
 		if err != nil {
-			return nil, fmt.Errorf("Could not marshal valueFragmentType. %s", err)
+			return nil, fmt.Errorf("could not marshal valueFragmentType. %s", err)
 		}
 
 		// Remove the "{" and "}" object brackets from the returned result as we need to merge the
 		// object properties to the overall measurement.
-		parts = append(parts, fmt.Sprintf("%s", b[1:len(b)-1]))
+		parts = append(parts, string(b[1:len(b)-1]))
 	}
 
 	o := []byte(fmt.Sprintf("{%s}", strings.Join(parts, ",")))
-	Logger.Printf("%s\n", o)
+	Logger.Infof("%s", o)
 
 	return o, nil
 }

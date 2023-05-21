@@ -38,7 +38,7 @@ func TestOperationBuilder_CreateOperation(t *testing.T) {
 		builder,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
 	testingutils.Equals(t, testDevice.ID, op.DeviceID)
 }
 
@@ -55,7 +55,7 @@ testProp=1
 		configOp,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
 	testingutils.Equals(t, testDevice.ID, op.DeviceID)
 }
 

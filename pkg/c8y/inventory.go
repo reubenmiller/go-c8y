@@ -1,18 +1,17 @@
 package c8y
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
 	"path"
 
 	"github.com/pkg/errors"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/binary"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/contentType"
 
 	"github.com/tidwall/gjson"
 	"go.uber.org/zap"
@@ -43,15 +42,30 @@ type ManagedObjectOptions struct {
 }
 
 // BinaryObjectOptions managed object options which can be given with the managed object request
-type BinaryObjectOptions struct {
-	Type string `url:"type,omitempty"`
+type ManagedObjectDeleteOptions struct {
+	// When set to true and the managed object is a device or group, all the hierarchy will be deleted
+	Cascade *bool `url:"cascade,omitempty"`
 
-	FragmentType string `url:"fragmentType,omitempty"`
+	// When set to true all the hierarchy will be deleted without checking the type of managed object. It takes precedence over the parameter cascade
+	ForceCascade *bool `url:"forceCascade,omitempty"`
 
-	// Read-only collection of managed objects fetched for a given list of ids (placeholder {ids}),for example "?ids=41,43,68".
-	Ids []string `url:"ids,omitempty"`
+	// When set to true and the managed object is a device, it deletes the associated device user (credentials)
+	DeviceUser *bool `url:"withDeviceUser,omitempty"`
+}
 
-	PaginationOptions
+func (o *ManagedObjectDeleteOptions) WithCascade(v bool) *ManagedObjectDeleteOptions {
+	o.Cascade = &v
+	return o
+}
+
+func (o *ManagedObjectDeleteOptions) WithForceCascade(v bool) *ManagedObjectDeleteOptions {
+	o.ForceCascade = &v
+	return o
+}
+
+func (o *ManagedObjectDeleteOptions) WithDeviceUser(v bool) *ManagedObjectDeleteOptions {
+	o.DeviceUser = &v
+	return o
 }
 
 // EmptyFragment fragment used for special c8y fragments, i.e. c8y_IsDevice etc.
@@ -97,6 +111,10 @@ type ManagedObject struct {
 	Owner            string              `json:"owner,omitempty"`
 	DeviceParents    *ParentDevices      `json:"deviceParents,omitempty"`
 	ChildDevices     *ChildDevices       `json:"childDevices,omitempty"`
+	AdditionParents  *AdditionParents    `json:"additionParents,omitempty"`
+	AssetParents     *AssetParents       `json:"assetParents,omitempty"`
+	ChildAdditions   *ChildAdditions     `json:"childAdditions,omitempty"`
+	ChildAssets      *ChildAssets        `json:"childAssets,omitempty"`
 	Kpi              *Kpi                `json:"c8y_Kpi,omitempty"`
 	C8yConfiguration *AgentConfiguration `json:"c8y_Configuration,omitempty"`
 
@@ -152,6 +170,26 @@ type ParentDevices struct {
 	References []ManagedObjectReference `json:"references"`
 }
 
+type AdditionParents struct {
+	Self       string                   `json:"self"`
+	References []ManagedObjectReference `json:"references"`
+}
+
+type AssetParents struct {
+	Self       string                   `json:"self"`
+	References []ManagedObjectReference `json:"references"`
+}
+
+type ChildAssets struct {
+	Self       string                   `json:"self"`
+	References []ManagedObjectReference `json:"references"`
+}
+
+type ChildAdditions struct {
+	Self       string                   `json:"self"`
+	References []ManagedObjectReference `json:"references"`
+}
+
 // ManagedObjectCollection todo
 type ManagedObjectCollection struct {
 	*BaseResponse
@@ -178,8 +216,8 @@ type ManagedObjectReferencesCollection struct {
 
 // ManagedObjectReference Managed object reference
 type ManagedObjectReference struct {
-	Self          string        `json:"self"`
-	ManagedObject ManagedObject `json:"managedObject"`
+	Self          string        `json:"self,omitempty"`
+	ManagedObject ManagedObject `json:"managedObject,omitempty"`
 }
 
 // GetDevicesByName returns managed object devices by filter by a name
@@ -275,6 +313,30 @@ func (s *InventoryService) GetChildDevices(ctx context.Context, id string, opt *
 	return data, resp, err
 }
 
+// GetChildAdditions returns a list of child additions related to a given managed object
+func (s *InventoryService) GetChildAdditions(ctx context.Context, id string, opt *ManagedObjectOptions) (*ManagedObjectReferencesCollection, *Response, error) {
+	data := new(ManagedObjectReferencesCollection)
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "GET",
+		Path:         fmt.Sprintf("inventory/managedObjects/%s/childAdditions", id),
+		Query:        opt,
+		ResponseData: data,
+	})
+	return data, resp, err
+}
+
+// GetChildAssets returns a list of child assets related to a given managed object
+func (s *InventoryService) GetChildAssets(ctx context.Context, id string, opt *ManagedObjectOptions) (*ManagedObjectReferencesCollection, *Response, error) {
+	data := new(ManagedObjectReferencesCollection)
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "GET",
+		Path:         fmt.Sprintf("inventory/managedObjects/%s/childAssets", id),
+		Query:        opt,
+		ResponseData: data,
+	})
+	return data, resp, err
+}
+
 // Update updates a managed object
 // Link: http://cumulocity.com/guides/reference/inventory
 func (s *InventoryService) Update(ctx context.Context, ID string, body interface{}) (*ManagedObject, *Response, error) {
@@ -315,6 +377,17 @@ func (s *InventoryService) Delete(ctx context.Context, ID string) (*Response, er
 	return resp, err
 }
 
+// Delete a managed object with additional options
+func (s *InventoryService) DeleteWithOptions(ctx context.Context, ID string, options *ManagedObjectDeleteOptions) (*Response, error) {
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method: "DELETE",
+		Path:   "inventory/managedObjects/" + ID,
+		Query:  options,
+	})
+
+	return resp, err
+}
+
 // DownloadBinary downloads a binary by its ID
 func (s *InventoryService) DownloadBinary(ctx context.Context, ID string) (filepath string, err error) {
 	// set binary api
@@ -338,24 +411,10 @@ func (s *InventoryService) DownloadBinary(ctx context.Context, ID string) (filep
 
 	req.Header.Set("Accept", "*/*")
 
-	// Get the data
-	resp, err := client.Do(ctx, req, nil)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	// Check server response
-	if resp.StatusCode != http.StatusOK {
-		err = fmt.Errorf("bad status: %s", resp.Status)
-		return
-	}
-
 	// Create the file
-	tempDir, err := ioutil.TempDir("", "go-c8y_")
-
+	tempDir, err := os.MkdirTemp("", "go-c8y_")
 	if err != nil {
-		err = fmt.Errorf("Could not create temp folder. %s", err)
+		err = fmt.Errorf("could not create temp folder. %s", err)
 		return
 	}
 
@@ -367,10 +426,16 @@ func (s *InventoryService) DownloadBinary(ctx context.Context, ID string) (filep
 	}
 	defer out.Close()
 
-	// Writer the body to file
-	_, err = io.Copy(out, resp.Body)
+	// Get the data
+	resp, err := client.Do(ctx, req, out)
 	if err != nil {
-		filepath = ""
+		os.RemoveAll(tempDir)
+		return "", err
+	}
+
+	// Check server response
+	if resp.StatusCode() != http.StatusOK {
+		err = fmt.Errorf("bad status: %s", resp.Response.Status)
 		return
 	}
 
@@ -378,19 +443,13 @@ func (s *InventoryService) DownloadBinary(ctx context.Context, ID string) (filep
 }
 
 // CreateBinary uploads a given binary to Cumulocity under the inventory managed objects
-func (s *InventoryService) CreateBinary(ctx context.Context, filename string, properties interface{}) (*ManagedObject, *Response, error) {
+func (s *InventoryService) CreateBinary(ctx context.Context, binaryFile binary.MultiPartReader, middleware ...RequestMiddleware) (*ManagedObject, *Response, error) {
 	client := s.client
-	metadataBytes, err := json.Marshal(properties)
+
+	values, err := binaryFile.GetMultiPartBody()
 
 	if err != nil {
-		err = errors.Wrap(err, "Failed to marshal properties")
-		zap.S().Error(err)
 		return nil, nil, err
-	}
-
-	values := map[string]io.Reader{
-		"file":   mustOpen(filename), // lets assume its this file
-		"object": bytes.NewReader(metadataBytes),
 	}
 
 	// set binary api
@@ -398,41 +457,34 @@ func (s *InventoryService) CreateBinary(ctx context.Context, filename string, pr
 	u.Path = path.Join(u.Path, "/inventory/binaries")
 
 	req, err := prepareMultipartRequest("POST", u.String(), values)
-	s.client.SetAuthorization(req)
-
-	req.Header.Set("Accept", "application/json")
-
 	if err != nil {
 		err = errors.Wrap(err, "Could not create binary upload request object")
 		zap.S().Error(err)
 		return nil, nil, err
 	}
+	s.client.SetAuthorization(req)
+
+	req.Header.Set("Accept", "application/json")
 
 	data := new(ManagedObject)
-	resp, err := client.Do(ctx, req, data)
+	resp, err := client.Do(ctx, req, data, middleware...)
 
 	if err != nil {
 		return nil, resp, err
 	}
 
-	data.Item = *resp.JSON
+	data.Item = resp.JSON()
 
 	return data, resp, nil
 }
 
 // UpdateBinary updates an existing binary under the inventory managed objects
-func (s *InventoryService) UpdateBinary(ctx context.Context, ID, filename string) (*ManagedObject, *Response, error) {
-	binarydata, err := os.Open(filename)
-	if err != nil {
-		Logger.Fatal(err)
-	}
-	defer binarydata.Close()
-
+func (s *InventoryService) UpdateBinary(ctx context.Context, ID string, file io.Reader) (*ManagedObject, *Response, error) {
 	data := new(ManagedObject)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "PUT",
 		Path:         "inventory/binaries/" + ID,
-		Body:         binarydata,
+		Body:         file,
 		ResponseData: data,
 	})
 	return data, resp, err
@@ -448,7 +500,7 @@ func (s *InventoryService) DeleteBinary(ctx context.Context, ID string) (*Respon
 }
 
 // GetBinaries returns a list of managed object binaries
-func (s *InventoryService) GetBinaries(ctx context.Context, opt *BinaryObjectOptions) (*ManagedObjectCollection, *Response, error) {
+func (s *InventoryService) GetBinaries(ctx context.Context, opt *ManagedObjectOptions) (*ManagedObjectCollection, *Response, error) {
 	data := new(ManagedObjectCollection)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "GET",
@@ -468,7 +520,7 @@ func (s *InventoryService) ExpandCollection(ctx context.Context, col *ManagedObj
 		if out.Next == nil {
 			return
 		}
-		Logger.Printf("Requesting page (index=%d, max=%d): %s", i, maxPages, *out.Next)
+		Logger.Infof("Requesting page (index=%d, max=%d): %s", i, maxPages, *out.Next)
 
 		urlObj, err := url.Parse(*out.Next)
 
@@ -489,7 +541,7 @@ func (s *InventoryService) ExpandCollection(ctx context.Context, col *ManagedObj
 			return
 		}
 
-		Logger.Printf("Adding pagination results - %d managed objects found", len(data.ManagedObjects))
+		Logger.Infof("Adding pagination results - %d managed objects found", len(data.ManagedObjects))
 
 		out.Items = append(out.Items, data.Items...)
 		out.ManagedObjects = append(out.ManagedObjects, data.ManagedObjects...)
@@ -497,11 +549,95 @@ func (s *InventoryService) ExpandCollection(ctx context.Context, col *ManagedObj
 		out.Statistics = data.Statistics
 
 		if len(data.ManagedObjects) < *data.Statistics.PageSize {
-			Logger.Printf("No more results in pagination result. total=%d, pages=%d", len(data.ManagedObjects), *data.Statistics.PageSize)
+			Logger.Infof("No more results in pagination result. total=%d, pages=%d", len(data.ManagedObjects), *data.Statistics.PageSize)
 			return
 		}
 
 		i++
 	}
 	return
+}
+
+// CreateChildAddition create a new managed object as a child addition to an existing managed object
+func (s *InventoryService) CreateChildAddition(ctx context.Context, ID string, body interface{}) (*ManagedObject, *Response, error) {
+	data := new(ManagedObject)
+
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "POST",
+		Path:         "inventory/managedObjects/" + ID + "/childAdditions",
+		ContentType:  contentType.ContentTypeManagedObject,
+		Body:         body,
+		ResponseData: data,
+	})
+	return data, resp, err
+}
+
+// AddChildAddition add a managed object as a child addition to an existing managed object
+func (s *InventoryService) AddChildAddition(ctx context.Context, ID, childID string) (*ManagedObject, *Response, error) {
+	data := new(ManagedObject)
+
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method: "POST",
+		Accept: contentType.ContentTypeJSON,
+		Path:   "inventory/managedObjects/" + ID + "/childAdditions",
+		Body: &ManagedObjectReference{
+			ManagedObject: ManagedObject{
+				ID: childID,
+			},
+		},
+		ResponseData: data,
+	})
+	return data, resp, err
+}
+
+// CreateChildAdditionWithBinary create a child addition with a child binary upload a binary and creates a software version referencing it
+func (s *InventoryService) CreateChildAdditionWithBinary(ctx context.Context, parentID string, binaryFile binary.MultiPartReader, bodyFunc func(binaryURL string) interface{}, middlware ...RequestMiddleware) (*ManagedObject, *Response, error) {
+	// Upload file
+	binary, resp, err := s.client.Inventory.CreateBinary(ctx, binaryFile, middlware...)
+	if err != nil {
+		return binary, resp, err
+	}
+
+	// Create managed object (as child addition of software)
+	var body interface{}
+	if binary != nil {
+		body = bodyFunc(binary.Self)
+	}
+	mo, resp, err := s.client.Inventory.CreateChildAddition(ctx, parentID, body)
+
+	if err != nil {
+		return mo, resp, err
+	}
+
+	// Add binary as child addition to managed object
+	if childMO, childResp, childErr := s.client.Inventory.AddChildAddition(ctx, mo.ID, binary.ID); err != nil {
+		return childMO, childResp, childErr
+	}
+	return mo, resp, err
+}
+
+// CreateWithBinary create managed object which also has a binary linked as a child addition so that the binary is deleted when the parent maanaged object is deleted
+func (s *InventoryService) CreateWithBinary(ctx context.Context, binaryFile binary.MultiPartReader, bodyFunc func(binaryURL string) interface{}, middlware ...RequestMiddleware) (*ManagedObject, *Response, error) {
+	// Upload file
+	binary, resp, err := s.client.Inventory.CreateBinary(ctx, binaryFile, middlware...)
+	if err != nil {
+		return binary, resp, err
+	}
+
+	// Create managed object
+	var body interface{}
+	if binary != nil {
+		body = bodyFunc(binary.Self)
+	}
+	mo, resp, err := s.client.Inventory.Create(ctx, body)
+
+	if err != nil {
+		return mo, resp, err
+	}
+
+	// Add binary as child addition to managed object
+	if childMO, childResp, childErr := s.client.Inventory.AddChildAddition(ctx, mo.ID, binary.ID); err != nil {
+		return childMO, childResp, childErr
+	}
+	return mo, resp, err
 }

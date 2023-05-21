@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -137,24 +136,10 @@ func (s *EventService) DownloadBinary(ctx context.Context, ID string) (filepath 
 
 	req.Header.Set("Accept", "*/*")
 
-	// Get the data
-	resp, err := client.Do(ctx, req, nil)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	// Check server response
-	if resp.StatusCode != http.StatusOK {
-		err = fmt.Errorf("bad status: %s", resp.Status)
-		return
-	}
-
 	// Create the file
-	tempDir, err := ioutil.TempDir("", "go-c8y_")
-
+	tempDir, err := os.MkdirTemp("", "go-c8y_")
 	if err != nil {
-		err = fmt.Errorf("Could not create temp folder. %s", err)
+		err = fmt.Errorf("could not create temp folder. %s", err)
 		return
 	}
 
@@ -166,10 +151,16 @@ func (s *EventService) DownloadBinary(ctx context.Context, ID string) (filepath 
 	}
 	defer out.Close()
 
-	// Writer the body to file
-	_, err = io.Copy(out, resp.Body)
+	// Get the data
+	resp, err := client.Do(ctx, req, out)
 	if err != nil {
-		filepath = ""
+		os.RemoveAll(tempDir)
+		return "", err
+	}
+
+	// Check server response
+	if resp.StatusCode() != http.StatusOK {
+		err = fmt.Errorf("bad status: %s", resp.Response.Status)
 		return
 	}
 
@@ -180,8 +171,13 @@ func (s *EventService) DownloadBinary(ctx context.Context, ID string) (filepath 
 func (s *EventService) CreateBinary(ctx context.Context, filename string, ID string) (*EventBinary, *Response, error) {
 	client := s.client
 
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	values := map[string]io.Reader{
-		"file": mustOpen(filename), // lets assume its this file
+		"file": file,
 	}
 
 	// set binary api
@@ -189,15 +185,14 @@ func (s *EventService) CreateBinary(ctx context.Context, filename string, ID str
 	u.Path = path.Join(u.Path, "/event/events/"+ID+"/binaries")
 
 	req, err := prepareMultipartRequest("POST", u.String(), values)
-	s.client.SetAuthorization(req)
-
-	req.Header.Set("Accept", "application/json")
-
 	if err != nil {
 		err = errors.Wrap(err, "Could not create binary upload request object")
 		zap.S().Error(err)
 		return nil, nil, err
 	}
+	s.client.SetAuthorization(req)
+
+	req.Header.Set("Accept", "application/json")
 
 	data := new(EventBinary)
 	resp, err := client.Do(ctx, req, data)

@@ -8,20 +8,46 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 )
 
 func prepareMultipartRequest(method string, url string, values map[string]io.Reader) (req *http.Request, err error) {
 	// Prepare a form that you will submit to that URL.
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
-	for key, r := range values {
+
+	// Sort formdata keys
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	for _, key := range keys {
+		r := values[key]
+		if key == "filename" {
+			// Ignore filename as it is used to name the uploaded file
+			continue
+		}
+
 		var fw io.Writer
 		if x, ok := r.(io.Closer); ok {
 			defer x.Close()
 		}
 		// Add an image file
 		if x, ok := r.(*os.File); ok {
-			if fw, err = w.CreateFormFile(key, filepath.Base(x.Name())); err != nil {
+
+			// Check if manual filename field was provided, otherwise use the basename
+			filename := filepath.Base(x.Name())
+			if manual_filename, ok := values["filename"]; ok {
+				if b, rErr := io.ReadAll(manual_filename); rErr == nil {
+					filename = string(b)
+				} else {
+					err = rErr
+				}
+			}
+			if fw, err = w.CreateFormFile(key, filename); err != nil {
 				return
 			}
 		} else {
@@ -102,10 +128,9 @@ func Upload(client *http.Client, url string, values map[string]io.Reader) (err e
 	return
 }
 
-func mustOpen(f string) *os.File {
-	r, err := os.Open(f)
-	if err != nil {
-		panic(err)
-	}
-	return r
+// IsID check if a string is most likely an id
+func IsID(v string) bool {
+	isNotDigit := func(c rune) bool { return c < '0' || c > '9' }
+	value := strings.TrimSpace(v)
+	return strings.IndexFunc(value, isNotDigit) <= -1
 }

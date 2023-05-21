@@ -39,7 +39,7 @@ func TestOperationService_CreateOperation(t *testing.T) {
 	op, resp, err := createOp()
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
 	testingutils.Equals(t, device.ID, op.DeviceID)
 
 	ops, resp, err := client.Operation.GetOperations(
@@ -49,7 +49,7 @@ func TestOperationService_CreateOperation(t *testing.T) {
 		},
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, 1, len(ops.Operations))
 	testingutils.Equals(t, 1, len(ops.Items))
 
@@ -76,7 +76,7 @@ func TestOperationService_UpdateOperation(t *testing.T) {
 	)
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, op1.ID, op2.ID)
 	testingutils.Equals(t, op2.ID, op2.Item.Get("id").String())
 
@@ -93,7 +93,7 @@ func TestOperationService_UpdateOperation(t *testing.T) {
 	)
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, op2.ID, op3.ID)
 	testingutils.Equals(t, "Got bored of waiting", op3.Item.Get("failureReason").String())
 }
@@ -125,7 +125,7 @@ func TestOperationService_DeleteOperation(t *testing.T) {
 	)
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, 3, len(ops.Operations))
 	testingutils.Equals(t, 3, len(ops.Items))
 
@@ -137,7 +137,7 @@ func TestOperationService_DeleteOperation(t *testing.T) {
 		filterOptions,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
+	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode())
 
 	//
 	// Check count of operations after the delete action
@@ -148,7 +148,7 @@ func TestOperationService_DeleteOperation(t *testing.T) {
 	)
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, 0, len(ops.Operations))
 	testingutils.Equals(t, 0, len(ops.Items))
 }

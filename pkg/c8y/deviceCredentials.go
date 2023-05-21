@@ -28,9 +28,12 @@ type NewDeviceRequestOptions struct {
 
 // NewDeviceRequest representation
 type NewDeviceRequest struct {
-	ID     string `json:"id,omitempty"`
-	Status string `json:"status,omitempty"`
-	Self   string `json:"self,omitempty"`
+	ID           string `json:"id,omitempty"`
+	Status       string `json:"status,omitempty"`
+	Self         string `json:"self,omitempty"`
+	Owner        string `json:"owner,omitempty"`
+	CreationTime string `json:"creationTime,omitempty"`
+	TenantID     string `json:"tenantId,omitempty"`
 
 	// Allow access to custom fields
 	Item gjson.Result `json:"-"`
@@ -57,7 +60,7 @@ func (s *DeviceCredentialsService) GetNewDeviceRequest(ctx context.Context, ID s
 }
 
 // GetNewDeviceRequests returns a collection of New Device requests
-func (s *DeviceCredentialsService) GetNewDeviceRequests(ctx context.Context, opt *AlarmCollectionOptions) (*NewDeviceRequestCollection, *Response, error) {
+func (s *DeviceCredentialsService) GetNewDeviceRequests(ctx context.Context, opt *NewDeviceRequestOptions) (*NewDeviceRequestCollection, *Response, error) {
 	data := new(NewDeviceRequestCollection)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "GET",
@@ -151,7 +154,7 @@ func (s *DeviceCredentialsService) PollNewDeviceRequest(ctx context.Context, dev
 				return
 
 			case <-ticker.C:
-				Logger.Printf("Polling for device request")
+				Logger.Infof("Polling for device request")
 				deviceRequest, _, err := s.GetNewDeviceRequest(ctx, deviceID)
 				if err != nil {
 					continue
@@ -161,7 +164,7 @@ func (s *DeviceCredentialsService) PollNewDeviceRequest(ctx context.Context, dev
 				}
 
 			case <-timeoutTimer.C:
-				err <- errors.New("Timeout waiting for device request to reach ACCEPTED state")
+				err <- errors.New("timeout waiting for device request to reach ACCEPTED state")
 				return
 			}
 		}

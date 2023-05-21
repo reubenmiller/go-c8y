@@ -30,7 +30,7 @@ func TestDeviceCredentialsService_PollNewDeviceRequest_CreateGetDelete(t *testin
 		deviceID,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
 	testingutils.Equals(t, deviceID, deviceReq.ID)
 
 	//
@@ -40,7 +40,7 @@ func TestDeviceCredentialsService_PollNewDeviceRequest_CreateGetDelete(t *testin
 		deviceID,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, deviceID, getDeviceReq.ID)
 
 	//
@@ -50,7 +50,7 @@ func TestDeviceCredentialsService_PollNewDeviceRequest_CreateGetDelete(t *testin
 		deviceID,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
+	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode())
 }
 
 func TestDeviceCredentialsService_PollNewDeviceRequest_CRUD(t *testing.T) {
@@ -74,7 +74,7 @@ func TestDeviceCredentialsService_PollNewDeviceRequest_CRUD(t *testing.T) {
 		deviceID,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
 	testingutils.Equals(t, deviceID, deviceReq.ID)
 
 	//
@@ -85,7 +85,7 @@ func TestDeviceCredentialsService_PollNewDeviceRequest_CRUD(t *testing.T) {
 		c8y.NewDeviceRequestAccepted,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, c8y.NewDeviceRequestAccepted, updatedDeviceReq.Status)
 
 	//
@@ -95,7 +95,7 @@ func TestDeviceCredentialsService_PollNewDeviceRequest_CRUD(t *testing.T) {
 		deviceID,
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
+	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode())
 }
 
 func TestDeviceCredentialsService_PollNewDeviceRequest_TimeoutWithInvalidDeviceID(t *testing.T) {

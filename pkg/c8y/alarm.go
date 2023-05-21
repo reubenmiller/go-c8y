@@ -17,7 +17,7 @@ const (
 	AlarmSeverityWarning  = "WARNING"
 )
 
-//  Cumulocity alarm status states
+// Cumulocity alarm status states
 const (
 	AlarmStatusActive       = "ACTIVE"
 	AlarmStatusAcknowledged = "ACKNOWLEDGED"

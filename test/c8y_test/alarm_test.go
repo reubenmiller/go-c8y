@@ -28,7 +28,7 @@ func TestAlarmService_CreateAlarm(t *testing.T) {
 
 	alarm, resp, err := client.Alarm.Create(context.Background(), value)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
 	testingutils.Assert(t, alarm != nil, "Alarm object should not be empty")
 }
 
@@ -50,7 +50,7 @@ func TestAlarmService_UpdateAlarm(t *testing.T) {
 		},
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
 	testingutils.Assert(t, alarm != nil, "Alarm should not be nil", alarm)
 
 	// add check to satisfy linter and nil checks
@@ -68,7 +68,7 @@ func TestAlarmService_UpdateAlarm(t *testing.T) {
 		})
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, "CRITICAL", updatedAlarm1.Severity)
 
 	// Update Text
@@ -80,7 +80,7 @@ func TestAlarmService_UpdateAlarm(t *testing.T) {
 		})
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, "Updated Alarm Text 1", updatedAlarm1.Text)
 
 	// Update Status
@@ -92,7 +92,7 @@ func TestAlarmService_UpdateAlarm(t *testing.T) {
 		})
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, "ACKNOWLEDGED", updatedAlarm1.Status)
 
 	// Update all fields at once
@@ -106,7 +106,7 @@ func TestAlarmService_UpdateAlarm(t *testing.T) {
 		})
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, "CLEARED", updatedAlarm1.Status)
 	testingutils.Equals(t, "MINOR", updatedAlarm1.Severity)
 	testingutils.Equals(t, "Alarm is cleared", updatedAlarm1.Text)
@@ -127,7 +127,7 @@ func TestAlarmService_GetAlarmByID(t *testing.T) {
 		Type:     "TestAlarm1",
 	})
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
 	testingutils.Assert(t, alarm != nil, "Alarm should not be nil", alarm)
 
 	if alarm == nil {
@@ -136,7 +136,7 @@ func TestAlarmService_GetAlarmByID(t *testing.T) {
 
 	alarm2, resp, err := client.Alarm.GetAlarm(context.Background(), alarm.ID)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, alarm.ID, alarm2.ID)
 }
 
@@ -158,7 +158,7 @@ func TestAlarmService_GetAlarmCollection(t *testing.T) {
 
 		alarmObj, resp, respErr := client.Alarm.Create(context.Background(), alarm)
 		testingutils.Ok(t, respErr)
-		testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+		testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
 		testingutils.Assert(t, alarmObj != nil, "Alarm should not be nil", alarmObj)
 		time.Sleep(1000 * time.Millisecond)
 		return alarmObj
@@ -178,7 +178,7 @@ func TestAlarmService_GetAlarmCollection(t *testing.T) {
 		},
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, 3, len(alarmCollection.Alarms))
 	testingutils.Equals(t, 3, len(alarmCollection.Items))
 
@@ -196,7 +196,7 @@ func TestAlarmService_GetAlarmCollection(t *testing.T) {
 		},
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, 1, len(alarmCollection.Alarms))
 	testingutils.Equals(t, alarm2.ID, alarmCollection.Alarms[0].ID)
 }
@@ -219,7 +219,7 @@ func TestAlarmService_BulkUpdateAlarms(t *testing.T) {
 
 		alarmObj, resp, respErr := client.Alarm.Create(context.Background(), alarm)
 		testingutils.Ok(t, respErr)
-		testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+		testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
 		testingutils.Assert(t, alarmObj != nil, "Alarm should not be nil", alarmObj)
 		time.Sleep(1 * time.Second)
 		return alarmObj
@@ -253,7 +253,7 @@ func TestAlarmService_BulkUpdateAlarms(t *testing.T) {
 		resp = &c8y.Response{}
 	}
 
-	switch resp.StatusCode {
+	switch resp.StatusCode() {
 	case http.StatusAccepted:
 		testingutils.Equals(t, c8y.AcceptedError{}, err)
 		// Wait for Cumulocity to process the request in the background
@@ -267,7 +267,7 @@ func TestAlarmService_BulkUpdateAlarms(t *testing.T) {
 	}
 
 	testingutils.Ok(t, err)
-	testingutils.Assert(t, resp.StatusCode == http.StatusAccepted || resp.StatusCode == http.StatusOK, "Accepted or OK")
+	testingutils.Assert(t, resp.StatusCode() == http.StatusAccepted || resp.StatusCode() == http.StatusOK, "Accepted or OK")
 
 	// Filter by Source and Severity
 	// dateFrom, dateTo = c8y.GetDateRange("1min")
@@ -280,7 +280,7 @@ func TestAlarmService_BulkUpdateAlarms(t *testing.T) {
 		},
 	)
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusOK, resp.StatusCode)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, 3, len(alarmCollection.Alarms))
 
 	// should be in reverse order
@@ -313,7 +313,7 @@ func TestAlarmService_RemoveAlarmCollection(t *testing.T) {
 			alarm,
 		)
 		testingutils.Ok(t, respErr)
-		testingutils.Equals(t, http.StatusCreated, resp.StatusCode)
+		testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
 		testingutils.Assert(t, alarmObj != nil, "Alarm should not be nil", alarmObj)
 		return alarmObj
 	}
@@ -341,7 +341,7 @@ func TestAlarmService_RemoveAlarmCollection(t *testing.T) {
 		})
 
 	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode)
+	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode())
 
 	// Get alarms after deletion
 	alarmCollection, _, err = client.Alarm.GetAlarms(
