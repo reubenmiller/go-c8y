@@ -32,7 +32,7 @@ const (
 	// MINIMUMVERSION supported Bayeux version
 	MINIMUMVERSION = "1.0"
 
-	// MinimumRetryDelay is the minimum retry delay in milliseconds to wait before sending another /connect/meta message
+	// MinimumRetryDelay is the minimum retry delay in milliseconds to wait before sending another /meta/connect message
 	MinimumRetryDelay int64 = 500
 )
 
