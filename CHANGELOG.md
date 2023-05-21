@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## Released
+
+### v0.14.0
+
+This release is a cleanup of the project which merges a long standing parallel branch. The parallel branch included a lot of changes which were used by the [go-c8y-cli](https://github.com/reubenmiller/go-c8y-cli) project. And like with any long lasting branches, it was hard to list all of the changes that were done since the last official release. Moving forward all releases will go through a more formal release process.
+
 * Dry option improvements
     * Removed unnecessary indentation when displaying body in prettified json
     * Added dry output of form data information for PUT and POST requests
@@ -24,8 +30,6 @@
 * Added additional properties (owner, tenantId, creationTime) to `NewDeviceRequest`
 * Added support for using bearer authorization
 * Fixed bug when hiding tokens when it is empty
-
-## Released
 
 ### v0.8.0
 
