@@ -8,6 +8,7 @@ test/c8y_test/application.properties
 test/c8y_test/debug.test
 test/c8y_test/application.setup.properties
 c8y.env
+*.env
 main.exe
 *.log
 output
