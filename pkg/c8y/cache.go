@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -86,7 +85,7 @@ func CacheResponse(ttl time.Duration, dir string, isCachable Cachable, options C
 func copyStream(r io.ReadCloser) (io.ReadCloser, io.ReadCloser) {
 	b := &bytes.Buffer{}
 	nr := io.TeeReader(r, b)
-	return ioutil.NopCloser(b), &readCloser{
+	return io.NopCloser(b), &readCloser{
 		Reader: nr,
 		Closer: r,
 	}
@@ -143,7 +142,7 @@ func cacheKey(req *http.Request, opt CacheOptions) (string, error) {
 		defer bodyCopy.Close()
 
 		if len(opt.BodyKeys) > 0 && strings.Contains(req.Header.Get("Accept"), "json") && strings.Contains(req.Header.Get("Accept"), "application") {
-			bodyBytes, err := ioutil.ReadAll(bodyCopy)
+			bodyBytes, err := io.ReadAll(bodyCopy)
 
 			if err != nil {
 				return "", err

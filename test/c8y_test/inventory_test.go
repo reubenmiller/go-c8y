@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -219,7 +218,7 @@ func TestInventoryService_CreateManagedObjectWithBinary(t *testing.T) {
 }
 
 func readOutput(t *testing.T, b io.Reader) string {
-	out, err := ioutil.ReadAll(b)
+	out, err := io.ReadAll(b)
 	testingutils.Ok(t, err)
 	return string(out)
 }

@@ -136,18 +136,16 @@ type MeasurementAggregateValue struct {
 
 // UnmarshalJSON converts the Cumulocity measurement Series response to a format which is easier to parse.
 //
-//
-// {
-//     "series": [ "c8y_Temperature.A", "c8y_Temperature.B" ],
-//     "unit": [ "degC", "degC" ],
-//     "truncated": true,
-//     "values": [
-//         { "timestamp": "2018-11-11T23:20:00.000+01:00", values: [0.0001, 0.1001] },
-//         { "timestamp": "2018-11-11T23:20:01.000+01:00", values: [0.1234, 2.2919] },
-//         { "timestamp": "2018-11-11T23:20:02.000+01:00", values: [0.8370, 4.8756] }
-//     ]
-// }
-//
+//	{
+//	    "series": [ "c8y_Temperature.A", "c8y_Temperature.B" ],
+//	    "unit": [ "degC", "degC" ],
+//	    "truncated": true,
+//	    "values": [
+//	        { "timestamp": "2018-11-11T23:20:00.000+01:00", values: [0.0001, 0.1001] },
+//	        { "timestamp": "2018-11-11T23:20:01.000+01:00", values: [0.1234, 2.2919] },
+//	        { "timestamp": "2018-11-11T23:20:02.000+01:00", values: [0.8370, 4.8756] }
+//	    ]
+//	}
 func (d *MeasurementSeriesGroup) UnmarshalJSON(data []byte) error {
 	c8ySeries := gjson.ParseBytes(data)
 
@@ -329,7 +327,6 @@ func (s *MeasurementService) Delete(ctx context.Context, ID string) (*Response, 
 // timestamp,c8y_Temperature.A,c8y_Temperature.B
 // 2018-11-23T00:45:39+01:00,60.699993,44.300003
 // 2018-11-23T01:45:39+01:00,67.63333,47.199997
-//
 func (d *MeasurementSeriesGroup) MarshalCSV(delimiter string) ([]byte, error) {
 
 	useDelimiter := delimiter

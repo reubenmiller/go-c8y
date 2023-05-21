@@ -163,7 +163,8 @@ func TestEventService_DeleteEvents(t *testing.T) {
 	resp, err := client.Event.DeleteEvents(
 		context.Background(),
 		&c8y.EventCollectionOptions{
-			Type: eventType1,
+			Type:   eventType1,
+			Source: testDevice.ID,
 		},
 	)
 

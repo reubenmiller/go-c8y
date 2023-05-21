@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"flag"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"os/signal"
@@ -24,7 +24,7 @@ func main() {
 	flag.Parse()
 
 	if !*verbose {
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 	}
 
 	// Create the client from the following environment variables

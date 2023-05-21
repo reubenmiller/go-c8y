@@ -59,11 +59,12 @@ type MeasurementSource struct {
 // FragmentName is a fragment name which can be added to a measurement object.
 // These are commonly used to tag particular measurements with additional information
 // In JSON a fragment name will look like this:
-// {
-//   ...
-//   customMarker: {},
-//   ...
-// }
+//
+//	{
+//	  ...
+//	  customMarker: {},
+//	  ...
+//	}
 type FragmentName string
 
 // NewFragmentNameSeries returns a new array of fragment names will can be appended to a particular measurement
@@ -137,7 +138,7 @@ type MeasurementRepresentation struct {
 	ValueFragmentTypes []ValueFragmentType `json:"-"`
 }
 
-// MarshalJSON custom marshalling of the Value Fragment Type representation in a measurement
+// MarshalJSON custom marshaling of the Value Fragment Type representation in a measurement
 func (m ValueFragmentType) MarshalJSON() ([]byte, error) {
 	buffer := bytes.NewBufferString("{")
 
@@ -184,7 +185,7 @@ func (m ValueFragmentType) MarshalJSON() ([]byte, error) {
 			valueStr = setMeasurementValue(v, value.Unit)
 
 		default:
-			// Try marshalling it if it is a complex object.
+			// Try marshaling it if it is a complex object.
 			// This will rely on the user to add marshaling flags to it
 			b, err := json.Marshal(value)
 			if err != nil {
@@ -204,7 +205,7 @@ func (m ValueFragmentType) MarshalJSON() ([]byte, error) {
 }
 
 // MarshalJSON converts the Measurement Representation to a json string
-// A custom marshalling is required as the meausurement object is structured
+// A custom marshaling is required as the meausurement object is structured
 // differently to the official Cumulocity Measurement structure to make it easier to handle
 func (m MeasurementRepresentation) MarshalJSON() ([]byte, error) {
 	// Collect the json property strings, then join all of the parts together at the end

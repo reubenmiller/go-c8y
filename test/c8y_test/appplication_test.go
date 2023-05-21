@@ -129,8 +129,8 @@ func TestApplicationService_CRUD_Application(t *testing.T) {
 	testingutils.Ok(t, err)
 	if len(appCol.Applications) > 0 {
 		for _, app := range appCol.Applications {
-			_, err := client.Application.Delete(context.Background(), app.ID)
-			testingutils.Ok(t, err)
+			_, tErr := client.Application.Delete(context.Background(), app.ID)
+			testingutils.Ok(t, tErr)
 		}
 	}
 
@@ -145,8 +145,8 @@ func TestApplicationService_CRUD_Application(t *testing.T) {
 	testingutils.Ok(t, err)
 	if len(app2Col.Applications) > 0 {
 		for _, app := range app2Col.Applications {
-			_, err := client.Application.Delete(context.Background(), app.ID)
-			testingutils.Ok(t, err)
+			_, tErr := client.Application.Delete(context.Background(), app.ID)
+			testingutils.Ok(t, tErr)
 		}
 	}
 

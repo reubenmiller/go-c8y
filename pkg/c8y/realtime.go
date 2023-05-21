@@ -193,7 +193,7 @@ func getRealtimeURL(host string) *url.URL {
 	return c8yhost
 }
 
-// NewRealtimeClient initialises a new Bayeux client. By default `http.DefaultClient`
+// NewRealtimeClient initializes a new Bayeux client. By default `http.DefaultClient`
 // is used for HTTP connections.
 func NewRealtimeClient(host string, wsDialer *websocket.Dialer, tenant, username, password string) *RealtimeClient {
 	if wsDialer == nil {

@@ -41,8 +41,10 @@ func prepareMultipartRequest(method string, url string, values map[string]io.Rea
 			// Check if manual filename field was provided, otherwise use the basename
 			filename := filepath.Base(x.Name())
 			if manual_filename, ok := values["filename"]; ok {
-				if b, err := io.ReadAll(manual_filename); err == nil {
+				if b, rErr := io.ReadAll(manual_filename); rErr == nil {
 					filename = string(b)
+				} else {
+					err = rErr
 				}
 			}
 			if fw, err = w.CreateFormFile(key, filename); err != nil {

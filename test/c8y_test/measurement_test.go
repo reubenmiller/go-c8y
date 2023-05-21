@@ -114,7 +114,7 @@ func TestMeasurementService_GetMeasurements(t *testing.T) {
 	}
 }
 
-// TestMeasurementService_MarshalMeasurement tests the custom json marshalling function for the
+// TestMeasurementService_MarshalMeasurement tests the custom json marshaling function for the
 // measurement representation.
 func TestMeasurementService_MarshalMeasurement(t *testing.T) {
 	timestamp, _ := time.Parse(time.RFC3339, "2018-11-25T14:41:51+01:00")
@@ -134,7 +134,7 @@ func TestMeasurementService_MarshalMeasurement(t *testing.T) {
 	mJSON, err := json.Marshal(m)
 
 	if err != nil {
-		t.Errorf("Decoding threw an error when marshalling measurement to json. wanted: nil, got: %s", err)
+		t.Errorf("Decoding threw an error when marshaling measurement to json. wanted: nil, got: %s", err)
 	}
 
 	expectedOutput := `{"source":{"id":"12345"},"type":"TestSeries1","time":"2018-11-25T14:41:51+01:00","c8y_Test":{},"c8y_Temperature":{"A":{"value":1.101,"unit":"degC"}}}`
@@ -177,7 +177,7 @@ func TestMeasurementService_MarshalMeasurementMultipleSeries(t *testing.T) {
 	mJSON, err := json.Marshal(m)
 
 	if err != nil {
-		t.Errorf("Decoding threw an error when marshalling measurement to json. wanted: nil, got: %s", err)
+		t.Errorf("Decoding threw an error when marshaling measurement to json. wanted: nil, got: %s", err)
 	}
 
 	expectedOutput := `{"source":{"id":"12345"},"time":"2018-11-25T14:41:51+01:00","c8y_Test":{},"c8y_Temperature":{"A":{"value":1.101,"unit":"degC"},"B":{"value":56.876,"unit":"degC"}}}`

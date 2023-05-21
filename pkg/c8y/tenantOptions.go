@@ -9,7 +9,7 @@ import (
 // TenantOptionsService does something
 type TenantOptionsService service
 
-// TenantOption is a setting used to customise a tenant
+// TenantOption is a setting used to customize a tenant
 type TenantOption struct {
 	Category string `json:"category,omitempty"`
 	Key      string `json:"key,omitempty"`

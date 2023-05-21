@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -178,7 +177,7 @@ func DecodeJSONFile(filepath string, dst interface{}) error {
 	}
 
 	defer fp.Close()
-	buf, err := ioutil.ReadAll(fp)
+	buf, err := io.ReadAll(fp)
 	if err != nil {
 		return err
 	}
@@ -804,7 +803,7 @@ func (c *Client) NewRequestWithoutAuth(method, path string, query string, body i
 
 func (c *Client) SetHostHeader(req *http.Request) {
 	if req != nil && c.Domain != "" && c.Domain != req.URL.Host {
-		// setting the Host header actualy does nothing however
+		// setting the Host header actually does nothing however
 		// it makes the setting visible when logging
 		req.Header.Set("Host", c.Domain)
 		req.Host = c.Domain
@@ -993,10 +992,10 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}, middl
 		default:
 			// Don't print out multi part forms, but everything else is fine.
 			if !strings.Contains(req.Header.Get("Content-Type"), "multipart/form-data") {
-				// bodyBytes, _ := ioutil.ReadAll(io.LimitReader(v, 4096))
-				bodyBytes, _ := ioutil.ReadAll(v)
+				// bodyBytes, _ := io.ReadAll(io.LimitReader(v, 4096))
+				bodyBytes, _ := io.ReadAll(v)
 				req.Body.Close() //  must close
-				req.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+				req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 				Logger.Infof("Body: %s", bytes.TrimSpace(bodyBytes))
 			}
 		}
@@ -1056,7 +1055,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}, middl
 		if w, ok := v.(io.Writer); ok {
 			_, err = io.Copy(w, response.Response.Body)
 		} else {
-			buf, _ := ioutil.ReadAll(response.Response.Body)
+			buf, _ := io.ReadAll(response.Response.Body)
 			response.body = buf
 
 			if jsonUtilities.IsValidJSON(buf) {
@@ -1069,7 +1068,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}, middl
 		}
 	} else {
 		defer resp.Body.Close()
-		buf, _ := ioutil.ReadAll(response.Response.Body)
+		buf, _ := io.ReadAll(response.Response.Body)
 		response.body = buf
 	}
 
@@ -1171,7 +1170,7 @@ func CheckResponse(r *http.Response) error {
 		return nil
 	}
 	errorResponse := &ErrorResponse{Response: r}
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 
 	if err == nil && data != nil {
 		DecodeJSONBytes(data, errorResponse)

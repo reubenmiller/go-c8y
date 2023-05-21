@@ -1,7 +1,7 @@
 package microservice
 
 import (
-	"io/ioutil"
+	"io"
 	"os"
 
 	"go.uber.org/zap"
@@ -27,8 +27,8 @@ func ConfigureLogger(logger *zap.Logger, logPath string) {
 	// implement io.Writer, we can use zapcore.AddSync to add a no-op Sync
 	// method. If they're not safe for concurrent use, we can add a protecting
 	// mutex with zapcore.Lock.)
-	topicDebugging := zapcore.AddSync(ioutil.Discard)
-	topicErrors := zapcore.AddSync(ioutil.Discard)
+	topicDebugging := zapcore.AddSync(io.Discard)
+	topicErrors := zapcore.AddSync(io.Discard)
 
 	// High-priority output should also go to standard error, and low-priority
 	// output should also go to standard out.

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -138,7 +137,7 @@ func (s *EventService) DownloadBinary(ctx context.Context, ID string) (filepath 
 	req.Header.Set("Accept", "*/*")
 
 	// Create the file
-	tempDir, err := ioutil.TempDir("", "go-c8y_")
+	tempDir, err := os.MkdirTemp("", "go-c8y_")
 	if err != nil {
 		err = fmt.Errorf("could not create temp folder. %s", err)
 		return

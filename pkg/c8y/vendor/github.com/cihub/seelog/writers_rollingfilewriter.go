@@ -27,7 +27,6 @@ package seelog
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -591,7 +590,7 @@ func (rw *rollingFileWriter) tempArchiveFile(archiveDir string) (*os.File, error
 	if err := os.MkdirAll(tmp, defaultDirectoryPermissions); err != nil {
 		return nil, err
 	}
-	return ioutil.TempFile(tmp, "archived_logs")
+	return os.CreateTemp(tmp, "archived_logs")
 }
 
 // =============================================================================================

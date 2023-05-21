@@ -28,7 +28,6 @@ type Options struct {
 // The microservice agent will not be registered automatically, you need to call
 // RegisterMicroserviceAgent(). Though before you call it be sure to set your default
 // configuration values in the Config.SetDefault()
-//
 func NewDefaultMicroservice(opts Options) *Microservice {
 	ConfigureLogger(nil, "microservice_bootstrap.log")
 
@@ -75,7 +74,7 @@ func NewDefaultMicroservice(opts Options) *Microservice {
 	return ms
 }
 
-// NewMicroservice create a new microservice where the user can customise the http client and the host
+// NewMicroservice create a new microservice where the user can customize the http client and the host
 // This function will not initiliase the logger (.InitializeLogger()) nor call .Config.InitConfiguration(), it
 // is up to the user to call these functions
 func NewMicroservice(httpClient *http.Client, host string, skipRealtimeClient bool) *Microservice {

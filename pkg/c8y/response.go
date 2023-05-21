@@ -61,6 +61,7 @@ func (r *Response) Body() []byte {
 }
 
 // Status method returns the HTTP status string for the executed request.
+//
 //	Example: 200 OK
 func (r *Response) Status() string {
 	if r.Response == nil {
@@ -70,6 +71,7 @@ func (r *Response) Status() string {
 }
 
 // StatusCode method returns the HTTP status code for the executed request.
+//
 //	Example: 200
 func (r *Response) StatusCode() int {
 	if r.Response == nil {

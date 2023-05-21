@@ -5,7 +5,6 @@ import (
 	"archive/zip"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -76,7 +75,7 @@ func Copy(dst Writer, src Reader) error {
 func copyBuffer(dst Writer, src Reader) (err error) {
 	const defaultFileMode = 0666
 
-	buf, err := ioutil.TempFile("", "archive_copy_buffer")
+	buf, err := os.CreateTemp("", "archive_copy_buffer")
 	if err != nil {
 		return err
 	}

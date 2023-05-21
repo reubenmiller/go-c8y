@@ -22,7 +22,7 @@ package zap
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"runtime"
 	"strings"
@@ -81,7 +81,7 @@ func New(core zapcore.Core, options ...Option) *Logger {
 func NewNop() *Logger {
 	return &Logger{
 		core:        zapcore.NewNopCore(),
-		errorOutput: zapcore.AddSync(ioutil.Discard),
+		errorOutput: zapcore.AddSync(io.Discard),
 		addStack:    zapcore.FatalLevel + 1,
 	}
 }
