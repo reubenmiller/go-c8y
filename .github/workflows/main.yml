@@ -40,17 +40,14 @@ jobs:
         os: [macos-latest, windows-latest, ubuntu-18.04]
 
     steps:
+    - uses: actions/checkout@v3
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version-file: 'go.mod'
-
-    - uses: actions/checkout@v3
-
     - name: Install Task
       uses: arduino/setup-task@v1
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
-
     - name: Run tests
       run: task test
