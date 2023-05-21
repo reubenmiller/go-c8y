@@ -3,7 +3,7 @@ version: '3'
 env:
   ENV: testing
 
-dotenv: ['c8y.env', '{{.ENV}}/c8y.env', '{{.HOME}}/c8y.env']
+dotenv: ['.env', 'c8y.env', '{{.ENV}}/c8y.env', '{{.HOME}}/c8y.env']
 
 tasks:
   test:
@@ -11,6 +11,7 @@ tasks:
     cmds:
       - task: test-c8y
       - task: test-microservice
+      - task: test-race
 
   test-c8y:
     desc: Test c8y package
@@ -21,6 +22,11 @@ tasks:
     desc: Test microservice package
     cmds:
       - go test -v -timeout 30m github.com/reubenmiller/go-c8y/test/microservice_test
+
+  test-race:
+    desc: Test for race conditions
+    cmds:
+      - go test -race -timeout 30s github.com/reubenmiller/go-c8y/test/c8y_test -run "^(TestRealtimeSubscriptions_Unsubscribe)$"
 
   lint:
     desc: Linting
