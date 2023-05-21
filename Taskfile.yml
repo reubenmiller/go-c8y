@@ -2,7 +2,6 @@ version: '3'
 
 env:
   ENV: testing
-  GO111MODULE: on
 
 dotenv: ['c8y.env', '{{.ENV}}/c8y.env', '{{.HOME}}/c8y.env']
 
@@ -32,5 +31,5 @@ tasks:
   docs:
     desc: Launch go doc webserver
     cmds:
-      - go install golang.org/x/tools/cmd/godoc
+      - go install golang.org/x/tools/cmd/godoc@latest
       - godoc -http=":6060"
