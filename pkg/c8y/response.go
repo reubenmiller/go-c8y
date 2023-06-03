@@ -30,6 +30,11 @@ type Response struct {
 	receivedAt time.Time
 }
 
+func (r *Response) SetBody(v []byte) {
+	r.body = v
+	r.size = int64(len(r.body))
+}
+
 func (r *Response) JSON(path ...string) gjson.Result {
 	if len(path) > 0 {
 		return gjson.GetBytes(r.body, path[0])
