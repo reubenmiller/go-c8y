@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/google/go-querystring/query"
 	"github.com/reubenmiller/go-c8y/pkg/jsonUtilities"
@@ -1009,7 +1010,9 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}, middl
 		}
 	}
 
+	start := time.Now()
 	resp, err := c.client.Do(req)
+	duration := time.Since(start)
 	if err != nil {
 		// If we got an error, and the context has been canceled,
 		// the context's error is probably more useful.
@@ -1031,7 +1034,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}, middl
 		return nil, err
 	}
 
-	response := newResponse(resp)
+	response := newResponse(resp, duration)
 
 	err = CheckResponse(resp)
 	if err != nil {

@@ -12,8 +12,8 @@ import (
 
 // newResponse creates a new Response for the provided http.Response.
 // r must not be nil.
-func newResponse(r *http.Response) *Response {
-	response := &Response{Response: r}
+func newResponse(r *http.Response, duration time.Duration) *Response {
+	response := &Response{Response: r, duration: duration}
 	return response
 }
 
@@ -28,6 +28,11 @@ type Response struct {
 	body       []byte
 	size       int64
 	receivedAt time.Time
+	duration   time.Duration
+}
+
+func (r *Response) Duration() time.Duration {
+	return r.duration
 }
 
 func (r *Response) SetBody(v []byte) {
