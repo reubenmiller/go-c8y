@@ -99,6 +99,9 @@ type Client struct {
 	// Cumulocity Tenant
 	TenantName string
 
+	// Cumulocity Version
+	Version string
+
 	// Password for Cumulocity Authentication
 	Password string
 
@@ -946,6 +949,12 @@ func (c *Client) LoginUsingOAuth2(ctx context.Context, initRequest ...string) er
 	if err != nil {
 		return err
 	}
+
+	// Get Cumulocity system version, but don't fail if it does not work
+	if version, err := c.TenantOptions.GetVersion(ctx); err == nil {
+		c.Version = version
+	}
+
 	c.TenantName = tenant.Name
 	return nil
 }
@@ -955,15 +964,6 @@ func (c *Client) SetRequestOptions(options DefaultRequestOptions) {
 	c.clientMu.Lock()
 	defer c.clientMu.Unlock()
 	c.requestOptions = options
-}
-
-// Get the current tenant version
-func (c *Client) GetTenantVersion(ctx context.Context) (string, error) {
-	option, _, err := c.TenantOptions.GetOption(ctx, "system", "version")
-	if err != nil {
-		return "", err
-	}
-	return option.Value, nil
 }
 
 func withContext(ctx context.Context, req *http.Request) *http.Request {
