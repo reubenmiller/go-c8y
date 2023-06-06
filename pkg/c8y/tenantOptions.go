@@ -147,6 +147,10 @@ func (s *TenantOptionsService) GetSystemOption(ctx context.Context, category, ke
 }
 
 // GetVersion returns Cumulocity version information
-func (s *TenantOptionsService) GetVersion(ctx context.Context) (*TenantOption, *Response, error) {
-	return s.GetSystemOption(ctx, "system", "version")
+func (s *TenantOptionsService) GetVersion(ctx context.Context) (string, error) {
+	opt, _, err := s.GetSystemOption(ctx, "system", "version")
+	if err != nil {
+		return "", err
+	}
+	return opt.Value, nil
 }
