@@ -957,6 +957,15 @@ func (c *Client) SetRequestOptions(options DefaultRequestOptions) {
 	c.requestOptions = options
 }
 
+// Get the current tenant version
+func (c *Client) GetTenantVersion(ctx context.Context) (string, error) {
+	option, _, err := c.TenantOptions.GetOption(ctx, "system", "version")
+	if err != nil {
+		return "", err
+	}
+	return option.Value, nil
+}
+
 func withContext(ctx context.Context, req *http.Request) *http.Request {
 	return req.WithContext(ctx)
 }
