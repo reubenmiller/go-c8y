@@ -245,7 +245,7 @@ func (s *Notification2Service) RenewToken(ctx context.Context, opt Notification2
 			isValid = false
 		}
 
-		Logger.Infof("Existing token: alg=%s, valid=%v, expired=%v, issuedAt: %v, expiresAt: %v, subscription=%s, subscriber=%s, tenant=%s", token.Method.Alg(), claims.Valid() == nil, claims.HasExpired(), claims.IssuedAt, claims.ExpiresAt, claims.Subscription(), claims.Subscriber, claims.Tenant())
+		Logger.Infof("Existing token: alg=%s, valid=%v, expired=%v, issuedAt: %v, expiresAt: %v, subscription=%s, subscriber=%s, shared=%v, tenant=%s", token.Method.Alg(), claims.Valid() == nil, claims.HasExpired(), claims.IssuedAt, claims.ExpiresAt, claims.Subscription(), claims.Subscriber, claims.IsShared(), claims.Tenant())
 
 		if opt.Options.Subscription != "" {
 			if claims.Subscription() != opt.Options.Subscription {
