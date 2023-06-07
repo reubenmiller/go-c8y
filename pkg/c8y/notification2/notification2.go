@@ -184,7 +184,7 @@ func (c *Notification2Client) Connect() error {
 }
 
 func (c *Notification2Client) Endpoint() string {
-	// TODO: Support the hide senstive information option
+	// TODO: Support hiding of sensitive information (same as the client)
 	return c.url.String()
 }
 
