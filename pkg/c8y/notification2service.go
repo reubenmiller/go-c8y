@@ -178,7 +178,12 @@ type Notification2ClientOptions struct {
 type Notification2TokenClaim struct {
 	Subscriber string `json:"sub,omitempty"`
 	Topic      string `json:"topic,omitempty"`
+	Shared     string `json:"shared,omitempty"`
 	jwt.RegisteredClaims
+}
+
+func (c *Notification2TokenClaim) IsShared() bool {
+	return strings.EqualFold(c.Shared, "true")
 }
 
 func (c *Notification2TokenClaim) Tenant() string {
@@ -224,6 +229,7 @@ func (s *Notification2Service) RenewToken(ctx context.Context, opt Notification2
 	subscription := opt.Options.Subscription
 	subscriber := opt.Options.Subscriber
 	expiresInMinutes := opt.Options.ExpiresInMinutes
+	shared := opt.Options.Shared
 
 	if opt.Token != "" {
 
@@ -257,6 +263,8 @@ func (s *Notification2Service) RenewToken(ctx context.Context, opt Notification2
 			subscriber = claims.Subscriber
 		}
 
+		shared = claims.IsShared()
+
 		if claimMatch && expiresInMinutes == 0 {
 			// Reuse the expiration time given in the token
 			if claims.ExpiresAt != nil && claims.IssuedAt != nil {
@@ -280,6 +288,7 @@ func (s *Notification2Service) RenewToken(ctx context.Context, opt Notification2
 		ExpiresInMinutes: expiresInMinutes,
 		Subscription:     subscription,
 		Subscriber:       subscriber,
+		Shared:           shared,
 	})
 	if err != nil {
 		return "", err
