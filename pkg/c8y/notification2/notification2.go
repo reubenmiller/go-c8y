@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/tls"
-	"fmt"
 	"math"
 	"net/http"
 	"net/url"
@@ -185,7 +184,8 @@ func (c *Notification2Client) Connect() error {
 }
 
 func (c *Notification2Client) Endpoint() string {
-	return fmt.Sprintf("%s%s", c.url.Host, c.url.Path)
+	// TODO: Support hiding of sensitive information (same as the client)
+	return c.url.String()
 }
 
 func (c *Notification2Client) URL() string {
