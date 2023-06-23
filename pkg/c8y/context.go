@@ -102,3 +102,15 @@ func (s *ContextService) ServiceUserFromRequest(req *http.Request) context.Conte
 func (s *ContextService) CommonOptions(opts CommonOptions) context.Context {
 	return context.WithValue(context.Background(), GetContextCommonOptionsKey(), opts)
 }
+
+// Create a context where dry run is disabled
+func WithDisabledDryRunContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, GetContextCommonOptionsKey(), CommonOptions{
+		DryRun: false,
+	})
+}
+
+// Create a context with common options
+func WithCommonOptionsContext(ctx context.Context, opts CommonOptions) context.Context {
+	return context.WithValue(ctx, GetContextCommonOptionsKey(), opts)
+}
