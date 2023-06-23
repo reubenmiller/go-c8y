@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/go-querystring/query"
 	"github.com/reubenmiller/go-c8y/pkg/jsonUtilities"
 )
@@ -376,6 +377,71 @@ func addOptions(s string, opt interface{}) (string, error) {
 // Noop todo
 func (c *Client) Noop() {
 
+}
+
+// Parse a JWT claims
+func (c *Client) ParseToken(tokenString string) (*CumulocityTokenClaim, error) {
+	parts := strings.Split(tokenString, ".")
+	if len(parts) != 3 {
+		return nil, fmt.Errorf("invalid token. expected 3 fields")
+	}
+	raw, err := base64.RawStdEncoding.DecodeString(parts[1])
+	if err != nil {
+		return nil, err
+	}
+
+	claim := &CumulocityTokenClaim{}
+	err = json.Unmarshal(raw, claim)
+	return claim, err
+}
+
+// Get hostname (parse from either the token)
+func (c *Client) GetHostname() string {
+	if c.Token != "" {
+		claims, err := c.ParseToken(c.Token)
+		if err == nil {
+			if c.BaseURL == nil || c.BaseURL.Host == "" {
+				return claims.Issuer
+			}
+			if strings.Contains(c.BaseURL.Host, claims.Issuer) {
+				return claims.Issuer
+			}
+			return c.BaseURL.Host
+		}
+	}
+	if c.BaseURL == nil {
+		return ""
+	}
+	return c.BaseURL.Host
+}
+
+// Get the username. Parse the token if exists
+func (c *Client) GetUsername() string {
+	if c.Token != "" {
+		claims, err := c.ParseToken(c.Token)
+		if err == nil {
+			return claims.User
+		}
+	}
+	return c.Username
+}
+
+// Get tenant name. Parse the token if exists, or a cached value, and finally the name from the server if required
+func (c *Client) GetTenantName() string {
+	if c.Token != "" {
+		claims, err := c.ParseToken(c.Token)
+		if err == nil {
+			return claims.Tenant
+		}
+	}
+	if c.TenantName != "" {
+		return c.TenantName
+	}
+	tenant, _, err := c.TenantOptions.client.Tenant.GetCurrentTenant(context.Background())
+	if err != nil {
+		return ""
+	}
+	return tenant.Name
 }
 
 // NewAuthorizationContextFromRequest returns a new context with the Authorization token set which will override the Basic Auth in subsequent
@@ -1291,3 +1357,27 @@ func (c *Client) DefaultDryRunHandler(options *RequestOptions, req *http.Request
 
 	Logger.Info(c.hideSensitiveInformationIfActive(message))
 }
+
+type CumulocityTokenClaim struct {
+	User      string `json:"sub,omitempty"`
+	Tenant    string `json:"ten,omitempty"`
+	XSRFToken string `json:"xsrfToken,omitempty"`
+	TGA       bool   `json:"tfa,omitempty"`
+	jwt.RegisteredClaims
+}
+
+// Token claims
+// ------------
+// {
+//   "aud": "test-ci-runner01.latest.stage.c8y.io",
+//   "exp": 1688664540,
+//   "iat": 1687454940,
+//   "iss": "test-ci-runner01.latest.stage.c8y.io",
+//   "jti": "0b912809-9782-4f80-b81f-50616b9aea7f",
+//   "nbf": 1687454940,
+//   "sub": "ciuser01",
+//   "tci": "e92245a3-f088-4490-bda7-54027ba31af5",
+//   "ten": "t2873877",
+//   "tfa": false,
+//   "xsrfToken": "UTpiVqeHmaCHAedigjZS"
+// }
