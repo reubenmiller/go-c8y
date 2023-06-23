@@ -427,7 +427,7 @@ func (c *Client) GetUsername() string {
 }
 
 // Get tenant name. Parse the token if exists, or a cached value, and finally the name from the server if required
-func (c *Client) GetTenantName() string {
+func (c *Client) GetTenantName(ctx context.Context) string {
 	if c.Token != "" {
 		claims, err := c.ParseToken(c.Token)
 		if err == nil {
@@ -437,7 +437,7 @@ func (c *Client) GetTenantName() string {
 	if c.TenantName != "" {
 		return c.TenantName
 	}
-	tenant, _, err := c.TenantOptions.client.Tenant.GetCurrentTenant(context.Background())
+	tenant, _, err := c.TenantOptions.client.Tenant.GetCurrentTenant(ctx)
 	if err != nil {
 		return ""
 	}
