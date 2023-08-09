@@ -255,7 +255,6 @@ func TestAlarmService_BulkUpdateAlarms(t *testing.T) {
 
 	switch resp.StatusCode() {
 	case http.StatusAccepted:
-		testingutils.Equals(t, c8y.AcceptedError{}, err)
 		// Wait for Cumulocity to process the request in the background
 		time.Sleep(5 * time.Second)
 

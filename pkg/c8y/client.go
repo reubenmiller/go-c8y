@@ -1222,18 +1222,6 @@ func (r *ErrorResponse) Error() string {
 		r.Response.StatusCode, r.ErrorType, r.Message)
 }
 
-// AcceptedError occurs when Cumulocity returns 202 Accepted response with an
-// empty body, which means a job was scheduled on the Cumulocity side to process
-// the information needed and cache it.
-// Technically, 202 Accepted is not a real error, it's just used to
-// indicate that results are not ready yet, but should be available soon.
-// The request can be repeated after some time.
-type AcceptedError struct{}
-
-func (*AcceptedError) Error() string {
-	return "job scheduled on Cumulocity side; try again later"
-}
-
 // CheckResponse checks the API response for errors, and returns them if
 // present. A response is considered an error if it has a status code outside
 // the 200 range or equal to 202 Accepted.
@@ -1241,9 +1229,6 @@ func (*AcceptedError) Error() string {
 // body, or a JSON response body that maps to ErrorResponse. Any other
 // response body will be silently ignored.
 func CheckResponse(r *http.Response) error {
-	if r.StatusCode == http.StatusAccepted {
-		return &AcceptedError{}
-	}
 	if c := r.StatusCode; 200 <= c && c <= 299 {
 		return nil
 	}
