@@ -23,7 +23,12 @@ type ApplicationOptions struct {
 	Tenant      string `url:"tenant,omitempty"`
 	Type        string `url:"type,omitempty"`
 	User        string `url:"user,omitempty"`
-	HasVersions bool   `url:"hasVersions,omitempty"`
+	HasVersions *bool  `url:"hasVersions,omitempty"`
+}
+
+func (o *ApplicationOptions) WithHasVersions(v bool) *ApplicationOptions {
+	o.HasVersions = &v
+	return o
 }
 
 // Cumulocity Application Types
