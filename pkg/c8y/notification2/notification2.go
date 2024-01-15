@@ -128,14 +128,16 @@ func getEndpoint(host string, subscription Subscription) *url.URL {
 	if index := strings.Index(host, "://"); index > -1 {
 		fullHost = "wss" + host[index:]
 	}
-	c8yhost, _ := url.Parse(fullHost)
-	c8yhost.Path = "/notification2/consumer/"
+	tempUrl, err := url.Parse(fullHost)
+	if err != nil {
+		Logger.Fatalf("Invalid url. %s", err)
+	}
+	c8yhost := tempUrl.ResolveReference(&url.URL{Path: "notification2/consumer/"})
 	c8yhost.RawQuery = "token=" + subscription.Token
 
 	if subscription.Consumer != "" {
 		c8yhost.RawQuery += "&consumer=" + subscription.Consumer
 	}
-
 	return c8yhost
 }
 

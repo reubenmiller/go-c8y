@@ -188,9 +188,7 @@ func getRealtimeURL(host string) *url.URL {
 		c8yhost.Scheme = "wss"
 	}
 
-	c8yhost.Path = "/cep/realtime"
-
-	return c8yhost
+	return c8yhost.ResolveReference(&url.URL{Path: "cep/realtime"})
 }
 
 // NewRealtimeClient initializes a new Bayeux client. By default `http.DefaultClient`
