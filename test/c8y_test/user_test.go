@@ -218,15 +218,16 @@ func TestUserService_GetUsersByGroup(t *testing.T) {
 	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 
 	// Create temp group
+	name := "group" + testingutils.RandomString(8)
 	group, resp, err := client.User.CreateGroup(
 		context.Background(),
 		&c8y.Group{
-			Name: "CustomCIGroup",
+			Name: name,
 		},
 	)
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
-	testingutils.Equals(t, "CustomCIGroup", group.Name)
+	testingutils.Equals(t, name, group.Name)
 
 	// Add user to temp group
 	_, resp, err = client.User.AddUserToGroup(
@@ -251,16 +252,17 @@ func TestUserService_GetUsersByGroup(t *testing.T) {
 	testingutils.Equals(t, userReferences.References[0].User.Username, currentUser.Username)
 
 	// Update temp group
+	updatedName := name + "-UpdatedName"
 	updatedGroup, resp, err := client.User.UpdateGroup(
 		context.Background(),
 		group.GetID(),
 		&c8y.Group{
-			Name: "CustomCIGroup-UpdatedName",
+			Name: updatedName,
 		},
 	)
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
-	testingutils.Equals(t, "CustomCIGroup-UpdatedName", updatedGroup.Name)
+	testingutils.Equals(t, updatedName, updatedGroup.Name)
 
 	// Remove temp group
 	resp, err = client.User.DeleteGroup(
