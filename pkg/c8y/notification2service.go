@@ -342,7 +342,7 @@ func (s *Notification2Service) CreateClient(ctx context.Context, opt Notificatio
 		return nil, err
 	}
 
-	client := notification2.NewNotification2Client(s.client.BaseURL.Host, nil, notification2.Subscription{
+	client := notification2.NewNotification2Client(s.client.BaseURL.String(), nil, notification2.Subscription{
 		TokenRenewal: func(v string) (string, error) {
 			return s.RenewToken(ctx, Notification2ClientOptions{
 				Token: v,
