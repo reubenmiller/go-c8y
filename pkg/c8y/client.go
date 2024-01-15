@@ -764,7 +764,7 @@ func (c *Client) NewRequest(method, path string, query string, body interface{})
 		return nil, fmt.Errorf("BaseURL must have a trailing slash, but %q does not", c.BaseURL)
 	}
 
-	rel := &url.URL{Path: path}
+	rel := &url.URL{Path: ensureRelativePath(path)}
 	if query != "" {
 		rel.RawQuery = query
 	}
@@ -820,13 +820,20 @@ func (c *Client) SetDomain(v string) {
 	}
 }
 
+// ensureRelativePath returns a relative path variant of the input path.
+// e.g. /test/path => test/path
+func ensureRelativePath(u string) string {
+	return strings.TrimPrefix(u, "/")
+}
+
 // NewRequestWithoutAuth returns a request with the required additional base url, accept and user-agent.NewRequest
 func (c *Client) NewRequestWithoutAuth(method, path string, query string, body interface{}) (*http.Request, error) {
 	if !strings.HasSuffix(c.BaseURL.Path, "/") {
 		return nil, fmt.Errorf("BaseURL must have a trailing slash, but %q does not", c.BaseURL)
 	}
 
-	rel := &url.URL{Path: path}
+	// Note: Ensure path is a relative address
+	rel := &url.URL{Path: ensureRelativePath(path)}
 	if query != "" {
 		rel.RawQuery = query
 	}
