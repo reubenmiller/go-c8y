@@ -52,8 +52,9 @@ func TestUserService_GetUserByUsername(t *testing.T) {
 
 func TestUserService_CRUD(t *testing.T) {
 	client := createTestClient()
-
-	userInput := c8y.NewUser("myciuser01", "myciuser01@no-reply.org", "0d18dksd81j30d*64fl65")
+	name := "myciuser" + testingutils.RandomString(7)
+	password := testingutils.RandomString(32)
+	userInput := c8y.NewUser(name, name+"@no-reply.org", password)
 	userInput.
 		SetFirstName("User01").
 		SetLastName("CI")
