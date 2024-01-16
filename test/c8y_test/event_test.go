@@ -105,7 +105,6 @@ func TestEventService_Update(t *testing.T) {
 }
 
 func TestEventService_Delete(t *testing.T) {
-	t.Skip("Skipping due to ci issue on 1020.40.0 on staging latest. https://cumulocity.atlassian.net/browse/MTM-57310")
 	client := createTestClient()
 
 	testDevice, err := createRandomTestDevice()
