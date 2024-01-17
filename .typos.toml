@@ -1,0 +1,6 @@
+files.extend-exclude = [
+    "**/vendor/"
+]
+
+[default.extend-identifiers]
+mosquitto = "mosquitto"
