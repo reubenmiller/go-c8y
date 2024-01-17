@@ -288,19 +288,19 @@ func TestRealtimeSubscriptions_Unsubscribe(t *testing.T) {
 		}
 	}()
 
-	subcriptionPattern := c8y.RealtimeOperations(device.ID)
+	subscriptionPattern := c8y.RealtimeOperations(device.ID)
 
-	err = <-realtime.Subscribe(subcriptionPattern, ch)
+	err = <-realtime.Subscribe(subscriptionPattern, ch)
 	testingutils.Ok(t, err)
 
 	// Unsubscribe then resubscribe, this should not lead to duplicated messages
-	err = <-realtime.Unsubscribe(subcriptionPattern)
+	err = <-realtime.Unsubscribe(subscriptionPattern)
 	testingutils.Ok(t, err)
 
 	sendOperation() // Subscription should not count as the sub
 
 	time.Sleep(2 * time.Second)
-	err = <-realtime.Subscribe(subcriptionPattern, ch)
+	err = <-realtime.Subscribe(subscriptionPattern, ch)
 	testingutils.Ok(t, err)
 
 	sendOperation()

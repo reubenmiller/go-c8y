@@ -90,8 +90,8 @@ func (s *MeasurementService) DeleteMeasurements(ctx context.Context, opt *Measur
 	})
 }
 
-// MeasurementSerieDefinition represents information about a serie
-type MeasurementSerieDefinition struct {
+// MeasurementSeriesDefinition represents information about a single series
+type MeasurementSeriesDefinition struct {
 	Unit string `json:"unit"`
 	Name string `json:"name"`
 	Type string `json:"type"`
@@ -112,7 +112,7 @@ type MeasurementSeriesAggregateValueGroup struct {
 // MeasurementSeriesGroup represents a group of series values (no aggregate values)
 type MeasurementSeriesGroup struct {
 	DeviceID  string                        `json:"deviceId"`
-	Series    []MeasurementSerieDefinition  `json:"series"`
+	Series    []MeasurementSeriesDefinition `json:"series"`
 	Values    []MeasurementSeriesValueGroup `json:"values"`
 	DateFrom  time.Time                     `json:"dateFrom"`
 	DateTo    time.Time                     `json:"dateTo"`
@@ -121,7 +121,7 @@ type MeasurementSeriesGroup struct {
 
 // MeasurementSeriesAggregateGroup represents a group of aggregate series
 type MeasurementSeriesAggregateGroup struct {
-	Series    []MeasurementSerieDefinition           `json:"series"`
+	Series    []MeasurementSeriesDefinition          `json:"series"`
 	Values    []MeasurementSeriesAggregateValueGroup `json:"values"`
 	DateFrom  time.Time                              `json:"dateFrom"`
 	DateTo    time.Time                              `json:"dateTo"`
@@ -150,12 +150,12 @@ func (d *MeasurementSeriesGroup) UnmarshalJSON(data []byte) error {
 	c8ySeries := gjson.ParseBytes(data)
 
 	// Get the series definitions
-	var seriesDefinitions []MeasurementSerieDefinition
+	var seriesDefinitions []MeasurementSeriesDefinition
 
-	c8ySeries.Get("series").ForEach(func(_, serie gjson.Result) bool {
-		v := &MeasurementSerieDefinition{}
-		if err := json.Unmarshal([]byte(serie.String()), &v); err != nil {
-			Logger.Infof("Could not unmarshal series definition. %s", serie.String())
+	c8ySeries.Get("series").ForEach(func(_, item gjson.Result) bool {
+		v := &MeasurementSeriesDefinition{}
+		if err := json.Unmarshal([]byte(item.String()), &v); err != nil {
+			Logger.Infof("Could not unmarshal series definition. %s", item.String())
 		}
 
 		seriesDefinitions = append(seriesDefinitions, *v)
@@ -211,12 +211,12 @@ func (d *MeasurementSeriesAggregateGroup) UnmarshalJSON(data []byte) error {
 	c8ySeries := gjson.ParseBytes(data)
 
 	// Get the series definitions
-	var seriesDefinitions []MeasurementSerieDefinition
+	var seriesDefinitions []MeasurementSeriesDefinition
 
-	c8ySeries.Get("series").ForEach(func(_, serie gjson.Result) bool {
-		v := &MeasurementSerieDefinition{}
-		if err := json.Unmarshal([]byte(serie.String()), &v); err != nil {
-			Logger.Infof("Could not unmarshal series definition. %s", serie.String())
+	c8ySeries.Get("series").ForEach(func(_, item gjson.Result) bool {
+		v := &MeasurementSeriesDefinition{}
+		if err := json.Unmarshal([]byte(item.String()), &v); err != nil {
+			Logger.Infof("Could not unmarshal series definition. %s", item.String())
 		}
 
 		seriesDefinitions = append(seriesDefinitions, *v)

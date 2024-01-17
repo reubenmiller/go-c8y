@@ -38,22 +38,22 @@ func (b AlarmBuilder) Severity() string {
 	return ""
 }
 
-// SetSeverityMajor sets the alarm serverity to Major
+// SetSeverityMajor sets the alarm severity to Major
 func (b *AlarmBuilder) SetSeverityMajor() *AlarmBuilder {
 	return b.Set("severity", AlarmSeverityMajor)
 }
 
-// SetSeverityMinor sets the alarm serverity to Minor
+// SetSeverityMinor sets the alarm severity to Minor
 func (b *AlarmBuilder) SetSeverityMinor() *AlarmBuilder {
 	return b.Set("severity", AlarmSeverityMinor)
 }
 
-// SetSeverityCritical sets the alarm serverity to Critical
+// SetSeverityCritical sets the alarm severity to Critical
 func (b *AlarmBuilder) SetSeverityCritical() *AlarmBuilder {
 	return b.Set("severity", AlarmSeverityCritical)
 }
 
-// SetSeverityWarning sets the alarm serverity to Warning
+// SetSeverityWarning sets the alarm severity to Warning
 func (b *AlarmBuilder) SetSeverityWarning() *AlarmBuilder {
 	return b.Set("severity", AlarmSeverityWarning)
 }

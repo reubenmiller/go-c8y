@@ -23,7 +23,7 @@ type Configuration struct {
 	viper *viper.Viper
 }
 
-// InitConfiguration initiliases the configuration (i.e. reads from file / environment variables)
+// InitConfiguration initializes the configuration (i.e. reads from file / environment variables)
 func (c *Configuration) InitConfiguration() {
 	config := c.viper
 	config.SetConfigName("application")

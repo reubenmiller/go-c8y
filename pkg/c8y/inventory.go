@@ -591,9 +591,9 @@ func (s *InventoryService) AddChildAddition(ctx context.Context, ID, childID str
 }
 
 // CreateChildAdditionWithBinary create a child addition with a child binary upload a binary and creates a software version referencing it
-func (s *InventoryService) CreateChildAdditionWithBinary(ctx context.Context, parentID string, binaryFile binary.MultiPartReader, bodyFunc func(binaryURL string) interface{}, middlware ...RequestMiddleware) (*ManagedObject, *Response, error) {
+func (s *InventoryService) CreateChildAdditionWithBinary(ctx context.Context, parentID string, binaryFile binary.MultiPartReader, bodyFunc func(binaryURL string) interface{}, middleware ...RequestMiddleware) (*ManagedObject, *Response, error) {
 	// Upload file
-	binary, resp, err := s.client.Inventory.CreateBinary(ctx, binaryFile, middlware...)
+	binary, resp, err := s.client.Inventory.CreateBinary(ctx, binaryFile, middleware...)
 	if err != nil {
 		return binary, resp, err
 	}
@@ -617,9 +617,9 @@ func (s *InventoryService) CreateChildAdditionWithBinary(ctx context.Context, pa
 }
 
 // CreateWithBinary create managed object which also has a binary linked as a child addition so that the binary is deleted when the parent maanaged object is deleted
-func (s *InventoryService) CreateWithBinary(ctx context.Context, binaryFile binary.MultiPartReader, bodyFunc func(binaryURL string) interface{}, middlware ...RequestMiddleware) (*ManagedObject, *Response, error) {
+func (s *InventoryService) CreateWithBinary(ctx context.Context, binaryFile binary.MultiPartReader, bodyFunc func(binaryURL string) interface{}, middleware ...RequestMiddleware) (*ManagedObject, *Response, error) {
 	// Upload file
-	binary, resp, err := s.client.Inventory.CreateBinary(ctx, binaryFile, middlware...)
+	binary, resp, err := s.client.Inventory.CreateBinary(ctx, binaryFile, middleware...)
 	if err != nil {
 		return binary, resp, err
 	}

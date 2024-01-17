@@ -9,7 +9,7 @@ import (
 // AlarmService provides api to get/set/delete alarms in Cumulocity
 type AlarmService service
 
-// Cumulocity alarm Serverity types
+// Cumulocity alarm Severity types
 const (
 	AlarmSeverityCritical = "CRITICAL"
 	AlarmSeverityMajor    = "MAJOR"

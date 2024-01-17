@@ -75,6 +75,6 @@ func TestOperationBuilder_GetSet(t *testing.T) {
 	testingutils.Equals(t, true, ok)
 	testingutils.Equals(t, int64(2), val.(int64))
 
-	_, ok = builder.Get("c8y_NonExistantProp")
+	_, ok = builder.Get("c8y_NonExistentProp")
 	testingutils.Equals(t, false, ok)
 }

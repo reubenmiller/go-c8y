@@ -75,7 +75,7 @@ func NewDefaultMicroservice(opts Options) *Microservice {
 }
 
 // NewMicroservice create a new microservice where the user can customize the http client and the host
-// This function will not initiliase the logger (.InitializeLogger()) nor call .Config.InitConfiguration(), it
+// This function will not initialize the logger (.InitializeLogger()) nor call .Config.InitConfiguration(), it
 // is up to the user to call these functions
 func NewMicroservice(httpClient *http.Client, host string, skipRealtimeClient bool) *Microservice {
 	return &Microservice{

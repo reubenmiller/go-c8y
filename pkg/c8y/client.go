@@ -1217,9 +1217,9 @@ type ErrorResponse struct {
 
 	// Error details. Only available in DEBUG mode.
 	Details *struct {
-		ExpectionClass      string `json:"expectionClass,omitempty"`
+		ExceptionClass      string `json:"exceptionClass,omitempty"`
 		ExceptionMessage    string `json:"exceptionMessage,omitempty"`
-		ExpectionStackTrace string `json:"expectionStackTrace,omitempty"`
+		ExceptionStackTrace string `json:"exceptionStackTrace,omitempty"`
 	} `json:"details,omitempty"`
 }
 

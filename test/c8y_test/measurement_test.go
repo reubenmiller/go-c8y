@@ -12,7 +12,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 )
 
-func measurmentFactory(client *c8y.Client, deviceID string, valueFragmentType, ValueFragmentSeries string) func(float64) (*c8y.Measurement, *c8y.Response, error) {
+func measurementFactory(client *c8y.Client, deviceID string, valueFragmentType, ValueFragmentSeries string) func(float64) (*c8y.Measurement, *c8y.Response, error) {
 	counter := 1
 	return func(value float64) (*c8y.Measurement, *c8y.Response, error) {
 		counter++
@@ -399,8 +399,8 @@ func TestMeasurementService_DeleteMeasurements(t *testing.T) {
 	testingutils.Ok(t, err)
 
 	valueFragmentType := "nx_Type1"
-	createMeasVariable1 := measurmentFactory(client, testDevice.ID, valueFragmentType, "Variable1")
-	createMeasVariable2 := measurmentFactory(client, testDevice.ID, valueFragmentType, "Variable2")
+	createMeasVariable1 := measurementFactory(client, testDevice.ID, valueFragmentType, "Variable1")
+	createMeasVariable2 := measurementFactory(client, testDevice.ID, valueFragmentType, "Variable2")
 
 	meas1, resp, err := createMeasVariable1(1.0)
 	testingutils.Ok(t, err)
