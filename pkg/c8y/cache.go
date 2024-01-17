@@ -19,17 +19,17 @@ import (
 
 const TimeFormat = "Mon, 02 Jan 2006 15:04:05 GMT"
 
-type Cachable func(*http.Request) bool
+type Cacheable func(*http.Request) bool
 
-func NewCachedClient(httpClient *http.Client, cacheDir string, cacheTTL time.Duration, isCachable Cachable, opts CacheOptions) *http.Client {
+func NewCachedClient(httpClient *http.Client, cacheDir string, cacheTTL time.Duration, isCacheable Cacheable, opts CacheOptions) *http.Client {
 	if cacheDir == "" {
 		cacheDir = filepath.Join(os.TempDir(), "go-c8y-cache")
 	}
-	if isCachable == nil {
-		isCachable = isCacheableRequest
+	if isCacheable == nil {
+		isCacheable = isCacheableRequest
 	}
 	return &http.Client{
-		Transport: CacheResponse(cacheTTL, cacheDir, isCachable, opts)(httpClient.Transport),
+		Transport: CacheResponse(cacheTTL, cacheDir, isCacheable, opts)(httpClient.Transport),
 	}
 }
 
@@ -50,7 +50,7 @@ func isCacheableResponse(res *http.Response) bool {
 }
 
 // CacheResponse produces a RoundTripper that caches HTTP responses to disk for a specified amount of time
-func CacheResponse(ttl time.Duration, dir string, isCachable Cachable, options CacheOptions) ClientOption {
+func CacheResponse(ttl time.Duration, dir string, isCacheable Cacheable, options CacheOptions) ClientOption {
 	fs := fileStorage{
 		dir: dir,
 		ttl: ttl,
@@ -60,7 +60,7 @@ func CacheResponse(ttl time.Duration, dir string, isCachable Cachable, options C
 	return func(tr http.RoundTripper) http.RoundTripper {
 		return &funcTripper{roundTrip: func(req *http.Request) (*http.Response, error) {
 
-			if !isCachable(req) {
+			if !isCacheable(req) {
 				return tr.RoundTrip(req)
 			}
 
