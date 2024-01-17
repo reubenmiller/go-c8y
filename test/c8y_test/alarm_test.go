@@ -59,7 +59,7 @@ func TestAlarmService_UpdateAlarm(t *testing.T) {
 		alarm = &c8y.Alarm{}
 	}
 
-	// Update serverity
+	// Update severity
 	updatedAlarm1, resp, err := client.Alarm.Update(
 		context.Background(),
 		alarm.ID,

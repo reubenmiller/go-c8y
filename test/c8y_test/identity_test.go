@@ -40,7 +40,7 @@ func TestIdentityService_GetExternalID(t *testing.T) {
 
 	identity, resp, err := client.Identity.GetExternalID(
 		context.Background(),
-		"NoExistantType",
+		"NoExistentType",
 		"Value123",
 	)
 

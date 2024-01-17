@@ -154,7 +154,7 @@ func main() {
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, os.Interrupt)
 
-	log.Printf("Listenening to subscriptions")
+	log.Printf("Listening to subscriptions")
 
 	for {
 		select {

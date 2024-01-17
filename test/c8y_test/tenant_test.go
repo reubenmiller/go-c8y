@@ -178,6 +178,6 @@ func TestTenantService_GetTenantLoginOptions(t *testing.T) {
 
 	testingutils.Ok(t, err)
 	testingutils.Assert(t, resp != nil, "response should not be empty")
-	testingutils.Assert(t, len(loginOptions.LoginOptions) > 0, "Shoud have at least 1 login option")
+	testingutils.Assert(t, len(loginOptions.LoginOptions) > 0, "Should have at least 1 login option")
 	testingutils.Assert(t, loginOptions.Self != "", "self link should not be empty")
 }
