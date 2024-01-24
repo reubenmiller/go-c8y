@@ -304,6 +304,8 @@ func (s *MeasurementService) GetMeasurementSeries(ctx context.Context, opt *Meas
 }
 
 // GetMeasurement returns a single measurement
+// Deprecated: Retrieving single measurements is no longer supported in Cumulocity IoT
+// when using the time series feature. Use `GetMeasurements` instead
 func (s *MeasurementService) GetMeasurement(ctx context.Context, ID string) (*Measurement, *Response, error) {
 	data := new(Measurement)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
@@ -315,6 +317,8 @@ func (s *MeasurementService) GetMeasurement(ctx context.Context, ID string) (*Me
 }
 
 // Delete removed a measurement by ID
+// Deprecated: Deleting single measurements is no longer supported in Cumulocity IoT
+// when using the time series feature. Use `DeleteMeasurements` instead
 func (s *MeasurementService) Delete(ctx context.Context, ID string) (*Response, error) {
 	return s.client.SendRequest(ctx, RequestOptions{
 		Method: "DELETE",

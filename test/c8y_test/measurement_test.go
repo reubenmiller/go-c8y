@@ -345,7 +345,8 @@ func TestMeasurementService_CreateWithDifferentTypes(t *testing.T) {
 	// createMeasurement(false)
 }
 
-func TestMeasurementService_GetMeasurement_DeleteMeasurement(t *testing.T) {
+func TestMeasurementService_GetMeasurement(t *testing.T) {
+	t.Skip("Note: Removing single measurements is no longer supported by Cumulocity IoT")
 	client := createTestClient()
 	testDevice, err := createRandomTestDevice()
 	testingutils.Ok(t, err)
@@ -373,24 +374,6 @@ func TestMeasurementService_GetMeasurement_DeleteMeasurement(t *testing.T) {
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, meas.ID, meas2.ID)
-
-	// Remove measurement
-	resp, err = client.Measurement.Delete(
-		context.Background(),
-		meas2.ID,
-	)
-
-	testingutils.Ok(t, err)
-	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode())
-
-	// Check if the measurement has been deleted
-	meas3, resp, err := client.Measurement.GetMeasurement(
-		context.Background(),
-		meas2.ID,
-	)
-	testingutils.Assert(t, err != nil, "Error should not be nil")
-	testingutils.Equals(t, http.StatusNotFound, resp.StatusCode())
-	testingutils.Assert(t, meas3.ID == "", "ID should be empty when the object is not found")
 }
 
 func TestMeasurementService_DeleteMeasurements(t *testing.T) {
@@ -435,22 +418,16 @@ func TestMeasurementService_DeleteMeasurements(t *testing.T) {
 	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode())
 
 	// Check that the measurements have been removed
-	deletedMeas1, resp, err := client.Measurement.GetMeasurement(
+	// Check by requesting the new collection again as retrieving single measurements
+	// is no longer supported by Cumulocity IoT
+	measColAfter, resp, err := client.Measurement.GetMeasurements(
 		context.Background(),
-		meas1.ID,
+		searchOptions,
 	)
-	testingutils.Assert(t, err != nil, "Error should not be nil")
-	testingutils.Equals(t, http.StatusNotFound, resp.StatusCode())
-	testingutils.Equals(t, "", deletedMeas1.ID)
 
-	// Check that the measurements have been removed
-	deletedMeas2, resp, err := client.Measurement.GetMeasurement(
-		context.Background(),
-		meas1.ID,
-	)
-	testingutils.Assert(t, err != nil, "Error should not be nil")
-	testingutils.Equals(t, http.StatusNotFound, resp.StatusCode())
-	testingutils.Equals(t, "", deletedMeas2.ID)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
+	testingutils.Equals(t, 0, len(measColAfter.Measurements))
 }
 
 func TestMeasurementService_CreateMeasurements(t *testing.T) {
