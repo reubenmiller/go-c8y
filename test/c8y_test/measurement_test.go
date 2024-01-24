@@ -346,7 +346,7 @@ func TestMeasurementService_CreateWithDifferentTypes(t *testing.T) {
 }
 
 func TestMeasurementService_GetMeasurement(t *testing.T) {
-	// Note: Removing single measurements is no longer supported by Cumulocity IoT
+	t.Skip("Note: Removing single measurements is no longer supported by Cumulocity IoT")
 	client := createTestClient()
 	testDevice, err := createRandomTestDevice()
 	testingutils.Ok(t, err)
@@ -425,7 +425,7 @@ func TestMeasurementService_DeleteMeasurements(t *testing.T) {
 		searchOptions,
 	)
 
-	testingutils.Assert(t, err != nil, "Error should not be nil")
+	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusOK, resp.StatusCode())
 	testingutils.Equals(t, 0, len(measColAfter.Measurements))
 }
