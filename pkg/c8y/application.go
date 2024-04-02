@@ -65,6 +65,7 @@ type Application struct {
 
 	// Microservice roles
 	RequiredRoles []string `json:"requiredRoles,omitempty"`
+	Roles         []string `json:"roles,omitempty"`
 
 	Item gjson.Result `json:"-"`
 }
