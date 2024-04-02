@@ -17,7 +17,7 @@ type RetentionRule struct {
 	// RetentionRule id
 	ID string `json:"id,omitempty"`
 
-	// RetentionRule will be applied to documnets with source
+	// RetentionRule will be applied to documents with source
 	Source string `json:"source,omitempty"`
 
 	// RetentionRule will be applied to documents with type
