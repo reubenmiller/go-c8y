@@ -5,3 +5,4 @@ files.extend-exclude = [
 [default.extend-identifiers]
 mosquitto = "mosquitto"
 ws = "ws"
+wsDialer = "wsDialer"
