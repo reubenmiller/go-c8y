@@ -43,6 +43,7 @@ const (
 const (
 	ApplicationAvailabilityMarket  = "MARKET"
 	ApplicationAvailabilityPrivate = "PRIVATE"
+	ApplicationAvailabilityShared  = "SHARED"
 )
 
 // Application todo
