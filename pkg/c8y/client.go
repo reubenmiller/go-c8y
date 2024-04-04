@@ -803,7 +803,6 @@ func (c *Client) NewRequest(method, path string, query string, body interface{})
 	}
 
 	c.SetAuthorization(req)
-	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgent)
 	req.Header.Set("X-APPLICATION", "go-client")
 	c.SetHostHeader(req)
@@ -871,7 +870,6 @@ func (c *Client) NewRequestWithoutAuth(method, path string, query string, body i
 		}
 	}
 
-	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgent)
 	req.Header.Set("X-APPLICATION", "go-client")
 	c.SetHostHeader(req)
