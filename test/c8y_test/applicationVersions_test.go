@@ -127,21 +127,8 @@ func TestApplicationVersionsService_CRUD_Extension(t *testing.T) {
 	app, err := client.UIExtension.NewUIExtensionFromFile(file.Name())
 	testingutils.Ok(t, err)
 
-	// Delete application if it already exists
-	appCol, _, err := client.UIExtension.GetExtensions(
-		context.Background(),
-		&c8y.ExtensionOptions{
-			Name:              app.Name,
-			PaginationOptions: *c8y.NewPaginationOptions(10),
-		},
-	)
-	testingutils.Ok(t, err)
-	if len(appCol.Applications) > 0 {
-		for _, app := range appCol.Applications {
-			_, tErr := client.Application.Delete(context.Background(), app.ID)
-			testingutils.Ok(t, tErr)
-		}
-	}
+	// Use a unique name
+	app.Name = testingutils.RandomString(12)
 
 	//
 	// Create
@@ -151,6 +138,12 @@ func TestApplicationVersionsService_CRUD_Extension(t *testing.T) {
 			Version: app.ManifestFile.Version,
 			Tags:    []string{"latest", "tag1"},
 		},
+	})
+
+	t.Cleanup(func() {
+		// Don't check if it failed or not, as the test will also delete the application
+		// but this cleanup is done just in case the test fails earlier
+		client.Application.Delete(context.Background(), appVersion.Application.ID)
 	})
 
 	testingutils.Ok(t, err)
