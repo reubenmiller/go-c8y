@@ -128,25 +128,27 @@ type Client struct {
 	common service // Reuse a single struct instead of allocating one for each service on the heap.
 
 	// Services used for talking to different parts of the Cumulocity API.
-	Context           *ContextService
-	Alarm             *AlarmService
-	Audit             *AuditService
-	DeviceCredentials *DeviceCredentialsService
-	Measurement       *MeasurementService
-	Operation         *OperationService
-	Tenant            *TenantService
-	Event             *EventService
-	Inventory         *InventoryService
-	Application       *ApplicationService
-	Identity          *IdentityService
-	Microservice      *MicroserviceService
-	Notification2     *Notification2Service
-	Retention         *RetentionRuleService
-	TenantOptions     *TenantOptionsService
-	Software          *InventorySoftwareService
-	Firmware          *InventoryFirmwareService
-	User              *UserService
-	DeviceCertificate *DeviceCertificateService
+	Context             *ContextService
+	Alarm               *AlarmService
+	Audit               *AuditService
+	DeviceCredentials   *DeviceCredentialsService
+	Measurement         *MeasurementService
+	Operation           *OperationService
+	Tenant              *TenantService
+	Event               *EventService
+	Inventory           *InventoryService
+	Application         *ApplicationService
+	UIExtension         *UIExtensionService
+	ApplicationVersions *ApplicationVersionsService
+	Identity            *IdentityService
+	Microservice        *MicroserviceService
+	Notification2       *Notification2Service
+	Retention           *RetentionRuleService
+	TenantOptions       *TenantOptionsService
+	Software            *InventorySoftwareService
+	Firmware            *InventoryFirmwareService
+	User                *UserService
+	DeviceCertificate   *DeviceCertificateService
 }
 
 const (
@@ -337,6 +339,8 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 	c.Event = (*EventService)(&c.common)
 	c.Inventory = (*InventoryService)(&c.common)
 	c.Application = (*ApplicationService)(&c.common)
+	c.ApplicationVersions = (*ApplicationVersionsService)(&c.common)
+	c.UIExtension = (*UIExtensionService)(&c.common)
 	c.Identity = (*IdentityService)(&c.common)
 	c.Microservice = (*MicroserviceService)(&c.common)
 	c.Notification2 = (*Notification2Service)(&c.common)
@@ -705,7 +709,8 @@ func (c *Client) SetJSONItems(resp *Response, v interface{}) error {
 		t.Item = resp.JSON()
 	case *ApplicationCollection:
 		t.Items = resp.JSON("applications").Array()
-
+	case *ApplicationVersionsCollection:
+		t.Items = resp.JSON("applicationVersions").Array()
 	case *AuditRecord:
 		t.Item = resp.JSON()
 	case *AuditRecordCollection:
@@ -803,7 +808,6 @@ func (c *Client) NewRequest(method, path string, query string, body interface{})
 	}
 
 	c.SetAuthorization(req)
-	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgent)
 	req.Header.Set("X-APPLICATION", "go-client")
 	c.SetHostHeader(req)
@@ -871,7 +875,6 @@ func (c *Client) NewRequestWithoutAuth(method, path string, query string, body i
 		}
 	}
 
-	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgent)
 	req.Header.Set("X-APPLICATION", "go-client")
 	c.SetHostHeader(req)

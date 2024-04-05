@@ -47,6 +47,22 @@ func Equals(tb testing.TB, exp, act interface{}) {
 	}
 }
 
+// Check if a string is found in a given slice of strings
+func ContainsString(tb testing.TB, exp string, act []string) {
+	found := false
+	for _, v := range act {
+		if v == exp {
+			found = true
+			break
+		}
+	}
+	if !found {
+		_, file, line, _ := runtime.Caller(1)
+		fmt.Printf("\033[31m%s:%d:\n\n\texp: %#v\n\n\tgot: %#v\033[39m\n\n", filepath.Base(file), line, exp, act)
+		tb.FailNow()
+	}
+}
+
 // FileEquals fails if the SHA256 checksum of the exp if not equal to the checksum of the act
 func FileEquals(tb testing.TB, exp, act string) {
 	expSHA, _ := getSHA256(exp)
