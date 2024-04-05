@@ -21,6 +21,9 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
+          # skip caching due to golangci-lint errors during setup
+          # see https://github.com/golangci/golangci-lint-action/issues/807
+          cache: false
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v4
         with:
