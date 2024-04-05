@@ -36,6 +36,7 @@ jobs:
       C8Y_TIMEOUT: 30000
 
     strategy:
+      fail-fast: false
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
 
