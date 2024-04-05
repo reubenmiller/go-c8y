@@ -130,6 +130,7 @@ func TestApplicationVersionsService_CRUD_Extension(t *testing.T) {
 	// Use a unique name
 	app.Name = testingutils.RandomString(12)
 	app.Key = app.Name + "-key"
+	app.ContextPath = app.Name
 
 	//
 	// Create
@@ -144,7 +145,9 @@ func TestApplicationVersionsService_CRUD_Extension(t *testing.T) {
 	t.Cleanup(func() {
 		// Don't check if it failed or not, as the test will also delete the application
 		// but this cleanup is done just in case the test fails earlier
-		client.Application.Delete(context.Background(), appVersion.Application.ID)
+		if appVersion != nil && appVersion.Application != nil {
+			client.Application.Delete(context.Background(), appVersion.Application.ID)
+		}
 	})
 
 	testingutils.Ok(t, err)

@@ -31,6 +31,7 @@ func TestUIExtensionService_CreateExtension(t *testing.T) {
 	// Use unique name to avoid name clashes
 	app1.Name = appName
 	app1.Key = appName + "-key"
+	app1.ContextPath = app1.Name
 	testingutils.Ok(t, err)
 
 	appVersion1, _, err := client.UIExtension.CreateExtension(context.Background(), &app1.Application, file1.Name(), c8y.UpsertOptions{
