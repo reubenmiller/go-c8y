@@ -35,12 +35,17 @@ func (m *UIManifest) WithPackage(v string) *UIManifest {
 
 type UIManifestFile struct {
 	Name        string `json:"name,omitempty"`
-	Version     string `json:"version,omitempty"`
 	Key         string `json:"key,omitempty"`
 	ContextPath string `json:"contextPath,omitempty"`
-	Description string `json:"description,omitempty"`
 	Package     string `json:"package,omitempty"`
 	IsPackage   bool   `json:"isPackage,omitempty"`
+	Version     string `json:"version,omitempty"`
+
+	Author                  string              `json:"author"`
+	Description             string              `json:"description,omitempty"`
+	License                 string              `json:"license"`
+	Remotes                 map[string][]string `json:"remotes"`
+	RequiredPlatformVersion string              `json:"requiredPlatformVersion"`
 }
 
 const CumulocityUIManifestFile = "cumulocity.json"
