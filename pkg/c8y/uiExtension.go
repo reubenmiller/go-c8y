@@ -144,9 +144,9 @@ func (s *UIExtensionService) CreateExtension(ctx context.Context, application *A
 	} else if application.Name != "" {
 		// Lookup via name
 		opts := &ApplicationOptions{}
-		matches, resp, err := s.client.Application.GetApplicationsByName(ctx, application.Name, opts.WithHasVersions(true))
-		if err != nil {
-			return nil, resp, err
+		matches, listResp, listErr := s.client.Application.GetApplicationsByName(ctx, application.Name, opts.WithHasVersions(true))
+		if listErr != nil {
+			return nil, listResp, listErr
 		}
 		if len(matches.Applications) > 0 {
 			app = &matches.Applications[0]

@@ -154,17 +154,20 @@ func (s *ApplicationVersionsService) CreateVersion(ctx context.Context, ID strin
 	if s.IsUrl(filenameOrURL) {
 		urlLink := filenameOrURL
 		file, err = os.CreateTemp("", "extension.zip")
-		resp, err := http.Get(urlLink)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to download extension from url. %w", err)
+			return nil, nil, fmt.Errorf("could not create temp file. %w", err)
+		}
+		resp, downloadErr := http.Get(urlLink)
+		if downloadErr != nil {
+			return nil, nil, fmt.Errorf("failed to download extension from url. %w", downloadErr)
 		}
 		defer func() {
 			resp.Body.Close()
 			file.Close()
 			_ = os.Remove(file.Name())
 		}()
-		if _, err := io.Copy(file, resp.Body); err != nil {
-			return nil, nil, fmt.Errorf("failed to write extension to file. %w", err)
+		if _, writeErr := io.Copy(file, resp.Body); writeErr != nil {
+			return nil, nil, fmt.Errorf("failed to write extension to file. %w", writeErr)
 		}
 	} else {
 		file, err = os.Open(filenameOrURL)
