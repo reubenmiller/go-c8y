@@ -400,6 +400,8 @@ func TestMeasurementService_DeleteMeasurements(t *testing.T) {
 		ValueFragmentType: valueFragmentType,
 	}
 
+	// Wait for measurements to be created
+	time.Sleep(2 * time.Second)
 	measCol1, resp, err := client.Measurement.GetMeasurements(
 		context.Background(),
 		searchOptions,
