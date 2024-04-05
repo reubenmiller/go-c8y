@@ -129,6 +129,7 @@ func TestApplicationVersionsService_CRUD_Extension(t *testing.T) {
 
 	// Use a unique name
 	app.Name = testingutils.RandomString(12)
+	app.Key = app.Name + "-key"
 
 	//
 	// Create

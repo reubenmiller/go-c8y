@@ -26,9 +26,11 @@ func TestUIExtensionService_CreateExtension(t *testing.T) {
 
 	app1, err := client.UIExtension.NewUIExtensionFromFile(file1.Name())
 	testingutils.Assert(t, app1.Name != "", "Name should not be empty")
+	testingutils.Assert(t, app1.Key != "", "Key should not be empty")
 
 	// Use unique name to avoid name clashes
 	app1.Name = appName
+	app1.Key = appName + "-key"
 	testingutils.Ok(t, err)
 
 	appVersion1, _, err := client.UIExtension.CreateExtension(context.Background(), &app1.Application, file1.Name(), c8y.UpsertOptions{
