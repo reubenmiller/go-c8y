@@ -381,7 +381,7 @@ func TestMeasurementService_DeleteMeasurements(t *testing.T) {
 	testDevice, err := createRandomTestDevice()
 	testingutils.Ok(t, err)
 
-	valueFragmentType := "nx_Type1"
+	valueFragmentType := "nx_Type1_" + testingutils.RandomString(5)
 	createMeasVariable1 := measurementFactory(client, testDevice.ID, valueFragmentType, "Variable1")
 	createMeasVariable2 := measurementFactory(client, testDevice.ID, valueFragmentType, "Variable2")
 
@@ -400,6 +400,8 @@ func TestMeasurementService_DeleteMeasurements(t *testing.T) {
 		ValueFragmentType: valueFragmentType,
 	}
 
+	// Wait for measurements to be created
+	time.Sleep(2 * time.Second)
 	measCol1, resp, err := client.Measurement.GetMeasurements(
 		context.Background(),
 		searchOptions,
@@ -420,6 +422,7 @@ func TestMeasurementService_DeleteMeasurements(t *testing.T) {
 	// Check that the measurements have been removed
 	// Check by requesting the new collection again as retrieving single measurements
 	// is no longer supported by Cumulocity IoT
+	time.Sleep(2 * time.Second) // give server some time to delete the measurements
 	measColAfter, resp, err := client.Measurement.GetMeasurements(
 		context.Background(),
 		searchOptions,
