@@ -10,6 +10,7 @@ import (
 )
 
 // UIExtensionService to managed UI extensions
+// WARNING: THE UI Extension Service API is not yet finalized so expect changes in the future!
 type UIExtensionService service
 
 type UIExtension struct {

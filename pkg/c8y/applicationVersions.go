@@ -17,6 +17,7 @@ var ContentTypeApplicationVersion = "application/vnd.com.nsn.cumulocity.applicat
 var ContentTypeApplicationVersionCollection = "application/vnd.com.nsn.cumulocity.applicationVersionCollection+json"
 
 // ApplicationService provides the service provider for the Cumulocity Application API
+// WARNING: THE UI Extension Service API is not yet finalized so expect changes in the future!
 type ApplicationVersionsService service
 
 // ApplicationVersionsOptions options that can be provided when using application api calls
