@@ -34,7 +34,7 @@ func TestUIExtensionService_CreateExtension(t *testing.T) {
 	app1.ContextPath = app1.Name
 	testingutils.Ok(t, err)
 
-	appVersion1, _, err := client.UIExtension.CreateExtension(context.Background(), &app1.Application, file1.Name(), c8y.UpsertOptions{
+	appVersion1, resp, err := client.UIExtension.CreateExtension(context.Background(), &app1.Application, file1.Name(), c8y.UpsertOptions{
 		SkipActivation: false,
 		Version: &c8y.ApplicationVersion{
 			Version: app1.ManifestFile.Version,
@@ -45,6 +45,7 @@ func TestUIExtensionService_CreateExtension(t *testing.T) {
 		client.Application.Delete(context.Background(), appVersion1.Application.ID)
 	})
 	testingutils.Ok(t, err)
+	testingutils.Equals(t, "2.4.3", resp.JSON("version").String())
 	testingutils.Equals(t, "2.4.3", appVersion1.Version)
 	testingutils.Assert(t, len(appVersion1.Tags) == 2, "Tags should be present")
 	testingutils.ContainsString(t, "tag1", appVersion1.Tags)
