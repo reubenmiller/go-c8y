@@ -177,9 +177,9 @@ func (s *UIExtensionService) CreateExtension(ctx context.Context, application *A
 	}
 
 	// Upload binary
-	binaryVersion, resp, err := s.client.ApplicationVersions.CreateVersion(ctx, app.ID, filename, *opt.Version)
+	binaryVersion, versionResp, err := s.client.ApplicationVersions.CreateVersion(ctx, app.ID, filename, *opt.Version)
 	if err != nil {
-		return nil, resp, err
+		return nil, versionResp, err
 	}
 
 	if binaryVersion != nil {
@@ -197,7 +197,7 @@ func (s *UIExtensionService) CreateExtension(ctx context.Context, application *A
 		}
 	}
 
-	return binaryVersion, resp, err
+	return binaryVersion, versionResp, err
 }
 
 func (s *UIExtensionService) SetActive(ctx context.Context, appID string, binaryID string) (*Application, *Response, error) {
