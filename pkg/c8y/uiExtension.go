@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 )
 
@@ -136,7 +137,8 @@ type UpsertOptions struct {
 }
 
 // CreateVersion creates a new version of an application from a given file
-func (s *UIExtensionService) CreateExtension(ctx context.Context, application *Application, filename string, opt UpsertOptions) (*ApplicationVersion, *Response, error) {
+// The filename can either be a string or a io.Reader
+func (s *UIExtensionService) CreateExtension(ctx context.Context, application *Application, filename any, opt UpsertOptions) (*ApplicationVersion, *Response, error) {
 	var app *Application
 	var resp *Response
 	var err error
@@ -176,10 +178,21 @@ func (s *UIExtensionService) CreateExtension(ctx context.Context, application *A
 		return nil, resp, err
 	}
 
+	var binaryVersion *ApplicationVersion
+	var binaryVersionResponse *Response
+
 	// Upload binary
-	binaryVersion, binaryVersionResponse, err := s.client.ApplicationVersions.CreateVersion(ctx, app.ID, filename, *opt.Version)
+	switch v := filename.(type) {
+	case string:
+		binaryVersion, binaryVersionResponse, err = s.client.ApplicationVersions.CreateVersion(ctx, app.ID, v, *opt.Version)
+	case io.Reader:
+		binaryVersion, binaryVersionResponse, err = s.client.ApplicationVersions.CreateVersionFromReader(ctx, app.ID, v, *opt.Version)
+	default:
+		return nil, nil, fmt.Errorf("invalid file type. Only string or reader is accepted")
+	}
+
 	if err != nil {
-		return nil, binaryVersionResponse, err
+		return binaryVersion, binaryVersionResponse, err
 	}
 
 	if binaryVersion != nil {
