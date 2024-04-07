@@ -177,6 +177,11 @@ func (s *ApplicationVersionsService) CreateVersion(ctx context.Context, ID strin
 		return nil, nil, err
 	}
 
+	return s.CreateVersionFromReader(ctx, ID, file, version)
+}
+
+// CreateVersion creates a new version of an application from a given file or url
+func (s *ApplicationVersionsService) CreateVersionFromReader(ctx context.Context, ID string, file io.Reader, version ApplicationVersion) (*ApplicationVersion, *Response, error) {
 	applicationVersion, err := json.Marshal(version)
 	if err != nil {
 		return nil, nil, err
