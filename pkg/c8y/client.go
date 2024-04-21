@@ -493,6 +493,15 @@ type RequestOptions struct {
 	PrepareRequest   func(*http.Request) (*http.Request, error)
 }
 
+// Add a validator function which will check if the outgoing http request is valid or not
+func (r *RequestOptions) WithValidateFunc(v ...RequestValidator) *RequestOptions {
+	if r.ValidateFuncs == nil {
+		r.ValidateFuncs = make([]RequestValidator, 0)
+	}
+	r.ValidateFuncs = append(r.ValidateFuncs, v...)
+	return r
+}
+
 func (r *RequestOptions) GetPath() (string, error) {
 	prefixPath := ""
 	if r.Host != "" {
