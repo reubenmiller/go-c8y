@@ -48,7 +48,8 @@ func prepareMultipartRequest(method string, url string, values map[string]io.Rea
 					if b, rErr := io.ReadAll(manual_filename); rErr == nil {
 						filename = string(b)
 					} else {
-						err = rErr
+						pw.CloseWithError(rErr)
+						return
 					}
 				}
 				if fw, err = w.CreateFormFile(key, filename); err != nil {
@@ -58,12 +59,13 @@ func prepareMultipartRequest(method string, url string, values map[string]io.Rea
 			} else {
 				// Add other fields
 				if fw, err = w.CreateFormField(key); err != nil {
-					err = pw.CloseWithError(err)
+					pw.CloseWithError(err)
 					return
 				}
 			}
 			if _, err = io.Copy(fw, r); err != nil {
-				err = pw.CloseWithError(err)
+				pw.CloseWithError(err)
+				return
 			}
 		}
 		// Don't forget to close the multipart writer.
