@@ -12,10 +12,12 @@ import (
 	"strings"
 )
 
-func prepareMultipartRequest(method string, url string, values map[string]io.Reader) (req *http.Request, err error) {
+// Prepare multipart form-data request which uses io.Pipe to buffer reading the message to ensure files won't be read entirely into memory
+func prepareMultipartRequest(method string, url string, values map[string]io.Reader) (*http.Request, error) {
+	pr, pw := io.Pipe()
+
 	// Prepare a form that you will submit to that URL.
-	var b bytes.Buffer
-	w := multipart.NewWriter(&b)
+	w := multipart.NewWriter(pw)
 
 	// Sort formdata keys
 	keys := make([]string, 0, len(values))
@@ -24,51 +26,57 @@ func prepareMultipartRequest(method string, url string, values map[string]io.Rea
 	}
 	sort.Strings(keys)
 
-	for _, key := range keys {
-		r := values[key]
-		if key == "filename" {
-			// Ignore filename as it is used to name the uploaded file
-			continue
-		}
+	go func() {
+		var err error
+		for _, key := range keys {
+			r := values[key]
+			if key == "filename" {
+				// Ignore filename as it is used to name the uploaded file
+				continue
+			}
 
-		var fw io.Writer
-		if x, ok := r.(io.Closer); ok {
-			defer x.Close()
-		}
-		// Add an image file
-		if x, ok := r.(*os.File); ok {
+			var fw io.Writer
+			if x, ok := r.(io.Closer); ok {
+				defer x.Close()
+			}
+			// Add an image file
+			if x, ok := r.(*os.File); ok {
 
-			// Check if manual filename field was provided, otherwise use the basename
-			filename := filepath.Base(x.Name())
-			if manual_filename, ok := values["filename"]; ok {
-				if b, rErr := io.ReadAll(manual_filename); rErr == nil {
-					filename = string(b)
-				} else {
-					err = rErr
+				// Check if manual filename field was provided, otherwise use the basename
+				filename := filepath.Base(x.Name())
+				if manual_filename, ok := values["filename"]; ok {
+					if b, rErr := io.ReadAll(manual_filename); rErr == nil {
+						filename = string(b)
+					} else {
+						pw.CloseWithError(rErr)
+						return
+					}
+				}
+				if fw, err = w.CreateFormFile(key, filename); err != nil {
+					pw.CloseWithError(err)
+					return
+				}
+			} else {
+				// Add other fields
+				if fw, err = w.CreateFormField(key); err != nil {
+					pw.CloseWithError(err)
+					return
 				}
 			}
-			if fw, err = w.CreateFormFile(key, filename); err != nil {
-				return
-			}
-		} else {
-			// Add other fields
-			if fw, err = w.CreateFormField(key); err != nil {
+			if _, err = io.Copy(fw, r); err != nil {
+				pw.CloseWithError(err)
 				return
 			}
 		}
-		if _, err = io.Copy(fw, r); err != nil {
-			return nil, err
-		}
-
-	}
-	// Don't forget to close the multipart writer.
-	// If you don't close it, your request will be missing the terminating boundary.
-	w.Close()
+		// Don't forget to close the multipart writer.
+		// If you don't close it, your request will be missing the terminating boundary.
+		pw.CloseWithError(w.Close())
+	}()
 
 	// Now that you have a form, you can submit it to your handler.
-	req, err = http.NewRequest(method, url, &b)
-	if err != nil {
-		return
+	req, rErr := http.NewRequest(method, url, pr)
+	if rErr != nil {
+		return req, rErr
 	}
 	// Don't forget to set the content type, this will contain the boundary.
 	req.Header.Set("Content-Type", w.FormDataContentType())
