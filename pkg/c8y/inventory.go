@@ -610,7 +610,7 @@ func (s *InventoryService) CreateChildAdditionWithBinary(ctx context.Context, pa
 	}
 
 	// Add binary as child addition to managed object
-	if childMO, childResp, childErr := s.client.Inventory.AddChildAddition(ctx, mo.ID, binary.ID); err != nil {
+	if childMO, childResp, childErr := s.client.Inventory.AddChildAddition(ctx, mo.ID, binary.ID); childErr != nil {
 		return childMO, childResp, childErr
 	}
 	return mo, resp, err
@@ -636,7 +636,7 @@ func (s *InventoryService) CreateWithBinary(ctx context.Context, binaryFile bina
 	}
 
 	// Add binary as child addition to managed object
-	if childMO, childResp, childErr := s.client.Inventory.AddChildAddition(ctx, mo.ID, binary.ID); err != nil {
+	if childMO, childResp, childErr := s.client.Inventory.AddChildAddition(ctx, mo.ID, binary.ID); childErr != nil {
 		return childMO, childResp, childErr
 	}
 	return mo, resp, err
