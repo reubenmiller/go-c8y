@@ -456,7 +456,7 @@ func (s *InventoryService) CreateBinary(ctx context.Context, binaryFile binary.M
 	u, _ := url.Parse(client.BaseURL.String())
 	u.Path = path.Join(u.Path, "/inventory/binaries")
 
-	req, err := prepareMultipartRequest("POST", u.String(), values)
+	req, err := prepareMultipartRequestWithBuffer("POST", u.String(), values)
 	if err != nil {
 		err = errors.Wrap(err, "Could not create binary upload request object")
 		zap.S().Error(err)
