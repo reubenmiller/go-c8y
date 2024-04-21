@@ -13,7 +13,7 @@ import (
 )
 
 // Prepare multipart form-data request which uses io.Pipe to buffer reading the message to ensure files won't be read entirely into memory
-func prepareMultipartRequest(method string, url string, values map[string]io.Reader) (req *http.Request, err error) {
+func prepareMultipartRequest(method string, url string, values map[string]io.Reader) (*http.Request, error) {
 	pr, pw := io.Pipe()
 
 	// Prepare a form that you will submit to that URL.
@@ -27,6 +27,7 @@ func prepareMultipartRequest(method string, url string, values map[string]io.Rea
 	sort.Strings(keys)
 
 	go func() {
+		var err error
 		for _, key := range keys {
 			r := values[key]
 			if key == "filename" {
@@ -51,6 +52,7 @@ func prepareMultipartRequest(method string, url string, values map[string]io.Rea
 					}
 				}
 				if fw, err = w.CreateFormFile(key, filename); err != nil {
+					pw.CloseWithError(err)
 					return
 				}
 			} else {
@@ -70,9 +72,9 @@ func prepareMultipartRequest(method string, url string, values map[string]io.Rea
 	}()
 
 	// Now that you have a form, you can submit it to your handler.
-	req, err = http.NewRequest(method, url, pr)
-	if err != nil {
-		return
+	req, rErr := http.NewRequest(method, url, pr)
+	if rErr != nil {
+		return req, rErr
 	}
 	// Don't forget to set the content type, this will contain the boundary.
 	req.Header.Set("Content-Type", w.FormDataContentType())
