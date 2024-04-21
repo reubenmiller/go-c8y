@@ -671,14 +671,19 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 	}
 
 	// Optional request validator (allows users to verify the outgoing request before it is sent)
-	validatorErrors := make([]error, 0)
-	for _, validator := range options.ValidateFuncs {
-		if vErr := validator(req); vErr != nil {
-			validatorErrors = append(validatorErrors, vErr)
+	if len(options.ValidateFuncs) > 0 {
+		validatorErrors := make([]error, 0)
+		for _, validator := range options.ValidateFuncs {
+			if vErr := validator(req); vErr != nil {
+				validatorErrors = append(validatorErrors, vErr)
+			}
 		}
-	}
-	if len(validatorErrors) > 0 {
-		return nil, errors.Join(validatorErrors...)
+		if len(validatorErrors) == 1 {
+			return nil, validatorErrors[0]
+		}
+		if len(validatorErrors) > 1 {
+			return nil, errors.Join(validatorErrors...)
+		}
 	}
 
 	if dryRun {
