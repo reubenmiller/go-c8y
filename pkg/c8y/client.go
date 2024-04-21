@@ -470,6 +470,9 @@ func NewBasicAuthString(tenant, username, password string) string {
 	return "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
 }
 
+// Request validator function to be used to check if the outgoing request is properly formulated
+type RequestValidator func(*http.Request) error
+
 // RequestOptions struct which contains the options to be used with the SendRequest function
 type RequestOptions struct {
 	Method           string
@@ -486,6 +489,7 @@ type RequestOptions struct {
 	NoAuthentication bool
 	DryRun           bool
 	DryRunResponse   bool
+	ValidateFuncs    []RequestValidator
 	PrepareRequest   func(*http.Request) (*http.Request, error)
 }
 
@@ -655,6 +659,17 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 			)
 			dryRun = ctxOptions.DryRun
 		}
+	}
+
+	// Optional request validator (allows users to verify the outgoing request before it is sent)
+	validatorErrors := make([]error, 0)
+	for _, validator := range options.ValidateFuncs {
+		if vErr := validator(req); vErr != nil {
+			validatorErrors = append(validatorErrors, vErr)
+		}
+	}
+	if len(validatorErrors) > 0 {
+		return nil, errors.Join(validatorErrors...)
 	}
 
 	if dryRun {
