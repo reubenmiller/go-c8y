@@ -68,6 +68,9 @@ type Application struct {
 	RequiredRoles []string `json:"requiredRoles,omitempty"`
 	Roles         []string `json:"roles,omitempty"`
 
+	// Application versions
+	ApplicationVersions []ApplicationVersion `json:"applicationVersions,omitempty"`
+
 	Item gjson.Result `json:"-"`
 }
 
