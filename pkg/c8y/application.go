@@ -16,14 +16,15 @@ type ApplicationService service
 type ApplicationOptions struct {
 	PaginationOptions
 
-	Name        string `url:"name,omitempty"`
-	Owner       string `url:"owner,omitempty"`
-	ProviderFor string `url:"providerFor,omitempty"`
-	Subscriber  string `url:"subscriber,omitempty"`
-	Tenant      string `url:"tenant,omitempty"`
-	Type        string `url:"type,omitempty"`
-	User        string `url:"user,omitempty"`
-	HasVersions *bool  `url:"hasVersions,omitempty"`
+	Name         string `url:"name,omitempty"`
+	Owner        string `url:"owner,omitempty"`
+	ProviderFor  string `url:"providerFor,omitempty"`
+	Subscriber   string `url:"subscriber,omitempty"`
+	Tenant       string `url:"tenant,omitempty"`
+	Type         string `url:"type,omitempty"`
+	User         string `url:"user,omitempty"`
+	Availability string `url:"availability,omitempty"`
+	HasVersions  *bool  `url:"hasVersions,omitempty"`
 }
 
 func (o *ApplicationOptions) WithHasVersions(v bool) *ApplicationOptions {
