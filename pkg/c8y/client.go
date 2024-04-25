@@ -491,6 +491,8 @@ type RequestOptions struct {
 	DryRunResponse   bool
 	ValidateFuncs    []RequestValidator
 	PrepareRequest   func(*http.Request) (*http.Request, error)
+
+	PrepareRequestOnDryRun bool
 }
 
 // Add a validator function which will check if the outgoing http request is valid or not
@@ -687,6 +689,11 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 	}
 
 	if dryRun {
+		var dryRunErr error
+		if options.PrepareRequestOnDryRun && options.PrepareRequest != nil {
+			req, dryRunErr = options.PrepareRequest(req)
+		}
+
 		// Show information about the request i.e. url, headers, body etc.
 		if c.requestOptions.DryRunHandler != nil {
 			c.requestOptions.DryRunHandler(&options, req)
@@ -699,9 +706,9 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 				Response: &http.Response{
 					Request: req,
 				},
-			}, nil
+			}, dryRunErr
 		}
-		return nil, nil
+		return nil, dryRunErr
 	}
 
 	localLogger.Info(c.hideSensitiveInformationIfActive(fmt.Sprintf("Headers: %v", req.Header)))
