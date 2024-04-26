@@ -14,6 +14,8 @@ import (
 // WARNING: THE UI Extension Service API is not yet finalized so expect changes in the future!
 type UIExtensionService service
 
+var ApplicationTagLatest = "latest"
+
 type UIExtension struct {
 	Application
 	Manifest     *UIManifest     `json:"manifest,omitempty"`
@@ -136,6 +138,15 @@ type UpsertOptions struct {
 	Version        *ApplicationVersion
 }
 
+func HasTag(tags []string, tag string) bool {
+	for _, v := range tags {
+		if strings.EqualFold(v, tag) {
+			return true
+		}
+	}
+	return false
+}
+
 // CreateVersion creates a new version of an application from a given file
 // The filename can either be a string or a io.Reader
 func (s *UIExtensionService) CreateExtension(ctx context.Context, application *Application, filename any, opt UpsertOptions) (*ApplicationVersion, *Response, error) {
@@ -166,13 +177,23 @@ func (s *UIExtensionService) CreateExtension(ctx context.Context, application *A
 	if app == nil {
 		// Create the new application
 		app, resp, err = s.client.Application.Create(ctx, application)
+
+		// New applications must have the first binary be activated, so ignore the existing SkipActivation option
+		opt.SkipActivation = false
+
+		// Append latest tag if not already defined
+		if opt.Version != nil {
+			if !HasTag(opt.Version.Tags, ApplicationTagLatest) {
+				opt.Version.Tags = append(opt.Version.Tags, ApplicationTagLatest)
+			}
+		}
 	} else {
 		// Update the existing application
-		props := &Application{}
 		if application.Availability != "" {
+			props := &Application{}
 			props.Availability = application.Availability
+			app, resp, err = s.client.Application.Update(ctx, app.ID, props)
 		}
-		app, resp, err = s.client.Application.Update(ctx, app.ID, props)
 	}
 	if err != nil {
 		return nil, resp, err
