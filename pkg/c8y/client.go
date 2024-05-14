@@ -143,6 +143,7 @@ type Client struct {
 	Identity            *IdentityService
 	Microservice        *MicroserviceService
 	Notification2       *Notification2Service
+	RemoteAccess        *RemoteAccessService
 	Retention           *RetentionRuleService
 	TenantOptions       *TenantOptionsService
 	Software            *InventorySoftwareService
@@ -345,6 +346,7 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 	c.Microservice = (*MicroserviceService)(&c.common)
 	c.Notification2 = (*Notification2Service)(&c.common)
 	c.Context = (*ContextService)(&c.common)
+	c.RemoteAccess = (*RemoteAccessService)(&c.common)
 	c.Retention = (*RetentionRuleService)(&c.common)
 	c.TenantOptions = (*TenantOptionsService)(&c.common)
 	c.Software = (*InventorySoftwareService)(&c.common)
