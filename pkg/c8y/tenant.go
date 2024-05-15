@@ -146,7 +146,7 @@ func (s *TenantService) GetAllTenantsStatisticsSummary(ctx context.Context, opt 
 		Method:       "GET",
 		Path:         "tenant/statistics/allTenantsSummary",
 		Query:        opt,
-		ResponseData: data,
+		ResponseData: &data,
 	})
 	return data, resp, err
 }
