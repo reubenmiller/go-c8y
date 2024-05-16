@@ -67,13 +67,13 @@ func (c *RemoteAccessClient) createRemoteAccessConnection() (*websocket.Conn, st
 	requestHeader := http.Header{}
 	requestHeader.Add("Content-Type", "application/json")
 
-	switch c.client.AuthorizationMethod {
-	case c8y.AuthMethodBasic:
-		requestHeader.Add("Authorization", c8y.NewBasicAuthString(c.client.GetTenantName(context.Background()), c.client.Username, c.client.Password))
-	default:
+	if c.client.Token != "" {
+		c.log.Debug("Using bearer token")
 		requestHeader.Add("Authorization", "Bearer "+c.client.Token)
+	} else {
+		c.log.Debug("Using basic auth")
+		requestHeader.Add("Authorization", c8y.NewBasicAuthString(c.client.GetTenantName(context.Background()), c.client.Username, c.client.Password))
 	}
-
 	c.log.Infof("Connection to Cumulocity IoT CRA: remote=%s, headers=%v", remoteURL, requestHeader)
 
 	wsConn, _, err := websocket.DefaultDialer.Dial(remoteURL, requestHeader)
