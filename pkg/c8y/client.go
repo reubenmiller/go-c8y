@@ -713,7 +713,7 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 		return nil, dryRunErr
 	}
 
-	localLogger.Info(c.hideSensitiveInformationIfActive(fmt.Sprintf("Headers: %v", req.Header)))
+	localLogger.Info(c.HideSensitiveInformationIfActive(fmt.Sprintf("Headers: %v", req.Header)))
 
 	if options.PrepareRequest != nil {
 		req, err = options.PrepareRequest(req)
@@ -936,7 +936,7 @@ func (c *Client) SetBasicAuthorization(req *http.Request) {
 	} else {
 		headerUsername = c.Username
 	}
-	Logger.Infof("Current username: %s", c.hideSensitiveInformationIfActive(headerUsername))
+	Logger.Infof("Current username: %s", c.HideSensitiveInformationIfActive(headerUsername))
 	req.SetBasicAuth(headerUsername, c.Password)
 }
 
@@ -1102,7 +1102,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}, middl
 	}
 
 	if req != nil {
-		Logger.Infof("Sending request: %s %s", req.Method, c.hideSensitiveInformationIfActive(req.URL.String()))
+		Logger.Infof("Sending request: %s %s", req.Method, c.HideSensitiveInformationIfActive(req.URL.String()))
 	}
 
 	// Log the body (if applicable)
@@ -1289,7 +1289,7 @@ func CheckResponse(r *http.Response) error {
 	return errorResponse
 }
 
-func (c *Client) hideSensitiveInformationIfActive(message string) string {
+func (c *Client) HideSensitiveInformationIfActive(message string) string {
 
 	if strings.ToLower(os.Getenv(EnvVarLoggerHideSensitive)) != "true" {
 		return message
@@ -1388,7 +1388,7 @@ func (c *Client) DefaultDryRunHandler(options *RequestOptions, req *http.Request
 		}
 	}
 
-	Logger.Info(c.hideSensitiveInformationIfActive(message))
+	Logger.Info(c.HideSensitiveInformationIfActive(message))
 }
 
 type CumulocityTokenClaim struct {
