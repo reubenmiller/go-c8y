@@ -15,7 +15,7 @@ import (
 func TestDeviceCredentialsService_PollNewDeviceRequest_CreateGetDelete(t *testing.T) {
 	client := createTestClient()
 
-	deviceID := "TEST_DEVICE1"
+	deviceID := "TEST_DEVICE" + testingutils.RandomString(7)
 
 	// Delete the request in case it already exists
 	client.DeviceCredentials.Delete(
@@ -59,7 +59,7 @@ func TestDeviceCredentialsService_PollNewDeviceRequest_CRUD(t *testing.T) {
 	t.Skip("The following requires device authentication")
 	client := createTestClient()
 
-	deviceID := "TEST_DEVICE1"
+	deviceID := "TEST_DEVICE" + testingutils.RandomString(7)
 
 	// Delete the request in case it already exists
 	client.DeviceCredentials.Delete(

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
 
@@ -170,6 +171,10 @@ func TestEventService_DeleteEvents(t *testing.T) {
 
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode())
+
+	// wait for events to be deleted
+	// TODO: Add dynamic retry
+	time.Sleep(1 * time.Second)
 
 	col, resp, err = client.Event.GetEvents(
 		context.Background(),
