@@ -160,11 +160,26 @@ func TestUserService_AddUserToGroup(t *testing.T) {
 	)
 	testingutils.Ok(t, err)
 
+	// Create random group
+	ciGroup, _, err := client.User.CreateGroup(
+		context.Background(),
+		&c8y.Group{
+			Name: "cigroup" + testingutils.RandomString(7),
+		},
+	)
+	testingutils.Ok(t, err)
+	t.Cleanup(func() {
+		client.User.DeleteGroup(
+			context.Background(),
+			ciGroup.GetID(),
+		)
+	})
+
 	//
 	// Get group
 	group, resp, err := client.User.GetGroupByName(
 		context.Background(),
-		"Cockpit User",
+		ciGroup.Name,
 	)
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusOK, resp.StatusCode())

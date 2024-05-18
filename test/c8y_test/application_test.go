@@ -109,13 +109,13 @@ func TestApplicationService_GetApplication(t *testing.T) {
 func TestApplicationService_CRUD_Application(t *testing.T) {
 	client := createTestClient()
 
-	appName := "testApplication"
+	appName := "testApplication" + testingutils.RandomString(7)
 
 	appInfo := &c8y.Application{
-		Key:         "testApplicationKey",
-		Name:        "testApplication",
+		Key:         appName + "Key",
+		Name:        appName,
 		Type:        "HOSTED",
-		ContextPath: "/testApplication",
+		ContextPath: "/" + appName,
 	}
 
 	// Delete application if it already exists
