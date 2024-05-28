@@ -291,12 +291,11 @@ func TestAlarmService_BulkUpdateAlarms(t *testing.T) {
 func TestAlarmService_RemoveAlarmCollection(t *testing.T) {
 	client := createTestClient()
 
-	testDevice, _, err := client.Inventory.CreateDevice(
-		context.Background(),
-		"testDevice",
-	)
+	testDevice, err := createRandomTestDevice()
 	testingutils.Ok(t, err)
-	defer client.Inventory.Delete(context.Background(), testDevice.ID)
+	t.Cleanup(func() {
+		client.Inventory.Delete(context.Background(), testDevice.ID)
+	})
 
 	alarmFactory := func(alarmtype string) *c8y.Alarm {
 		alarm := c8y.Alarm{

@@ -6,7 +6,7 @@ require (
 	github.com/google/go-jsonnet v0.20.0
 	github.com/google/go-querystring v1.1.0
 	github.com/gorilla/websocket v1.5.1
-	github.com/labstack/echo v3.3.10+incompatible
+	github.com/labstack/echo/v4 v4.12.0
 	github.com/obeattie/ohmyglob v0.0.0-20150811221449-290764208a0d
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7
 	github.com/pkg/errors v0.9.1
