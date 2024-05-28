@@ -55,7 +55,7 @@ func TestIdentityService_Delete(t *testing.T) {
 	testingutils.Ok(t, err)
 
 	identityType := "testType"
-	externalID := "MyUniqueValue1"
+	externalID := "ext" + testingutils.RandomString(16)
 
 	//
 	// Create identity
