@@ -12,7 +12,7 @@ import (
 func TestTenantOptionsService_CRUD_Option(t *testing.T) {
 	client := createTestClient()
 
-	category := "custom.app"
+	category := "custom.app" + testingutils.RandomString(8)
 	optionKey := "testKey"
 	optionValue := "value1"
 
@@ -72,7 +72,7 @@ func TestTenantOptionsService_CRUD_Options(t *testing.T) {
 		"prop3": "value3",
 	}
 
-	category := "custom.ci.multi"
+	category := "custom.ci.multi" + testingutils.RandomString(8)
 
 	//
 	// Update multiple options
@@ -105,7 +105,7 @@ func TestTenantOptionsService_CRUD_Options(t *testing.T) {
 func TestTenantOptionsService_GetOptions(t *testing.T) {
 	client := createTestClient()
 
-	category := "ciMulti2"
+	category := "ciMulti" + testingutils.RandomString(8)
 
 	//
 	// Update multiple options
