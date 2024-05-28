@@ -299,8 +299,12 @@ func (m *Microservice) CheckForNewConfiguration() {
 
 // StartOperationPolling start the polling of the operations
 func (m *Microservice) StartOperationPolling() {
-	interval := m.Config.viper.GetString("agent.operations.pollRate")
+	interval := strings.TrimSpace(m.Config.viper.GetString("agent.operations.pollRate"))
 
+	if interval == "" || interval == "0" {
+		zap.S().Infof("Skipping operation polling task")
+		return
+	}
 	zap.S().Infof("Adding operation polling task with interval: %s", interval)
 	_, err := m.Scheduler.cronjob.AddFunc(interval, func() {
 		m.CheckForNewConfiguration()
