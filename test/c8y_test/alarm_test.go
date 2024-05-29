@@ -341,6 +341,9 @@ func TestAlarmService_RemoveAlarmCollection(t *testing.T) {
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusNoContent, resp.StatusCode())
 
+	// Give server some time to delete
+	time.Sleep(1 * time.Second)
+
 	// Get alarms after deletion
 	alarmCollection, _, err = client.Alarm.GetAlarms(
 		context.Background(),

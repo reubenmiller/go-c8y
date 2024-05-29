@@ -44,6 +44,7 @@ type User struct {
 	Groups            *GroupReferenceCollection `json:"groups,omitempty"`
 	Roles             *RoleReferenceCollection  `json:"roles,omitempty"`
 	DevicePermissions map[string]interface{}    `json:"devicePermissions,omitempty"`
+	EffectiveRoles    []Role                    `json:"effectiveRoles,omitempty"`
 
 	Item gjson.Result `json:"-"`
 }
