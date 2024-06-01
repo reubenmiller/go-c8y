@@ -384,8 +384,8 @@ func (c *Notification2Client) Register(pattern string, out chan<- Message) {
 
 func (c *Notification2Client) SendMessageAck(messageIdentifier []byte) error {
 	Logger.Debugf("Sending message ack: %s", messageIdentifier)
-	c.ws.SetWriteDeadline(time.Now().Add(c.ConnectionOptions.GetWriteDuration()))
-	return c.ws.WriteMessage(websocket.TextMessage, messageIdentifier)
+	c.send <- messageIdentifier
+	return nil
 }
 
 func (c *Notification2Client) worker() error {
@@ -437,6 +437,6 @@ func (c *Notification2Client) worker() error {
 // Unsubscribe unsubscribe to a given pattern
 func (c *Notification2Client) Unsubscribe() error {
 	Logger.Info("unsubscribing")
-	c.ws.SetWriteDeadline(time.Now().Add(c.ConnectionOptions.GetWriteDuration()))
-	return c.ws.WriteMessage(websocket.TextMessage, []byte("unsubscribe_subscriber"))
+	c.send <- []byte("unsubscribe_subscriber")
+	return nil
 }
