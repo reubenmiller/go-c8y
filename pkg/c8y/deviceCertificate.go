@@ -42,11 +42,14 @@ type Certificate struct {
 }
 
 // GetCertificates returns collection of certificates
-func (s *DeviceCertificateService) GetCertificates(ctx context.Context, opt *DeviceCertificateCollectionOptions) (*DeviceCertificateCollection, *Response, error) {
+func (s *DeviceCertificateService) GetCertificates(ctx context.Context, tenant string, opt *DeviceCertificateCollectionOptions) (*DeviceCertificateCollection, *Response, error) {
+	if tenant == "" {
+		tenant = s.client.TenantName
+	}
 	data := new(DeviceCertificateCollection)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "GET",
-		Path:         "tenant/tenants/" + s.client.TenantName + "/trusted-certificates",
+		Path:         "tenant/tenants/" + tenant + "/trusted-certificates",
 		Query:        opt,
 		ResponseData: data,
 	})
@@ -54,30 +57,39 @@ func (s *DeviceCertificateService) GetCertificates(ctx context.Context, opt *Dev
 }
 
 // GetCertificate returns a single certificate
-func (s *DeviceCertificateService) GetCertificate(ctx context.Context, fingerprint string) (*Certificate, *Response, error) {
+func (s *DeviceCertificateService) GetCertificate(ctx context.Context, tenant string, fingerprint string) (*Certificate, *Response, error) {
+	if tenant == "" {
+		tenant = s.client.TenantName
+	}
 	data := new(Certificate)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "GET",
-		Path:         "tenant/tenants/" + s.client.TenantName + "/trusted-certificates/" + fingerprint,
+		Path:         "tenant/tenants/" + tenant + "/trusted-certificates/" + fingerprint,
 		ResponseData: data,
 	})
 	return data, resp, err
 }
 
 // Delete removed a measurement by ID
-func (s *DeviceCertificateService) Delete(ctx context.Context, fingerprint string) (*Response, error) {
+func (s *DeviceCertificateService) Delete(ctx context.Context, tenant string, fingerprint string) (*Response, error) {
+	if tenant == "" {
+		tenant = s.client.TenantName
+	}
 	return s.client.SendRequest(ctx, RequestOptions{
 		Method: "DELETE",
-		Path:   "tenant/tenants/" + s.client.TenantName + "/trusted-certificates/" + fingerprint,
+		Path:   "tenant/tenants/" + tenant + "/trusted-certificates/" + fingerprint,
 	})
 }
 
 // Create will upload a new trusted certificate
-func (s *DeviceCertificateService) Create(ctx context.Context, body interface{}) (*Certificate, *Response, error) {
+func (s *DeviceCertificateService) Create(ctx context.Context, tenant string, body interface{}) (*Certificate, *Response, error) {
+	if tenant == "" {
+		tenant = s.client.TenantName
+	}
 	data := new(Certificate)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "POST",
-		Path:         "tenant/tenants/" + s.client.TenantName + "/trusted-certificates",
+		Path:         "tenant/tenants/" + tenant + "/trusted-certificates",
 		Body:         body,
 		ResponseData: data,
 	})
@@ -85,11 +97,14 @@ func (s *DeviceCertificateService) Create(ctx context.Context, body interface{})
 }
 
 // Update an existing trusted certificate
-func (s *DeviceCertificateService) Update(ctx context.Context, fingerprint string, body interface{}) (*Certificate, *Response, error) {
+func (s *DeviceCertificateService) Update(ctx context.Context, tenant string, fingerprint string, body interface{}) (*Certificate, *Response, error) {
+	if tenant == "" {
+		tenant = s.client.TenantName
+	}
 	data := new(Certificate)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "PUT",
-		Path:         "tenant/tenants/" + s.client.TenantName + "/trusted-certificates/" + fingerprint,
+		Path:         "tenant/tenants/" + tenant + "/trusted-certificates/" + fingerprint,
 		Body:         body,
 		ResponseData: data,
 	})
