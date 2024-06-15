@@ -936,8 +936,13 @@ func (c *Client) SetBasicAuthorization(req *http.Request) {
 	} else {
 		headerUsername = c.Username
 	}
-	Logger.Infof("Current username: %s", c.HideSensitiveInformationIfActive(headerUsername))
-	req.SetBasicAuth(headerUsername, c.Password)
+
+	if headerUsername != "" && c.Password != "" {
+		Logger.Infof("Current username: %s", c.HideSensitiveInformationIfActive(headerUsername))
+		req.SetBasicAuth(headerUsername, c.Password)
+	} else {
+		Logger.Debug("Ignoring basic authorization header as either username or password is empty")
+	}
 }
 
 // SetAuthorization sets the configured authorization to the given request. By default it will set the Basic Authorization header
