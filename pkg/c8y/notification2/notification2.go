@@ -426,15 +426,24 @@ func (c *Notification2Client) worker() error {
 				break
 			}
 
-			if messageType == websocket.TextMessage {
+			switch messageType {
+			case websocket.TextMessage:
 				message := parseMessage(rawMessage)
-
 				c.hub.broadcast <- *message
-
 				Logger.Debugf("message id: %s", message.Identifier)
 				Logger.Debugf("message description: %s", message.Description)
 				Logger.Debugf("message action: %s", message.Action)
 				Logger.Debugf("message payload: %s", message.Payload)
+
+			case websocket.CloseMessage:
+				Logger.Debugf("Received close message. %v", rawMessage)
+				go c.reconnect()
+				break
+			case websocket.PingMessage:
+				Logger.Debugf("Received ping message. %v", rawMessage)
+
+			case websocket.PongMessage:
+				Logger.Debugf("Received pong message. %v", rawMessage)
 			}
 		}
 	}()
