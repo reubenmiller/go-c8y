@@ -15,8 +15,8 @@ import (
 	"time"
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
-	"github.com/vbauerster/mpb/v6"
-	"github.com/vbauerster/mpb/v6/decor"
+	"github.com/vbauerster/mpb/v8"
+	"github.com/vbauerster/mpb/v8/decor"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/binary"
@@ -252,18 +252,20 @@ func TestInventoryService_CreateBinaryWithProgressBar(t *testing.T) {
 	file, err := os.Open(testfile1)
 	testingutils.Ok(t, err)
 
-	bar := progress.Add(size,
+	bar, err := progress.Add(size,
 		mpb.NewBarFiller(BarFiller),
 		mpb.PrependDecorators(
-			decor.Name("elapsed", decor.WC{W: len("elapsed") + 1, C: decor.DidentRight}),
-			decor.Elapsed(decor.ET_STYLE_MMSS, decor.WC{W: 8, C: decor.DidentRight}),
-			decor.Name(basename, decor.WC{W: len(basename) + 1, C: decor.DidentRight}),
+			decor.Name("elapsed", decor.WC{W: len("elapsed") + 1, C: decor.DindentRight}),
+			decor.Elapsed(decor.ET_STYLE_MMSS, decor.WC{W: 8, C: decor.DindentRight}),
+			decor.Name(basename, decor.WC{W: len(basename) + 1, C: decor.DindentRight}),
 		),
 		mpb.AppendDecorators(
-			decor.Percentage(decor.WC{W: 6, C: decor.DidentRight}),
+			decor.Percentage(decor.WC{W: 6, C: decor.DindentRight}),
 			decor.CountersKibiByte("% .2f / % .2f"),
 		),
 	)
+
+	testingutils.Ok(t, err)
 	binaryFile, err := binary.NewBinaryFile(
 		binary.WithReader(file),
 		binary.WithFileProperties(testfile1),

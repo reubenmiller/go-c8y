@@ -422,6 +422,8 @@ func TestUserService_AssignRoleToGroup(t *testing.T) {
 		)
 	}
 
+	// TODO: Use a random role
+
 	// Assign role to user
 	roleRef, resp, err := client.User.AssignRoleToGroup(
 		context.Background(),

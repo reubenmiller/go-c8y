@@ -12,8 +12,8 @@ import (
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
-	"github.com/vbauerster/mpb/v6"
-	"github.com/vbauerster/mpb/v6/decor"
+	"github.com/vbauerster/mpb/v8"
+	"github.com/vbauerster/mpb/v8/decor"
 )
 
 // TestInventoryService_DecodeJSONManagedObject tests whether individual managed objects can be decoded into custom objects
@@ -125,12 +125,12 @@ func Test_CustomBodyWriter(t *testing.T) {
 		}
 		bar := progress.AddBar(response.ContentLength,
 			mpb.PrependDecorators(
-				decor.Name("elapsed", decor.WC{W: len("elapsed") + 1, C: decor.DidentRight}),
-				decor.Elapsed(decor.ET_STYLE_MMSS, decor.WC{W: 8, C: decor.DidentRight}),
-				decor.Name(basename, decor.WC{W: len(basename) + 1, C: decor.DidentRight}),
+				decor.Name("elapsed", decor.WC{W: len("elapsed") + 1, C: decor.DindentRight}),
+				decor.Elapsed(decor.ET_STYLE_MMSS, decor.WC{W: 8, C: decor.DindentRight}),
+				decor.Name(basename, decor.WC{W: len(basename) + 1, C: decor.DindentRight}),
 			),
 			mpb.AppendDecorators(
-				decor.Percentage(decor.WC{W: 6, C: decor.DidentRight}),
+				decor.Percentage(decor.WC{W: 6, C: decor.DindentRight}),
 				decor.CountersKibiByte("% .2f / % .2f"),
 			),
 		)
