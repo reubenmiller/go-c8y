@@ -434,7 +434,7 @@ func (c *Notification2Client) worker() error {
 				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 					Logger.Warnf("unexpected websocket error. %v", err)
 				} else {
-					Logger.Warnf("websocket error. %v", err)
+					Logger.Infof("websocket error. %v", err)
 				}
 				go c.reconnect()
 				break
@@ -451,8 +451,7 @@ func (c *Notification2Client) worker() error {
 				c.hub.broadcast <- *message
 
 			case websocket.CloseMessage:
-				Logger.Debugf("Received close message. %v", rawMessage)
-				go c.reconnect()
+				Logger.Warnf("Received close message. %v", rawMessage)
 			case websocket.PingMessage:
 				Logger.Debugf("Received ping message. %v", rawMessage)
 
