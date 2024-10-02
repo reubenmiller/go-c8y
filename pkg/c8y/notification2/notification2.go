@@ -321,6 +321,8 @@ func parseMessage(raw []byte) *Message {
 
 	i := 0
 	for scanner.Scan() {
+		// Note: .Bytes() does not allocate memory, so you need to allocate the data
+		// and copy the data to another variable if you want it to persist
 		line := scanner.Bytes()
 		if len(line) == 0 {
 			inHeader = false
@@ -329,11 +331,14 @@ func parseMessage(raw []byte) *Message {
 		}
 		if inHeader {
 			if i == 0 {
-				message.Identifier = line
+				message.Identifier = make([]byte, len(line))
+				copy(message.Identifier, line)
 			} else if i == 1 {
-				message.Description = line
+				message.Description = make([]byte, len(line))
+				copy(message.Description, line)
 			} else if i == 2 {
-				message.Action = line
+				message.Action = make([]byte, len(line))
+				copy(message.Action, line)
 			}
 			// Ignore unknown header indexes
 		} else {
