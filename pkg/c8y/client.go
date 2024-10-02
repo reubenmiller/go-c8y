@@ -1371,7 +1371,7 @@ func (c *Client) DefaultDryRunHandler(options *RequestOptions, req *http.Request
 		message += "\nBody: (empty)\n"
 	}
 
-	if options.FormData != nil && len(options.FormData) > 0 {
+	if len(options.FormData) > 0 {
 		message += "\nForm Data:\n"
 
 		// Sort formdata keys
