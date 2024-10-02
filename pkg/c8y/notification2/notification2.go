@@ -453,7 +453,6 @@ func (c *Notification2Client) worker() error {
 			case websocket.CloseMessage:
 				Logger.Debugf("Received close message. %v", rawMessage)
 				go c.reconnect()
-				break
 			case websocket.PingMessage:
 				Logger.Debugf("Received ping message. %v", rawMessage)
 
