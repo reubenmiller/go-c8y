@@ -321,21 +321,33 @@ func parseMessage(raw []byte) *Message {
 
 	i := 0
 	for scanner.Scan() {
+		// Note: .Bytes() does not allocate memory, so you need to allocate the data
+		// and copy the data to another variable if you want it to persist
 		line := scanner.Bytes()
 		if len(line) == 0 {
 			inHeader = false
+			// empty line is the border between the header and body
+			continue
 		}
 		if inHeader {
 			if i == 0 {
-				message.Identifier = line
+				message.Identifier = make([]byte, len(line))
+				copy(message.Identifier, line)
 			} else if i == 1 {
-				message.Description = line
+				message.Description = make([]byte, len(line))
+				copy(message.Description, line)
 			} else if i == 2 {
-				message.Action = line
+				message.Action = make([]byte, len(line))
+				copy(message.Action, line)
 			}
 			// Ignore unknown header indexes
 		} else {
-			message.Payload = line
+			// Copy payload
+			message.Payload = make([]byte, len(line))
+			copy(message.Payload, line)
+			// TODO: Check if a single websocket message can continue multiple messages
+			// Stop processing further messages
+			break
 		}
 		i++
 	}
@@ -374,7 +386,7 @@ func (c *Notification2Client) writeHandler() {
 				if err := c.ws.WriteMessage(websocket.PingMessage, nil); err != nil {
 					Logger.Warnf("Failed to send ping message to server. %s", err)
 					// go c.reconnect()
-					return
+					continue
 				}
 				Logger.Debug("Sent ping successfully")
 			}
@@ -413,28 +425,38 @@ func (c *Notification2Client) worker() error {
 		for {
 			messageType, rawMessage, err := c.ws.ReadMessage()
 
-			Logger.Debugf("Received message: type=%d, message=%s, err=%s", messageType, rawMessage, err)
+			if err == nil {
+				Logger.Debugf("Received websocket message: type=%d, len=%d", messageType, len(rawMessage))
+			}
 
 			if err != nil {
 				// Taken from https://github.com/gorilla/websocket/blob/main/examples/chat/client.go
 				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 					Logger.Warnf("unexpected websocket error. %v", err)
 				} else {
-					Logger.Warnf("websocket error. %v", err)
+					Logger.Infof("websocket error. %v", err)
 				}
 				go c.reconnect()
 				break
 			}
 
-			if messageType == websocket.TextMessage {
+			switch messageType {
+			case websocket.TextMessage:
+				Logger.Debugf("Raw notification2 message (len=%d):\n%s", len(rawMessage), rawMessage)
 				message := parseMessage(rawMessage)
-
-				c.hub.broadcast <- *message
-
 				Logger.Debugf("message id: %s", message.Identifier)
 				Logger.Debugf("message description: %s", message.Description)
 				Logger.Debugf("message action: %s", message.Action)
 				Logger.Debugf("message payload: %s", message.Payload)
+				c.hub.broadcast <- *message
+
+			case websocket.CloseMessage:
+				Logger.Warnf("Received close message. %v", rawMessage)
+			case websocket.PingMessage:
+				Logger.Debugf("Received ping message. %v", rawMessage)
+
+			case websocket.PongMessage:
+				Logger.Debugf("Received pong message. %v", rawMessage)
 			}
 		}
 	}()
