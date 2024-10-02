@@ -324,6 +324,8 @@ func parseMessage(raw []byte) *Message {
 		line := scanner.Bytes()
 		if len(line) == 0 {
 			inHeader = false
+			// empty line is the border between the header and body
+			continue
 		}
 		if inHeader {
 			if i == 0 {
@@ -336,6 +338,9 @@ func parseMessage(raw []byte) *Message {
 			// Ignore unknown header indexes
 		} else {
 			message.Payload = line
+			// TODO: Check if a single websocket message can continue multiple messages
+			// Stop processing further messages
+			break
 		}
 		i++
 	}
