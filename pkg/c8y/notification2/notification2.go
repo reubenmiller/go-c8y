@@ -222,6 +222,9 @@ func (c *Notification2Client) disconnect() error {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 	c.connected = false
+	if c.ws != nil {
+		return c.ws.Close()
+	}
 
 	// TODO: Add option to unsubscribe on disconnect (e.g. no offline messages required?)
 	// Note: If you unsubscribe, then notifications will be ignored when the client is offline
@@ -283,6 +286,13 @@ func (c *Notification2Client) reconnect() error {
 func (c *Notification2Client) connect() error {
 	if c.dialer == nil {
 		panic("Missing dialer for realtime client")
+	}
+
+	// This may be overkill, but is in place to prevent unexpected errors
+	if c.ws != nil {
+		if err := c.ws.Close(); err != nil {
+			Logger.Infof("Error whilst closing connection before connecting. %s", err)
+		}
 	}
 	ws, err := c.createWebsocket()
 
@@ -406,11 +416,12 @@ func (c *Notification2Client) worker() error {
 			Logger.Debugf("Received message: type=%d, message=%s, err=%s", messageType, rawMessage, err)
 
 			if err != nil {
-				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway) {
-					Logger.Infof("error %v", err)
+				// Taken from https://github.com/gorilla/websocket/blob/main/examples/chat/client.go
+				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+					Logger.Warnf("unexpected websocket error. %v", err)
+				} else {
+					Logger.Warnf("websocket error. %v", err)
 				}
-
-				Logger.Warnf("err: %s", err)
 				go c.reconnect()
 				break
 			}
