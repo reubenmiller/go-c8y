@@ -429,11 +429,12 @@ func (c *Notification2Client) worker() error {
 			switch messageType {
 			case websocket.TextMessage:
 				message := parseMessage(rawMessage)
-				c.hub.broadcast <- *message
+				Logger.Debugf("message len: %d", len(rawMessage))
 				Logger.Debugf("message id: %s", message.Identifier)
 				Logger.Debugf("message description: %s", message.Description)
 				Logger.Debugf("message action: %s", message.Action)
 				Logger.Debugf("message payload: %s", message.Payload)
+				c.hub.broadcast <- *message
 
 			case websocket.CloseMessage:
 				Logger.Debugf("Received close message. %v", rawMessage)
