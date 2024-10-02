@@ -374,7 +374,7 @@ func (c *Notification2Client) writeHandler() {
 				if err := c.ws.WriteMessage(websocket.PingMessage, nil); err != nil {
 					Logger.Warnf("Failed to send ping message to server. %s", err)
 					// go c.reconnect()
-					return
+					continue
 				}
 				Logger.Debug("Sent ping successfully")
 			}
