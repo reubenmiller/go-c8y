@@ -413,7 +413,9 @@ func (c *Notification2Client) worker() error {
 		for {
 			messageType, rawMessage, err := c.ws.ReadMessage()
 
-			Logger.Debugf("Received message: type=%d, message=%s, err=%s", messageType, rawMessage, err)
+			if err == nil {
+				Logger.Debugf("Received websocket message: type=%d, len=%d", messageType, len(rawMessage))
+			}
 
 			if err != nil {
 				// Taken from https://github.com/gorilla/websocket/blob/main/examples/chat/client.go
@@ -428,8 +430,8 @@ func (c *Notification2Client) worker() error {
 
 			switch messageType {
 			case websocket.TextMessage:
+				Logger.Debugf("Raw notification2 message (len=%d):\n%s", len(rawMessage), rawMessage)
 				message := parseMessage(rawMessage)
-				Logger.Debugf("message len: %d", len(rawMessage))
 				Logger.Debugf("message id: %s", message.Identifier)
 				Logger.Debugf("message description: %s", message.Description)
 				Logger.Debugf("message action: %s", message.Action)
