@@ -40,7 +40,7 @@ func (s *ContextService) ServiceUserContext(tenant string, skipUpdateServiceUser
 		client.Microservice.SetServiceUsers()
 	}
 
-	if client.ServiceUsers == nil || len(client.ServiceUsers) == 0 {
+	if len(client.ServiceUsers) == 0 {
 		panic("No service users found")
 	}
 	var auth string
