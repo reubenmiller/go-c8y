@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
@@ -111,7 +110,7 @@ func Test_CustomBodyWriter(t *testing.T) {
 
 	progress := mpb.New(
 		mpb.WithOutput(progressOut),
-		mpb.WithRefreshRate(120*time.Millisecond),
+		mpb.WithAutoRefresh(),
 		mpb.WithWidth(180),
 	)
 
@@ -123,7 +122,9 @@ func Test_CustomBodyWriter(t *testing.T) {
 				basename = filename
 			}
 		}
-		bar := progress.AddBar(response.ContentLength,
+		// Note: ContentLength is set to -1 if the response is chunked, and if set the progress bar
+		// will hang for a total <= 0
+		bar := progress.AddBar(max(response.ContentLength, 1),
 			mpb.PrependDecorators(
 				decor.Name("elapsed", decor.WC{W: len("elapsed") + 1, C: decor.DindentRight}),
 				decor.Elapsed(decor.ET_STYLE_MMSS, decor.WC{W: 8, C: decor.DindentRight}),

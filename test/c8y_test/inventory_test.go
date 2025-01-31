@@ -12,7 +12,6 @@ import (
 	"regexp"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
 	"github.com/vbauerster/mpb/v8"
@@ -238,7 +237,7 @@ func TestInventoryService_CreateBinaryWithProgressBar(t *testing.T) {
 	progress := mpb.New(
 		mpb.WithOutput(output),
 		mpb.WithWidth(120),
-		mpb.WithRefreshRate(180*time.Millisecond),
+		mpb.WithAutoRefresh(),
 	)
 	var size int64
 	fileInfo, err := os.Stat(testfile1)
