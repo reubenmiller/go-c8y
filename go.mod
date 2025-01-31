@@ -14,7 +14,7 @@ require (
 	github.com/sethvargo/go-password v0.3.1
 	github.com/spf13/viper v1.19.0
 	github.com/tidwall/gjson v1.18.0
-	github.com/vbauerster/mpb/v6 v6.0.4
+	github.com/vbauerster/mpb/v8 v8.9.1
 	go.uber.org/zap v1.27.0
 	golang.org/x/net v0.34.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
@@ -35,14 +35,14 @@ require (
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/mattn/go-runewidth v0.0.15 // indirect
+	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	github.com/rivo/uniseg v0.4.4 // indirect
+	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
