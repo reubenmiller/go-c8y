@@ -73,6 +73,4 @@ replace github.com/reubenmiller/go-c8y/test/c8y_test => ./test/c8y_test
 
 replace github.com/reubenmiller/go-c8y/test/c8y_microservice => ./test/c8y_microservice
 
-go 1.22
-
-toolchain go1.22.3
+go 1.21
