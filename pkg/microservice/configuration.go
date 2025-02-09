@@ -18,7 +18,7 @@ func NewConfiguration() *Configuration {
 	}
 }
 
-// Configuration represents the micorservice's configuration
+// Configuration represents the microservice's configuration
 type Configuration struct {
 	viper *viper.Viper
 }

@@ -24,7 +24,7 @@ func TestRetentionRuleService_CRUDRetentionRule(t *testing.T) {
 
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
-	testingutils.Assert(t, retentionRule.ID != "", "Rention Rule should have an non-empty id")
+	testingutils.Assert(t, retentionRule.ID != "", "Retention Rule should have an non-empty id")
 
 	//
 	// Get retention rule by id

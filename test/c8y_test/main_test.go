@@ -24,5 +24,5 @@ func createTestClient() *c8y.Client {
 }
 
 func createRandomTestDevice(prefix ...string) (*c8y.ManagedObject, error) {
-	return TestEnvironment.NewRandomTestDevice()
+	return TestEnvironment.NewRandomTestDevice(prefix...)
 }

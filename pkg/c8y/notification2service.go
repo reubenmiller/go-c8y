@@ -36,7 +36,7 @@ type Notification2TokenOptions struct {
 	Shared bool `json:"shared,omitempty"`
 }
 
-// Notificatioin2Subscription notification subscription object
+// Notification2Subscription notification subscription object
 type Notification2Subscription struct {
 	ID                 string                          `json:"id,omitempty"`
 	Self               string                          `json:"self,omitempty"`
@@ -50,7 +50,7 @@ type Notification2Subscription struct {
 	Item gjson.Result `json:"-"`
 }
 
-// Notificatioin2Subscription collection options
+// Notification2SubscriptionCollectionOptions collection options
 type Notification2SubscriptionCollectionOptions struct {
 	Context string `url:"context,omitempty"`
 	Source  string `url:"source,omitempty"`
@@ -302,7 +302,7 @@ func (s *Notification2Service) RenewToken(ctx context.Context, opt Notification2
 //
 // ```
 //
-//	notifClient, err := client.Notification2.CreateClient(context.Background(), c8y.Notification2ClientOptions{
+//	notificationsClient, err := client.Notification2.CreateClient(context.Background(), c8y.Notification2ClientOptions{
 //	    Token:    os.Getenv("NOTIFICATION2_TOKEN"),
 //	    Consumer: *consumer,
 //	    Options: &c8y.Notification2TokenOptions{
@@ -317,7 +317,7 @@ func (s *Notification2Service) RenewToken(ctx context.Context, opt Notification2
 //	}
 //
 // messagesCh := make(chan notifications2.Message)
-// notifClient.Register("*", messagesCh)
+// notificationsClient.Register("*", messagesCh)
 // signalCh := make(chan os.Signal, 1)
 // signal.Notify(signalCh, os.Interrupt)
 //
@@ -325,7 +325,7 @@ func (s *Notification2Service) RenewToken(ctx context.Context, opt Notification2
 //	  select {
 //	  case msg := <-messagesCh:
 //		      log.Printf("Received message. %s", msg.Payload)
-//	       notifClient.SendMessageAck(msg.Identifier)
+//	       notificationsClient.SendMessageAck(msg.Identifier)
 //
 //	  case <-signalCh:
 //	  	// Enable ctrl-c to stop

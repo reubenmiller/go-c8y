@@ -11,12 +11,12 @@ import (
 // EncodeUTF16 get a utf8 string and translate it into a slice of bytes of ucs2
 func EncodeUTF16(s string, addBOM bool) []byte {
 	r := []rune(s)
-	iresult := utf16.Encode(r)
+	iResult := utf16.Encode(r)
 	var bytes []byte
 	if addBOM {
 		bytes = []byte{254, 255}
 	}
-	for _, i := range iresult {
+	for _, i := range iResult {
 		temp := make([]byte, 2)
 		binary.BigEndian.PutUint16(temp, i)
 		bytes = append(bytes, temp...)

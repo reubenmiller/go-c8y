@@ -36,7 +36,7 @@ func TestAuditService_CreateAuditRecord(t *testing.T) {
 
 	recordInput := c8y.AuditRecord{
 		Activity:    "Test audit entry",
-		Type:        "testalarm",
+		Type:        "testAlarm",
 		Text:        "Test audit record 1",
 		Severity:    "MAJOR",
 		Time:        c8y.NewTimestamp(),

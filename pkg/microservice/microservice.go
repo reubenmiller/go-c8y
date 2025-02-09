@@ -14,7 +14,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 )
 
-// Options contains the additional microsevice options
+// Options contains the additional microservice options
 type Options struct {
 	// List of supported operations
 	SupportedOperations AgentSupportedOperations
@@ -203,7 +203,7 @@ func (s *Scheduler) AddFunc(spec string, cmd func()) error {
 	return nil
 }
 
-// TestClientConnection tests if the microservice client has connection to the Cumulocty host
+// TestClientConnection tests if the microservice client has connection to the Cumulocity host
 func (m *Microservice) TestClientConnection() error {
 	// Print out the service users
 	for _, user := range m.Client.ServiceUsers {
