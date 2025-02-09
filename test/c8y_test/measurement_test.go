@@ -100,10 +100,10 @@ func TestMeasurementService_GetMeasurements(t *testing.T) {
 	if resp != nil {
 		log.Printf("json result: %s\n", resp.Body())
 
-		totalmeasurements := resp.JSON("measurements.#").Int()
+		totalMeasurements := resp.JSON("measurements.#").Int()
 
-		if totalmeasurements != 1 {
-			t.Errorf("expected more than 0 measurements. want: %d, got: %d", 1, totalmeasurements)
+		if totalMeasurements != 1 {
+			t.Errorf("expected more than 0 measurements. want: %d, got: %d", 1, totalMeasurements)
 		}
 		value := resp.JSON("measurements.0.id")
 

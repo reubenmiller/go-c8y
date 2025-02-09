@@ -52,7 +52,7 @@ func TestUserService_GetUserByUsername(t *testing.T) {
 
 func TestUserService_CRUD(t *testing.T) {
 	client := createTestClient()
-	name := "myciuser" + testingutils.RandomString(7)
+	name := "my-ci-user" + testingutils.RandomString(7)
 	password := testingutils.RandomPassword(32)
 	userInput := c8y.NewUser(name, name+"@no-reply.org", password)
 	userInput.
@@ -164,7 +164,7 @@ func TestUserService_AddUserToGroup(t *testing.T) {
 	ciGroup, _, err := client.User.CreateGroup(
 		context.Background(),
 		&c8y.Group{
-			Name: "cigroup" + testingutils.RandomString(7),
+			Name: "ci-group" + testingutils.RandomString(7),
 		},
 	)
 	testingutils.Ok(t, err)

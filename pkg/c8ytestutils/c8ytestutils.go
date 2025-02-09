@@ -62,10 +62,10 @@ func (s *SetupConfiguration) NewClient() *c8y.Client {
 
 	log.Printf("Host=%s, Tenant=%s, Username=%s, Password=%s\n", host, tenant, username, password)
 
-	httpclient := c8y.NewHTTPClient(
+	httpClient := c8y.NewHTTPClient(
 		WithCompression(false),
 	)
-	client := c8y.NewClient(httpclient, host, tenant, username, password, false)
+	client := c8y.NewClient(httpClient, host, tenant, username, password, false)
 
 	if token != "" {
 		client.SetToken(token)
@@ -133,7 +133,7 @@ func (s *SetupConfiguration) BootstrapApplication(appName ...string) *microservi
 	var applicationName string
 
 	if len(appName) == 0 {
-		applicationName = "citest" + strings.ToLower(testingutils.RandomString(5))
+		applicationName = "ci-test" + strings.ToLower(testingutils.RandomString(5))
 	} else {
 		applicationName = appName[0]
 	}

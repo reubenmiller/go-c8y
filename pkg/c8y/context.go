@@ -55,7 +55,7 @@ func (s *ContextService) ServiceUserContext(tenant string, skipUpdateServiceUser
 }
 
 // ServiceUserFromRequest returns a new context with the Authorization token set which will override the Basic Auth in subsequent
-// REST requests. The service user will be seletected based on the tenant credentials provided in the request.
+// REST requests. The service user will be selected based on the tenant credentials provided in the request.
 // If the request's Authorization header does not use the tenant/username format, then the request's URL
 // will be used to determine which tenant to use.
 // Should only be used for MULTI_TENANT microservices

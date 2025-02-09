@@ -34,7 +34,7 @@ func TestEventService_CreateEvent(t *testing.T) {
 
 	value := c8y.Event{
 		Time:   c8y.NewTimestamp(),
-		Type:   "testevent",
+		Type:   "testEvent",
 		Text:   "Test Event",
 		Source: c8y.NewSource(testDevice.ID),
 	}
@@ -59,7 +59,7 @@ func TestEventService_GetEvents(t *testing.T) {
 	testDevice, err := createRandomTestDevice()
 	testingutils.Ok(t, err)
 
-	eventType := "testevent1"
+	eventType := "testEvent1"
 
 	createEvent := eventFactory(client, testDevice.ID, eventType)
 
@@ -86,7 +86,7 @@ func TestEventService_Update(t *testing.T) {
 	testDevice, err := createRandomTestDevice()
 	testingutils.Ok(t, err)
 
-	createEvent := eventFactory(client, testDevice.ID, "testevent1")
+	createEvent := eventFactory(client, testDevice.ID, "testEvent1")
 
 	event1, resp, err := createEvent()
 	testingutils.Ok(t, err)
@@ -111,7 +111,7 @@ func TestEventService_Delete(t *testing.T) {
 	testDevice, err := createRandomTestDevice()
 	testingutils.Ok(t, err)
 
-	createEventType := eventFactory(client, testDevice.ID, "testevent1")
+	createEventType := eventFactory(client, testDevice.ID, "testEvent1")
 	event1, resp, err := createEventType()
 
 	testingutils.Ok(t, err)
@@ -141,8 +141,8 @@ func TestEventService_DeleteEvents(t *testing.T) {
 	testDevice, err := createRandomTestDevice()
 	testingutils.Ok(t, err)
 
-	eventType1 := "testevent1"
-	eventType2 := "testevent2"
+	eventType1 := "testEvent1"
+	eventType2 := "testEvent2"
 
 	createEventType1 := eventFactory(client, testDevice.ID, eventType1)
 	createEventType2 := eventFactory(client, testDevice.ID, eventType2)
@@ -197,7 +197,7 @@ func TestEventService_CreateBinary(t *testing.T) {
 
 	value1 := c8y.Event{
 		Time:   c8y.NewTimestamp(),
-		Type:   "testevent",
+		Type:   "testEvent",
 		Text:   "Test Event",
 		Source: c8y.NewSource(testDevice.ID),
 	}
@@ -212,16 +212,16 @@ func TestEventService_CreateBinary(t *testing.T) {
 
 	//
 	// Upload file to event
-	testfile1 := NewDummyFile("testfile1", "test contents 1")
-	binaryobj1, resp, err := client.Event.CreateBinary(
+	testfile1 := NewDummyFile("testFile1", "test contents 1")
+	binaryObj1, resp, err := client.Event.CreateBinary(
 		context.Background(),
 		testfile1,
 		event1.ID,
 	)
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
-	testingutils.Equals(t, event1.ID, binaryobj1.Source)
-	testingutils.Assert(t, binaryobj1.Self != "", "Self link should be set")
+	testingutils.Equals(t, event1.ID, binaryObj1.Source)
+	testingutils.Assert(t, binaryObj1.Self != "", "Self link should be set")
 
 	//
 	// Download file

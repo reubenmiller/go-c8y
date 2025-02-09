@@ -19,7 +19,7 @@ func TestAlarmService_CreateAlarm(t *testing.T) {
 	defer client.Inventory.Delete(context.Background(), testDevice.ID)
 
 	value := c8y.Alarm{
-		Type:     "testalarm",
+		Type:     "testAlarm",
 		Text:     "Test alarm",
 		Severity: "MAJOR",
 		Time:     c8y.NewTimestamp(),
@@ -54,7 +54,7 @@ func TestAlarmService_UpdateAlarm(t *testing.T) {
 	testingutils.Assert(t, alarm != nil, "Alarm should not be nil", alarm)
 
 	// add check to satisfy linter and nil checks
-	// eventhough the assertion for != nil will stop the test
+	// even though the assertion for != nil will stop the test
 	if alarm == nil {
 		alarm = &c8y.Alarm{}
 	}
@@ -147,13 +147,13 @@ func TestAlarmService_GetAlarmCollection(t *testing.T) {
 	testingutils.Ok(t, err)
 	defer client.Inventory.Delete(context.Background(), testDevice.ID)
 
-	alarmFactory := func(alarmtype string) *c8y.Alarm {
+	alarmFactory := func(alarmType string) *c8y.Alarm {
 		alarm := c8y.Alarm{
 			Time:     c8y.NewTimestamp(),
 			Source:   c8y.NewSource(testDevice.ID),
 			Severity: "MAJOR",
 			Text:     "Test Alarm 1",
-			Type:     alarmtype,
+			Type:     alarmType,
 		}
 
 		alarmObj, resp, respErr := client.Alarm.Create(context.Background(), alarm)
@@ -208,13 +208,13 @@ func TestAlarmService_BulkUpdateAlarms(t *testing.T) {
 	testingutils.Ok(t, err)
 	defer client.Inventory.Delete(context.Background(), testDevice.ID)
 
-	alarmFactory := func(alarmtype string) *c8y.Alarm {
+	alarmFactory := func(alarmType string) *c8y.Alarm {
 		alarm := c8y.Alarm{
 			Time:     c8y.NewTimestamp(),
 			Source:   c8y.NewSource(testDevice.ID),
 			Severity: "MAJOR",
 			Text:     "Test Alarm 1",
-			Type:     alarmtype,
+			Type:     alarmType,
 		}
 
 		alarmObj, resp, respErr := client.Alarm.Create(context.Background(), alarm)
@@ -241,7 +241,7 @@ func TestAlarmService_BulkUpdateAlarms(t *testing.T) {
 	/*
 		Note:
 		If the StatusCode is "Accepted", then the error will be set to
-		"job scheduled on Cumulocity side; try again later" eventhough the request was accepted.
+		"job scheduled on Cumulocity side; try again later" even though the request was accepted.
 		Also, a delay is required before getting the status in the platform.
 
 		Reference: https://cumulocity.com/guides/reference/alarms/
@@ -297,13 +297,13 @@ func TestAlarmService_RemoveAlarmCollection(t *testing.T) {
 		client.Inventory.Delete(context.Background(), testDevice.ID)
 	})
 
-	alarmFactory := func(alarmtype string) *c8y.Alarm {
+	alarmFactory := func(alarmType string) *c8y.Alarm {
 		alarm := c8y.Alarm{
 			Time:     c8y.NewTimestamp(),
 			Source:   c8y.NewSource(testDevice.ID),
 			Severity: "MAJOR",
 			Text:     "Test Alarm 1",
-			Type:     alarmtype,
+			Type:     alarmType,
 		}
 
 		alarmObj, resp, respErr := client.Alarm.Create(

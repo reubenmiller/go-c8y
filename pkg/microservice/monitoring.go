@@ -21,7 +21,7 @@ import (
 //   - /logfile
 func (m *Microservice) AddHealthEndpointHandlers(e *echo.Echo) {
 	if e == nil {
-		zap.S().Errorf("Failed to end health endpoitns because the echo server is nil")
+		zap.S().Errorf("Failed to end health endpoints because the echo server is nil")
 		return
 	}
 
@@ -109,7 +109,7 @@ func getLastLineWithSeek(filepath string, numberLines int64) string {
 	line := ""
 	var cursor int64
 	stat, _ := fileHandle.Stat()
-	filesize := stat.Size()
+	fileSize := stat.Size()
 	var totalLines int64
 	for {
 		cursor--
@@ -128,7 +128,7 @@ func getLastLineWithSeek(filepath string, numberLines int64) string {
 
 		line = fmt.Sprintf("%s%s", string(char), line) // there is more efficient way
 
-		if cursor == -filesize { // stop if we are at the beginning
+		if cursor == -fileSize { // stop if we are at the beginning
 			break
 		}
 	}

@@ -19,5 +19,5 @@ func TestMain(m *testing.M) {
 }
 
 func bootstrapApplication(appName ...string) *microservice.Microservice {
-	return TestEnvironment.BootstrapApplication()
+	return TestEnvironment.BootstrapApplication(appName...)
 }

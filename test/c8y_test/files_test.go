@@ -12,7 +12,7 @@ func NewDummyFile(name string, contents string) (filepath string) {
 	}
 	f, err := os.Create(name)
 	if err != nil {
-		panic(errors.Wrap(err, "Error creating dummyfile"))
+		panic(errors.Wrap(err, "Error creating dummy file"))
 	}
 
 	defer f.Close()
@@ -38,7 +38,7 @@ func NewDummyFileWithSize(name string, size int64) (filepath string) {
 
 	f, err := os.Create(name)
 	if err != nil {
-		panic(errors.Wrap(err, "Error creating dummyfile"))
+		panic(errors.Wrap(err, "Error creating dummy file"))
 	}
 
 	defer f.Close()

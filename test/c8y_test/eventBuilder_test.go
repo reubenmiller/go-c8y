@@ -15,11 +15,11 @@ func TestEventBuilder_CreateEventBuilder(t *testing.T) {
 	id := "12345"
 	eventType := "testType"
 	eventText := "Custom Event 1"
-	tstamp, err := time.Parse(time.RFC3339, "2019-04-06T14:11:42.045421+02:00")
+	timestamp, err := time.Parse(time.RFC3339, "2019-04-06T14:11:42.045421+02:00")
 	testingutils.Ok(t, err)
 	wantJSON := `{"source":{"id":"12345"},"text":"Custom Event 1","time":"2019-04-06T14:11:42.045421+02:00","type":"testType"}`
 
-	builder := c8y.NewEventBuilder(id, eventType, eventText).SetTimestamp(c8y.NewTimestamp(tstamp))
+	builder := c8y.NewEventBuilder(id, eventType, eventText).SetTimestamp(c8y.NewTimestamp(timestamp))
 
 	eventJSON, err := builder.MarshalJSON()
 	testingutils.Ok(t, err)
@@ -48,15 +48,15 @@ func TestEventBuilder_CreateEvent(t *testing.T) {
 }
 
 func TestEventBuilder_Timestamp(t *testing.T) {
-	tstampStr := "2019-04-06T14:11:42.045421+02:00"
-	tstamp, err := time.Parse(time.RFC3339, tstampStr)
+	timestampStr := "2019-04-06T14:11:42.045421+02:00"
+	timestamp, err := time.Parse(time.RFC3339, timestampStr)
 	testingutils.Ok(t, err)
 
 	builder := c8y.NewEventBuilder("12345", "customEvent1", "Custom Event Text 1")
 
-	builder.SetTimestamp(c8y.NewTimestamp(tstamp))
+	builder.SetTimestamp(c8y.NewTimestamp(timestamp))
 	eventTimestamp := builder.Timestamp()
-	testingutils.Equals(t, tstampStr, eventTimestamp.String())
+	testingutils.Equals(t, timestampStr, eventTimestamp.String())
 }
 
 func TestEventBuilder_DeviceID(t *testing.T) {

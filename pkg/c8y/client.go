@@ -56,7 +56,7 @@ func GetContextAuthTokenKey() ContextAuthTokenKey {
 // ContextCommonOptionsKey todo
 type ContextCommonOptionsKey string
 
-// GetContextCommonOptionsKey common optinos key used to override request options for a single request
+// GetContextCommonOptionsKey common options key used to override request options for a single request
 func GetContextCommonOptionsKey() ContextCommonOptionsKey {
 	return ContextCommonOptionsKey("commonOptions")
 }
@@ -157,7 +157,7 @@ const (
 )
 
 var (
-	// EnvVarLoggerHideSensitive environment variable name used to control whethere sensitive session information is logged or not. When set to "true", then the tenant, username, password, base 64 passwords will be obfuscated from the log messages
+	// EnvVarLoggerHideSensitive environment variable name used to control whether sensitive session information is logged or not. When set to "true", then the tenant, username, password, base 64 passwords will be obfuscated from the log messages
 	EnvVarLoggerHideSensitive = "C8Y_LOGGER_HIDE_SENSITIVE"
 )
 
@@ -835,13 +835,13 @@ func (c *Client) NewRequest(method, path string, query string, body interface{})
 		case io.Reader:
 			buf = v
 		default:
-			jsonbuf := new(bytes.Buffer)
-			err := json.NewEncoder(jsonbuf).Encode(body)
+			jsonBuf := new(bytes.Buffer)
+			err := json.NewEncoder(jsonBuf).Encode(body)
 
 			if err != nil {
 				return nil, err
 			}
-			buf = NewStringReader(jsonbuf.String())
+			buf = NewStringReader(jsonBuf.String())
 		}
 	}
 	req, err := http.NewRequest(method, u.String(), buf)
@@ -903,13 +903,13 @@ func (c *Client) NewRequestWithoutAuth(method, path string, query string, body i
 		case io.Reader:
 			buf = v
 		default:
-			jsonbuf := new(bytes.Buffer)
-			err := json.NewEncoder(jsonbuf).Encode(body)
+			jsonBuf := new(bytes.Buffer)
+			err := json.NewEncoder(jsonBuf).Encode(body)
 
 			if err != nil {
 				return nil, err
 			}
-			buf = NewStringReader(jsonbuf.String())
+			buf = NewStringReader(jsonBuf.String())
 		}
 	}
 	req, err := http.NewRequest(method, u.String(), buf)
@@ -1383,7 +1383,7 @@ func (c *Client) DefaultDryRunHandler(options *RequestOptions, req *http.Request
 	if len(options.FormData) > 0 {
 		message += "\nForm Data:\n"
 
-		// Sort formdata keys
+		// Sort form data keys
 		keys := make([]string, 0, len(options.FormData))
 		for key := range options.FormData {
 			keys = append(keys, key)
