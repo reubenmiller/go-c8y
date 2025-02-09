@@ -2,7 +2,7 @@
 
 Unofficial Go client for [Cumulocity IoT](https://cumulocity.com/api/core/).
 
-[![tests](https://github.com/reubenmiller/go-c8y/actions/workflows/main.yml/badge.svg)](https://github.com/reubenmiller/go-c8y/actions/workflows/main.yml)
+[![tests](https://github.com/reubenmiller/go-c8y/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/reubenmiller/go-c8y/actions/workflows/main.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/reubenmiller/go-c8y)](https://goreportcard.com/report/github.com/reubenmiller/go-c8y)
 [![Documentation c8y](https://godoc.org/github.com/reubenmiller/go-c8y/pkg/c8y?status.svg)](https://godoc.org/github.com/reubenmiller/go-c8y/pkg/c8y)
 [![Documentation microservice ](https://godoc.org/github.com/reubenmiller/go-c8y/pkg/microservice?status.svg)](https://godoc.org/github.com/reubenmiller/go-c8y/pkg/microservice)
@@ -20,7 +20,7 @@ We encourage you to try the package in your projects, just keep these caveats in
 1. Add the package to your project using `go get`:
 
     ```sh
-    go get -u github.com/reubenmiller/go-c8y/c8y
+    go get -u github.com/reubenmiller/go-c8y
     ```
 
 1. Create a `main.go` file with the following
