@@ -278,6 +278,20 @@ func (tr funcTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	return tr.roundTrip(req)
 }
 
+// Format the base url to ensure it is normalized for cases where the
+// scheme can be missing, and the trailing slash (which affects the default path used in calls)
+func FormatBaseURL(v string) string {
+	// add a default scheme if missing
+	if !strings.Contains(v, "://") {
+		v = "https://" + v
+	}
+
+	if strings.HasSuffix(v, "/") {
+		return v
+	}
+	return v + "/"
+}
+
 // NewClient returns a new Cumulocity API client. If a nil httpClient is
 // provided, http.DefaultClient will be used. To use API methods which require
 // authentication, provide an http.Client that will perform the authentication
@@ -303,12 +317,7 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 		}
 	}
 
-	var fmtURL string
-	if !strings.HasSuffix(baseURL, "/") {
-		fmtURL = baseURL + "/"
-	} else {
-		fmtURL = baseURL
-	}
+	fmtURL := FormatBaseURL(baseURL)
 	targetBaseURL, _ := url.Parse(fmtURL)
 
 	var realtimeClient *RealtimeClient

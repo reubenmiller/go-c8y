@@ -160,3 +160,43 @@ func Test_CustomBodyWriter(t *testing.T) {
 		t.Errorf("received empty body. got=0, wanted=!0")
 	}
 }
+
+func Test_formatBase(t *testing.T) {
+	testingutils.Equals(t, "https://example.com/", c8y.FormatBaseURL("example.com"))
+	testingutils.Equals(t, "https://example.com/", c8y.FormatBaseURL("https://example.com"))
+	testingutils.Equals(t, "http://example.com/", c8y.FormatBaseURL("http://example.com"))
+	testingutils.Equals(t, "http://example.com/", c8y.FormatBaseURL("http://example.com/"))
+	testingutils.Equals(t, "http://example.com/foo/", c8y.FormatBaseURL("http://example.com/foo"))
+}
+
+func Test_NewClientFromEnvironment(t *testing.T) {
+
+	cases := []struct {
+		env    string
+		scheme string
+		host   string
+		path   string
+	}{
+		{"example.com", "https", "example.com", "/"},
+		{"https://example.com", "https", "example.com", "/"},
+		{"http://example.com", "http", "example.com", "/"},
+		{"http://example.com/", "http", "example.com", "/"},
+
+		{"http://example.com/foo", "http", "example.com", "/foo/"},
+		{"http://example.com/foo/", "http", "example.com", "/foo/"},
+	}
+
+	for _, testcase := range cases {
+		t.Setenv("C8Y_HOST", testcase.env)
+		client := c8y.NewClientFromEnvironment(nil, true)
+		testingutils.Equals(t, testcase.scheme, client.BaseURL.Scheme)
+		testingutils.Equals(t, testcase.host, client.BaseURL.Host)
+		testingutils.Equals(t, testcase.path, client.BaseURL.Path)
+
+		req, err := client.NewRequest(http.MethodGet, "inventory/managedObjects", "", nil)
+		testingutils.Ok(t, err)
+
+		expectedPath := testcase.path + "inventory/managedObjects"
+		testingutils.Equals(t, expectedPath, req.URL.Path)
+	}
+}
