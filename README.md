@@ -20,7 +20,7 @@ We encourage you to try the package in your projects, just keep these caveats in
 1. Add the package to your project using `go get`:
 
     ```sh
-    go get -u github.com/reubenmiller/go-c8y/c8y
+    go get -u github.com/reubenmiller/go-c8y
     ```
 
 1. Create a `main.go` file with the following
