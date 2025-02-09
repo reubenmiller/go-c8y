@@ -39,3 +39,8 @@ tasks:
     cmds:
       - go install golang.org/x/tools/cmd/godoc@latest
       - godoc -http=":6060"
+
+  spell-checker:
+    desc: Run the spell checker
+    cmds:
+      - docker run -v $PWD:/workdir ghcr.io/streetsidesoftware/cspell:latest "**"
