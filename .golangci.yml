@@ -1,11 +1,11 @@
 run:
-  deadline: 30m
+  timeout: 30m
   tests: true
 
 linters-settings:
   govet:
-    shadow: true
-    fieldalignment: true
+    disable:
+      - fieldalignment
   gofmt:
     simplify: true
   

@@ -1019,7 +1019,12 @@ func (c *Client) addOAuth2ToRequest(req *http.Request) {
 	}
 }
 
-// LoginUsingOAuth2 login to Cumulocity using OAuth2 and save the cookies from the response
+// OAuthTokenResponse OAuth Token Response
+type OAuthTokenResponse struct {
+	AccessToken string `json:"access_token,omitempty"`
+}
+
+// LoginUsingOAuth2 login to Cumulocity using OAuth2
 func (c *Client) LoginUsingOAuth2(ctx context.Context, initRequest ...string) error {
 
 	data := url.Values{}
@@ -1035,14 +1040,16 @@ func (c *Client) LoginUsingOAuth2(ctx context.Context, initRequest ...string) er
 	headers := http.Header{}
 	headers.Add("Content-Length", strconv.Itoa(len(data.Encode())))
 
+	responseData := new(OAuthTokenResponse)
 	options := &RequestOptions{
-		Method:      "POST",
-		Path:        "/tenant/oauth",
-		Query:       fmt.Sprintf("tenant_id=%s", c.TenantName),
-		Accept:      "*/*",
-		Header:      headers,
-		ContentType: "application/x-www-form-urlencoded;charset=UTF-8",
-		Body:        data.Encode(),
+		Method:       "POST",
+		Path:         "/tenant/oauth/token",
+		Query:        fmt.Sprintf("tenant_id=%s", c.TenantName),
+		Accept:       "application/json",
+		Header:       headers,
+		ContentType:  "application/x-www-form-urlencoded;charset=UTF-8",
+		Body:         data.Encode(),
+		ResponseData: responseData,
 	}
 
 	if len(initRequest) > 0 && initRequest[0] != "" {
@@ -1069,6 +1076,78 @@ func (c *Client) LoginUsingOAuth2(ctx context.Context, initRequest ...string) er
 			c.SetToken(cookie.Value)
 			break
 		}
+	}
+
+	if responseData.AccessToken != "" {
+		c.SetToken(responseData.AccessToken)
+	}
+
+	// test
+	c.AuthorizationMethod = AuthMethodOAuth2Internal
+	tenant, _, err := c.Tenant.GetCurrentTenant(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Get Cumulocity system version, but don't fail if it does not work
+	if version, err := c.TenantOptions.GetVersion(ctx); err == nil {
+		c.Version = version
+	}
+
+	c.TenantName = tenant.Name
+	return nil
+}
+
+// LoginUsingOAuth2External login to Cumulocity using an external OAuth2 code
+func (c *Client) LoginUsingOAuth2External(ctx context.Context, code string, initRequest ...string) error {
+
+	data := url.Values{}
+	data.Set("grant_type", "AUTHORIZATION_CODE")
+	data.Set("code", code)
+
+	headers := http.Header{}
+	headers.Add("Content-Length", strconv.Itoa(len(data.Encode())))
+
+	responseData := new(OAuthTokenResponse)
+	options := &RequestOptions{
+		Method:       "POST",
+		Path:         "/tenant/oauth/token",
+		Query:        fmt.Sprintf("tenant_id=%s", c.TenantName),
+		Accept:       "application/json",
+		Header:       headers,
+		ContentType:  "application/x-www-form-urlencoded;charset=UTF-8",
+		Body:         data.Encode(),
+		ResponseData: responseData,
+	}
+
+	if len(initRequest) > 0 && initRequest[0] != "" {
+		if v, err := url.Parse(initRequest[0]); err == nil {
+			options.Path = v.Path
+			options.Query = v.RawQuery
+		}
+	}
+
+	resp, err := c.SendRequest(
+		ctx,
+		*options,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	c.SetCookies(resp.Cookies())
+
+	// read authorization token from cookies
+	for _, cookie := range resp.Cookies() {
+		if strings.EqualFold(cookie.Name, "authorization") {
+			c.SetToken(cookie.Value)
+			break
+		}
+	}
+
+	if responseData.AccessToken != "" {
+		c.SetToken(responseData.AccessToken)
 	}
 
 	// test
