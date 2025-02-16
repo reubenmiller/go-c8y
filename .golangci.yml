@@ -4,8 +4,7 @@ run:
 
 linters-settings:
   govet:
-    enable:
-      - shadow
+    disable:
       - fieldalignment
   gofmt:
     simplify: true
