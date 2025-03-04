@@ -1344,10 +1344,10 @@ func (e *Error) Error() string {
 An ErrorResponse reports one or more errors caused by an API request.
 */
 type ErrorResponse struct {
-	Response  *http.Response `json:"-"`                 // HTTP response that caused this error
-	ErrorType string         `json:"error,omitempty"`   // Error type formatted as "<<resource type>>/<<error name>>"". For example, an object not found in the inventory is reported as "inventory/notFound".
-	Message   string         `json:"message,omitempty"` // error message
-	Info      string         `json:"info,omitempty"`    // URL to an error description on the Internet.
+	Response  *Response `json:"-"`                 // HTTP response that caused this error
+	ErrorType string    `json:"error,omitempty"`   // Error type formatted as "<<resource type>>/<<error name>>"". For example, an object not found in the inventory is reported as "inventory/notFound".
+	Message   string    `json:"message,omitempty"` // error message
+	Info      string    `json:"info,omitempty"`    // URL to an error description on the Internet.
 
 	// Error details. Only available in DEBUG mode.
 	Details *struct {
@@ -1359,8 +1359,8 @@ type ErrorResponse struct {
 
 func (r *ErrorResponse) Error() string {
 	return fmt.Sprintf("%v %v: %d %v %v",
-		r.Response.Request.Method, sanitizeURL(r.Response.Request.URL),
-		r.Response.StatusCode, r.ErrorType, r.Message)
+		r.Response.Response.Request.Method, sanitizeURL(r.Response.Response.Request.URL),
+		r.Response.StatusCode(), r.ErrorType, r.Message)
 }
 
 // CheckResponse checks the API response for errors, and returns them if
@@ -1373,8 +1373,12 @@ func CheckResponse(r *http.Response) error {
 	if c := r.StatusCode; 200 <= c && c <= 299 {
 		return nil
 	}
-	errorResponse := &ErrorResponse{Response: r}
+
+	errorResponse := &ErrorResponse{Response: newResponse(r, 0)}
 	data, err := io.ReadAll(r.Body)
+
+	// Store copy of response as error messages are short anyway
+	errorResponse.Response.SetBody(data)
 
 	if err == nil && data != nil {
 		DecodeJSONBytes(data, errorResponse)
