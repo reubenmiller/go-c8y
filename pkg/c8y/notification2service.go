@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/notification2"
 	"github.com/tidwall/gjson"
 )
@@ -203,8 +203,9 @@ func (c *Notification2TokenClaim) Subscription() string {
 }
 
 func (c *Notification2TokenClaim) HasExpired() bool {
-	now := time.Now()
-	return !(c.VerifyIssuedAt(now, true) && c.VerifyExpiresAt(now, true))
+	var v = jwt.NewValidator(jwt.WithLeeway(5 * time.Second))
+	err := v.Validate(c)
+	return err != nil
 }
 
 func (s *Notification2Service) ParseToken(tokenString string) (*Notification2TokenClaim, error) {
@@ -240,12 +241,12 @@ func (s *Notification2Service) RenewToken(ctx context.Context, opt Notification2
 		if err != nil {
 			Logger.Infof("Token is invalid. %s", err)
 			isValid = false
-		} else if err := token.Claims.Valid(); err != nil {
+		} else if err := jwt.NewValidator(jwt.WithLeeway(5 * time.Second)).Validate(token.Claims); err != nil {
 			Logger.Infof("Token is invalid. %s", err)
 			isValid = false
 		}
 
-		Logger.Infof("Existing token: alg=%s, valid=%v, expired=%v, issuedAt: %v, expiresAt: %v, subscription=%s, subscriber=%s, shared=%v, tenant=%s", token.Method.Alg(), claims.Valid() == nil, claims.HasExpired(), claims.IssuedAt, claims.ExpiresAt, claims.Subscription(), claims.Subscriber, claims.IsShared(), claims.Tenant())
+		Logger.Infof("Existing token: alg=%s, valid=%v, expired=%v, issuedAt: %v, expiresAt: %v, subscription=%s, subscriber=%s, shared=%v, tenant=%s", token.Method.Alg(), isValid, claims.HasExpired(), claims.IssuedAt, claims.ExpiresAt, claims.Subscription(), claims.Subscriber, claims.IsShared(), claims.Tenant())
 
 		if opt.Options.Subscription != "" {
 			if claims.Subscription() != opt.Options.Subscription {

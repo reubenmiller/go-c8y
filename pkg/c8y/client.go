@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/go-querystring/query"
 	"github.com/reubenmiller/go-c8y/pkg/jsonUtilities"
 )
