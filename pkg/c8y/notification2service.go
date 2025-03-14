@@ -29,11 +29,21 @@ type Notification2TokenOptions struct {
 	// The subscriber name which the client wishes to be identified with
 	Subscriber string `json:"subscriber,omitempty"`
 
+	// Default subscriber to use if a token is not provided by the user or an explicit subscriber value
+	DefaultSubscriber string `json:"-"`
+
 	// The subscription name. This value must match the same that was used when the subscription was created
 	Subscription string `json:"subscription,omitempty"`
 
 	// Subscription is shared by multiple consumers
 	Shared bool `json:"shared,omitempty"`
+}
+
+func (nt *Notification2TokenOptions) GetDefaultSubscriber() string {
+	if nt.DefaultSubscriber != "" {
+		return nt.DefaultSubscriber
+	}
+	return "goc8y"
 }
 
 // Notification2Subscription notification subscription object
@@ -119,6 +129,11 @@ func (s *Notification2Service) GetSubscriptions(ctx context.Context, opt *Notifi
 // Create token
 func (s *Notification2Service) CreateToken(ctx context.Context, options Notification2TokenOptions) (*Notification2Token, *Response, error) {
 	data := new(Notification2Token)
+
+	// Set a default subscriber if necessary
+	if options.Subscriber == "" {
+		options.Subscriber = options.GetDefaultSubscriber()
+	}
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
 		Method:       "POST",
 		Path:         "notification2/token",
@@ -286,10 +301,11 @@ func (s *Notification2Service) RenewToken(ctx context.Context, opt Notification2
 
 	Logger.Infof("Creating new token")
 	updatedToken, _, err := s.CreateToken(ctx, Notification2TokenOptions{
-		ExpiresInMinutes: expiresInMinutes,
-		Subscription:     subscription,
-		Subscriber:       subscriber,
-		Shared:           shared,
+		ExpiresInMinutes:  expiresInMinutes,
+		Subscription:      subscription,
+		Subscriber:        subscriber,
+		DefaultSubscriber: opt.Options.DefaultSubscriber,
+		Shared:            shared,
 	})
 	if err != nil {
 		return "", err
