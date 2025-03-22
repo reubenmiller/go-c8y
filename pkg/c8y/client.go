@@ -173,6 +173,26 @@ const (
 	AuthMethodNone = "NONE"
 )
 
+var (
+	ErrInvalidAuthMethod = errors.New("invalid authorization method")
+)
+
+// Parse the authorization method and select as default if no value options are found
+// It returns the selected method, and if the input was valid or not
+func ParseAuthMethod(v string) (string, error) {
+	v = strings.ToUpper(v)
+	switch v {
+	case AuthMethodBasic:
+		return AuthMethodBasic, nil
+	case AuthMethodNone:
+		return AuthMethodNone, nil
+	case AuthMethodOAuth2Internal:
+		return AuthMethodOAuth2Internal, nil
+	default:
+		return "", ErrInvalidAuthMethod
+	}
+}
+
 // DecodeJSONBytes decodes json preserving number formatting (especially large integers and scientific notation floats)
 func DecodeJSONBytes(v []byte, dst interface{}) error {
 	return DecodeJSONReader(bytes.NewReader(v), dst)
