@@ -2,7 +2,7 @@ module github.com/reubenmiller/go-c8y
 
 require (
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
-	github.com/golang-jwt/jwt/v5 v5.2.1
+	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/google/go-jsonnet v0.20.0
 	github.com/google/go-querystring v1.1.0
 	github.com/gorilla/websocket v1.5.3
