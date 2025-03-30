@@ -18,11 +18,19 @@ func TestCertificateAuthority_get(t *testing.T) {
 	_, setupErr := client.CertificateAuthority.Delete(ctx, "")
 	testingutils.Ok(t, setupErr)
 
+	// Create
 	cert, err := client.CertificateAuthority.Create(ctx, c8y.CertificateAuthorityOptions{
 		AutoRegistration: true,
 	})
 	testingutils.Ok(t, err)
 	testingutils.Assert(t, cert.Fingerprint != "", "fingerprint should not be empty")
+
+	// Create again (should be idempotent)
+	certDuplicate, err := client.CertificateAuthority.Create(ctx, c8y.CertificateAuthorityOptions{
+		AutoRegistration: true,
+	})
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, cert.Fingerprint, certDuplicate.Fingerprint)
 
 	// Get
 	cert2, err := client.CertificateAuthority.Get(ctx)
@@ -42,4 +50,19 @@ func TestCertificateAuthority_get(t *testing.T) {
 	resp, deleteErr := client.CertificateAuthority.Delete(ctx, cert.Fingerprint)
 	testingutils.Ok(t, deleteErr)
 	testingutils.Equals(t, resp.StatusCode(), http.StatusNoContent)
+}
+
+func TestCertificateAuthority_DryRun(t *testing.T) {
+	client := createTestClient()
+	client.SetRequestOptions(c8y.DefaultRequestOptions{
+		DryRun: true,
+	})
+
+	ctx := context.Background()
+
+	cert, setupErr := client.CertificateAuthority.Create(ctx, c8y.CertificateAuthorityOptions{
+		AutoRegistration: true,
+	})
+	testingutils.Ok(t, setupErr)
+	testingutils.Assert(t, cert == nil, "cert should be nil")
 }

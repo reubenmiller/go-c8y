@@ -27,25 +27,25 @@ func (s *CertificateAuthorityService) Create(ctx context.Context, opts Certifica
 		ResponseData: cert,
 	})
 	if err != nil {
-		return nil, err
+		// Don't treat a conflict as an error
+		if resp != nil && resp.StatusCode() == http.StatusConflict {
+			// Get existing certificate
+			existingCert, err := s.Get(ctx)
+			if err != nil {
+				return nil, err
+			}
+			if existingCert == nil {
+				return nil, nil
+			}
+			cert = existingCert
+		} else {
+			return nil, err
+		}
 	}
 
 	if resp == nil {
 		// Dry run
 		return nil, nil
-	}
-
-	// Don't treat a conflict as an error
-	if resp.StatusCode() == http.StatusConflict {
-		// Get existing certificate
-		existingCert, err := s.Get(ctx)
-		if err != nil {
-			return nil, err
-		}
-		if existingCert == nil {
-			return nil, nil
-		}
-		cert = existingCert
 	}
 
 	if opts.AutoRegistration && !cert.AutoRegistrationEnabled {
