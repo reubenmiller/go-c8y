@@ -128,29 +128,30 @@ type Client struct {
 	common service // Reuse a single struct instead of allocating one for each service on the heap.
 
 	// Services used for talking to different parts of the Cumulocity API.
-	Context             *ContextService
-	Alarm               *AlarmService
-	Audit               *AuditService
-	DeviceCredentials   *DeviceCredentialsService
-	Measurement         *MeasurementService
-	Operation           *OperationService
-	Tenant              *TenantService
-	Event               *EventService
-	Inventory           *InventoryService
-	Application         *ApplicationService
-	UIExtension         *UIExtensionService
-	ApplicationVersions *ApplicationVersionsService
-	Identity            *IdentityService
-	Microservice        *MicroserviceService
-	Notification2       *Notification2Service
-	RemoteAccess        *RemoteAccessService
-	Retention           *RetentionRuleService
-	TenantOptions       *TenantOptionsService
-	Software            *InventorySoftwareService
-	Firmware            *InventoryFirmwareService
-	User                *UserService
-	DeviceCertificate   *DeviceCertificateService
-	Features            *FeaturesService
+	Context              *ContextService
+	Alarm                *AlarmService
+	Audit                *AuditService
+	DeviceCredentials    *DeviceCredentialsService
+	Measurement          *MeasurementService
+	Operation            *OperationService
+	Tenant               *TenantService
+	Event                *EventService
+	Inventory            *InventoryService
+	Application          *ApplicationService
+	UIExtension          *UIExtensionService
+	ApplicationVersions  *ApplicationVersionsService
+	Identity             *IdentityService
+	Microservice         *MicroserviceService
+	Notification2        *Notification2Service
+	RemoteAccess         *RemoteAccessService
+	Retention            *RetentionRuleService
+	TenantOptions        *TenantOptionsService
+	Software             *InventorySoftwareService
+	Firmware             *InventoryFirmwareService
+	User                 *UserService
+	DeviceCertificate    *DeviceCertificateService
+	CertificateAuthority *CertificateAuthorityService
+	Features             *FeaturesService
 }
 
 const (
@@ -383,6 +384,7 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 	c.Firmware = (*InventoryFirmwareService)(&c.common)
 	c.User = (*UserService)(&c.common)
 	c.Features = (*FeaturesService)(&c.common)
+	c.CertificateAuthority = (*CertificateAuthorityService)(&c.common)
 	return c
 }
 
