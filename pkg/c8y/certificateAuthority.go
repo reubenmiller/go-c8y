@@ -30,12 +30,20 @@ func (s *CertificateAuthorityService) Create(ctx context.Context, opts Certifica
 		return nil, err
 	}
 
+	if resp == nil {
+		// Dry run
+		return nil, nil
+	}
+
 	// Don't treat a conflict as an error
 	if resp.StatusCode() == http.StatusConflict {
 		// Get existing certificate
 		existingCert, err := s.Get(ctx)
 		if err != nil {
 			return nil, err
+		}
+		if existingCert == nil {
+			return nil, nil
 		}
 		cert = existingCert
 	}
@@ -59,6 +67,9 @@ func (s *CertificateAuthorityService) Delete(ctx context.Context, fingerprint st
 		if err != nil {
 			return nil, err
 		}
+		if cert == nil {
+			return nil, nil
+		}
 		fingerprint = cert.Fingerprint
 	}
 
@@ -67,11 +78,14 @@ func (s *CertificateAuthorityService) Delete(ctx context.Context, fingerprint st
 
 // Get certificate authority for the current tenant
 func (s *CertificateAuthorityService) Get(ctx context.Context) (*Certificate, error) {
-	items, _, err := s.client.DeviceCertificate.GetCertificates(ctx, s.client.GetTenantName(ctx), &DeviceCertificateCollectionOptions{
+	items, resp, err := s.client.DeviceCertificate.GetCertificates(ctx, s.client.GetTenantName(ctx), &DeviceCertificateCollectionOptions{
 		PaginationOptions: *NewPaginationOptions(2000),
 	})
 	if err != nil {
 		return nil, err
+	}
+	if resp == nil {
+		return nil, nil
 	}
 
 	for _, item := range items.Certificates {
@@ -89,6 +103,9 @@ func (s *CertificateAuthorityService) Update(ctx context.Context, fingerprint st
 		cert, err := s.Get(ctx)
 		if err != nil {
 			return nil, nil, err
+		}
+		if cert == nil {
+			return nil, nil, nil
 		}
 		fingerprint = cert.Fingerprint
 	}
