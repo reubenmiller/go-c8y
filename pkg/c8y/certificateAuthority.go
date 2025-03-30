@@ -48,9 +48,10 @@ func (s *CertificateAuthorityService) Create(ctx context.Context, opts Certifica
 		return nil, nil
 	}
 
-	if opts.AutoRegistration && !cert.AutoRegistrationEnabled {
+	if opts.AutoRegistration != cert.AutoRegistrationEnabled || (opts.Status != "" && opts.Status != cert.Status) {
 		cert, _, err := s.client.DeviceCertificate.Update(ctx, s.client.GetTenantName(ctx), cert.Fingerprint, Certificate{
 			AutoRegistrationEnabled: opts.AutoRegistration,
+			Status:                  opts.Status,
 		})
 		return cert, err
 	}
