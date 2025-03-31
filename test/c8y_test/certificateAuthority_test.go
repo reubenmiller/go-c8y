@@ -37,6 +37,15 @@ func TestCertificateAuthority_get(t *testing.T) {
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, cert.Fingerprint, cert2.Fingerprint)
 
+	// Update dry-run (get should work, but the update should not)
+	dryRunContext := c8y.WithCommonOptionsContext(ctx, c8y.CommonOptions{
+		DryRun: true,
+	})
+	_, _, dryRunErr := client.CertificateAuthority.Update(dryRunContext, "", &c8y.Certificate{
+		AutoRegistrationEnabled: true,
+	})
+	testingutils.Ok(t, dryRunErr)
+
 	// Update
 	cert3, resp, err := client.CertificateAuthority.Update(ctx, cert2.Fingerprint, &c8y.Certificate{
 		Status:                  c8y.CertificateStatusDisabled,
