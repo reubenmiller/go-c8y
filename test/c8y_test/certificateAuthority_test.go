@@ -66,3 +66,17 @@ func TestCertificateAuthority_DryRun(t *testing.T) {
 	testingutils.Ok(t, setupErr)
 	testingutils.Assert(t, cert == nil, "cert should be nil")
 }
+
+func TestCertificateAuthority_UpdateDryRun(t *testing.T) {
+	client := createTestClient()
+	client.SetRequestOptions(c8y.DefaultRequestOptions{
+		DryRun: true,
+	})
+
+	ctx := context.Background()
+
+	_, _, setupErr := client.CertificateAuthority.Update(ctx, "", &c8y.Certificate{
+		AutoRegistrationEnabled: true,
+	})
+	testingutils.Ok(t, setupErr)
+}
