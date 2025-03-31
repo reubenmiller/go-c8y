@@ -29,6 +29,10 @@ type DeviceCertificateCollection struct {
 	Items []gjson.Result `json:"-"`
 }
 
+func NewCertificate() *Certificate {
+	return &Certificate{}
+}
+
 // Certificate properties
 type Certificate struct {
 	AlgorithmName              string `json:"algorithmName,omitempty"`
@@ -42,9 +46,29 @@ type Certificate struct {
 	SerialNumber               string `json:"serialNumber,omitempty"`
 	Status                     string `json:"status,omitempty"`
 	Subject                    string `json:"subject,omitempty"`
-	AutoRegistrationEnabled    bool   `json:"autoRegistrationEnabled,omitempty"`
+	AutoRegistrationEnabled    *bool  `json:"autoRegistrationEnabled,omitempty"`
 	TenantCertificateAuthority bool   `json:"tenantCertificateAuthority,omitempty"`
 	Version                    int    `json:"version,omitempty"`
+}
+
+// Check if auto registration is enabled or not
+func (c *Certificate) IsAutoRegistrationEnabled() bool {
+	if c.AutoRegistrationEnabled == nil {
+		return false
+	}
+	return *c.AutoRegistrationEnabled
+}
+
+// Set the certificate status, ENABLED or DISABLED
+func (c *Certificate) WithStatus(v string) *Certificate {
+	c.Status = v
+	return c
+}
+
+// Set the auto registration status
+func (c *Certificate) WithAutoRegistration(enabled bool) *Certificate {
+	c.AutoRegistrationEnabled = &enabled
+	return c
 }
 
 // GetCertificates returns collection of certificates
