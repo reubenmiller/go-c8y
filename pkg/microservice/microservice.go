@@ -249,6 +249,19 @@ func (m *Microservice) WithServiceUser(tenant ...string) context.Context {
 	return m.Client.Context.ServiceUserContext(tenant[0], true)
 }
 
+// WithServiceUserCache returns the default service user (i.e. the first tenant), but it
+// allows the user to control whether the list of service users should be updated or not
+// Can be used when using a PER_TENANT microservice as there will only ever be one tenant
+func (m *Microservice) WithServiceUserCache(skipUpdateServiceUsers bool, tenant ...string) context.Context {
+	if len(tenant) > 1 {
+		panic(fmt.Errorf("context only accepts 1 tenant"))
+	}
+	if len(tenant) == 0 {
+		return m.Client.Context.ServiceUserContext("", skipUpdateServiceUsers)
+	}
+	return m.Client.Context.ServiceUserContext(tenant[0], skipUpdateServiceUsers)
+}
+
 // WithBootstrapUserCredentials returns the application credentials
 func (m *Microservice) WithBootstrapUserCredentials() c8y.ServiceUser {
 	return c8y.ServiceUser{
