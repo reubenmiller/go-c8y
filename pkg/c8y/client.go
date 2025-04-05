@@ -1214,7 +1214,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}, middl
 
 	// Check if an authorization key is provided in the context, if so then override the c8y authentication
 	if authToken := ctx.Value(GetContextAuthTokenKey()); authToken != nil {
-		Logger.Infof("Overriding basic auth provided in the context")
+		Logger.Infof("Using authorization provided in the context")
 		req.Header.Set("Authorization", authToken.(string))
 	}
 
