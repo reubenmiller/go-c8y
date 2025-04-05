@@ -82,6 +82,12 @@ type DefaultRequestOptions struct {
 	DryRunHandler func(options *RequestOptions, req *http.Request)
 }
 
+// FromAuthFuncContext returns the AuthFunc value stored in ctx, if any.
+func FromAuthFuncContext(ctx context.Context) (AuthFunc, bool) {
+	u, ok := ctx.Value(GetContextAuthFuncKey()).(AuthFunc)
+	return u, ok
+}
+
 type service struct {
 	client *Client
 }
@@ -1223,15 +1229,13 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}, middl
 	req = withContext(ctx, req)
 
 	// Check if custom auth function is provided
-	if ctxAuthFunc := ctx.Value(GetContextAuthFuncKey()); ctxAuthFunc != nil {
-		if authFunc, ok := ctxAuthFunc.(AuthFunc); ok {
-			auth, authErr := authFunc(req)
-			if authErr != nil {
-				Logger.Infof("Authorization function returned an error. %s", authErr)
-			} else if auth != "" {
-				Logger.Infof("Using authorization provided by an auth function")
-				req.Header.Set("Authorization", auth)
-			}
+	if ctxAuthFunc, ok := FromAuthFuncContext(ctx); ok {
+		auth, authErr := ctxAuthFunc(req)
+		if authErr != nil {
+			Logger.Infof("Authorization function returned an error. %s", authErr)
+		} else if auth != "" {
+			Logger.Infof("Using authorization provided by an auth function")
+			req.Header.Set("Authorization", auth)
 		}
 	} else if authToken := ctx.Value(GetContextAuthTokenKey()); authToken != nil {
 		// Check if an authorization key is provided in the context, if so then override the c8y authentication
