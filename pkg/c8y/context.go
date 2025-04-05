@@ -36,21 +36,34 @@ func (s *ContextService) ServiceUserFromEnvironment() context.Context {
 // If no service users are found then it will panic.
 func (s *ContextService) ServiceUserContext(tenant string, skipUpdateServiceUsers bool) context.Context {
 	client := s.client
+	serviceUsersUpdated := false
 	if !skipUpdateServiceUsers {
 		client.Microservice.SetServiceUsers()
+		serviceUsersUpdated = true
+	}
+
+	findUser := func() string {
+		for _, user := range client.ServiceUsers {
+			if tenant == user.Tenant || tenant == "" {
+				auth := NewBasicAuthString(user.Tenant, user.Username, user.Password)
+				return auth
+			}
+		}
+		return ""
+	}
+
+	auth := findUser()
+
+	if auth == "" && !serviceUsersUpdated {
+		// Refresh list if user is not found
+		client.Microservice.SetServiceUsers()
+		auth = findUser()
 	}
 
 	if len(client.ServiceUsers) == 0 {
 		panic("No service users found")
 	}
-	var auth string
 
-	for _, user := range client.ServiceUsers {
-		if tenant == user.Tenant || tenant == "" {
-			auth = NewBasicAuthString(user.Tenant, user.Username, user.Password)
-			break
-		}
-	}
 	return context.WithValue(context.Background(), GetContextAuthTokenKey(), auth)
 }
 
