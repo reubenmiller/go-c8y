@@ -19,6 +19,9 @@ type Options struct {
 	// List of supported operations
 	SupportedOperations AgentSupportedOperations
 	AgentInformation    AgentInformation
+
+	// Custom HTTP client
+	HTTPClient *http.Client
 }
 
 // NewDefaultMicroservice returns a new microservice instance.
@@ -50,7 +53,7 @@ func NewDefaultMicroservice(opts Options) *Microservice {
 	ms.InitializeLogger()
 
 	// Create a Cumulocity client
-	client := c8y.NewClientUsingBootstrapUserFromEnvironment(nil, config.GetHost(), false)
+	client := c8y.NewClientUsingBootstrapUserFromEnvironment(opts.HTTPClient, config.GetHost(), false)
 	client.UseTenantInUsername = true
 	ms.Client = client
 
@@ -240,13 +243,11 @@ func (m *Microservice) SetMicroserviceHost(host string) {
 // WithServiceUser returns the default service user (i.e. the first tenant).
 // Can be used when using a PER_TENANT microservice as there will only ever be one tenant
 func (m *Microservice) WithServiceUser(tenant ...string) context.Context {
-	if len(tenant) > 1 {
-		panic(fmt.Errorf("Context only accepts 1 tenant"))
+	targetTenant := ""
+	if len(tenant) > 0 {
+		targetTenant = tenant[0]
 	}
-	if len(tenant) == 0 {
-		return m.Client.Context.ServiceUserContext("", true)
-	}
-	return m.Client.Context.ServiceUserContext(tenant[0], true)
+	return m.Client.Context.AuthContext(m.Client.Context.GetServiceUserAuthFunc(targetTenant))
 }
 
 // WithServiceUserCache returns the default service user (i.e. the first tenant), but it
