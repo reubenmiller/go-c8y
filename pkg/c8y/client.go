@@ -61,6 +61,16 @@ func GetContextCommonOptionsKey() ContextCommonOptionsKey {
 	return ContextCommonOptionsKey("commonOptions")
 }
 
+// ContextAuthFuncKey auth function key
+type ContextAuthFuncKey string
+
+// GetContextServiceUser server user
+func GetContextAuthFuncKey() ContextAuthFuncKey {
+	return ContextAuthFuncKey("authFunc")
+}
+
+type AuthFunc func(r *http.Request) (string, error)
+
 // DefaultRequestOptions default request options which are added to each outgoing request
 type DefaultRequestOptions struct {
 	DryRun bool
@@ -70,6 +80,12 @@ type DefaultRequestOptions struct {
 
 	// DryRunHandler called when a request should be called
 	DryRunHandler func(options *RequestOptions, req *http.Request)
+}
+
+// FromAuthFuncContext returns the AuthFunc value stored in ctx, if any.
+func FromAuthFuncContext(ctx context.Context) (AuthFunc, bool) {
+	u, ok := ctx.Value(GetContextAuthFuncKey()).(AuthFunc)
+	return u, ok
 }
 
 type service struct {
@@ -1212,8 +1228,17 @@ func withContext(ctx context.Context, req *http.Request) *http.Request {
 func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}, middleware ...RequestMiddleware) (*Response, error) {
 	req = withContext(ctx, req)
 
-	// Check if an authorization key is provided in the context, if so then override the c8y authentication
-	if authToken := ctx.Value(GetContextAuthTokenKey()); authToken != nil {
+	// Check if custom auth function is provided
+	if ctxAuthFunc, ok := FromAuthFuncContext(ctx); ok {
+		auth, authErr := ctxAuthFunc(req)
+		if authErr != nil {
+			Logger.Infof("Authorization function returned an error. %s", authErr)
+		} else if auth != "" {
+			Logger.Infof("Using authorization provided by an auth function")
+			req.Header.Set("Authorization", auth)
+		}
+	} else if authToken := ctx.Value(GetContextAuthTokenKey()); authToken != nil {
+		// Check if an authorization key is provided in the context, if so then override the c8y authentication
 		Logger.Infof("Using authorization provided in the context")
 		req.Header.Set("Authorization", authToken.(string))
 	}
