@@ -3,6 +3,7 @@ package c8y
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -79,18 +80,17 @@ func (s *ContextService) GetServiceUserAuthFunc(tenant string) AuthFunc {
 		client := s.client
 
 		var auth string
-
-		for _, user := range client.ServiceUsers {
-			if tenant == user.Tenant || tenant == "" {
-				auth = NewBasicAuthString(user.Tenant, user.Username, user.Password)
-				break
+		var err error
+		auth, err = client.Microservice.GetServiceAuth(tenant)
+		if err == nil {
+			return auth, err
+		}
+		if errors.Is(err, ErrNotFound) {
+			if serviceUserErr := client.Microservice.SetServiceUsers(); serviceUserErr == nil {
+				auth, err = client.Microservice.GetServiceAuth(tenant)
 			}
 		}
-
-		if auth == "" {
-			return "", fmt.Errorf("service user not found")
-		}
-		return auth, nil
+		return auth, err
 	}
 }
 
