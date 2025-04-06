@@ -67,6 +67,33 @@ func (s *ContextService) ServiceUserContext(tenant string, skipUpdateServiceUser
 	return context.WithValue(context.Background(), GetContextAuthTokenKey(), auth)
 }
 
+// Create new authorization context with an auth function
+func (s *ContextService) AuthContext(authFunc AuthFunc) context.Context {
+	return context.WithValue(context.Background(), GetContextAuthFuncKey(), authFunc)
+}
+
+// GetServiceUserAuthFunc returns an auth function which resolves the service user
+// when the request is about to be sent
+func (s *ContextService) GetServiceUserAuthFunc(tenant string) AuthFunc {
+	return func(r *http.Request) (string, error) {
+		client := s.client
+
+		var auth string
+
+		for _, user := range client.ServiceUsers {
+			if tenant == user.Tenant || tenant == "" {
+				auth = NewBasicAuthString(user.Tenant, user.Username, user.Password)
+				break
+			}
+		}
+
+		if auth == "" {
+			return "", fmt.Errorf("service user not found")
+		}
+		return auth, nil
+	}
+}
+
 // ServiceUserFromRequest returns a new context with the Authorization token set which will override the Basic Auth in subsequent
 // REST requests. The service user will be selected based on the tenant credentials provided in the request.
 // If the request's Authorization header does not use the tenant/username format, then the request's URL
