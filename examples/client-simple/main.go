@@ -7,6 +7,16 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 )
 
+type CustomField struct {
+	URL string `json:"url,omitempty"`
+}
+
+type ExampleMO struct {
+	c8y.ManagedObject
+
+	CustomField *CustomField `json:"my_CustomField,omitempty"`
+}
+
 func main() {
 	// Create the client from the following environment variables
 	// C8Y_HOST, C8Y_TENANT, C8Y_USER, C8Y_PASSWORD
@@ -26,4 +36,20 @@ func main() {
 	}
 
 	log.Printf("Total alarms: %d", len(alarmCollection.Alarms))
+
+	// Create custom managed object
+	mo := &ExampleMO{
+		ManagedObject: c8y.ManagedObject{
+			Name: "hello",
+		},
+		CustomField: &CustomField{
+			URL: "example.com/foo",
+		},
+	}
+	_, resp, err := client.Inventory.Create(context.Background(), mo)
+	if err != nil {
+		log.Fatalf("Failed to create the managed object. %s", err)
+	}
+
+	log.Printf("mo: %v", resp.JSON().Raw)
 }
