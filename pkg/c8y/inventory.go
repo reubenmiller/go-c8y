@@ -246,12 +246,6 @@ func (s *InventoryService) GetDevices(ctx context.Context, paging *PaginationOpt
 	return data, resp, err
 }
 
-// All todo
-func (s *ManagedObjectCollection) All() error {
-	// TODO: Get All results
-	return nil
-}
-
 // GetManagedObject returns a managed object by its id
 func (s *InventoryService) GetManagedObject(ctx context.Context, ID string, opt *ManagedObjectOptions) (*ManagedObject, *Response, error) {
 	data := new(ManagedObject)
