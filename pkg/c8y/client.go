@@ -845,6 +845,21 @@ func (c *Client) SetJSONItems(resp *Response, v interface{}) error {
 	case *UserCollection:
 		t.Items = resp.JSON("users").Array()
 
+	// Managed object references
+	case *ChildDevices:
+		t.Items = resp.JSON("references").Array()
+	case *ParentDevices:
+		t.Items = resp.JSON("references").Array()
+	case *AdditionParents:
+		t.Items = resp.JSON("references").Array()
+	case *AssetParents:
+		t.Items = resp.JSON("references").Array()
+	case *ChildAssets:
+		t.Items = resp.JSON("references").Array()
+	case *ChildAdditions:
+		t.Items = resp.JSON("references").Array()
+	case *ManagedObjectReferencesCollection:
+		t.Items = resp.JSON("references").Array()
 	}
 
 	return nil
