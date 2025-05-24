@@ -1451,8 +1451,12 @@ func CheckResponse(r *http.Response) error {
 }
 
 func (c *Client) HideSensitiveInformationIfActive(message string) string {
-
-	if strings.ToLower(os.Getenv(EnvVarLoggerHideSensitive)) != "true" {
+	// Default to hiding the information
+	hideSensitive := true
+	if v, err := strconv.ParseBool(os.Getenv(EnvVarLoggerHideSensitive)); err == nil {
+		hideSensitive = v
+	}
+	if !hideSensitive {
 		return message
 	}
 
