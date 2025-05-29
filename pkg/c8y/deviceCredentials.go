@@ -3,6 +3,7 @@ package c8y
 import (
 	"context"
 	"errors"
+	"io"
 	"time"
 
 	"github.com/tidwall/gjson"
@@ -171,4 +172,48 @@ func (s *DeviceCredentialsService) PollNewDeviceRequest(ctx context.Context, dev
 	}()
 
 	return done, err
+}
+
+//
+// Bulk Registration
+//
+
+// BulkNewDeviceRequest response which details the results of the bulk registration
+type BulkNewDeviceRequest struct {
+	NumberOfAll        int64 `json:"numberOfAll,omitempty"`
+	NumberOfCreated    int64 `json:"numberOfCreated,omitempty"`
+	NumberOfFailed     int64 `json:"numberOfFailed,omitempty"`
+	NumberOfSuccessful int64 `json:"numberOfSuccessful,omitempty"`
+
+	CredentialUpdatedList []BulkNewDeviceRequestDetails `json:"credentialUpdatedList,omitempty"`
+	FailedCreationList    []BulkNewDeviceRequestDetails `json:"failedCreationList,omitempty"`
+
+	Item gjson.Result `json:"-"`
+}
+
+type BulkNewDeviceRequestDetails struct {
+	BulkNewDeviceStatus string `json:"bulkNewDeviceStatus,omitempty"`
+	DeviceID            string `json:"deviceId,omitempty"`
+
+	FailureReason string `json:"failureReason,omitempty"`
+	Line          string `json:"line,omitempty"`
+}
+
+// CreateBulk allows multiple devices to be registered in one request
+func (s *DeviceCredentialsService) CreateBulk(ctx context.Context, csvContents io.Reader) (*BulkNewDeviceRequest, *Response, error) {
+	formData := make(map[string]io.Reader)
+	formData["file"] = csvContents
+
+	data := new(BulkNewDeviceRequest)
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:       "POST",
+		Path:         "devicecontrol/bulkNewDeviceRequests",
+		FormData:     formData,
+		ResponseData: data,
+	})
+
+	if err != nil {
+		return nil, resp, err
+	}
+	return data, resp, err
 }
