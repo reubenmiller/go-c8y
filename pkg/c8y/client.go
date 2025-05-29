@@ -515,10 +515,33 @@ func NewAuthorizationContext(tenant, username, password string) context.Context 
 	return context.WithValue(context.Background(), GetContextAuthTokenKey(), auth)
 }
 
+// NewBasicAuthAuthorizationContext returns a new basic authorization context
+func NewBasicAuthAuthorizationContext(ctx context.Context, tenant, username, password string) context.Context {
+	auth := NewBasicAuthString(tenant, username, password)
+	return context.WithValue(ctx, GetContextAuthTokenKey(), auth)
+}
+
+// NewBearerAuthAuthorizationContext returns a new bearer authorization context
+func NewBearerAuthAuthorizationContext(ctx context.Context, token string) context.Context {
+	auth := NewBearerAuthString(token)
+	return context.WithValue(ctx, GetContextAuthTokenKey(), auth)
+}
+
 // NewBasicAuthString returns a Basic Authorization key used for rest requests
 func NewBasicAuthString(tenant, username, password string) string {
-	auth := fmt.Sprintf("%s/%s:%s", tenant, username, password)
+	var auth string
+	if tenant == "" {
+		auth = fmt.Sprintf("%s:%s", username, password)
+	} else {
+		auth = fmt.Sprintf("%s/%s:%s", tenant, username, password)
+	}
+
 	return "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
+}
+
+// NewBearerAuthString returns a Bearer Authorization key used for rest requests
+func NewBearerAuthString(token string) string {
+	return "Bearer " + token
 }
 
 // Request validator function to be used to check if the outgoing request is properly formulated
