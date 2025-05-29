@@ -166,6 +166,7 @@ type Client struct {
 	Firmware             *InventoryFirmwareService
 	User                 *UserService
 	DeviceCertificate    *DeviceCertificateService
+	DeviceEnrollment     *DeviceEnrollmentService
 	CertificateAuthority *CertificateAuthorityService
 	Features             *FeaturesService
 }
@@ -312,6 +313,20 @@ func WithInsecureSkipVerify(skipVerify bool) ClientOption {
 	}
 }
 
+// WithClientCertificate uses the given x509 client certificate for cert-based auth when doing requests
+func WithClientCertificate(cert tls.Certificate) ClientOption {
+	return func(tr http.RoundTripper) http.RoundTripper {
+		if tr.(*http.Transport).TLSClientConfig == nil {
+			tr.(*http.Transport).TLSClientConfig = &tls.Config{
+				Certificates: []tls.Certificate{cert},
+			}
+		} else {
+			tr.(*http.Transport).TLSClientConfig.Certificates = []tls.Certificate{cert}
+		}
+		return tr
+	}
+}
+
 type funcTripper struct {
 	roundTrip func(*http.Request) (*http.Response, error)
 }
@@ -407,6 +422,7 @@ func NewClientFromOptions(httpClient *http.Client, opts ClientOptions) *Client {
 	c.Tenant = (*TenantService)(&c.common)
 	c.Event = (*EventService)(&c.common)
 	c.Inventory = (*InventoryService)(&c.common)
+	c.DeviceEnrollment = (*DeviceEnrollmentService)(&c.common)
 	c.Application = (*ApplicationService)(&c.common)
 	c.ApplicationVersions = (*ApplicationVersionsService)(&c.common)
 	c.UIExtension = (*UIExtensionService)(&c.common)
