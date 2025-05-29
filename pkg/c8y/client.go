@@ -303,7 +303,11 @@ func ReplaceTripper(tr http.RoundTripper) ClientOption {
 // can trust the server, otherwise just leave verify enabled.
 func WithInsecureSkipVerify(skipVerify bool) ClientOption {
 	return func(tr http.RoundTripper) http.RoundTripper {
-		tr.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: skipVerify}
+		if tr.(*http.Transport).TLSClientConfig == nil {
+			tr.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: skipVerify}
+		} else {
+			tr.(*http.Transport).TLSClientConfig.InsecureSkipVerify = skipVerify
+		}
 		return tr
 	}
 }
@@ -330,11 +334,27 @@ func FormatBaseURL(v string) string {
 	return v + "/"
 }
 
+// Client options
+type ClientOptions struct {
+	BaseURL string
+
+	// Username / Password Auth
+	Tenant   string
+	Username string
+	Password string
+
+	// Token Auth
+	Token string
+
+	// Create a realtime client
+	Realtime bool
+}
+
 // NewClient returns a new Cumulocity API client. If a nil httpClient is
 // provided, http.DefaultClient will be used. To use API methods which require
 // authentication, provide an http.Client that will perform the authentication
 // for you (such as that provided by the golang.org/x/oauth2 library).
-func NewClient(httpClient *http.Client, baseURL string, tenant string, username string, password string, skipRealtimeClient bool) *Client {
+func NewClientFromOptions(httpClient *http.Client, opts ClientOptions) *Client {
 	if httpClient == nil {
 		// Default client ignores self signed certificates (to enable compatibility to the edge which uses self signed certs)
 		defaultTransport := http.DefaultTransport.(*http.Transport)
@@ -355,13 +375,13 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 		}
 	}
 
-	fmtURL := FormatBaseURL(baseURL)
+	fmtURL := FormatBaseURL(opts.BaseURL)
 	targetBaseURL, _ := url.Parse(fmtURL)
 
 	var realtimeClient *RealtimeClient
-	if !skipRealtimeClient {
+	if opts.Realtime {
 		Logger.Infof("Creating realtime client %s", fmtURL)
-		realtimeClient = NewRealtimeClient(fmtURL, nil, tenant, username, password)
+		realtimeClient = NewRealtimeClient(fmtURL, nil, opts.Tenant, opts.Username, opts.Password)
 	}
 
 	userAgent := defaultUserAgent
@@ -371,9 +391,10 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 		BaseURL:             targetBaseURL,
 		UserAgent:           userAgent,
 		Realtime:            realtimeClient,
-		Username:            username,
-		Password:            password,
-		TenantName:          tenant,
+		Username:            opts.Username,
+		Password:            opts.Password,
+		Token:               opts.Token,
+		TenantName:          opts.Tenant,
 		UseTenantInUsername: true,
 	}
 	c.common.client = c
@@ -402,6 +423,20 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 	c.Features = (*FeaturesService)(&c.common)
 	c.CertificateAuthority = (*CertificateAuthorityService)(&c.common)
 	return c
+}
+
+// NewClient returns a new Cumulocity API client. If a nil httpClient is
+// provided, http.DefaultClient will be used. To use API methods which require
+// authentication, provide an http.Client that will perform the authentication
+// for you (such as that provided by the golang.org/x/oauth2 library).
+func NewClient(httpClient *http.Client, baseURL string, tenant string, username string, password string, skipRealtimeClient bool) *Client {
+	return NewClientFromOptions(httpClient, ClientOptions{
+		BaseURL:  baseURL,
+		Tenant:   tenant,
+		Username: username,
+		Password: password,
+		Realtime: !skipRealtimeClient,
+	})
 }
 
 // addOptions adds the parameters in opt as URL query parameters to s. opt
