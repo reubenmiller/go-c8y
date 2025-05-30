@@ -166,6 +166,7 @@ type Client struct {
 	Firmware             *InventoryFirmwareService
 	User                 *UserService
 	DeviceCertificate    *DeviceCertificateService
+	DeviceEnrollment     *DeviceEnrollmentService
 	CertificateAuthority *CertificateAuthorityService
 	Features             *FeaturesService
 }
@@ -303,7 +304,25 @@ func ReplaceTripper(tr http.RoundTripper) ClientOption {
 // can trust the server, otherwise just leave verify enabled.
 func WithInsecureSkipVerify(skipVerify bool) ClientOption {
 	return func(tr http.RoundTripper) http.RoundTripper {
-		tr.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: skipVerify}
+		if tr.(*http.Transport).TLSClientConfig == nil {
+			tr.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: skipVerify}
+		} else {
+			tr.(*http.Transport).TLSClientConfig.InsecureSkipVerify = skipVerify
+		}
+		return tr
+	}
+}
+
+// WithClientCertificate uses the given x509 client certificate for cert-based auth when doing requests
+func WithClientCertificate(cert tls.Certificate) ClientOption {
+	return func(tr http.RoundTripper) http.RoundTripper {
+		if tr.(*http.Transport).TLSClientConfig == nil {
+			tr.(*http.Transport).TLSClientConfig = &tls.Config{
+				Certificates: []tls.Certificate{cert},
+			}
+		} else {
+			tr.(*http.Transport).TLSClientConfig.Certificates = []tls.Certificate{cert}
+		}
 		return tr
 	}
 }
@@ -330,11 +349,27 @@ func FormatBaseURL(v string) string {
 	return v + "/"
 }
 
+// Client options
+type ClientOptions struct {
+	BaseURL string
+
+	// Username / Password Auth
+	Tenant   string
+	Username string
+	Password string
+
+	// Token Auth
+	Token string
+
+	// Create a realtime client
+	Realtime bool
+}
+
 // NewClient returns a new Cumulocity API client. If a nil httpClient is
 // provided, http.DefaultClient will be used. To use API methods which require
 // authentication, provide an http.Client that will perform the authentication
 // for you (such as that provided by the golang.org/x/oauth2 library).
-func NewClient(httpClient *http.Client, baseURL string, tenant string, username string, password string, skipRealtimeClient bool) *Client {
+func NewClientFromOptions(httpClient *http.Client, opts ClientOptions) *Client {
 	if httpClient == nil {
 		// Default client ignores self signed certificates (to enable compatibility to the edge which uses self signed certs)
 		defaultTransport := http.DefaultTransport.(*http.Transport)
@@ -355,13 +390,13 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 		}
 	}
 
-	fmtURL := FormatBaseURL(baseURL)
+	fmtURL := FormatBaseURL(opts.BaseURL)
 	targetBaseURL, _ := url.Parse(fmtURL)
 
 	var realtimeClient *RealtimeClient
-	if !skipRealtimeClient {
+	if opts.Realtime {
 		Logger.Infof("Creating realtime client %s", fmtURL)
-		realtimeClient = NewRealtimeClient(fmtURL, nil, tenant, username, password)
+		realtimeClient = NewRealtimeClient(fmtURL, nil, opts.Tenant, opts.Username, opts.Password)
 	}
 
 	userAgent := defaultUserAgent
@@ -371,9 +406,10 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 		BaseURL:             targetBaseURL,
 		UserAgent:           userAgent,
 		Realtime:            realtimeClient,
-		Username:            username,
-		Password:            password,
-		TenantName:          tenant,
+		Username:            opts.Username,
+		Password:            opts.Password,
+		Token:               opts.Token,
+		TenantName:          opts.Tenant,
 		UseTenantInUsername: true,
 	}
 	c.common.client = c
@@ -386,6 +422,7 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 	c.Tenant = (*TenantService)(&c.common)
 	c.Event = (*EventService)(&c.common)
 	c.Inventory = (*InventoryService)(&c.common)
+	c.DeviceEnrollment = (*DeviceEnrollmentService)(&c.common)
 	c.Application = (*ApplicationService)(&c.common)
 	c.ApplicationVersions = (*ApplicationVersionsService)(&c.common)
 	c.UIExtension = (*UIExtensionService)(&c.common)
@@ -402,6 +439,20 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 	c.Features = (*FeaturesService)(&c.common)
 	c.CertificateAuthority = (*CertificateAuthorityService)(&c.common)
 	return c
+}
+
+// NewClient returns a new Cumulocity API client. If a nil httpClient is
+// provided, http.DefaultClient will be used. To use API methods which require
+// authentication, provide an http.Client that will perform the authentication
+// for you (such as that provided by the golang.org/x/oauth2 library).
+func NewClient(httpClient *http.Client, baseURL string, tenant string, username string, password string, skipRealtimeClient bool) *Client {
+	return NewClientFromOptions(httpClient, ClientOptions{
+		BaseURL:  baseURL,
+		Tenant:   tenant,
+		Username: username,
+		Password: password,
+		Realtime: !skipRealtimeClient,
+	})
 }
 
 // addOptions adds the parameters in opt as URL query parameters to s. opt
@@ -515,10 +566,33 @@ func NewAuthorizationContext(tenant, username, password string) context.Context 
 	return context.WithValue(context.Background(), GetContextAuthTokenKey(), auth)
 }
 
+// NewBasicAuthAuthorizationContext returns a new basic authorization context
+func NewBasicAuthAuthorizationContext(ctx context.Context, tenant, username, password string) context.Context {
+	auth := NewBasicAuthString(tenant, username, password)
+	return context.WithValue(ctx, GetContextAuthTokenKey(), auth)
+}
+
+// NewBearerAuthAuthorizationContext returns a new bearer authorization context
+func NewBearerAuthAuthorizationContext(ctx context.Context, token string) context.Context {
+	auth := NewBearerAuthString(token)
+	return context.WithValue(ctx, GetContextAuthTokenKey(), auth)
+}
+
 // NewBasicAuthString returns a Basic Authorization key used for rest requests
 func NewBasicAuthString(tenant, username, password string) string {
-	auth := fmt.Sprintf("%s/%s:%s", tenant, username, password)
+	var auth string
+	if tenant == "" {
+		auth = fmt.Sprintf("%s:%s", username, password)
+	} else {
+		auth = fmt.Sprintf("%s/%s:%s", tenant, username, password)
+	}
+
 	return "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
+}
+
+// NewBearerAuthString returns a Bearer Authorization key used for rest requests
+func NewBearerAuthString(token string) string {
+	return "Bearer " + token
 }
 
 // Request validator function to be used to check if the outgoing request is properly formulated

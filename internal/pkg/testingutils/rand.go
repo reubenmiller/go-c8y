@@ -35,3 +35,15 @@ func RandomPassword(length int) string {
 	}
 	return value
 }
+
+// RandomOneTimePassword generates a random one-time password thats meets the default
+// Cumulocity IoT password policy
+// Symbols are avoided
+func RandomOneTimePassword(length int) string {
+	value, err := password.Generate(length, 10, 0, false, false)
+	if err != nil {
+		// Panic as this should not happen
+		panic("could not generate password")
+	}
+	return value
+}

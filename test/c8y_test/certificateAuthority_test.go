@@ -10,6 +10,7 @@ import (
 )
 
 func TestCertificateAuthority_get(t *testing.T) {
+	t.Skip("Skip due to affects other tests due to performing destructive operations on the CA certificate")
 	client := createTestClient()
 
 	ctx := context.Background()
@@ -49,7 +50,7 @@ func TestCertificateAuthority_get(t *testing.T) {
 	)
 	testingutils.Ok(t, dryRunErr)
 
-	// Update
+	// Update (skip due to race conditions with other tests)
 	cert3, resp, err := client.CertificateAuthority.Update(
 		ctx,
 		cert2.Fingerprint,

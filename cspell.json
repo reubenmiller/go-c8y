@@ -44,6 +44,12 @@
         "Kibi",
         "installsuffix",
         "ldflags",
+        "simpleenroll",
+        "simplereenroll",
+        "certutil",
+        "pkcs",
+        "PKCS",
+        "IDTYPE",
         // libraries
         "araddon",
         "c8ytestutils",
