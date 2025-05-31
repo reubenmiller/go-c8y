@@ -39,6 +39,7 @@ func WithLength(length int) PasswordOption {
 	}
 }
 
+// WithMaximumLengthConstraint enforces a maximum password length
 func WithMaximumLengthConstraint(length int) PasswordOption {
 	return func(c *PasswordConfig) error {
 		if length > 0 {
@@ -48,6 +49,7 @@ func WithMaximumLengthConstraint(length int) PasswordOption {
 	}
 }
 
+// WithMinimumLengthConstraint enforces a minimum password length
 func WithMinimumLengthConstraint(length int) PasswordOption {
 	return func(c *PasswordConfig) error {
 		if length > 0 {
@@ -57,6 +59,7 @@ func WithMinimumLengthConstraint(length int) PasswordOption {
 	}
 }
 
+// WithLengthConstraints enforces a minimum and maximum password length
 func WithLengthConstraints(minimum int, maximum int) PasswordOption {
 	return func(c *PasswordConfig) error {
 		// Don't allow setting the min below 1
@@ -66,6 +69,8 @@ func WithLengthConstraints(minimum int, maximum int) PasswordOption {
 	}
 }
 
+// WithUrlCompatibleSymbols sets the number of symbols to use when generating a password and use symbols that
+// don't require additional URL encoding
 func WithUrlCompatibleSymbols(num int) PasswordOption {
 	return func(c *PasswordConfig) error {
 		if num >= 0 {
@@ -76,6 +81,8 @@ func WithUrlCompatibleSymbols(num int) PasswordOption {
 	}
 }
 
+// WithShellCompatibleSymbols sets the number of symbols to use when generating a password and use symbols that
+// don't require additional shell escaping
 func WithShellCompatibleSymbols(num int) PasswordOption {
 	return func(c *PasswordConfig) error {
 		if num >= 0 {
@@ -86,6 +93,8 @@ func WithShellCompatibleSymbols(num int) PasswordOption {
 	}
 }
 
+// WithCustomSymbols sets the number of symbols to use when generating a password and use
+// the given set of symbols
 func WithCustomSymbols(symbols string, num int) PasswordOption {
 	return func(c *PasswordConfig) error {
 		if num >= 0 {
