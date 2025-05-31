@@ -86,6 +86,16 @@ func WithShellCompatibleSymbols(num int) PasswordOption {
 	}
 }
 
+func WithCustomSymbols(symbols string, num int) PasswordOption {
+	return func(c *PasswordConfig) error {
+		if num >= 0 {
+			c.numSymbols = num
+			c.symbols = symbols
+		}
+		return nil
+	}
+}
+
 // WithSymbols sets the minimum number of symbols to include in the password.
 // It ensures the number of symbols is non-negative.
 func WithSymbols(num int) PasswordOption {
