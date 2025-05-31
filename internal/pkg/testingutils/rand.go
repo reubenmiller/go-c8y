@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/sethvargo/go-password/password"
+	"github.com/reubenmiller/go-c8y/pkg/password"
 )
 
 const charset = "abcdefghijklmnopqrstuvwxyz" +
@@ -28,19 +28,9 @@ func RandomString(length int) string {
 // RandomPassword generate a random password that meets the default
 // Cumulocity IoT password policy
 func RandomPassword(length int) string {
-	value, err := password.Generate(length, 10, 10, false, false)
-	if err != nil {
-		// Panic as this should not happen
-		panic("could not generate password")
-	}
-	return value
-}
-
-// RandomOneTimePassword generates a random one-time password thats meets the default
-// Cumulocity IoT password policy
-// Symbols are avoided
-func RandomOneTimePassword(length int) string {
-	value, err := password.Generate(length, 10, 0, false, false)
+	value, err := password.NewRandomPassword(
+		password.WithLength(length),
+	)
 	if err != nil {
 		// Panic as this should not happen
 		panic("could not generate password")
