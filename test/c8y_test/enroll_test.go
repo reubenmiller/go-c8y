@@ -7,6 +7,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
@@ -22,6 +23,35 @@ func TestSimpleEnrollment_OneTimePasswordGenerator(t *testing.T) {
 		fmt.Printf("password: %s\n", opt)
 		i += 1
 	}
+}
+
+func TestSimpleEnrollment_PollEnroll(t *testing.T) {
+	client := createTestClient()
+
+	deviceID := "TestDevice" + testingutils.RandomString(10)
+
+	// Create private key
+	keyPem, err := certutil.MakeEllipticPrivateKeyPEM()
+	testingutils.Ok(t, err)
+
+	key, err := certutil.ParsePrivateKeyPEM(keyPem)
+	testingutils.Ok(t, err)
+
+	// Enroll
+	csr, err := certutil.CreateCertificateSigningRequest(deviceID, key)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, deviceID, csr.Subject.CommonName)
+
+	result := <-client.DeviceEnrollment.PollEnroll(context.Background(), c8y.DeviceEnrollmentOption{
+		ExternalID:                deviceID,
+		OneTimePassword:           "",
+		Interval:                  1 * time.Second,
+		Timeout:                   1500 * time.Millisecond,
+		CertificateSigningRequest: csr,
+		Banner:                    c8y.NewDeviceEnrollmentBannerOptions(true, true),
+	})
+	testingutils.Assert(t, result.Err != nil, "enrollment should timeout")
+	testingutils.Equals(t, false, result.Ok())
 }
 
 func TestSimpleEnrollment_Register(t *testing.T) {

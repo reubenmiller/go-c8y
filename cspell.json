@@ -26,10 +26,14 @@
         // URLs and query parameters
         "bygroupid",
         "devicecontrol",
+        "devicemanagement",
+        "deviceregistration",
         "editability",
         "managedobjects",
         "remoteaccess",
         // functions
+        "qrcode",
+        "qrterminal",
         "Fatalf",
         "Errorf",
         "Warnf",
