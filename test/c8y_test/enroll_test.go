@@ -5,12 +5,24 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/csv"
+	"fmt"
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/reubenmiller/go-c8y/pkg/certutil"
 )
+
+func TestSimpleEnrollment_OneTimePasswordGenerator(t *testing.T) {
+	client := createTestClient()
+	i := 0
+	for i < 100 {
+		opt, err := client.DeviceEnrollment.GenerateOneTimePassword()
+		testingutils.Ok(t, err)
+		fmt.Printf("password: %s\n", opt)
+		i += 1
+	}
+}
 
 func TestSimpleEnrollment_Register(t *testing.T) {
 	client := createTestClient()
@@ -23,7 +35,8 @@ func TestSimpleEnrollment_Register(t *testing.T) {
 	testingutils.Ok(t, err)
 
 	deviceID := "TestDevice" + testingutils.RandomString(10)
-	otp := testingutils.RandomOneTimePassword(31)
+	otp, err := client.DeviceEnrollment.GenerateOneTimePassword()
+	testingutils.Ok(t, err)
 
 	// Delete any pre-existing values, but ignore any errors
 	client.DeviceCredentials.Delete(context.Background(), deviceID)

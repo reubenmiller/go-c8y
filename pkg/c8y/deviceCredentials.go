@@ -6,6 +6,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/reubenmiller/go-c8y/pkg/password"
 	"github.com/tidwall/gjson"
 )
 
@@ -216,4 +217,21 @@ func (s *DeviceCredentialsService) CreateBulk(ctx context.Context, csvContents i
 		return nil, resp, err
 	}
 	return data, resp, err
+}
+
+// GeneratePassword generates a device password with the recommended password length by default
+// and uses symbols which are compatible with the Bulk Registration API.
+func (s *DeviceCredentialsService) GeneratePassword(opts ...password.PasswordOption) (string, error) {
+	defaults := []password.PasswordOption{
+		// enforce min/max that the api supports
+		password.WithLengthConstraints(8, 32),
+
+		// use max length
+		password.WithLength(32),
+
+		// use all available symbols to increase complexity
+		password.WithSymbols(2),
+	}
+	defaults = append(defaults, opts...)
+	return password.NewRandomPassword(defaults...)
 }

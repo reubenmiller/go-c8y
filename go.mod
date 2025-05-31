@@ -11,7 +11,6 @@ require (
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.21.1
-	github.com/sethvargo/go-password v0.3.1
 	github.com/spf13/viper v1.19.0
 	github.com/tidwall/gjson v1.18.0
 	github.com/vbauerster/mpb/v8 v8.9.3
