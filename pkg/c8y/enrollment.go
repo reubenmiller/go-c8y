@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/reubenmiller/go-c8y/pkg/certutil"
+	"github.com/reubenmiller/go-c8y/pkg/password"
 	"github.com/tidwall/gjson"
 	"go.mozilla.org/pkcs7"
 )
@@ -193,4 +194,22 @@ func (s *DeviceEnrollmentService) parsePKCS7Response(resp *Response) (*x509.Cert
 	}
 
 	return cert, resp, err
+}
+
+// GenerateOneTimePassword generates a one-time password with the recommended password length by default
+// and uses symbols which are compatible with the Bulk Registration API.
+func (s *DeviceEnrollmentService) GenerateOneTimePassword(opts ...password.PasswordOption) (string, error) {
+	defaults := []password.PasswordOption{
+		// enforce min/max that the api supports
+		password.WithLengthConstraints(8, 32),
+
+		// note: increase to 32 once c8y-ca is in general release
+		password.WithLength(31),
+
+		// use reduced set of symbols so that it is more compatible
+		// for different usages, e.g. on the shell, within a url without encoding
+		password.WithUrlCompatibleSymbols(2),
+	}
+	defaults = append(defaults, opts...)
+	return password.NewRandomPassword(defaults...)
 }
