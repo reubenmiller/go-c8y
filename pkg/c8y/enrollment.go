@@ -1,15 +1,22 @@
 package c8y
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	_ "embed"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
+	"text/template"
+	"time"
 
+	"github.com/mdp/qrterminal/v3"
 	"github.com/reubenmiller/go-c8y/pkg/certutil"
 	"github.com/reubenmiller/go-c8y/pkg/password"
 	"github.com/tidwall/gjson"
@@ -212,4 +219,253 @@ func (s *DeviceEnrollmentService) GenerateOneTimePassword(opts ...password.Passw
 	}
 	defaults = append(defaults, opts...)
 	return password.NewRandomPassword(defaults...)
+}
+
+// DeviceEnrollmentOption device enrollment options when using the poller
+type DeviceEnrollmentOption struct {
+	// External ID of the device
+	ExternalID string
+
+	// Initial delay before first trying to download the certificate
+	InitDelay time.Duration
+
+	// Retry interval when attempting to download the certificate
+	Interval time.Duration
+
+	// Overall timeout
+	Timeout time.Duration
+
+	// Device one-time password. If left blank a randomly generated password will be used
+	OneTimePassword string
+
+	// Certificate Signing Request
+	CertificateSigningRequest *x509.CertificateRequest
+
+	// OnProgressBefore callback which is executed just before attempting to download the certificate
+	OnProgressBefore func()
+
+	// OnProgressError callback which is executed after a failed download attempt
+	OnProgressError func(*Response, error)
+
+	// Banner options
+	Banner *DeviceEnrollmentBannerOptions
+}
+
+// DeviceEnrollmentDefaultTemplate default enrollment template
+var DeviceEnrollmentDefaultTemplate = `
+{{.Title}}
+
+{{- if .ShowQRCode }}
+Scan the QR Code
+{{ .QRCode }}
+{{- end}}
+
+{{- if .ShowURL }}
+Use the following URL
+
+{{.Url}}
+{{- end}}
+
+`
+
+// NewDeviceEnrollmentBannerOptions create default enrollment banner options
+func NewDeviceEnrollmentBannerOptions(showQRCode bool, showURL bool) *DeviceEnrollmentBannerOptions {
+	return &DeviceEnrollmentBannerOptions{
+		Enable:     true,
+		ShowQRCode: showQRCode,
+		ShowURL:    showURL,
+		Template:   DeviceEnrollmentDefaultTemplate,
+	}
+}
+
+// DeviceEnrollmentBannerOptions banner options to control the visualization of the enrollment information
+type DeviceEnrollmentBannerOptions struct {
+	Enable bool
+
+	// BannerTemplate is the template which is used to display when Banner is set to True
+	//
+	// The following variables are supported
+	//
+	// {{ .Title }} - Banner title
+	// {{ .BaseURL }} - BaseURL of the Cumulocity instance
+	// {{ .Url }} - Registration URL
+	// {{ .ExternalID }} - Device External ID
+	// {{ .OneTimePassword }} - One-time password to used to download the certificate
+	// {{ .QRCode }} - QR Code which displays the encoded registration URL
+	// {{ .Divider }} - Title divider (e.g. `------`)
+	Template string
+
+	// ShowQRCode show the QR Code
+	ShowQRCode bool
+
+	// ShowURL display the URL
+	ShowURL bool
+}
+
+// DeviceEnrollmentPollResult result of the device enrollment polling
+type DeviceEnrollmentPollResult struct {
+	// Err the last error encountered. If it is not nil, then it indicates that a certificate was not downloaded successfully
+	Err error
+
+	// ExternalID. The device's external ID
+	ExternalID string
+
+	// Certificate x509 is the downloaded certificate as a result of the enrollment action
+	Certificate *x509.Certificate
+
+	// Duration is how long the polling took from start to finish
+	Duration time.Duration
+}
+
+// Ok. Whether the enrollment was successful or not
+func (r *DeviceEnrollmentPollResult) Ok() bool {
+	return r.Err == nil
+}
+
+//go:embed device_registration.txt
+var DeviceRegistrationHeader string
+
+func (s *DeviceEnrollmentService) printEnrollmentLog(externalID string, oneTimePassword string, opts DeviceEnrollmentBannerOptions) error {
+
+	if opts.Template == "" {
+		opts.Template = DeviceEnrollmentDefaultTemplate
+	}
+
+	bannerTemplate, err := template.New("registration").Parse(opts.Template)
+	if err != nil {
+		return err
+	}
+
+	fullURL := fmt.Sprintf(
+		"%s/apps/devicemanagement/index.html#/deviceregistration?externalId=%s&one-time-password=%s",
+		strings.TrimRight(s.client.BaseURL.String(), "/"),
+		externalID,
+		oneTimePassword,
+	)
+
+	qrcode := bytes.NewBufferString("")
+	qrterminal.GenerateWithConfig(fullURL, qrterminal.Config{
+		Level:      qrterminal.M,
+		Writer:     qrcode,
+		HalfBlocks: true,
+		QuietZone:  1,
+	})
+
+	bannerText := "Device Registration Banner"
+	b := bytes.NewBufferString("")
+	bannerTemplate.Execute(b, struct {
+		Title           string
+		BaseURL         string
+		Url             string
+		ShowQRCode      bool
+		ShowURL         bool
+		QRCode          string
+		ExternalID      string
+		OneTimePassword string
+		Divider         string
+	}{
+		Title:           DeviceRegistrationHeader,
+		BaseURL:         s.client.BaseURL.String(),
+		Url:             fullURL,
+		ExternalID:      externalID,
+		OneTimePassword: oneTimePassword,
+		ShowQRCode:      opts.ShowQRCode,
+		ShowURL:         opts.ShowURL,
+		QRCode:          qrcode.String(),
+		Divider:         strings.Repeat("-", len(bannerText)),
+	})
+	_, err = fmt.Fprintf(os.Stderr, "%s\n", b.String())
+	return err
+}
+
+// PollEnroll continuously tries to download the x509 certificate for the given device.
+// The polling will give up when
+// * The certificate was successful downloaded
+// * Timeout is exceeded
+func (s *DeviceEnrollmentService) PollEnroll(ctx context.Context, opts DeviceEnrollmentOption) <-chan DeviceEnrollmentPollResult {
+	if opts.Interval == 0 {
+		opts.Interval = 5 * time.Second
+	}
+
+	if opts.Timeout == 0 {
+		opts.Timeout = 10 * time.Minute
+	}
+
+	if opts.OneTimePassword == "" {
+		opts.OneTimePassword, _ = s.GenerateOneTimePassword()
+	}
+
+	done := make(chan DeviceEnrollmentPollResult)
+
+	if opts.Banner != nil && opts.Banner.Enable {
+		if err := s.printEnrollmentLog(opts.ExternalID, opts.OneTimePassword, *opts.Banner); err != nil {
+			Logger.Warnf("Failed to print enrollment banner .err=%s", err)
+		}
+	}
+
+	go func() {
+		startedAt := time.Now()
+
+		if opts.InitDelay > 0 {
+			time.Sleep(opts.InitDelay)
+		}
+
+		ticker := time.NewTicker(opts.Interval)
+		timeoutTimer := time.NewTimer(opts.Timeout)
+
+		defer func() {
+			ticker.Stop()
+			timeoutTimer.Stop()
+		}()
+
+		for {
+			// try to download certificate
+			tick := time.Now()
+			if opts.OnProgressBefore != nil {
+				opts.OnProgressBefore()
+			}
+
+			deviceCert, resp, err := s.Enroll(ctx, opts.ExternalID, opts.OneTimePassword, opts.CertificateSigningRequest)
+
+			if err != nil || resp.IsError() {
+				if opts.OnProgressError != nil {
+					opts.OnProgressError(resp, err)
+				}
+			} else {
+				done <- DeviceEnrollmentPollResult{
+					ExternalID:  opts.ExternalID,
+					Certificate: deviceCert,
+					Duration:    tick.Sub(startedAt),
+				}
+				return
+			}
+
+			// block waiting for next tick, or polling event
+			select {
+			case <-ctx.Done():
+				done <- DeviceEnrollmentPollResult{
+					Err: ctx.Err(),
+
+					ExternalID:  opts.ExternalID,
+					Certificate: nil,
+					Duration:    time.Since(startedAt),
+				}
+				return
+
+			case <-ticker.C:
+				// continue to next action
+				continue
+
+			case tick := <-timeoutTimer.C:
+				done <- DeviceEnrollmentPollResult{
+					Err:        errors.New("timeout trying to download certificate"),
+					ExternalID: opts.ExternalID,
+					Duration:   tick.Sub(startedAt),
+				}
+				return
+			}
+		}
+	}()
+
+	return done
 }
