@@ -4,8 +4,8 @@ import (
 	"crypto/rand" // For secure random number generation (essential for passwords)
 	"fmt"
 	"math/big"
-	mathrand "math/rand" // For shuffling the password (order doesn't need cryptographic randomness)
-	"time"               // Used to seed math/rand for shuffling
+	math_rand "math/rand" // For shuffling the password (order doesn't need cryptographic randomness)
+	"time"                // Used to seed math/rand for shuffling
 )
 
 // PasswordConfig holds the configuration parameters for generating a password.
@@ -57,10 +57,10 @@ func WithMinimumLengthConstraint(length int) PasswordOption {
 	}
 }
 
-func WithLengthConstraints(mininum int, maximum int) PasswordOption {
+func WithLengthConstraints(minimum int, maximum int) PasswordOption {
 	return func(c *PasswordConfig) error {
 		// Don't allow setting the min below 1
-		c.minimumLength = max(1, mininum)
+		c.minimumLength = max(1, minimum)
 		c.maximumLength = maximum
 		return nil
 	}
@@ -163,7 +163,7 @@ func getRandomChar(charset string) (byte, error) {
 // has already been done securely.
 func shuffleBytes(b []byte) {
 	// Seed math/rand with the current time to ensure different shuffles each run.
-	r := mathrand.New(mathrand.NewSource(time.Now().UnixNano()))
+	r := math_rand.New(math_rand.NewSource(time.Now().UnixNano()))
 	r.Shuffle(len(b), func(i, j int) {
 		b[i], b[j] = b[j], b[i]
 	})
