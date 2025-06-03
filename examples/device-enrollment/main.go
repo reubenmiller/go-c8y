@@ -17,13 +17,66 @@ func stopOnError(err error) {
 	}
 }
 
-func main() {
-	client := c8y.NewClientFromEnvironment(nil, false)
+// Value option
+type Value func() (string, error)
 
-	if len(os.Args) < 2 {
-		log.Fatal("Expected the device id (external id) as the first argument")
+// From Arg returns a from the app's arguments
+func FromArg(i int) Value {
+	return func() (string, error) {
+		if i < len(os.Args) {
+			return os.Args[i], nil
+		}
+		return "", nil
 	}
-	deviceID := os.Args[1]
+}
+
+// FromEnv returns a value from the environment
+func FromEnv(key string) Value {
+	return func() (string, error) {
+		return os.Getenv(key), nil
+	}
+}
+
+// GetValueWithOptions set a value from
+func GetValueWithOptions(opts ...Value) string {
+	for _, opt := range opts {
+		if v, err := opt(); err == nil && v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
+// Register a device using the Cumulocity Certificate Authority feature where a device
+// certificate will be requested using an auto generated password that the user needs to
+// then note, and register it in Cumulocity. To easy the process, a QR Code and a clickable
+// URL is printed on the console.
+//
+// The example only needs to values to work:
+// C8Y_HOST - Cumulocity URL to the tenant you want to register with (via env)
+// DEVICE_ID - Via Argument, Env or default to the device's hostname
+func main() {
+	// Only the target Cumulocity is required as registration will
+	c8yHost := GetValueWithOptions(
+		FromEnv("C8Y_HOST"),
+		FromEnv("C8Y_URL"),
+		FromEnv("C8Y_BASEURL"),
+	)
+	if c8yHost == "" {
+		log.Fatal("🚫 The C8Y_HOST is not set")
+	}
+	client := c8y.NewClient(nil, c8yHost, "", "", "", true)
+
+	// choose first non-empty value
+	deviceID := GetValueWithOptions(
+		FromArg(1),
+		FromEnv("DEVICE_ID"),
+		os.Hostname,
+	)
+
+	if deviceID == "" {
+		log.Fatal("🚫 The device id (external id) is not set")
+	}
 
 	// Create private key
 	keyPem, err := certutil.MakeEllipticPrivateKeyPEM()
@@ -68,7 +121,11 @@ func main() {
 			fmt.Fprintf(os.Stderr, "\rTrying to download certificate: ")
 		},
 		OnProgressError: func(r *c8y.Response, err error) {
-			fmt.Fprintf(os.Stderr, "WAITING (last statusCode=%s, time=%s)", r.Status(), time.Now().Format(time.RFC3339))
+			if r != nil {
+				fmt.Fprintf(os.Stderr, "WAITING (last statusCode=%s, time=%s)", r.Status(), time.Now().Format(time.RFC3339))
+			} else {
+				fmt.Fprintf(os.Stderr, "WAITING (last statusCode=%s, time=%s)", "0", time.Now().Format(time.RFC3339))
+			}
 		},
 	})
 	if result.Err != nil {
