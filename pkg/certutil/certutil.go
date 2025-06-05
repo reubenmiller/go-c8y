@@ -53,7 +53,8 @@ func MakeEllipticPrivateKeyWithCurvePEM(curve elliptic.Curve) ([]byte, error) {
 	}
 
 	privateKeyPemBlock := &pem.Block{
-		Type:  ECPrivateKeyBlockType,
+		// Use the generic block over the EC specific one to improve compatibility
+		Type:  PrivateKeyBlockType,
 		Bytes: derBytes,
 	}
 	return pem.EncodeToMemory(privateKeyPemBlock), nil
@@ -76,7 +77,8 @@ func MakeRSAPrivateKeyPEM(bitSize int) ([]byte, error) {
 	derBytes := x509.MarshalPKCS1PrivateKey(privateKey)
 
 	privateKeyPemBlock := &pem.Block{
-		Type:  RSAPrivateKeyBlockType,
+		// Use the generic block over the EC specific one to improve compatibility
+		Type:  PrivateKeyBlockType,
 		Bytes: derBytes,
 	}
 	return pem.EncodeToMemory(privateKeyPemBlock), nil
@@ -125,13 +127,13 @@ func MarshalPrivateKeyToPEM(privateKey crypto.PrivateKey) ([]byte, error) {
 			return nil, err
 		}
 		block := &pem.Block{
-			Type:  ECPrivateKeyBlockType,
+			Type:  PrivateKeyBlockType,
 			Bytes: derBytes,
 		}
 		return pem.EncodeToMemory(block), nil
 	case *rsa.PrivateKey:
 		block := &pem.Block{
-			Type:  RSAPrivateKeyBlockType,
+			Type:  PrivateKeyBlockType,
 			Bytes: x509.MarshalPKCS1PrivateKey(t),
 		}
 		return pem.EncodeToMemory(block), nil
