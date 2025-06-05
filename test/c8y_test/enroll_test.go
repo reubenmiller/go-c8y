@@ -38,7 +38,7 @@ func TestSimpleEnrollment_PollEnroll(t *testing.T) {
 	testingutils.Ok(t, err)
 
 	// Enroll
-	csr, err := certutil.CreateCertificateSigningRequest(deviceID, key)
+	csr, err := client.DeviceEnrollment.CreateCertificateSigningRequest(deviceID, key)
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, deviceID, csr.Subject.CommonName)
 
@@ -115,7 +115,7 @@ func TestSimpleEnrollment_Register(t *testing.T) {
 	testingutils.Ok(t, err)
 
 	// Enroll
-	csr, err := certutil.CreateCertificateSigningRequest(deviceID, key)
+	csr, err := client.DeviceEnrollment.CreateCertificateSigningRequest(deviceID, key)
 	testingutils.Ok(t, err)
 	testingutils.Equals(t, deviceID, csr.Subject.CommonName)
 
@@ -135,7 +135,7 @@ func TestSimpleEnrollment_Register(t *testing.T) {
 	testingutils.Assert(t, token.AccessToken != "", "Token should not be empty")
 
 	// Re-enroll
-	secondCSR, err := certutil.CreateCertificateSigningRequest(deviceID, key)
+	secondCSR, err := client.DeviceEnrollment.CreateCertificateSigningRequest(deviceID, key)
 	testingutils.Ok(t, err)
 	secondCert, resp, err := client.DeviceEnrollment.ReEnroll(context.Background(), c8y.ReEnrollOptions{
 		Token: token.AccessToken,

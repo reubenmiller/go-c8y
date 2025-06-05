@@ -88,7 +88,7 @@ func main() {
 	fmt.Fprintf(os.Stderr, "\n📣 Starting device enrollment: externalID=%s\n", deviceID)
 
 	// Create CSR
-	csr, err := certutil.CreateCertificateSigningRequest(deviceID, key)
+	csr, err := client.DeviceEnrollment.CreateCertificateSigningRequest(deviceID, key)
 	stopOnError(err)
 
 	ctx := c8y.NewSilentLoggerContext(context.Background())

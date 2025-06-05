@@ -392,8 +392,8 @@ func MarshalCertificateToPEM(derBytes []byte) []byte {
 }
 
 // CreateCertificateSigningRequest creates a certificate signing request
-func CreateCertificateSigningRequest(id string, key any) (*x509.CertificateRequest, error) {
-	template := x509.CertificateRequest{Subject: pkix.Name{CommonName: id}}
+func CreateCertificateSigningRequest(subject pkix.Name, key any) (*x509.CertificateRequest, error) {
+	template := x509.CertificateRequest{Subject: subject}
 	reqBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, key)
 	if err != nil {
 		return nil, err

@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	_ "embed"
 	"encoding/base64"
 	"errors"
@@ -61,6 +62,22 @@ func (s *DeviceEnrollmentService) Enroll(ctx context.Context, externalID string,
 	}
 
 	return s.parsePKCS7Response(resp)
+}
+
+// CreateCertificateSigningRequest creates a certificate signing request using the given external id and private key
+// The subject of the certificate will be set to the external id
+// Sensible defaults are used to set the Organization and OrganizationalUnit. If you want your own
+// custom values, then use certutil.CreateCertificateSigningRequest directly
+func (s *DeviceEnrollmentService) CreateCertificateSigningRequest(externalId string, key any) (*x509.CertificateRequest, error) {
+	return certutil.CreateCertificateSigningRequest(pkix.Name{
+		CommonName: externalId,
+		Organization: []string{
+			"Cumulocity",
+		},
+		OrganizationalUnit: []string{
+			"Device",
+		},
+	}, key)
 }
 
 // Re enrollment options
