@@ -205,6 +205,17 @@ func ParsePrivateKeyPEM(keyData []byte) (interface{}, error) {
 			if key, err := x509.ParsePKCS8PrivateKey(privateKeyPemBlock.Bytes); err == nil {
 				return key, nil
 			}
+
+			// Fallback to ECDSA and RSA private keys
+			// ECDSA Private Key in ASN.1 format
+			if key, err := x509.ParseECPrivateKey(privateKeyPemBlock.Bytes); err == nil {
+				return key, nil
+			}
+
+			// RSA Private Key in PKCS#1 format
+			if key, err := x509.ParsePKCS1PrivateKey(privateKeyPemBlock.Bytes); err == nil {
+				return key, nil
+			}
 		}
 
 		// tolerate non-key PEM blocks for compatibility with things like "EC PARAMETERS" blocks
