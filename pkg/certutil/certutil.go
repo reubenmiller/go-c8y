@@ -47,7 +47,7 @@ func MakeEllipticPrivateKeyWithCurvePEM(curve elliptic.Curve) ([]byte, error) {
 		return nil, err
 	}
 
-	derBytes, err := x509.MarshalECPrivateKey(privateKey)
+	derBytes, err := x509.MarshalPKCS8PrivateKey(privateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,10 @@ func MakeRSAPrivateKeyPEM(bitSize int) ([]byte, error) {
 		return nil, err
 	}
 
-	derBytes := x509.MarshalPKCS1PrivateKey(privateKey)
+	derBytes, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	if err != nil {
+		return nil, err
+	}
 
 	privateKeyPemBlock := &pem.Block{
 		// Use the generic block over the EC specific one to improve compatibility
@@ -203,17 +206,6 @@ func ParsePrivateKeyPEM(keyData []byte) (interface{}, error) {
 		case PrivateKeyBlockType:
 			// RSA or ECDSA Private Key in unencrypted PKCS#8 format
 			if key, err := x509.ParsePKCS8PrivateKey(privateKeyPemBlock.Bytes); err == nil {
-				return key, nil
-			}
-
-			// Fallback to ECDSA and RSA private keys
-			// ECDSA Private Key in ASN.1 format
-			if key, err := x509.ParseECPrivateKey(privateKeyPemBlock.Bytes); err == nil {
-				return key, nil
-			}
-
-			// RSA Private Key in PKCS#1 format
-			if key, err := x509.ParsePKCS1PrivateKey(privateKeyPemBlock.Bytes); err == nil {
 				return key, nil
 			}
 		}
