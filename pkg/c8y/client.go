@@ -122,6 +122,9 @@ type Client struct {
 	clientMu sync.Mutex   // clientMu protects the client during calls that modify the CheckRedirect func.
 	client   *http.Client // HTTP client used to communicate with the API.
 
+	// Show sensitive information
+	showSensitive bool
+
 	Realtime *RealtimeClient
 
 	// Base URL for API requests. Defaults to the public Cumulocity API, but can be
@@ -388,6 +391,9 @@ type ClientOptions struct {
 
 	// Create a realtime client
 	Realtime bool
+
+	// Show sensitive information in the logs
+	ShowSensitive bool
 }
 
 // NewClient returns a new Cumulocity API client. If a nil httpClient is
@@ -435,6 +441,7 @@ func NewClientFromOptions(httpClient *http.Client, opts ClientOptions) *Client {
 		Token:               opts.Token,
 		TenantName:          opts.Tenant,
 		UseTenantInUsername: true,
+		showSensitive:       opts.ShowSensitive,
 	}
 	c.common.client = c
 	c.Alarm = (*AlarmService)(&c.common)
@@ -850,14 +857,16 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 			c.DefaultDryRunHandler(&options, req)
 		}
 
-		if options.DryRunResponse || c.requestOptions.DryRunResponse {
-			return &Response{
-				Response: &http.Response{
-					Request: req,
-				},
-			}, dryRunErr
+		resp := &Response{
+			dryRun: dryRun,
+			Response: &http.Response{
+				Request: req,
+			},
 		}
-		return nil, dryRunErr
+		if options.DryRunResponse || c.requestOptions.DryRunResponse {
+			return resp, dryRunErr
+		}
+		return resp, dryRunErr
 	}
 
 	localLogger.Info(c.HideSensitiveInformationIfActive(fmt.Sprintf("Headers: %v", req.Header)))
@@ -1117,6 +1126,11 @@ func (c *Client) SetAuthorization(req *http.Request) {
 	default:
 		c.SetBasicAuthorization(req)
 	}
+}
+
+// HideSensitive checks if sensitive information should be hidden in the logs
+func (c *Client) HideSensitive() bool {
+	return !c.showSensitive
 }
 
 // GetXSRFToken returns the XSRF Token if found in the configured cookies
@@ -1550,7 +1564,7 @@ func CheckResponse(r *http.Response) error {
 
 func (c *Client) HideSensitiveInformationIfActive(message string) string {
 	// Default to hiding the information
-	hideSensitive := true
+	hideSensitive := c.HideSensitive()
 	if v, err := strconv.ParseBool(os.Getenv(EnvVarLoggerHideSensitive)); err == nil {
 		hideSensitive = v
 	}
