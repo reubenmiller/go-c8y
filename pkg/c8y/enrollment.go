@@ -47,14 +47,15 @@ type Enrollment struct {
 func (s *DeviceEnrollmentService) Enroll(ctx context.Context, externalID string, oneTimePassword string, csr *x509.CertificateRequest) (*x509.Certificate, *Response, error) {
 	headers := http.Header{}
 	headers.Add("Content-Transfer-Encoding", "base64")
-	reqContext := NewBasicAuthAuthorizationContext(ctx, "", externalID, oneTimePassword)
+	headers.Add("Authorization", NewBasicAuthString("", externalID, oneTimePassword))
 
-	resp, err := s.client.SendRequest(reqContext, RequestOptions{
-		Method:      "POST",
-		Path:        ".well-known/est/simpleenroll",
-		Header:      headers,
-		ContentType: "application/pkcs10",
-		Body:        base64.StdEncoding.EncodeToString(csr.Raw),
+	resp, err := s.client.SendRequest(ctx, RequestOptions{
+		Method:           "POST",
+		Path:             ".well-known/est/simpleenroll",
+		Header:           headers,
+		ContentType:      "application/pkcs10",
+		Body:             base64.StdEncoding.EncodeToString(csr.Raw),
+		NoAuthentication: true,
 	})
 
 	if err != nil {
