@@ -61,6 +61,10 @@ func (s *DeviceEnrollmentService) Enroll(ctx context.Context, externalID string,
 		return nil, resp, err
 	}
 
+	if resp.IsDryRun() {
+		return nil, resp, nil
+	}
+
 	return s.parsePKCS7Response(resp)
 }
 
@@ -118,6 +122,10 @@ func (s *DeviceEnrollmentService) ReEnroll(ctx context.Context, opts ReEnrollOpt
 
 	if err != nil {
 		return nil, resp, err
+	}
+
+	if resp.IsDryRun() {
+		return nil, resp, nil
 	}
 
 	return s.parsePKCS7Response(resp)
