@@ -37,6 +37,7 @@
         "mydevice",
         "paho",
         "pkid",
+        "ICCID",
         // URLs and query parameters
         "bygroupid",
         "devicecontrol",
