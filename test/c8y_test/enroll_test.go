@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
-	"encoding/csv"
 	"fmt"
 	"testing"
 	"time"
@@ -82,27 +81,19 @@ func TestSimpleEnrollment_Register(t *testing.T) {
 	})
 
 	csvContents := bytes.NewBufferString("")
-	csvWriter := csv.NewWriter(csvContents)
-	csvWriter.Comma = '\t'
-	_ = csvWriter.Write([]string{
-		"ID",
-		"AUTH_TYPE",
-		"ENROLLMENT_OTP",
-		"NAME",
-		"TYPE",
-		"IDTYPE",
-		"com_cumulocity_model_Agent.active",
-	})
-	_ = csvWriter.Write([]string{
-		deviceID,
-		"CERTIFICATES",
-		otp,
-		deviceID,
-		"test_ci_reg",
-		"c8y_Serial",
-		"true",
-	})
-	csvWriter.Flush()
+	csvErr := c8y.BulkRegistrationRecordWriter(
+		csvContents,
+		c8y.BulkRegistrationRecord{
+			ID:            deviceID,
+			AuthType:      c8y.BulkRegistrationAuthTypeCertificates,
+			EnrollmentOTP: otp,
+			Name:          deviceID,
+			Type:          "test_ci_reg",
+			IDType:        "c8y_Serial",
+			IsAgent:       true,
+		},
+	)
+	testingutils.Ok(t, csvErr)
 
 	_, _, regErr := client.DeviceCredentials.CreateBulk(context.Background(), csvContents)
 	testingutils.Ok(t, regErr)
