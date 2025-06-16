@@ -18,3 +18,7 @@ docs/_site
 _site
 .jekyll-cache
 .scannerwork
+
+# example files
+device.crt
+device.key
