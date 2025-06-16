@@ -46,7 +46,7 @@ func Test_BulkRegistrationRecordCollection(t *testing.T) {
 ID	AUTH_TYPE	CREDENTIALS	ENROLLMENT_OTP	NAME	TYPE	IDTYPE	ICCID	TENANT	PATH	com_cumulocity_model_Agent.active
 device01	CERTIFICATES		dummy	device01	linux	c8y_Serial				true
 device02	CERTIFICATES			device02	macOS	c8y_Serial				true
-device03	BASIC			device03	Windows	c8y_Serial				false
+device03	BASIC	pass12345		device03	Windows	c8y_Serial				false
 `, "\n")
 	testingutils.Equals(t, expected, csvContents.String())
 }
