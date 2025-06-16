@@ -1,10 +1,7 @@
-package main
+package cmd
 
 import (
-	"log/slog"
-	"os"
-
-	"github.com/reubenmiller/example/cmd"
+	"github.com/alecthomas/kong"
 	"github.com/reubenmiller/example/pkg/cli"
 	"github.com/reubenmiller/example/pkg/enroll"
 	"github.com/reubenmiller/example/pkg/mqtt"
@@ -36,11 +33,8 @@ type CLI struct {
 	Enroll    enroll.EnrollCmd  `cmd:"enroll" help:"Enroll the device"`
 }
 
-func main() {
-	err := cmd.Run()
-	if err != nil {
-		slog.Error("Command failed", "error", err)
-		os.Exit(1)
-	}
-	os.Exit(0)
+func Run() error {
+	cmdCtx := &CLI{}
+	ctx := kong.Parse(cmdCtx)
+	return ctx.Run(NewContextFromCli(cmdCtx))
 }
