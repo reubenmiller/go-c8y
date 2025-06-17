@@ -486,6 +486,19 @@ func NewClient(httpClient *http.Client, baseURL string, tenant string, username 
 	})
 }
 
+// SetBaseURL changes the base url used by the REST client
+func (c *Client) SetBaseURL(v string) error {
+	fmtURL := FormatBaseURL(v)
+	targetBaseURL, err := url.Parse(fmtURL)
+	if err != nil {
+		return err
+	}
+	c.clientMu.Lock()
+	defer c.clientMu.Unlock()
+	c.BaseURL = targetBaseURL
+	return nil
+}
+
 // addOptions adds the parameters in opt as URL query parameters to s. opt
 // must be a struct whose fields may contain "url" tags.
 func addOptions(s string, opt interface{}) (string, error) {
