@@ -16,6 +16,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -31,6 +32,20 @@ var (
 	// ErrTimeout is thrown when polling the server for the granted token has timed out.
 	ErrTimeout = errors.New("authentication timed out")
 )
+
+type DeviceCodeFunc func(*CodeResponse) error
+
+func DeviceCodeOnConsole(w io.Writer) DeviceCodeFunc {
+	return func(code *CodeResponse) error {
+		var err error
+		if code.VerificationURIComplete != "" {
+			_, err = fmt.Fprintf(w, "Open url: %s\n\n", code.VerificationURIComplete)
+		} else {
+			_, err = fmt.Fprintf(w, "Copy code: %s\nthen open: %s\n\n", code.UserCode, code.VerificationURI)
+		}
+		return err
+	}
+}
 
 type httpClient interface {
 	PostForm(string, url.Values) (*http.Response, error)

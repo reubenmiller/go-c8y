@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/reubenmiller/go-c8y/pkg/oauth/api"
 	"github.com/reubenmiller/go-c8y/pkg/oauth/device"
@@ -386,7 +387,7 @@ func (s *TenantService) HasExternalAuthProvider(ctx context.Context) (loginOptio
 }
 
 // AuthorizeWithDeviceFlow authorize the client using the OAuth2 Device Authorization Flow (the Auth provider must support it)
-func (s *TenantService) AuthorizeWithDeviceFlow(ctx context.Context, initRequest string, auth_endpoints api.AuthEndpoints) (*api.AccessToken, error) {
+func (s *TenantService) AuthorizeWithDeviceFlow(ctx context.Context, initRequest string, auth_endpoints api.AuthEndpoints, displayFunc device.DeviceCodeFunc) (*api.AccessToken, error) {
 	// Create a new client which uses the given certificate
 	// Use similar setting as the main client for consistency
 	skipVerify := false
@@ -407,11 +408,12 @@ func (s *TenantService) AuthorizeWithDeviceFlow(ctx context.Context, initRequest
 		return nil, err
 	}
 
-	if code.VerificationURIComplete != "" {
-		fmt.Printf("Open url: %s\n\n", code.VerificationURIComplete)
-	} else {
-		fmt.Printf("Copy code: %s\n", code.UserCode)
-		fmt.Printf("then open: %s\n\n", code.VerificationURI)
+	if displayFunc == nil {
+		displayFunc = device.DeviceCodeOnConsole(os.Stderr)
+	}
+
+	if displayErr := displayFunc(code); displayErr != nil {
+		return nil, displayErr
 	}
 
 	accessToken, err := device.Wait(context.TODO(), httpClient, api.GetEndpointUrl(endpoint, auth_endpoints.TokenURL), device.WaitOptions{
