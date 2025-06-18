@@ -212,6 +212,9 @@ const (
 	// AuthMethodOAuth2Internal OAuth2 internal mode
 	AuthMethodOAuth2Internal = "OAUTH2_INTERNAL"
 
+	// AuthMethodOAuth2 OAuth2 external provider
+	AuthMethodOAuth2 = "OAUTH2"
+
 	// AuthMethodBasic Basic authentication
 	AuthMethodBasic = "BASIC"
 
@@ -234,6 +237,8 @@ func ParseAuthMethod(v string) (string, error) {
 		return AuthMethodNone, nil
 	case AuthMethodOAuth2Internal:
 		return AuthMethodOAuth2Internal, nil
+	case AuthMethodOAuth2:
+		return AuthMethodOAuth2, nil
 	default:
 		return "", ErrInvalidAuthMethod
 	}
@@ -1129,7 +1134,7 @@ func (c *Client) SetBasicAuthorization(req *http.Request) {
 // SetAuthorization sets the configured authorization to the given request. By default it will set the Basic Authorization header
 func (c *Client) SetAuthorization(req *http.Request) {
 	switch c.AuthorizationMethod {
-	case AuthMethodOAuth2Internal:
+	case AuthMethodOAuth2Internal, AuthMethodOAuth2:
 		c.SetBearerAuthorization(req)
 		c.addOAuth2ToRequest(req)
 	case AuthMethodNone:
