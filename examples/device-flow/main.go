@@ -32,14 +32,10 @@ func main() {
 	_, err = client.Tenant.AuthorizeWithDeviceFlow(context.Background(), loginOption.InitRequest, api.AuthEndpoints{
 		DeviceAuthorizationURL: "/oauth/device/code",
 		TokenURL:               "/oauth/token",
-	})
+	}, nil)
 	if err != nil {
 		log.Fatalf("Failed to get access token. %s", err)
 	}
-
-	// Verify
-	// client.SetToken(token.Token)
-	// client.AuthorizationMethod = c8y.AuthMethodOAuth2
 
 	fmt.Fprintf(os.Stderr, "🔍 Checking if the token can be used to make API calls\n")
 	_, _, err = client.Alarm.GetAlarms(
