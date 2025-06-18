@@ -403,7 +403,23 @@ func (s *TenantService) AuthorizeWithDeviceFlow(ctx context.Context, initRequest
 		return nil, err
 	}
 
-	code, err := device.RequestCode(httpClient, api.GetEndpointUrl(endpoint, auth_endpoints.DeviceAuthorizationURL), endpoint.ClientID, endpoint.Scopes, device.WithAudience(endpoint.Audience))
+	if auth_endpoints.TokenURL == "" || auth_endpoints.DeviceAuthorizationURL == "" {
+		// Try detecting the endpoints via the open-id configuration endpoint
+		openIDConfig := &api.OpenIDConfiguration{}
+		if err := api.GetOpenIDConfiguration(ctx, httpClient, endpoint.URL, openIDConfig); err != nil {
+			Logger.Infof("Could not get open-id configuration. url=%s, err=%s", endpoint.URL.String(), err)
+		} else {
+			Logger.Infof("Found open-id configuration. %#v", openIDConfig)
+			if auth_endpoints.TokenURL == "" {
+				auth_endpoints.TokenURL = openIDConfig.TokenEndpoint
+			}
+			if auth_endpoints.DeviceAuthorizationURL == "" {
+				auth_endpoints.DeviceAuthorizationURL = openIDConfig.DeviceAuthorizationEndpoint
+			}
+		}
+	}
+
+	code, err := device.RequestCode(httpClient, api.GetEndpointUrl(endpoint.URL, auth_endpoints.DeviceAuthorizationURL), endpoint.ClientID, endpoint.Scopes, device.WithAudience(endpoint.Audience))
 	if err != nil {
 		return nil, err
 	}
@@ -416,7 +432,7 @@ func (s *TenantService) AuthorizeWithDeviceFlow(ctx context.Context, initRequest
 		return nil, displayErr
 	}
 
-	accessToken, err := device.Wait(context.TODO(), httpClient, api.GetEndpointUrl(endpoint, auth_endpoints.TokenURL), device.WaitOptions{
+	accessToken, err := device.Wait(context.TODO(), httpClient, api.GetEndpointUrl(endpoint.URL, auth_endpoints.TokenURL), device.WaitOptions{
 		ClientID:   endpoint.ClientID,
 		DeviceCode: code,
 	})

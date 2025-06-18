@@ -29,10 +29,7 @@ func main() {
 
 	// Request token using device flow
 	fmt.Fprintf(os.Stderr, "🏄 Signing in using OAuth2 device flow\n\n")
-	_, err = client.Tenant.AuthorizeWithDeviceFlow(context.Background(), loginOption.InitRequest, api.AuthEndpoints{
-		DeviceAuthorizationURL: "/oauth/device/code",
-		TokenURL:               "/oauth/token",
-	}, nil)
+	_, err = client.Tenant.AuthorizeWithDeviceFlow(context.Background(), loginOption.InitRequest, api.AuthEndpoints{}, nil)
 	if err != nil {
 		log.Fatalf("Failed to get access token. %s", err)
 	}

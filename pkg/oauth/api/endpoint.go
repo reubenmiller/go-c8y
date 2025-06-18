@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/url"
 	"strings"
 )
@@ -31,9 +30,19 @@ type AuthEndpoints struct {
 }
 
 // GetEndpointUrl get the full url related to a given oauth endpoint
-func GetEndpointUrl(endpoint *AuthorizationRequest, u string) string {
+func GetEndpointUrl(endpoint *url.URL, u string) string {
 	if endpoint == nil {
 		return u
 	}
-	return fmt.Sprintf("%s://%s/%s", endpoint.URL.Scheme, endpoint.URL.Host, strings.TrimLeft(u, "/"))
+
+	// check if already a fully formed url
+	if strings.Contains(u, "://") {
+		return u
+	}
+
+	out, err := endpoint.Parse(u)
+	if err != nil {
+		return u
+	}
+	return out.String()
 }
