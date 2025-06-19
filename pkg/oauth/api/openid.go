@@ -20,8 +20,11 @@ type OpenIDConfiguration struct {
 	ResponseTypesSupported      []string `json:"response_types_supported"`
 }
 
-func GetOpenIDConfiguration(ctx context.Context, client *http.Client, oauthUrl *url.URL, data any) error {
-	u, err := oauthUrl.Parse("/.well-known/openid-configuration")
+func GetOpenIDConfiguration(ctx context.Context, client *http.Client, oauthUrl *url.URL, oidc_url string, data any) error {
+	if oidc_url == "" {
+		oidc_url = "/.well-known/openid-configuration"
+	}
+	u, err := oauthUrl.Parse(oidc_url)
 	if err != nil {
 		return err
 	}

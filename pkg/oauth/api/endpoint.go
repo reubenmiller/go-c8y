@@ -27,6 +27,8 @@ type AuthEndpoints struct {
 
 	// Token Authorization URL, e.g. /oauth/token
 	TokenURL string
+
+	OpenIDConfigurationURL string
 }
 
 // GetEndpointUrl get the full url related to a given oauth endpoint
