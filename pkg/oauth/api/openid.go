@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
+	"strings"
 )
 
 type OpenIDConfiguration struct {
@@ -20,9 +22,24 @@ type OpenIDConfiguration struct {
 	ResponseTypesSupported      []string `json:"response_types_supported"`
 }
 
+func getOpenIDConnectConfigurationURL(u *url.URL) string {
+	path := "/"
+	if strings.Contains(u.Host, "login.microsoftonline.com") {
+		// Microsoft
+		path = "/oauth2/v2.0"
+	} else if strings.Contains(u.Path, "/realms/") {
+		// Keycloak
+		r := regexp.MustCompile("(/realms/[^/]+/)")
+		if matches := r.FindStringSubmatch(u.Path); len(matches) > 0 {
+			path = matches[0]
+		}
+	}
+	return path + ".well-known/openid-configuration"
+}
+
 func GetOpenIDConfiguration(ctx context.Context, client *http.Client, oauthUrl *url.URL, oidc_url string, data any) error {
 	if oidc_url == "" {
-		oidc_url = "/.well-known/openid-configuration"
+		oidc_url = getOpenIDConnectConfigurationURL(oauthUrl)
 	}
 	u, err := oauthUrl.Parse(oidc_url)
 	if err != nil {
