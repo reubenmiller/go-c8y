@@ -26,7 +26,7 @@ func getOpenIDConnectConfigurationURL(u *url.URL) string {
 	path := "/"
 	if strings.Contains(u.Host, "login.microsoftonline.com") {
 		// Microsoft
-		path = "/oauth2/v2.0"
+		path = "/oauth2/v2.0/"
 	} else if strings.Contains(u.Path, "/realms/") {
 		// Keycloak
 		r := regexp.MustCompile("(/realms/[^/]+/)")
