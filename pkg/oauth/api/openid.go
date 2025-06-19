@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 )
 
 type OpenIDConfiguration struct {
@@ -19,9 +20,60 @@ type OpenIDConfiguration struct {
 	RevocationEndpoint          string   `json:"revocation_endpoint"`
 	ResponseTypesSupported      []string `json:"response_types_supported"`
 }
+type OpenIDMatcher struct {
+	Pattern string
+	Path    func([]string) string
+}
 
-func GetOpenIDConfiguration(ctx context.Context, client *http.Client, oauthUrl *url.URL, data any) error {
-	u, err := oauthUrl.Parse("/.well-known/openid-configuration")
+type OpenIDPath func([]string) string
+
+func FixedPath(v string) OpenIDPath {
+	return func(s []string) string {
+		return v
+	}
+}
+
+func FirstMatch() OpenIDPath {
+	return func(s []string) string {
+		if len(s) > 0 {
+			return s[0]
+		}
+		return ""
+	}
+}
+
+func getOpenIDConnectConfigurationURL(u *url.URL) string {
+	path := "/"
+	fullURL := u.String()
+	definitions := []OpenIDMatcher{
+		{
+			// Microsoft
+			Pattern: `.*login\.microsoftonline\.com.*`,
+			Path:    FixedPath("/oauth2/v2.0/"),
+		},
+		{
+			// Keycloak
+			Pattern: `.*(/realms/[^/]+/).*`,
+			Path:    FirstMatch(),
+		},
+	}
+	for _, def := range definitions {
+		re, err := regexp.Compile(def.Pattern)
+		if err == nil {
+			if re.MatchString(fullURL) {
+				path = def.Path(re.FindStringSubmatch(fullURL))
+				break
+			}
+		}
+	}
+	return path + ".well-known/openid-configuration"
+}
+
+func GetOpenIDConfiguration(ctx context.Context, client *http.Client, oauthUrl *url.URL, oidc_url string, data any) error {
+	if oidc_url == "" {
+		oidc_url = getOpenIDConnectConfigurationURL(oauthUrl)
+	}
+	u, err := oauthUrl.Parse(oidc_url)
 	if err != nil {
 		return err
 	}
