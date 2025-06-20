@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
-	"strings"
 )
 
 type OpenIDConfiguration struct {
@@ -21,17 +20,50 @@ type OpenIDConfiguration struct {
 	RevocationEndpoint          string   `json:"revocation_endpoint"`
 	ResponseTypesSupported      []string `json:"response_types_supported"`
 }
+type OpenIDMatcher struct {
+	Pattern string
+	Path    func([]string) string
+}
+
+type OpenIDPath func([]string) string
+
+func FixedPath(v string) OpenIDPath {
+	return func(s []string) string {
+		return v
+	}
+}
+
+func FirstMatch() OpenIDPath {
+	return func(s []string) string {
+		if len(s) > 0 {
+			return s[0]
+		}
+		return ""
+	}
+}
 
 func getOpenIDConnectConfigurationURL(u *url.URL) string {
 	path := "/"
-	if strings.Contains(u.Host, "login.microsoftonline.com") {
-		// Microsoft
-		path = "/oauth2/v2.0/"
-	} else if strings.Contains(u.Path, "/realms/") {
-		// Keycloak
-		r := regexp.MustCompile("(/realms/[^/]+/)")
-		if matches := r.FindStringSubmatch(u.Path); len(matches) > 0 {
-			path = matches[0]
+	fullURL := u.String()
+	definitions := []OpenIDMatcher{
+		{
+			// Microsoft
+			Pattern: `.*login\.microsoftonline\.com.*`,
+			Path:    FixedPath("/oauth2/v2.0/"),
+		},
+		{
+			// Keycloak
+			Pattern: `.*(/realms/[^/]+/).*`,
+			Path:    FirstMatch(),
+		},
+	}
+	for _, def := range definitions {
+		re, err := regexp.Compile(def.Pattern)
+		if err == nil {
+			if re.MatchString(fullURL) {
+				path = def.Path(re.FindStringSubmatch(fullURL))
+				break
+			}
 		}
 	}
 	return path + ".well-known/openid-configuration"
