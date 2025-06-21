@@ -239,6 +239,20 @@ const (
 	AuthTypeBearer AuthType = 3
 )
 
+func (a AuthType) String() string {
+	switch a {
+	case AuthTypeUnset:
+		return "UNSET"
+	case AuthTypeNone:
+		return "NONE"
+	case AuthTypeBasic:
+		return "BASIC"
+	case AuthTypeBearer:
+		return "BEARER"
+	}
+	return "UNKNOWN"
+}
+
 var (
 	ErrInvalidAuthMethod = errors.New("invalid authorization method")
 )
