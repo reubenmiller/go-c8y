@@ -124,10 +124,10 @@ func (s *TenantService) GetTenantStatisticsSummary(ctx context.Context, opt *Ten
 func (s *TenantService) GetLoginOptions(ctx context.Context) (*TenantLoginOptions, *Response, error) {
 	data := new(TenantLoginOptions)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
-		Method:           "GET",
-		Path:             "tenant/loginOptions",
-		NoAuthentication: true,
-		ResponseData:     data,
+		Method:       "GET",
+		Path:         "tenant/loginOptions",
+		AuthFunc:     WithNoAuthorization(),
+		ResponseData: data,
 	})
 	return data, resp, err
 }

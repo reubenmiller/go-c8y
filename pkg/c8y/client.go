@@ -226,14 +226,17 @@ const (
 type AuthType int
 
 const (
+	// AuthTypeUnset no auth type set
+	AuthTypeUnset AuthType = 0
+
 	// AuthTypeNone don't use an Authorization
-	AuthTypeNone AuthType = 0
+	AuthTypeNone AuthType = 1
 
 	// AuthTypeBasic Basic Authorization
-	AuthTypeBasic AuthType = 1
+	AuthTypeBasic AuthType = 2
 
 	// AuthTypeBearer Bearer Authorization
-	AuthTypeBearer AuthType = 2
+	AuthTypeBearer AuthType = 3
 )
 
 var (
@@ -663,22 +666,22 @@ type RequestValidator func(*http.Request) error
 
 // RequestOptions struct which contains the options to be used with the SendRequest function
 type RequestOptions struct {
-	Method           string
-	Host             string
-	Path             string
-	Accept           string
-	ContentType      string
-	Query            interface{} // Use string if you want
-	Body             interface{}
-	ResponseData     interface{}
-	FormData         map[string]io.Reader
-	Header           http.Header
-	IgnoreAccept     bool
-	NoAuthentication bool
-	DryRun           bool
-	DryRunResponse   bool
-	ValidateFuncs    []RequestValidator
-	PrepareRequest   func(*http.Request) (*http.Request, error)
+	Method         string
+	Host           string
+	Path           string
+	Accept         string
+	ContentType    string
+	Query          interface{} // Use string if you want
+	Body           interface{}
+	ResponseData   interface{}
+	FormData       map[string]io.Reader
+	Header         http.Header
+	IgnoreAccept   bool
+	AuthFunc       RequestAuthFunc
+	DryRun         bool
+	DryRunResponse bool
+	ValidateFuncs  []RequestValidator
+	PrepareRequest func(*http.Request) (*http.Request, error)
 
 	PrepareRequestOnDryRun bool
 }
@@ -779,16 +782,29 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 		if err != nil {
 			return nil, err
 		}
-		if !options.NoAuthentication {
+		if options.AuthFunc != nil {
+			if _, err := options.AuthFunc(req); err != nil {
+				return nil, err
+			}
+		} else {
 			c.SetAuthorization(req)
 		}
 		c.SetHostHeader(req)
 	} else {
-		// Normal request
-		if options.NoAuthentication {
-			req, err = c.NewRequestWithoutAuth(options.Method, currentPath, currentQuery, options.Body)
-		} else {
+		if options.AuthFunc == nil {
+			// Use default auth
 			req, err = c.NewRequest(options.Method, currentPath, currentQuery, options.Body)
+		} else {
+			req, err = c.NewRequestWithoutAuth(options.Method, currentPath, currentQuery, options.Body)
+			if err != nil {
+				return nil, err
+			}
+
+			if options.AuthFunc != nil {
+				if _, err := options.AuthFunc(req); err != nil {
+					return nil, err
+				}
+			}
 		}
 	}
 
@@ -1131,33 +1147,25 @@ func (c *Client) SetHostHeader(req *http.Request) {
 	}
 }
 
-// SetBasicAuthorization sets the configured authorization to the given request. By default it will set the Basic Authorization header
-func (c *Client) SetBasicAuthorization(req *http.Request) bool {
-	var headerUsername string
-	if c.UseTenantInUsername && c.TenantName != "" {
-		headerUsername = fmt.Sprintf("%s/%s", c.TenantName, c.Username)
-	} else {
-		headerUsername = c.Username
-	}
-
-	if headerUsername != "" && c.Password != "" {
-		req.SetBasicAuth(headerUsername, c.Password)
-		return true
-	}
-	return false
-}
-
 // SetAuthorization sets the configured authorization to the given request. By default it will set the Basic Authorization header
-func (c *Client) SetAuthorization(req *http.Request) {
+func (c *Client) SetAuthorization(req *http.Request, authTypeFunc ...RequestAuthFunc) (bool, error) {
+	if len(authTypeFunc) > 0 {
+		return authTypeFunc[0](req)
+	}
 	switch c.AuthorizationType {
 	case AuthTypeNone:
-		break
+		return WithNoAuthorization()(req)
 	case AuthTypeBearer:
-		c.SetBearerAuthorization(req)
 		c.addCookiesToRequest(req)
+		return WithToken(c.Token)(req)
 	case AuthTypeBasic:
-		c.SetBasicAuthorization(req)
+		if c.UseTenantInUsername {
+			return WithTenantUsernamePassword(c.TenantName, c.Username, c.Password)(req)
+		} else {
+			return WithTenantUsernamePassword("", c.Username, c.Password)(req)
+		}
 	}
+	return false, nil
 }
 
 // HideSensitive checks if sensitive information should be hidden in the logs
@@ -1223,15 +1231,6 @@ func (c *Client) SetToken(v string) {
 	defer c.clientMu.Unlock()
 	c.Token = v
 	c.AuthorizationType = AuthTypeBearer
-}
-
-// SetBearerAuthorization set bearer authorization header
-func (c *Client) SetBearerAuthorization(req *http.Request) bool {
-	if c.Token != "" {
-		req.Header.Set("Authorization", "Bearer "+c.Token)
-		return true
-	}
-	return false
 }
 
 func (c *Client) addCookiesToRequest(req *http.Request) {
