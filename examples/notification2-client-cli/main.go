@@ -34,7 +34,6 @@ func main() {
 	c8yToken := os.Getenv("C8Y_TOKEN")
 	if c8yToken != "" {
 		client.SetToken(c8yToken)
-		client.AuthorizationMethod = c8y.AuthMethodOAuth2Internal
 	}
 
 	notificationClient, err := client.Notification2.CreateClient(context.Background(), c8y.Notification2ClientOptions{
