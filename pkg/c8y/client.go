@@ -1239,12 +1239,28 @@ func (c *Client) SetUsernamePassword(username string, password string) {
 	c.AuthorizationType = AuthTypeBasic
 }
 
+// ClearTenantUsernamePassword removes any tenant, username and password set on the client
+func (c *Client) ClearTenantUsernamePassword() {
+	c.clientMu.Lock()
+	defer c.clientMu.Unlock()
+	c.TenantName = ""
+	c.Username = ""
+	c.Password = ""
+}
+
 // SetToken sets the Bearer auth token to use for all rest requests
 func (c *Client) SetToken(v string) {
 	c.clientMu.Lock()
 	defer c.clientMu.Unlock()
 	c.Token = v
 	c.AuthorizationType = AuthTypeBearer
+}
+
+// Clear an existing token
+func (c *Client) ClearToken() {
+	c.clientMu.Lock()
+	defer c.clientMu.Unlock()
+	c.Token = ""
 }
 
 func (c *Client) addCookiesToRequest(req *http.Request) {
