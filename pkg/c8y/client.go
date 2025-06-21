@@ -156,8 +156,8 @@ type Client struct {
 	// TFACode (Two Factor Authentication) code.
 	TFACode string
 
-	// Authorization method
-	AuthorizationMethod string
+	// Authorization type
+	AuthorizationType AuthType
 
 	Cookies []*http.Cookie
 
@@ -209,38 +209,69 @@ var (
 )
 
 const (
-	// AuthMethodOAuth2Internal OAuth2 internal mode
-	AuthMethodOAuth2Internal = "OAUTH2_INTERNAL"
+	// LoginTypeOAuth2Internal OAuth2 internal mode
+	LoginTypeOAuth2Internal = "OAUTH2_INTERNAL"
 
-	// AuthMethodOAuth2 OAuth2 external provider
-	AuthMethodOAuth2 = "OAUTH2"
+	// LoginTypeOAuth2 OAuth2 external provider
+	LoginTypeOAuth2 = "OAUTH2"
 
-	// AuthMethodBasic Basic authentication
-	AuthMethodBasic = "BASIC"
+	// LoginTypeBasic Basic authentication
+	LoginTypeBasic = "BASIC"
 
-	// AuthMethodNone no authentication
-	AuthMethodNone = "NONE"
+	// LoginTypeNone no authentication
+	LoginTypeNone = "NONE"
 )
+
+// AuthType request authorization type
+type AuthType int
+
+const (
+	// AuthTypeUnset no auth type set
+	AuthTypeUnset AuthType = 0
+
+	// AuthTypeNone don't use an Authorization
+	AuthTypeNone AuthType = 1
+
+	// AuthTypeBasic Basic Authorization
+	AuthTypeBasic AuthType = 2
+
+	// AuthTypeBearer Bearer Authorization
+	AuthTypeBearer AuthType = 3
+)
+
+func (a AuthType) String() string {
+	switch a {
+	case AuthTypeUnset:
+		return "UNSET"
+	case AuthTypeNone:
+		return "NONE"
+	case AuthTypeBasic:
+		return "BASIC"
+	case AuthTypeBearer:
+		return "BEARER"
+	}
+	return "UNKNOWN"
+}
 
 var (
-	ErrInvalidAuthMethod = errors.New("invalid authorization method")
+	ErrInvalidLoginType = errors.New("invalid login type")
 )
 
-// Parse the authorization method and select as default if no value options are found
+// Parse the login type and select as default if no value options are found
 // It returns the selected method, and if the input was valid or not
-func ParseAuthMethod(v string) (string, error) {
+func ParseLoginType(v string) (string, error) {
 	v = strings.ToUpper(v)
 	switch v {
-	case AuthMethodBasic:
-		return AuthMethodBasic, nil
-	case AuthMethodNone:
-		return AuthMethodNone, nil
-	case AuthMethodOAuth2Internal:
-		return AuthMethodOAuth2Internal, nil
-	case AuthMethodOAuth2:
-		return AuthMethodOAuth2, nil
+	case LoginTypeBasic:
+		return LoginTypeBasic, nil
+	case LoginTypeNone:
+		return LoginTypeNone, nil
+	case LoginTypeOAuth2Internal:
+		return LoginTypeOAuth2Internal, nil
+	case LoginTypeOAuth2:
+		return LoginTypeOAuth2, nil
 	default:
-		return "", ErrInvalidAuthMethod
+		return "", ErrInvalidLoginType
 	}
 }
 
@@ -394,6 +425,9 @@ type ClientOptions struct {
 	// Token Auth
 	Token string
 
+	// Auth preference (to control which credentials are used when more than 1 value is provided)
+	AuthType AuthType
+
 	// Create a realtime client
 	Realtime bool
 
@@ -434,6 +468,15 @@ func NewClientFromOptions(httpClient *http.Client, opts ClientOptions) *Client {
 		realtimeClient = NewRealtimeClient(fmtURL, nil, opts.Tenant, opts.Username, opts.Password)
 	}
 
+	authType := opts.AuthType
+	if authType == AuthTypeUnset {
+		if opts.Token != "" {
+			authType = AuthTypeBearer
+		} else if opts.Username != "" && opts.Password != "" {
+			authType = AuthTypeBasic
+		}
+	}
+
 	userAgent := defaultUserAgent
 
 	c := &Client{
@@ -446,6 +489,7 @@ func NewClientFromOptions(httpClient *http.Client, opts ClientOptions) *Client {
 		Token:               opts.Token,
 		TenantName:          opts.Tenant,
 		UseTenantInUsername: true,
+		AuthorizationType:   authType,
 		showSensitive:       opts.ShowSensitive,
 	}
 	c.common.client = c
@@ -649,22 +693,22 @@ type RequestValidator func(*http.Request) error
 
 // RequestOptions struct which contains the options to be used with the SendRequest function
 type RequestOptions struct {
-	Method           string
-	Host             string
-	Path             string
-	Accept           string
-	ContentType      string
-	Query            interface{} // Use string if you want
-	Body             interface{}
-	ResponseData     interface{}
-	FormData         map[string]io.Reader
-	Header           http.Header
-	IgnoreAccept     bool
-	NoAuthentication bool
-	DryRun           bool
-	DryRunResponse   bool
-	ValidateFuncs    []RequestValidator
-	PrepareRequest   func(*http.Request) (*http.Request, error)
+	Method         string
+	Host           string
+	Path           string
+	Accept         string
+	ContentType    string
+	Query          interface{} // Use string if you want
+	Body           interface{}
+	ResponseData   interface{}
+	FormData       map[string]io.Reader
+	Header         http.Header
+	IgnoreAccept   bool
+	AuthFunc       RequestAuthFunc
+	DryRun         bool
+	DryRunResponse bool
+	ValidateFuncs  []RequestValidator
+	PrepareRequest func(*http.Request) (*http.Request, error)
 
 	PrepareRequestOnDryRun bool
 }
@@ -765,16 +809,29 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 		if err != nil {
 			return nil, err
 		}
-		if !options.NoAuthentication {
+		if options.AuthFunc != nil {
+			if _, err := options.AuthFunc(req); err != nil {
+				return nil, err
+			}
+		} else {
 			c.SetAuthorization(req)
 		}
 		c.SetHostHeader(req)
 	} else {
-		// Normal request
-		if options.NoAuthentication {
-			req, err = c.NewRequestWithoutAuth(options.Method, currentPath, currentQuery, options.Body)
-		} else {
+		if options.AuthFunc == nil {
+			// Use default auth
 			req, err = c.NewRequest(options.Method, currentPath, currentQuery, options.Body)
+		} else {
+			req, err = c.NewRequestWithoutAuth(options.Method, currentPath, currentQuery, options.Body)
+			if err != nil {
+				return nil, err
+			}
+
+			if options.AuthFunc != nil {
+				if _, err := options.AuthFunc(req); err != nil {
+					return nil, err
+				}
+			}
 		}
 	}
 
@@ -1117,33 +1174,35 @@ func (c *Client) SetHostHeader(req *http.Request) {
 	}
 }
 
-// SetBasicAuthorization sets the configured authorization to the given request. By default it will set the Basic Authorization header
-func (c *Client) SetBasicAuthorization(req *http.Request) {
-	var headerUsername string
-	if c.UseTenantInUsername && c.TenantName != "" {
-		headerUsername = fmt.Sprintf("%s/%s", c.TenantName, c.Username)
-	} else {
-		headerUsername = c.Username
-	}
-
-	if headerUsername != "" && c.Password != "" {
-		req.SetBasicAuth(headerUsername, c.Password)
-	}
-}
-
 // SetAuthorization sets the configured authorization to the given request. By default it will set the Basic Authorization header
-func (c *Client) SetAuthorization(req *http.Request) {
-	switch c.AuthorizationMethod {
-	case AuthMethodOAuth2Internal, AuthMethodOAuth2:
-		c.SetBearerAuthorization(req)
-		c.addOAuth2ToRequest(req)
-	case AuthMethodNone:
-		break
-	case AuthMethodBasic:
-		fallthrough
-	default:
-		c.SetBasicAuthorization(req)
+func (c *Client) SetAuthorization(req *http.Request, authTypeFunc ...RequestAuthFunc) (bool, error) {
+	if len(authTypeFunc) > 0 {
+		return authTypeFunc[0](req)
 	}
+
+	authType := c.AuthorizationType
+	if authType == AuthTypeUnset {
+		if c.Token != "" {
+			authType = AuthTypeBearer
+		} else if c.Username != "" && c.Password != "" {
+			authType = AuthTypeBasic
+		}
+	}
+
+	switch authType {
+	case AuthTypeNone:
+		return WithNoAuthorization()(req)
+	case AuthTypeBearer:
+		c.addCookiesToRequest(req)
+		return WithToken(c.Token)(req)
+	case AuthTypeBasic:
+		if c.UseTenantInUsername {
+			return WithTenantUsernamePassword(c.TenantName, c.Username, c.Password)(req)
+		} else {
+			return WithTenantUsernamePassword("", c.Username, c.Password)(req)
+		}
+	}
+	return false, nil
 }
 
 // HideSensitive checks if sensitive information should be hidden in the logs
@@ -1168,21 +1227,66 @@ func (c *Client) SetCookies(cookies []*http.Cookie) {
 	c.Cookies = cookies
 }
 
+// SetAuthorizationType set the authorization type to use to add to outgoing requests
+func (c *Client) SetAuthorizationType(authType AuthType) {
+	c.clientMu.Lock()
+	defer c.clientMu.Unlock()
+	c.AuthorizationType = authType
+}
+
+// SetTenantUsernamePassword sets the tenant/username/password to use for all rest requests
+func (c *Client) SetTenantUsernamePassword(tenant string, username string, password string) {
+	c.clientMu.Lock()
+	defer c.clientMu.Unlock()
+	c.TenantName = tenant
+	c.Username = username
+	c.Password = password
+	c.AuthorizationType = AuthTypeBasic
+}
+
+// SetUsernamePassword sets the username/password to use for all rest requests
+// If the username is in the format of {tenant}/{username}, then the tenant
+// name will also be set with the given value
+func (c *Client) SetUsernamePassword(username string, password string) {
+	c.clientMu.Lock()
+	defer c.clientMu.Unlock()
+
+	if tenant, user, found := strings.Cut(username, "/"); found {
+		username = user
+		c.TenantName = tenant
+		c.UseTenantInUsername = true
+	}
+
+	c.Username = username
+	c.Password = password
+	c.AuthorizationType = AuthTypeBasic
+}
+
+// ClearTenantUsernamePassword removes any tenant, username and password set on the client
+func (c *Client) ClearTenantUsernamePassword() {
+	c.clientMu.Lock()
+	defer c.clientMu.Unlock()
+	c.TenantName = ""
+	c.Username = ""
+	c.Password = ""
+}
+
 // SetToken sets the Bearer auth token to use for all rest requests
 func (c *Client) SetToken(v string) {
 	c.clientMu.Lock()
 	defer c.clientMu.Unlock()
 	c.Token = v
+	c.AuthorizationType = AuthTypeBearer
 }
 
-// SetBearerAuthorization set bearer authorization header
-func (c *Client) SetBearerAuthorization(req *http.Request) {
-	if c.Token != "" {
-		req.Header.Set("Authorization", "Bearer "+c.Token)
-	}
+// Clear an existing token
+func (c *Client) ClearToken() {
+	c.clientMu.Lock()
+	defer c.clientMu.Unlock()
+	c.Token = ""
 }
 
-func (c *Client) addOAuth2ToRequest(req *http.Request) {
+func (c *Client) addCookiesToRequest(req *http.Request) {
 	if c.Cookies == nil {
 		return
 	}
@@ -1265,7 +1369,6 @@ func (c *Client) LoginUsingOAuth2(ctx context.Context, initRequest ...string) er
 	}
 
 	// test
-	c.AuthorizationMethod = AuthMethodOAuth2Internal
 	tenant, _, err := c.Tenant.GetCurrentTenant(ctx)
 	if err != nil {
 		return err
@@ -1333,7 +1436,7 @@ func (c *Client) LoginUsingOAuth2External(ctx context.Context, code string, init
 	}
 
 	// test
-	c.AuthorizationMethod = AuthMethodOAuth2Internal
+	c.AuthorizationType = AuthTypeBearer
 	tenant, _, err := c.Tenant.GetCurrentTenant(ctx)
 	if err != nil {
 		return err

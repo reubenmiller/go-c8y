@@ -69,7 +69,6 @@ func (s *SetupConfiguration) NewClient() *c8y.Client {
 
 	if token != "" {
 		client.SetToken(token)
-		client.AuthorizationMethod = c8y.AuthMethodOAuth2Internal
 	}
 	return client
 }
