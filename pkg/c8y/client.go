@@ -156,8 +156,8 @@ type Client struct {
 	// TFACode (Two Factor Authentication) code.
 	TFACode string
 
-	// Authorization method
-	AuthorizationMethod AuthType
+	// Authorization type
+	AuthorizationType AuthType
 
 	Cookies []*http.Cookie
 
@@ -1149,7 +1149,7 @@ func (c *Client) SetBasicAuthorization(req *http.Request) bool {
 
 // SetAuthorization sets the configured authorization to the given request. By default it will set the Basic Authorization header
 func (c *Client) SetAuthorization(req *http.Request) {
-	switch c.AuthorizationMethod {
+	switch c.AuthorizationType {
 	case AuthTypeNone:
 		break
 	case AuthTypeBearer:
@@ -1182,6 +1182,13 @@ func (c *Client) SetCookies(cookies []*http.Cookie) {
 	c.Cookies = cookies
 }
 
+// SetAuthorizationType set the authorization type to use to add to outgoing requests
+func (c *Client) SetAuthorizationType(authType AuthType) {
+	c.clientMu.Lock()
+	defer c.clientMu.Unlock()
+	c.AuthorizationType = authType
+}
+
 // SetTenantUsernamePassword sets the tenant/username/password to use for all rest requests
 func (c *Client) SetTenantUsernamePassword(tenant string, username string, password string) {
 	c.clientMu.Lock()
@@ -1189,7 +1196,7 @@ func (c *Client) SetTenantUsernamePassword(tenant string, username string, passw
 	c.TenantName = tenant
 	c.Username = username
 	c.Password = password
-	c.AuthorizationMethod = AuthTypeBasic
+	c.AuthorizationType = AuthTypeBasic
 }
 
 // SetUsernamePassword sets the username/password to use for all rest requests
@@ -1207,7 +1214,7 @@ func (c *Client) SetUsernamePassword(username string, password string) {
 
 	c.Username = username
 	c.Password = password
-	c.AuthorizationMethod = AuthTypeBasic
+	c.AuthorizationType = AuthTypeBasic
 }
 
 // SetToken sets the Bearer auth token to use for all rest requests
@@ -1215,7 +1222,7 @@ func (c *Client) SetToken(v string) {
 	c.clientMu.Lock()
 	defer c.clientMu.Unlock()
 	c.Token = v
-	c.AuthorizationMethod = AuthTypeBearer
+	c.AuthorizationType = AuthTypeBearer
 }
 
 // SetBearerAuthorization set bearer authorization header
@@ -1377,7 +1384,7 @@ func (c *Client) LoginUsingOAuth2External(ctx context.Context, code string, init
 	}
 
 	// test
-	c.AuthorizationMethod = AuthTypeBearer
+	c.AuthorizationType = AuthTypeBearer
 	tenant, _, err := c.Tenant.GetCurrentTenant(ctx)
 	if err != nil {
 		return err
