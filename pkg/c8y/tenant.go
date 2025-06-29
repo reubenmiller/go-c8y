@@ -124,10 +124,10 @@ func (s *TenantService) GetTenantStatisticsSummary(ctx context.Context, opt *Ten
 func (s *TenantService) GetLoginOptions(ctx context.Context) (*TenantLoginOptions, *Response, error) {
 	data := new(TenantLoginOptions)
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
-		Method:           "GET",
-		Path:             "tenant/loginOptions",
-		NoAuthentication: true,
-		ResponseData:     data,
+		Method:       "GET",
+		Path:         "tenant/loginOptions",
+		AuthFunc:     WithNoAuthorization(),
+		ResponseData: data,
 	})
 	return data, resp, err
 }
@@ -377,7 +377,7 @@ func (s *TenantService) HasExternalAuthProvider(ctx context.Context) (loginOptio
 	}
 
 	for _, option := range loginOptions.LoginOptions {
-		if option.Type == AuthMethodOAuth2 {
+		if option.Type == LoginTypeOAuth2 {
 			loginOption = &option
 			found = true
 			break
@@ -443,7 +443,6 @@ func (s *TenantService) AuthorizeWithDeviceFlow(ctx context.Context, initRequest
 	// Update client auth
 	Logger.Info("Using token from device flow")
 	s.client.SetToken(accessToken.Token)
-	s.client.AuthorizationMethod = AuthMethodOAuth2
 
 	return accessToken, nil
 }

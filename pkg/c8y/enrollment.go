@@ -50,12 +50,12 @@ func (s *DeviceEnrollmentService) Enroll(ctx context.Context, externalID string,
 	headers.Add("Authorization", NewBasicAuthString("", externalID, oneTimePassword))
 
 	resp, err := s.client.SendRequest(ctx, RequestOptions{
-		Method:           "POST",
-		Path:             ".well-known/est/simpleenroll",
-		Header:           headers,
-		ContentType:      "application/pkcs10",
-		Body:             base64.StdEncoding.EncodeToString(csr.Raw),
-		NoAuthentication: true,
+		Method:      "POST",
+		Path:        ".well-known/est/simpleenroll",
+		Header:      headers,
+		ContentType: "application/pkcs10",
+		Body:        base64.StdEncoding.EncodeToString(csr.Raw),
+		AuthFunc:    WithNoAuthorization(),
 	})
 
 	if err != nil {
@@ -178,7 +178,7 @@ func (s *DeviceEnrollmentService) RequestAccessToken(ctx context.Context, client
 		ResponseData: data,
 
 		// No auth is required as x509 certificates are being used
-		NoAuthentication: true,
+		AuthFunc: WithNoAuthorization(),
 	})
 	return data, resp, err
 }
