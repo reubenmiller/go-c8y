@@ -29,6 +29,9 @@ type AuthEndpoints struct {
 	TokenURL string
 
 	OpenIDConfigurationURL string
+
+	// User defined scopes to add to request
+	Scopes []string
 }
 
 // GetEndpointUrl get the full url related to a given oauth endpoint

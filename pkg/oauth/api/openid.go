@@ -19,6 +19,7 @@ type OpenIDConfiguration struct {
 	RegistrationEndpoint        string   `json:"registration_endpoint"`
 	RevocationEndpoint          string   `json:"revocation_endpoint"`
 	ResponseTypesSupported      []string `json:"response_types_supported"`
+	ScopesSupported             []string `json:"scopes_supported"`
 }
 type OpenIDMatcher struct {
 	Pattern string

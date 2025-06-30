@@ -403,6 +403,12 @@ func (s *TenantService) AuthorizeWithDeviceFlow(ctx context.Context, initRequest
 		return nil, err
 	}
 
+	scopes := make([]string, 0, len(auth_endpoints.Scopes))
+	scopes = append(scopes, auth_endpoints.Scopes...)
+	if len(scopes) == 0 {
+		scopes = append(scopes, endpoint.Scopes...)
+	}
+
 	if auth_endpoints.TokenURL == "" || auth_endpoints.DeviceAuthorizationURL == "" {
 		// Try detecting the endpoints via the open-id configuration endpoint
 		openIDConfig := &api.OpenIDConfiguration{}
@@ -422,9 +428,17 @@ func (s *TenantService) AuthorizeWithDeviceFlow(ctx context.Context, initRequest
 				auth_endpoints.DeviceAuthorizationURL = openIDConfig.DeviceAuthorizationEndpoint
 			}
 		}
+
+		// Add default scope if none are defined, as microsoft generally requires at least one scope
+		if len(scopes) == 0 && len(openIDConfig.ScopesSupported) > 0 {
+			Logger.Infof("Adding default scope. value=%s", openIDConfig.ScopesSupported[0])
+			scopes = append(scopes, openIDConfig.ScopesSupported[0])
+		}
 	}
 
-	code, err := device.RequestCode(httpClient, api.GetEndpointUrl(endpoint.URL, auth_endpoints.DeviceAuthorizationURL), endpoint.ClientID, endpoint.Scopes, device.WithAudience(endpoint.Audience))
+	deviceCodeURL := api.GetEndpointUrl(endpoint.URL, auth_endpoints.DeviceAuthorizationURL)
+	Logger.Infof("Requesting device code. url=%s, client_id=%s, scopes=%v", deviceCodeURL, endpoint.ClientID, scopes)
+	code, err := device.RequestCode(httpClient, deviceCodeURL, endpoint.ClientID, scopes, device.WithAudience(endpoint.Audience))
 	if err != nil {
 		return nil, err
 	}
