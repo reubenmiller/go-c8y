@@ -406,10 +406,15 @@ func (s *TenantService) AuthorizeWithDeviceFlow(ctx context.Context, initRequest
 	if auth_endpoints.TokenURL == "" || auth_endpoints.DeviceAuthorizationURL == "" {
 		// Try detecting the endpoints via the open-id configuration endpoint
 		openIDConfig := &api.OpenIDConfiguration{}
+
+		if auth_endpoints.OpenIDConfigurationURL == "" {
+			auth_endpoints.OpenIDConfigurationURL = api.GetOpenIDConnectConfigurationURL(endpoint.URL)
+		}
+
 		if err := api.GetOpenIDConfiguration(ctx, httpClient, endpoint.URL, auth_endpoints.OpenIDConfigurationURL, openIDConfig); err != nil {
-			return nil, fmt.Errorf("could not get OpenID Connect configuration. url=%s, err=%s", endpoint.URL.String(), err)
+			return nil, fmt.Errorf("could not get OpenID Connect configuration. url=%s, err=%s", auth_endpoints.OpenIDConfigurationURL, err)
 		} else {
-			Logger.Infof("Found OpenID Connect configuration. url=%s, config=%#v", endpoint.URL.String(), openIDConfig)
+			Logger.Infof("Found OpenID Connect configuration. url=%s, config=%#v", auth_endpoints.OpenIDConfigurationURL, openIDConfig)
 			if auth_endpoints.TokenURL == "" {
 				auth_endpoints.TokenURL = openIDConfig.TokenEndpoint
 			}

@@ -33,28 +33,28 @@ func FixedPath(v string) OpenIDPath {
 	}
 }
 
-func FirstMatch() OpenIDPath {
+func FirstMatch(format string) OpenIDPath {
 	return func(s []string) string {
-		if len(s) > 0 {
-			return s[0]
+		if len(s) > 1 {
+			return fmt.Sprintf(format, s[1])
 		}
-		return ""
+		return fmt.Sprintf(format, "")
 	}
 }
 
-func getOpenIDConnectConfigurationURL(u *url.URL) string {
+func GetOpenIDConnectConfigurationURL(u *url.URL) string {
 	path := "/"
 	fullURL := u.String()
 	definitions := []OpenIDMatcher{
 		{
 			// Microsoft
-			Pattern: `.*login\.microsoftonline\.com.*`,
-			Path:    FixedPath("/oauth2/v2.0/"),
+			Pattern: `.*login\.microsoftonline\.com/([^/]+)/.*`,
+			Path:    FirstMatch("/%s/v2.0/"),
 		},
 		{
 			// Keycloak
 			Pattern: `.*(/realms/[^/]+/).*`,
-			Path:    FirstMatch(),
+			Path:    FirstMatch("%s"),
 		},
 	}
 	for _, def := range definitions {
@@ -71,7 +71,7 @@ func getOpenIDConnectConfigurationURL(u *url.URL) string {
 
 func GetOpenIDConfiguration(ctx context.Context, client *http.Client, oauthUrl *url.URL, oidc_url string, data any) error {
 	if oidc_url == "" {
-		oidc_url = getOpenIDConnectConfigurationURL(oauthUrl)
+		oidc_url = GetOpenIDConnectConfigurationURL(oauthUrl)
 	}
 	u, err := oauthUrl.Parse(oidc_url)
 	if err != nil {
