@@ -32,6 +32,9 @@ type AuthEndpoints struct {
 
 	// User defined scopes to add to request
 	Scopes []string
+
+	// Custom auth request options
+	AuthRequestOptions []AuthRequestEditorFn
 }
 
 // GetEndpointUrl get the full url related to a given oauth endpoint

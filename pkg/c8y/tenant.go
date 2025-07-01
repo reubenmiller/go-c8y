@@ -400,6 +400,7 @@ func (s *TenantService) AuthorizeWithDeviceFlow(ctx context.Context, initRequest
 
 	httpClient := NewHTTPClient(
 		WithInsecureSkipVerify(skipVerify),
+		WithRequestDebugLogger(Logger),
 	)
 	endpoint, err := getAuthorizationRequest(ctx, httpClient, initRequest)
 	if err != nil {
@@ -440,8 +441,10 @@ func (s *TenantService) AuthorizeWithDeviceFlow(ctx context.Context, initRequest
 	}
 
 	deviceCodeURL := api.GetEndpointUrl(endpoint.URL, auth_endpoints.DeviceAuthorizationURL)
+	requestCodeOptions := append([]api.AuthRequestEditorFn{}, auth_endpoints.AuthRequestOptions...)
+	requestCodeOptions = append(requestCodeOptions, api.WithAudience(endpoint.Audience))
 	Logger.Infof("Requesting device code. url=%s, client_id=%s, scopes=%v", deviceCodeURL, endpoint.ClientID, scopes)
-	code, err := device.RequestCode(httpClient, deviceCodeURL, endpoint.ClientID, scopes, device.WithAudience(endpoint.Audience))
+	code, err := device.RequestCode(httpClient, deviceCodeURL, endpoint.ClientID, scopes, requestCodeOptions...)
 	if err != nil {
 		return nil, err
 	}
