@@ -97,7 +97,7 @@ func GetOpenIDConfiguration(ctx context.Context, client *http.Client, oauthUrl *
 		return err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode > 399 {
-		return fmt.Errorf("openid-configuration request failed. status_code=%s", resp.Status)
+		return fmt.Errorf("request failed. status_code=%s, url=%s", resp.Status, u.String())
 	}
 	defer resp.Body.Close()
 	return json.NewDecoder(resp.Body).Decode(data)

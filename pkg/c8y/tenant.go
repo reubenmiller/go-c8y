@@ -2,6 +2,7 @@ package c8y
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -9,6 +10,8 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/oauth/api"
 	"github.com/reubenmiller/go-c8y/pkg/oauth/device"
 )
+
+var ErrSSOInvalidConfiguration = errors.New("invalid sso configuration")
 
 // TenantService does something
 type TenantService service
@@ -418,7 +421,7 @@ func (s *TenantService) AuthorizeWithDeviceFlow(ctx context.Context, initRequest
 		}
 
 		if err := api.GetOpenIDConfiguration(ctx, httpClient, endpoint.URL, auth_endpoints.OpenIDConfigurationURL, openIDConfig); err != nil {
-			return nil, fmt.Errorf("could not get OpenID Connect configuration. url=%s, err=%s", auth_endpoints.OpenIDConfigurationURL, err)
+			return nil, fmt.Errorf("%w. %w", ErrSSOInvalidConfiguration, err)
 		} else {
 			Logger.Infof("Found OpenID Connect configuration. url=%s, config=%#v", auth_endpoints.OpenIDConfigurationURL, openIDConfig)
 			if auth_endpoints.TokenURL == "" {
