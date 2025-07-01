@@ -69,21 +69,9 @@ type CodeResponse struct {
 	Interval int
 }
 
-// AuthRequestEditorFn defines the function signature for setting additional form values.
-type AuthRequestEditorFn func(*url.Values)
-
-// WithAudience sets the audience parameter in the request.
-func WithAudience(audience string) AuthRequestEditorFn {
-	return func(values *url.Values) {
-		if audience != "" {
-			values.Add("audience", audience)
-		}
-	}
-}
-
 // RequestCode initiates the authorization flow by requesting a code from uri.
 func RequestCode(c httpClient, uri string, clientID string, scopes []string,
-	optionalRequestParams ...AuthRequestEditorFn) (*CodeResponse, error) {
+	optionalRequestParams ...api.AuthRequestEditorFn) (*CodeResponse, error) {
 	values := url.Values{
 		"client_id": {clientID},
 		"scope":     {strings.Join(scopes, " ")},

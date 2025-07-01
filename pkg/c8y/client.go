@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"os"
 	"path"
@@ -391,12 +392,33 @@ func WithClientCertificate(cert tls.Certificate) ClientOption {
 	}
 }
 
+func WithRequestDebugLogger(l logger.Logger) ClientOption {
+	return func(tr http.RoundTripper) http.RoundTripper {
+		return &LoggingTransport{
+			Logger: l,
+		}
+	}
+}
+
 type funcTripper struct {
 	roundTrip func(*http.Request) (*http.Response, error)
 }
 
 func (tr funcTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	return tr.roundTrip(req)
+}
+
+type LoggingTransport struct {
+	Logger logger.Logger
+}
+
+func (t *LoggingTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	reqInfo, _ := httputil.DumpRequestOut(r, true)
+	if t.Logger != nil {
+		t.Logger.Debugf("Sending request. %s", reqInfo)
+	}
+	resp, err := http.DefaultTransport.RoundTrip(r)
+	return resp, err
 }
 
 // Format the base url to ensure it is normalized for cases where the

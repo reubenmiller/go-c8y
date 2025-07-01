@@ -275,7 +275,7 @@ func TestRequestCode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := RequestCode(&tt.args.http, tt.args.url,
-				tt.args.clientID, tt.args.scopes, WithAudience(tt.args.audience))
+				tt.args.clientID, tt.args.scopes, api.WithAudience(tt.args.audience))
 			if (err != nil) != (tt.wantErr != "") {
 				t.Errorf("RequestCode() error = %v, wantErr %v", err, tt.wantErr)
 				return
