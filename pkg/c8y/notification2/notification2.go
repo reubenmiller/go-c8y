@@ -7,12 +7,12 @@ import (
 	"math"
 	"net/http"
 	"net/url"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/reubenmiller/go-c8y/pkg/logger"
+	"github.com/reubenmiller/go-c8y/pkg/wsurl"
 	"github.com/tidwall/gjson"
 	tomb "gopkg.in/tomb.v2"
 )
@@ -124,15 +124,10 @@ func (m *Message) JSON() gjson.Result {
 }
 
 func getEndpoint(host string, subscription Subscription) *url.URL {
-	fullHost := "wss://" + host
-	if index := strings.Index(host, "://"); index > -1 {
-		fullHost = "wss" + host[index:]
-	}
-	tempUrl, err := url.Parse(fullHost)
+	c8yHost, err := wsurl.GetWebsocketURL(host, "notification2/consumer/")
 	if err != nil {
 		Logger.Fatalf("Invalid url. %s", err)
 	}
-	c8yHost := tempUrl.ResolveReference(&url.URL{Path: "notification2/consumer/"})
 	c8yHost.RawQuery = "token=" + subscription.Token
 
 	if subscription.Consumer != "" {

@@ -96,5 +96,6 @@
         "tidwall",
         "vbauerster",
         "wsconnadapter",
+        "wsurl",
     ],
 }
