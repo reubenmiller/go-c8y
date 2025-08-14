@@ -17,6 +17,11 @@ func GetWebsocketURL(host string, path string) (*url.URL, error) {
 		return nil, err
 	}
 
+	// Check if the url has already been converted
+	if tempUrl.Scheme == "ws" || tempUrl.Scheme == "wss" {
+		return tempUrl, nil
+	}
+
 	if tempUrl.Scheme == "http" {
 		tempUrl.Scheme = "ws"
 	} else {

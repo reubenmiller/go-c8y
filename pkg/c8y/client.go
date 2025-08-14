@@ -326,6 +326,15 @@ func (c *Client) NewRealtimeClientFromServiceUser(tenant string) *RealtimeClient
 	return nil
 }
 
+func GetEnvValue(key ...string) string {
+	for _, k := range key {
+		if v := strings.TrimSpace(os.Getenv(k)); v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
 // NewClientFromEnvironment returns a new c8y client configured from environment variables
 //
 // Environment Variables
@@ -334,7 +343,7 @@ func (c *Client) NewRealtimeClientFromServiceUser(tenant string) *RealtimeClient
 // C8Y_USER - Username e.g. myuser@mycompany.com
 // C8Y_PASSWORD - Password
 func NewClientFromEnvironment(httpClient *http.Client, skipRealtimeClient bool) *Client {
-	baseURL := os.Getenv("C8Y_HOST")
+	baseURL := GetEnvValue("C8Y_HOST", EnvironmentBaseURL)
 	tenant, username, password := GetServiceUserFromEnvironment()
 	return NewClient(httpClient, baseURL, tenant, username, password, skipRealtimeClient)
 }
