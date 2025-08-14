@@ -186,7 +186,7 @@ func (c *Notification2Client) Endpoint() string {
 }
 
 func (c *Notification2Client) URL() string {
-	return getEndpoint(c.url.Host, c.Subscription).String()
+	return getEndpoint(c.url.String(), c.Subscription).String()
 }
 
 // IsConnected returns true if the websocket is connected
