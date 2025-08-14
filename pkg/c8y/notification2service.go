@@ -299,7 +299,7 @@ func (s *Notification2Service) RenewToken(ctx context.Context, opt Notification2
 		expiresInMinutes = MinTokenMinutes
 	}
 
-	Logger.Infof("Creating new token")
+	Logger.Infof("Creating new notification2 token")
 	updatedToken, _, err := s.CreateToken(ctx, Notification2TokenOptions{
 		ExpiresInMinutes:  expiresInMinutes,
 		Subscription:      subscription,
