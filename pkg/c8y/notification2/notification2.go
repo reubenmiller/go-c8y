@@ -181,12 +181,23 @@ func (c *Notification2Client) Connect() error {
 }
 
 func (c *Notification2Client) Endpoint() string {
-	// TODO: Support hiding of sensitive information (same as the client)
 	return c.url.String()
 }
 
-func (c *Notification2Client) URL() string {
-	return getEndpoint(c.url.String(), c.Subscription).String()
+func (c *Notification2Client) URL(hideSensitive bool) string {
+	wsURL := getEndpoint(c.url.String(), c.Subscription).String()
+	if hideSensitive {
+		if u, err := url.Parse(wsURL); err == nil {
+			q := u.Query()
+			if q.Has("token") {
+				q.Set("token", "redacted")
+				u.RawQuery = q.Encode()
+				return u.String()
+			}
+		}
+		return wsURL
+	}
+	return wsURL
 }
 
 // IsConnected returns true if the websocket is connected
@@ -242,8 +253,8 @@ func (c *Notification2Client) createWebsocket() (*websocket.Conn, error) {
 		c.Subscription.Token = token
 	}
 
-	Logger.Debugf("Establishing connection to %s", c.Endpoint())
-	ws, _, err := c.dialer.Dial(c.URL(), nil)
+	Logger.Debugf("Establishing connection to %s", c.URL(true))
+	ws, _, err := c.dialer.Dial(c.URL(false), nil)
 
 	if err != nil {
 		Logger.Warnf("Failed to establish connection. %s", err)
