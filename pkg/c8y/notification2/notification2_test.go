@@ -20,3 +20,17 @@ CREATE
 	testingutils.Equals(t, "/t123456/measurements/12345", string(message.Description))
 	testingutils.Assert(t, len(message.Payload) > 0, "payload size should be larger than zero")
 }
+
+func Test_GetEndpoint(t *testing.T) {
+	endpoint := getEndpoint("http://cumulocity:8111", Subscription{
+		Token:    "abcdef",
+		Consumer: "",
+	})
+	testingutils.Equals(t, endpoint.Scheme, "ws")
+
+	endpoint = getEndpoint("https://cumulocity:8111", Subscription{
+		Token:    "abcdef",
+		Consumer: "",
+	})
+	testingutils.Equals(t, endpoint.Scheme, "wss")
+}
