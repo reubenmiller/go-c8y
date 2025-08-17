@@ -18,7 +18,7 @@ func main() {
 
 	if err != nil {
 		slog.Error("Could not connect to /cep/realtime", "err", err)
-		panic(err)
+		os.Exit(1)
 	}
 
 	ch := make(chan *c8y.Message)
@@ -67,7 +67,7 @@ func main() {
 	// Always check for errors
 	if err != nil {
 		slog.Error("Could not retrieve alarms", "err", err)
-		panic(err)
+		os.Exit(1)
 	}
 
 	slog.Info("Alarms", "total", len(alarmCollection.Alarms))

@@ -180,6 +180,11 @@ const (
 	defaultUserAgent = "go-client"
 )
 
+var (
+	// EnvVarLoggerHideSensitive environment variable name used to control whether sensitive session information is logged or not. When set to "true", then the tenant, username, password, base 64 passwords will be obfuscated from the log messages
+	EnvVarLoggerHideSensitive = "C8Y_LOGGER_HIDE_SENSITIVE"
+)
+
 const (
 	// LoginTypeOAuth2Internal OAuth2 internal mode
 	LoginTypeOAuth2Internal = "OAUTH2_INTERNAL"
@@ -373,6 +378,14 @@ func WithClientCertificate(cert tls.Certificate) ClientOption {
 	}
 }
 
+func WithRequestDebugLogger(l slog.Logger) ClientOption {
+	return func(tr http.RoundTripper) http.RoundTripper {
+		return &LoggingTransport{
+			Logger: l,
+		}
+	}
+}
+
 type funcTripper struct {
 	roundTrip func(*http.Request) (*http.Response, error)
 }
@@ -381,11 +394,13 @@ func (tr funcTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	return tr.roundTrip(req)
 }
 
-type LoggingTransport struct{}
+type LoggingTransport struct {
+	Logger slog.Logger
+}
 
 func (t *LoggingTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 	reqInfo, _ := httputil.DumpRequestOut(r, true)
-	slog.Debug("Sending request.", "request", reqInfo)
+	t.Logger.Debug("Sending request.", "request", reqInfo)
 	resp, err := http.DefaultTransport.RoundTrip(r)
 	return resp, err
 }
@@ -1673,6 +1688,9 @@ func CheckResponse(r *http.Response) error {
 func (c *Client) HideSensitiveInformationIfActive(message string) string {
 	// Default to hiding the information
 	hideSensitive := c.HideSensitive()
+	if v, err := strconv.ParseBool(os.Getenv(EnvVarLoggerHideSensitive)); err == nil {
+		hideSensitive = v
+	}
 	if !hideSensitive {
 		return message
 	}
