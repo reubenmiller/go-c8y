@@ -18,6 +18,7 @@ docs/_site
 _site
 .jekyll-cache
 .scannerwork
+*.zip
 
 # example files
 device.crt
