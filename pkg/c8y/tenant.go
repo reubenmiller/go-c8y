@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 
@@ -400,7 +401,6 @@ func (s *TenantService) AuthorizeWithDeviceFlow(ctx context.Context, initRequest
 
 	httpClient := NewHTTPClient(
 		WithInsecureSkipVerify(skipVerify),
-		WithRequestDebugLogger(Logger),
 	)
 	endpoint, err := getAuthorizationRequest(ctx, httpClient, initRequest)
 	if err != nil {
@@ -424,7 +424,7 @@ func (s *TenantService) AuthorizeWithDeviceFlow(ctx context.Context, initRequest
 		if err := api.GetOpenIDConfiguration(ctx, httpClient, endpoint.URL, auth_endpoints.OpenIDConfigurationURL, openIDConfig); err != nil {
 			return nil, fmt.Errorf("%w. %w", ErrSSOInvalidConfiguration, err)
 		} else {
-			Logger.Infof("Found OpenID Connect configuration. url=%s, config=%#v", auth_endpoints.OpenIDConfigurationURL, openIDConfig)
+			slog.Info("Found OpenID Connect configuration", "url", auth_endpoints.OpenIDConfigurationURL, "config", openIDConfig)
 			if auth_endpoints.TokenURL == "" {
 				auth_endpoints.TokenURL = openIDConfig.TokenEndpoint
 			}
@@ -435,7 +435,7 @@ func (s *TenantService) AuthorizeWithDeviceFlow(ctx context.Context, initRequest
 
 		// Add default scope if none are defined, as microsoft generally requires at least one scope
 		if len(scopes) == 0 && len(openIDConfig.ScopesSupported) > 0 {
-			Logger.Infof("Adding default scope. value=%s", openIDConfig.ScopesSupported[0])
+			slog.Info("Adding default scope", "value", openIDConfig.ScopesSupported[0])
 			scopes = append(scopes, openIDConfig.ScopesSupported[0])
 		}
 	}
@@ -443,7 +443,7 @@ func (s *TenantService) AuthorizeWithDeviceFlow(ctx context.Context, initRequest
 	deviceCodeURL := api.GetEndpointUrl(endpoint.URL, auth_endpoints.DeviceAuthorizationURL)
 	requestCodeOptions := append([]api.AuthRequestEditorFn{}, auth_endpoints.AuthRequestOptions...)
 	requestCodeOptions = append(requestCodeOptions, api.WithAudience(endpoint.Audience))
-	Logger.Infof("Requesting device code. url=%s, client_id=%s, scopes=%v", deviceCodeURL, endpoint.ClientID, scopes)
+	slog.Info("Requesting device code", "url", deviceCodeURL, "client_id", endpoint.ClientID, "scopes", scopes)
 	code, err := device.RequestCode(httpClient, deviceCodeURL, endpoint.ClientID, scopes, requestCodeOptions...)
 	if err != nil {
 		return nil, err
@@ -466,7 +466,7 @@ func (s *TenantService) AuthorizeWithDeviceFlow(ctx context.Context, initRequest
 	}
 
 	// Update client auth
-	Logger.Info("Using token from device flow")
+	slog.Info("Using token from device flow")
 	s.client.SetToken(accessToken.Token)
 
 	return accessToken, nil

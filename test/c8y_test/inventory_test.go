@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -49,7 +49,7 @@ func TestInventoryService_GetDevices(t *testing.T) {
 
 	deviceName := data.Items[0].Get("name")
 
-	log.Printf("Device Name: %s\n", deviceName)
+	slog.Info("Device", "name", deviceName)
 }
 
 func TestInventoryService_AuthenticationToken(t *testing.T) {

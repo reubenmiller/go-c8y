@@ -4,24 +4,20 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/tls"
+	"fmt"
+	"log/slog"
 	"math"
 	"net/http"
 	"net/url"
+	"os"
 	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/reubenmiller/go-c8y/pkg/logger"
 	"github.com/reubenmiller/go-c8y/pkg/wsurl"
 	"github.com/tidwall/gjson"
 	tomb "gopkg.in/tomb.v2"
 )
-
-var Logger logger.Logger
-
-func init() {
-	Logger = logger.NewLogger("notifications2")
-}
 
 const (
 	// MaximumRetryInterval is the maximum interval (in seconds) between reconnection attempts
@@ -36,14 +32,6 @@ const (
 	// interval = Min(MaximumRetryInterval, interval * RetryBackoffFactor)
 	RetryBackoffFactor float64 = 2
 )
-
-func SetLogger(log logger.Logger) {
-	if log == nil {
-		Logger = logger.NewDummyLogger("notification2")
-	} else {
-		Logger = log
-	}
-}
 
 type ConnectionOptions struct {
 	// Send pings to client with this interval. Must be less than pongWait.
@@ -126,7 +114,8 @@ func (m *Message) JSON() gjson.Result {
 func getEndpoint(host string, subscription Subscription) *url.URL {
 	c8yHost, err := wsurl.GetWebsocketURL(host, "notification2/consumer/")
 	if err != nil {
-		Logger.Fatalf("Invalid url. %s", err)
+		slog.Error("Invalid url", "err", err)
+		os.Exit(1)
 	}
 	c8yHost.RawQuery = "token=" + subscription.Token
 
@@ -211,12 +200,12 @@ func (c *Notification2Client) IsConnected() bool {
 // Close the connection
 func (c *Notification2Client) Close() error {
 	if err := c.disconnect(); err != nil {
-		Logger.Warnf("Failed to disconnect. %s", err)
+		slog.Warn("Failed to disconnect", "err", err)
 	}
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 	if c.tomb != nil {
-		Logger.Debugf("Stopping worker")
+		slog.Debug("Stopping worker")
 		c.tomb.Killf("Close")
 		c.tomb = nil
 	}
@@ -253,14 +242,14 @@ func (c *Notification2Client) createWebsocket() (*websocket.Conn, error) {
 		c.Subscription.Token = token
 	}
 
-	Logger.Debugf("Establishing connection to %s", c.URL(true))
+	slog.Debug(fmt.Sprintf("Establishing connection to %s", c.URL(true)))
 	ws, _, err := c.dialer.Dial(c.URL(false), nil)
 
 	if err != nil {
-		Logger.Warnf("Failed to establish connection. %s", err)
+		slog.Warn("Failed to establish connection", "err", err)
 		return ws, err
 	}
-	Logger.Debug("Established websocket connection")
+	slog.Debug("Established websocket connection")
 	return ws, nil
 }
 
@@ -271,12 +260,12 @@ func (c *Notification2Client) reconnect() error {
 	interval := MinimumRetryInterval
 
 	for !connected {
-		Logger.Warnf("Retrying in %ds", interval)
+		slog.Warn(fmt.Sprintf("Retrying in %ds", interval))
 		<-time.After(time.Duration(interval) * time.Second)
 		err := c.connect()
 
 		if err != nil {
-			Logger.Warnf("Failed to connect. %s", err)
+			slog.Warn("Failed to connect", "err", err)
 			interval = int64(math.Min(float64(MaximumRetryInterval), RetryBackoffFactor*float64(interval)))
 			continue
 		}
@@ -284,7 +273,7 @@ func (c *Notification2Client) reconnect() error {
 		connected = true
 	}
 
-	Logger.Warn("Reestablished connection")
+	slog.Warn("Reestablished connection")
 	return nil
 }
 
@@ -297,7 +286,7 @@ func (c *Notification2Client) connect() error {
 	// This may be overkill, but is in place to prevent unexpected errors
 	if c.ws != nil {
 		if err := c.ws.Close(); err != nil {
-			Logger.Infof("Error whilst closing connection before connecting. %s", err)
+			slog.Info("Error whilst closing connection before connecting", "err", err)
 		}
 	}
 	ws, err := c.createWebsocket()
@@ -372,14 +361,14 @@ func (c *Notification2Client) writeHandler() {
 		case message, ok := <-c.send:
 			if !ok {
 				// The send channel has been closed
-				Logger.Info("Channel has been closed")
+				slog.Info("Channel has been closed")
 				return
 			}
 
 			if c.ws != nil {
 				c.ws.SetWriteDeadline(time.Now().Add(c.ConnectionOptions.GetWriteDuration()))
 				if err := c.ws.WriteMessage(websocket.TextMessage, message); err != nil {
-					Logger.Warnf("Failed to send message. %s", err)
+					slog.Warn("Failed to send message", "err", err)
 				}
 			}
 
@@ -390,18 +379,18 @@ func (c *Notification2Client) writeHandler() {
 				// If the pong is not received in the minimum time, then the connection will be reset
 				c.ws.SetWriteDeadline(time.Now().Add(c.ConnectionOptions.GetWriteDuration()))
 				if err := c.ws.WriteMessage(websocket.PingMessage, nil); err != nil {
-					Logger.Warnf("Failed to send ping message to server. %s", err)
+					slog.Warn("Failed to send ping message to server", "err", err)
 					// go c.reconnect()
 					continue
 				}
-				Logger.Debug("Sent ping successfully")
+				slog.Debug("Sent ping successfully")
 			}
 		}
 	}
 }
 
 func (c *Notification2Client) Register(pattern string, out chan<- Message) {
-	Logger.Debugf("Subscribing to %s", pattern)
+	slog.Debug(fmt.Sprintf("Subscribing to %s", pattern))
 
 	c.hub.register <- &ClientSubscription{
 		Pattern:  pattern,
@@ -411,7 +400,7 @@ func (c *Notification2Client) Register(pattern string, out chan<- Message) {
 }
 
 func (c *Notification2Client) SendMessageAck(messageIdentifier []byte) error {
-	Logger.Debugf("Sending message ack: %s", messageIdentifier)
+	slog.Debug("Sending message ack", "identifier", messageIdentifier)
 	c.send <- messageIdentifier
 	return nil
 }
@@ -421,7 +410,7 @@ func (c *Notification2Client) worker() error {
 
 	c.ws.SetReadDeadline(time.Now().Add(c.ConnectionOptions.GetPongDuration()))
 	c.ws.SetPongHandler(func(string) error {
-		Logger.Debug("Received pong message")
+		slog.Debug("Received pong message")
 		c.ws.SetReadDeadline(time.Now().Add(c.ConnectionOptions.GetPongDuration()))
 		return nil
 	})
@@ -432,15 +421,15 @@ func (c *Notification2Client) worker() error {
 			messageType, rawMessage, err := c.ws.ReadMessage()
 
 			if err == nil {
-				Logger.Debugf("Received websocket message: type=%d, len=%d", messageType, len(rawMessage))
+				slog.Debug("Received websocket message", "type", messageType, "len", len(rawMessage))
 			}
 
 			if err != nil {
 				// Taken from https://github.com/gorilla/websocket/blob/main/examples/chat/client.go
 				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-					Logger.Warnf("unexpected websocket error. %v", err)
+					slog.Warn("unexpected websocket error", "err", err)
 				} else {
-					Logger.Infof("websocket error. %v", err)
+					slog.Info("websocket error", "err", err)
 				}
 				go c.reconnect()
 				break
@@ -448,34 +437,34 @@ func (c *Notification2Client) worker() error {
 
 			switch messageType {
 			case websocket.TextMessage:
-				Logger.Debugf("Raw notification2 message (len=%d):\n%s", len(rawMessage), rawMessage)
+				slog.Debug("Raw notification2 message", "len", len(rawMessage), "message", rawMessage)
 				message := parseMessage(rawMessage)
-				Logger.Debugf("message id: %s", message.Identifier)
-				Logger.Debugf("message description: %s", message.Description)
-				Logger.Debugf("message action: %s", message.Action)
-				Logger.Debugf("message payload: %s", message.Payload)
+				slog.Debug("message", "id", message.Identifier)
+				slog.Debug("message", "description", message.Description)
+				slog.Debug("message", "action", message.Action)
+				slog.Debug("message", "payload", message.Payload)
 				c.hub.broadcast <- *message
 
 			case websocket.CloseMessage:
-				Logger.Warnf("Received close message. %v", rawMessage)
+				slog.Warn("Received close", "message", rawMessage)
 			case websocket.PingMessage:
-				Logger.Debugf("Received ping message. %v", rawMessage)
+				slog.Debug("Received ping", "message", rawMessage)
 
 			case websocket.PongMessage:
-				Logger.Debugf("Received pong message. %v", rawMessage)
+				slog.Debug("Received pong", "message", rawMessage)
 			}
 		}
 	}()
 
 	defer c.ws.Close()
 	<-c.tomb.Dying()
-	Logger.Info("Worker is shutting down")
+	slog.Info("Worker is shutting down")
 	return nil
 }
 
 // Unsubscribe unsubscribe to a given pattern
 func (c *Notification2Client) Unsubscribe() error {
-	Logger.Info("unsubscribing")
+	slog.Info("unsubscribing")
 	c.send <- []byte("unsubscribe_subscriber")
 	return nil
 }

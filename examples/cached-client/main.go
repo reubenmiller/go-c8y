@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"time"
@@ -29,10 +29,11 @@ func main() {
 
 	// Always check for errors
 	if err != nil {
-		log.Fatalf("Could not retrieve alarms. %s", err)
+		slog.Error("Could not retrieve alarms", "err", err)
+		panic(err)
 	}
 
-	log.Printf("Total alarms: %d", len(alarmCollection.Alarms))
+	slog.Info("Alarms", "total", len(alarmCollection.Alarms))
 
 	alarmCollection2, _, err2 := client.Alarm.GetAlarms(
 		context.Background(),
@@ -42,8 +43,9 @@ func main() {
 	)
 
 	if err2 != nil {
-		log.Fatalf("Could not retrieve alarms. %s", err)
+		slog.Error("Could not retrieve alarms", "err", err2)
+		panic(err2)
 	}
 
-	log.Printf("Total alarms: %d", len(alarmCollection2.Alarms))
+	slog.Info("Alarms", "total", len(alarmCollection2.Alarms))
 }

@@ -1,6 +1,6 @@
 module github.com/reubenmiller/example
 
-go 1.24.2
+go 1.24
 
 require (
 	github.com/alecthomas/kong v1.11.0
@@ -15,14 +15,11 @@ require (
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/mdp/qrterminal/v3 v3.2.1 // indirect
 	github.com/obeattie/ohmyglob v0.0.0-20150811221449-290764208a0d // indirect
-	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	go.mozilla.org/pkcs7 v0.9.0 // indirect
-	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/term v0.32.0 // indirect

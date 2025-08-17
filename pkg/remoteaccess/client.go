@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"strings"
@@ -65,13 +66,13 @@ func (c *RemoteAccessClient) createRemoteAccessConnection() (*websocket.Conn, st
 	requestHeader.Add("Content-Type", "application/json")
 
 	if c.client.Token != "" {
-		c8y.Logger.Debug("Using bearer token")
+		slog.Debug("Using bearer token")
 		requestHeader.Add("Authorization", "Bearer "+c.client.Token)
 	} else {
-		c8y.Logger.Debug("Using basic auth")
+		slog.Debug("Using basic auth")
 		requestHeader.Add("Authorization", c8y.NewBasicAuthString(c.client.GetTenantName(context.Background()), c.client.Username, c.client.Password))
 	}
-	c8y.Logger.Infof("Connecting to Cumulocity IoT: url=%s, headers=%v", remoteURL, c.client.HideSensitiveInformationIfActive(fmt.Sprintf("%v", requestHeader)))
+	slog.Info("Connecting to Cumulocity IoT", "url", remoteURL, "headers", c.client.HideSensitiveInformationIfActive(fmt.Sprintf("%v", requestHeader)))
 
 	wsConn, _, err := websocket.DefaultDialer.Dial(remoteURL, requestHeader)
 	return wsConn, remoteURL, err
@@ -91,10 +92,10 @@ func (c *RemoteAccessClient) GetListenerAddress() string {
 func (c *RemoteAccessClient) ListenServe(r io.ReadCloser, w io.Writer) error {
 	clientWsConn, remoteURL, err := c.createRemoteAccessConnection()
 	if err != nil {
-		c8y.Logger.Errorf("DIALER: %v", err.Error())
+		slog.Error("Could not create remote access connection", "err", err.Error())
 		return err
 	}
-	c8y.Logger.Infof("Proxying traffic to %v via %v for %v", remoteURL, clientWsConn.RemoteAddr(), "stdio")
+	slog.Info(fmt.Sprintf("Proxying traffic to %v via %v for %v", remoteURL, clientWsConn.RemoteAddr(), "stdio"))
 
 	// block until finished as stdio mode can not launch multiple instances
 	proxy.CopyReadWriter(clientWsConn, r, w)
@@ -110,11 +111,11 @@ func (c *RemoteAccessClient) Listen(addr string) error {
 		return err
 	}
 
-	c8y.Logger.Infof("Creating listener. network=%s, address=%s", network, localAddress)
+	slog.Info("Creating listener", "network", network, "address", localAddress)
 
 	l, err := net.Listen(network, localAddress)
 	if err != nil {
-		c8y.Logger.Errorf("%s LISTENER: %v", strings.ToUpper(network), err.Error())
+		slog.Error("Could not create listener", "network", strings.ToUpper(network), "err", err.Error())
 		return err
 	}
 
@@ -135,16 +136,16 @@ func (c *RemoteAccessClient) Serve() error {
 		// Listen for an incoming connection.
 		tcpConn, err := c.listener.Accept()
 		if err != nil {
-			c8y.Logger.Errorf("ACCEPT: %v", err.Error())
+			slog.Error("Failed to accept incoming connection (ACCEPT)", "err", err.Error())
 		}
 
 		clientWsConn, remoteURL, err := c.createRemoteAccessConnection()
 		if err != nil {
-			c8y.Logger.Errorf("DIALER: %v", err.Error())
+			slog.Error("Could not create remove access connection", "err", err.Error())
 			return err
 		}
 		// Handle connections in a new goroutine.
-		c8y.Logger.Infof("Proxying traffic to %v via %v for %v", remoteURL, clientWsConn.RemoteAddr(), tcpConn.RemoteAddr())
+		slog.Info(fmt.Sprintf("Proxying traffic to %v via %v for %v", remoteURL, clientWsConn.RemoteAddr(), tcpConn.RemoteAddr()))
 		go proxy.Copy(clientWsConn, tcpConn)
 	}
 }

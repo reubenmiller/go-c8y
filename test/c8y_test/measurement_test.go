@@ -3,7 +3,7 @@ package c8y_test
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net/http"
 	"testing"
 	"time"
@@ -53,15 +53,15 @@ func TestMeasurementService_GetMeasurementSeries(t *testing.T) {
 
 	csv, _ := data.MarshalCSV(",")
 
-	log.Printf("csv: %s\n", csv)
+	slog.Info("csv", "value", csv)
 
 	if respJson, err := json.Marshal(data); err != nil {
 		t.Errorf("Could not convert object to json. %v", data)
 	} else {
-		log.Printf("JSON Response: %s\n", respJson)
+		slog.Info("JSON Response", "value", respJson)
 	}
 
-	log.Printf("Response: %v\n", resp)
+	slog.Info("Response", "value", resp)
 }
 func TestMeasurementService_GetMeasurements(t *testing.T) {
 	client := createTestClient()
@@ -98,7 +98,7 @@ func TestMeasurementService_GetMeasurements(t *testing.T) {
 	testingutils.Equals(t, 1, len(measCollection.Items))
 
 	if resp != nil {
-		log.Printf("json result: %s\n", resp.Body())
+		slog.Info("json result", "body", resp.Body())
 
 		totalMeasurements := resp.JSON("measurements.#").Int()
 
@@ -110,7 +110,7 @@ func TestMeasurementService_GetMeasurements(t *testing.T) {
 		if !value.Exists() {
 			t.Errorf("expected id to exist. Wanted: Existing but go: no exist")
 		}
-		log.Printf("JSON value: %s", value)
+		slog.Info("JSON", "value", value)
 	}
 }
 
@@ -143,7 +143,7 @@ func TestMeasurementService_MarshalMeasurement(t *testing.T) {
 		t.Errorf("json does not match. wanted: %s, got: %s", expectedOutput, mJSON)
 	}
 
-	log.Printf("json: %s\n", mJSON)
+	slog.Info("json", "value", mJSON)
 }
 
 func TestMeasurementService_MarshalMeasurementMultipleSeries(t *testing.T) {
@@ -186,7 +186,7 @@ func TestMeasurementService_MarshalMeasurementMultipleSeries(t *testing.T) {
 		t.Errorf("json does not match. wanted: %s, got: %s", expectedOutput, mJSON)
 	}
 
-	log.Printf("json: %s\n", mJSON)
+	slog.Info("json", "value", mJSON)
 }
 
 func TestMeasurementService_Create(t *testing.T) {
@@ -216,7 +216,7 @@ func TestMeasurementService_Create(t *testing.T) {
 	}
 
 	if data != nil {
-		log.Printf("measurement: %s\n", data.Item.String())
+		slog.Info("measurement", "value", data.Item.String())
 	}
 }
 
@@ -245,7 +245,7 @@ func TestMeasurementService_CreateWithDifferentTypes(t *testing.T) {
 			t.Errorf("Unexpected error when creating measurement. wanted: nil, got: %s", err)
 		}
 		if data != nil {
-			log.Printf("measurement: %s\n", data.Item.Raw)
+			slog.Info("measurement", "value", data.Item.Raw)
 		}
 
 		path := "c8y_Temperature.A.value"

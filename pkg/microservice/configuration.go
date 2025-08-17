@@ -2,13 +2,13 @@ package microservice
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 
 	"github.com/spf13/viper"
-	"go.uber.org/zap"
 )
 
 // NewConfiguration returns a new microservice configuration object
@@ -32,11 +32,11 @@ func (c *Configuration) InitConfiguration() {
 	err := config.ReadInConfig()
 
 	if err != nil {
-		zap.S().Warnf("Could not read application.properties file. %s", err)
+		slog.Warn("Could not read application.properties file", "err", err)
 	}
 
 	// Set default settings
-	zap.S().Debug("Setting default configuration properties")
+	slog.Debug("Setting default configuration properties")
 	config.SetDefault("server.port", "80")
 	config.SetDefault("application.name", "go-microservice")
 	config.SetDefault("agent.identityType", "microservice")
@@ -57,7 +57,7 @@ func (c *Configuration) InitConfiguration() {
 	proxyPort := config.GetString("http.proxyPort")
 
 	if proxyHost != "" && proxyPort != "" {
-		zap.L().Info("Setting proxy")
+		slog.Info("Setting proxy")
 		os.Setenv("HTTP_PROXY", fmt.Sprintf("http://%s:%s", proxyHost, proxyPort))
 		os.Setenv("HTTPS_PROXY", fmt.Sprintf("http://%s:%s", proxyHost, proxyPort))
 	}

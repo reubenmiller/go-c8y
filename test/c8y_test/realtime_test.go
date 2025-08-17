@@ -2,7 +2,7 @@ package c8y_test
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -112,8 +112,8 @@ func TestRealtimeSubscriptions_SubscribeToOperations(t *testing.T) {
 				t.Errorf("Unexpected device id in operation. wanted: %s, got: %s", device.ID, deviceId)
 			}
 
-			log.Printf("Received notification")
-			log.Printf("ws: [frame]: Channel: %s, %s\n", msg.Channel, string(msg.Payload.Item.Raw))
+			slog.Info("Received notification")
+			slog.Info("ws: [frame]", "chanel", msg.Channel, "payload", string(msg.Payload.Item.Raw))
 
 		case <-timerChan:
 			realtime.UnsubscribeAll()
@@ -211,7 +211,7 @@ func TestRealtimeSubscriptions_SubscribeToMeasurements(t *testing.T) {
 				t.Errorf("Unexpected device id in operation. wanted: %s, got: %s", device.ID, deviceId)
 			}
 
-			log.Printf("ws: [frame]: Channel: %s, %s\n", msg.Channel, string(msg.Payload.Item.Raw))
+			slog.Info("ws: [frame]", "channel", msg.Channel, "payload", string(msg.Payload.Item.Raw))
 
 		case <-timerChan:
 			realtime.UnsubscribeAll()
@@ -272,7 +272,7 @@ func TestRealtimeSubscriptions_Unsubscribe(t *testing.T) {
 				if deviceId != device.ID {
 					t.Errorf("Unexpected device id in operation. wanted: %s, got: %s", device.ID, deviceId)
 				}
-				log.Printf("ws: [frame]: Channel: %s, %s\n", msg.Channel, string(msg.Payload.Item.Raw))
+				slog.Info("ws: [frame]", "channel", msg.Channel, "message", string(msg.Payload.Item.Raw))
 
 			case <-timerChan:
 				// Stop subscribing to operations after x seconds, and then compare the result
@@ -280,7 +280,7 @@ func TestRealtimeSubscriptions_Unsubscribe(t *testing.T) {
 
 				time.Sleep(2 * time.Second)
 
-				log.Printf("Test: Closing realtime client")
+				slog.Info("Test: Closing realtime client")
 				realtime.Close()
 				done <- true
 				return
@@ -307,7 +307,7 @@ func TestRealtimeSubscriptions_Unsubscribe(t *testing.T) {
 	sendOperation()
 
 	defer func() {
-		log.Printf("Test: Closing channel")
+		slog.Info("Test: Closing channel")
 		close(ch)
 	}()
 
