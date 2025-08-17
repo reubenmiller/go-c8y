@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"time"
 
 	"github.com/reubenmiller/go-c8y/pkg/password"
@@ -158,7 +159,7 @@ func (s *DeviceCredentialsService) PollNewDeviceRequest(ctx context.Context, dev
 				return
 
 			case <-ticker.C:
-				Logger.Infof("Polling for device request")
+				slog.Info("Polling for device request")
 				deviceRequest, _, err := s.GetNewDeviceRequest(ctx, deviceID)
 				if err != nil {
 					continue

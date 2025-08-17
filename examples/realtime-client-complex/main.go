@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 
@@ -17,7 +17,8 @@ func main() {
 	err := client.Realtime.Connect()
 
 	if err != nil {
-		log.Fatalf("Could not connect to /cep/realtime. %s", err)
+		slog.Error("Could not connect to /cep/realtime", "err", err)
+		panic(err)
 	}
 
 	ch := make(chan *c8y.Message)
@@ -33,10 +34,10 @@ func main() {
 		for {
 			select {
 			case msg := <-ch:
-				log.Printf("Received measurement. %s", msg.Payload.Data)
+				slog.Info("Received measurement", "payload", msg.Payload.Data)
 
 			case <-ctx.Done():
-				log.Printf("Stopping realtime client")
+				slog.Info("Stopping realtime client")
 				client.Realtime.UnsubscribeAll()
 				client.Realtime.Close()
 				exitCh <- struct{}{}
@@ -50,11 +51,8 @@ func main() {
 		client.Realtime.Close()
 	}()
 	go func() {
-		select {
-		case <-signalCh:
-			cancel()
-			return
-		}
+		<-signalCh
+		cancel()
 	}()
 	<-exitCh
 
@@ -68,8 +66,9 @@ func main() {
 
 	// Always check for errors
 	if err != nil {
-		log.Fatalf("Could not retrieve alarms. %s", err)
+		slog.Error("Could not retrieve alarms", "err", err)
+		panic(err)
 	}
 
-	log.Printf("Total alarms: %d", len(alarmCollection.Alarms))
+	slog.Info("Alarms", "total", len(alarmCollection.Alarms))
 }
