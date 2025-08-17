@@ -34,7 +34,7 @@ func main() {
 
 	if err != nil {
 		slog.Error("Could not connect to /cep/realtime", "err", err)
-		panic(err)
+		os.Exit(1)
 	}
 
 	// Subscribe to all measurements

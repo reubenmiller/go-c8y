@@ -203,7 +203,7 @@ func (fs *fileStorage) read(key string) (*http.Response, error) {
 		return nil, errors.New("cache expired")
 	}
 
-	slog.Info("Using cached response.", "file", cacheFile, "age", age, "ttl", fs.ttl)
+	slog.Info("Using cached response", "file", cacheFile, "age", age, "ttl", fs.ttl)
 
 	body := &bytes.Buffer{}
 	_, err = io.Copy(body, f)

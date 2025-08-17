@@ -30,7 +30,7 @@ func main() {
 	// Always check for errors
 	if err != nil {
 		slog.Error("Could not retrieve alarms", "err", err)
-		panic(err)
+		os.Exit(1)
 	}
 
 	slog.Info("Alarms", "total", len(alarmCollection.Alarms))
@@ -44,7 +44,7 @@ func main() {
 
 	if err2 != nil {
 		slog.Error("Could not retrieve alarms", "err", err2)
-		panic(err2)
+		os.Exit(1)
 	}
 
 	slog.Info("Alarms", "total", len(alarmCollection2.Alarms))
