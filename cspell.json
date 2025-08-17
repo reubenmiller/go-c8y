@@ -8,6 +8,7 @@
         // products and names
         "Apama",
         "APAMA",
+        "buildx",
         "c8y",
         "cumulocity",
         "Cumulocity",
@@ -48,6 +49,9 @@
         "managedobjects",
         "remoteaccess",
         // functions
+        "tonistiigi",
+        "binfmt",
+        "myms",
         "qrcode",
         "qrterminal",
         "Fatalf",
@@ -71,6 +75,7 @@
         "PKCS",
         "IDTYPE",
         // libraries
+        "omitzero",
         "araddon",
         "c8ytestutils",
         "dateparse",
