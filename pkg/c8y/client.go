@@ -1597,7 +1597,14 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}, middl
 		responseSize = resp.ContentLength
 	}
 
-	slog.Info("Response", "code", response.StatusCode(), "len", toKB(responseSize), "compressed", !resp.Uncompressed, "content_type", resp.Header.Get("Content-Type"))
+	slog.Info(
+		"Response",
+		"code", response.StatusCode(),
+		"len", toKB(responseSize),
+		"compressed", !resp.Uncompressed,
+		"duration", fmt.Sprintf("Response time: %dms", response.Duration().Milliseconds()),
+		"content_type", resp.Header.Get("Content-Type"),
+	)
 
 	return response, err
 }
