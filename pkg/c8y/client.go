@@ -1602,7 +1602,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}, middl
 		"code", response.StatusCode(),
 		"len", toKB(responseSize),
 		"compressed", !resp.Uncompressed,
-		"duration", fmt.Sprintf("Response time: %dms", response.Duration().Milliseconds()),
+		"duration", fmt.Sprintf("%dms", response.Duration().Milliseconds()),
 		"content_type", resp.Header.Get("Content-Type"),
 	)
 
