@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"math"
 	"net/http"
 	"net/http/cookiejar"
@@ -183,7 +184,8 @@ func getC8yExtensionFromXSRFToken(token string) c8yExtensionMessage {
 func getRealtimeURL(host string) *url.URL {
 	c8yHost, err := wsurl.GetWebsocketURL(host, "cep/realtime")
 	if err != nil {
-		Logger.Fatalf("Invalid websocket url. %s", err)
+		slog.Error("Invalid websocket url", "err", err)
+		os.Exit(1)
 	}
 	return c8yHost
 }
@@ -293,9 +295,9 @@ func (c *RealtimeClient) IsConnected() bool {
 // the background polling loop.
 func (c *RealtimeClient) Close() error {
 	if err := c.disconnect(); err != nil {
-		Logger.Infof("Failed to disconnect. %s", err)
+		slog.Info("Failed to disconnect. %s", "err", err)
 	}
-	Logger.Infof("Killing go routine")
+	slog.Info("Killing go routine")
 	c.tomb.Killf("Close")
 	return nil
 }
@@ -322,7 +324,7 @@ func (c *RealtimeClient) disconnect() error {
 }
 
 func (c *RealtimeClient) createWebsocket() error {
-	Logger.Infof("Establishing connection to %s", c.url.String())
+	slog.Info("Establishing connection", "to", c.url.String())
 	ws, _, err := c.dialer.Dial(c.url.String(), c.requestHeader)
 
 	if err != nil {
@@ -354,7 +356,7 @@ func (c *RealtimeClient) reconnect() error {
 	interval := MinimumRetryInterval
 
 	for !connected {
-		Logger.Infof("Retrying in %ds", interval)
+		slog.Info(fmt.Sprintf("Retrying in %ds", interval))
 		<-time.After(time.Duration(interval) * time.Second)
 		c.ws.Close()
 		err := c.createWebsocket()
@@ -365,13 +367,13 @@ func (c *RealtimeClient) reconnect() error {
 		}
 
 		if err := c.Connect(); err != nil {
-			Logger.Infof("Failed to get advice from server. %s", err)
+			slog.Info("Failed to get advice from server", "err", err)
 		} else {
 			connected = true
 		}
 	}
 
-	Logger.Info("Established connection, any subscriptions will be also be resubmitted")
+	slog.Info("Established connection, any subscriptions will be also be resubmitted")
 
 	c.reactivateSubscriptions()
 	return nil
@@ -382,7 +384,7 @@ func (c *RealtimeClient) connect() chan error {
 	if c.dialer == nil {
 		panic("Missing dialer for realtime client")
 	}
-	Logger.Infof("Establishing connection to %s", c.url.String())
+	slog.Info(fmt.Sprintf("Establishing connection to %s", c.url.String()))
 	ws, _, err := c.dialer.Dial(c.url.String(), c.requestHeader)
 
 	if err != nil {
@@ -420,13 +422,13 @@ func (c *RealtimeClient) worker() error {
 			err := c.ws.ReadJSON(&messages)
 
 			if err != nil {
-				Logger.Infof("wc ReadJSON: error=%s, message=%v", err, messages)
+				slog.Info("ws ReadJSON", "err", err, "message", messages)
 
 				if !c.IsConnected() {
-					Logger.Info("Connection has been closed by the client")
+					slog.Info("Connection has been closed by the client")
 					return
 				}
-				Logger.Info("Handling connection error. You need to reconnect")
+				slog.Info("Handling connection error. You need to reconnect")
 
 				go c.reconnect()
 				return
@@ -435,7 +437,7 @@ func (c *RealtimeClient) worker() error {
 			for _, message := range messages {
 				if strings.HasPrefix(message.Channel, "/meta") {
 					if messageText, err := json.Marshal(message); err == nil {
-						Logger.Infof("ws (recv): %s : %s", message.Channel, messageText)
+						slog.Info("ws (recv)", "channel", message.Channel, "text", messageText)
 					}
 				}
 
@@ -447,19 +449,20 @@ func (c *RealtimeClient) worker() error {
 						c.connected = true
 						c.mtx.Unlock()
 					} else {
-						Logger.Fatalf("No clientID present in handshake. Check that the tenant, username and password is correct. Raw Message: %v", message)
+						slog.Error("No clientID present in handshake. Check that the tenant, username and password is correct", "message", message)
+						os.Exit(1)
 					}
 
 				case "/meta/subscribe":
 					if message.Successful {
-						Logger.Infof("Successfully subscribed to channel %s", message.Subscription)
+						slog.Info("Successfully subscribed to channel", "value", message.Subscription)
 					} else {
-						Logger.Infof("Failed to subscribe to channel %s", message.Subscription)
+						slog.Info("Failed to subscribe to channel", "value", message.Subscription)
 					}
 
 				case "/meta/unsubscribe":
 					if message.Successful {
-						Logger.Infof("Successfully unsubscribed to channel %s", message.Subscription)
+						slog.Info("Successfully unsubscribed to channel", "value", message.Subscription)
 					}
 
 				case "/meta/connect":
@@ -475,12 +478,12 @@ func (c *RealtimeClient) worker() error {
 						}
 						switch message.Advice.Reconnect {
 						case "handshake":
-							Logger.Infof("Scheduling sending of new handshake to server with %d ms delay", retryDelay)
+							slog.Info("Scheduling sending of new handshake to server with a small delay", "delay_ms", retryDelay)
 							time.AfterFunc(time.Duration(retryDelay)*time.Millisecond, func() {
 								c.handshake()
 							})
 						case "retry":
-							Logger.Infof("Resending /meta/connect heartbeat with %d ms delay", retryDelay)
+							slog.Info("Resending /meta/connect heartbeat after a small delay", "delay_ms", retryDelay)
 							time.AfterFunc(time.Duration(retryDelay)*time.Millisecond, func() {
 								c.sendMeta()
 							})
@@ -508,7 +511,7 @@ func (c *RealtimeClient) worker() error {
 
 				case "/meta/disconnect":
 					if message.Successful {
-						Logger.Infof("Successfully disconnected with server")
+						slog.Info("Successfully disconnected with server")
 					}
 
 				default:
@@ -519,7 +522,7 @@ func (c *RealtimeClient) worker() error {
 
 				// remove the message from the queue
 				if message.ID != "" {
-					Logger.Infof("Removing message from pending requests: %s", message.ID)
+					slog.Info("Removing message from pending requests", "id", message.ID)
 					c.pendingRequests.Delete(message.ID)
 					c.logRemainingResponses()
 				}
@@ -534,12 +537,12 @@ func (c *RealtimeClient) worker() error {
 			return nil
 
 		case <-interrupt:
-			Logger.Info("interrupt")
+			slog.Info("interrupt")
 
 			// Cleanly close the connection by sending a close message and then
 			// waiting (with timeout) for the server to close the connection.
 			if err := c.Disconnect(); err != nil {
-				Logger.Info("Failed to send disconnect to server:", err)
+				slog.Info("Failed to send disconnect to server", "err", err)
 				return err
 			}
 
@@ -637,7 +640,7 @@ func RealtimeOperations(id ...string) string {
 
 // Subscribe setup a subscription to the given element
 func (c *RealtimeClient) Subscribe(pattern string, out chan<- *Message) chan error {
-	Logger.Infof("Subscribing to %s", pattern)
+	slog.Info("Subscribing to pattern", "value", pattern)
 
 	glob, err := ohmyglob.Compile(pattern, nil)
 	if err != nil {
@@ -716,7 +719,7 @@ func (c *RealtimeClient) UnsubscribeAll() chan error {
 
 // Unsubscribe unsubscribe to a given pattern
 func (c *RealtimeClient) Unsubscribe(pattern string) chan error {
-	Logger.Infof("unsubscribing to %s", pattern)
+	slog.Info("unsubscribing to pattern", "value", pattern)
 
 	message := &request{
 		ID:           c.nextMessageID(),
@@ -736,9 +739,9 @@ func (c *RealtimeClient) nextMessageID() string {
 
 func (c *RealtimeClient) logMessage(r *request) {
 	if text, err := json.Marshal(r); err == nil {
-		Logger.Infof("ws (send): %s : %s", r.Channel, text)
+		slog.Info("ws (send)", "channel", r.Channel, "text", text)
 	} else {
-		Logger.Infof("Could not marshal message for sending. %s", err)
+		slog.Info("Could not marshal message for sending", "err", err)
 	}
 }
 
@@ -748,7 +751,7 @@ func (c *RealtimeClient) logRemainingResponses() {
 		ids = append(ids, key.(string))
 		return true
 	})
-	Logger.Infof("Pending messages ids: %s", strings.Join(ids, ","))
+	slog.Info("Pending messages", "id", ids)
 }
 
 // WaitForMessages waits for a server response related to the list of message ids
@@ -778,7 +781,7 @@ func (c *RealtimeClient) WaitForMessage(ID string) chan error {
 
 	waitInterval := 10 * time.Second
 
-	Logger.Infof("Waiting for message: id=%s", ID)
+	slog.Info("Waiting for message", "id", ID)
 
 	go func() {
 		ticker := time.NewTicker(200 * time.Millisecond)
@@ -791,9 +794,9 @@ func (c *RealtimeClient) WaitForMessage(ID string) chan error {
 		for {
 			select {
 			case <-ticker.C:
-				// Logger.Infof("Checking if ID has been removed")
+				// slog.Info("Checking if ID has been removed")
 				if _, exists := c.pendingRequests.Load(ID); !exists {
-					Logger.Infof("Received message %s", ID)
+					slog.Info("Received message", "id", ID)
 					out <- nil
 					return
 				}
@@ -821,7 +824,7 @@ func (c *RealtimeClient) writeHandler() {
 		case message, ok := <-c.send:
 			if !ok {
 				// The send channel has been closed
-				Logger.Info("Channel has been closed")
+				slog.Info("Channel has been closed")
 				return
 			}
 
@@ -837,7 +840,7 @@ func (c *RealtimeClient) writeHandler() {
 
 			if c.ws != nil {
 				if err := c.ws.WriteJSON([]request{*message}); err != nil {
-					Logger.Infof("Failed to send JSON message. %s", err)
+					slog.Info("Failed to send JSON message", "err", err)
 				}
 			}
 
@@ -848,11 +851,11 @@ func (c *RealtimeClient) writeHandler() {
 				// If the pong is not received in the minimum time, then the connection will be reset
 				c.ws.SetWriteDeadline(time.Now().Add(writeWait))
 				if err := c.ws.WriteMessage(websocket.PingMessage, nil); err != nil {
-					Logger.Info("Failed to send ping message to server")
+					slog.Info("Failed to send ping message to server")
 					go c.reconnect()
 					break
 				}
-				Logger.Info("Sent ping successfully")
+				slog.Info("Sent ping successfully")
 			}
 		}
 	}

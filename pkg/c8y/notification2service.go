@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -254,14 +255,14 @@ func (s *Notification2Service) RenewToken(ctx context.Context, opt Notification2
 		token, _, err := parser.ParseUnverified(opt.Token, &claims)
 
 		if err != nil {
-			Logger.Infof("Token is invalid. %s", err)
+			slog.Info("Token is invalid", "err", err)
 			isValid = false
 		} else if err := jwt.NewValidator(jwt.WithLeeway(5 * time.Second)).Validate(token.Claims); err != nil {
-			Logger.Infof("Token is invalid. %s", err)
+			slog.Info("Token is invalid", "err", err)
 			isValid = false
 		}
 
-		Logger.Infof("Existing token: alg=%s, valid=%v, expired=%v, issuedAt: %v, expiresAt: %v, subscription=%s, subscriber=%s, shared=%v, tenant=%s", token.Method.Alg(), isValid, claims.HasExpired(), claims.IssuedAt, claims.ExpiresAt, claims.Subscription(), claims.Subscriber, claims.IsShared(), claims.Tenant())
+		slog.Info("Existing token", "alg", token.Method.Alg(), "valid", isValid, "expired", claims.HasExpired(), "issuedAt", claims.IssuedAt, "expiresAt", claims.ExpiresAt, "subscription", claims.Subscription(), "subscriber", claims.Subscriber, "shared", claims.IsShared(), "tenant", claims.Tenant())
 
 		if opt.Options.Subscription != "" {
 			if claims.Subscription() != opt.Options.Subscription {
@@ -289,17 +290,17 @@ func (s *Notification2Service) RenewToken(ctx context.Context, opt Notification2
 		}
 
 		if isValid && claimMatch {
-			Logger.Infof("Using existing valid token")
+			slog.Info("Using existing valid token")
 			return opt.Token, nil
 		}
-		Logger.Infof("Token does not match claim. Invalid information will be ignored in the token")
+		slog.Info("Token does not match claim. Invalid information will be ignored in the token")
 	}
 
 	if expiresInMinutes < MinTokenMinutes {
 		expiresInMinutes = MinTokenMinutes
 	}
 
-	Logger.Infof("Creating new notification2 token")
+	slog.Info("Creating new notification2 token")
 	updatedToken, _, err := s.CreateToken(ctx, Notification2TokenOptions{
 		ExpiresInMinutes:  expiresInMinutes,
 		Subscription:      subscription,
@@ -341,7 +342,7 @@ func (s *Notification2Service) RenewToken(ctx context.Context, opt Notification2
 //	for {
 //	  select {
 //	  case msg := <-messagesCh:
-//		      log.Printf("Received message. %s", msg.Payload)
+//		      slog.Info("Received message", "payload", msg.Payload)
 //	       notificationsClient.SendMessageAck(msg.Identifier)
 //
 //	  case <-signalCh:
