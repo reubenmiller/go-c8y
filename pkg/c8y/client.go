@@ -1567,6 +1567,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}, middl
 		}
 	}
 
+	responseSize := int64(-1)
 	if v != nil {
 		defer resp.Body.Close()
 
@@ -1575,6 +1576,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}, middl
 		} else {
 			buf, _ := io.ReadAll(response.Response.Body)
 			response.body = buf
+			responseSize = int64(len(buf))
 
 			if jsonUtilities.IsValidJSON(buf) {
 				err = response.DecodeJSON(v)
@@ -1588,11 +1590,30 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}, middl
 		defer resp.Body.Close()
 		buf, _ := io.ReadAll(response.Response.Body)
 		response.body = buf
+		responseSize = int64(len(buf))
 	}
 
-	slog.Info("Status code", "value", response.StatusCode())
+	if resp.ContentLength > -1 {
+		responseSize = resp.ContentLength
+	}
+
+	slog.Info(
+		"Response",
+		"code", response.StatusCode(),
+		"len", toKB(responseSize),
+		"compressed", !resp.Uncompressed,
+		"duration", fmt.Sprintf("%dms", response.Duration().Milliseconds()),
+		"content_type", resp.Header.Get("Content-Type"),
+	)
 
 	return response, err
+}
+
+func toKB(v int64) string {
+	if v == -1 {
+		return "-1"
+	}
+	return fmt.Sprintf("%0.1fKB", float64(v/1024))
 }
 
 // sanitizeURL redacts the client_secret parameter from the URL which may be
