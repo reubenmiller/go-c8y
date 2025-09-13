@@ -1,7 +1,7 @@
 package microservice_test
 
 import (
-	"log"
+	"log/slog"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -101,11 +101,11 @@ prop2=2
 
 	select {
 	case <-ch:
-		log.Printf("Received hook")
+		slog.Info("Received hook")
 		break
 	case <-timeout.C:
 		// timeout
-		log.Printf("Timeout whilst waiting for update configuration hook")
+		slog.Info("Timeout whilst waiting for update configuration hook")
 		break
 	}
 

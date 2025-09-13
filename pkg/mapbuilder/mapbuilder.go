@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"strings"
 
@@ -54,7 +54,7 @@ local isMandatory(o, prop) = {
 	jsonnetImport += "\nfinal"
 
 	if strings.ToLower(os.Getenv("C8Y_JSONNET_DEBUG")) == "true" {
-		log.Printf("jsonnet snippet: %s\n", jsonnetImport)
+		slog.Info(fmt.Sprintf("jsonnet snippet: %s\n", jsonnetImport))
 	}
 
 	// evaluate the jsonnet

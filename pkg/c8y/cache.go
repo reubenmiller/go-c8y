@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -202,7 +203,7 @@ func (fs *fileStorage) read(key string) (*http.Response, error) {
 		return nil, errors.New("cache expired")
 	}
 
-	Logger.Infof("Using cached response. file: %s, age: %s, ttl: %s", cacheFile, age, fs.ttl)
+	slog.Info("Using cached response", "file", cacheFile, "age", age, "ttl", fs.ttl)
 
 	body := &bytes.Buffer{}
 	_, err = io.Copy(body, f)

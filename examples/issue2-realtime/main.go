@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"time"
@@ -33,7 +33,8 @@ func main() {
 	err := client.Realtime.Connect()
 
 	if err != nil {
-		log.Fatalf("Could not connect to /cep/realtime. %s", err)
+		slog.Error("Could not connect to /cep/realtime", "err", err)
+		os.Exit(1)
 	}
 
 	// Subscribe to all measurements
@@ -58,14 +59,14 @@ func main() {
 		select {
 		case msg := <-ch:
 			if msg != nil {
-				log.Printf("Received measurement. %s", msg.Payload.Data)
+				slog.Info("Received measurement", "payload", msg.Payload.Data)
 			} else {
-				log.Printf("Received empty message")
+				slog.Info("Received empty message")
 			}
 
 		case <-signalCh:
 			// Enable ctrl-c to stop
-			log.Printf("Stopping realtime client")
+			slog.Info("Stopping realtime client")
 			return
 		}
 	}

@@ -4,11 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 
-	"go.uber.org/zap"
 	cron "gopkg.in/robfig/cron.v2"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
@@ -26,14 +25,11 @@ type Options struct {
 
 // NewDefaultMicroservice returns a new microservice instance.
 // The bootstrap user will be automatically read from the environment variables
-// In addition it will read the configuration, and set configure the zap logger
 // NOTE:
 // The microservice agent will not be registered automatically, you need to call
 // RegisterMicroserviceAgent(). Though before you call it be sure to set your default
 // configuration values in the Config.SetDefault()
 func NewDefaultMicroservice(opts Options) *Microservice {
-	ConfigureLogger(nil, "microservice_bootstrap.log")
-
 	// Read the configuration
 	config := NewConfiguration()
 	config.InitConfiguration()
@@ -49,9 +45,6 @@ func NewDefaultMicroservice(opts Options) *Microservice {
 		AgentInformation:    opts.AgentInformation,
 	}
 
-	// Init logger using default log.file value provided in settings
-	ms.InitializeLogger()
-
 	// Create a Cumulocity client
 	client := c8y.NewClientUsingBootstrapUserFromEnvironment(opts.HTTPClient, config.GetHost(), false)
 	client.UseTenantInUsername = true
@@ -61,14 +54,14 @@ func NewDefaultMicroservice(opts Options) *Microservice {
 	currentApplication, _, err := client.Application.GetCurrentApplication(context.Background())
 
 	if err != nil {
-		zap.S().Errorf("Failed to get current application information. %s", err)
+		slog.Error("Failed to get current application information", "err", err)
 	} else {
 		ms.Application = currentApplication
 	}
 
 	// Test the Cumulocity Client
 	if err := ms.TestClientConnection(); err != nil {
-		zap.S().Errorf("Cumulocity client failed to connect to client. If you are running this microservice locally, are you sure you set the bootstrap user credentials correctly?. Error: %s", err)
+		slog.Error("Cumulocity client failed to connect to client. If you are running this microservice locally, are you sure you set the bootstrap user credentials correctly?", "err", err)
 	}
 
 	ms.RealtimeClientCache = NewRealtimeClientCache(config.GetHost())
@@ -78,7 +71,7 @@ func NewDefaultMicroservice(opts Options) *Microservice {
 }
 
 // NewMicroservice create a new microservice where the user can customize the http client and the host
-// This function will not initialize the logger (.InitializeLogger()) nor call .Config.InitConfiguration(), it
+// This function will not call .Config.InitConfiguration(), it
 // is up to the user to call these functions
 func NewMicroservice(httpClient *http.Client, host string, skipRealtimeClient bool) *Microservice {
 	return &Microservice{
@@ -89,21 +82,6 @@ func NewMicroservice(httpClient *http.Client, host string, skipRealtimeClient bo
 	}
 }
 
-// InitializeLogger starts the logger with custom configuration
-func (m *Microservice) InitializeLogger(logfile ...string) {
-	logfilepath := ""
-
-	if len(logfile) > 1 {
-		panic("Only a max of one log file is supported.")
-	} else if len(logfile) == 1 && logfile[0] != "" {
-		logfilepath = logfile[0]
-	} else if m.Config != nil {
-		logfilepath = m.Config.viper.GetString("log.file")
-	}
-
-	ConfigureLogger(m.Logger, logfilepath)
-}
-
 // Microservice contains information and
 type Microservice struct {
 	Application         *c8y.Application
@@ -112,7 +90,6 @@ type Microservice struct {
 	AgentID             string
 	MicroserviceHost    string
 	Scheduler           *Scheduler
-	Logger              *zap.Logger
 	SupportedOperations AgentSupportedOperations
 	AgentInformation    AgentInformation
 	Hooks               Hooks
@@ -154,17 +131,17 @@ func (s *RealtimeClientCache) LoadOrNewClient(user c8y.ServiceUser) (*c8y.Realti
 		s.SetClient(user, client)
 		return client, nil
 	}
-	return nil, errors.New("No existing realtime clients")
+	return nil, errors.New("no existing realtime clients")
 }
 
 // GetClient returns a realtime client if it already exists in the cache. If no realtime client already exists for the service user, then an error is returned
 func (s *RealtimeClientCache) GetClient(user c8y.ServiceUser) (*c8y.RealtimeClient, error) {
-	log.Printf("Get realtime client for tenant %s", user.Tenant)
-	log.Printf("Total realtime clients in cache %d", len(s.clients))
+	slog.Info("Get realtime client for tenant", "tenant", user.Tenant)
+	slog.Info("Total realtime clients in cache", "total", len(s.clients))
 	if v, ok := s.clients[user.Tenant]; ok {
 		return v, nil
 	}
-	return nil, errors.New("No realtime client found for tenant")
+	return nil, errors.New("no realtime client found for tenant")
 
 }
 
@@ -199,10 +176,10 @@ func (s *Scheduler) Stop() {
 func (s *Scheduler) AddFunc(spec string, cmd func()) error {
 	id, err := s.cronjob.AddFunc(spec, cmd)
 	if err != nil {
-		zap.S().Errorf("Could not create task scheduler. spec='%s', err='%s'", spec, err)
+		slog.Error("Could not create task scheduler", "spec", spec, "err", err)
 		return err
 	}
-	zap.S().Infof("Added task [id=%v, schedule=%s] to scheduler", id, spec)
+	slog.Info("Added task to scheduler", "id", id, "schedule", spec)
 	return nil
 }
 
@@ -210,7 +187,7 @@ func (s *Scheduler) AddFunc(spec string, cmd func()) error {
 func (m *Microservice) TestClientConnection() error {
 	// Print out the service users
 	for _, user := range m.Client.ServiceUsers {
-		zap.S().Infof("user: %s, tenant: %s, password: ******************", user.Username, user.Tenant)
+		slog.Info("Service user", "user", user.Username, "tenant", user.Tenant, "password", "******************")
 	}
 
 	_, _, err := m.Client.Inventory.GetDevices(
@@ -221,7 +198,7 @@ func (m *Microservice) TestClientConnection() error {
 	)
 
 	if err != nil {
-		zap.S().Errorf("Could not get a list of devices. %s", err)
+		slog.Error("Could not get a list of devices", "err", err)
 	}
 	return err
 }
