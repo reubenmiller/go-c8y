@@ -1512,7 +1512,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}, middl
 				bodyBytes, _ := io.ReadAll(v)
 				req.Body.Close() //  must close
 				req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-				slog.Info("Body", "contents", bytes.TrimSpace(bodyBytes))
+				slog.Debug("Body", "contents", bytes.TrimSpace(bodyBytes))
 			}
 		}
 	}
