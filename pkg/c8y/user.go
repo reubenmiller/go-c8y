@@ -3,6 +3,9 @@ package c8y
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/tidwall/gjson"
 )
@@ -131,6 +134,11 @@ type UserCollection struct {
 	Items []gjson.Result `json:"-"`
 }
 
+// Token
+type Token struct {
+	AccessToken string `json:"access_token"`
+}
+
 // GetUsers returns a list of users for the given tenant
 // Users in the response are sorted by username in ascending order.
 func (s *UserService) GetUsers(ctx context.Context, opt *UserOptions) (*UserCollection, *Response, error) {
@@ -218,6 +226,49 @@ func (s *UserService) UpdateCurrentUser(ctx context.Context, body *User) (*User,
 		Body:         body,
 		ResponseData: data,
 	})
+	return data, resp, err
+}
+
+// GetTokenWithCodeAndRedirect retrieves an OAuth2 access token for Cumulocity with full authorization code flow parameters including redirect URI
+func (s *UserService) GetAccessTokenFromAuthorizationCode(ctx context.Context, tenant string, code string) (*Token, *Response, error) {
+	body := url.Values{}
+	body.Set("grant_type", "authorization_code")
+	body.Set("code", code)
+
+	params := url.Values{}
+	if tenant != "" {
+		params.Add("tenant_id", tenant)
+	}
+
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/x-www-form-urlencoded;charset=UTF-8")
+
+	retrier := func(total int) func(r *Response) bool {
+		attempts := 0
+		return func(r *Response) bool {
+			attempts += 1
+			if attempts >= total {
+				return false
+			}
+			// 400 indicates an unrecoverable error where a new authorization code is required
+			if r.StatusCode() == 400 {
+				return false
+			}
+			Logger.Warnf("error response: %s", r.Body())
+			return r.StatusCode() == 403
+		}
+	}
+
+	data := new(Token)
+	resp, err := s.client.sendRequestWithRetries(ctx, RequestOptions{
+		Method:       "POST",
+		Path:         "tenant/oauth/token",
+		Query:        params.Encode(),
+		Accept:       "application/json",
+		Header:       headers,
+		Body:         strings.NewReader(body.Encode()),
+		ResponseData: &data,
+	}, retrier(5))
 	return data, resp, err
 }
 

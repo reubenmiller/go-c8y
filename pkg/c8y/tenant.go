@@ -2,10 +2,13 @@ package c8y
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/reubenmiller/go-c8y/pkg/oauth/api"
 	"github.com/reubenmiller/go-c8y/pkg/oauth/device"
@@ -470,4 +473,109 @@ func (s *TenantService) AuthorizeWithDeviceFlow(ctx context.Context, initRequest
 	s.client.SetToken(accessToken.Token)
 
 	return accessToken, nil
+}
+
+func randString(n int) string {
+	const alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+	var bytes = make([]byte, n)
+	rand.Read(bytes)
+	for i, b := range bytes {
+		bytes[i] = alphanum[b%byte(len(alphanum))]
+	}
+	return string(bytes)
+}
+
+// AuthorizeWithAuthorizationFlow authorize the client using the OAuth2 Authorization Flow
+func (s *TenantService) AuthorizeWithAuthorizationFlow(ctx context.Context, initRequest string, auth_endpoints api.AuthEndpoints, callback string, displayFunc api.AuthorizationCodeFunc) (*api.AccessToken, error) {
+	// Create a new client which uses the given certificate
+	// Use similar setting as the main client for consistency
+	skipVerify := false
+	if s.client.client.Transport.(*http.Transport).TLSClientConfig != nil {
+		skipVerify = s.client.client.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify
+	}
+
+	if callback == "" {
+		callback = "http://127.0.0.1:5001/callback"
+	}
+
+	// TODO: Check if state is required or not or does not cause problems
+	state := randString(32)
+
+	httpClient := NewHTTPClient(
+		WithInsecureSkipVerify(skipVerify),
+		// WithRequestDebugLogger(Logger),
+	)
+	endpoint, err := getAuthorizationRequest(ctx, httpClient, initRequest)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("Endpoint: %s", endpoint.Debug())
+
+	scopes := make([]string, 0, len(auth_endpoints.Scopes))
+	scopes = append(scopes, auth_endpoints.Scopes...)
+	if len(scopes) == 0 {
+		scopes = append(scopes, endpoint.Scopes...)
+	}
+
+	if auth_endpoints.TokenURL == "" || auth_endpoints.DeviceAuthorizationURL == "" {
+		// Try detecting the endpoints via the open-id configuration endpoint
+		openIDConfig := &api.OpenIDConfiguration{}
+
+		if auth_endpoints.OpenIDConfigurationURL == "" {
+			auth_endpoints.OpenIDConfigurationURL = api.GetOpenIDConnectConfigurationURL(endpoint.URL)
+		}
+
+		if err := api.GetOpenIDConfiguration(ctx, httpClient, endpoint.URL, auth_endpoints.OpenIDConfigurationURL, openIDConfig); err != nil {
+			return nil, fmt.Errorf("%w. %w", ErrSSOInvalidConfiguration, err)
+		} else {
+			Logger.Infof("Found OpenID Connect configuration. url=%s, config=%#v", auth_endpoints.OpenIDConfigurationURL, openIDConfig)
+			if auth_endpoints.TokenURL == "" {
+				auth_endpoints.TokenURL = openIDConfig.TokenEndpoint
+			}
+			if auth_endpoints.DeviceAuthorizationURL == "" {
+				auth_endpoints.DeviceAuthorizationURL = openIDConfig.DeviceAuthorizationEndpoint
+			}
+		}
+
+		// Add default scope if none are defined, as microsoft generally requires at least one scope
+		if len(scopes) == 0 && len(openIDConfig.ScopesSupported) > 0 {
+			Logger.Infof("Adding default scope. value=%s", openIDConfig.ScopesSupported[0])
+			scopes = append(scopes, openIDConfig.ScopesSupported[0])
+		}
+	}
+
+	opts := api.AuthorizationCodeOptions{
+		BaseURL:     endpoint.URL.String(),
+		RedirectURI: callback,
+		State:       state,
+		DisplayFunc: displayFunc,
+	}
+
+	var code string
+	var token string
+	maxAttempts := 2
+	attempts := 1
+
+	for {
+		if attempts > maxAttempts {
+			// give up
+			return nil, err
+		}
+		code, err = api.PerformAuthorizationCodeFlow(ctx, opts)
+		if err != nil {
+			return nil, err
+		}
+		time.Sleep(2 * time.Second)
+		access, _, err := s.client.User.GetAccessTokenFromAuthorizationCode(context.Background(), s.client.TenantName, code)
+		if err == nil {
+			token = access.AccessToken
+			break
+		}
+
+		attempts++
+	}
+
+	Logger.Info("Using token from authorization flow")
+	s.client.SetToken(token)
+	return nil, nil
 }

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/url"
 	"strings"
 )
@@ -18,6 +19,14 @@ type AuthorizationRequest struct {
 
 	// The refresh token value, associated with the access token.
 	URL *url.URL
+}
+
+func (r *AuthorizationRequest) Debug() string {
+	u := ""
+	if r.URL != nil {
+		u = r.URL.String()
+	}
+	return fmt.Sprintf("url=%s, client_id=%s, audience=%s, scopes=%v", u, r.ClientID, r.Audience, r.Scopes)
 }
 
 // AuthEndpoints OAuth2 endpoints used to get retrieve the device code and access token

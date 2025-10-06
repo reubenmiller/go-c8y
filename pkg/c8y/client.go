@@ -811,6 +811,22 @@ func (r *RequestOptions) GetQuery() (string, error) {
 	// return queryParams.Encode(), nil
 }
 
+type retrierFunc func(*Response) bool
+
+func (c *Client) sendRequestWithRetries(ctx context.Context, options RequestOptions, retry retrierFunc) (*Response, error) {
+	for {
+		resp, err := c.SendRequest(ctx, options)
+		if err == nil {
+			return resp, err
+		}
+		retry := retry(resp)
+		if !retry {
+			return resp, err
+		}
+		time.Sleep(2 * time.Second)
+	}
+}
+
 // SendRequest creates and sends a request
 func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Response, error) {
 
@@ -1418,7 +1434,7 @@ func (c *Client) LoginUsingOAuth2(ctx context.Context, initRequest ...string) er
 func (c *Client) LoginUsingOAuth2External(ctx context.Context, code string, initRequest ...string) error {
 
 	data := url.Values{}
-	data.Set("grant_type", "AUTHORIZATION_CODE")
+	data.Set("grant_type", "authorization_code")
 	data.Set("code", code)
 
 	headers := http.Header{}
@@ -1686,9 +1702,9 @@ type ErrorResponse struct {
 }
 
 func (r *ErrorResponse) Error() string {
-	return fmt.Sprintf("%v %v: %d %v %v",
+	return fmt.Sprintf("%v %v: %d %v %v %s %#v",
 		r.Response.Response.Request.Method, sanitizeURL(r.Response.Response.Request.URL),
-		r.Response.StatusCode(), r.ErrorType, r.Message)
+		r.Response.StatusCode(), r.ErrorType, r.Message, r.Response.Body(), r.Response.Header())
 }
 
 // CheckResponse checks the API response for errors, and returns them if
