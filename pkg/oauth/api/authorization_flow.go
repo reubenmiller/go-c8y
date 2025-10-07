@@ -24,7 +24,7 @@ After authorizing, you'll be redirected to:
 
   %s
 
-  `, u, auth.RedirectURI)
+`, u, auth.RedirectURI)
 		return err
 	}
 }

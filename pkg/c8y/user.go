@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
+	"time"
 
 	"github.com/tidwall/gjson"
 )
@@ -250,12 +250,14 @@ func (s *UserService) GetAccessTokenFromAuthorizationCode(ctx context.Context, t
 			if attempts >= total {
 				return false
 			}
-			// 400 indicates an unrecoverable error where a new authorization code is required
+			// retry on status code 400 to workaround any server side issues
+			// when communicating with the external SSO provider
 			if r.StatusCode() == 400 {
-				return false
+				Logger.Warn("Retrying request due to receiving a 400 status code")
+				time.Sleep(1 * time.Second)
+				return true
 			}
-			Logger.Warnf("error response: %s", r.Body())
-			return r.StatusCode() == 403
+			return false
 		}
 	}
 
@@ -266,7 +268,7 @@ func (s *UserService) GetAccessTokenFromAuthorizationCode(ctx context.Context, t
 		Query:        params.Encode(),
 		Accept:       "application/json",
 		Header:       headers,
-		Body:         strings.NewReader(body.Encode()),
+		Body:         body.Encode(), // use string instead of a reader so it works with retries
 		ResponseData: &data,
 	}, retrier(5))
 	return data, resp, err
