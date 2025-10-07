@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -34,17 +33,16 @@ func main() {
 		client.TenantName = parts[0]
 	}
 
-	port := "5001"
-	if v := os.Getenv("C8Y_CALLBACK_PORT"); v != "" {
-		port = v
+	callbackURL := "http://127.0.0.1:%s/callback"
+	if v := os.Getenv("C8Y_CALLBACK_URL"); v != "" {
+		callbackURL = v
 	}
-	callbackUrl := fmt.Sprintf("http://127.0.0.1:%s/callback", port)
 
 	_, loginErr := client.Tenant.AuthorizeWithAuthorizationFlow(
 		context.TODO(),
 		loginOption.InitRequest,
 		api.AuthEndpoints{},
-		callbackUrl,
+		callbackURL,
 		nil,
 	)
 
