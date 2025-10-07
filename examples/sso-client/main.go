@@ -33,7 +33,7 @@ func main() {
 		client.TenantName = parts[0]
 	}
 
-	callbackURL := "http://127.0.0.1:%s/callback"
+	callbackURL := "http://127.0.0.1:5001/callback"
 	if v := os.Getenv("C8Y_CALLBACK_URL"); v != "" {
 		callbackURL = v
 	}
