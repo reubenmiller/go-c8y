@@ -74,7 +74,7 @@ func (r *EnrollCmd) Run(ctx *cli.Context) error {
 			panic(fmt.Errorf("failed to create certificate signing request. %w", err))
 		}
 
-		clientCtx := c8y.NewSilentLoggerContext(context.Background())
+		clientCtx := context.Background()
 
 		// Enroll device
 		result := <-client.DeviceEnrollment.PollEnroll(clientCtx, c8y.DeviceEnrollmentOption{
