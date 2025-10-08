@@ -486,7 +486,7 @@ func randString(n int) string {
 }
 
 // AuthorizeWithAuthorizationFlow authorize the client using the OAuth2 Authorization Flow
-func (s *TenantService) AuthorizeWithAuthorizationFlow(ctx context.Context, initRequest string, auth_endpoints api.AuthEndpoints, callback string, displayFunc api.AuthorizationCodeFunc) (*api.AccessToken, error) {
+func (s *TenantService) AuthorizeWithAuthorizationFlow(ctx context.Context, initRequest string, auth_endpoints api.AuthEndpoints, callback string, displayFunc api.AuthorizationCodeFunc, externalToken bool) (*api.AccessToken, error) {
 	// Create a new client which uses the given certificate
 	// Use similar setting as the main client for consistency
 	skipVerify := false
@@ -549,10 +549,13 @@ func (s *TenantService) AuthorizeWithAuthorizationFlow(ctx context.Context, init
 		RedirectURI: callback,
 		State:       state,
 		DisplayFunc: displayFunc,
+		TokenURL:    auth_endpoints.TokenURL,
+		ClientID:    endpoint.ClientID,
 	}
 
 	var code string
 	var token string
+	var access *Token
 	maxAttempts := 2
 	attempts := 1
 
@@ -566,7 +569,14 @@ func (s *TenantService) AuthorizeWithAuthorizationFlow(ctx context.Context, init
 			return nil, err
 		}
 		time.Sleep(2 * time.Second)
-		access, _, err := s.client.User.GetAccessTokenFromAuthorizationCode(context.Background(), s.client.TenantName, code)
+
+		if externalToken {
+			Logger.Infof("Requesting token directly from SSO provider")
+			access, _, err = s.client.User.GetAccessTokenFromAuthorizationCode2(context.Background(), "", code, opts)
+		} else {
+			Logger.Infof("Requesting token from Cumulocity")
+			access, _, err = s.client.User.GetAccessTokenFromAuthorizationCode(context.Background(), s.client.TenantName, code, opts)
+		}
 		if err == nil {
 			token = access.AccessToken
 			break

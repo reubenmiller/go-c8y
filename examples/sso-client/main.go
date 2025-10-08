@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
@@ -38,12 +39,18 @@ func main() {
 		callbackURL = v
 	}
 
+	requestExternalToken := false
+	if b, err := strconv.ParseBool(os.Getenv("C8Y_EXTERNAL")); err == nil {
+		requestExternalToken = b
+	}
+
 	_, loginErr := client.Tenant.AuthorizeWithAuthorizationFlow(
 		context.TODO(),
 		loginOption.InitRequest,
 		api.AuthEndpoints{},
 		callbackURL,
 		nil,
+		requestExternalToken,
 	)
 
 	if loginErr != nil {

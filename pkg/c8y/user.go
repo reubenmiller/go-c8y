@@ -2,11 +2,15 @@ package c8y
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
+	"github.com/reubenmiller/go-c8y/pkg/oauth/api"
 	"github.com/tidwall/gjson"
 )
 
@@ -230,7 +234,67 @@ func (s *UserService) UpdateCurrentUser(ctx context.Context, body *User) (*User,
 }
 
 // GetTokenWithCodeAndRedirect retrieves an OAuth2 access token for Cumulocity with full authorization code flow parameters including redirect URI
-func (s *UserService) GetAccessTokenFromAuthorizationCode(ctx context.Context, tenant string, code string) (*Token, *Response, error) {
+func (s *UserService) GetAccessTokenFromAuthorizationCode2(ctx context.Context, tenant string, code string, opts api.AuthorizationCodeOptions) (*Token, *Response, error) {
+	// Prepare form data
+	data := url.Values{}
+
+	// Authorization Code Flow
+	data.Set("grant_type", "authorization_code")
+	data.Set("code", code)
+	if opts.ClientID != "" {
+		data.Set("client_id", opts.ClientID)
+	}
+	if opts.RedirectURI != "" {
+		data.Set("redirect_uri", opts.RedirectURI)
+	}
+
+	// Create the request
+	tokenURL := opts.TokenURL
+	if tenant != "" {
+		tokenURL += fmt.Sprintf("?tenant_id=%s", tenant)
+	}
+	req, err := http.NewRequestWithContext(ctx, "POST", tokenURL, strings.NewReader(data.Encode()))
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Set headers
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded;charset=UTF-8")
+	req.Header.Set("Accept", "application/json")
+
+	// Send the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	response := newResponse(resp, 0)
+	if err != nil {
+		return nil, response, fmt.Errorf("failed to send request: %w", err)
+	}
+	// response.
+
+	// Read response
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, nil, fmt.Errorf("OAuth2 request failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	// Parse the response
+	tokenResp := new(Token)
+	if err := json.Unmarshal(body, &tokenResp); err != nil {
+		return nil, nil, fmt.Errorf("failed to parse token response: %w", err)
+	}
+
+	if tokenResp.AccessToken == "" {
+		return nil, nil, fmt.Errorf("access_token not found in response")
+	}
+
+	return tokenResp, nil, nil
+}
+
+func (s *UserService) GetAccessTokenFromAuthorizationCode(ctx context.Context, tenant string, code string, opts api.AuthorizationCodeOptions) (*Token, *Response, error) {
 	body := url.Values{}
 	body.Set("grant_type", "authorization_code")
 	body.Set("code", code)

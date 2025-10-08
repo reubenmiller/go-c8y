@@ -46,6 +46,8 @@ type AuthorizationCodeOptions struct {
 	State       string
 	RedirectURI string
 
+	TokenURL string
+
 	DisplayFunc AuthorizationCodeFunc
 }
 
