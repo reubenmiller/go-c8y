@@ -554,38 +554,28 @@ func (s *TenantService) AuthorizeWithAuthorizationFlow(ctx context.Context, init
 	}
 
 	var code string
-	var token string
 	var access *Token
-	maxAttempts := 2
-	attempts := 1
-
-	for {
-		if attempts > maxAttempts {
-			// give up
-			return nil, err
-		}
-		code, err = api.PerformAuthorizationCodeFlow(ctx, opts)
-		if err != nil {
-			return nil, err
-		}
-		time.Sleep(2 * time.Second)
-
-		if externalToken {
-			Logger.Infof("Requesting token directly from SSO provider")
-			access, _, err = s.client.User.GetAccessTokenFromAuthorizationCode2(context.Background(), "", code, opts)
-		} else {
-			Logger.Infof("Requesting token from Cumulocity")
-			access, _, err = s.client.User.GetAccessTokenFromAuthorizationCode(context.Background(), s.client.TenantName, code, opts)
-		}
-		if err == nil {
-			token = access.AccessToken
-			break
-		}
-
-		attempts++
-	}
 
 	Logger.Info("Using token from authorization flow")
-	s.client.SetToken(token)
+
+	code, err = api.PerformAuthorizationCodeFlow(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	time.Sleep(2 * time.Second)
+
+	if externalToken {
+		Logger.Infof("Requesting token directly from SSO provider")
+		access, _, err = s.client.User.GetAccessTokenFromAuthorizationCode2(context.Background(), "", code, opts)
+	} else {
+		Logger.Infof("Requesting token from Cumulocity")
+		access, _, err = s.client.User.GetAccessTokenFromAuthorizationCode(context.Background(), s.client.TenantName, code, opts)
+	}
+	if err != nil {
+		Logger.Warnf("Failed to get authorization token. %s", err)
+		return nil, err
+	}
+
+	s.client.SetToken(access.AccessToken)
 	return nil, nil
 }
