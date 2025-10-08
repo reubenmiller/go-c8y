@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -243,6 +244,9 @@ func (s *UserService) GetAccessTokenFromAuthorizationCode2(ctx context.Context, 
 	data.Set("code", code)
 	if opts.ClientID != "" {
 		data.Set("client_id", opts.ClientID)
+	}
+	if v := os.Getenv("SSO_CLIENT_SECRET"); v != "" {
+		data.Set("client_secret", v)
 	}
 	if opts.RedirectURI != "" {
 		data.Set("redirect_uri", opts.RedirectURI)
