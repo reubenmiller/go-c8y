@@ -242,7 +242,10 @@ func (s *UserService) GetAccessTokenFromAuthorizationCode2(ctx context.Context, 
 	// Authorization Code Flow
 	data.Set("grant_type", "authorization_code")
 	data.Set("code", code)
-	if opts.ClientID != "" {
+
+	if v := os.Getenv("SSO_CLIENT_ID"); v != "" {
+		data.Set("client_id", v)
+	} else if opts.ClientID != "" {
 		data.Set("client_id", opts.ClientID)
 	}
 	if v := os.Getenv("SSO_CLIENT_SECRET"); v != "" {
