@@ -225,7 +225,7 @@ type BulkUpdateOptions struct {
 // 202 - if process continues in background
 //
 // Since this operations can take a lot of time, request returns after maximum 0.5 sec of processing, and updating is continued as a background process in the platform.
-func (s *Service) UpdateBulk(ctx context.Context, opt BulkUpdateOptions, body any) *resty.Request {
+func (s *Service) UpdateList(ctx context.Context, opt BulkUpdateOptions, body any) *resty.Request {
 	return s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
