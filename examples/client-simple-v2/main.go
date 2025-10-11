@@ -10,6 +10,7 @@ import (
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/authentication"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/binaries"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/measurements"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
@@ -30,10 +31,9 @@ type ExampleMO struct {
 func main() {
 	// Create the client from the following environment variables
 	// C8Y_HOST, C8Y_TENANT, C8Y_USER, C8Y_PASSWORD
-	client := c8y_api.NewClientV2(c8y_api.ClientOptions{
-		BaseURL:  "https://" + os.Getenv("C8Y_HOST"),
-		Username: os.Getenv("C8Y_USERNAME"),
-		Password: os.Getenv("C8Y_PASSWORD"),
+	client := c8y_api.NewClient(c8y_api.ClientOptions{
+		BaseURL: authentication.HostFromEnvironment(),
+		Auth:    authentication.FromEnvironment(),
 	})
 
 	if enabledDebug, err := strconv.ParseBool(os.Getenv("DEBUG")); err == nil {
