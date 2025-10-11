@@ -57,8 +57,6 @@ func MiddlewareAuthorization(auth authentication.AuthOptions) resty.RequestMiddl
 				}
 			case authentication.AuthTypeBearer:
 				if auth.Token != "" {
-					// r.SetAuthScheme("Bearer")
-					// r.SetAuthToken(auth.Token)
 					r.Header.Set(HeaderAuthorization, fmt.Sprintf("Bearer %s", auth.Token))
 					slog.Info("Auth", "value", r.Header.Get(HeaderAuthorization))
 
@@ -66,9 +64,6 @@ func MiddlewareAuthorization(auth authentication.AuthOptions) resty.RequestMiddl
 				}
 			case authentication.AuthTypeUnset:
 				if auth.Token != "" {
-					// r.SetAuthScheme("Bearer")
-					// r.SetAuthToken(auth.Token)
-
 					r.Header.Set(HeaderAuthorization, fmt.Sprintf("Bearer %s", auth.Token))
 					slog.Info("Auth", "value", r.Header.Get(HeaderAuthorization))
 					return nil
