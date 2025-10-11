@@ -62,7 +62,7 @@ func main() {
 
 	slog.Info("Response", "status", resp.Status(), "duration", resp.Duration())
 
-	slog.Info("Items", "total", collection.Statistics.TotalElements)
+	slog.Info("Measurements", "total", collection.Statistics.TotalElements)
 
 	// Or access the raw json (in addition to the setting the result)
 	raw := gjson.Parse(resp.String())
@@ -71,23 +71,6 @@ func main() {
 	exampleCreateBinary(client)
 
 	exampleChildAdditions(client)
-
-	// // Create custom managed object
-	// mo := &ExampleMO{
-	// 	ManagedObject: c8y.ManagedObject{
-	// 		Name: "hello",
-	// 	},
-	// 	CustomField: &CustomField{
-	// 		URL: "example.com/foo",
-	// 	},
-	// }
-	// _, resp, err := client.Inventory.Create(context.Background(), mo)
-	// if err != nil {
-	// 	slog.Error("Failed to create the managed object", "err", err)
-	// 	os.Exit(1)
-	// }
-
-	// slog.Info("mo", "value", resp.JSON().Raw)
 }
 
 func exampleCreateBinary(client *c8y_api.Client) error {
@@ -110,6 +93,6 @@ func exampleCreateBinary(client *c8y_api.Client) error {
 }
 
 func exampleChildAdditions(client *c8y_api.Client) error {
-	_ = client.ManagedObject.ChildAdditions.Assign(context.Background(), "1234", nil).Funcs(c8y_api.SetProcessingModeCEP())
+	_ = client.ManagedObjects.ChildAdditions.Assign(context.Background(), "1234", nil).Funcs(c8y_api.SetProcessingModeCEP())
 	return nil
 }

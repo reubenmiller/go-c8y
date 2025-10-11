@@ -2,6 +2,7 @@ module github.com/reubenmiller/go-c8y
 
 require (
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
+	github.com/destel/rill v0.8.0
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/go-jsonnet v0.21.0
 	github.com/google/go-querystring v1.1.0
@@ -68,6 +69,8 @@ replace github.com/reubenmiller/go-c8y/pkg/c8y => ./pkg/c8y
 replace github.com/reubenmiller/go-c8y/pkg/microservice => ./pkg/microservice
 
 replace github.com/reubenmiller/go-c8y/test/c8y_test => ./test/c8y_test
+
+replace github.com/reubenmiller/go-c8y/test/c8y_api_test => ./test/c8y_api_test
 
 replace github.com/reubenmiller/go-c8y/test/c8y_microservice => ./test/c8y_microservice
 

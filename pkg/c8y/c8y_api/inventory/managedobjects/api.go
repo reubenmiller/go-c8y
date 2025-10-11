@@ -18,6 +18,8 @@ var ApiManagedObjectSupportedSeries = "/inventory/managedObjects/{id}/supportedS
 
 const ParamId = "id"
 
+const ResultProperty = "managedObjects"
+
 func NewService(s *core.Service) *Service {
 	return &Service{
 		Service:        *s,
@@ -47,7 +49,7 @@ type ListOptions struct {
 
 	Query string `url:"query,omitempty"`
 
-	*GetOptions
+	GetOptions
 
 	// Pagination options
 	pagination.PaginationOptions
@@ -59,6 +61,14 @@ func (s *Service) List(ctx context.Context, opt ListOptions) *resty.Request {
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiManagedObjects)
+}
+
+func (s *Service) ListPager(ctx context.Context, opt ListOptions) *core.TryRequest {
+	return &core.TryRequest{
+		Client:   s.Client,
+		Request:  s.List(ctx, opt),
+		Property: ResultProperty,
+	}
 }
 
 type GetOptions struct {

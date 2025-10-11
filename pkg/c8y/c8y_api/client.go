@@ -151,7 +151,7 @@ type Client struct {
 	Measurement     *measurements.Service
 	InventoryBinary *binaries.ManagedObjectBinaryService
 
-	ManagedObject *managedobjects.Service
+	ManagedObjects *managedobjects.Service
 	// Operation            *OperationService
 	// Tenant               *TenantService
 	// Event                *EventService
@@ -437,7 +437,7 @@ func NewClientV2(opts ClientOptions) *Client {
 	// c.DeviceCredentials = (*DeviceCredentialsService)(&c.common)
 	c.Measurement = (*measurements.Service)(&c.common)
 	c.InventoryBinary = (*binaries.ManagedObjectBinaryService)(&c.common)
-	c.ManagedObject = managedobjects.NewService(&c.common)
+	c.ManagedObjects = managedobjects.NewService(&c.common)
 	// c.Operation = (*OperationService)(&c.common)
 	// c.Tenant = (*TenantService)(&c.common)
 	// c.Event = (*EventService)(&c.common)

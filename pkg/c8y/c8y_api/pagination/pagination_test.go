@@ -26,3 +26,7 @@ func TestPageSizeEncoding_WithZero(t *testing.T) {
 	encoded := q.Encode()
 	assert.Equal(t, encoded, "")
 }
+
+func Test_HostTrim(t *testing.T) {
+	assert.Equal(t, trimHost("https://hello.com/hello"), "/hello")
+}
