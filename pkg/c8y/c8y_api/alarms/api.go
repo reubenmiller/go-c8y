@@ -11,7 +11,7 @@ import (
 
 var ApiAlarms = "/alarm/alarms"
 var ApiAlarmsCount = "/alarm/alarms/count"
-var ApiAlarm = "/alarm/alarm/{id}"
+var ApiAlarm = "/alarm/alarms/{id}"
 
 var ParamId = "id"
 
