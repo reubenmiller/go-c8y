@@ -1,0 +1,42 @@
+package model
+
+import (
+	"time"
+)
+
+// Cumulocity alarm Severity types
+const (
+	AlarmSeverityCritical = "CRITICAL"
+	AlarmSeverityMajor    = "MAJOR"
+	AlarmSeverityMinor    = "MINOR"
+	AlarmSeverityWarning  = "WARNING"
+)
+
+// Cumulocity alarm status states
+const (
+	AlarmStatusActive       = "ACTIVE"
+	AlarmStatusAcknowledged = "ACKNOWLEDGED"
+	AlarmStatusCleared      = "CLEARED"
+)
+
+// Alarm representation
+type Alarm struct {
+	ID                  string    `json:"id,omitempty"`
+	Source              *Source   `json:"source,omitempty"`
+	Type                string    `json:"type,omitempty"`
+	Time                time.Time `json:"time,omitempty,omitzero"`
+	CreationTime        time.Time `json:"creationTime,omitempty,omitzero"`
+	FirstOccurrenceTime time.Time `json:"firstOccurrenceTime,omitempty,omitzero"`
+	Text                string    `json:"text,omitempty"`
+	Status              string    `json:"status,omitempty"`
+	Severity            string    `json:"severity,omitempty"`
+	Count               uint64    `json:"count,omitempty"`
+	Self                string    `json:"self,omitempty"`
+}
+
+// AlarmCollection collection of alarms
+type AlarmCollection struct {
+	*BaseResponse
+
+	Alarms []Alarm `json:"alarms"`
+}

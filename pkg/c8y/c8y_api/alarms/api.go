@@ -1,0 +1,294 @@
+package alarms
+
+import (
+	"context"
+	"time"
+
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
+	"resty.dev/v3"
+)
+
+var ApiAlarms = "/alarm/alarms"
+var ApiAlarmsCount = "/alarm/alarms/count"
+var ApiAlarm = "/alarm/alarm/{id}"
+
+var ParamId = "id"
+
+const ResultProperty = "alarms"
+
+// Service provides api to get/set/delete audit entries in Cumulocity
+type Service core.Service
+
+// ListOptions to use when search for alarms
+type ListOptions struct {
+	// Start date or date and time of the alarm creation
+	CreatedFrom time.Time `url:"createdFrom,omitempty,omitzero"`
+
+	// End date or date and time of the alarm creation
+	CreatedTo time.Time `url:"createdTo,omitempty,omitzero"`
+
+	// Start date or date and time of the last update made
+	LastUpdatedFrom time.Time `url:"lastUpdatedFrom,omitempty,omitzero"`
+
+	// End date or date and time of the last update made
+	LastUpdatedTo time.Time `url:"lastUpdatedTo,omitempty,omitzero"`
+
+	// Start date or date and time of the alarm occurrence
+	DateFrom time.Time `url:"dateFrom,omitempty,omitzero"`
+
+	// End date or date and time of the alarm occurrence
+	DateTo time.Time `url:"dateTo,omitempty,omitzero"`
+
+	// Source device to filter measurements by
+	Source string `url:"source,omitempty"`
+
+	// The types of alarm to search for
+	Type []string `url:"type,omitempty"`
+
+	// The status of the alarm to search for. Should not be used when resolved parameter is provided
+	Status []string `url:"status,omitempty"`
+
+	// The severity of the alarm to search for
+	Severity []string `url:"severity,omitempty"`
+
+	// When set to true only alarms with status CLEARED will be fetched, whereas false will fetch all
+	// alarms with status ACTIVE or ACKNOWLEDGED. Takes precedence over the status parameter
+	Resolved bool `url:"resolved,omitempty"`
+
+	// When set to true, alarms for related source assets, devices and additions will
+	// also be included in the response. When this parameter is provided a source
+	// must be specified.
+	WithSourceChildren bool `url:"withSourceChildren,omitempty"`
+
+	// When set to true, alarms for related source assets will also be included in
+	// the response. When this parameter is provided a source must be specified.
+	WithSourceAssets bool `url:"withSourceAssets,omitempty"`
+
+	// When set to true, alarms for related source devices will also be included in
+	// the response. When this parameter is provided a source must be specified.
+	WithSourceDevices bool `url:"withSourceDevices,omitempty"`
+
+	// When set to true, alarms for related source additions will also be included in
+	// the response. When this parameter is provided a source must be specified.
+	WithSourceAdditions bool `url:"withSourceAdditions,omitempty"`
+
+	pagination.PaginationOptions
+}
+
+// List alarms
+func (s *Service) List(ctx context.Context, opt ListOptions) *resty.Request {
+	return s.Client.R().
+		SetMethod(resty.MethodGet).
+		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetURL(ApiAlarms)
+}
+
+func (s *Service) ListPager(ctx context.Context, opt ListOptions) *core.TryRequest {
+	return &core.TryRequest{
+		Client:   s.Client,
+		Request:  s.List(ctx, opt),
+		Property: ResultProperty,
+	}
+}
+
+// CountOptions to use when counting the active alarms
+type CountOptions struct {
+	// Start date or date and time of the alarm occurrence
+	DateFrom time.Time `url:"dateFrom,omitempty,omitzero"`
+
+	// End date or date and time of the alarm occurrence
+	DateTo time.Time `url:"dateTo,omitempty,omitzero"`
+
+	// When set to true only alarms with status CLEARED will be fetched, whereas false will fetch all
+	// alarms with status ACTIVE or ACKNOWLEDGED. Takes precedence over the status parameter
+	Resolved bool `url:"resolved,omitempty"`
+
+	// The severity of the alarm to search for
+	Severity []string `url:"severity,omitempty"`
+
+	// Source device to filter measurements by
+	Source string `url:"source,omitempty"`
+
+	// The status of the alarm to search for. Should not be used when resolved parameter is provided
+	Status []string `url:"status,omitempty"`
+
+	// The types of alarm to search for
+	Type []string `url:"type,omitempty"`
+
+	// When set to true, alarms for related source assets, devices and additions will
+	// also be included in the response. When this parameter is provided a source
+	// must be specified.
+	WithSourceChildren bool `url:"withSourceChildren,omitempty"`
+
+	// When set to true, alarms for related source assets will also be included in
+	// the response. When this parameter is provided a source must be specified.
+	WithSourceAssets bool `url:"withSourceAssets,omitempty"`
+
+	// When set to true, alarms for related source devices will also be included in
+	// the response. When this parameter is provided a source must be specified.
+	WithSourceDevices bool `url:"withSourceDevices,omitempty"`
+
+	// When set to true, alarms for related source additions will also be included in
+	// the response. When this parameter is provided a source must be specified.
+	WithSourceAdditions bool `url:"withSourceAdditions,omitempty"`
+
+	pagination.PaginationOptions
+}
+
+// Count the total number of active alarms on your tenant
+func (s *Service) Count(ctx context.Context, opt ListOptions) *resty.Request {
+	return s.Client.R().
+		SetMethod(resty.MethodGet).
+		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetURL(ApiAlarmsCount)
+}
+
+// Get an alarm
+func (s *Service) Get(ctx context.Context, ID string) *resty.Request {
+	return s.Client.R().
+		SetMethod(resty.MethodGet).
+		SetPathParam(ParamId, ID).
+		SetURL(ApiAlarm)
+}
+
+// Create an alarm
+func (s *Service) Create(ctx context.Context, body any) *resty.Request {
+	return s.Client.R().
+		SetMethod(resty.MethodPost).
+		SetBody(body).
+		SetURL(ApiAlarms)
+}
+
+// Update an alarm
+func (s *Service) Update(ctx context.Context, ID string, body any) *resty.Request {
+	return s.Client.R().
+		SetMethod(resty.MethodPut).
+		SetPathParam(ParamId, ID).
+		SetBody(body).
+		SetURL(ApiAlarms)
+}
+
+// UpdateOptions option when bulk updating alarms
+type BulkUpdateOptions struct {
+	// Start date or date and time of the alarm creation
+	CreatedFrom time.Time `url:"createdFrom,omitempty,omitzero"`
+
+	// End date or date and time of the alarm creation
+	CreatedTo time.Time `url:"createdTo,omitempty,omitzero"`
+
+	// Start date or date and time of the alarm occurrence
+	DateFrom time.Time `url:"dateFrom,omitempty,omitzero"`
+
+	// End date or date and time of the alarm occurrence
+	DateTo time.Time `url:"dateTo,omitempty,omitzero"`
+
+	// When set to true only alarms with status CLEARED will be fetched, whereas false will fetch all
+	// alarms with status ACTIVE or ACKNOWLEDGED. Takes precedence over the status parameter
+	Resolved bool `url:"resolved,omitempty"`
+
+	// The severity of the alarm to search for
+	Severity []string `url:"severity,omitempty"`
+
+	// Source device to filter measurements by
+	Source string `url:"source,omitempty"`
+
+	// TODO: Check if this is supported or not
+	// The types of alarm to search for
+	// Type []string `url:"type,omitempty"`
+
+	// The status of the alarm to search for. Should not be used when resolved parameter is provided
+	Status []string `url:"status,omitempty"`
+
+	// When set to true, alarms for related source assets, devices and additions will
+	// also be included in the response. When this parameter is provided a source
+	// must be specified.
+	WithSourceChildren bool `url:"withSourceChildren,omitempty"`
+
+	// When set to true, alarms for related source assets will also be included in
+	// the response. When this parameter is provided a source must be specified.
+	WithSourceAssets bool `url:"withSourceAssets,omitempty"`
+
+	// When set to true, alarms for related source devices will also be included in
+	// the response. When this parameter is provided a source must be specified.
+	WithSourceDevices bool `url:"withSourceDevices,omitempty"`
+
+	// When set to true, alarms for related source additions will also be included in
+	// the response. When this parameter is provided a source must be specified.
+	WithSourceAdditions bool `url:"withSourceAdditions,omitempty"`
+}
+
+// BulkUpdateAlarms bulk update of alarm collection
+// The PUT method allows for updating alarms collections. Currently only the status of alarms can be changed.
+// Response status:
+// 200 - if the process has completed, all alarms have been updated
+// 202 - if process continues in background
+//
+// Since this operations can take a lot of time, request returns after maximum 0.5 sec of processing, and updating is continued as a background process in the platform.
+func (s *Service) UpdateBulk(ctx context.Context, opt BulkUpdateOptions, body any) *resty.Request {
+	return s.Client.R().
+		SetMethod(resty.MethodPut).
+		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetBody(opt).
+		SetURL(ApiAlarms)
+}
+
+// DeleteBulkOptions option when deleting a collection of alarms
+type DeleteBulkOptions struct {
+	// Start date or date and time of the alarm creation
+	CreatedFrom time.Time `url:"createdFrom,omitempty,omitzero"`
+
+	// End date or date and time of the alarm creation
+	CreatedTo time.Time `url:"createdTo,omitempty,omitzero"`
+
+	// Start date or date and time of the alarm occurrence
+	DateFrom time.Time `url:"dateFrom,omitempty,omitzero"`
+
+	// End date or date and time of the alarm occurrence
+	DateTo time.Time `url:"dateTo,omitempty,omitzero"`
+
+	// When set to true only alarms with status CLEARED will be fetched, whereas false will fetch all
+	// alarms with status ACTIVE or ACKNOWLEDGED. Takes precedence over the status parameter
+	Resolved bool `url:"resolved,omitempty"`
+
+	// The severity of the alarm to search for
+	Severity []string `url:"severity,omitempty"`
+
+	// Source device to filter measurements by
+	Source string `url:"source,omitempty"`
+
+	// TODO: Check if this is supported or not
+	// The types of alarm to search for
+	// Type []string `url:"type,omitempty"`
+
+	// The status of the alarm to search for. Should not be used when resolved parameter is provided
+	Status []string `url:"status,omitempty"`
+
+	// The types of alarm to search for
+	Type []string `url:"type,omitempty"`
+
+	// When set to true, alarms for related source assets, devices and additions will
+	// also be included in the response. When this parameter is provided a source
+	// must be specified.
+	WithSourceChildren bool `url:"withSourceChildren,omitempty"`
+
+	// When set to true, alarms for related source assets will also be included in
+	// the response. When this parameter is provided a source must be specified.
+	WithSourceAssets bool `url:"withSourceAssets,omitempty"`
+
+	// When set to true, alarms for related source devices will also be included in
+	// the response. When this parameter is provided a source must be specified.
+	WithSourceDevices bool `url:"withSourceDevices,omitempty"`
+
+	// When set to true, alarms for related source additions will also be included in
+	// the response. When this parameter is provided a source must be specified.
+	WithSourceAdditions bool `url:"withSourceAdditions,omitempty"`
+}
+
+// Remove alarm collections specified by query parameters
+func (s *Service) DeleteBulk(ctx context.Context, opt DeleteBulkOptions) *resty.Request {
+	return s.Client.R().
+		SetMethod(resty.MethodDelete).
+		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetURL(ApiAlarms)
+}

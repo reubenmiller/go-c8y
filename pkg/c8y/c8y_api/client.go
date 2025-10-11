@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alarms"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/auditrecords"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/authentication"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/binaries"
@@ -77,10 +79,10 @@ type Client struct {
 
 	// Services used for talking to different parts of the Cumulocity API.
 	// Context              *ContextService
-	// Alarm                *AlarmService
-	// Audit                *AuditService
+	Alarms       *alarms.Service
+	AuditRecords *auditrecords.Service
 	// DeviceCredentials    *DeviceCredentialsService
-	Measurement     *measurements.Service
+	Measurements    *measurements.Service
 	InventoryBinary *binaries.ManagedObjectBinaryService
 
 	ManagedObjects *managedobjects.Service
@@ -189,11 +191,11 @@ func NewClient(opts ClientOptions) *Client {
 		showSensitive:       opts.ShowSensitive,
 	}
 	c.common.Client = rclient
-	// c.Alarm = (*AlarmService)(&c.common)
-	// c.Audit = (*AuditService)(&c.common)
+	c.Alarms = (*alarms.Service)(&c.common)
+	c.AuditRecords = (*auditrecords.Service)(&c.common)
 	// c.DeviceCertificate = (*DeviceCertificateService)(&c.common)
 	// c.DeviceCredentials = (*DeviceCredentialsService)(&c.common)
-	c.Measurement = (*measurements.Service)(&c.common)
+	c.Measurements = (*measurements.Service)(&c.common)
 	c.InventoryBinary = (*binaries.ManagedObjectBinaryService)(&c.common)
 	c.ManagedObjects = managedobjects.NewService(&c.common)
 	// c.Operation = (*OperationService)(&c.common)

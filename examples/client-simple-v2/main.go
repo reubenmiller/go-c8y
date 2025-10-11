@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log"
 	"log/slog"
 	"os"
 	"strconv"
@@ -10,9 +11,11 @@ import (
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alarms"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/authentication"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/binaries"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/measurements"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"github.com/tidwall/gjson"
 	"resty.dev/v3"
@@ -42,7 +45,7 @@ func main() {
 
 	// Get list of measurements
 	collection := new(measurements.MeasurementCollection)
-	resp, err := client.Measurement.List(context.Background(), &measurements.ListOptions{
+	resp, err := client.Measurements.List(context.Background(), &measurements.ListOptions{
 		DateFrom: time.Now().Add(-20 * 24 * time.Hour),
 		DateTo:   time.Now(),
 		PaginationOptions: pagination.PaginationOptions{
@@ -59,15 +62,27 @@ func main() {
 		slog.Error("Could not retrieve alarms", "err", err)
 		os.Exit(1)
 	}
-
 	slog.Info("Response", "status", resp.Status(), "duration", resp.Duration())
-
-	slog.Info("Measurements", "total", collection.Statistics.TotalElements)
-
 	// Or access the raw json (in addition to the setting the result)
 	raw := gjson.Parse(resp.String())
 	slog.Info("Measurement found", "id", raw.Get("measurements.0.id").String(), "type", raw.Get("measurements.0.type").String())
 
+	slog.Info("Measurements", "total", collection.Statistics.TotalElements)
+
+	//
+	// Alarms
+	alarmCollection := new(model.AlarmCollection)
+	resp, err = client.Alarms.List(context.Background(), alarms.ListOptions{
+		DateFrom: time.Now().Add(-30 * 24 * time.Hour),
+	}).
+		SetResult(alarmCollection).
+		Send()
+	if err != nil {
+		log.Panic(err)
+	}
+	slog.Info("Alarms", "total", len(alarmCollection.Alarms))
+
+	// Inventory binaries
 	exampleCreateBinary(client)
 
 	exampleChildAdditions(client)
