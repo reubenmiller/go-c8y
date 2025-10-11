@@ -233,8 +233,8 @@ func (s *Service) UpdateBulk(ctx context.Context, opt BulkUpdateOptions, body an
 		SetURL(ApiAlarms)
 }
 
-// DeleteBulkOptions option when deleting a collection of alarms
-type DeleteBulkOptions struct {
+// DeleteListOptions option when deleting a collection of alarms
+type DeleteListOptions struct {
 	// Start date or date and time of the alarm creation
 	CreatedFrom time.Time `url:"createdFrom,omitempty,omitzero"`
 
@@ -286,7 +286,7 @@ type DeleteBulkOptions struct {
 }
 
 // Remove alarm collections specified by query parameters
-func (s *Service) DeleteBulk(ctx context.Context, opt DeleteBulkOptions) *resty.Request {
+func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) *resty.Request {
 	return s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
