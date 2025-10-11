@@ -16,6 +16,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/measurements"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/operations"
 	"resty.dev/v3"
 )
 
@@ -86,7 +87,7 @@ type Client struct {
 	InventoryBinary *binaries.ManagedObjectBinaryService
 
 	ManagedObjects *managedobjects.Service
-	// Operation            *OperationService
+	Operations     *operations.Service
 	// Tenant               *TenantService
 	// Event                *EventService
 	// Inventory            *InventoryService
@@ -198,7 +199,7 @@ func NewClient(opts ClientOptions) *Client {
 	c.Measurements = (*measurements.Service)(&c.common)
 	c.InventoryBinary = (*binaries.ManagedObjectBinaryService)(&c.common)
 	c.ManagedObjects = managedobjects.NewService(&c.common)
-	// c.Operation = (*OperationService)(&c.common)
+	c.Operations = (*operations.Service)(&c.common)
 	// c.Tenant = (*TenantService)(&c.common)
 	// c.Event = (*EventService)(&c.common)
 	// c.Inventory = (*InventoryService)(&c.common)
