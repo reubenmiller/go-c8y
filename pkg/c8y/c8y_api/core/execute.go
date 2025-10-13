@@ -9,15 +9,12 @@ import (
 // Execute a request and return the typed response
 func Execute[T any](ctx context.Context, req *TryRequest) (*T, *resty.Response, error) {
 	result := new(T)
-	resp, err := req.Request.
+	resp, err := coupleAPIErrors(req.Request.
 		SetContext(ctx).
 		SetResult(result).
-		Send()
+		Send())
 
 	if err != nil {
-		return nil, resp, err
-	}
-	if resp.IsError() {
 		return nil, resp, err
 	}
 
@@ -27,15 +24,12 @@ func Execute[T any](ctx context.Context, req *TryRequest) (*T, *resty.Response, 
 // Execute a request and return the typed response
 func ExecuteResultOnly[T any](ctx context.Context, req *TryRequest) (*T, error) {
 	result := new(T)
-	resp, err := req.Request.
+	_, err := coupleAPIErrors(req.Request.
 		SetContext(ctx).
 		SetResult(result).
-		Send()
+		Send())
 
 	if err != nil {
-		return nil, err
-	}
-	if resp.IsError() {
 		return nil, err
 	}
 
@@ -44,14 +38,11 @@ func ExecuteResultOnly[T any](ctx context.Context, req *TryRequest) (*T, error) 
 
 // Execute a request and return the response as text
 func ExecuteResultText(ctx context.Context, req *TryRequest) (string, error) {
-	resp, err := req.Request.
+	resp, err := coupleAPIErrors(req.Request.
 		SetContext(ctx).
-		Send()
+		Send())
 
 	if err != nil {
-		return "", err
-	}
-	if resp.IsError() {
 		return "", err
 	}
 
@@ -60,8 +51,8 @@ func ExecuteResultText(ctx context.Context, req *TryRequest) (string, error) {
 
 // Execute a request that doesn't any result only if there was an error or not
 func ExecuteNoResult(ctx context.Context, req *TryRequest) error {
-	_, err := req.Request.
+	_, err := coupleAPIErrors(req.Request.
 		SetContext(ctx).
-		Send()
+		Send())
 	return err
 }

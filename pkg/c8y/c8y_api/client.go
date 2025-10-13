@@ -16,7 +16,6 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/binaries"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/measurements"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/operations"
 	"resty.dev/v3"
 )
@@ -165,7 +164,7 @@ func NewClient(opts ClientOptions) *Client {
 		SetRetryCount(3).
 		SetRetryWaitTime(2 * time.Second).
 		SetRetryMaxWaitTime(30 * time.Second).
-		SetError(&model.ErrorResponse{}).
+		SetError(core.APIError{}).
 		SetCircuitBreaker(circuitBreaker)
 
 	targetBaseURL, _ := url.Parse(FormatBaseURL(opts.BaseURL))

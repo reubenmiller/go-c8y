@@ -3,13 +3,42 @@ package c8y_api_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 )
+
+func Test_ErrorHandlingGet(t *testing.T) {
+	client := testcore.CreateTestClient(t)
+	client.Client.SetDebug(true)
+	mo, err := client.ManagedObjects.Get(context.Background(), "0", managedobjects.GetOptions{})
+	assert.Error(t, err)
+	assert.Nil(t, mo)
+}
+
+func Test_ErrorHandlingCreateEvent(t *testing.T) {
+	client := testcore.CreateTestClient(t)
+	client.Client.SetDebug(true)
+
+	evt, err := client.Events.Create(context.Background(), model.Event{
+		Source: model.NewSource("0"),
+	})
+
+	assert.Error(t, err)
+	assert.Nil(t, evt)
+
+	assert.True(t, c8y_api.ErrHasStatus(err, 422))
+	assert.True(t, errors.Is(err, c8y_api.Error{Code: 422}))
+	assert.True(t, errors.Is(err, c8y_api.ErrUnprocessableEntity))
+	sdkError := err.(*c8y_api.Error)
+	assert.NotEmpty(t, sdkError.MessageRaw)
+
+}
 
 func Test_SimpleDefaultRequest(t *testing.T) {
 	client := testcore.CreateTestClient(t)
@@ -23,7 +52,6 @@ func Test_SimpleDefaultRequest(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, mo)
 
-	// assert.NoError(t, c8y_api.UnmarshalJSON(resp, &out))
 	assert.NotEmpty(t, mo.ID)
 	assert.Equal(t, mo.Name, "custom")
 }
