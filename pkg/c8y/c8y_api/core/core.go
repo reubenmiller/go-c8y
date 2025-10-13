@@ -63,6 +63,11 @@ func (r *TryRequest) SetNoResponse() *TryRequest {
 	return r
 }
 
+func (r *TryRequest) SetResponseBodyUnlimitedReads(v bool) *TryRequest {
+	r.Request.SetResponseBodyUnlimitedReads(v)
+	return r
+}
+
 func (r *TryRequest) SetResult(v any) *TryRequest {
 	r.Request.SetResult(v)
 	return r

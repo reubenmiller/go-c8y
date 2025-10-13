@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"resty.dev/v3"
 )
@@ -77,19 +78,16 @@ type ListOptions struct {
 }
 
 // List alarms
-func (s *Service) List(ctx context.Context, opt ListOptions) *resty.Request {
-	return s.Client.R().
+func (s *Service) List(ctx context.Context, opt ListOptions) (*model.AlarmCollection, error) {
+	return core.ExecuteResultOnly[model.AlarmCollection](ctx, s.ListB(opt))
+}
+
+func (s *Service) ListB(opt any) *core.TryRequest {
+	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiAlarms)
-}
-
-func (s *Service) ListPager(ctx context.Context, opt ListOptions) *core.TryRequest {
-	return &core.TryRequest{
-		Client:   s.Client,
-		Request:  s.List(ctx, opt),
-		Property: ResultProperty,
-	}
+	return core.NewTryRequest(s.Client, req, ResultProperty)
 }
 
 // CountOptions to use when counting the active alarms
@@ -136,37 +134,44 @@ type CountOptions struct {
 	pagination.PaginationOptions
 }
 
-// Count the total number of active alarms on your tenant
-func (s *Service) Count(ctx context.Context, opt ListOptions) *resty.Request {
-	return s.Client.R().
-		SetMethod(resty.MethodGet).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
-		SetURL(ApiAlarmsCount)
+// Get an alarm
+func (s *Service) Get(ctx context.Context, ID string) (*model.Alarm, error) {
+	return core.ExecuteResultOnly[model.Alarm](ctx, s.GetB(ID))
 }
 
-// Get an alarm
-func (s *Service) Get(ctx context.Context, ID string) *resty.Request {
-	return s.Client.R().
+func (s *Service) GetB(ID string) *core.TryRequest {
+	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamId, ID).
 		SetURL(ApiAlarm)
+	return core.NewTryRequest(s.Client, req)
 }
 
 // Create an alarm
-func (s *Service) Create(ctx context.Context, body any) *resty.Request {
-	return s.Client.R().
+func (s *Service) Create(ctx context.Context, body any) (*model.Alarm, error) {
+	return core.ExecuteResultOnly[model.Alarm](ctx, s.CreateB(body))
+}
+
+func (s *Service) CreateB(body any) *core.TryRequest {
+	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetBody(body).
 		SetURL(ApiAlarms)
+	return core.NewTryRequest(s.Client, req)
 }
 
 // Update an alarm
-func (s *Service) Update(ctx context.Context, ID string, body any) *resty.Request {
-	return s.Client.R().
+func (s *Service) Update(ctx context.Context, ID string, body any) (*model.Alarm, error) {
+	return core.ExecuteResultOnly[model.Alarm](ctx, s.UpdateB(ID, body))
+}
+
+func (s *Service) UpdateB(ID string, body any) *core.TryRequest {
+	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamId, ID).
 		SetBody(body).
-		SetURL(ApiAlarms)
+		SetURL(ApiAlarm)
+	return core.NewTryRequest(s.Client, req)
 }
 
 // UpdateOptions option when bulk updating alarms
@@ -225,12 +230,17 @@ type BulkUpdateOptions struct {
 // 202 - if process continues in background
 //
 // Since this operations can take a lot of time, request returns after maximum 0.5 sec of processing, and updating is continued as a background process in the platform.
-func (s *Service) UpdateList(ctx context.Context, opt BulkUpdateOptions, body any) *resty.Request {
-	return s.Client.R().
+func (s *Service) UpdateList(ctx context.Context, opt BulkUpdateOptions, body any) (*model.AlarmCollection, error) {
+	return core.ExecuteResultOnly[model.AlarmCollection](ctx, s.UpdateListB(opt, body))
+}
+
+func (s *Service) UpdateListB(opt BulkUpdateOptions, body any) *core.TryRequest {
+	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetBody(opt).
 		SetURL(ApiAlarms)
+	return core.NewTryRequest(s.Client, req, ResultProperty)
 }
 
 // DeleteListOptions option when deleting a collection of alarms
@@ -286,9 +296,14 @@ type DeleteListOptions struct {
 }
 
 // Remove alarm collections specified by query parameters
-func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) *resty.Request {
-	return s.Client.R().
+func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) error {
+	return core.ExecuteNoResult(ctx, s.DeleteListB(opt))
+}
+
+func (s *Service) DeleteListB(opt DeleteListOptions) *core.TryRequest {
+	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiAlarms)
+	return core.NewTryRequest(s.Client, req)
 }

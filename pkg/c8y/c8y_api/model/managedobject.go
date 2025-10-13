@@ -1,8 +1,6 @@
 package model
 
-var MimeTypeManagedObjectCollection = "application/vnd.com.nsn.cumulocity.managedobjectreferencecollection+json"
-var MimeTypeManagedObject = "application/vnd.com.nsn.cumulocity.managedobject+json"
-var MimeTypeManagedObjectReference = "application/vnd.com.nsn.cumulocity.managedobjectreference+json"
+import "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 
 // ManagedObject is the general Inventory Managed Object data structure
 type ManagedObject struct {
@@ -46,7 +44,7 @@ func NewManagedObjectReference(ID string) *ManagedObjectReference {
 func FromManagedObjectChildReferences(value any) (string, any) {
 	switch v := value.(type) {
 	case string:
-		return MimeTypeManagedObjectReference, NewManagedObjectReference(v)
+		return types.MimeTypeManagedObjectReference, NewManagedObjectReference(v)
 	case []string:
 		data := &ManagedObjectReferenceCollection{
 			References: []ManagedObjectReference{},
@@ -54,9 +52,9 @@ func FromManagedObjectChildReferences(value any) (string, any) {
 		for _, ID := range v {
 			data.References = append(data.References, *NewManagedObjectReference(ID))
 		}
-		return MimeTypeManagedObjectCollection, data
+		return types.MimeTypeManagedObjectCollection, data
 	default:
-		return MimeTypeManagedObject, v
+		return types.MimeTypeManagedObject, v
 	}
 }
 

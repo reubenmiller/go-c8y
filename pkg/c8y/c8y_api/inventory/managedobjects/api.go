@@ -64,7 +64,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) (*model.ManagedObje
 	return core.ExecuteResultOnly[model.ManagedObjectCollection](ctx, s.ListB(opt))
 }
 
-func (s *Service) ListB(opt any) *core.TryRequest {
+func (s *Service) ListB(opt ListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
@@ -148,5 +148,31 @@ func (s *Service) ListSupportedSeriesB(ID string) *core.TryRequest {
 		SetPathParam(ParamId, ID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObjectSupportedSeries)
+	return core.NewTryRequest(s.Client, req)
+}
+
+// DeleteOptions options to delete a managed object
+type DeleteOptions struct {
+	// When set to true and the managed object is a device or group, all the hierarchy will be deleted
+	Cascade bool `url:"cascade,omitempty"`
+
+	// When set to true all the hierarchy will be deleted without checking the type of managed object. It takes precedence over the parameter cascade
+	ForceCascade bool `url:"forceCascade,omitempty"`
+
+	// When set to true and the managed object is a device, it deletes the associated device user (credentials)
+	WithDeviceUser bool `url:"withDeviceUser,omitempty"`
+}
+
+// Delete a managed object
+func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) error {
+	return core.ExecuteNoResult(ctx, s.DeleteB(ID, opt))
+}
+
+func (s *Service) DeleteB(ID string, opt DeleteOptions) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodDelete).
+		SetPathParam(ParamId, ID).
+		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetURL(ApiManagedObject)
 	return core.NewTryRequest(s.Client, req)
 }

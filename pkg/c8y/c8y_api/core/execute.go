@@ -42,6 +42,22 @@ func ExecuteResultOnly[T any](ctx context.Context, req *TryRequest) (*T, error) 
 	return result, nil
 }
 
+// Execute a request and return the response as text
+func ExecuteResultText(ctx context.Context, req *TryRequest) (string, error) {
+	resp, err := req.Request.
+		SetContext(ctx).
+		Send()
+
+	if err != nil {
+		return "", err
+	}
+	if resp.IsError() {
+		return "", err
+	}
+
+	return resp.String(), nil
+}
+
 // Execute a request that doesn't any result only if there was an error or not
 func ExecuteNoResult(ctx context.Context, req *TryRequest) error {
 	_, err := req.Request.

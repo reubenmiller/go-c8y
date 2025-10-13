@@ -6,12 +6,13 @@ import (
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/events/eventbinaries"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"resty.dev/v3"
 )
 
 var ApiEvents = "/event/events"
-var ApiAlarm = "/event/events/{id}"
+var ApiEvent = "/event/events/{id}"
 
 var ParamId = "id"
 
@@ -93,44 +94,56 @@ type ListOptions struct {
 }
 
 // List events
-func (s *Service) List(ctx context.Context, opt ListOptions) *resty.Request {
-	return s.Client.R().
+func (s *Service) List(ctx context.Context, opt ListOptions) (*model.EventCollection, error) {
+	return core.ExecuteResultOnly[model.EventCollection](ctx, s.ListB(opt))
+}
+
+func (s *Service) ListB(opt any) *core.TryRequest {
+	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiEvents)
-}
-
-func (s *Service) ListPager(ctx context.Context, opt ListOptions) *core.TryRequest {
-	return &core.TryRequest{
-		Client:   s.Client,
-		Request:  s.List(ctx, opt),
-		Property: ResultProperty,
-	}
+	return core.NewTryRequest(s.Client, req, ResultProperty)
 }
 
 // Get an event
-func (s *Service) Get(ctx context.Context, ID string) *resty.Request {
-	return s.Client.R().
+func (s *Service) Get(ctx context.Context, ID string) (*model.Event, error) {
+	return core.ExecuteResultOnly[model.Event](ctx, s.GetB(ID))
+}
+
+func (s *Service) GetB(ID string) *core.TryRequest {
+	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamId, ID).
-		SetURL(ApiAlarm)
+		SetURL(ApiEvent)
+	return core.NewTryRequest(s.Client, req)
 }
 
 // Create an event
-func (s *Service) Create(ctx context.Context, body any) *resty.Request {
-	return s.Client.R().
+func (s *Service) Create(ctx context.Context, body any) (*model.Event, error) {
+	return core.ExecuteResultOnly[model.Event](ctx, s.CreateB(body))
+}
+
+func (s *Service) CreateB(body any) *core.TryRequest {
+	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetBody(body).
 		SetURL(ApiEvents)
+	return core.NewTryRequest(s.Client, req)
 }
 
 // Update an event
-func (s *Service) Update(ctx context.Context, ID string, body any) *resty.Request {
-	return s.Client.R().
+func (s *Service) Update(ctx context.Context, ID string, body any) (*model.Event, error) {
+	return core.ExecuteResultOnly[model.Event](ctx, s.UpdateB(ID, body))
+}
+
+func (s *Service) UpdateB(ID string, body any) *core.TryRequest {
+	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamId, ID).
 		SetBody(body).
-		SetURL(ApiEvents)
+		SetURL(ApiEvent)
+	return core.NewTryRequest(s.Client, req)
 }
 
 // DeleteListOptions option when deleting a collection of events
@@ -165,9 +178,14 @@ type DeleteListOptions struct {
 // when the deleted event has a lot of associated data. After sending the
 // request, the platform starts deleting the associated data in an asynchronous way.
 // Finally, the requested event is deleted after all associated data has been deleted.
-func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) *resty.Request {
-	return s.Client.R().
+func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) error {
+	return core.ExecuteNoResult(ctx, s.DeleteListB(opt))
+}
+
+func (s *Service) DeleteListB(opt DeleteListOptions) *core.TryRequest {
+	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiEvents)
+	return core.NewTryRequest(s.Client, req)
 }

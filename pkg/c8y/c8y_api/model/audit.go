@@ -19,3 +19,10 @@ type AuditRecord struct {
 	Severity     string    `json:"severity,omitempty"`
 	// Changes     []ChangeDescription     `json:"changes,omitempty"`
 }
+
+// AuditRecordsCollection collection of audit records
+type AuditRecordsCollection struct {
+	*BaseResponse
+
+	AuditRecords []AuditRecord `json:"auditRecords,omitempty"`
+}

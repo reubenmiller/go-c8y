@@ -44,8 +44,8 @@ func main() {
 	}
 
 	// Get list of measurements
-	collection := new(measurements.MeasurementCollection)
-	resp, err := client.Measurements.List(context.Background(), &measurements.ListOptions{
+	collection := new(model.MeasurementCollection)
+	resp, err := client.Measurements.ListB(measurements.ListOptions{
 		DateFrom: time.Now().Add(-20 * 24 * time.Hour),
 		DateTo:   time.Now(),
 		PaginationOptions: pagination.PaginationOptions{
@@ -55,6 +55,7 @@ func main() {
 	}).
 		SetResponseBodyUnlimitedReads(true).
 		SetResult(collection).
+		SetContext(context.Background()).
 		Send()
 
 	// Always check for errors
@@ -62,7 +63,7 @@ func main() {
 		slog.Error("Could not retrieve alarms", "err", err)
 		os.Exit(1)
 	}
-	slog.Info("Response", "status", resp.Status(), "duration", resp.Duration())
+	slog.Info("Response", "status", resp.Response.Status(), "duration", resp.Response.Duration())
 	// Or access the raw json (in addition to the setting the result)
 	raw := gjson.Parse(resp.String())
 	slog.Info("Measurement found", "id", raw.Get("measurements.0.id").String(), "type", raw.Get("measurements.0.type").String())
@@ -71,12 +72,9 @@ func main() {
 
 	//
 	// Alarms
-	alarmCollection := new(model.AlarmCollection)
-	resp, err = client.Alarms.List(context.Background(), alarms.ListOptions{
+	alarmCollection, err := client.Alarms.List(context.Background(), alarms.ListOptions{
 		DateFrom: time.Now().Add(-30 * 24 * time.Hour),
-	}).
-		SetResult(alarmCollection).
-		Send()
+	})
 	if err != nil {
 		log.Panic(err)
 	}
