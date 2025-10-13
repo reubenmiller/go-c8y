@@ -12,6 +12,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/auditrecords"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/authentication"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/events"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/binaries"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/measurements"
@@ -89,7 +90,7 @@ type Client struct {
 	ManagedObjects *managedobjects.Service
 	Operations     *operations.Service
 	// Tenant               *TenantService
-	// Event                *EventService
+	Events *events.Service
 	// Inventory            *InventoryService
 	// Application          *ApplicationService
 	// UIExtension          *UIExtensionService
@@ -201,7 +202,7 @@ func NewClient(opts ClientOptions) *Client {
 	c.ManagedObjects = managedobjects.NewService(&c.common)
 	c.Operations = (*operations.Service)(&c.common)
 	// c.Tenant = (*TenantService)(&c.common)
-	// c.Event = (*EventService)(&c.common)
+	c.Events = events.NewService(&c.common)
 	// c.Inventory = (*InventoryService)(&c.common)
 	// c.DeviceEnrollment = (*DeviceEnrollmentService)(&c.common)
 	// c.Application = (*ApplicationService)(&c.common)

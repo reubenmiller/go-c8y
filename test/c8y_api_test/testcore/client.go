@@ -1,6 +1,8 @@
 package testcore
 
 import (
+	"testing"
+
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/authentication"
@@ -9,7 +11,8 @@ import (
 
 var TestEnvironment *c8ytestutils.SetupConfiguration
 
-func CreateTestClient() *c8y_api.Client {
+func CreateTestClient(t *testing.T) *c8y_api.Client {
+	t.Setenv("C8Y_TOKEN", "")
 	return c8y_api.NewClient(c8y_api.ClientOptions{
 		BaseURL: authentication.HostFromEnvironment(),
 		Auth:    authentication.FromEnvironment(),

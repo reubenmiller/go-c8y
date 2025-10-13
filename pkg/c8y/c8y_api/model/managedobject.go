@@ -19,6 +19,12 @@ type ManagedObject struct {
 	ChildAssets     *ManagedObjectReferenceCollection `json:"childAssets,omitempty"`
 }
 
+type ManagedObjectCollection struct {
+	*BaseResponse
+
+	ManagedObjects []ManagedObject `json:"managedObjects"`
+}
+
 type ManagedObjectReferenceCollection struct {
 	Self       string                   `json:"self,omitempty"`
 	References []ManagedObjectReference `json:"references,omitempty"`

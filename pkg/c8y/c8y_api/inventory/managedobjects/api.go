@@ -7,7 +7,9 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects/childadditions"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects/childassets"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects/childdevices"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
 )
 
@@ -24,6 +26,8 @@ func NewService(s *core.Service) *Service {
 	return &Service{
 		Service:        *s,
 		ChildAdditions: childadditions.NewService(s),
+		ChildAssets:    childassets.NewService(s),
+		ChildDevices:   childdevices.NewService(s),
 	}
 }
 
@@ -56,19 +60,16 @@ type ListOptions struct {
 }
 
 // List managed objects
-func (s *Service) List(ctx context.Context, opt ListOptions) *resty.Request {
-	return s.Client.R().
+func (s *Service) List(ctx context.Context, opt ListOptions) (*model.ManagedObjectCollection, error) {
+	return core.ExecuteResultOnly[model.ManagedObjectCollection](ctx, s.ListB(opt))
+}
+
+func (s *Service) ListB(opt any) *core.TryRequest {
+	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiManagedObjects)
-}
-
-func (s *Service) ListPager(ctx context.Context, opt ListOptions) *core.TryRequest {
-	return &core.TryRequest{
-		Client:   s.Client,
-		Request:  s.List(ctx, opt),
-		Property: ResultProperty,
-	}
+	return core.NewTryRequest(s.Client, req, ResultProperty)
 }
 
 type GetOptions struct {
@@ -80,43 +81,72 @@ type GetOptions struct {
 }
 
 // Create a managed object
-func (s *Service) Create(ctx context.Context, body any) *resty.Request {
-	return s.Client.R().
+func (s *Service) Create(ctx context.Context, body any) (*model.ManagedObject, error) {
+	return core.ExecuteResultOnly[model.ManagedObject](ctx, s.CreateB(body))
+}
+
+func (s *Service) CreateB(body any) *core.TryRequest {
+	req := s.Service.Client.R().
 		SetMethod(resty.MethodPost).
 		SetBody(body).
-		SetURL(ApiManagedObject)
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetURL(ApiManagedObjects)
+	return core.NewTryRequest(s.Client, req, "")
 }
 
 // Get a managed object
-func (s *Service) Get(ctx context.Context, ID string, opt GetOptions) *resty.Request {
-	return s.Client.R().
+func (s *Service) Get(ctx context.Context, ID string, opt GetOptions) (*model.ManagedObject, error) {
+	return core.ExecuteResultOnly[model.ManagedObject](ctx, s.GetB(ID, opt))
+}
+
+func (s *Service) GetB(ID string, opt GetOptions) *core.TryRequest {
+	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamId, ID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObject)
+	return core.NewTryRequest(s.Client, req)
 }
 
 // Update a managed object
-func (s *Service) Update(ctx context.Context, ID string, body any) *resty.Request {
-	return s.Client.R().
+func (s *Service) Update(ctx context.Context, ID string, body any) (*model.ManagedObject, error) {
+	return core.ExecuteResultOnly[model.ManagedObject](ctx, s.UpdateB(ID, body))
+}
+
+func (s *Service) UpdateB(ID string, body any) *core.TryRequest {
+	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamId, ID).
 		SetBody(body).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObject)
+	return core.NewTryRequest(s.Client, req)
 }
 
 // List of supported measurement types for a given managed object
-func (s *Service) ListSupportedMeasurements(ctx context.Context, ID string) *resty.Request {
-	return s.Client.R().
+func (s *Service) ListSupportedMeasurements(ctx context.Context, ID string) (*model.SupportedMeasurements, error) {
+	return core.ExecuteResultOnly[model.SupportedMeasurements](ctx, s.ListSupportedMeasurementsB(ID))
+}
+
+func (s *Service) ListSupportedMeasurementsB(ID string) *core.TryRequest {
+	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamId, ID).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObjectSupportedMeasurements)
+	return core.NewTryRequest(s.Client, req)
 }
 
 // List of supported measurement series for a given managed object
-func (s *Service) ListSupportedSeries(ctx context.Context, ID string) *resty.Request {
-	return s.Client.R().
+func (s *Service) ListSupportedSeries(ctx context.Context, ID string) (*model.SupportedSeries, error) {
+	return core.ExecuteResultOnly[model.SupportedSeries](ctx, s.ListSupportedSeriesB(ID))
+}
+func (s *Service) ListSupportedSeriesB(ID string) *core.TryRequest {
+	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamId, ID).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObjectSupportedSeries)
+	return core.NewTryRequest(s.Client, req)
 }

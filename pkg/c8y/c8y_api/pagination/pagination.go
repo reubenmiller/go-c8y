@@ -73,7 +73,7 @@ func NewPaginationOptions(pageSize int) *PaginationOptions {
 	}
 }
 
-func ForEach[A any](r *core.TryRequest, pagerOpts PagerOptions, out chan<- A) error {
+func ForEach[A any](ctx context.Context, r *core.TryRequest, pagerOpts PagerOptions, out chan<- A) error {
 	var nextReq *resty.Request
 	nextReq = r.Request
 	nextReq.SetQueryParam("pageSize", fmt.Sprintf("%d", pagerOpts.GetPageSize()))
@@ -83,7 +83,7 @@ func ForEach[A any](r *core.TryRequest, pagerOpts PagerOptions, out chan<- A) er
 	pageCount := int64(0)
 
 	for {
-		resp, err := nextReq.Send()
+		resp, err := nextReq.SetContext(ctx).Send()
 		if err != nil {
 			slog.Error("Request failed", "err", err)
 			break
@@ -140,7 +140,7 @@ func ForEach[A any](r *core.TryRequest, pagerOpts PagerOptions, out chan<- A) er
 	return nil
 }
 
-func ForEachJSON(r *core.TryRequest, pagerOpts PagerOptions, out chan<- gjson.Result) error {
+func ForEachJSON(ctx context.Context, r *core.TryRequest, pagerOpts PagerOptions, out chan<- gjson.Result) error {
 	var nextReq *resty.Request
 	nextReq = r.Request
 	nextReq.SetQueryParam("pageSize", fmt.Sprintf("%d", pagerOpts.GetPageSize()))
@@ -150,7 +150,7 @@ func ForEachJSON(r *core.TryRequest, pagerOpts PagerOptions, out chan<- gjson.Re
 	pageCount := int64(0)
 
 	for {
-		resp, err := nextReq.Send()
+		resp, err := nextReq.SetContext(ctx).Send()
 		if err != nil {
 			slog.Error("Request failed", "err", err)
 			break
@@ -210,52 +210,4 @@ func trimHost(v string) string {
 		i++
 	}
 	return v[i:]
-}
-
-type Pager[A any] struct {
-	Input  *core.TryRequest
-	Output chan A
-}
-
-func NewPager[A any](r *core.TryRequest, channelSize ...int) *Pager[A] {
-	size := 0
-	if len(channelSize) > 0 {
-		size = channelSize[0]
-	}
-	return &Pager[A]{
-		Input:  r,
-		Output: make(chan A, size),
-	}
-}
-
-func (s *Pager[A]) IncludeAll() error {
-	return ForEach(s.Input, PagerOptions{}, s.Output)
-}
-
-func (s *Pager[A]) Pages(paging PagerOptions) error {
-	return ForEach(s.Input, paging, s.Output)
-}
-
-type PagerJSON struct {
-	Input  *core.TryRequest
-	Output chan gjson.Result
-}
-
-func NewPagerJSON(r *core.TryRequest, channelSize ...int) *PagerJSON {
-	size := 0
-	if len(channelSize) > 0 {
-		size = channelSize[0]
-	}
-	return &PagerJSON{
-		Input:  r,
-		Output: make(chan gjson.Result, size),
-	}
-}
-
-func (s *PagerJSON) IncludeAll(ctx context.Context) error {
-	return ForEach(s.Input, PagerOptions{}, s.Output)
-}
-
-func (s *PagerJSON) Page(ctx context.Context, paging PagerOptions) error {
-	return ForEach(s.Input, paging, s.Output)
 }

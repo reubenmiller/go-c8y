@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/destel/rill"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
@@ -16,54 +17,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_NewPagerManagedObjectsIncludeAll(t *testing.T) {
-	client := testcore.CreateTestClient()
-
-	// Create pager
-	pager := pagination.NewPager[model.ManagedObject](
-		client.ManagedObjects.ListPager(context.Background(), managedobjects.ListOptions{}),
-	)
-
-	// Start pager and iterate through all of the results
-	go pager.IncludeAll()
-
-	// Range over the output channel
-	for item := range pager.Output {
-		slog.Info("Processing message", "id", item.ID)
-	}
-}
-
-func Test_NewPagerManagedObjectsPages(t *testing.T) {
-	client := testcore.CreateTestClient()
-
-	// Create pager which includes the creation of the channel
-	pager := pagination.NewPager[model.ManagedObject](
-		client.ManagedObjects.ListPager(context.Background(), managedobjects.ListOptions{}),
-	)
-
-	// Start pager and iterate through the first 2 pages
-	go pager.Pages(pagination.PagerOptions{
-		MaxPages: 2,
-		PageSize: 10,
-	})
-
-	// Range over the output channel
-	total := 0
-	for item := range pager.Output {
-		slog.Info("Processing message", "id", item.ID)
-		total++
-	}
-	assert.Equal(t, total, 20)
-}
-
 func Test_ForEachManagedObjectsIncludeAll(t *testing.T) {
-	client := testcore.CreateTestClient()
+	client := testcore.CreateTestClient(t)
 
 	out := make(chan model.ManagedObject)
 
 	// Start pager and iterate through all of the results
 	go pagination.ForEach(
-		client.ManagedObjects.ListPager(context.Background(), managedobjects.ListOptions{}),
+		context.Background(),
+		client.ManagedObjects.ListB(managedobjects.ListOptions{}),
 		pagination.IncludeAll(),
 		out,
 	)
@@ -75,14 +37,15 @@ func Test_ForEachManagedObjectsIncludeAll(t *testing.T) {
 }
 
 func Test_ForEachManagedObjectsMaxPages(t *testing.T) {
-	client := testcore.CreateTestClient()
+	client := testcore.CreateTestClient(t)
 
 	// Create output channel standard managed object
 	out := make(chan model.ManagedObject)
 
 	// Create list pager and iterate over the results
-	go pagination.ForEach(
-		client.ManagedObjects.ListPager(context.Background(), managedobjects.ListOptions{}),
+	go c8y_api.ForEach(
+		context.Background(),
+		client.ManagedObjects.ListB(managedobjects.ListOptions{}),
 		pagination.PagerOptions{
 			MaxPages: 2,
 			PageSize: 10,
@@ -100,7 +63,7 @@ func Test_ForEachManagedObjectsMaxPages(t *testing.T) {
 }
 
 func Test_ForEachCustomModel(t *testing.T) {
-	client := testcore.CreateTestClient()
+	client := testcore.CreateTestClient(t)
 
 	// Create custom model which can also re-use fields from the default model
 	type CustomModel struct {
@@ -112,8 +75,9 @@ func Test_ForEachCustomModel(t *testing.T) {
 	out := make(chan CustomModel)
 
 	// Create list pager and iterate over the results
-	go pagination.ForEach(
-		client.ManagedObjects.ListPager(context.Background(), managedobjects.ListOptions{
+	go c8y_api.ForEach(
+		context.Background(),
+		client.ManagedObjects.ListB(managedobjects.ListOptions{
 			Type: "thin-edge.io",
 		}),
 		pagination.PagerOptions{
@@ -138,14 +102,15 @@ func Test_ForEachCustomModel(t *testing.T) {
 
 // Filter managed object list on the client side
 func Test_ManagedObjectsAdvanced(t *testing.T) {
-	client := testcore.CreateTestClient()
+	client := testcore.CreateTestClient(t)
 
 	// Create channel with desired data model
 	out := make(chan model.ManagedObject)
 
 	// List managed objects and iterate of the list
-	go pagination.ForEach(
-		client.ManagedObjects.ListPager(context.Background(), managedobjects.ListOptions{}),
+	go c8y_api.ForEach(
+		context.Background(),
+		client.ManagedObjects.ListB(managedobjects.ListOptions{}),
 		pagination.PagerOptions{
 			MaxPages: 5,
 			PageSize: 2000,

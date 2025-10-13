@@ -84,8 +84,6 @@ func main() {
 
 	// Inventory binaries
 	exampleCreateBinary(client)
-
-	exampleChildAdditions(client)
 }
 
 func exampleCreateBinary(client *c8y_api.Client) error {
@@ -104,10 +102,5 @@ func exampleCreateBinary(client *c8y_api.Client) error {
 	if resp, err := client.InventoryBinary.Delete(context.TODO(), binary.ID).Send(); err != nil {
 		slog.Error("Failed to delete binary", "err", err, "response", resp.String())
 	}
-	return nil
-}
-
-func exampleChildAdditions(client *c8y_api.Client) error {
-	_ = client.ManagedObjects.ChildAdditions.Assign(context.Background(), "1234", nil).Funcs(c8y_api.SetProcessingModeCEP())
 	return nil
 }
