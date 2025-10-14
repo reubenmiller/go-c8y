@@ -21,7 +21,7 @@ func Test_CreateEventBinary(t *testing.T) {
 	assert.NoError(t, err)
 	// TODO: Create mo and event to be used in the test
 	binary, err := client.Events.Binaries.Upsert(context.Background(), "747256", eventbinaries.UploadFileOptions{
-		Filename: tempFile,
+		FilePath: tempFile,
 	})
 	assert.NoError(t, err)
 	assert.NotEmpty(t, binary.Name)

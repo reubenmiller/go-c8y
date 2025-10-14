@@ -1,6 +1,7 @@
 package types
 
 var MimeTypeApplicationJSON = "application/json"
+var MimeTypeApplicationOctetStream = "application/octet-stream"
 var MimeTypeTextPlain = "text/plain"
 
 var MimeTypeCumulocityMeasurementCollection = "application/vnd.com.nsn.cumulocity.measurementCollection+json"

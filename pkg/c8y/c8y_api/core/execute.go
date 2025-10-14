@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"net/http"
 
 	"resty.dev/v3"
 )
@@ -34,6 +35,21 @@ func ExecuteResultOnly[T any](ctx context.Context, req *TryRequest) (*T, error) 
 	}
 
 	return result, nil
+}
+
+func ExecuteUpsertResultOnly[T any](ctx context.Context, create *TryRequest, update *TryRequest) (*T, error) {
+	result, err := ExecuteResultOnly[T](ctx, create)
+	if err == nil {
+		return result, nil
+	}
+
+	if !ErrHasStatus(err, http.StatusConflict) {
+		return result, err
+	}
+	if err != nil {
+		return nil, err
+	}
+	return ExecuteResultOnly[T](ctx, update)
 }
 
 // Execute a request and return the response as text
