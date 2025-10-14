@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"io"
 	"net/url"
 
 	"github.com/google/go-querystring/query"
@@ -73,8 +74,20 @@ func (r *TryRequest) SetResult(v any) *TryRequest {
 	return r
 }
 
+func closeq(v any) {
+	if c, ok := v.(io.Closer); ok {
+		silently(c.Close())
+	}
+}
+
+func silently(_ ...any) {}
+
 func (r *TryRequest) Send() (*Response, error) {
 	resp, err := r.Request.Send()
+
+	// close body quietly to cleanup results
+	closeq(r.Request.Body)
+
 	return &Response{
 		Request:  r,
 		Response: resp,
