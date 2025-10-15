@@ -21,8 +21,8 @@ func NewService(common *core.Service) *Service {
 }
 
 // Get an event binary
-func (s *Service) Get(ctx context.Context, eventID string) (*model.EventBinary, error) {
-	return core.ExecuteResultOnly[model.EventBinary](ctx, s.GetB(eventID))
+func (s *Service) Get(ctx context.Context, eventID string) (*core.BinaryResponse, error) {
+	return core.ExecuteBinaryResponse(ctx, s.GetB(eventID))
 }
 
 func (s *Service) GetB(eventID string) *core.TryRequest {

@@ -11,9 +11,9 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alarms"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/auditrecords"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/authentication"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/binaries"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/events"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/binaries"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/measurements"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/operations"
@@ -83,8 +83,8 @@ type Client struct {
 	Alarms       *alarms.Service
 	AuditRecords *auditrecords.Service
 	// DeviceCredentials    *DeviceCredentialsService
-	Measurements    *measurements.Service
-	InventoryBinary *binaries.ManagedObjectBinaryService
+	Measurements *measurements.Service
+	Binaries     *binaries.Service
 
 	ManagedObjects *managedobjects.Service
 	Operations     *operations.Service
@@ -197,7 +197,7 @@ func NewClient(opts ClientOptions) *Client {
 	// c.DeviceCertificate = (*DeviceCertificateService)(&c.common)
 	// c.DeviceCredentials = (*DeviceCredentialsService)(&c.common)
 	c.Measurements = (*measurements.Service)(&c.common)
-	c.InventoryBinary = (*binaries.ManagedObjectBinaryService)(&c.common)
+	c.Binaries = (*binaries.Service)(&c.common)
 	c.ManagedObjects = managedobjects.NewService(&c.common)
 	c.Operations = (*operations.Service)(&c.common)
 	// c.Tenant = (*TenantService)(&c.common)

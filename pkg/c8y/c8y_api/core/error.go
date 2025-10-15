@@ -1,8 +1,10 @@
 package core
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"reflect"
 	"time"
@@ -49,12 +51,14 @@ func coupleAPIErrors(r *resty.Response, err error) (*resty.Response, error) {
 		return nil, NewError(err)
 	}
 
-	if r.Error() == nil {
-		// no error in the resty Response
+	if r.IsSuccess() {
 		return r, nil
 	}
 
-	// handle the resty Response errors
+	if r.IsRead && r.Error() == nil {
+		// no error in the resty Response
+		return r, nil
+	}
 
 	// Check that response is of the correct content-type before unmarshalling
 	// expectedContentType := r.Request.Header.Get("Accept")
@@ -63,8 +67,33 @@ func coupleAPIErrors(r *resty.Response, err error) (*resty.Response, error) {
 	// If the upstream Cumulocity API server being fronted fails to respond to the request,
 	// the http server will respond with a default "Bad Gateway" page with Content-Type
 	// "text/html".
-	if r.StatusCode() == http.StatusBadGateway && responseContentType == "text/html" { //nolint:goconst
+	if r.StatusCode() == http.StatusBadGateway && responseContentType == "text/html" {
 		return nil, Error{Code: http.StatusBadGateway, Message: http.StatusText(http.StatusBadGateway)}
+	}
+
+	if !r.IsRead {
+		// Manually parse the response to analyze the error message
+		defer r.Body.Close()
+		buf, err := io.ReadAll(r.Body)
+		if err != nil {
+			return nil, NewError(err)
+		}
+
+		var apiError APIError
+		if err := json.Unmarshal(buf, &apiError); err != nil {
+			return nil, NewError(err)
+		}
+
+		return nil, &Error{
+			Code: r.StatusCode(),
+
+			Type:       apiError.ErrorType,
+			Message:    apiError.Error(),
+			MessageRaw: string(buf),
+			Response:   r.RawResponse,
+			Duration:   r.Duration(),
+			ReceivedAt: r.ReceivedAt(),
+		}
 	}
 
 	return nil, NewError(r)

@@ -13,12 +13,11 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alarms"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/authentication"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/binaries"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/binaries"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/measurements"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"github.com/tidwall/gjson"
-	"resty.dev/v3"
 )
 
 type CustomField struct {
@@ -85,20 +84,18 @@ func main() {
 }
 
 func exampleCreateBinary(client *c8y_api.Client) error {
-	binary := &binaries.BinaryManagedObject{}
-	_, err := client.InventoryBinary.Create(context.Background(), binaries.CreateOptions{
-		File: &resty.MultipartField{
-			Reader: strings.NewReader(`hello`),
-		},
-	}).SetResult(binary).Send()
+	binary, err := client.Binaries.Create(context.Background(), binaries.UploadFileOptions{
+		Reader: strings.NewReader(`hello`),
+		Name:   "unknown",
+	})
 	if err != nil {
 		return err
 	}
 
 	slog.Info("Successfully created binary", "id", binary.ID, "lastUpdated(ago)", time.Since(binary.LastUpdated))
 
-	if resp, err := client.InventoryBinary.Delete(context.TODO(), binary.ID).Send(); err != nil {
-		slog.Error("Failed to delete binary", "err", err, "response", resp.String())
+	if err := client.Binaries.Delete(context.TODO(), binary.ID); err != nil {
+		slog.Error("Failed to delete binary", "err", err)
 	}
 	return nil
 }

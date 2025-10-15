@@ -69,6 +69,21 @@ func (r *TryRequest) SetResponseBodyUnlimitedReads(v bool) *TryRequest {
 	return r
 }
 
+func (r *TryRequest) SetOutputFileName(file string) *TryRequest {
+	r.Request.SetOutputFileName(file)
+	return r
+}
+
+func (r *TryRequest) SetSaveResponse(v bool) *TryRequest {
+	r.Request.SetSaveResponse(v)
+	return r
+}
+
+func (r *TryRequest) Funcs(funcs ...resty.RequestFunc) *TryRequest {
+	r.Request.Funcs(funcs...)
+	return r
+}
+
 func (r *TryRequest) SetResult(v any) *TryRequest {
 	r.Request.SetResult(v)
 	return r

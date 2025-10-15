@@ -32,20 +32,12 @@ func NoAcceptHeader(r *resty.Request) *resty.Request {
 	return r
 }
 
-func ExecuteNoResult(ctx context.Context, req *resty.Request) (*resty.Response, error) {
-	resp, err := req.
-		SetContext(ctx).
-		Funcs(NoAcceptHeader).
-		Send()
+func ExecuteNoResult(ctx context.Context, req *core.TryRequest) error {
+	return core.ExecuteNoResult(ctx, req)
+}
 
-	if err != nil {
-		return resp, err
-	}
-	if resp.IsError() {
-		return resp, err
-	}
-
-	return resp, nil
+func ExecuteResponseOnly(ctx context.Context, req *core.TryRequest) (*resty.Response, error) {
+	return core.ExecuteResponseOnly(ctx, req)
 }
 
 func UnmarshalJSON(req *core.Response, data any) error {
