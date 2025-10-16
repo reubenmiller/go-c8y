@@ -15,8 +15,10 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/events"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/loginoptions"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/measurements"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/operations"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/tenants/logintokens"
 	"resty.dev/v3"
 )
 
@@ -85,6 +87,10 @@ type Client struct {
 	// DeviceCredentials    *DeviceCredentialsService
 	Measurements *measurements.Service
 	Binaries     *binaries.Service
+
+	LoginOptions *loginoptions.Service
+
+	LoginTokens *logintokens.Service
 
 	ManagedObjects *managedobjects.Service
 	Operations     *operations.Service
@@ -199,6 +205,8 @@ func NewClient(opts ClientOptions) *Client {
 	c.Measurements = (*measurements.Service)(&c.common)
 	c.Binaries = (*binaries.Service)(&c.common)
 	c.ManagedObjects = managedobjects.NewService(&c.common)
+	c.LoginOptions = loginoptions.NewService(&c.common)
+	c.LoginTokens = logintokens.NewService(&c.common)
 	c.Operations = (*operations.Service)(&c.common)
 	// c.Tenant = (*TenantService)(&c.common)
 	c.Events = events.NewService(&c.common)

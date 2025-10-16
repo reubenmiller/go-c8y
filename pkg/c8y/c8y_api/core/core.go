@@ -113,3 +113,10 @@ func QueryParameters(opt any) url.Values {
 	v, _ := query.Values(opt)
 	return v
 }
+
+func NoAuthorization() resty.RequestFunc {
+	return func(r *resty.Request) *resty.Request {
+		r.Header.Del("Authorization")
+		return r
+	}
+}
