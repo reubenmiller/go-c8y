@@ -37,8 +37,7 @@ tasks:
   docs:
     desc: Launch go doc webserver
     cmds:
-      - go install golang.org/x/tools/cmd/godoc@latest
-      - godoc -http=":6060"
+      - go run golang.org/x/pkgsite/cmd/pkgsite@latest -open
 
   spell-checker:
     desc: Run the spell checker
