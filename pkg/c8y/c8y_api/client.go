@@ -156,6 +156,12 @@ type ClientOptions struct {
 	Agent string
 }
 
+func NewClientFromEnvironment(opt ClientOptions) *Client {
+	opt.BaseURL = authentication.HostFromEnvironment()
+	opt.Auth = authentication.FromEnvironment()
+	return NewClient(opt)
+}
+
 // NewClient returns a new Cumulocity API client. If a nil httpClient is
 // provided, http.DefaultClient will be used. To use API methods which require
 // authentication, provide an http.Client that will perform the authentication
