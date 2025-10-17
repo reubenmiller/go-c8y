@@ -2,7 +2,6 @@ package c8y_api_test
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
@@ -16,8 +15,8 @@ func Test_LoginTokensCreate(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
 	tok, err := client.LoginTokens.Create(context.Background(), logintokens.CreateTokenOptions{
-		Username:  os.Getenv(authentication.EnvironmentUser),
-		Password:  os.Getenv(authentication.EnvironmentPassword),
+		Username:  authentication.GetEnvValue(authentication.EnvironmentUsername...),
+		Password:  authentication.GetEnvValue(authentication.EnvironmentPassword...),
 		GrantType: "PASSWORD",
 	})
 	assert.NoError(t, err)

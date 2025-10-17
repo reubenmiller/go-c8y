@@ -6,26 +6,24 @@ import (
 	"strings"
 )
 
-var EnvironmentBaseURL = "C8Y_BASEURL"
-var EnvironmentURL = "C8Y_URL"
-var EnvironmentHost = "C8Y_HOST"
-var EnvironmentTenant = "C8Y_TENANT"
-var EnvironmentToken = "C8Y_TOKEN"
-var EnvironmentPassword = "C8Y_PASSWORD"
-var EnvironmentUsername = "C8Y_USERNAME"
-var EnvironmentUser = "C8Y_USER"
-
-var EnvironmentCertificateKeyFile = "C8Y_CERTIFICATE_KEY_FILE"
-var EnvironmentCertificateFile = "C8Y_CERTIFICATE_FILE"
+var (
+	EnvironmentHost               = []string{"C8Y_BASEURL", "C8Y_URL", "C8Y_HOST"}
+	EnvironmentTenant             = []string{"C8Y_TENANT"}
+	EnvironmentToken              = []string{"C8Y_TOKEN"}
+	EnvironmentPassword           = []string{"C8Y_PASSWORD"}
+	EnvironmentUsername           = []string{"C8Y_USERNAME", "C8Y_USER"}
+	EnvironmentCertificateKeyFile = []string{"C8Y_CERTIFICATE_KEY_FILE"}
+	EnvironmentCertificateFile    = []string{"C8Y_CERTIFICATE_FILE"}
+)
 
 func HostFromEnvironment() string {
 	// Prefer host instead of the token's Issuer, so it works well in situations
 	// where the issuer might be from a URL which is not reachable for the device
-	host := GetEnvValue(EnvironmentBaseURL, EnvironmentHost, EnvironmentURL)
+	host := GetEnvValue(EnvironmentHost...)
 	if host != "" {
 		return host
 	}
-	if token := GetEnvValue(EnvironmentToken); token != "" {
+	if token := GetEnvValue(EnvironmentToken...); token != "" {
 		if tok, err := ParseToken(token); err == nil && tok.XSRFToken != "" && tok.Issuer != "" {
 			slog.Info("Setting host from issuer", "value", tok.Issuer)
 			return tok.Issuer
@@ -36,13 +34,13 @@ func HostFromEnvironment() string {
 
 func FromEnvironment() AuthOptions {
 	auth := AuthOptions{
-		Tenant:   GetEnvValue(EnvironmentTenant),
-		Username: GetEnvValue(EnvironmentUsername, EnvironmentUser),
-		Password: GetEnvValue(EnvironmentPassword),
-		Token:    GetEnvValue(EnvironmentToken),
+		Tenant:   GetEnvValue(EnvironmentTenant...),
+		Username: GetEnvValue(EnvironmentUsername...),
+		Password: GetEnvValue(EnvironmentPassword...),
+		Token:    GetEnvValue(EnvironmentToken...),
 
-		CertificateKey: GetEnvValue(EnvironmentCertificateKeyFile),
-		Certificate:    GetEnvValue(EnvironmentCertificateFile),
+		CertificateKey: GetEnvValue(EnvironmentCertificateKeyFile...),
+		Certificate:    GetEnvValue(EnvironmentCertificateFile...),
 	}
 
 	if strings.Contains(auth.Username, "/") {
