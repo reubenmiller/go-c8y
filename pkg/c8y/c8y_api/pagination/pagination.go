@@ -67,8 +67,8 @@ func (p *PagerOptions) GetPageSize() int64 {
 }
 
 // NewPaginationOptions returns a pagination options object with a specified pagesize and WithTotalPages set to false
-func NewPaginationOptions(pageSize int) *PaginationOptions {
-	return &PaginationOptions{
+func NewPaginationOptions(pageSize int) PaginationOptions {
+	return PaginationOptions{
 		PageSize: pageSize,
 	}
 }
