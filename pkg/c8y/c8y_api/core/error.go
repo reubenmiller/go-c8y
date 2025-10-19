@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"reflect"
+	"regexp"
 	"time"
 
 	"resty.dev/v3"
@@ -189,5 +190,22 @@ func ErrHasStatus(err error, code ...int) bool {
 		}
 	}
 
+	return false
+}
+
+func ErrTokenRevoked(err any) bool {
+	// Token '{uuid}' not present for user
+	// Token is terminated
+	if apiError, ok := err.(*APIError); ok {
+		notPresent := regexp.MustCompile("(?i)^Token '[0-9a-z-]+' not present for user")
+		if notPresent.MatchString(apiError.Message) {
+			return true
+		}
+
+		tokenTerminated := regexp.MustCompile("(?i)^Token is terminated")
+		if tokenTerminated.MatchString(apiError.Message) {
+			return true
+		}
+	}
 	return false
 }

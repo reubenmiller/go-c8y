@@ -1,0 +1,28 @@
+package devices
+
+import (
+	"testing"
+
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
+	"github.com/stretchr/testify/assert"
+	"resty.dev/v3"
+)
+
+func newTestService() *Service {
+	return NewService(&core.Service{
+		Client: resty.New().SetBaseURL("https://example.cumulocity.com"),
+	})
+}
+
+func TestCreateTokenB(t *testing.T) {
+	t.Skip("Create a temp cert key pair")
+	s := newTestService()
+	s.Client.SetCertificateFromFile("todo.crt", "todo.key")
+	req := s.CreateAccessTokenB()
+
+	certChain := req.Request.Header.Get(types.HeaderSSLCertificateChain)
+	assert.NotEmpty(t, certChain)
+	assert.Equal(t, "example.cumulocity.com:8443", req.URL().Host)
+	assert.Equal(t, ApiDeviceControlAccessToken, req.URL().Path)
+}

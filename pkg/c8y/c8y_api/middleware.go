@@ -85,15 +85,15 @@ func MiddlewareAuthorization(auth authentication.AuthOptions) resty.RequestMiddl
 func SetAuth(c *resty.Client, auth authentication.AuthOptions) {
 	if auth.CertificateKey != "" && auth.Certificate != "" {
 		if _, err := os.Stat(auth.CertificateKey); err == nil {
-			c.SetCertificateFromString(auth.Certificate, auth.CertificateKey)
-		} else {
 			c.SetCertificateFromFile(auth.Certificate, auth.CertificateKey)
+		} else {
+			c.SetCertificateFromString(auth.Certificate, auth.CertificateKey)
 		}
-		// TODO: The certificate should only be used to exchange for a token
-
-	} else if auth.Token != "" {
+	}
+	if auth.Token != "" {
 		c.SetAuthToken(auth.Token)
-	} else if auth.Username != "" && auth.Password != "" {
+	}
+	if auth.Username != "" && auth.Password != "" {
 		c.SetBasicAuth(authentication.JoinTenantUser(auth.Tenant, auth.Username), auth.Password)
 	}
 }

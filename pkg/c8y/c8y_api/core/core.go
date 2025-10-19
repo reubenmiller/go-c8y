@@ -32,6 +32,13 @@ func NewTryRequest(client *resty.Client, req *resty.Request, prop ...string) *Tr
 	}
 }
 
+func (r *TryRequest) URL() *url.URL {
+	if u, err := url.Parse(r.Request.URL); err == nil {
+		return u
+	}
+	return &url.URL{}
+}
+
 func (r *TryRequest) SetContext(ctx context.Context) *TryRequest {
 	r.Request.SetContext(ctx)
 	return r

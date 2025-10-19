@@ -63,7 +63,7 @@ func (s *Service) CreateB(opt CreateTokenOptions) *core.TryRequest {
 		SetQueryParams(params).
 		SetFormDataFromValues(core.QueryParameters(opt)).
 		Funcs(core.NoAuthorization()).
-		// SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiOAuthToken)
 	// The response might not have the Content-Type set
 	req.ForceResponseContentType = types.MimeTypeApplicationJSON

@@ -23,3 +23,5 @@ _site
 # example files
 device.crt
 device.key
+*.crt
+*.key

@@ -1,7 +1,10 @@
 package c8y_api
 
 import (
+	"context"
 	"errors"
+	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
@@ -13,12 +16,14 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/authentication"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/binaries"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/devices"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/events"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/loginoptions"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/measurements"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/operations"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/tenants/logintokens"
+	"github.com/zalando/go-keyring"
 	"resty.dev/v3"
 )
 
@@ -62,19 +67,10 @@ type Client struct {
 
 	Auth authentication.AuthOptions
 
-	// Username for Cumulocity Authentication
-	// Username string
-
-	// Cumulocity Tenant
-	TenantName string
+	UseKeyRing bool
 
 	// Cumulocity Version
 	Version string
-
-	// TFACode (Two Factor Authentication) code.
-	TFACode string
-
-	Cookies []*http.Cookie
 
 	UseTenantInUsername bool
 
@@ -92,6 +88,7 @@ type Client struct {
 
 	LoginTokens *logintokens.Service
 
+	Devices        *devices.Service
 	ManagedObjects *managedobjects.Service
 	Operations     *operations.Service
 	// Tenant               *TenantService
@@ -150,6 +147,9 @@ type ClientOptions struct {
 	// Show sensitive information in the logs
 	ShowSensitive bool
 
+	// Enable Keyring for saving and retrieving a token
+	UseKeyRing bool
+
 	// Not recommended
 	InsecureSkipVerify bool
 
@@ -185,7 +185,17 @@ func NewClient(opts ClientOptions) *Client {
 	}
 
 	rclient.TLSClientConfig().InsecureSkipVerify = opts.InsecureSkipVerify
-	SetAuth(rclient, opts.Auth)
+
+	if opts.UseKeyRing {
+		if tok, err := keyring.Get(KeyringName(targetBaseURL, opts.Auth.Tenant), opts.Auth.Username); err == nil {
+			if tok != "" {
+				slog.Warn("loading token from keyring")
+				opts.Auth.Token = tok
+			}
+		} else {
+			slog.Warn("Failed to load token from keyring", "err", err)
+		}
+	}
 
 	userAgent := defaultUserAgent
 	if opts.Agent != "" {
@@ -199,9 +209,11 @@ func NewClient(opts ClientOptions) *Client {
 		Client:              rclient,
 		BaseURL:             targetBaseURL,
 		UserAgent:           userAgent,
-		TenantName:          "",
 		UseTenantInUsername: true,
-		showSensitive:       opts.ShowSensitive,
+		Auth:                opts.Auth,
+
+		showSensitive: opts.ShowSensitive,
+		UseKeyRing:    opts.UseKeyRing,
 	}
 	c.common.Client = rclient
 	c.Alarms = (*alarms.Service)(&c.common)
@@ -211,6 +223,7 @@ func NewClient(opts ClientOptions) *Client {
 	c.Measurements = (*measurements.Service)(&c.common)
 	c.Binaries = (*binaries.Service)(&c.common)
 	c.ManagedObjects = managedobjects.NewService(&c.common)
+	c.Devices = devices.NewService(&c.common)
 	c.LoginOptions = loginoptions.NewService(&c.common)
 	c.LoginTokens = logintokens.NewService(&c.common)
 	c.Operations = (*operations.Service)(&c.common)
@@ -233,10 +246,20 @@ func NewClient(opts ClientOptions) *Client {
 	// c.User = (*UserService)(&c.common)
 	// c.Features = (*FeaturesService)(&c.common)
 	// c.CertificateAuthority = (*CertificateAuthorityService)(&c.common)
+	c.AddMiddleware()
+	c.SetAuth(opts.Auth)
+	if _, err := c.Login(context.Background()); err != nil {
+		slog.Debug("Failed to get a token", "err", err)
+	}
 	return c
 }
 
 // SetBaseURL changes the base url used by the REST client
+func (c *Client) AddMiddleware() error {
+
+	c.Client.AddRetryConditions(TokenRenewalRetry(c))
+	return nil
+}
 func (c *Client) SetBaseURL(v string) error {
 	fmtURL := FormatBaseURL(v)
 	targetBaseURL, err := url.Parse(fmtURL)
@@ -253,5 +276,109 @@ func (c *Client) SetAuth(opt authentication.AuthOptions) {
 	c.clientMu.Lock()
 	defer c.clientMu.Unlock()
 	c.Auth = opt
+	c.updateClientAuth()
+}
+
+func (c *Client) updateClientAuth() {
 	SetAuth(c.Client, c.Auth)
+}
+
+func (c *Client) SetToken(v string) {
+	c.clientMu.Lock()
+	defer c.clientMu.Unlock()
+	c.Auth.Token = v
+	if v != "" {
+		if c.UseKeyRing {
+			slog.Warn("Trying to save token to keyring")
+			if err := keyring.Set(KeyringName(c.BaseURL, c.Auth.Tenant), c.Auth.Username, c.Auth.Token); err != nil {
+				slog.Warn("Failed to save token")
+			} else {
+				slog.Warn("Saved token in keyring")
+			}
+		}
+	}
+}
+
+func (c *Client) Login(ctx context.Context) (token string, err error) {
+	if len(c.Auth.Certificate) > 0 && len(c.Auth.CertificateKey) > 0 {
+		// User certificate
+		token, err = c.loginDeviceCertificate(ctx)
+	} else if len(c.Auth.Username) > 0 && len(c.Auth.Password) > 0 {
+		// Internal SSO
+		token, err = c.loginInternalSSO(ctx)
+	} else {
+		// No login necessary
+		return
+	}
+	if err != nil {
+		return
+	}
+	slog.Debug("Updating client token")
+	c.SetToken(token)
+	c.SetAuth(c.Auth)
+	return
+}
+
+func (c *Client) loginInternalSSO(ctx context.Context) (string, error) {
+	tok, err := c.LoginTokens.Create(ctx, logintokens.CreateTokenOptions{
+		Username:  c.Auth.Username,
+		Password:  c.Auth.Password,
+		GrantType: logintokens.GrantTypePassword,
+	})
+	if err != nil {
+		return "", err
+	}
+	return tok.AccessToken, nil
+}
+
+func (c *Client) loginDeviceCertificate(ctx context.Context) (string, error) {
+	tok, err := c.Devices.CreateAccessToken(ctx)
+	if err != nil {
+		return "", err
+	}
+	return tok.AccessToken, nil
+}
+
+func TokenRenewalRetry(c *Client) func(res *resty.Response, err error) bool {
+	return func(res *resty.Response, err error) bool {
+		if !res.IsError() {
+			return false
+		}
+		if res.StatusCode() == 401 {
+			if res.Request.Attempt > 1 {
+				slog.Warn("More than 1 401 detected, giving up", "err", err)
+				return false
+			}
+
+			if res.Request.AuthToken != "" && core.ErrTokenRevoked(res.Error()) {
+				slog.Warn("Token is not longer valid", "err", err)
+				loginTok, loginErr := c.Login(res.Request.Context())
+				if loginErr != nil {
+					return false
+				}
+				res.Request.SetAuthToken(loginTok)
+				// res.Request.SetRetryWaitTime(100 * time.Millisecond)
+				// res.Request.RetryMaxWaitTime = 100 * time.Millisecond
+				res.Request.Attempt = 0
+				return true
+			}
+			return false
+		}
+		return true
+	}
+
+}
+
+func TokenRenewalRetryMiddleware(c *Client) resty.ResponseMiddleware {
+	return func(c *resty.Client, r *resty.Response) error {
+		slog.Warn("")
+		if r.StatusCode() == 401 {
+
+		}
+		return nil
+	}
+}
+
+func KeyringName(host *url.URL, tenant string) string {
+	return fmt.Sprintf("go-c8y-%s", strings.Join([]string{host.Hostname(), tenant}, "#"))
 }
