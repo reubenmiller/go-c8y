@@ -59,3 +59,16 @@ type ApplicationVersionsCollection struct {
 
 	Versions []ApplicationVersion `json:"applicationVersions"`
 }
+
+type ApplicationReference struct {
+	Self        string       `json:"self,omitempty"`
+	Application *Application `json:"application,omitempty"`
+}
+
+func NewApplicationReference(selfURL string) *ApplicationReference {
+	return &ApplicationReference{
+		Application: &Application{
+			Self: selfURL,
+		},
+	}
+}

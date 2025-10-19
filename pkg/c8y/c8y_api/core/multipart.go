@@ -57,6 +57,16 @@ func NewMultiPartFileFields(opt UploadFileOptions) []*resty.MultipartField {
 	return fields
 }
 
+func NewMultiPartFile(opt UploadFileOptions) []*resty.MultipartField {
+	fields := make([]*resty.MultipartField, 0, 2)
+	fields = append(fields, &resty.MultipartField{
+		Name:     "file",
+		FilePath: opt.FilePath,
+		Reader:   opt.Reader,
+	})
+	return fields
+}
+
 type ReaderError struct {
 	Err error
 }

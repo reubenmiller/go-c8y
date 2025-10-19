@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alarms"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/applications"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/auditrecords"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/authentication"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/binaries"
@@ -21,6 +22,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/loginoptions"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/measurements"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/microservices"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/operations"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/tenants/logintokens"
 	"github.com/zalando/go-keyring"
@@ -94,7 +96,8 @@ type Client struct {
 	// Tenant               *TenantService
 	Events *events.Service
 	// Inventory            *InventoryService
-	// Application          *ApplicationService
+	Applications  *applications.Service
+	Microservices *microservices.Service
 	// UIExtension          *UIExtensionService
 	// ApplicationVersions  *ApplicationVersionsService
 	// Identity             *IdentityService
@@ -231,7 +234,8 @@ func NewClient(opts ClientOptions) *Client {
 	c.Events = events.NewService(&c.common)
 	// c.Inventory = (*InventoryService)(&c.common)
 	// c.DeviceEnrollment = (*DeviceEnrollmentService)(&c.common)
-	// c.Application = (*ApplicationService)(&c.common)
+	c.Applications = applications.NewService(&c.common)
+	c.Microservices = microservices.NewService(&c.common)
 	// c.ApplicationVersions = (*ApplicationVersionsService)(&c.common)
 	// c.UIExtension = (*UIExtensionService)(&c.common)
 	// c.Identity = (*IdentityService)(&c.common)

@@ -73,6 +73,21 @@ func NewPaginationOptions(pageSize int) PaginationOptions {
 	}
 }
 
+func ForEachWhere[A any](ctx context.Context, r *core.TryRequest, predicate func(A) bool) (*A, bool, error) {
+	out := make(chan A)
+	go ForEach(ctx, r, PagerOptions{
+		MaxPages: 3,
+	}, out)
+	for item := range out {
+		if predicate(item) {
+			return &item, true, nil
+		}
+	}
+	return nil, false, nil
+}
+
+// ForEach paginates of a result set return every individual item
+// TODO: Propagate errors back to the caller
 func ForEach[A any](ctx context.Context, r *core.TryRequest, pagerOpts PagerOptions, out chan<- A) error {
 	var nextReq *resty.Request
 	nextReq = r.Request

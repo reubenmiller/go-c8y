@@ -1,0 +1,37 @@
+package model
+
+// Binary ManagedObject representation
+type Microservice struct {
+	ID                string            `json:"id,omitempty"`
+	Key               string            `json:"key,omitempty"`
+	Name              string            `json:"name,omitempty"`
+	Type              string            `json:"type,omitempty"`
+	Availability      string            `json:"availability,omitempty"`
+	Self              string            `json:"self,omitempty"`
+	ContextPath       string            `json:"contextPath,omitempty"`
+	ExternalURL       string            `json:"externalUrl,omitempty"`
+	ResourcesURL      string            `json:"resourcesUrl,omitempty"`
+	ResourcesUsername string            `json:"resourcesUsername,omitempty"`
+	ResourcesPassword string            `json:"resourcesPassword,omitempty"`
+	Owner             *ApplicationOwner `json:"owner,omitempty"`
+
+	// Microservice roles
+	RequiredRoles []string `json:"requiredRoles,omitempty"`
+	Roles         []string `json:"roles,omitempty"`
+
+	Manifest *MicroserviceManifest `json:"manifest,omitempty"`
+}
+
+// MicroserviceCollection contains information about a list of microservices
+type MicroserviceCollection struct {
+	*BaseResponse
+
+	Microservices []Microservice `json:"applications"`
+}
+
+type MicroserviceManifest struct {
+	Name          string   `json:"name"`
+	Version       string   `json:"version"`
+	RequiredRoles []string `json:"requiredRoles"`
+	Roles         []string `json:"roles,omitempty"`
+}

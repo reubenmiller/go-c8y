@@ -10,13 +10,22 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiApplications = "/application/applications"
-var ApiApplication = "/application/applications/{id}"
-var ApiApplicationClone = "/application/applications/{id}/clone"
-var ApiApplicationByName = "/application/applicationsByName/{name}"
-var ApiApplicationByTenantID = "/application/applicationsByTenant/{tenantID}"
-var ApiApplicationByOwner = "/application/applicationsByTenant/{tenantID}"
-var ApiApplicationByUser = "/application/applicationsByUser/{username}"
+var (
+	ApiApplications          = "/application/applications"
+	ApiApplication           = "/application/applications/{id}"
+	ApiApplicationBinaries   = "/application/applications/{id}/binaries"
+	ApiApplicationClone      = "/application/applications/{id}/clone"
+	ApiApplicationByName     = "/application/applicationsByName/{name}"
+	ApiApplicationByTenantID = "/application/applicationsByTenant/{tenantID}"
+	ApiApplicationByOwner    = "/application/applicationsByTenant/{tenantID}"
+	ApiApplicationByUser     = "/application/applicationsByUser/{username}"
+	ApiTenantApplications    = "/tenant/tenants/{tenantID}/applications"
+	ApiTenantApplication     = "/tenant/tenants/{tenantID}/applications/{id}"
+)
+
+var (
+	TypeMicroservice = "MICROSERVICE"
+)
 
 var ParamId = "id"
 var ParamName = "name"
@@ -55,6 +64,11 @@ type ListOptions struct {
 
 	// The ID of a user that has access to the applications
 	User string `url:"user,omitempty"`
+
+	// When set to true, the returned result contains applications with an applicationVersions
+	// field that is not empty. When set to false, the result will contain applications with an
+	// empty applicationVersions field
+	HasVersions string `url:"hasVersions,omitempty"`
 
 	// Pagination options
 	pagination.PaginationOptions
@@ -185,8 +199,8 @@ func (s *Service) CreateB(body any) *core.TryRequest {
 }
 
 // Update an application
-func (s *Service) Update(ctx context.Context, ID string, body any) (*model.Binary, error) {
-	return core.ExecuteResultOnly[model.Binary](ctx, s.UpdateB(ID, body))
+func (s *Service) Update(ctx context.Context, ID string, body any) (*model.Application, error) {
+	return core.ExecuteResultOnly[model.Application](ctx, s.UpdateB(ID, body))
 }
 
 func (s *Service) UpdateB(ID string, body any) *core.TryRequest {
@@ -237,5 +251,51 @@ func (s *Service) CopyB(ID string, opt CopyOptions) *core.TryRequest {
 		SetMethod(resty.MethodPost).
 		SetPathParam(ParamId, ID).
 		SetURL(ApiApplicationClone)
+	return core.NewTryRequest(s.Client, req)
+}
+
+// Subscribe an application to a tenant
+func (s *Service) Subscribe(ctx context.Context, tenantID string, selfLink string) (*model.Application, error) {
+	return core.ExecuteResultOnly[model.Application](ctx, s.SubscribeB(tenantID, selfLink))
+}
+
+func (s *Service) SubscribeB(tenantID string, selfURL string) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodPost).
+		SetPathParam(ParamTenantID, tenantID).
+		SetBody(model.NewApplicationReference(selfURL)).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetURL(ApiTenantApplications)
+	return core.NewTryRequest(s.Client, req)
+}
+
+// Unsubscribe an application from a tenant
+func (s *Service) Unsubscribe(ctx context.Context, tenantID string, ID string) error {
+	return core.ExecuteNoResult(ctx, s.UnsubscribeB(tenantID, ID))
+}
+
+func (s *Service) UnsubscribeB(tenantID string, ID string) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodDelete).
+		SetPathParam(ParamTenantID, tenantID).
+		SetPathParam(ParamId, ID).
+		SetURL(ApiTenantApplication)
+	return core.NewTryRequest(s.Client, req)
+}
+
+type UploadFileOptions = core.UploadFileOptions
+
+// Upload an application binary
+func (s *Service) Upload(ctx context.Context, ID string, opt UploadFileOptions) (*model.Application, error) {
+	return core.ExecuteResultOnly[model.Application](ctx, s.UploadB(ID, opt))
+}
+
+func (s *Service) UploadB(ID string, opt UploadFileOptions) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodPost).
+		SetPathParam(ParamId, ID).
+		SetMultipartFields(core.NewMultiPartFile(opt)...).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetURL(ApiApplicationBinaries)
 	return core.NewTryRequest(s.Client, req)
 }
