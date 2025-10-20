@@ -1,7 +1,8 @@
-FROM python:alpine3.6
+FROM python:3.12-alpine3.22
 
-COPY . /app
 WORKDIR /app
+COPY application.py .
+COPY c8y_hservice.py .
 RUN pip install flask==0.10.1
 
 ENTRYPOINT ["python"]

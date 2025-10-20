@@ -1,3 +1,14 @@
+package microservices
+
+import (
+	"bytes"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func Test_NewManifestFromJSON(t *testing.T) {
+	dummyManifest := `
 {
   "apiVersion": "v2",
   "name": "example",
@@ -31,4 +42,9 @@
     "initialDelaySeconds": 20,
     "periodSeconds": 10
   }
+}
+	`
+	manifest, err := NewManifest(nil, FromJSON(bytes.NewBufferString(dummyManifest)))
+	assert.NoError(t, err)
+	assert.Equal(t, APIVersion2, manifest.APIVersion)
 }

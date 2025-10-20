@@ -34,4 +34,10 @@ type MicroserviceManifest struct {
 	Version       string   `json:"version"`
 	RequiredRoles []string `json:"requiredRoles"`
 	Roles         []string `json:"roles,omitempty"`
+	APIVersion    string   `json:"apiVersion,omitempty"`
+}
+
+type MicroserviceReference struct {
+	Self        string        `json:"self,omitempty"`
+	Application *Microservice `json:"application,omitempty"`
 }

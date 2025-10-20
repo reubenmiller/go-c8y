@@ -8,12 +8,13 @@ import (
 
 // ManagedObject is the general Inventory Managed Object data structure
 type ManagedObject struct {
-	ID          string    `json:"id,omitempty"`
-	Name        string    `json:"name,omitempty"`
-	Type        string    `json:"type,omitempty"`
-	Self        string    `json:"self,omitempty"`
-	Owner       string    `json:"owner,omitempty"`
-	LastUpdated time.Time `json:"lastUpdated,omitzero"`
+	ID           string    `json:"id,omitempty"`
+	Name         string    `json:"name,omitempty"`
+	Type         string    `json:"type,omitempty"`
+	Self         string    `json:"self,omitempty"`
+	Owner        string    `json:"owner,omitempty"`
+	CreationTime time.Time `json:"creationTime,omitzero"`
+	LastUpdated  time.Time `json:"lastUpdated,omitzero"`
 
 	DeviceParents   *ManagedObjectReferenceCollection `json:"deviceParents,omitempty"`
 	ChildDevices    *ManagedObjectReferenceCollection `json:"childDevices,omitempty"`

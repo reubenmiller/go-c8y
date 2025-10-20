@@ -1,12 +1,13 @@
-import urllib.request, json, base64
+import base64
+import json
 import os
-from datetime import datetime, date, time
+from datetime import datetime, timezone
 from random import randint
 from urllib.request import Request
 from urllib.request import urlopen
 
 # values provided into environment by cumulocity platform during deployment
-C8Y_BASEURL = os.getenv('C8Y_BASEURL')
+C8Y_BASEURL = os.getenv('C8Y_BASEURL', '')
 C8Y_BOOTSTRAP_USER = os.getenv('C8Y_BOOTSTRAP_USER')
 C8Y_BOOTSTRAP_TENANT = os.getenv('C8Y_BOOTSTRAP_TENANT')
 C8Y_BOOTSTRAP_PASSWORD = os.getenv('C8Y_BOOTSTRAP_PASSWORD')
@@ -66,7 +67,7 @@ def random_measurement_for(device_id):
     measurement_data = {
         'source': {'id': str(device_id)},
         'type': 'c8y_TestMeasurement',
-        'time': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z',
+        'time': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z',
         'c8y_TestMeasurement': {
             'T': {
                 'value': randint(0, 1000)

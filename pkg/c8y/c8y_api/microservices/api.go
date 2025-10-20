@@ -121,8 +121,13 @@ func (s *Service) DeleteB(ID string, opt DeleteOptions) *core.TryRequest {
 }
 
 // Subscribe a microservice to a tenant
+// TODO: Should 409 errors be ignored? Or should another function be created to allow 409s to be ignored
 func (s *Service) Subscribe(ctx context.Context, tenantID string, selfURL string) (*model.Microservice, error) {
-	return core.ExecuteResultOnly[model.Microservice](ctx, s.SubscribeB(tenantID, selfURL))
+	res, err := core.ExecuteResultOnly[model.MicroserviceReference](ctx, s.SubscribeB(tenantID, selfURL))
+	if err != nil {
+		return nil, err
+	}
+	return res.Application, nil
 }
 
 func (s *Service) SubscribeB(tenantID string, selfURL string) *core.TryRequest {
@@ -141,8 +146,8 @@ func (s *Service) UnsubscribeB(tenantID string, ID string) *core.TryRequest {
 type UploadFileOptions = applications.UploadFileOptions
 
 // Upload a new microservice binary
-func (s *Service) Upload(ctx context.Context, ID string, opt UploadFileOptions) (*model.Microservice, error) {
-	return core.ExecuteResultOnly[model.Microservice](ctx, s.UploadB(ID, opt))
+func (s *Service) Upload(ctx context.Context, ID string, opt UploadFileOptions) (*model.MicroserviceBinary, error) {
+	return core.ExecuteResultOnly[model.MicroserviceBinary](ctx, s.UploadB(ID, opt))
 }
 
 func (s *Service) UploadB(ID string, opt UploadFileOptions) *core.TryRequest {

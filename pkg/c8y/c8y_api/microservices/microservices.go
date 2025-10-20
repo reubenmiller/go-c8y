@@ -18,8 +18,6 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 )
 
-const ManifestFile = "cumulocity.json"
-
 type CreateOptions struct {
 	File             string
 	Name             string
@@ -45,7 +43,7 @@ func getApplicationDetails(opt CreateOptions) (*model.Microservice, error) {
 		// Try loading manifest file directly from the zip (without unzipping it)
 		slog.Info("Trying to detect manifest from a zip file", "path", opt.File)
 		if err := GetManifestContents(opt.File, &app.Manifest); err != nil {
-			slog.Warn(fmt.Sprintf("Could not find manifest file. Expected %s to contain %s. %s", opt.File, ManifestFile), "err", err)
+			slog.Warn(fmt.Sprintf("Could not find manifest file. Expected %s to contain %s", opt.File, ManifestFile), "err", err)
 		}
 	} else if opt.File != "" {
 		// Assume json (regardless of file type)
@@ -105,8 +103,6 @@ func (s *Service) CreateOrUpdate(ctx context.Context, opt CreateOptions) (*model
 	var application *model.Microservice
 	var applicationID string
 	var applicationName string
-
-	dryRun := false
 
 	applicationDetails, err := getApplicationDetails(opt)
 	if err != nil {
@@ -168,13 +164,11 @@ func (s *Service) CreateOrUpdate(ctx context.Context, opt CreateOptions) (*model
 	// Upload binary
 	if !skipUpload {
 		slog.Info("uploading microservice binary", "id", application.ID)
-		if !dryRun {
-			_, err := s.Upload(ctx, application.ID, UploadFileOptions{
-				FilePath: opt.File,
-			})
-			if err != nil {
-				return nil, fmt.Errorf("failed to upload file. path=%s. %w", opt.File, err)
-			}
+		_, err := s.Upload(ctx, application.ID, UploadFileOptions{
+			FilePath: opt.File,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to upload file. path=%s. %w", opt.File, err)
 		}
 	} else {
 		//
@@ -192,29 +186,25 @@ func (s *Service) CreateOrUpdate(ctx context.Context, opt CreateOptions) (*model
 			"roles",
 			strings.Join(applicationDetails.Manifest.Roles, ","),
 		)
-		if !dryRun {
-			application, err = s.Update(ctx, application.ID, &model.Microservice{
-				RequiredRoles: applicationDetails.Manifest.RequiredRoles,
-				Roles:         applicationDetails.Manifest.Roles,
-			})
-			if err != nil {
-				return application, err
-			}
+		application, err = s.Update(ctx, application.ID, &model.Microservice{
+			RequiredRoles: applicationDetails.Manifest.RequiredRoles,
+			Roles:         applicationDetails.Manifest.Roles,
+		})
+		if err != nil {
+			return application, err
 		}
 	}
 
 	// App subscription
 	if !opt.SkipSubscription {
 		slog.Info("Subscribing to microservice")
-		if !dryRun {
-			application, err = s.Subscribe(ctx, opt.TenantID, application.Self)
-			if err != nil {
-				if core.ErrHasStatus(err, 409) {
-					slog.Info("microservice is already subscribed to")
-				} else {
-					return application, fmt.Errorf("failed to subscribe to application. %w", err)
-				}
-			}
+		_, err = s.Subscribe(ctx, opt.TenantID, application.Self)
+		if core.ErrHasStatus(err, 409) {
+			slog.Info("microservice is already subscribed to")
+			err = nil
+		}
+		if err != nil {
+			return application, fmt.Errorf("failed to subscribe to application. %w", err)
 		}
 	}
 	return application, err
