@@ -1,0 +1,58 @@
+package currentmicroservice
+
+import (
+	"context"
+
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
+	"resty.dev/v3"
+)
+
+var (
+	ApiApplication              = "/application/currentApplication"
+	ApiApplicationSubscriptions = "/application/currentApplication/subscriptions"
+	ApiApplicationSettings      = "/application/currentApplication/settings"
+)
+
+// Service
+type Service core.Service
+
+func NewService(common *core.Service) *Service {
+	return (*Service)(common)
+}
+
+// Get the current microservice
+func (s *Service) Get(ctx context.Context) (*model.Microservice, error) {
+	return core.ExecuteResultOnly[model.Microservice](ctx, s.GetB())
+}
+
+func (s *Service) GetB() *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodGet).
+		SetURL(ApiApplication)
+	return core.NewTryRequest(s.Client, req)
+}
+
+// Retrieve the subscribed users of the current application
+func (s *Service) ListUsers(ctx context.Context) (*model.MicroserviceUserCollection, error) {
+	return core.ExecuteResultOnly[model.MicroserviceUserCollection](ctx, s.ListUsersB())
+}
+
+func (s *Service) ListUsersB() *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodGet).
+		SetURL(ApiApplicationSubscriptions)
+	return core.NewTryRequest(s.Client, req)
+}
+
+// ListSettings returns the current application settings
+func (s *Service) ListSettings(ctx context.Context) ([]model.MicroserviceSetting, error) {
+	return core.ExecuteResultsArrayOnly[model.MicroserviceSetting](ctx, s.ListSettingsB())
+}
+
+func (s *Service) ListSettingsB() *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodGet).
+		SetURL(ApiApplicationSettings)
+	return core.NewTryRequest(s.Client, req)
+}

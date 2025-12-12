@@ -41,3 +41,24 @@ type MicroserviceReference struct {
 	Self        string        `json:"self,omitempty"`
 	Application *Microservice `json:"application,omitempty"`
 }
+
+// MicroserviceUser containers the credentials to access a given tenant
+type MicroserviceUser struct {
+	Username string `json:"name,omitempty"`
+	Password string `json:"password,omitempty"`
+	Tenant   string `json:"tenant,omitempty"`
+}
+
+type MicroserviceUserCollection struct {
+	Users []MicroserviceUser `json:"users"`
+}
+
+type MicroserviceSetting struct {
+	Key              string `json:"key,omitempty"`
+	DefaultValue     string `json:"defaultValue,omitempty"`
+	Editable         bool   `json:"editable,omitempty"`
+	InheritFromOwner bool   `json:"inheritFromOwner,omitempty"`
+	ValueSchema      struct {
+		Type string `json:"type,omitempty"`
+	} `json:"valueSchema,omitempty"`
+}

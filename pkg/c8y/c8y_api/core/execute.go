@@ -64,6 +64,19 @@ func ExecuteResultOnly[T any](ctx context.Context, req *TryRequest) (*T, error) 
 	return result, nil
 }
 
+func ExecuteResultsArrayOnly[T any](ctx context.Context, req *TryRequest) ([]T, error) {
+	result := make([]T, 0)
+	_, err := coupleAPIErrors(req.Request.
+		SetContext(ctx).
+		SetResult(result).
+		Send())
+
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
 func ExecuteUpsertResultOnly[T any](ctx context.Context, create *TryRequest, update *TryRequest) (*T, error) {
 	result, err := ExecuteResultOnly[T](ctx, create)
 	if err == nil {

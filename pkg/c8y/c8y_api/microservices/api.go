@@ -5,6 +5,8 @@ import (
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/applications"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/microservices/bootstrapuser"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/microservices/currentmicroservice"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 )
@@ -13,13 +15,17 @@ import (
 // Managed objects can perform operations to store, retrieve and delete binaries. One binary can store only one file. Together with the binary, a managed object is created which acts as a metadata information for the binary.
 type Service struct {
 	core.Service
-	applicationAPI applications.Service
+	applicationAPI      applications.Service
+	BootstrapUser       bootstrapuser.Service
+	CurrentMicroservice currentmicroservice.Service
 }
 
 func NewService(common *core.Service) *Service {
 	return &Service{
-		Service:        *common,
-		applicationAPI: *applications.NewService(common),
+		Service:             *common,
+		applicationAPI:      *applications.NewService(common),
+		BootstrapUser:       *bootstrapuser.NewService(common),
+		CurrentMicroservice: *currentmicroservice.NewService(common),
 	}
 }
 
