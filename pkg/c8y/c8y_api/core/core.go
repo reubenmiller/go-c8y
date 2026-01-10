@@ -96,6 +96,13 @@ func (r *TryRequest) SetResult(v any) *TryRequest {
 	return r
 }
 
+func (r *TryRequest) SetDefaultAcceptHeader() *TryRequest {
+	if r.Request.Header.Get("Accept") == "" {
+		r.Request.SetHeader("Accept", types.MimeTypeApplicationJSON)
+	}
+	return r
+}
+
 func closeq(v any) {
 	if c, ok := v.(io.Closer); ok {
 		silently(c.Close())

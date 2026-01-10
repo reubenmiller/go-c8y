@@ -19,8 +19,15 @@ func Test_CreateEventBinary(t *testing.T) {
 	tempFile := filepath.Join(tempDir, "myfile.txt")
 	err := os.WriteFile(tempFile, []byte(`foo`), 0644)
 	assert.NoError(t, err)
-	// TODO: Create mo and event to be used in the test
-	binary, err := client.Events.Binaries.Upsert(context.Background(), "747256", eventbinaries.UploadFileOptions{
+
+	mo, err := testcore.CreateManagedObject(t, client)
+	assert.NoError(t, err)
+
+	event, err := testcore.CreateEvent(t, client, mo)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, event.ID)
+
+	binary, err := client.Events.Binaries.Upsert(context.Background(), event.ID, eventbinaries.UploadFileOptions{
 		FilePath: tempFile,
 	})
 	assert.NoError(t, err)

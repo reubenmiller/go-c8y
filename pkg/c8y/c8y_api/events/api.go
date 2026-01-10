@@ -8,6 +8,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/events/eventbinaries"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
 )
 
@@ -127,6 +128,7 @@ func (s *Service) Create(ctx context.Context, body any) (*model.Event, error) {
 func (s *Service) CreateB(body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiEvents)
 	return core.NewTryRequest(s.Client, req)
@@ -141,6 +143,7 @@ func (s *Service) UpdateB(ID string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamId, ID).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiEvent)
 	return core.NewTryRequest(s.Client, req)

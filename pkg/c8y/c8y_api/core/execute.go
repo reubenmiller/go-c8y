@@ -52,6 +52,7 @@ func ExecuteBinaryResponse(ctx context.Context, req *TryRequest) (*BinaryRespons
 // Execute a request and return the typed response
 func ExecuteResultOnly[T any](ctx context.Context, req *TryRequest) (*T, error) {
 	result := new(T)
+	req.SetDefaultAcceptHeader()
 	_, err := coupleAPIErrors(req.Request.
 		SetContext(ctx).
 		SetResult(result).
@@ -66,6 +67,7 @@ func ExecuteResultOnly[T any](ctx context.Context, req *TryRequest) (*T, error) 
 
 func ExecuteResultsArrayOnly[T any](ctx context.Context, req *TryRequest) ([]T, error) {
 	result := make([]T, 0)
+	req.SetDefaultAcceptHeader()
 	_, err := coupleAPIErrors(req.Request.
 		SetContext(ctx).
 		SetResult(result).
