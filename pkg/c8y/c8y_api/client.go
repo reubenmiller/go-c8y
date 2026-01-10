@@ -170,10 +170,7 @@ func NewClientFromEnvironment(opt ClientOptions) *Client {
 // authentication, provide an http.Client that will perform the authentication
 // for you (such as that provided by the golang.org/x/oauth2 library).
 func NewClient(opts ClientOptions) *Client {
-	circuitBreaker := resty.NewCircuitBreaker().
-		SetTimeout(15 * time.Second).
-		SetFailureThreshold(10).
-		SetSuccessThreshold(5)
+	circuitBreaker := resty.NewCircuitBreakerWithCount(10, 5, 15*time.Second)
 
 	rclient := resty.New().
 		SetRetryCount(3).
