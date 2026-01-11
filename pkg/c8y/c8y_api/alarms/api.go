@@ -7,6 +7,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
 )
 
@@ -155,6 +156,7 @@ func (s *Service) Create(ctx context.Context, body any) (*model.Alarm, error) {
 func (s *Service) CreateB(body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiAlarms)
 	return core.NewTryRequest(s.Client, req)
@@ -169,6 +171,7 @@ func (s *Service) UpdateB(ID string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamId, ID).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiAlarm)
 	return core.NewTryRequest(s.Client, req)
@@ -238,6 +241,7 @@ func (s *Service) UpdateListB(opt BulkUpdateOptions, body any) *core.TryRequest 
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(opt).
 		SetURL(ApiAlarms)
 	return core.NewTryRequest(s.Client, req, ResultProperty)
