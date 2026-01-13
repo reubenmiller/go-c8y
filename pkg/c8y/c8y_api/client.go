@@ -19,6 +19,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/devices"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/events"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/features"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/loginoptions"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/measurements"
@@ -112,7 +113,7 @@ type Client struct {
 	// DeviceCertificate    *DeviceCertificateService
 	// DeviceEnrollment     *DeviceEnrollmentService
 	// CertificateAuthority *CertificateAuthorityService
-	// Features             *FeaturesService
+	Features *features.Service
 }
 
 const (
@@ -245,7 +246,7 @@ func NewClient(opts ClientOptions) *Client {
 	// c.Software = (*InventorySoftwareService)(&c.common)
 	// c.Firmware = (*InventoryFirmwareService)(&c.common)
 	// c.User = (*UserService)(&c.common)
-	// c.Features = (*FeaturesService)(&c.common)
+	c.Features = features.NewService(&c.common)
 	// c.CertificateAuthority = (*CertificateAuthorityService)(&c.common)
 	c.AddMiddleware()
 	c.SetAuth(opts.Auth)
