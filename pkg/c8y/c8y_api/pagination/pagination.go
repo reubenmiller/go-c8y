@@ -51,6 +51,7 @@ func (o PaginationOptions) SetPageSize(v int) *PaginationOptions {
 
 type PagerOptions struct {
 	MaxPages    int64 `url:"-"`
+	MaxItems    int64 `url:"-"`
 	PageSize    int64 `url:"pageSize"`
 	CurrentPage int64 `url:"currentPage"`
 }
@@ -73,11 +74,9 @@ func NewPaginationOptions(pageSize int) PaginationOptions {
 	}
 }
 
-func ForEachWhere[A any](ctx context.Context, r *core.TryRequest, predicate func(A) bool) (*A, bool, error) {
+func ForEachWhere[A any](ctx context.Context, r *core.TryRequest, pagerOpts PagerOptions, predicate func(A) bool) (*A, bool, error) {
 	out := make(chan A)
-	go ForEach(ctx, r, PagerOptions{
-		MaxPages: 3,
-	}, out)
+	go ForEach(ctx, r, pagerOpts, out)
 	for item := range out {
 		if predicate(item) {
 			return &item, true, nil
@@ -96,6 +95,7 @@ func ForEach[A any](ctx context.Context, r *core.TryRequest, pagerOpts PagerOpti
 		nextReq.SetQueryParam("currentPage", fmt.Sprintf("%d", pagerOpts.CurrentPage))
 	}
 	pageCount := int64(0)
+	totalCount := int64(0)
 
 	for {
 		resp, err := nextReq.SetContext(ctx).Send()
@@ -143,6 +143,12 @@ func ForEach[A any](ctx context.Context, r *core.TryRequest, pagerOpts PagerOpti
 			break
 		}
 
+		totalCount += int64(len(items.Array()))
+		if pagerOpts.MaxItems > 0 && totalCount >= pagerOpts.MaxItems {
+			slog.Info("max items reached", "total", totalCount)
+			break
+		}
+
 		// prepare next request
 
 		// TODO: Make the url parsing more robust to use the external url rather the the txxx url
@@ -163,6 +169,7 @@ func ForEachJSON(ctx context.Context, r *core.TryRequest, pagerOpts PagerOptions
 		nextReq.SetQueryParam("currentPage", fmt.Sprintf("%d", pagerOpts.CurrentPage))
 	}
 	pageCount := int64(0)
+	totalCount := int64(0)
 
 	for {
 		resp, err := nextReq.SetContext(ctx).Send()
@@ -201,6 +208,12 @@ func ForEachJSON(ctx context.Context, r *core.TryRequest, pagerOpts PagerOptions
 
 		if pagerOpts.MaxPages > 0 && pageCount >= pagerOpts.MaxPages {
 			slog.Info("max pages reached", "total", pageCount)
+			break
+		}
+
+		totalCount += int64(len(items.Array()))
+		if pagerOpts.MaxItems > 0 && totalCount >= pagerOpts.MaxItems {
+			slog.Info("max items reached", "total", totalCount)
 			break
 		}
 

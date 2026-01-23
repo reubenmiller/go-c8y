@@ -76,7 +76,7 @@ func First(m model.Microservice) bool {
 }
 
 func (s *Service) FindFirst(ctx context.Context, opt ListOptions) (*model.Microservice, bool, error) {
-	return pagination.ForEachWhere(ctx, s.ListB(opt), First)
+	return pagination.ForEachWhere(ctx, s.ListB(opt), pagination.PagerOptions{MaxPages: 2}, First)
 }
 
 // List all microservices on your tenant
