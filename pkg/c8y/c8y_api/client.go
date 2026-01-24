@@ -20,6 +20,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/devices"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/events"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/features"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/identity"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/loginoptions"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/measurements"
@@ -95,14 +96,12 @@ type Client struct {
 	ManagedObjects *managedobjects.Service
 	Operations     *operations.Service
 	// Tenant               *TenantService
-	Events *events.Service
-	// Inventory            *InventoryService
+	Events        *events.Service
 	Applications  *applications.Service
 	Microservices *microservices.Service
 	// UIExtension          *UIExtensionService
 	// ApplicationVersions  *ApplicationVersionsService
-	// Identity             *IdentityService
-	// Microservice         *MicroserviceService
+	Identity *identity.Service
 	// Notification2        *Notification2Service
 	// RemoteAccess         *RemoteAccessService
 	// Retention            *RetentionRuleService
@@ -236,7 +235,7 @@ func NewClient(opts ClientOptions) *Client {
 	c.Microservices = microservices.NewService(&c.common)
 	// c.ApplicationVersions = (*ApplicationVersionsService)(&c.common)
 	// c.UIExtension = (*UIExtensionService)(&c.common)
-	// c.Identity = (*IdentityService)(&c.common)
+	c.Identity = identity.NewService(&c.common)
 	// c.Microservice = (*MicroserviceService)(&c.common)
 	// c.Notification2 = (*Notification2Service)(&c.common)
 	// c.Context = (*ContextService)(&c.common)
