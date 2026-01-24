@@ -232,6 +232,23 @@ func TestEventService_CreateBinary(t *testing.T) {
 	testingutils.Ok(t, err)
 	testingutils.FileEquals(t, testfile1, downloadedFile1)
 
+	// Update binary
+	testfile2 := NewDummyFile("testFile2", "test contents 2")
+	binaryObj2, resp, err := client.Event.UpdateBinary(context.Background(), event1.ID, testfile2)
+	testingutils.Ok(t, err)
+	testingutils.Equals(t, http.StatusCreated, resp.StatusCode())
+	testingutils.Equals(t, event1.ID, binaryObj2.Source)
+	testingutils.Assert(t, binaryObj2.Self != "", "Self link should be set")
+
+	//
+	// Download update file
+	downloadedFile2, err := client.Event.DownloadBinary(
+		context.Background(),
+		event1.ID,
+	)
+	testingutils.Ok(t, err)
+	testingutils.FileEquals(t, testfile2, downloadedFile2)
+
 	//
 	// Remove file
 	resp, err = client.Event.DeleteBinary(
@@ -244,10 +261,10 @@ func TestEventService_CreateBinary(t *testing.T) {
 
 	//
 	// Check if binary has been deleted
-	downloadedFile2, err := client.Event.DownloadBinary(
+	downloadedFile3, err := client.Event.DownloadBinary(
 		context.Background(),
 		event1.ID,
 	)
 	testingutils.Assert(t, err != nil, "An error should be thrown if the binary does not exist")
-	testingutils.Equals(t, "", downloadedFile2)
+	testingutils.Equals(t, "", downloadedFile3)
 }
