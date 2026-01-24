@@ -119,6 +119,10 @@ type ListSeriesOptions struct {
 
 	DateTo string `url:"dateTo,omitempty"`
 
+	AggregationFunction []string `url:"aggregationFunction,omitempty"`
+
+	AggregationInterval string `url:"aggregationInterval,omitempty"`
+
 	AggregationType string `url:"aggregationType,omitempty"`
 
 	Variables []string `url:"series,omitempty"`
