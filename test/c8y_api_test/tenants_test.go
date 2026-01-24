@@ -1,0 +1,29 @@
+package c8y_api_test
+
+import (
+	"context"
+	"testing"
+
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/tenants"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/tenants/currenttenant"
+	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
+	"github.com/stretchr/testify/assert"
+)
+
+func Test_TenantsList(t *testing.T) {
+	client := testcore.CreateTestClient(t)
+	client.Client.SetDebug(true)
+	tenants_, err := client.Tenants.List(context.Background(), tenants.ListOptions{})
+	assert.NoError(t, err)
+	assert.NotEmpty(t, tenants_.Self)
+}
+
+func Test_GetCurrent(t *testing.T) {
+	client := testcore.CreateTestClient(t)
+	client.Client.SetDebug(true)
+
+	// Get Current
+	currentTenant, err := client.Tenants.Current.Get(context.Background(), currenttenant.GetOptions{})
+	assert.NoError(t, err)
+	assert.NotEmpty(t, currentTenant.Name)
+}

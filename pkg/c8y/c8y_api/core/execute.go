@@ -70,7 +70,7 @@ func ExecuteResultsArrayOnly[T any](ctx context.Context, req *TryRequest) ([]T, 
 	req.SetDefaultAcceptHeader()
 	_, err := coupleAPIErrors(req.Request.
 		SetContext(ctx).
-		SetResult(result).
+		SetResult(&result).
 		Send())
 
 	if err != nil {

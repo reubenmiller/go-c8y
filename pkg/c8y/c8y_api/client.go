@@ -26,6 +26,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/measurements"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/microservices"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/operations"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/tenants"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/tenants/logintokens"
 	"github.com/zalando/go-keyring"
 	"resty.dev/v3"
@@ -95,10 +96,10 @@ type Client struct {
 	Devices        *devices.Service
 	ManagedObjects *managedobjects.Service
 	Operations     *operations.Service
-	// Tenant               *TenantService
-	Events        *events.Service
-	Applications  *applications.Service
-	Microservices *microservices.Service
+	Tenants        *tenants.Service
+	Events         *events.Service
+	Applications   *applications.Service
+	Microservices  *microservices.Service
 	// UIExtension          *UIExtensionService
 	// ApplicationVersions  *ApplicationVersionsService
 	Identity *identity.Service
@@ -227,9 +228,8 @@ func NewClient(opts ClientOptions) *Client {
 	c.LoginOptions = loginoptions.NewService(&c.common)
 	c.LoginTokens = logintokens.NewService(&c.common)
 	c.Operations = (*operations.Service)(&c.common)
-	// c.Tenant = (*TenantService)(&c.common)
+	c.Tenants = tenants.NewService(&c.common)
 	c.Events = events.NewService(&c.common)
-	// c.Inventory = (*InventoryService)(&c.common)
 	// c.DeviceEnrollment = (*DeviceEnrollmentService)(&c.common)
 	c.Applications = applications.NewService(&c.common)
 	c.Microservices = microservices.NewService(&c.common)
