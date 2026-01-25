@@ -30,6 +30,8 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/tenants"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/tenants/logintokens"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/trustedcertificates"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/usergroups"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/users"
 	"github.com/zalando/go-keyring"
 	"resty.dev/v3"
 )
@@ -112,7 +114,8 @@ type Client struct {
 	// TenantOptions        *TenantOptionsService
 	// Software             *InventorySoftwareService
 	// Firmware             *InventoryFirmwareService
-	// User                 *UserService
+	Users      *users.Service
+	UserGroups *usergroups.Service
 	// DeviceEnrollment     *DeviceEnrollmentService
 	// CertificateAuthority *CertificateAuthorityService
 	Features *features.Service
@@ -247,7 +250,8 @@ func NewClient(opts ClientOptions) *Client {
 	// c.TenantOptions = (*TenantOptionsService)(&c.common)
 	// c.Software = (*InventorySoftwareService)(&c.common)
 	// c.Firmware = (*InventoryFirmwareService)(&c.common)
-	// c.User = (*UserService)(&c.common)
+	c.Users = users.NewService(&c.common)
+	c.UserGroups = usergroups.NewService(&c.common)
 	c.Features = features.NewService(&c.common)
 	// c.CertificateAuthority = (*CertificateAuthorityService)(&c.common)
 	c.AddMiddleware()

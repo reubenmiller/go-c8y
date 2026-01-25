@@ -23,7 +23,7 @@ func NewService(s *core.Service) *Service {
 	}
 }
 
-// Service provides api to managed retention rules
+// Service provides api to manage retention rules
 type Service struct {
 	core.Service
 }
