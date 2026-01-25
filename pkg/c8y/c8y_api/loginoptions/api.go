@@ -113,6 +113,7 @@ func (s *Service) Delete(ctx context.Context, typeOrID string) error {
 func (s *Service) DeleteB(typeOrID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
+		SetPathParam(ParamId, typeOrID).
 		SetURL(ApiLoginOption)
 	return core.NewTryRequest(s.Client, req)
 }
