@@ -28,6 +28,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/operations"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/tenants"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/tenants/logintokens"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/trustedcertificates"
 	"github.com/zalando/go-keyring"
 	"resty.dev/v3"
 )
@@ -102,7 +103,8 @@ type Client struct {
 	Microservices  *microservices.Service
 	// UIExtension          *UIExtensionService
 	// ApplicationVersions  *ApplicationVersionsService
-	Identity *identity.Service
+	Identity            *identity.Service
+	TrustedCertificates *trustedcertificates.Service
 	// Notification2        *Notification2Service
 	// RemoteAccess         *RemoteAccessService
 	// Retention            *RetentionRuleService
@@ -110,7 +112,6 @@ type Client struct {
 	// Software             *InventorySoftwareService
 	// Firmware             *InventoryFirmwareService
 	// User                 *UserService
-	// DeviceCertificate    *DeviceCertificateService
 	// DeviceEnrollment     *DeviceEnrollmentService
 	// CertificateAuthority *CertificateAuthorityService
 	Features *features.Service
@@ -204,6 +205,8 @@ func NewClient(opts ClientOptions) *Client {
 	}
 	rclient.AddRequestMiddleware(MiddlewareAddUserAgent(userAgent, "go-client"))
 	rclient.AddRequestMiddleware(MiddlewareAddHost("domain"))
+	rclient.AddRequestMiddleware(MiddlewareRemoveEmptyTenantID())
+	rclient.SetPathParam("tenantID", opts.Auth.Tenant)
 	// rclient.AddRequestMiddleware(MiddlewareAuthorization(opts.Auth))
 
 	c := &Client{
@@ -219,7 +222,7 @@ func NewClient(opts ClientOptions) *Client {
 	c.common.Client = rclient
 	c.Alarms = (*alarms.Service)(&c.common)
 	c.AuditRecords = (*auditrecords.Service)(&c.common)
-	// c.DeviceCertificate = (*DeviceCertificateService)(&c.common)
+	c.TrustedCertificates = trustedcertificates.NewService(&c.common)
 	// c.DeviceCredentials = (*DeviceCredentialsService)(&c.common)
 	c.Measurements = (*measurements.Service)(&c.common)
 	c.Binaries = (*binaries.Service)(&c.common)
@@ -236,7 +239,6 @@ func NewClient(opts ClientOptions) *Client {
 	// c.ApplicationVersions = (*ApplicationVersionsService)(&c.common)
 	// c.UIExtension = (*UIExtensionService)(&c.common)
 	c.Identity = identity.NewService(&c.common)
-	// c.Microservice = (*MicroserviceService)(&c.common)
 	// c.Notification2 = (*Notification2Service)(&c.common)
 	// c.Context = (*ContextService)(&c.common)
 	// c.RemoteAccess = (*RemoteAccessService)(&c.common)

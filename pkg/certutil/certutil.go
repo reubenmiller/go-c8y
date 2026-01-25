@@ -6,6 +6,7 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha256"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/base64"
@@ -417,4 +418,53 @@ func Base64Decode(src []byte) ([]byte, error) {
 		return nil, err
 	}
 	return dec[:n], nil
+}
+
+// A Signer is can create signatures that verify against a public key.
+type Signer interface {
+	// Sign returns raw signature for the given data. This method
+	// will apply the hash specified for the key type to the data.
+	// Sign(data []byte) ([]byte, error)
+	SignSHA256(data []byte) ([]byte, error)
+}
+
+type RsaPrivateKey struct {
+	*rsa.PrivateKey
+}
+
+// Signs directly the data
+func (r *RsaPrivateKey) Sign(data []byte) ([]byte, error) {
+	return rsa.SignPKCS1v15(nil, r.PrivateKey, 0, data)
+}
+
+// Sign signs data with rsa-sha256
+func (r *RsaPrivateKey) SignSHA256(data []byte) ([]byte, error) {
+	h := sha256.New()
+	h.Write(data)
+	d := h.Sum(nil)
+	return rsa.SignPKCS1v15(rand.Reader, r.PrivateKey, crypto.SHA256, d)
+}
+
+type EcdsaPrivateKey struct {
+	*ecdsa.PrivateKey
+}
+
+func (r *EcdsaPrivateKey) SignSHA256(data []byte) ([]byte, error) {
+	h := sha256.New()
+	h.Write(data)
+	d := h.Sum(nil)
+	return ecdsa.SignASN1(rand.Reader, r.PrivateKey, d)
+}
+
+func NewSignerFromKey(k any) (Signer, error) {
+	var sshKey Signer
+	switch t := k.(type) {
+	case *rsa.PrivateKey:
+		sshKey = &RsaPrivateKey{t}
+	case *ecdsa.PrivateKey:
+		sshKey = &EcdsaPrivateKey{t}
+	default:
+		return nil, fmt.Errorf("crypto: unsupported key type %T", k)
+	}
+	return sshKey, nil
 }

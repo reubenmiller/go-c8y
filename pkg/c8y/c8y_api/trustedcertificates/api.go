@@ -1,0 +1,298 @@
+package trustedcertificates
+
+import (
+	"context"
+	"encoding/base64"
+	"time"
+
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/trustedcertificates/certificateauthority"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/trustedcertificates/certificaterevocationlist"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
+	"github.com/reubenmiller/go-c8y/pkg/certutil"
+	"resty.dev/v3"
+)
+
+var ApiTrustedCertificates = "/tenant/tenants/{tenantID}/trusted-certificates"
+var ApiTrustedCertificate = "/tenant/tenants/{tenantID}/trusted-certificates/{fingerprint}"
+
+// Proof of possession
+var ApiProofOfPossession = "/tenant/tenants/{tenantID}/trusted-certificates-pop/{fingerprint}/pop"
+var ApiGenerateVerificationCode = "/tenant/tenants/{tenantID}/trusted-certificates-pop/{fingerprint}/verification-code"
+var ApiProofOfPossessionConfirm = "/tenant/tenants/{tenantID}/trusted-certificates-pop/{fingerprint}/confirmed"
+
+const ParamTenant = "tenantID"
+const ParamFingerprint = "fingerprint"
+
+const ResultProperty = "certificates"
+
+func NewService(s *core.Service) *Service {
+	return &Service{
+		Service:              *s,
+		CertificateAuthority: certificateauthority.NewService(s),
+		RevocationList:       certificaterevocationlist.NewService(s),
+	}
+}
+
+// Service api to interact with the trusted certificates
+// type Service core.Service
+type Service struct {
+	core.Service
+
+	CertificateAuthority *certificateauthority.Service
+	RevocationList       *certificaterevocationlist.Service
+}
+
+// ListOptions trusted certificates filter options
+type ListOptions struct {
+	TenantID string
+
+	// When set to true, the tenant certificate authority will be retrieved
+	CertificateAuthority bool `url:"certificateAuthority,omitempty"`
+
+	// Pagination options
+	pagination.PaginationOptions
+}
+
+// List trusted certificates
+func (s *Service) List(ctx context.Context, opt ListOptions) (*model.TrustedCertificateCollection, error) {
+	return core.ExecuteResultOnly[model.TrustedCertificateCollection](ctx, s.ListB(opt))
+}
+
+func (s *Service) ListB(opt ListOptions) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodGet).
+		SetPathParam(ParamTenant, opt.TenantID).
+		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetURL(ApiTrustedCertificates)
+	return core.NewTryRequest(s.Client, req, ResultProperty)
+}
+
+type CreateOptions struct {
+	TenantID string
+
+	// If set to true the certificate is added to the truststore
+	// The truststore contains all trusted certificates. A connection to a device is only established if it connects to Cumulocity with a certificate in the truststore.
+	// Default: true
+	AddToTrustStore *bool `url:"addToTrustStore,omitempty"`
+}
+
+// Create a trusted certificate
+func (s *Service) Create(ctx context.Context, opt CreateOptions, body any) (*model.TrustedCertificate, error) {
+	return core.ExecuteResultOnly[model.TrustedCertificate](ctx, s.CreateB(opt, body))
+}
+
+func (s *Service) CreateB(opt CreateOptions, body any) *core.TryRequest {
+	req := s.Service.Client.R().
+		SetMethod(resty.MethodPost).
+		SetPathParam(ParamTenant, opt.TenantID).
+		SetBody(body).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetURL(ApiTrustedCertificates)
+	return core.NewTryRequest(s.Client, req)
+}
+
+// Create multiple trusted certificate
+func (s *Service) CreateMultiple(ctx context.Context, opt CreateOptions, body any) (*model.TrustedCertificateCollection, error) {
+	return core.ExecuteResultOnly[model.TrustedCertificateCollection](ctx, s.CreateB(opt, body))
+}
+
+func (s *Service) CreateMultipleB(opt CreateOptions, body any) *core.TryRequest {
+	req := s.Service.Client.R().
+		SetMethod(resty.MethodPost).
+		SetPathParam(ParamTenant, opt.TenantID).
+		SetBody(body).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetURL(ApiTrustedCertificates)
+	return core.NewTryRequest(s.Client, req)
+}
+
+type GetOptions struct {
+	TenantID string
+
+	Fingerprint string
+}
+
+// Get a trusted certificate
+func (s *Service) Get(ctx context.Context, opt GetOptions) (*model.TrustedCertificate, error) {
+	return core.ExecuteResultOnly[model.TrustedCertificate](ctx, s.GetB(opt))
+}
+
+func (s *Service) GetB(opt GetOptions) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodGet).
+		SetPathParam(ParamTenant, opt.TenantID).
+		SetPathParam(ParamFingerprint, opt.Fingerprint).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetURL(ApiTrustedCertificate)
+	return core.NewTryRequest(s.Client, req)
+}
+
+type UpdateOptions struct {
+	TenantID string
+
+	Fingerprint string
+}
+
+// Update a trusted certificate
+func (s *Service) Update(ctx context.Context, opt UpdateOptions, body any) (*model.TrustedCertificate, error) {
+	return core.ExecuteResultOnly[model.TrustedCertificate](ctx, s.UpdateB(opt, body))
+}
+
+func (s *Service) UpdateB(opt UpdateOptions, body any) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodPut).
+		SetPathParam(ParamTenant, opt.TenantID).
+		SetPathParam(ParamFingerprint, opt.Fingerprint).
+		SetBody(body).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetURL(ApiTrustedCertificate)
+	return core.NewTryRequest(s.Client, req)
+}
+
+// DeleteOptions options to delete a tenant
+type DeleteOptions struct {
+	TenantID string `url:"-"`
+
+	Fingerprint string `url:"-"`
+}
+
+// Delete a trusted certificate
+func (s *Service) Delete(ctx context.Context, opt DeleteOptions) error {
+	return core.ExecuteNoResult(ctx, s.DeleteB(opt))
+}
+
+func (s *Service) DeleteB(opt DeleteOptions) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodDelete).
+		SetPathParam(ParamTenant, opt.TenantID).
+		SetPathParam(ParamFingerprint, opt.Fingerprint).
+		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetURL(ApiTrustedCertificate)
+	return core.NewTryRequest(s.Client, req)
+}
+
+/*
+  Proof of Possession
+*/
+// ProofOptions proof of possession verification options
+type ProofOptions struct {
+	Fingerprint string `url:"-"`
+
+	TenantID string
+
+	// Verification code. If left blank then it will be fetched
+	Code string
+
+	// Path to the private key to use to verify the code
+	PrivateKey string
+}
+
+func (s *Service) ProofEndToEnd(ctx context.Context, opt ProofOptions) (*model.TrustedCertificate, error) {
+	if opt.PrivateKey != "" {
+		key, err := certutil.PrivateKeyFromFile(opt.PrivateKey)
+		if err != nil {
+			return nil, err
+		}
+		signer, err := certutil.NewSignerFromKey(key)
+		if err != nil {
+			return nil, err
+		}
+
+		cert, err := s.Get(ctx, GetOptions{
+			TenantID:    opt.TenantID,
+			Fingerprint: opt.Fingerprint,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		verificationCode := cert.ProofOfPossessionUnsignedVerificationCode
+
+		// Request a proof of possession code if the current one has expired
+		if time.Now().After(cert.ProofOfPossessionVerificationCodeUsableUntil) {
+			// regeneration code
+			cert, err := s.CreateVerificationCode(ctx, CreateVerificationCodeOptions{
+				TenantID:    opt.TenantID,
+				Fingerprint: opt.Fingerprint,
+			})
+			if err != nil {
+				return nil, err
+			}
+			verificationCode = cert.ProofOfPossessionUnsignedVerificationCode
+		}
+
+		code, err := signer.SignSHA256([]byte(verificationCode))
+		if err != nil {
+			return nil, err
+		}
+
+		opt.Code = base64.StdEncoding.EncodeToString(code)
+	}
+	return s.Proof(ctx, opt)
+}
+
+// Submit proof of possession
+func (s *Service) Proof(ctx context.Context, opt ProofOptions) (*model.TrustedCertificate, error) {
+	body := &model.ProofOfPossession{
+		ProofOfPossessionSignedVerificationCode: opt.Code,
+	}
+	return core.ExecuteResultOnly[model.TrustedCertificate](ctx, s.ProofB(opt, body))
+}
+
+func (s *Service) ProofB(opt ProofOptions, body any) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodPost).
+		SetPathParam(ParamTenant, opt.TenantID).
+		SetPathParam(ParamFingerprint, opt.Fingerprint).
+		SetBody(body).
+		SetContentType(types.MimeTypeApplicationJSON).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetURL(ApiProofOfPossession)
+	return core.NewTryRequest(s.Client, req, ResultProperty)
+}
+
+type CreateVerificationCodeOptions struct {
+	Fingerprint string
+
+	TenantID string
+}
+
+// Generate a verification code for the proof of possession operation for the certificate (by a given fingerprint)
+func (s *Service) CreateVerificationCode(ctx context.Context, opt CreateVerificationCodeOptions) (*model.TrustedCertificate, error) {
+	return core.ExecuteResultOnly[model.TrustedCertificate](ctx, s.CreateVerificationCodeB(opt))
+}
+
+func (s *Service) CreateVerificationCodeB(opt CreateVerificationCodeOptions) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodPost).
+		SetPathParam(ParamTenant, opt.TenantID).
+		SetPathParam(ParamFingerprint, opt.Fingerprint).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetURL(ApiGenerateVerificationCode)
+	return core.NewTryRequest(s.Client, req)
+}
+
+type ConfirmOptions struct {
+	Fingerprint string
+
+	TenantID string
+}
+
+// Confirm the proof of possession of an already uploaded certificate (by a given fingerprint) for a specific tenant
+// TODO: This api calls always returns a 403 error
+func (s *Service) Confirm(ctx context.Context, opt ConfirmOptions) (*model.TrustedCertificate, error) {
+	return core.ExecuteResultOnly[model.TrustedCertificate](ctx, s.ConfirmB(opt))
+}
+
+func (s *Service) ConfirmB(opt ConfirmOptions) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodPost).
+		SetPathParam(ParamTenant, opt.TenantID).
+		SetPathParam(ParamFingerprint, opt.Fingerprint).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetURL(ApiProofOfPossessionConfirm)
+	return core.NewTryRequest(s.Client, req)
+}

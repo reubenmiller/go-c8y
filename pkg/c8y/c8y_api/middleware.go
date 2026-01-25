@@ -82,6 +82,26 @@ func MiddlewareAuthorization(auth authentication.AuthOptions) resty.RequestMiddl
 	}
 }
 
+func MiddlewareRemoveEmptyTenantID() resty.RequestMiddleware {
+	return func(c *resty.Client, r *resty.Request) error {
+		// Set tenant id based on the context
+		if currentValue, ok := r.PathParams["tenantID"]; ok && currentValue == "" {
+			// remove any empty values in the request so the client setting
+			// takes priority
+			delete(r.PathParams, "tenantID")
+		}
+
+		// Allow overriding using context
+		switch v := r.Context().Value("tenant").(type) {
+		case string:
+			if v != "" {
+				r.SetPathParam("tenantID", v)
+			}
+		}
+		return nil
+	}
+}
+
 func SetAuth(c *resty.Client, auth authentication.AuthOptions) {
 	if auth.CertificateKey != "" && auth.Certificate != "" {
 		if _, err := os.Stat(auth.CertificateKey); err == nil {

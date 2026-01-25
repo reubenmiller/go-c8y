@@ -88,9 +88,6 @@ func ExecuteUpsertResultOnly[T any](ctx context.Context, create *TryRequest, upd
 	if !ErrHasStatus(err, http.StatusConflict) {
 		return result, err
 	}
-	if err != nil {
-		return nil, err
-	}
 	return ExecuteResultOnly[T](ctx, update)
 }
 

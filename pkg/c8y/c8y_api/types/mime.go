@@ -4,6 +4,8 @@ var MimeTypeApplicationJSON = "application/json"
 var MimeTypeApplicationOctetStream = "application/octet-stream"
 var MimeTypeTextPlain = "text/plain"
 
+var MimeTypePkixCRL = "application/pkix-crl"
+
 var MimeTypeCumulocityMeasurementCollection = "application/vnd.com.nsn.cumulocity.measurementCollection+json"
 
 var MimeTypeManagedObjectCollection = "application/vnd.com.nsn.cumulocity.managedobjectreferencecollection+json"
