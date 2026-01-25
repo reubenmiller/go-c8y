@@ -15,3 +15,9 @@ type UserRoleReferenceCollection struct {
 	Self       string              `json:"self,omitempty"`
 	References []UserRoleReference `json:"references,omitempty"`
 }
+
+type UserRoleCollection struct {
+	*BaseResponse
+
+	Roles []UserRole `json:"roles"`
+}
