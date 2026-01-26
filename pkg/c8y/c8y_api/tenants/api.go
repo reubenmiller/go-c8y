@@ -7,6 +7,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/tenants/currenttenant"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/tenants/systemoptions"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/tenants/tenantoptions"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/tenants/usagestatistics"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
@@ -27,6 +28,7 @@ func NewService(s *core.Service) *Service {
 		UsageStatistics: usagestatistics.NewService(s),
 		Current:         currenttenant.NewService(s),
 		Options:         tenantoptions.NewService(s),
+		SystemOptions:   systemoptions.NewService(s),
 	}
 }
 
@@ -37,6 +39,7 @@ type Service struct {
 	UsageStatistics *usagestatistics.Service
 	Current         *currenttenant.Service
 	Options         *tenantoptions.Service
+	SystemOptions   *systemoptions.Service
 }
 
 // ListOptions tenant filter options
