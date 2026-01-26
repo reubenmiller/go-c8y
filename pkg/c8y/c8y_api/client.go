@@ -112,14 +112,12 @@ type Client struct {
 	// Notification2        *Notification2Service
 	// RemoteAccess         *RemoteAccessService
 	RetentionRules *retentionrules.Service
-	// TenantOptions        *TenantOptionsService
 	// Software             *InventorySoftwareService
 	// Firmware             *InventoryFirmwareService
 	Users      *users.Service
 	UserGroups *usergroups.Service
 	UserRoles  *userroles.Service
 	// DeviceEnrollment     *DeviceEnrollmentService
-	// CertificateAuthority *CertificateAuthorityService
 	Features *features.Service
 }
 
@@ -249,14 +247,12 @@ func NewClient(opts ClientOptions) *Client {
 	// c.Context = (*ContextService)(&c.common)
 	// c.RemoteAccess = (*RemoteAccessService)(&c.common)
 	c.RetentionRules = retentionrules.NewService(&c.common)
-	// c.TenantOptions = (*TenantOptionsService)(&c.common)
 	// c.Software = (*InventorySoftwareService)(&c.common)
 	// c.Firmware = (*InventoryFirmwareService)(&c.common)
 	c.Users = users.NewService(&c.common)
 	c.UserGroups = usergroups.NewService(&c.common)
 	c.UserRoles = userroles.NewService(&c.common)
 	c.Features = features.NewService(&c.common)
-	// c.CertificateAuthority = (*CertificateAuthorityService)(&c.common)
 	c.AddMiddleware()
 	c.SetAuth(opts.Auth)
 	if _, err := c.Login(context.Background()); err != nil {

@@ -65,6 +65,21 @@ func ExecuteResultOnly[T any](ctx context.Context, req *TryRequest) (*T, error) 
 	return result, nil
 }
 
+func ExecuteResultMap[k string, T any](ctx context.Context, req *TryRequest) (map[k]T, error) {
+	result := make(map[k]T)
+	req.SetDefaultAcceptHeader()
+	_, err := coupleAPIErrors(req.Request.
+		SetContext(ctx).
+		SetResult(&result).
+		Send())
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 func ExecuteResultsArrayOnly[T any](ctx context.Context, req *TryRequest) ([]T, error) {
 	result := make([]T, 0)
 	req.SetDefaultAcceptHeader()
