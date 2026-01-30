@@ -56,7 +56,7 @@ func (s *Service) GetB(parentID string, childID string) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req)
 }
 
-// Create a new child addition and assign it to an existing managed object
+// Create a new managed object and assign it as a child addition to an existing managed object
 func (s *Service) Create(ctx context.Context, parentID string, body any) (*model.ManagedObject, error) {
 	return core.ExecuteResultOnly[model.ManagedObject](ctx, s.CreateB(parentID, body))
 }
@@ -65,6 +65,7 @@ func (s *Service) CreateB(parentID string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(ParamId, parentID).
+		SetContentType(types.MimeTypeManagedObject).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiManagedObjectChildAdditions)
