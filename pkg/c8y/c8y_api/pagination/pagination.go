@@ -60,6 +60,12 @@ func IncludeAll() PagerOptions {
 	return PagerOptions{}
 }
 
+func DefaultSearch() PagerOptions {
+	return PagerOptions{
+		MaxItems: 6000,
+	}
+}
+
 func (p *PagerOptions) GetPageSize() int64 {
 	if p.PageSize <= 0 {
 		return 2000
@@ -83,6 +89,20 @@ func ForEachWhere[A any](ctx context.Context, r *core.TryRequest, pagerOpts Page
 		}
 	}
 	return nil, false, nil
+}
+
+func First[A any](ctx context.Context, r *core.TryRequest, pagerOpts PagerOptions) (*A, bool, error) {
+	predicate := func(A) bool { return true }
+	return ForEachWhere(ctx, r, pagerOpts, predicate)
+}
+
+func FindOrCreate[A any](ctx context.Context, find *core.TryRequest, create *core.TryRequest, pagerOpts PagerOptions) (item *A, found bool, err error) {
+	item, found, err = First[A](ctx, find, pagerOpts)
+	if err != nil || found {
+		return
+	}
+	item, err = core.ExecuteResultOnly[A](ctx, create)
+	return
 }
 
 // ForEach paginates of a result set return every individual item

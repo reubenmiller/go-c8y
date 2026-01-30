@@ -26,6 +26,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/measurements"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/microservices"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/operations"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/repository"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/retentionrules"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/tenants"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/tenants/logintokens"
@@ -105,6 +106,7 @@ type Client struct {
 	Events         *events.Service
 	Applications   *applications.Service
 	Microservices  *microservices.Service
+	Repository     *repository.Service
 	// UIExtension          *UIExtensionService
 	// ApplicationVersions  *ApplicationVersionsService
 	Identity            *identity.Service
@@ -240,6 +242,7 @@ func NewClient(opts ClientOptions) *Client {
 	// c.DeviceEnrollment = (*DeviceEnrollmentService)(&c.common)
 	c.Applications = applications.NewService(&c.common)
 	c.Microservices = microservices.NewService(&c.common)
+	c.Repository = repository.NewService(&c.common)
 	// c.ApplicationVersions = (*ApplicationVersionsService)(&c.common)
 	// c.UIExtension = (*UIExtensionService)(&c.common)
 	c.Identity = identity.NewService(&c.common)
