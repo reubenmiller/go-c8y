@@ -3,8 +3,9 @@ package systemoptions
 import (
 	"context"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
 )
@@ -33,8 +34,8 @@ type Service struct {
 type ListOptions struct{}
 
 // List system options
-func (s *Service) List(ctx context.Context, opt ListOptions) (*model.SystemOptionCollection, error) {
-	return core.ExecuteResultOnly[model.SystemOptionCollection](ctx, s.ListB(opt))
+func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.SystemOption] {
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewSystemOption)
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {
@@ -52,8 +53,8 @@ type GetOption struct {
 }
 
 // Get a system option
-func (s *Service) Get(ctx context.Context, opt GetOption) (*model.SystemOption, error) {
-	return core.ExecuteResultOnly[model.SystemOption](ctx, s.GetB(opt))
+func (s *Service) Get(ctx context.Context, opt GetOption) op.Result[jsonmodels.SystemOption] {
+	return core.ExecuteReturnResult(ctx, s.GetB(opt), jsonmodels.NewSystemOption)
 }
 
 func (s *Service) GetB(opt GetOption) *core.TryRequest {

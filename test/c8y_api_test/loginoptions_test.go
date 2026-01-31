@@ -12,7 +12,7 @@ import (
 func Test_LoginOptionsWithoutAuth(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
-	collection, err := client.LoginOptions.ListNoAuth(context.Background(), loginoptions.ListOptions{})
-	assert.NoError(t, err)
-	assert.Greater(t, len(collection.LoginOptions), 0)
+	collection := client.LoginOptions.ListNoAuth(context.Background(), loginoptions.ListOptions{})
+	assert.NoError(t, collection.Err)
+	assert.Greater(t, collection.Data.Length(), 0)
 }

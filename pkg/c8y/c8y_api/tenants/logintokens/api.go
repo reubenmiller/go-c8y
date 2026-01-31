@@ -3,8 +3,9 @@ package logintokens
 import (
 	"context"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
 )
@@ -48,8 +49,8 @@ type CreateTokenOptions struct {
 }
 
 // Obtain an OAI-Secure access token
-func (s *Service) Create(ctx context.Context, opt CreateTokenOptions) (*model.OAIToken, error) {
-	return core.ExecuteResultOnly[model.OAIToken](ctx, s.CreateB(opt))
+func (s *Service) Create(ctx context.Context, opt CreateTokenOptions) op.Result[jsonmodels.OAIToken] {
+	return core.ExecuteReturnResult(ctx, s.CreateB(opt), jsonmodels.NewOAIToken)
 }
 
 // Obtain an OAI-Secure access token

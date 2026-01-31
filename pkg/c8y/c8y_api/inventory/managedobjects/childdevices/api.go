@@ -3,6 +3,8 @@ package childdevices
 import (
 	"context"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects/child"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
@@ -28,8 +30,8 @@ func NewService(common *core.Service) *Service {
 type ListOptions child.ListOptions
 
 // List child devices of a parent
-func (s *Service) List(ctx context.Context, parentID string, opt ListOptions) (*model.ManagedObjectCollection, error) {
-	return core.ExecuteResultOnly[model.ManagedObjectCollection](ctx, s.ListB(parentID, opt))
+func (s *Service) List(ctx context.Context, parentID string, opt ListOptions) op.Result[jsonmodels.ManagedObject] {
+	return core.ExecuteReturnCollection(ctx, s.ListB(parentID, opt), ResultProperty, "", jsonmodels.NewManagedObject)
 }
 
 func (s *Service) ListB(parentID string, opt ListOptions) *core.TryRequest {
@@ -42,8 +44,8 @@ func (s *Service) ListB(parentID string, opt ListOptions) *core.TryRequest {
 }
 
 // Get existing child asset from a parent
-func (s *Service) Get(ctx context.Context, parentID string, childID string) (*model.ManagedObject, error) {
-	return core.ExecuteResultOnly[model.ManagedObject](ctx, s.GetB(parentID, childID))
+func (s *Service) Get(ctx context.Context, parentID string, childID string) op.Result[jsonmodels.ManagedObject] {
+	return core.ExecuteReturnResult(ctx, s.GetB(parentID, childID), jsonmodels.NewManagedObject)
 }
 
 func (s *Service) GetB(parentID string, childID string) *core.TryRequest {
@@ -57,8 +59,8 @@ func (s *Service) GetB(parentID string, childID string) *core.TryRequest {
 }
 
 // Create a new child device and assign it to an existing managed object
-func (s *Service) Create(ctx context.Context, parentID string, body any) (*model.ManagedObject, error) {
-	return core.ExecuteResultOnly[model.ManagedObject](ctx, s.CreateB(parentID, body))
+func (s *Service) Create(ctx context.Context, parentID string, body any) op.Result[jsonmodels.ManagedObject] {
+	return core.ExecuteReturnResult(ctx, s.CreateB(parentID, body), jsonmodels.NewManagedObject)
 }
 
 func (s *Service) CreateB(parentID string, body any) *core.TryRequest {

@@ -3,8 +3,9 @@ package currentuser
 import (
 	"context"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
 )
@@ -24,8 +25,8 @@ type Service struct {
 }
 
 // Get the current user
-func (s *Service) Get(ctx context.Context) (*model.User, error) {
-	return core.ExecuteResultOnly[model.User](ctx, s.GetB())
+func (s *Service) Get(ctx context.Context) op.Result[jsonmodels.User] {
+	return core.ExecuteReturnResult(ctx, s.GetB(), jsonmodels.NewUser)
 }
 
 func (s *Service) GetB() *core.TryRequest {
@@ -37,8 +38,8 @@ func (s *Service) GetB() *core.TryRequest {
 }
 
 // Update the current user
-func (s *Service) Update(ctx context.Context, body any) (*model.User, error) {
-	return core.ExecuteResultOnly[model.User](ctx, s.UpdateB(body))
+func (s *Service) Update(ctx context.Context, body any) op.Result[jsonmodels.User] {
+	return core.ExecuteReturnResult(ctx, s.UpdateB(body), jsonmodels.NewUser)
 }
 
 func (s *Service) UpdateB(body any) *core.TryRequest {
@@ -60,8 +61,8 @@ type UpdatePasswordOptions struct {
 }
 
 // Update the current user's password
-func (s *Service) UpdatePassword(ctx context.Context, body UpdatePasswordOptions) (*model.User, error) {
-	return core.ExecuteResultOnly[model.User](ctx, s.UpdatePasswordB(body))
+func (s *Service) UpdatePassword(ctx context.Context, body UpdatePasswordOptions) op.Result[jsonmodels.User] {
+	return core.ExecuteReturnResult(ctx, s.UpdatePasswordB(body), jsonmodels.NewUser)
 }
 
 func (s *Service) UpdatePasswordB(body any) *core.TryRequest {

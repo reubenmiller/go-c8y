@@ -3,8 +3,9 @@ package tenantoptions
 import (
 	"context"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
@@ -39,8 +40,8 @@ type ListOptions struct {
 }
 
 // List tenant options
-func (s *Service) List(ctx context.Context, opt ListOptions) (*model.TenantOptionCollection, error) {
-	return core.ExecuteResultOnly[model.TenantOptionCollection](ctx, s.ListB(opt))
+func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.TenantOption] {
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewTenantOption)
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {
@@ -52,8 +53,8 @@ func (s *Service) ListB(opt ListOptions) *core.TryRequest {
 }
 
 // Create a tenant option
-func (s *Service) Create(ctx context.Context, body any) (*model.TenantOption, error) {
-	return core.ExecuteResultOnly[model.TenantOption](ctx, s.CreateB(body))
+func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.TenantOption] {
+	return core.ExecuteReturnResult(ctx, s.CreateB(body), jsonmodels.NewTenantOption)
 }
 
 func (s *Service) CreateB(body any) *core.TryRequest {
@@ -72,8 +73,8 @@ type GetOption struct {
 }
 
 // Get a tenant option
-func (s *Service) Get(ctx context.Context, opt GetOption) (*model.TenantOption, error) {
-	return core.ExecuteResultOnly[model.TenantOption](ctx, s.GetB(opt))
+func (s *Service) Get(ctx context.Context, opt GetOption) op.Result[jsonmodels.TenantOption] {
+	return core.ExecuteReturnResult(ctx, s.GetB(opt), jsonmodels.NewTenantOption)
 }
 
 func (s *Service) GetB(opt GetOption) *core.TryRequest {
@@ -94,8 +95,8 @@ type UpdateOption struct {
 }
 
 // Update a tenant option
-func (s *Service) Update(ctx context.Context, opt UpdateOption) (*model.TenantOption, error) {
-	return core.ExecuteResultOnly[model.TenantOption](ctx, s.UpdateB(opt))
+func (s *Service) Update(ctx context.Context, opt UpdateOption) op.Result[jsonmodels.TenantOption] {
+	return core.ExecuteReturnResult(ctx, s.UpdateB(opt), jsonmodels.NewTenantOption)
 }
 
 func (s *Service) UpdateB(opt UpdateOption) *core.TryRequest {
@@ -121,8 +122,8 @@ type UpdateEditableFlagOption struct {
 }
 
 // Updates the editable flag of a specific option (by a given category and key) on target tenant which determines if the option can be edited
-func (s *Service) UpdateEditableFlag(ctx context.Context, opt UpdateEditableFlagOption) (*model.TenantOption, error) {
-	return core.ExecuteResultOnly[model.TenantOption](ctx, s.UpdateEditableFlagB(opt))
+func (s *Service) UpdateEditableFlag(ctx context.Context, opt UpdateEditableFlagOption) op.Result[jsonmodels.TenantOption] {
+	return core.ExecuteReturnResult(ctx, s.UpdateEditableFlagB(opt), jsonmodels.NewTenantOption)
 }
 
 func (s *Service) UpdateEditableFlagB(opt UpdateEditableFlagOption) *core.TryRequest {

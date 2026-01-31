@@ -13,10 +13,10 @@ func Test_CurrentUser(t *testing.T) {
 	client.Client.SetDebug(true)
 
 	// get
-	currentUser, err := client.Users.CurrentUser.Get(context.Background())
-	assert.NoError(t, err)
+	currentUser := client.Users.CurrentUser.Get(context.Background())
+	assert.NoError(t, currentUser.Err)
 	assert.NotNil(t, currentUser)
-	assert.NotEmpty(t, currentUser.ID)
+	assert.NotEmpty(t, currentUser.Data.ID())
 
 	// update - don't modify the current test user
 	// updatedUser, err := client.Users.CurrentUser.Update(context.Background(), model.User{

@@ -3,8 +3,10 @@ package groups
 import (
 	"context"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsondoc"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
 )
@@ -36,8 +38,12 @@ type ListUsersOptions struct {
 }
 
 // ListUsers in a group
-func (s *Service) ListUsers(ctx context.Context, opt ListUsersOptions) (*model.UserReferencesCollection, error) {
-	return core.ExecuteResultOnly[model.UserReferencesCollection](ctx, s.ListUsersB(opt))
+func (s *Service) ListUsers(ctx context.Context, opt ListUsersOptions) op.Result[jsonmodels.User] {
+	return core.ExecuteReturnCollection(ctx, s.ListUsersB(opt), "references", "", func(b []byte) jsonmodels.User {
+		// Extract user from reference wrapper
+		doc := jsondoc.New(b)
+		return jsonmodels.NewUser([]byte(doc.Get("user").Raw))
+	})
 }
 
 func (s *Service) ListUsersB(opt ListUsersOptions) *core.TryRequest {
@@ -57,8 +63,12 @@ type AssignUserOptions struct {
 }
 
 // AssignUser assigns a user to a user group
-func (s *Service) AssignUser(ctx context.Context, opt AssignUserOptions, user any) (*model.UserReference, error) {
-	return core.ExecuteResultOnly[model.UserReference](ctx, s.AssignUserB(opt, user))
+func (s *Service) AssignUser(ctx context.Context, opt AssignUserOptions, user any) op.Result[jsonmodels.User] {
+	return core.ExecuteReturnResult(ctx, s.AssignUserB(opt, user), func(b []byte) jsonmodels.User {
+		// Extract user from reference wrapper
+		doc := jsondoc.New(b)
+		return jsonmodels.NewUser([]byte(doc.Get("user").Raw))
+	})
 }
 
 func (s *Service) AssignUserB(opt AssignUserOptions, user any) *core.TryRequest {

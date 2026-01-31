@@ -3,8 +3,10 @@ package usergroups
 import (
 	"context"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsondoc"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/users/currentuser"
@@ -46,8 +48,12 @@ type ListRolesOptions struct {
 }
 
 // Retrieve all roles assigned to a specific user group (by a given user group ID) in a specific tenant (by a given tenant ID)
-func (s *Service) ListRoles(ctx context.Context, opt ListRolesOptions) (*model.UserRoleReferenceCollection, error) {
-	return core.ExecuteResultOnly[model.UserRoleReferenceCollection](ctx, s.ListRolesB(opt))
+func (s *Service) ListRoles(ctx context.Context, opt ListRolesOptions) op.Result[jsonmodels.Role] {
+	return core.ExecuteReturnCollection(ctx, s.ListRolesB(opt), ResultProperty, "", func(b []byte) jsonmodels.Role {
+		// Extract role from reference wrapper
+		doc := jsondoc.New(b)
+		return jsonmodels.NewRole([]byte(doc.Get("role").Raw))
+	})
 }
 
 func (s *Service) ListRolesB(opt ListRolesOptions) *core.TryRequest {
@@ -67,8 +73,12 @@ type AssignRoleOptions struct {
 }
 
 // AssignRole assigns a role to a user group
-func (s *Service) AssignRole(ctx context.Context, opt AssignRoleOptions, body any) (*model.UserRoleReference, error) {
-	return core.ExecuteResultOnly[model.UserRoleReference](ctx, s.AssignRoleB(opt, body))
+func (s *Service) AssignRole(ctx context.Context, opt AssignRoleOptions, body any) op.Result[jsonmodels.Role] {
+	return core.ExecuteReturnResult(ctx, s.AssignRoleB(opt, body), func(b []byte) jsonmodels.Role {
+		// Extract role from reference wrapper
+		doc := jsondoc.New(b)
+		return jsonmodels.NewRole([]byte(doc.Get("role").Raw))
+	})
 }
 
 func (s *Service) AssignRoleB(opt AssignRoleOptions, body any) *core.TryRequest {

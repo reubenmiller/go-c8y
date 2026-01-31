@@ -3,8 +3,9 @@ package currentmicroservice
 import (
 	"context"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"resty.dev/v3"
 )
 
@@ -22,8 +23,8 @@ func NewService(common *core.Service) *Service {
 }
 
 // Get the current microservice
-func (s *Service) Get(ctx context.Context) (*model.Microservice, error) {
-	return core.ExecuteResultOnly[model.Microservice](ctx, s.GetB())
+func (s *Service) Get(ctx context.Context) op.Result[jsonmodels.Microservice] {
+	return core.ExecuteReturnResult(ctx, s.GetB(), jsonmodels.NewMicroservice)
 }
 
 func (s *Service) GetB() *core.TryRequest {
@@ -34,8 +35,8 @@ func (s *Service) GetB() *core.TryRequest {
 }
 
 // Retrieve the subscribed users of the current application
-func (s *Service) ListUsers(ctx context.Context) (*model.MicroserviceUserCollection, error) {
-	return core.ExecuteResultOnly[model.MicroserviceUserCollection](ctx, s.ListUsersB())
+func (s *Service) ListUsers(ctx context.Context) op.Result[jsonmodels.MicroserviceUser] {
+	return core.ExecuteReturnCollection(ctx, s.ListUsersB(), "users", "", jsonmodels.NewMicroserviceUser)
 }
 
 func (s *Service) ListUsersB() *core.TryRequest {
@@ -46,8 +47,8 @@ func (s *Service) ListUsersB() *core.TryRequest {
 }
 
 // ListSettings returns the current application settings
-func (s *Service) ListSettings(ctx context.Context) ([]model.MicroserviceSetting, error) {
-	return core.ExecuteResultsArrayOnly[model.MicroserviceSetting](ctx, s.ListSettingsB())
+func (s *Service) ListSettings(ctx context.Context) op.Result[jsonmodels.MicroserviceSetting] {
+	return core.ExecuteReturnCollection(ctx, s.ListSettingsB(), "", "", jsonmodels.NewMicroserviceSetting)
 }
 
 func (s *Service) ListSettingsB() *core.TryRequest {

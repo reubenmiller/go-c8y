@@ -3,8 +3,9 @@ package eventbinaries
 import (
 	"context"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
 )
@@ -36,8 +37,8 @@ func (s *Service) GetB(eventID string) *core.TryRequest {
 type UploadFileOptions = core.UploadFileOptions
 
 // Upload a binary file to an event
-func (s *Service) Create(ctx context.Context, eventID string, opt UploadFileOptions) (*model.EventBinary, error) {
-	return core.ExecuteResultOnly[model.EventBinary](ctx, s.CreateB(eventID, opt))
+func (s *Service) Create(ctx context.Context, eventID string, opt UploadFileOptions) op.Result[jsonmodels.EventBinary] {
+	return core.ExecuteReturnResult(ctx, s.CreateB(eventID, opt), jsonmodels.NewEventBinary)
 }
 
 func (s *Service) CreateB(eventID string, opt UploadFileOptions) *core.TryRequest {
@@ -55,14 +56,22 @@ func (s *Service) CreateB(eventID string, opt UploadFileOptions) *core.TryReques
 // It will first try to add a new binary to an event, but if a binary already exists (as indicated by a http 409 response)
 // then it is replaced by sending a PUT.
 // If the existing binary is only replaced, then some meta information might not be updated
-func (s *Service) Upsert(ctx context.Context, eventID string, opt UploadFileOptions) (*model.EventBinary, error) {
+func (s *Service) Upsert(ctx context.Context, eventID string, opt UploadFileOptions) op.Result[jsonmodels.EventBinary] {
 	// slog.Debug("Replacing existing event binary", "eventID", eventID)
-	return core.ExecuteUpsertResultOnly[model.EventBinary](ctx, s.CreateB(eventID, opt), s.UpdateB(eventID, opt))
+	result := core.ExecuteReturnResult(ctx, s.CreateB(eventID, opt), jsonmodels.NewEventBinary)
+	if result.Err == nil {
+		return result
+	}
+
+	if !core.ErrHasStatus(result.Err, 409) {
+		return result
+	}
+	return core.ExecuteReturnResult(ctx, s.UpdateB(eventID, opt), jsonmodels.NewEventBinary)
 }
 
 // Update an event binary
-func (s *Service) Update(ctx context.Context, eventID string, opt UploadFileOptions) (*model.EventBinary, error) {
-	return core.ExecuteResultOnly[model.EventBinary](ctx, s.UpdateB(eventID, opt))
+func (s *Service) Update(ctx context.Context, eventID string, opt UploadFileOptions) op.Result[jsonmodels.EventBinary] {
+	return core.ExecuteReturnResult(ctx, s.UpdateB(eventID, opt), jsonmodels.NewEventBinary)
 }
 
 func (s *Service) UpdateB(eventID string, opt UploadFileOptions) *core.TryRequest {

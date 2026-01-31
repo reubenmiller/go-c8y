@@ -3,6 +3,8 @@ package bootstrapuser
 import (
 	"context"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"resty.dev/v3"
 )
@@ -22,8 +24,8 @@ func NewService(common *core.Service) *Service {
 }
 
 // Get an microservice bootstrap user
-func (s *Service) Get(ctx context.Context, ID string) (*BootstrapUser, error) {
-	return core.ExecuteResultOnly[BootstrapUser](ctx, s.GetB(ID))
+func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.BootstrapUser] {
+	return core.ExecuteReturnResult(ctx, s.GetB(ID), jsonmodels.NewBootstrapUser)
 }
 
 func (s *Service) GetB(ID string) *core.TryRequest {

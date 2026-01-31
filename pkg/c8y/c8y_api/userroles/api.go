@@ -3,8 +3,9 @@ package userroles
 import (
 	"context"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/userroles/usergroups"
@@ -41,8 +42,8 @@ type ListOptions struct {
 }
 
 // Retrieve all user roles in the tenant
-func (s *Service) List(ctx context.Context, opt ListOptions) (*model.UserRoleCollection, error) {
-	return core.ExecuteResultOnly[model.UserRoleCollection](ctx, s.ListB(opt))
+func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Role] {
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewRole)
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {
@@ -59,8 +60,8 @@ type GetOption struct {
 }
 
 // Get a user role
-func (s *Service) Get(ctx context.Context, opt GetOption) (*model.UserRole, error) {
-	return core.ExecuteResultOnly[model.UserRole](ctx, s.GetB(opt))
+func (s *Service) Get(ctx context.Context, opt GetOption) op.Result[jsonmodels.Role] {
+	return core.ExecuteReturnResult(ctx, s.GetB(opt), jsonmodels.NewRole)
 }
 
 func (s *Service) GetB(opt GetOption) *core.TryRequest {

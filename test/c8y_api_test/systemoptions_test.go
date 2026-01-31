@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsondoc"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/tenants/systemoptions"
@@ -16,9 +17,9 @@ func Test_SystemOptions(t *testing.T) {
 	client.Client.SetDebug(true)
 
 	// list
-	collection, err := client.Tenants.SystemOptions.List(context.Background(), systemoptions.ListOptions{})
-	assert.NoError(t, err)
-	assert.Greater(t, len(collection.Options), 0)
+	collection := client.Tenants.SystemOptions.List(context.Background(), systemoptions.ListOptions{})
+	assert.NoError(t, collection.Err)
+	assert.Greater(t, collection.Data.Length(), 0)
 
 	// compatible with include all even through the api does not support pagination
 	out := make(chan model.SystemOption)
@@ -32,12 +33,19 @@ func Test_SystemOptions(t *testing.T) {
 		_ = item
 	}
 
+	// TODO: find a nicer way to access the first item in the results
+	var firstOption model.SystemOption
+	for item := range jsondoc.DecodeIter[model.SystemOption](collection.Data.Iter()) {
+		firstOption = *item
+		break
+	}
+
 	// get
-	option, err := client.Tenants.SystemOptions.Get(context.Background(), systemoptions.GetOption{
-		Category: collection.Options[0].Category,
-		Key:      collection.Options[0].Key,
+	option := client.Tenants.SystemOptions.Get(context.Background(), systemoptions.GetOption{
+		Category: firstOption.Category,
+		Key:      firstOption.Key,
 	})
-	assert.NoError(t, err)
-	assert.Equal(t, option.Category, collection.Options[0].Category)
-	assert.Equal(t, option.Key, collection.Options[0].Key)
+	assert.NoError(t, option.Err)
+	assert.Equal(t, option.Data.Category(), firstOption.Category)
+	assert.Equal(t, option.Data.Key(), firstOption.Key)
 }

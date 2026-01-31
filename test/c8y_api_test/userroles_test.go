@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsondoc"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/userroles"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
@@ -12,14 +14,21 @@ import (
 func Test_UserRoles(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	client.Client.SetDebug(true)
-	collection, err := client.UserRoles.List(context.Background(), userroles.ListOptions{})
-	assert.NoError(t, err)
+	collection := client.UserRoles.List(context.Background(), userroles.ListOptions{})
+	assert.NoError(t, collection.Err)
 	assert.NotNil(t, collection)
-	assert.Greater(t, len(collection.Roles), 0)
+	assert.Greater(t, collection.Data.Length(), 0)
 
-	role, err := client.UserRoles.Get(context.Background(), userroles.GetOption{
-		Name: collection.Roles[0].Name,
+	// TODO: find a nicer way to access the first item in the results
+	var firstItem model.UserRole
+	for item := range jsondoc.DecodeIter[model.UserRole](collection.Data.Iter()) {
+		firstItem = *item
+		break
+	}
+
+	role := client.UserRoles.Get(context.Background(), userroles.GetOption{
+		Name: firstItem.Name,
 	})
-	assert.NoError(t, err)
-	assert.Equal(t, role.Name, collection.Roles[0].Name)
+	assert.NoError(t, role.Err)
+	assert.Equal(t, role.Data.Name(), firstItem.Name)
 }

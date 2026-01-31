@@ -3,6 +3,8 @@ package features
 import (
 	"context"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
@@ -28,8 +30,8 @@ type Service struct {
 }
 
 // Retrieve all the features for the current tenant
-func (s *Service) List(ctx context.Context) (*FeatureCollect, error) {
-	return core.ExecuteResultOnly[FeatureCollect](ctx, s.ListB())
+func (s *Service) List(ctx context.Context) op.Result[jsonmodels.Feature] {
+	return core.ExecuteReturnCollection(ctx, s.ListB(), "", "", jsonmodels.NewFeature)
 }
 
 func (s *Service) ListB() *core.TryRequest {
@@ -40,8 +42,8 @@ func (s *Service) ListB() *core.TryRequest {
 }
 
 // Get a feature
-func (s *Service) Get(ctx context.Context, key string) (*model.LoginOption, error) {
-	return core.ExecuteResultOnly[model.LoginOption](ctx, s.GetB(key))
+func (s *Service) Get(ctx context.Context, key string) op.Result[jsonmodels.Feature] {
+	return core.ExecuteReturnResult(ctx, s.GetB(key), jsonmodels.NewFeature)
 }
 
 func (s *Service) GetB(key string) *core.TryRequest {
@@ -53,8 +55,8 @@ func (s *Service) GetB(key string) *core.TryRequest {
 }
 
 // Update a feature
-func (s *Service) Update(ctx context.Context, key string, body any) (*model.Feature, error) {
-	return core.ExecuteResultOnly[model.Feature](ctx, s.UpdateB(key, body))
+func (s *Service) Update(ctx context.Context, key string, body any) op.Result[jsonmodels.Feature] {
+	return core.ExecuteReturnResult(ctx, s.UpdateB(key, body), jsonmodels.NewFeature)
 }
 
 func (s *Service) UpdateB(key string, body any) *core.TryRequest {
@@ -68,17 +70,17 @@ func (s *Service) UpdateB(key string, body any) *core.TryRequest {
 }
 
 // Enable a feature
-func (s *Service) Enable(ctx context.Context, key string) (*model.Feature, error) {
-	return core.ExecuteResultOnly[model.Feature](ctx, s.UpdateB(key, &model.Feature{
+func (s *Service) Enable(ctx context.Context, key string) op.Result[jsonmodels.Feature] {
+	return core.ExecuteReturnResult(ctx, s.UpdateB(key, &model.Feature{
 		Active: true,
-	}))
+	}), jsonmodels.NewFeature)
 }
 
 // Disable a feature
-func (s *Service) Disable(ctx context.Context, key string) (*model.Feature, error) {
-	return core.ExecuteResultOnly[model.Feature](ctx, s.UpdateB(key, &model.Feature{
+func (s *Service) Disable(ctx context.Context, key string) op.Result[jsonmodels.Feature] {
+	return core.ExecuteReturnResult(ctx, s.UpdateB(key, &model.Feature{
 		Active: false,
-	}))
+	}), jsonmodels.NewFeature)
 }
 
 // Delete a feature override

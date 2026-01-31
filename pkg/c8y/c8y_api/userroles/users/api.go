@@ -3,8 +3,10 @@ package users
 import (
 	"context"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsondoc"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
 )
@@ -33,8 +35,12 @@ type AssignRoleOptions struct {
 }
 
 // AssignRole assigns a role to a user
-func (s *Service) AssignRole(ctx context.Context, opt AssignRoleOptions, body any) (*model.UserRoleReference, error) {
-	return core.ExecuteResultOnly[model.UserRoleReference](ctx, s.AssignRoleB(opt, body))
+func (s *Service) AssignRole(ctx context.Context, opt AssignRoleOptions, body any) op.Result[jsonmodels.Role] {
+	return core.ExecuteReturnResult(ctx, s.AssignRoleB(opt, body), func(b []byte) jsonmodels.Role {
+		// Extract role from reference wrapper
+		doc := jsondoc.New(b)
+		return jsonmodels.NewRole([]byte(doc.Get("role").Raw))
+	})
 }
 
 func (s *Service) AssignRoleB(opt AssignRoleOptions, body any) *core.TryRequest {

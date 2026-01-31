@@ -3,8 +3,9 @@ package loginoptions
 import (
 	"context"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
 )
@@ -37,8 +38,8 @@ type ListOptions struct {
 }
 
 // Retrieve all login options available in the tenant
-func (s *Service) List(ctx context.Context, opt ListOptions) (*model.LoginOptionCollection, error) {
-	return core.ExecuteResultOnly[model.LoginOptionCollection](ctx, s.ListB(opt))
+func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.LoginOption] {
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewLoginOption)
 }
 
 func (s *Service) ListB(opt any) *core.TryRequest {
@@ -50,8 +51,8 @@ func (s *Service) ListB(opt any) *core.TryRequest {
 }
 
 // Retrieve all login options available in the tenant without using credentials
-func (s *Service) ListNoAuth(ctx context.Context, opt ListOptions) (*model.LoginOptionCollection, error) {
-	return core.ExecuteResultOnly[model.LoginOptionCollection](ctx, s.ListNoAuthB(opt))
+func (s *Service) ListNoAuth(ctx context.Context, opt ListOptions) op.Result[jsonmodels.LoginOption] {
+	return core.ExecuteReturnCollection(ctx, s.ListNoAuthB(opt), ResultProperty, "", jsonmodels.NewLoginOption)
 }
 
 func (s *Service) ListNoAuthB(opt any) *core.TryRequest {
@@ -64,8 +65,8 @@ func (s *Service) ListNoAuthB(opt any) *core.TryRequest {
 }
 
 // Get an event
-func (s *Service) Get(ctx context.Context, typeOrID string) (*model.LoginOption, error) {
-	return core.ExecuteResultOnly[model.LoginOption](ctx, s.GetB(typeOrID))
+func (s *Service) Get(ctx context.Context, typeOrID string) op.Result[jsonmodels.LoginOption] {
+	return core.ExecuteReturnResult(ctx, s.GetB(typeOrID), jsonmodels.NewLoginOption)
 }
 
 func (s *Service) GetB(typeOrID string) *core.TryRequest {
@@ -77,8 +78,8 @@ func (s *Service) GetB(typeOrID string) *core.TryRequest {
 }
 
 // Create a login option
-func (s *Service) Create(ctx context.Context, body any) (*model.LoginOption, error) {
-	return core.ExecuteResultOnly[model.LoginOption](ctx, s.CreateB(body))
+func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.LoginOption] {
+	return core.ExecuteReturnResult(ctx, s.CreateB(body), jsonmodels.NewLoginOption)
 }
 
 func (s *Service) CreateB(body any) *core.TryRequest {
@@ -91,8 +92,8 @@ func (s *Service) CreateB(body any) *core.TryRequest {
 }
 
 // Update a login option
-func (s *Service) Update(ctx context.Context, typeOrID string, body any) (*model.LoginOption, error) {
-	return core.ExecuteResultOnly[model.LoginOption](ctx, s.UpdateB(typeOrID, body))
+func (s *Service) Update(ctx context.Context, typeOrID string, body any) op.Result[jsonmodels.LoginOption] {
+	return core.ExecuteReturnResult(ctx, s.UpdateB(typeOrID, body), jsonmodels.NewLoginOption)
 }
 
 func (s *Service) UpdateB(typeOrID string, body any) *core.TryRequest {
@@ -133,8 +134,8 @@ type LoginOptionTenantAccess struct {
 
 // Update the tenant's access to the authentication configuration.
 // TODO: This function signature is awkward
-func (s *Service) UpdateAccess(ctx context.Context, opt UpdateAccessOptions, body LoginOptionTenantAccess) (*model.LoginOption, error) {
-	return core.ExecuteResultOnly[model.LoginOption](ctx, s.UpdateAccessB(opt, body))
+func (s *Service) UpdateAccess(ctx context.Context, opt UpdateAccessOptions, body LoginOptionTenantAccess) op.Result[jsonmodels.LoginOption] {
+	return core.ExecuteReturnResult(ctx, s.UpdateAccessB(opt, body), jsonmodels.NewLoginOption)
 }
 
 func (s *Service) UpdateAccessB(opt UpdateAccessOptions, body any) *core.TryRequest {

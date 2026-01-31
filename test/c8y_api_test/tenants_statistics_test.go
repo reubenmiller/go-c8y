@@ -13,26 +13,26 @@ import (
 func Test_TenantsStatisticsList(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	client.Client.SetDebug(true)
-	usage, err := client.Tenants.UsageStatistics.List(context.Background(), usagestatistics.ListOptions{})
-	assert.NoError(t, err)
-	assert.NotEmpty(t, usage.Self)
+	usage := client.Tenants.UsageStatistics.List(context.Background(), usagestatistics.ListOptions{})
+	assert.NoError(t, usage.Err)
+	assert.Greater(t, usage.Data.Length(), 0)
 }
 
 func Test_TenantsStatisticsListSummary(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	client.Client.SetDebug(true)
-	usage, err := client.Tenants.UsageStatistics.ListSummary(context.Background(), usagestatistics.ListSummaryOptions{
+	usage := client.Tenants.UsageStatistics.ListSummary(context.Background(), usagestatistics.ListSummaryOptions{
 		DateFrom: time.Now().AddDate(-1, 0, 0),
 	})
-	assert.NoError(t, err)
-	assert.NotEmpty(t, usage.Self)
+	assert.NoError(t, usage.Err)
+	assert.Greater(t, usage.Data.Length(), 0)
 }
 func Test_TenantsStatisticsListSummaryAllTenants(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	client.Client.SetDebug(true)
-	usage, err := client.Tenants.UsageStatistics.ListSummaryAllTenants(context.Background(), usagestatistics.ListSummaryAllTenantsOptions{
+	usage := client.Tenants.UsageStatistics.ListSummaryAllTenants(context.Background(), usagestatistics.ListSummaryAllTenantsOptions{
 		DateFrom: time.Now().AddDate(-1, 0, 0),
 	})
-	assert.NoError(t, err)
-	assert.GreaterOrEqual(t, len(usage), 0)
+	assert.NoError(t, usage.Err)
+	assert.Greater(t, usage.Data.Length(), 0)
 }

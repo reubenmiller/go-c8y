@@ -4,8 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"resty.dev/v3"
 )
@@ -37,8 +38,8 @@ type ListOptions struct {
 }
 
 // List tenant statistics
-func (s *Service) List(ctx context.Context, opt ListOptions) (*model.TenantUsageStatisticsCollection, error) {
-	return core.ExecuteResultOnly[model.TenantUsageStatisticsCollection](ctx, s.ListB(opt))
+func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.TenantUsageStatistics] {
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewTenantUsageStatistics)
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {
@@ -59,8 +60,8 @@ type ListSummaryOptions struct {
 }
 
 // List tenant statistics
-func (s *Service) ListSummary(ctx context.Context, opt ListSummaryOptions) (*model.TenantUsageStatistics, error) {
-	return core.ExecuteResultOnly[model.TenantUsageStatistics](ctx, s.ListSummaryB(opt))
+func (s *Service) ListSummary(ctx context.Context, opt ListSummaryOptions) op.Result[jsonmodels.TenantUsageStatistics] {
+	return core.ExecuteReturnResult(ctx, s.ListSummaryB(opt), jsonmodels.NewTenantUsageStatistics)
 }
 
 func (s *Service) ListSummaryB(opt ListSummaryOptions) *core.TryRequest {
@@ -79,8 +80,8 @@ type ListSummaryAllTenantsOptions struct {
 }
 
 // // List usage statistics of all tenants
-func (s *Service) ListSummaryAllTenants(ctx context.Context, opt ListSummaryAllTenantsOptions) ([]model.TenantUsageStatisticsSummary, error) {
-	return core.ExecuteResultsArrayOnly[model.TenantUsageStatisticsSummary](ctx, s.ListSummaryAllTenantsB(opt))
+func (s *Service) ListSummaryAllTenants(ctx context.Context, opt ListSummaryAllTenantsOptions) op.Result[jsonmodels.TenantUsageStatisticsSummary] {
+	return core.ExecuteReturnCollection(ctx, s.ListSummaryAllTenantsB(opt), "", "", jsonmodels.NewTenantUsageStatisticsSummary)
 }
 
 func (s *Service) ListSummaryAllTenantsB(opt ListSummaryAllTenantsOptions) *core.TryRequest {
