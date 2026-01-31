@@ -121,14 +121,18 @@ func (s *Service) CreateOrUpdate(ctx context.Context, opt CreateOptions) (*model
 		// Only lookup microservices in the current tenant, as managing microservices of subtenants is not allowed
 		// e.g. upload binary etc. Restricting the search means name conflicts will be avoided if
 		// subtenants also have the same application name deployed multiple times.
-		application, found, err := s.FindFirst(ctx, ListOptions{
+		result, found := s.FindFirst(ctx, ListOptions{
 			Name: applicationName,
 		})
-		if err != nil {
-			return nil, err
+		if result.Err != nil {
+			return nil, result.Err
 		}
-		if found {
-			applicationID = application.ID
+		if !found {
+			// TODO: create well defined error type for when an item is not found
+			return nil, fmt.Errorf("item not found")
+		}
+		if result.Data.Exists("id") {
+			applicationID = result.Data.ID()
 		}
 	}
 
@@ -174,11 +178,11 @@ func (s *Service) CreateOrUpdate(ctx context.Context, opt CreateOptions) (*model
 	// Upload binary
 	if !skipUpload {
 		slog.Info("uploading microservice binary", "id", application.ID)
-		_, err := s.Upload(ctx, application.ID, UploadFileOptions{
+		result := s.Upload(ctx, application.ID, UploadFileOptions{
 			FilePath: opt.File,
 		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to upload file. path=%s. %w", opt.File, err)
+		if result.Err != nil {
+			return nil, fmt.Errorf("failed to upload file. path=%s. %w", opt.File, result.Err)
 		}
 	} else {
 		//

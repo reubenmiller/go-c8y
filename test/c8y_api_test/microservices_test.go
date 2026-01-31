@@ -2,6 +2,7 @@ package c8y_api_test
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -11,6 +12,30 @@ import (
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 )
+
+func Test_MicroserviceListAll(t *testing.T) {
+	client := testcore.CreateTestClient(t)
+	items := client.Microservices.ListAll(context.Background(), microservices.ListOptions{})
+	assert.NoError(t, items.Err())
+	total := 0
+	for item := range items.Items() {
+		fmt.Printf("id=%s, type=%s, owner=%s\n", item.ID(), item.Type(), item.Owner())
+		total += 1
+	}
+	assert.Greater(t, total, 0)
+}
+
+func Test_MicroserviceListLimit(t *testing.T) {
+	client := testcore.CreateTestClient(t)
+	items := client.Microservices.ListLimit(context.Background(), microservices.ListOptions{}, 10)
+	assert.NoError(t, items.Err())
+	total := 0
+	for item := range items.Items() {
+		fmt.Printf("id=%s, type=%s, owner=%s\n", item.ID(), item.Type(), item.Owner())
+		total += 1
+	}
+	assert.LessOrEqual(t, 10, total)
+}
 
 func Test_MicroserviceUpload(t *testing.T) {
 	client := testcore.CreateTestClient(t)

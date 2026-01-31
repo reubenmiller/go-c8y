@@ -1,6 +1,7 @@
 package op
 
 import (
+	"iter"
 	"time"
 )
 
@@ -13,6 +14,7 @@ const (
 	StatusUpdated   Status = "Updated"   // Existing resource modified
 	StatusSkipped   Status = "Skipped"   // Operation skipped (e.g., no-op update)
 	StatusDuplicate Status = "Duplicate" // Resource already exists (conflict)
+	StatusNoMatch   Status = "NoMatch"   // No matches found
 	StatusFailed    Status = "Failed"    // Operation failed
 )
 
@@ -105,6 +107,19 @@ func Duplicate[T any](data T, meta ...map[string]any) Result[T] {
 	}
 	if len(meta) > 0 && meta[0] != nil {
 		r.Meta = meta[0]
+	}
+	return r
+}
+
+// Not found, though generally this is not an error
+func NoMatch[T any](meta ...map[string]any) Result[T] {
+	var zero T
+	r := Result[T]{
+		Data:       zero,
+		Status:     StatusNoMatch,
+		Idempotent: true,
+		Timestamp:  time.Now(),
+		Meta:       make(map[string]any),
 	}
 	return r
 }
@@ -243,4 +258,11 @@ func Combine[T, U, V any](r1 Result[T], r2 Result[U], fn func(T, U) V) Result[V]
 		Status:    StatusOK,
 		Timestamp: time.Now(),
 	}
+}
+
+func First[T any](items iter.Seq[T]) (Result[T], bool) {
+	for item := range items {
+		return OK(item), true
+	}
+	return NoMatch[T](), false
 }

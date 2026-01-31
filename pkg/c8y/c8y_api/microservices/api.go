@@ -2,6 +2,8 @@ package microservices
 
 import (
 	"context"
+	"iter"
+	"log/slog"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsondoc"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
@@ -81,13 +83,88 @@ func First(m model.Microservice) bool {
 	return true
 }
 
-func (s *Service) FindFirst(ctx context.Context, opt ListOptions) (*model.Microservice, bool, error) {
-	return pagination.ForEachWhere(ctx, s.ListB(opt), pagination.PagerOptions{MaxPages: 2}, First)
+// MicroserviceIterator provides iteration over microservices
+type MicroserviceIterator struct {
+	items iter.Seq[jsonmodels.Microservice]
+	err   error
+}
+
+func (it *MicroserviceIterator) Items() iter.Seq[jsonmodels.Microservice] {
+	return it.items
+}
+
+func (it *MicroserviceIterator) Err() error {
+	return it.err
+}
+
+func paginateMicroservices(ctx context.Context, fetch func(page int) op.Result[jsonmodels.Microservice], maxItems int) *MicroserviceIterator {
+	iterator := &MicroserviceIterator{}
+
+	iterator.items = func(yield func(jsonmodels.Microservice) bool) {
+		page := 1
+		count := 0
+		for {
+			result := fetch(page)
+			if result.Err != nil {
+				iterator.err = result.Err
+				return
+			}
+			countBeforeResults := count
+			for doc := range result.Data.Iter() {
+				if maxItems > 0 && count >= maxItems {
+					return
+				}
+				item := jsonmodels.NewMicroservice(doc.Bytes())
+				if !yield(item) {
+					return
+				}
+				count++
+			}
+			if countBeforeResults == count {
+				slog.Info("Stopping pagination as results array is empty")
+				return
+			}
+
+			totalPages, ok := result.Meta["totalPages"].(int64)
+			if ok && page >= int(totalPages) {
+				return
+			}
+			page++
+		}
+	}
+
+	return iterator
+}
+
+func (s *Service) FindFirst(ctx context.Context, opt ListOptions) (op.Result[jsonmodels.Microservice], bool) {
+	iterator := s.ListLimit(ctx, opt, 1)
+	if iterator.Err() != nil {
+		return op.Failed[jsonmodels.Microservice](iterator.Err(), false), false
+	}
+	return op.First(iterator.Items())
 }
 
 // List all microservices on your tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Microservice] {
 	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewMicroservice)
+}
+
+// ListAll returns an iterator for all microservices
+func (s *Service) ListAll(ctx context.Context, opts ListOptions) *MicroserviceIterator {
+	return paginateMicroservices(ctx, func(page int) op.Result[jsonmodels.Microservice] {
+		opts.CurrentPage = page
+		opts.PageSize = 2000
+		return s.List(ctx, opts)
+	}, 0)
+}
+
+// ListLimit returns an iterator for up to maxItems microservices
+func (s *Service) ListLimit(ctx context.Context, opts ListOptions, maxItems int) *MicroserviceIterator {
+	return paginateMicroservices(ctx, func(page int) op.Result[jsonmodels.Microservice] {
+		opts.CurrentPage = page
+		opts.PageSize = 2000
+		return s.List(ctx, opts)
+	}, maxItems)
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {
@@ -148,8 +225,8 @@ func (s *Service) SubscribeB(tenantID string, selfURL string) *core.TryRequest {
 }
 
 // Unsubscribe a microservice from a tenant
-func (s *Service) Unsubscribe(ctx context.Context, tenantID string, ID string) (*model.Microservice, error) {
-	return core.ExecuteResultOnly[model.Microservice](ctx, s.UnsubscribeB(tenantID, ID))
+func (s *Service) Unsubscribe(ctx context.Context, tenantID string, ID string) op.Result[jsonmodels.Microservice] {
+	return core.ExecuteReturnResult(ctx, s.UnsubscribeB(tenantID, ID), jsonmodels.NewMicroservice)
 }
 
 func (s *Service) UnsubscribeB(tenantID string, ID string) *core.TryRequest {
@@ -159,8 +236,8 @@ func (s *Service) UnsubscribeB(tenantID string, ID string) *core.TryRequest {
 type UploadFileOptions = applications.UploadFileOptions
 
 // Upload a new microservice binary
-func (s *Service) Upload(ctx context.Context, ID string, opt UploadFileOptions) (*model.MicroserviceBinary, error) {
-	return core.ExecuteResultOnly[model.MicroserviceBinary](ctx, s.UploadB(ID, opt))
+func (s *Service) Upload(ctx context.Context, ID string, opt UploadFileOptions) op.Result[jsonmodels.MicroserviceBinary] {
+	return core.ExecuteReturnResult(ctx, s.UploadB(ID, opt), jsonmodels.NewMicroserviceBinary)
 }
 
 func (s *Service) UploadB(ID string, opt UploadFileOptions) *core.TryRequest {
