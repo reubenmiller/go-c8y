@@ -49,3 +49,7 @@ func (t TrustedCertificate) ProofOfPossessionVerificationCodeUsableUntil() time.
 func (t TrustedCertificate) ProofOfPossessionValid() bool {
 	return t.Get("proofOfPossessionValid").Bool()
 }
+
+func (t TrustedCertificate) TenantCertificateAuthority() bool {
+	return t.Get("tenantCertificateAuthority").Bool()
+}

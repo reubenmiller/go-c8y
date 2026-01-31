@@ -4,8 +4,9 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
 )
@@ -38,16 +39,35 @@ type GetOptions struct {
 }
 
 // Get the certificate authority
-func (s *Service) Get(ctx context.Context, opt GetOptions) (*model.TrustedCertificate, error) {
-	cert, err := core.ExecuteResultOnly[model.TrustedCertificateCollection](ctx, s.GetB(opt))
-	if err != nil {
-		return nil, err
+func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.TrustedCertificate] {
+	result := core.ExecuteReturnCollection(ctx, s.GetB(opt), ResultProperty, "", jsonmodels.NewTrustedCertificate)
+	if result.Err != nil {
+		return result
 	}
-	if len(cert.Certificates) == 0 {
-		// simulate a not found error
-		return nil, core.Error{Code: 404}
+	// Get first item from iterator
+	for doc := range result.Data.Iter() {
+		cert := jsonmodels.NewTrustedCertificate(doc.Bytes())
+		return op.Result[jsonmodels.TrustedCertificate]{
+			Data:       cert,
+			Err:        nil,
+			Status:     result.Status,
+			HTTPStatus: result.HTTPStatus,
+			Attempts:   result.Attempts,
+			Duration:   result.Duration,
+			RequestID:  result.RequestID,
+			Meta:       result.Meta,
+		}
 	}
-	return &cert.Certificates[0], nil
+	// No certificate found - simulate a not found error
+	return op.Result[jsonmodels.TrustedCertificate]{
+		Err:        core.Error{Code: 404},
+		Status:     result.Status,
+		HTTPStatus: 404,
+		Attempts:   result.Attempts,
+		Duration:   result.Duration,
+		RequestID:  result.RequestID,
+		Meta:       result.Meta,
+	}
 }
 
 func (s *Service) GetB(opt GetOptions) *core.TryRequest {
@@ -61,8 +81,8 @@ func (s *Service) GetB(opt GetOptions) *core.TryRequest {
 }
 
 // Create certificate authority
-func (s *Service) Create(ctx context.Context, opt CreateOptions) (*model.TrustedCertificate, error) {
-	return core.ExecuteResultOnly[model.TrustedCertificate](ctx, s.CreateB(opt))
+func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.TrustedCertificate] {
+	return core.ExecuteReturnResult(ctx, s.CreateB(opt), jsonmodels.NewTrustedCertificate)
 }
 
 func (s *Service) CreateB(opt CreateOptions) *core.TryRequest {
@@ -75,13 +95,10 @@ func (s *Service) CreateB(opt CreateOptions) *core.TryRequest {
 
 // Get or create a certificate authority
 // If the certificate does not exist it will be created
-func (s *Service) GetOrCreate(ctx context.Context, opt GetOptions) (*model.TrustedCertificate, error) {
-	result, err := s.Create(ctx, CreateOptions{})
-	if err == nil {
-		return result, nil
-	}
-	if !core.ErrHasStatus(err, http.StatusConflict) {
-		return result, err
+func (s *Service) GetOrCreate(ctx context.Context, opt GetOptions) op.Result[jsonmodels.TrustedCertificate] {
+	result := s.Create(ctx, CreateOptions{})
+	if result.IsError() && !core.ErrHasStatus(result.Err, http.StatusConflict) {
+		return result
 	}
 	return s.Get(ctx, opt)
 }
@@ -89,8 +106,8 @@ func (s *Service) GetOrCreate(ctx context.Context, opt GetOptions) (*model.Trust
 type RenewOptions struct{}
 
 // Renew certificate authority
-func (s *Service) Renew(ctx context.Context, opt CreateOptions) (*model.TrustedCertificate, error) {
-	return core.ExecuteResultOnly[model.TrustedCertificate](ctx, s.RenewB(opt))
+func (s *Service) Renew(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.TrustedCertificate] {
+	return core.ExecuteReturnResult(ctx, s.RenewB(opt), jsonmodels.NewTrustedCertificate)
 }
 
 func (s *Service) RenewB(opt CreateOptions) *core.TryRequest {

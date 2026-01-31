@@ -29,15 +29,15 @@ func Test_DeviceCertificates(t *testing.T) {
 		Certificate:    testcore.ProjectFile("testdevice01.crt"),
 	})
 
-	_, err := client.Devices.List(context.Background(), devices.ListOptions{})
-	assert.Error(t, err)
-	assert.ErrorIs(t, err, c8y_api.ErrUnauthorized)
+	result := client.Devices.List(context.Background(), devices.ListOptions{})
+	assert.Error(t, result.Err)
+	assert.ErrorIs(t, result.Err, c8y_api.ErrUnauthorized)
 
-	_, err = client.Login(context.Background())
+	_, err := client.Login(context.Background())
 	assert.NoError(t, err)
 	assert.NotEmpty(t, client.Auth.Token)
 
-	collection, err := client.Devices.List(context.Background(), devices.ListOptions{})
-	assert.NoError(t, err)
-	assert.Greater(t, len(collection.ManagedObjects), 0)
+	collection := client.Devices.List(context.Background(), devices.ListOptions{})
+	assert.NoError(t, collection.Err)
+	assert.Greater(t, collection.Data.Length(), 0)
 }

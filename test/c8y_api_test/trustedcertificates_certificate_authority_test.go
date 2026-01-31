@@ -15,22 +15,22 @@ func Test_TrustedCertificatesCertificateAuthority(t *testing.T) {
 	client.Client.SetDebug(true)
 
 	// get
-	cert, err := client.TrustedCertificates.CertificateAuthority.Get(context.Background(), certificateauthority.GetOptions{
+	cert := client.TrustedCertificates.CertificateAuthority.Get(context.Background(), certificateauthority.GetOptions{
 		TenantID: client.Auth.Tenant,
 	})
-	assert.NoError(t, err)
-	assert.NotEmpty(t, cert.Self)
-	assert.Equal(t, cert.TenantCertificateAuthority, true)
+	assert.NoError(t, cert.Err)
+	assert.NotEqual(t, 0, cert.Data.Length())
+	assert.Equal(t, cert.Data.TenantCertificateAuthority(), true)
 
 	// create
-	cert2, err := client.TrustedCertificates.CertificateAuthority.Create(context.Background(), certificateauthority.CreateOptions{})
-	assert.Error(t, err)
-	assert.True(t, core.ErrHasStatus(err, 409))
-	assert.Nil(t, cert2)
+	cert2 := client.TrustedCertificates.CertificateAuthority.Create(context.Background(), certificateauthority.CreateOptions{})
+	assert.Error(t, cert2.Err)
+	assert.True(t, core.ErrHasStatus(cert2.Err, 409))
+	assert.Equal(t, 0, cert2.Data.Length())
 
 	// get or create
-	cert3, err := client.TrustedCertificates.CertificateAuthority.GetOrCreate(context.Background(), certificateauthority.GetOptions{})
-	assert.NoError(t, err)
-	assert.NotEmpty(t, cert3.Self)
-	assert.Equal(t, cert3.TenantCertificateAuthority, true)
+	cert3 := client.TrustedCertificates.CertificateAuthority.GetOrCreate(context.Background(), certificateauthority.GetOptions{})
+	assert.NoError(t, cert3.Err)
+	assert.NotEmpty(t, cert3.Data.Self())
+	assert.Equal(t, cert3.Data.TenantCertificateAuthority(), true)
 }

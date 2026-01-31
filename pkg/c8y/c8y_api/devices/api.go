@@ -3,9 +3,10 @@ package devices
 import (
 	"context"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"resty.dev/v3"
 )
@@ -51,8 +52,8 @@ type ListOptions struct {
 }
 
 // List managed objects
-func (s *Service) List(ctx context.Context, opt ListOptions) (*model.ManagedObjectCollection, error) {
-	return core.ExecuteResultOnly[model.ManagedObjectCollection](ctx, s.ListB(opt))
+func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.ManagedObject] {
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), managedobjects.ResultProperty, "", jsonmodels.NewManagedObject)
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {
@@ -81,8 +82,8 @@ type FindOptions struct {
 }
 
 // List managed objects
-func (s *Service) Find(ctx context.Context, opt FindOptions) (*model.ManagedObjectCollection, error) {
-	return core.ExecuteResultOnly[model.ManagedObjectCollection](ctx, s.FindB(opt))
+func (s *Service) Find(ctx context.Context, opt FindOptions) op.Result[jsonmodels.ManagedObject] {
+	return core.ExecuteReturnCollection(ctx, s.FindB(opt), managedobjects.ResultProperty, managedobjects.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
 func (s *Service) FindB(opt FindOptions) *core.TryRequest {
