@@ -91,3 +91,28 @@ func getSHA256(filepath string) (string, error) {
 	checksum := fmt.Sprintf("%x", h.Sum(nil))
 	return checksum, nil
 }
+
+// CreateTempFile creates a temporary file with the given content and returns its path.
+// The file will be automatically cleaned up when the test completes.
+func CreateTempFile(tb testing.TB, content string) string {
+	tempFile, err := os.CreateTemp("", "test-*.txt")
+	if err != nil {
+		tb.Fatalf("failed to create temp file: %v", err)
+	}
+
+	if _, err := tempFile.WriteString(content); err != nil {
+		tempFile.Close()
+		tb.Fatalf("failed to write to temp file: %v", err)
+	}
+
+	if err := tempFile.Close(); err != nil {
+		tb.Fatalf("failed to close temp file: %v", err)
+	}
+
+	// Schedule cleanup
+	tb.Cleanup(func() {
+		os.Remove(tempFile.Name())
+	})
+
+	return tempFile.Name()
+}
