@@ -4,8 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"resty.dev/v3"
 )
@@ -48,8 +49,8 @@ type ListOptions struct {
 }
 
 // List the audit records
-func (s *Service) List(ctx context.Context, opt ListOptions) (*model.AuditRecordsCollection, error) {
-	return core.ExecuteResultOnly[model.AuditRecordsCollection](ctx, s.ListB(opt))
+func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.AuditRecord] {
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewAuditRecord)
 }
 
 func (s *Service) ListB(opt any) *core.TryRequest {
@@ -61,8 +62,8 @@ func (s *Service) ListB(opt any) *core.TryRequest {
 }
 
 // Get an audit record
-func (s *Service) Get(ctx context.Context, ID string) (*model.AuditRecord, error) {
-	return core.ExecuteResultOnly[model.AuditRecord](ctx, s.GetB(ID))
+func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.AuditRecord] {
+	return core.ExecuteReturnResult(ctx, s.GetB(ID), jsonmodels.NewAuditRecord)
 }
 
 func (s *Service) GetB(ID string) *core.TryRequest {
@@ -74,8 +75,8 @@ func (s *Service) GetB(ID string) *core.TryRequest {
 }
 
 // Create an audit record
-func (s *Service) Create(ctx context.Context, body any) (*model.AuditRecord, error) {
-	return core.ExecuteResultOnly[model.AuditRecord](ctx, s.CreateB(body))
+func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.AuditRecord] {
+	return core.ExecuteReturnResult(ctx, s.CreateB(body), jsonmodels.NewAuditRecord)
 }
 
 func (s *Service) CreateB(body any) *core.TryRequest {

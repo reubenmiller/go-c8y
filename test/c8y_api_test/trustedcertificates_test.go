@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"crypto/x509"
+	"encoding/json"
 	"io"
 	"path"
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsondoc"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/trustedcertificates"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/trustedcertificates/certificaterevocationlist"
@@ -20,15 +22,18 @@ import (
 func Test_TrustedCertificateListWithCACertificateOnly(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	client.Client.SetDebug(true)
-	certs, err := client.TrustedCertificates.List(context.Background(), trustedcertificates.ListOptions{
+	certs := client.TrustedCertificates.List(context.Background(), trustedcertificates.ListOptions{
 		TenantID:             client.Auth.Tenant,
 		CertificateAuthority: true,
 	})
-	assert.NoError(t, err)
-	if len(certs.Certificates) > 0 {
-		assert.Equal(t, certs.Certificates[0].TenantCertificateAuthority, true)
+	assert.NoError(t, certs.Err)
+	if certs.Data.Length() > 0 {
+		for item := range jsondoc.DecodeIter[model.TrustedCertificate](certs.Data.Iter()) {
+			assert.Equal(t, item.TenantCertificateAuthority, true)
+			break
+		}
 	}
-	assert.NotEmpty(t, certs.Self)
+	assert.NotEmpty(t, certs.Meta["self"])
 }
 
 func Test_TrustedCertifcates(t *testing.T) {
@@ -55,16 +60,16 @@ func Test_TrustedCertifcates(t *testing.T) {
 	assert.NotEmpty(t, localCert.Fingerprint)
 
 	// create
-	cert, err := client.TrustedCertificates.Create(context.Background(), trustedcertificates.CreateOptions{
+	cert := client.TrustedCertificates.Create(context.Background(), trustedcertificates.CreateOptions{
 		TenantID: client.Auth.Tenant,
 	}, localCert)
 	assert.NoError(t, err)
-	assert.Equal(t, cert.Fingerprint, localCert.Fingerprint)
+	assert.Equal(t, cert.Data.Fingerprint(), localCert.Fingerprint)
 
 	t.Cleanup(func() {
 		// always run a cleanup in case the test fails before the cert is deleted
 		client.TrustedCertificates.Delete(context.Background(), trustedcertificates.DeleteOptions{
-			Fingerprint: cert.Fingerprint,
+			Fingerprint: cert.Data.Fingerprint(),
 			TenantID:    client.Auth.Tenant,
 		})
 	})
@@ -78,13 +83,13 @@ func Test_TrustedCertifcates(t *testing.T) {
 	// assert.False(t, confirmedCertificateFail.ProofOfPossessionValid)
 
 	// proof of possession
-	verifiedCertificate, err := client.TrustedCertificates.ProofEndToEnd(context.Background(), trustedcertificates.ProofOptions{
-		Fingerprint: cert.Fingerprint,
+	verifiedCertificate := client.TrustedCertificates.ProofEndToEnd(context.Background(), trustedcertificates.ProofOptions{
+		Fingerprint: cert.Data.Fingerprint(),
 		TenantID:    client.Auth.Tenant,
 		PrivateKey:  keyFile,
 	})
-	assert.NoError(t, err)
-	assert.True(t, verifiedCertificate.ProofOfPossessionValid)
+	assert.NoError(t, verifiedCertificate.Err)
+	assert.True(t, verifiedCertificate.Data.ProofOfPossessionValid())
 
 	// confirm proof of possession
 	// confirmedCertificate, err := client.TrustedCertificates.Confirm(context.Background(), trustedcertificates.ConfirmOptions{
@@ -94,33 +99,33 @@ func Test_TrustedCertifcates(t *testing.T) {
 	// assert.True(t, confirmedCertificate.ProofOfPossessionValid)
 
 	// update
-	updatedCert, err := client.TrustedCertificates.Update(context.Background(), trustedcertificates.UpdateOptions{
-		Fingerprint: cert.Fingerprint,
+	updatedCert := client.TrustedCertificates.Update(context.Background(), trustedcertificates.UpdateOptions{
+		Fingerprint: cert.Data.Fingerprint(),
 		TenantID:    client.Auth.Tenant,
 	}, model.TrustedCertificate{
 		Status: model.TrustedCertificateStatusDisabled,
 	})
-	assert.NoError(t, err)
-	assert.Equal(t, updatedCert.Status, model.TrustedCertificateStatusDisabled)
+	assert.NoError(t, updatedCert.Err)
+	assert.Equal(t, updatedCert.Data.Status(), model.TrustedCertificateStatusDisabled)
 
 	// get
-	getCert, err := client.TrustedCertificates.Get(context.Background(), trustedcertificates.GetOptions{
-		Fingerprint: cert.Fingerprint,
+	getCert := client.TrustedCertificates.Get(context.Background(), trustedcertificates.GetOptions{
+		Fingerprint: cert.Data.Fingerprint(),
 		TenantID:    client.Auth.Tenant,
 	})
-	assert.NoError(t, err)
-	assert.Equal(t, getCert.Fingerprint, cert.Fingerprint)
+	assert.NoError(t, getCert.Err)
+	assert.Equal(t, getCert.Data.Fingerprint(), cert.Data.Fingerprint())
 
 	// list
-	listCerts, err := client.TrustedCertificates.List(context.Background(), trustedcertificates.ListOptions{
+	listCerts := client.TrustedCertificates.List(context.Background(), trustedcertificates.ListOptions{
 		TenantID: client.Auth.Tenant,
 	})
-	assert.NoError(t, err)
-	assert.GreaterOrEqual(t, len(listCerts.Certificates), 1)
+	assert.NoError(t, listCerts.Err)
+	assert.GreaterOrEqual(t, listCerts.Data.Length(), 1)
 
 	// delete
 	err = client.TrustedCertificates.Delete(context.Background(), trustedcertificates.DeleteOptions{
-		Fingerprint: updatedCert.Fingerprint,
+		Fingerprint: updatedCert.Data.Fingerprint(),
 		TenantID:    client.Auth.Tenant,
 	})
 	assert.NoError(t, err)
@@ -129,7 +134,11 @@ func Test_TrustedCertifcates(t *testing.T) {
 	// Certificate Revocation List
 
 	// Add cert to CRL
-	toAddCRL := model.NewTrustedCertificateRevocationCollectionFromCertificates(*updatedCert)
+	cert2 := new(model.TrustedCertificate)
+	unmarshalErr := json.Unmarshal(updatedCert.Data.Bytes(), &cert2)
+	assert.NoError(t, unmarshalErr)
+
+	toAddCRL := model.NewTrustedCertificateRevocationCollectionFromCertificates(*cert2)
 	err = client.TrustedCertificates.RevocationList.Add(context.Background(), toAddCRL)
 	assert.NoError(t, err)
 

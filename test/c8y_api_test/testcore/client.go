@@ -63,7 +63,7 @@ func CreateManagedObject(t *testing.T, client *c8y_api.Client) op.Result[jsonmod
 	return mo
 }
 
-func CreateEvent(t *testing.T, client *c8y_api.Client, mo *jsonmodels.ManagedObject) (*model.Event, error) {
+func CreateEvent(t *testing.T, client *c8y_api.Client, mo *jsonmodels.ManagedObject) op.Result[jsonmodels.Event] {
 	return client.Events.Create(context.TODO(), model.Event{
 		Source: model.NewSource(mo.ID()),
 		Type:   "ci_" + testingutils.RandomString(10),

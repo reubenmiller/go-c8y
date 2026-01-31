@@ -3,8 +3,9 @@ package tenants
 import (
 	"context"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/tenants/currenttenant"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/tenants/systemoptions"
@@ -58,8 +59,8 @@ type ListOptions struct {
 }
 
 // List tenants
-func (s *Service) List(ctx context.Context, opt ListOptions) (*model.TenantCollection, error) {
-	return core.ExecuteResultOnly[model.TenantCollection](ctx, s.ListB(opt))
+func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Tenant] {
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewTenant)
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {
@@ -71,8 +72,8 @@ func (s *Service) ListB(opt ListOptions) *core.TryRequest {
 }
 
 // Create a tenant
-func (s *Service) Create(ctx context.Context, body any) (*model.Tenant, error) {
-	return core.ExecuteResultOnly[model.Tenant](ctx, s.CreateB(body))
+func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Tenant] {
+	return core.ExecuteReturnResult(ctx, s.CreateB(body), jsonmodels.NewTenant)
 }
 
 func (s *Service) CreateB(body any) *core.TryRequest {
@@ -85,8 +86,8 @@ func (s *Service) CreateB(body any) *core.TryRequest {
 }
 
 // Get a tenant
-func (s *Service) Get(ctx context.Context, ID string) (*model.Tenant, error) {
-	return core.ExecuteResultOnly[model.Tenant](ctx, s.GetB(ID))
+func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Tenant] {
+	return core.ExecuteReturnResult(ctx, s.GetB(ID), jsonmodels.NewTenant)
 }
 
 func (s *Service) GetB(ID string) *core.TryRequest {
@@ -99,8 +100,8 @@ func (s *Service) GetB(ID string) *core.TryRequest {
 }
 
 // Update a tenant
-func (s *Service) Update(ctx context.Context, ID string, body any) (*model.Tenant, error) {
-	return core.ExecuteResultOnly[model.Tenant](ctx, s.UpdateB(ID, body))
+func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.Tenant] {
+	return core.ExecuteReturnResult(ctx, s.UpdateB(ID, body), jsonmodels.NewTenant)
 }
 
 func (s *Service) UpdateB(ID string, body any) *core.TryRequest {

@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsondoc"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/users"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
@@ -13,23 +15,28 @@ import (
 func Test_Users(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	client.Client.SetDebug(true)
-	collection, err := client.Users.List(context.Background(), users.ListOptions{})
-	assert.NoError(t, err)
-	assert.NotNil(t, collection)
+	collection := client.Users.List(context.Background(), users.ListOptions{})
+	assert.NoError(t, collection.Err)
+	assert.Greater(t, collection.Data.Length(), 0)
 
-	if len(collection.Users) > 0 {
-		user, err := client.Users.Get(context.Background(), users.Target{
-			ID: collection.Users[0].ID,
+	if collection.Data.Length() > 0 {
+		userID := ""
+		for user := range jsondoc.DecodeIter[model.User](collection.Data.Iter()) {
+			userID = user.ID
+			break
+		}
+		user := client.Users.Get(context.Background(), users.Target{
+			ID: userID,
 		})
-		assert.NoError(t, err)
-		assert.Equal(t, user.ID, collection.Users[0].ID)
+		assert.NoError(t, user.Err)
+		assert.Equal(t, userID, user.Data.ID())
 	}
 }
 
 func TestUserService_List(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	// list
-	collection, err := client.Users.List(
+	collection := client.Users.List(
 		context.Background(),
 		users.ListOptions{
 			PaginationOptions: pagination.PaginationOptions{
@@ -37,13 +44,20 @@ func TestUserService_List(t *testing.T) {
 			},
 		},
 	)
-	assert.NoError(t, err)
-	assert.Greater(t, len(collection.Users), 0, "At least 1 user should be present")
+	assert.NoError(t, collection.Err)
+	assert.Greater(t, collection.Data.Length(), 0, "At least 1 user should be present")
 
 	// get by username
-	user, err := client.Users.GetByUsername(context.Background(), users.GetByUsernameOptions{
-		Username: collection.Users[0].Username,
+	// TODO: add a nicer way to get the first item in the array of results
+	userName := ""
+	for user := range jsondoc.DecodeIter[model.User](collection.Data.Iter()) {
+		userName = user.Username
+		break
+	}
+
+	user := client.Users.GetByUsername(context.Background(), users.GetByUsernameOptions{
+		Username: userName,
 	})
-	assert.NoError(t, err)
-	assert.Equal(t, user.Username, collection.Users[0].Username)
+	assert.NoError(t, user.Err)
+	assert.Equal(t, userName, user.Data.UserName())
 }

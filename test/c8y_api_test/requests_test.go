@@ -25,12 +25,12 @@ func Test_ErrorHandlingCreateEvent(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	client.Client.SetDebug(true)
 
-	evt, err := client.Events.Create(context.Background(), model.Event{
+	evt := client.Events.Create(context.Background(), model.Event{
 		Source: model.NewSource("0"),
 	})
-
+	err := evt.Err
 	assert.Error(t, err)
-	assert.Nil(t, evt)
+	assert.Equal(t, 0, evt.Data.Length())
 
 	assert.True(t, c8y_api.ErrHasStatus(err, 422))
 	assert.True(t, errors.Is(err, c8y_api.Error{Code: 422}))

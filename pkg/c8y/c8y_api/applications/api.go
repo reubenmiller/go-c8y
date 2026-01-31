@@ -3,6 +3,8 @@ package applications
 import (
 	"context"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
@@ -75,8 +77,8 @@ type ListOptions struct {
 }
 
 // List all applications on your tenant
-func (s *Service) List(ctx context.Context, opt ListOptions) (*model.ApplicationCollection, error) {
-	return core.ExecuteResultOnly[model.ApplicationCollection](ctx, s.ListB(opt))
+func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Application] {
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewApplication)
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {
@@ -96,8 +98,8 @@ type ListByNameOptions struct {
 }
 
 // List applications by name
-func (s *Service) ListByName(ctx context.Context, opt ListByNameOptions) (*model.ApplicationCollection, error) {
-	return core.ExecuteResultOnly[model.ApplicationCollection](ctx, s.ListByNameB(opt))
+func (s *Service) ListByName(ctx context.Context, opt ListByNameOptions) op.Result[jsonmodels.Application] {
+	return core.ExecuteReturnCollection(ctx, s.ListByNameB(opt), ResultProperty, "", jsonmodels.NewApplication)
 }
 
 func (s *Service) ListByNameB(opt ListByNameOptions) *core.TryRequest {
@@ -117,8 +119,8 @@ type ListByTenantOptions struct {
 }
 
 // List applications by name
-func (s *Service) ListByTenant(ctx context.Context, opt ListByTenantOptions) (*model.ApplicationCollection, error) {
-	return core.ExecuteResultOnly[model.ApplicationCollection](ctx, s.ListByTenantB(opt))
+func (s *Service) ListByTenant(ctx context.Context, opt ListByTenantOptions) op.Result[jsonmodels.Application] {
+	return core.ExecuteReturnCollection(ctx, s.ListByTenantB(opt), ResultProperty, "", jsonmodels.NewApplication)
 }
 
 func (s *Service) ListByTenantB(opt ListByTenantOptions) *core.TryRequest {
@@ -138,8 +140,8 @@ type ListByOwnerOptions struct {
 }
 
 // Retrieve all applications owned by a particular tenant (by a given tenant ID)
-func (s *Service) ListByOwner(ctx context.Context, opt ListByOwnerOptions) (*model.ApplicationCollection, error) {
-	return core.ExecuteResultOnly[model.ApplicationCollection](ctx, s.ListByOwnerB(opt))
+func (s *Service) ListByOwner(ctx context.Context, opt ListByOwnerOptions) op.Result[jsonmodels.Application] {
+	return core.ExecuteReturnCollection(ctx, s.ListByOwnerB(opt), ResultProperty, "", jsonmodels.NewApplication)
 }
 
 func (s *Service) ListByOwnerB(opt ListByOwnerOptions) *core.TryRequest {
@@ -159,8 +161,8 @@ type ListByUserOptions struct {
 }
 
 // Retrieve all applications for a particular user (by a given username)
-func (s *Service) ListByUser(ctx context.Context, opt ListByUserOptions) (*model.ApplicationCollection, error) {
-	return core.ExecuteResultOnly[model.ApplicationCollection](ctx, s.ListByUserB(opt))
+func (s *Service) ListByUser(ctx context.Context, opt ListByUserOptions) op.Result[jsonmodels.Application] {
+	return core.ExecuteReturnCollection(ctx, s.ListByUserB(opt), ResultProperty, "", jsonmodels.NewApplication)
 }
 
 func (s *Service) ListByUserB(opt ListByUserOptions) *core.TryRequest {
@@ -172,8 +174,8 @@ func (s *Service) ListByUserB(opt ListByUserOptions) *core.TryRequest {
 }
 
 // Get an application
-func (s *Service) Get(ctx context.Context, ID string) (*model.Application, error) {
-	return core.ExecuteResultOnly[model.Application](ctx, s.GetB(ID))
+func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Application] {
+	return core.ExecuteReturnResult(ctx, s.GetB(ID), jsonmodels.NewApplication)
 }
 
 func (s *Service) GetB(ID string) *core.TryRequest {
@@ -185,8 +187,8 @@ func (s *Service) GetB(ID string) *core.TryRequest {
 }
 
 // Create an application
-func (s *Service) Create(ctx context.Context, body any) (*model.Application, error) {
-	return core.ExecuteResultOnly[model.Application](ctx, s.CreateB(body))
+func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Application] {
+	return core.ExecuteReturnResult(ctx, s.CreateB(body), jsonmodels.NewApplication)
 }
 
 func (s *Service) CreateB(body any) *core.TryRequest {
@@ -199,8 +201,8 @@ func (s *Service) CreateB(body any) *core.TryRequest {
 }
 
 // Update an application
-func (s *Service) Update(ctx context.Context, ID string, body any) (*model.Application, error) {
-	return core.ExecuteResultOnly[model.Application](ctx, s.UpdateB(ID, body))
+func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.Application] {
+	return core.ExecuteReturnResult(ctx, s.UpdateB(ID, body), jsonmodels.NewApplication)
 }
 
 func (s *Service) UpdateB(ID string, body any) *core.TryRequest {
@@ -242,8 +244,8 @@ type CopyOptions struct {
 }
 
 // Copy an application (by a given ID)
-func (s *Service) Copy(ctx context.Context, ID string, opt CopyOptions) (*model.ApplicationCollection, error) {
-	return core.ExecuteResultOnly[model.ApplicationCollection](ctx, s.CopyB(ID, opt))
+func (s *Service) Copy(ctx context.Context, ID string, opt CopyOptions) op.Result[jsonmodels.Application] {
+	return core.ExecuteReturnResult(ctx, s.CopyB(ID, opt), jsonmodels.NewApplication)
 }
 
 func (s *Service) CopyB(ID string, opt CopyOptions) *core.TryRequest {
@@ -255,8 +257,8 @@ func (s *Service) CopyB(ID string, opt CopyOptions) *core.TryRequest {
 }
 
 // Subscribe an application to a tenant
-func (s *Service) Subscribe(ctx context.Context, tenantID string, selfLink string) (*model.Application, error) {
-	return core.ExecuteResultOnly[model.Application](ctx, s.SubscribeB(tenantID, selfLink))
+func (s *Service) Subscribe(ctx context.Context, tenantID string, selfLink string) op.Result[jsonmodels.Application] {
+	return core.ExecuteReturnResult(ctx, s.SubscribeB(tenantID, selfLink), jsonmodels.NewApplication)
 }
 
 func (s *Service) SubscribeB(tenantID string, selfURL string) *core.TryRequest {
@@ -286,8 +288,8 @@ func (s *Service) UnsubscribeB(tenantID string, ID string) *core.TryRequest {
 type UploadFileOptions = core.UploadFileOptions
 
 // Upload an application binary
-func (s *Service) Upload(ctx context.Context, ID string, opt UploadFileOptions) (*model.Application, error) {
-	return core.ExecuteResultOnly[model.Application](ctx, s.UploadB(ID, opt))
+func (s *Service) Upload(ctx context.Context, ID string, opt UploadFileOptions) op.Result[jsonmodels.Application] {
+	return core.ExecuteReturnResult(ctx, s.UploadB(ID, opt), jsonmodels.NewApplication)
 }
 
 func (s *Service) UploadB(ID string, opt UploadFileOptions) *core.TryRequest {

@@ -3,8 +3,9 @@ package binaries
 import (
 	"context"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
@@ -54,8 +55,8 @@ type ListOptions struct {
 }
 
 // List binaries
-func (s *Service) List(ctx context.Context, opt ListOptions) (*model.BinaryCollection, error) {
-	return core.ExecuteResultOnly[model.BinaryCollection](ctx, s.ListB(opt))
+func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Binary] {
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewBinary)
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {
@@ -67,6 +68,7 @@ func (s *Service) ListB(opt ListOptions) *core.TryRequest {
 }
 
 // Get a binary
+// TODO: How to wrap the a binary type response in op.Result? A io.Reader or io.ReadCloser might make the most sense
 func (s *Service) Get(ctx context.Context, ID string) (*core.BinaryResponse, error) {
 	return core.ExecuteBinaryResponse(ctx, s.GetB(ID))
 }
@@ -84,8 +86,8 @@ func (s *Service) GetB(ID string) *core.TryRequest {
 type UploadFileOptions = core.UploadFileOptions
 
 // Create/Upload a binary
-func (s *Service) Create(ctx context.Context, opt UploadFileOptions) (*model.Binary, error) {
-	return core.ExecuteResultOnly[model.Binary](ctx, s.CreateB(opt))
+func (s *Service) Create(ctx context.Context, opt UploadFileOptions) op.Result[jsonmodels.Binary] {
+	return core.ExecuteReturnResult(ctx, s.CreateB(opt), jsonmodels.NewBinary)
 }
 
 func (s *Service) CreateB(opt UploadFileOptions) *core.TryRequest {
@@ -98,8 +100,8 @@ func (s *Service) CreateB(opt UploadFileOptions) *core.TryRequest {
 }
 
 // Update/replace a binary
-func (s *Service) Update(ctx context.Context, ID string, opt UploadFileOptions) (*model.Binary, error) {
-	return core.ExecuteResultOnly[model.Binary](ctx, s.UpdateB(ID, opt))
+func (s *Service) Update(ctx context.Context, ID string, opt UploadFileOptions) op.Result[jsonmodels.Binary] {
+	return core.ExecuteReturnResult(ctx, s.UpdateB(ID, opt), jsonmodels.NewBinary)
 }
 
 func (s *Service) UpdateB(eventID string, opt UploadFileOptions) *core.TryRequest {

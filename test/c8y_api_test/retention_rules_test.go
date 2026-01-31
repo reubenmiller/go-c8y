@@ -12,13 +12,19 @@ import (
 func Test_RetentionRules(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	client.Client.SetDebug(true)
-	rules, err := client.RetentionRules.List(context.Background(), retentionrules.ListOptions{})
-	assert.NoError(t, err)
-	assert.NotNil(t, rules)
+	rules := client.RetentionRules.List(context.Background(), retentionrules.ListOptions{})
+	assert.NoError(t, rules.Err)
+	assert.Greater(t, rules.Data.Length(), 0)
 
-	if len(rules.RetentionRules) > 0 {
-		rule, err := client.RetentionRules.Get(context.Background(), rules.RetentionRules[0].ID)
-		assert.NoError(t, err)
-		assert.Equal(t, rule.ID, rules.RetentionRules[0].ID)
+	if rules.Data.Length() > 0 {
+		ruleID := ""
+		// TODO: Add a better iterator for retention rules, or have a method which returns a plain array
+		for item := range rules.Data.Iter() {
+			ruleID = item.Get("id").String()
+			break
+		}
+		rule := client.RetentionRules.Get(context.Background(), ruleID)
+		assert.NoError(t, rule.Err)
+		assert.Equal(t, rule.Data.ID(), ruleID)
 	}
 }

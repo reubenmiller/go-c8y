@@ -2,11 +2,14 @@ package events
 
 import (
 	"context"
+	"iter"
+	"log/slog"
 	"time"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/events/eventbinaries"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
@@ -94,9 +97,80 @@ type ListOptions struct {
 	pagination.PaginationOptions
 }
 
+// EventIterator provides iteration over events
+type EventIterator struct {
+	items iter.Seq[jsonmodels.Event]
+	err   error
+}
+
+func (it *EventIterator) Items() iter.Seq[jsonmodels.Event] {
+	return it.items
+}
+
+func (it *EventIterator) Err() error {
+	return it.err
+}
+
+func paginateEvents(ctx context.Context, fetch func(page int) op.Result[jsonmodels.Event], maxItems int) *EventIterator {
+	iterator := &EventIterator{}
+
+	iterator.items = func(yield func(jsonmodels.Event) bool) {
+		page := 1
+		count := 0
+		for {
+			result := fetch(page)
+			if result.Err != nil {
+				iterator.err = result.Err
+				return
+			}
+			countBeforeResults := count
+			for doc := range result.Data.Iter() {
+				if maxItems > 0 && count >= maxItems {
+					return
+				}
+				item := jsonmodels.NewEvent(doc.Bytes())
+				if !yield(item) {
+					return
+				}
+				count++
+			}
+			if countBeforeResults == count {
+				slog.Info("Stopping pagination as results array is empty")
+				return
+			}
+
+			totalPages, ok := result.Meta["totalPages"].(int64)
+			if ok && page >= int(totalPages) {
+				return
+			}
+			page++
+		}
+	}
+
+	return iterator
+}
+
 // List events
-func (s *Service) List(ctx context.Context, opt ListOptions) (*model.EventCollection, error) {
-	return core.ExecuteResultOnly[model.EventCollection](ctx, s.ListB(opt))
+func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Event] {
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewEvent)
+}
+
+// ListAll returns an iterator for all events
+func (s *Service) ListAll(ctx context.Context, opts ListOptions) *EventIterator {
+	return paginateEvents(ctx, func(page int) op.Result[jsonmodels.Event] {
+		opts.CurrentPage = page
+		opts.PageSize = 2000
+		return s.List(ctx, opts)
+	}, 0)
+}
+
+// ListLimit returns an iterator for up to maxItems events
+func (s *Service) ListLimit(ctx context.Context, opts ListOptions, maxItems int) *EventIterator {
+	return paginateEvents(ctx, func(page int) op.Result[jsonmodels.Event] {
+		opts.CurrentPage = page
+		opts.PageSize = 2000
+		return s.List(ctx, opts)
+	}, maxItems)
 }
 
 func (s *Service) ListB(opt any) *core.TryRequest {
@@ -108,8 +182,8 @@ func (s *Service) ListB(opt any) *core.TryRequest {
 }
 
 // Get an event
-func (s *Service) Get(ctx context.Context, ID string) (*model.Event, error) {
-	return core.ExecuteResultOnly[model.Event](ctx, s.GetB(ID))
+func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Event] {
+	return core.ExecuteReturnResult(ctx, s.GetB(ID), jsonmodels.NewEvent)
 }
 
 func (s *Service) GetB(ID string) *core.TryRequest {
@@ -121,8 +195,8 @@ func (s *Service) GetB(ID string) *core.TryRequest {
 }
 
 // Create an event
-func (s *Service) Create(ctx context.Context, body any) (*model.Event, error) {
-	return core.ExecuteResultOnly[model.Event](ctx, s.CreateB(body))
+func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Event] {
+	return core.ExecuteReturnResult(ctx, s.CreateB(body), jsonmodels.NewEvent)
 }
 
 func (s *Service) CreateB(body any) *core.TryRequest {
@@ -135,8 +209,8 @@ func (s *Service) CreateB(body any) *core.TryRequest {
 }
 
 // Update an event
-func (s *Service) Update(ctx context.Context, ID string, body any) (*model.Event, error) {
-	return core.ExecuteResultOnly[model.Event](ctx, s.UpdateB(ID, body))
+func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.Event] {
+	return core.ExecuteReturnResult(ctx, s.UpdateB(ID, body), jsonmodels.NewEvent)
 }
 
 func (s *Service) UpdateB(ID string, body any) *core.TryRequest {
@@ -181,8 +255,8 @@ type DeleteListOptions struct {
 // when the deleted event has a lot of associated data. After sending the
 // request, the platform starts deleting the associated data in an asynchronous way.
 // Finally, the requested event is deleted after all associated data has been deleted.
-func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) error {
-	return core.ExecuteNoResult(ctx, s.DeleteListB(opt))
+func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Result[jsonmodels.Event] {
+	return core.ExecuteReturnResult(ctx, s.DeleteListB(opt), jsonmodels.NewEvent)
 }
 
 func (s *Service) DeleteListB(opt DeleteListOptions) *core.TryRequest {

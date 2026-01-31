@@ -3,8 +3,11 @@ package trustedcertificates
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 	"time"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
@@ -57,8 +60,8 @@ type ListOptions struct {
 }
 
 // List trusted certificates
-func (s *Service) List(ctx context.Context, opt ListOptions) (*model.TrustedCertificateCollection, error) {
-	return core.ExecuteResultOnly[model.TrustedCertificateCollection](ctx, s.ListB(opt))
+func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.TrustedCertificate] {
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewTrustedCertificate)
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {
@@ -80,8 +83,8 @@ type CreateOptions struct {
 }
 
 // Create a trusted certificate
-func (s *Service) Create(ctx context.Context, opt CreateOptions, body any) (*model.TrustedCertificate, error) {
-	return core.ExecuteResultOnly[model.TrustedCertificate](ctx, s.CreateB(opt, body))
+func (s *Service) Create(ctx context.Context, opt CreateOptions, body any) op.Result[jsonmodels.TrustedCertificate] {
+	return core.ExecuteReturnResult(ctx, s.CreateB(opt, body), jsonmodels.NewTrustedCertificate)
 }
 
 func (s *Service) CreateB(opt CreateOptions, body any) *core.TryRequest {
@@ -95,8 +98,8 @@ func (s *Service) CreateB(opt CreateOptions, body any) *core.TryRequest {
 }
 
 // Create multiple trusted certificate
-func (s *Service) CreateMultiple(ctx context.Context, opt CreateOptions, body any) (*model.TrustedCertificateCollection, error) {
-	return core.ExecuteResultOnly[model.TrustedCertificateCollection](ctx, s.CreateB(opt, body))
+func (s *Service) CreateMultiple(ctx context.Context, opt CreateOptions, body any) op.Result[jsonmodels.TrustedCertificate] {
+	return core.ExecuteReturnCollection(ctx, s.CreateMultipleB(opt, body), ResultProperty, "", jsonmodels.NewTrustedCertificate)
 }
 
 func (s *Service) CreateMultipleB(opt CreateOptions, body any) *core.TryRequest {
@@ -116,8 +119,8 @@ type GetOptions struct {
 }
 
 // Get a trusted certificate
-func (s *Service) Get(ctx context.Context, opt GetOptions) (*model.TrustedCertificate, error) {
-	return core.ExecuteResultOnly[model.TrustedCertificate](ctx, s.GetB(opt))
+func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.TrustedCertificate] {
+	return core.ExecuteReturnResult(ctx, s.GetB(opt), jsonmodels.NewTrustedCertificate)
 }
 
 func (s *Service) GetB(opt GetOptions) *core.TryRequest {
@@ -137,8 +140,8 @@ type UpdateOptions struct {
 }
 
 // Update a trusted certificate
-func (s *Service) Update(ctx context.Context, opt UpdateOptions, body any) (*model.TrustedCertificate, error) {
-	return core.ExecuteResultOnly[model.TrustedCertificate](ctx, s.UpdateB(opt, body))
+func (s *Service) Update(ctx context.Context, opt UpdateOptions, body any) op.Result[jsonmodels.TrustedCertificate] {
+	return core.ExecuteReturnResult(ctx, s.UpdateB(opt, body), jsonmodels.NewTrustedCertificate)
 }
 
 func (s *Service) UpdateB(opt UpdateOptions, body any) *core.TryRequest {
@@ -190,43 +193,43 @@ type ProofOptions struct {
 	PrivateKey string
 }
 
-func (s *Service) ProofEndToEnd(ctx context.Context, opt ProofOptions) (*model.TrustedCertificate, error) {
+func (s *Service) ProofEndToEnd(ctx context.Context, opt ProofOptions) op.Result[jsonmodels.TrustedCertificate] {
 	if opt.PrivateKey != "" {
 		key, err := certutil.PrivateKeyFromFile(opt.PrivateKey)
 		if err != nil {
-			return nil, err
+			return op.Failed[jsonmodels.TrustedCertificate](fmt.Errorf("Failed to get private key. %w", err), false)
 		}
 		signer, err := certutil.NewSignerFromKey(key)
 		if err != nil {
-			return nil, err
+			return op.Failed[jsonmodels.TrustedCertificate](fmt.Errorf("Failed to create signer for private key. %w", err), false)
 		}
 
-		cert, err := s.Get(ctx, GetOptions{
+		certResult := s.Get(ctx, GetOptions{
 			TenantID:    opt.TenantID,
 			Fingerprint: opt.Fingerprint,
 		})
-		if err != nil {
-			return nil, err
+		if certResult.IsError() {
+			return certResult
 		}
 
-		verificationCode := cert.ProofOfPossessionUnsignedVerificationCode
+		verificationCode := certResult.Data.ProofOfPossessionUnsignedVerificationCode()
 
 		// Request a proof of possession code if the current one has expired
-		if time.Now().After(cert.ProofOfPossessionVerificationCodeUsableUntil) {
+		if time.Now().After(certResult.Data.ProofOfPossessionVerificationCodeUsableUntil()) {
 			// regeneration code
-			cert, err := s.CreateVerificationCode(ctx, CreateVerificationCodeOptions{
+			certResult := s.CreateVerificationCode(ctx, CreateVerificationCodeOptions{
 				TenantID:    opt.TenantID,
 				Fingerprint: opt.Fingerprint,
 			})
-			if err != nil {
-				return nil, err
+			if certResult.IsError() {
+				return certResult
 			}
-			verificationCode = cert.ProofOfPossessionUnsignedVerificationCode
+			verificationCode = certResult.Data.ProofOfPossessionUnsignedVerificationCode()
 		}
 
 		code, err := signer.SignSHA256([]byte(verificationCode))
 		if err != nil {
-			return nil, err
+			return op.Failed[jsonmodels.TrustedCertificate](fmt.Errorf("Failed to sign verification code. %w", err), false)
 		}
 
 		opt.Code = base64.StdEncoding.EncodeToString(code)
@@ -235,11 +238,11 @@ func (s *Service) ProofEndToEnd(ctx context.Context, opt ProofOptions) (*model.T
 }
 
 // Submit proof of possession
-func (s *Service) Proof(ctx context.Context, opt ProofOptions) (*model.TrustedCertificate, error) {
+func (s *Service) Proof(ctx context.Context, opt ProofOptions) op.Result[jsonmodels.TrustedCertificate] {
 	body := &model.ProofOfPossession{
 		ProofOfPossessionSignedVerificationCode: opt.Code,
 	}
-	return core.ExecuteResultOnly[model.TrustedCertificate](ctx, s.ProofB(opt, body))
+	return core.ExecuteReturnResult(ctx, s.ProofB(opt, body), jsonmodels.NewTrustedCertificate)
 }
 
 func (s *Service) ProofB(opt ProofOptions, body any) *core.TryRequest {
@@ -261,8 +264,8 @@ type CreateVerificationCodeOptions struct {
 }
 
 // Generate a verification code for the proof of possession operation for the certificate (by a given fingerprint)
-func (s *Service) CreateVerificationCode(ctx context.Context, opt CreateVerificationCodeOptions) (*model.TrustedCertificate, error) {
-	return core.ExecuteResultOnly[model.TrustedCertificate](ctx, s.CreateVerificationCodeB(opt))
+func (s *Service) CreateVerificationCode(ctx context.Context, opt CreateVerificationCodeOptions) op.Result[jsonmodels.TrustedCertificate] {
+	return core.ExecuteReturnResult(ctx, s.CreateVerificationCodeB(opt), jsonmodels.NewTrustedCertificate)
 }
 
 func (s *Service) CreateVerificationCodeB(opt CreateVerificationCodeOptions) *core.TryRequest {
@@ -283,8 +286,8 @@ type ConfirmOptions struct {
 
 // Confirm the proof of possession of an already uploaded certificate (by a given fingerprint) for a specific tenant
 // TODO: This api calls always returns a 403 error
-func (s *Service) Confirm(ctx context.Context, opt ConfirmOptions) (*model.TrustedCertificate, error) {
-	return core.ExecuteResultOnly[model.TrustedCertificate](ctx, s.ConfirmB(opt))
+func (s *Service) Confirm(ctx context.Context, opt ConfirmOptions) op.Result[jsonmodels.TrustedCertificate] {
+	return core.ExecuteReturnResult(ctx, s.ConfirmB(opt), jsonmodels.NewTrustedCertificate)
 }
 
 func (s *Service) ConfirmB(opt ConfirmOptions) *core.TryRequest {

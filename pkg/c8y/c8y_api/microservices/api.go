@@ -3,6 +3,9 @@ package microservices
 import (
 	"context"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsondoc"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/applications"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/microservices/bootstrapuser"
@@ -10,6 +13,8 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 )
+
+const ResultProperty = "applications"
 
 // Service to manage binaries
 // Managed objects can perform operations to store, retrieve and delete binaries. One binary can store only one file. Together with the binary, a managed object is created which acts as a metadata information for the binary.
@@ -80,8 +85,8 @@ func (s *Service) FindFirst(ctx context.Context, opt ListOptions) (*model.Micros
 }
 
 // List all microservices on your tenant
-func (s *Service) List(ctx context.Context, opt ListOptions) (*model.MicroserviceCollection, error) {
-	return core.ExecuteResultOnly[model.MicroserviceCollection](ctx, s.ListB(opt))
+func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Microservice] {
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewMicroservice)
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {
@@ -89,8 +94,8 @@ func (s *Service) ListB(opt ListOptions) *core.TryRequest {
 }
 
 // Get an application
-func (s *Service) Get(ctx context.Context, ID string) (*model.Microservice, error) {
-	return core.ExecuteResultOnly[model.Microservice](ctx, s.GetB(ID))
+func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Microservice] {
+	return core.ExecuteReturnResult(ctx, s.GetB(ID), jsonmodels.NewMicroservice)
 }
 
 func (s *Service) GetB(ID string) *core.TryRequest {
@@ -98,8 +103,8 @@ func (s *Service) GetB(ID string) *core.TryRequest {
 }
 
 // Create a microservice
-func (s *Service) Create(ctx context.Context, body any) (*model.Microservice, error) {
-	return core.ExecuteResultOnly[model.Microservice](ctx, s.CreateB(body))
+func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Microservice] {
+	return core.ExecuteReturnResult(ctx, s.CreateB(body), jsonmodels.NewMicroservice)
 }
 
 func (s *Service) CreateB(body any) *core.TryRequest {
@@ -107,8 +112,8 @@ func (s *Service) CreateB(body any) *core.TryRequest {
 }
 
 // Update a microservice
-func (s *Service) Update(ctx context.Context, ID string, body any) (*model.Microservice, error) {
-	return core.ExecuteResultOnly[model.Microservice](ctx, s.UpdateB(ID, body))
+func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.Microservice] {
+	return core.ExecuteReturnResult(ctx, s.UpdateB(ID, body), jsonmodels.NewMicroservice)
 }
 
 func (s *Service) UpdateB(ID string, body any) *core.TryRequest {
@@ -118,8 +123,8 @@ func (s *Service) UpdateB(ID string, body any) *core.TryRequest {
 type DeleteOptions = applications.DeleteOptions
 
 // Delete a microservice
-func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) error {
-	return core.ExecuteNoResult(ctx, s.DeleteB(ID, opt))
+func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.Result[jsonmodels.Microservice] {
+	return core.ExecuteReturnResult(ctx, s.DeleteB(ID, opt), jsonmodels.NewMicroservice)
 }
 
 func (s *Service) DeleteB(ID string, opt DeleteOptions) *core.TryRequest {
@@ -128,12 +133,13 @@ func (s *Service) DeleteB(ID string, opt DeleteOptions) *core.TryRequest {
 
 // Subscribe a microservice to a tenant
 // TODO: Should 409 errors be ignored? Or should another function be created to allow 409s to be ignored
-func (s *Service) Subscribe(ctx context.Context, tenantID string, selfURL string) (*model.Microservice, error) {
-	res, err := core.ExecuteResultOnly[model.MicroserviceReference](ctx, s.SubscribeB(tenantID, selfURL))
-	if err != nil {
-		return nil, err
-	}
-	return res.Application, nil
+func (s *Service) Subscribe(ctx context.Context, tenantID string, selfURL string) op.Result[jsonmodels.Microservice] {
+	result := core.ExecuteReturnResult(ctx, s.SubscribeB(tenantID, selfURL), func(b []byte) jsonmodels.Microservice {
+		// Extract application from MicroserviceReference wrapper
+		doc := jsondoc.New(b)
+		return jsonmodels.NewMicroservice([]byte(doc.Get("application").Raw))
+	})
+	return result
 }
 
 func (s *Service) SubscribeB(tenantID string, selfURL string) *core.TryRequest {

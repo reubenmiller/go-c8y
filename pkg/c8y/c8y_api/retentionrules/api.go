@@ -3,8 +3,9 @@ package retentionrules
 import (
 	"context"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
@@ -34,8 +35,8 @@ type ListOptions struct {
 }
 
 // Retrieve all login options available in the tenant
-func (s *Service) List(ctx context.Context, opt ListOptions) (*model.RetentionRuleCollection, error) {
-	return core.ExecuteResultOnly[model.RetentionRuleCollection](ctx, s.ListB(opt))
+func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.RetentionRule] {
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewRetentionRule)
 }
 
 func (s *Service) ListB(opt any) *core.TryRequest {
@@ -47,8 +48,8 @@ func (s *Service) ListB(opt any) *core.TryRequest {
 }
 
 // Get a retention rule
-func (s *Service) Get(ctx context.Context, ID string) (*model.RetentionRule, error) {
-	return core.ExecuteResultOnly[model.RetentionRule](ctx, s.GetB(ID))
+func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.RetentionRule] {
+	return core.ExecuteReturnResult(ctx, s.GetB(ID), jsonmodels.NewRetentionRule)
 }
 
 func (s *Service) GetB(ID string) *core.TryRequest {
@@ -60,8 +61,8 @@ func (s *Service) GetB(ID string) *core.TryRequest {
 }
 
 // Create a retention rule
-func (s *Service) Create(ctx context.Context, body any) (*model.RetentionRule, error) {
-	return core.ExecuteResultOnly[model.RetentionRule](ctx, s.CreateB(body))
+func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.RetentionRule] {
+	return core.ExecuteReturnResult(ctx, s.CreateB(body), jsonmodels.NewRetentionRule)
 }
 
 func (s *Service) CreateB(body any) *core.TryRequest {
@@ -75,8 +76,8 @@ func (s *Service) CreateB(body any) *core.TryRequest {
 }
 
 // Update a retention rule
-func (s *Service) Update(ctx context.Context, ID string, body any) (*model.LoginOption, error) {
-	return core.ExecuteResultOnly[model.LoginOption](ctx, s.UpdateB(ID, body))
+func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.RetentionRule] {
+	return core.ExecuteReturnResult(ctx, s.UpdateB(ID, body), jsonmodels.NewRetentionRule)
 }
 
 func (s *Service) UpdateB(ID string, body any) *core.TryRequest {
@@ -91,8 +92,8 @@ func (s *Service) UpdateB(ID string, body any) *core.TryRequest {
 }
 
 // Delete a retention rule
-func (s *Service) Delete(ctx context.Context, ID string) error {
-	return core.ExecuteNoResult(ctx, s.DeleteB(ID))
+func (s *Service) Delete(ctx context.Context, ID string) op.Result[jsonmodels.RetentionRule] {
+	return core.ExecuteReturnResult(ctx, s.DeleteB(ID), jsonmodels.NewRetentionRule)
 }
 
 func (s *Service) DeleteB(ID string) *core.TryRequest {

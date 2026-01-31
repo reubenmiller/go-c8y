@@ -3,8 +3,9 @@ package usergroups
 import (
 	"context"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/users/currentuser"
@@ -49,8 +50,8 @@ type ListOptions struct {
 }
 
 // Retrieve all groups in the tenant
-func (s *Service) List(ctx context.Context, opt ListOptions) (*model.UserGroupCollection, error) {
-	return core.ExecuteResultOnly[model.UserGroupCollection](ctx, s.ListB(opt))
+func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.UserGroup] {
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewUserGroup)
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {
@@ -70,8 +71,8 @@ type Target struct {
 }
 
 // Get a user group
-func (s *Service) Get(ctx context.Context, opt Target) (*model.UserGroup, error) {
-	return core.ExecuteResultOnly[model.UserGroup](ctx, s.GetB(opt))
+func (s *Service) Get(ctx context.Context, opt Target) op.Result[jsonmodels.UserGroup] {
+	return core.ExecuteReturnResult(ctx, s.GetB(opt), jsonmodels.NewUserGroup)
 }
 
 func (s *Service) GetB(target Target) *core.TryRequest {
@@ -90,8 +91,8 @@ type GetByNameOptions struct {
 }
 
 // Get a group by name
-func (s *Service) GetByName(ctx context.Context, opt GetByNameOptions) (*model.UserGroup, error) {
-	return core.ExecuteResultOnly[model.UserGroup](ctx, s.GetByNameB(opt))
+func (s *Service) GetByName(ctx context.Context, opt GetByNameOptions) op.Result[jsonmodels.UserGroup] {
+	return core.ExecuteReturnResult(ctx, s.GetByNameB(opt), jsonmodels.NewUserGroup)
 }
 
 func (s *Service) GetByNameB(opt GetByNameOptions) *core.TryRequest {
@@ -105,8 +106,8 @@ func (s *Service) GetByNameB(opt GetByNameOptions) *core.TryRequest {
 }
 
 // Create a user group
-func (s *Service) Create(ctx context.Context, body any) (*model.UserGroup, error) {
-	return core.ExecuteResultOnly[model.UserGroup](ctx, s.CreateB(body))
+func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.UserGroup] {
+	return core.ExecuteReturnResult(ctx, s.CreateB(body), jsonmodels.NewUserGroup)
 }
 
 func (s *Service) CreateB(body any) *core.TryRequest {
@@ -126,8 +127,8 @@ type UpdateOptions struct {
 }
 
 // Update a user group
-func (s *Service) Update(ctx context.Context, opt UpdateOptions, body any) (*model.UserGroup, error) {
-	return core.ExecuteResultOnly[model.UserGroup](ctx, s.UpdateB(opt, body))
+func (s *Service) Update(ctx context.Context, opt UpdateOptions, body any) op.Result[jsonmodels.UserGroup] {
+	return core.ExecuteReturnResult(ctx, s.UpdateB(opt, body), jsonmodels.NewUserGroup)
 }
 
 func (s *Service) UpdateB(opt UpdateOptions, body any) *core.TryRequest {
@@ -175,8 +176,8 @@ type ListByUserOptions struct {
 }
 
 // List groups that contain a given user in the tenant
-func (s *Service) ListByUser(ctx context.Context, opt ListByUserOptions) (*model.UserCollection, error) {
-	return core.ExecuteResultOnly[model.UserCollection](ctx, s.ListByUserB(opt))
+func (s *Service) ListByUser(ctx context.Context, opt ListByUserOptions) op.Result[jsonmodels.UserGroup] {
+	return core.ExecuteReturnCollection(ctx, s.ListByUserB(opt), "references", "group", jsonmodels.NewUserGroup)
 }
 
 func (s *Service) ListByUserB(opt ListByUserOptions) *core.TryRequest {

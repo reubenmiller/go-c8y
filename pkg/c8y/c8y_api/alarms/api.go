@@ -2,10 +2,13 @@ package alarms
 
 import (
 	"context"
+	"iter"
+	"log/slog"
 	"time"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
@@ -78,9 +81,80 @@ type ListOptions struct {
 	pagination.PaginationOptions
 }
 
+// AlarmIterator provides iteration over alarms
+type AlarmIterator struct {
+	items iter.Seq[jsonmodels.Alarm]
+	err   error
+}
+
+func (it *AlarmIterator) Items() iter.Seq[jsonmodels.Alarm] {
+	return it.items
+}
+
+func (it *AlarmIterator) Err() error {
+	return it.err
+}
+
+func paginateAlarms(ctx context.Context, fetch func(page int) op.Result[jsonmodels.Alarm], maxItems int) *AlarmIterator {
+	iterator := &AlarmIterator{}
+
+	iterator.items = func(yield func(jsonmodels.Alarm) bool) {
+		page := 1
+		count := 0
+		for {
+			result := fetch(page)
+			if result.Err != nil {
+				iterator.err = result.Err
+				return
+			}
+			countBeforeResults := count
+			for doc := range result.Data.Iter() {
+				if maxItems > 0 && count >= maxItems {
+					return
+				}
+				item := jsonmodels.NewAlarm(doc.Bytes())
+				if !yield(item) {
+					return
+				}
+				count++
+			}
+			if countBeforeResults == count {
+				slog.Info("Stopping pagination as results array is empty")
+				return
+			}
+
+			totalPages, ok := result.Meta["totalPages"].(int64)
+			if ok && page >= int(totalPages) {
+				return
+			}
+			page++
+		}
+	}
+
+	return iterator
+}
+
 // List alarms
-func (s *Service) List(ctx context.Context, opt ListOptions) (*model.AlarmCollection, error) {
-	return core.ExecuteResultOnly[model.AlarmCollection](ctx, s.ListB(opt))
+func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Alarm] {
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewAlarm)
+}
+
+// ListAll returns an iterator for all alarms
+func (s *Service) ListAll(ctx context.Context, opts ListOptions) *AlarmIterator {
+	return paginateAlarms(ctx, func(page int) op.Result[jsonmodels.Alarm] {
+		opts.CurrentPage = page
+		opts.PageSize = 2000
+		return s.List(ctx, opts)
+	}, 0)
+}
+
+// ListLimit returns an iterator for up to maxItems alarms
+func (s *Service) ListLimit(ctx context.Context, opts ListOptions, maxItems int) *AlarmIterator {
+	return paginateAlarms(ctx, func(page int) op.Result[jsonmodels.Alarm] {
+		opts.CurrentPage = page
+		opts.PageSize = 2000
+		return s.List(ctx, opts)
+	}, maxItems)
 }
 
 func (s *Service) ListB(opt any) *core.TryRequest {
@@ -136,8 +210,8 @@ type CountOptions struct {
 }
 
 // Get an alarm
-func (s *Service) Get(ctx context.Context, ID string) (*model.Alarm, error) {
-	return core.ExecuteResultOnly[model.Alarm](ctx, s.GetB(ID))
+func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Alarm] {
+	return core.ExecuteReturnResult(ctx, s.GetB(ID), jsonmodels.NewAlarm)
 }
 
 func (s *Service) GetB(ID string) *core.TryRequest {
@@ -149,8 +223,8 @@ func (s *Service) GetB(ID string) *core.TryRequest {
 }
 
 // Create an alarm
-func (s *Service) Create(ctx context.Context, body any) (*model.Alarm, error) {
-	return core.ExecuteResultOnly[model.Alarm](ctx, s.CreateB(body))
+func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Alarm] {
+	return core.ExecuteReturnResult(ctx, s.CreateB(body), jsonmodels.NewAlarm)
 }
 
 func (s *Service) CreateB(body any) *core.TryRequest {
@@ -163,8 +237,8 @@ func (s *Service) CreateB(body any) *core.TryRequest {
 }
 
 // Update an alarm
-func (s *Service) Update(ctx context.Context, ID string, body any) (*model.Alarm, error) {
-	return core.ExecuteResultOnly[model.Alarm](ctx, s.UpdateB(ID, body))
+func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.Alarm] {
+	return core.ExecuteReturnResult(ctx, s.UpdateB(ID, body), jsonmodels.NewAlarm)
 }
 
 func (s *Service) UpdateB(ID string, body any) *core.TryRequest {
@@ -233,8 +307,8 @@ type BulkUpdateOptions struct {
 // 202 - if process continues in background
 //
 // Since this operations can take a lot of time, request returns after maximum 0.5 sec of processing, and updating is continued as a background process in the platform.
-func (s *Service) UpdateList(ctx context.Context, opt BulkUpdateOptions, body any) (*model.AlarmCollection, error) {
-	return core.ExecuteResultOnly[model.AlarmCollection](ctx, s.UpdateListB(opt, body))
+func (s *Service) UpdateList(ctx context.Context, opt BulkUpdateOptions, body any) op.Result[jsonmodels.Alarm] {
+	return core.ExecuteReturnResult(ctx, s.UpdateListB(opt, body), jsonmodels.NewAlarm)
 }
 
 func (s *Service) UpdateListB(opt BulkUpdateOptions, body any) *core.TryRequest {

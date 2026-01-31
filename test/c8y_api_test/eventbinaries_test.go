@@ -23,11 +23,11 @@ func Test_CreateEventBinary(t *testing.T) {
 	mo := testcore.CreateManagedObject(t, client)
 	assert.NoError(t, mo.Err)
 
-	event, err := testcore.CreateEvent(t, client, &mo.Data)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, event.ID)
+	event := testcore.CreateEvent(t, client, &mo.Data)
+	assert.NoError(t, event.Err)
+	assert.NotEmpty(t, event.Data.ID())
 
-	binary, err := client.Events.Binaries.Upsert(context.Background(), event.ID, eventbinaries.UploadFileOptions{
+	binary, err := client.Events.Binaries.Upsert(context.Background(), event.Data.ID(), eventbinaries.UploadFileOptions{
 		FilePath: tempFile,
 	})
 	assert.NoError(t, err)

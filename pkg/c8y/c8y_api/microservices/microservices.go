@@ -135,17 +135,27 @@ func (s *Service) CreateOrUpdate(ctx context.Context, opt CreateOptions) (*model
 	if applicationID == "" {
 		// Create the application
 		slog.Info("Creating new application")
-		application, err = s.Create(ctx, applicationDetails)
-		if err != nil {
-			return application, fmt.Errorf("failed to create microservice. %w", err)
+		result := s.Create(ctx, applicationDetails)
+		if result.Err != nil {
+			return nil, fmt.Errorf("failed to create microservice. %w", result.Err)
+		}
+		application = &model.Microservice{
+			ID:   result.Data.ID(),
+			Name: result.Data.Name(),
+			Key:  result.Data.Key(),
 		}
 	} else {
 		// Get existing application
 		slog.Info("Getting existing application", "id", applicationID)
-		application, err = s.Get(context.Background(), applicationID)
+		result := s.Get(context.Background(), applicationID)
 
-		if err != nil {
-			return application, fmt.Errorf("failed to get microservice. %w", err)
+		if result.Err != nil {
+			return nil, fmt.Errorf("failed to get microservice. %w", result.Err)
+		}
+		application = &model.Microservice{
+			ID:   result.Data.ID(),
+			Name: result.Data.Name(),
+			Key:  result.Data.Key(),
 		}
 	}
 
@@ -186,28 +196,28 @@ func (s *Service) CreateOrUpdate(ctx context.Context, opt CreateOptions) (*model
 			"roles",
 			strings.Join(applicationDetails.Manifest.Roles, ","),
 		)
-		application, err = s.Update(ctx, application.ID, &model.Microservice{
+		result := s.Update(ctx, application.ID, &model.Microservice{
 			RequiredRoles: applicationDetails.Manifest.RequiredRoles,
 			Roles:         applicationDetails.Manifest.Roles,
 		})
-		if err != nil {
-			return application, err
+		if result.Err != nil {
+			return application, result.Err
 		}
 	}
 
 	// App subscription
 	if !opt.SkipSubscription {
 		slog.Info("Subscribing to microservice")
-		_, err = s.Subscribe(ctx, opt.TenantID, application.Self)
-		if core.ErrHasStatus(err, 409) {
+		result := s.Subscribe(ctx, opt.TenantID, application.Self)
+		if core.ErrHasStatus(result.Err, 409) {
 			slog.Info("microservice is already subscribed to")
-			err = nil
+			result.Err = nil
 		}
-		if err != nil {
-			return application, fmt.Errorf("failed to subscribe to application. %w", err)
+		if result.Err != nil {
+			return application, fmt.Errorf("failed to subscribe to application. %w", result.Err)
 		}
 	}
-	return application, err
+	return application, nil
 }
 
 func GetManifestContents(zipFilename string, contents interface{}) error {

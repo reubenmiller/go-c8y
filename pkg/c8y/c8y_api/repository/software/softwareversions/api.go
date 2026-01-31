@@ -374,14 +374,14 @@ func (s *Service) CreateVersion(ctx context.Context, opt CreateOptions) op.Resul
 	// Step 2: Upload binary if file provided and URL not specified
 	url := opt.URL
 	if url == "" && opt.File.Name != "" {
-		binaryResult, err := s.binaries.Create(ctx, opt.File)
-		if err != nil {
+		binaryResult := s.binaries.Create(ctx, opt.File)
+		if binaryResult.IsError() {
 			return op.Failed[jsonmodels.SoftwareVersion](
-				fmt.Errorf("failed to upload binary: %w", err),
+				fmt.Errorf("failed to upload binary: %w", binaryResult.Err),
 				true,
 			)
 		}
-		url = binaryResult.Self
+		url = binaryResult.Data.Self()
 	}
 
 	// Step 3: Create software version

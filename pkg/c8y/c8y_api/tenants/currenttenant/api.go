@@ -3,8 +3,9 @@ package currenttenant
 import (
 	"context"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
 )
@@ -29,8 +30,8 @@ type GetOptions struct {
 }
 
 // Get current tenant
-func (s *Service) Get(ctx context.Context, opt GetOptions) (*model.Tenant, error) {
-	return core.ExecuteResultOnly[model.Tenant](ctx, s.GetB(opt))
+func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.Tenant] {
+	return core.ExecuteReturnResult(ctx, s.GetB(opt), jsonmodels.NewTenant)
 }
 
 func (s *Service) GetB(opt GetOptions) *core.TryRequest {

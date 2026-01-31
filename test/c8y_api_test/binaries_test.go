@@ -21,16 +21,16 @@ func Test_CreateBinary(t *testing.T) {
 	tempFile := filepath.Join(tempDir, "myfile.txt")
 	err := os.WriteFile(tempFile, []byte(`foo`), 0644)
 	assert.NoError(t, err)
-	binary, err := client.Binaries.Create(context.Background(), binaries.UploadFileOptions{
+	binary := client.Binaries.Create(context.Background(), binaries.UploadFileOptions{
 		FilePath: tempFile,
 	})
 	t.Cleanup(func() {
-		if binary != nil {
-			client.Binaries.Delete(context.Background(), binary.ID)
+		if !binary.IsError() {
+			client.Binaries.Delete(context.Background(), binary.Data.ID())
 		}
 	})
-	assert.NoError(t, err)
-	assert.NotEmpty(t, binary.Name)
+	assert.NoError(t, binary.Err)
+	assert.NotEmpty(t, binary.Data.Name())
 
 	// TODO: Add special binary handling which will read the response based on the exit code
 	resp, err := client.Binaries.Get(context.Background(), "0")
@@ -43,7 +43,7 @@ func Test_CreateBinary(t *testing.T) {
 	assert.ErrorAs(t, c8y_api.ErrAPINotFound, err)
 
 	// Get but don't read the response
-	binaryFile, err := client.Binaries.Get(context.Background(), binary.ID)
+	binaryFile, err := client.Binaries.Get(context.Background(), binary.Data.ID())
 	assert.NoError(t, err)
 	defer binaryFile.Close()
 	assert.NotEmpty(t, binaryFile.FileName())
