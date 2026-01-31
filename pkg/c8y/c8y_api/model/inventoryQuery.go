@@ -29,6 +29,13 @@ func (b *InventoryQuery) AddFilterPart(v string) *InventoryQuery {
 	return b
 }
 
+func (b *InventoryQuery) HasFragment(v string) *InventoryQuery {
+	if v != "" {
+		b.Filter = append(b.Filter, fmt.Sprintf("has(%s)", v))
+	}
+	return b
+}
+
 func (b *InventoryQuery) AddFilterEqStr(k string, v any) *InventoryQuery {
 	if v != "" {
 		switch value := v.(type) {
