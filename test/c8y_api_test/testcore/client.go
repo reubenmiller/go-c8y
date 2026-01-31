@@ -20,7 +20,9 @@ var TestEnvironment *c8ytestutils.SetupConfiguration
 
 func CreateTestClient(t *testing.T) *c8y_api.Client {
 	t.Setenv("C8Y_TOKEN", "")
-	return c8y_api.NewClientFromEnvironment(c8y_api.ClientOptions{})
+	client := c8y_api.NewClientFromEnvironment(c8y_api.ClientOptions{})
+	client.Client.SetRetryCount(1)
+	return client
 }
 
 func CreateTestClientNoAuth(t *testing.T) *c8y_api.Client {
