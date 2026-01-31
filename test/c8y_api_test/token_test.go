@@ -15,9 +15,9 @@ import (
 func Test_Token401s(t *testing.T) {
 	client := testcore.CreateTestClientWithToken(t)
 	client.Client.SetDebug(true)
-	collection, err := client.ManagedObjects.List(context.Background(), managedobjects.ListOptions{})
-	assert.NoError(t, err)
-	assert.Greater(t, len(collection.ManagedObjects), 0)
+	collection := client.ManagedObjects.List(context.Background(), managedobjects.ListOptions{})
+	assert.NoError(t, collection.Err)
+	assert.Greater(t, collection.Data.Length(), 0)
 }
 
 func Test_DeviceCertificates(t *testing.T) {

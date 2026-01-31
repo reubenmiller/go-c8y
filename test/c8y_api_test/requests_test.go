@@ -16,9 +16,9 @@ import (
 func Test_ErrorHandlingGet(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	client.Client.SetDebug(true)
-	mo, err := client.ManagedObjects.Get(context.Background(), "0", managedobjects.GetOptions{})
-	assert.Error(t, err)
-	assert.Nil(t, mo)
+	mo := client.ManagedObjects.Get(context.Background(), "0", managedobjects.GetOptions{})
+	assert.Error(t, mo.Err)
+	assert.Equal(t, 0, mo.Data.Length())
 }
 
 func Test_ErrorHandlingCreateEvent(t *testing.T) {
@@ -48,12 +48,12 @@ func Test_SimpleDefaultRequest(t *testing.T) {
 		"name": "custom",
 	}
 
-	mo, err := client.ManagedObjects.Create(context.Background(), body)
-	assert.NoError(t, err)
-	assert.NotNil(t, mo)
+	mo := client.ManagedObjects.Create(context.Background(), body)
+	assert.NoError(t, mo.Err)
+	assert.Greater(t, mo.Data.Length(), 0)
 
-	assert.NotEmpty(t, mo.ID)
-	assert.Equal(t, mo.Name, "custom")
+	assert.NotEmpty(t, mo.Data.ID())
+	assert.Equal(t, mo.Data.Name(), "custom")
 }
 
 func Test_CreateRequestWithCustomHeaders(t *testing.T) {

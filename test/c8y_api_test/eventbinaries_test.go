@@ -20,10 +20,10 @@ func Test_CreateEventBinary(t *testing.T) {
 	err := os.WriteFile(tempFile, []byte(`foo`), 0644)
 	assert.NoError(t, err)
 
-	mo, err := testcore.CreateManagedObject(t, client)
-	assert.NoError(t, err)
+	mo := testcore.CreateManagedObject(t, client)
+	assert.NoError(t, mo.Err)
 
-	event, err := testcore.CreateEvent(t, client, mo)
+	event, err := testcore.CreateEvent(t, client, &mo.Data)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, event.ID)
 

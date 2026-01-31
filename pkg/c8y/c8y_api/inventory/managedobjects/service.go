@@ -12,19 +12,19 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 )
 
-func (s *Service) Create2(ctx context.Context, body any) op.Result[jsonmodels.ManagedObject] {
+func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.ManagedObject] {
 	return core.ExecuteReturnResult(ctx, s.CreateB(body), jsonmodels.NewManagedObject)
 }
 
-func (s *Service) Get2(ctx context.Context, ID string, opt GetOptions) op.Result[jsonmodels.ManagedObject] {
+func (s *Service) Get(ctx context.Context, ID string, opt GetOptions) op.Result[jsonmodels.ManagedObject] {
 	return core.ExecuteReturnResult(ctx, s.GetB(ID, opt), jsonmodels.NewManagedObject)
 }
 
-func (s *Service) Update2(ctx context.Context, ID string, body any) op.Result[jsonmodels.ManagedObject] {
+func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.ManagedObject] {
 	return core.ExecuteReturnResult(ctx, s.UpdateB(ID, body), jsonmodels.NewManagedObject)
 }
 
-func (s *Service) Delete2(ctx context.Context, ID string, opt DeleteOptions) op.Result[jsonmodels.ManagedObject] {
+func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.Result[jsonmodels.ManagedObject] {
 	return core.ExecuteReturnResult(ctx, s.DeleteB(ID, opt), jsonmodels.NewManagedObject)
 }
 
@@ -68,7 +68,7 @@ func (s *Service) getOrCreateWithQuery(ctx context.Context, body map[string]any,
 		searchOpts.PaginationOptions.PageSize = 1
 		searchOpts.Query = query
 
-		listResult := s.List2(ctx, searchOpts)
+		listResult := s.List(ctx, searchOpts)
 		if listResult.Err != nil {
 			return listResult, false
 		}
@@ -88,21 +88,18 @@ func (s *Service) getOrCreateWithQuery(ctx context.Context, body map[string]any,
 
 	// Define creator function
 	creator := func(ctx context.Context) op.Result[jsonmodels.ManagedObject] {
-		createResult := s.Create2(ctx, body)
-		result := op.NewCreated(createResult.Data)
-		result.Err = createResult.Err
-		result.HTTPStatus = createResult.HTTPStatus
-		result.RequestID = createResult.RequestID
-		result.Meta["query"] = query
-		return result
+		createResult := s.Create(ctx, body)
+		// Preserve the original result (including Failed status if creation failed)
+		createResult.Meta["query"] = query
+		return createResult
 	}
 
 	// Execute get-or-create pattern (automatically sets Meta["found"])
 	return op.GetOrCreateR(ctx, finder, creator)
 }
 
-func (s *Service) List2(ctx context.Context, opt ListOptions) op.Result[jsonmodels.ManagedObject] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), "managedObjects", "statistics", jsonmodels.NewManagedObject)
+func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.ManagedObject] {
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
 type ManagedObjectIterator struct {
@@ -162,7 +159,7 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *ManagedObjectI
 	return paginateManagedObjects(ctx, func(page int) op.Result[jsonmodels.ManagedObject] {
 		opts.CurrentPage = page
 		opts.PageSize = 2000
-		return s.List2(ctx, opts)
+		return s.List(ctx, opts)
 	}, 0)
 }
 
@@ -170,6 +167,6 @@ func (s *Service) ListLimit(ctx context.Context, opts ListOptions, maxItems int)
 	return paginateManagedObjects(ctx, func(page int) op.Result[jsonmodels.ManagedObject] {
 		opts.CurrentPage = page
 		opts.PageSize = 2000
-		return s.List2(ctx, opts)
+		return s.List(ctx, opts)
 	}, maxItems)
 }

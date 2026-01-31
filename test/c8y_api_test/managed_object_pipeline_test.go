@@ -30,7 +30,7 @@ func Test_ManagedObjectPipeline(t *testing.T) {
 
 	// Remaining steps are Step[ManagedObject] (same input/output type)
 	addCustomProperty := func(ctx context.Context, mo jsonmodels.ManagedObject) (jsonmodels.ManagedObject, error) {
-		updateResult := client.ManagedObjects.Update2(ctx, mo.ID(), map[string]any{
+		updateResult := client.ManagedObjects.Update(ctx, mo.ID(), map[string]any{
 			"customProperty": "customValue",
 			"updatedAt":      time.Now().Format(time.RFC3339),
 		})
@@ -68,7 +68,7 @@ func Test_ManagedObjectPipeline(t *testing.T) {
 	assert.Equal(t, deviceName, device.Name())
 
 	// Cleanup
-	deleteResult := client.ManagedObjects.Delete2(ctx, device.ID(), managedobjects.DeleteOptions{})
+	deleteResult := client.ManagedObjects.Delete(ctx, device.ID(), managedobjects.DeleteOptions{})
 	assert.NoError(t, deleteResult.Err)
 }
 
@@ -81,7 +81,7 @@ func Test_ManagedObjectPipelineWithRetry(t *testing.T) {
 	deviceType := testingutils.RandomString(16)
 
 	// Create initial device
-	createResult := client.ManagedObjects.Create2(ctx, map[string]any{
+	createResult := client.ManagedObjects.Create(ctx, map[string]any{
 		"name":         deviceName,
 		"type":         deviceType,
 		"c8y_IsDevice": map[string]any{},
@@ -97,7 +97,7 @@ func Test_ManagedObjectPipelineWithRetry(t *testing.T) {
 			updateAttempts++
 			t.Logf("Update attempt %d for device %s", updateAttempts, mo.ID())
 
-			result := client.ManagedObjects.Update2(ctx, mo.ID(), map[string]any{
+			result := client.ManagedObjects.Update(ctx, mo.ID(), map[string]any{
 				"customProp": "value123",
 				"retryCount": updateAttempts,
 			})
@@ -137,7 +137,7 @@ func Test_ManagedObjectPipelineWithRetry(t *testing.T) {
 	assert.Equal(t, "value123", device.Get("customProp").String())
 
 	// Cleanup
-	deleteResult := client.ManagedObjects.Delete2(ctx, device.ID(), managedobjects.DeleteOptions{})
+	deleteResult := client.ManagedObjects.Delete(ctx, device.ID(), managedobjects.DeleteOptions{})
 	assert.NoError(t, deleteResult.Err)
 }
 
@@ -150,7 +150,7 @@ func Test_ManagedObjectPipelineWithMapResult(t *testing.T) {
 	deviceType := testingutils.RandomString(16)
 
 	// Create a device
-	createResult := client.ManagedObjects.Create2(ctx, map[string]any{
+	createResult := client.ManagedObjects.Create(ctx, map[string]any{
 		"name":         deviceName,
 		"type":         deviceType,
 		"c8y_IsDevice": map[string]any{},
@@ -161,7 +161,7 @@ func Test_ManagedObjectPipelineWithMapResult(t *testing.T) {
 	// Use MapResult to transform Result[ManagedObject] -> Result[string]
 	// Extract just the ID from the device
 	getDeviceID := func(ctx context.Context, id string) (op.Result[string], error) {
-		result := client.ManagedObjects.Get2(ctx, id, managedobjects.GetOptions{})
+		result := client.ManagedObjects.Get(ctx, id, managedobjects.GetOptions{})
 
 		// Transform Result[ManagedObject] to Result[string]
 		idResult := op.MapResult(result, func(mo jsonmodels.ManagedObject) string {
@@ -177,7 +177,7 @@ func Test_ManagedObjectPipelineWithMapResult(t *testing.T) {
 	assert.Equal(t, "OK", string(idResult.Status))
 
 	// Cleanup
-	deleteResult := client.ManagedObjects.Delete2(ctx, deviceID, managedobjects.DeleteOptions{})
+	deleteResult := client.ManagedObjects.Delete(ctx, deviceID, managedobjects.DeleteOptions{})
 	assert.NoError(t, deleteResult.Err)
 }
 
@@ -201,7 +201,7 @@ func Test_ManagedObjectComplexPipeline(t *testing.T) {
 
 	// Step 2: Add hardware info
 	step2 := func(ctx context.Context, mo jsonmodels.ManagedObject) (jsonmodels.ManagedObject, error) {
-		result := client.ManagedObjects.Update2(ctx, mo.ID(), map[string]any{
+		result := client.ManagedObjects.Update(ctx, mo.ID(), map[string]any{
 			"c8y_Hardware": map[string]any{
 				"model":        "TestModel",
 				"serialNumber": testingutils.RandomString(8),
@@ -212,7 +212,7 @@ func Test_ManagedObjectComplexPipeline(t *testing.T) {
 
 	// Step 3: Add firmware info
 	step3 := func(ctx context.Context, mo jsonmodels.ManagedObject) (jsonmodels.ManagedObject, error) {
-		result := client.ManagedObjects.Update2(ctx, mo.ID(), map[string]any{
+		result := client.ManagedObjects.Update(ctx, mo.ID(), map[string]any{
 			"c8y_Firmware": map[string]any{
 				"name":    "firmware-v1",
 				"version": "1.0.0",
@@ -266,6 +266,6 @@ func Test_ManagedObjectComplexPipeline(t *testing.T) {
 	assert.True(t, device.Get("c8y_Firmware").Exists())
 
 	// Cleanup
-	deleteResult := client.ManagedObjects.Delete2(ctx, device.ID(), managedobjects.DeleteOptions{})
+	deleteResult := client.ManagedObjects.Delete(ctx, device.ID(), managedobjects.DeleteOptions{})
 	assert.NoError(t, deleteResult.Err)
 }

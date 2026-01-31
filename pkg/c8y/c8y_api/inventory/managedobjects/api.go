@@ -21,6 +21,7 @@ var ApiManagedObjectSupportedSeries = "/inventory/managedObjects/{id}/supportedS
 const ParamId = "id"
 
 const ResultProperty = "managedObjects"
+const ResponseFieldStatistics = "statistics"
 
 func NewService(s *core.Service) *Service {
 	return &Service{
@@ -60,10 +61,6 @@ type ListOptions struct {
 }
 
 // List managed objects
-func (s *Service) List(ctx context.Context, opt ListOptions) (*model.ManagedObjectCollection, error) {
-	return core.ExecuteResultOnly[model.ManagedObjectCollection](ctx, s.ListB(opt))
-}
-
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
@@ -81,10 +78,6 @@ type GetOptions struct {
 }
 
 // Create a managed object
-func (s *Service) Create(ctx context.Context, body any) (*model.ManagedObject, error) {
-	return core.ExecuteResultOnly[model.ManagedObject](ctx, s.CreateB(body))
-}
-
 func (s *Service) CreateB(body any) *core.TryRequest {
 	req := s.Service.Client.R().
 		SetMethod(resty.MethodPost).
@@ -95,10 +88,6 @@ func (s *Service) CreateB(body any) *core.TryRequest {
 }
 
 // Get a managed object
-func (s *Service) Get(ctx context.Context, ID string, opt GetOptions) (*model.ManagedObject, error) {
-	return core.ExecuteResultOnly[model.ManagedObject](ctx, s.GetB(ID, opt))
-}
-
 func (s *Service) GetB(ID string, opt GetOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
@@ -110,10 +99,6 @@ func (s *Service) GetB(ID string, opt GetOptions) *core.TryRequest {
 }
 
 // Update a managed object
-func (s *Service) Update(ctx context.Context, ID string, body any) (*model.ManagedObject, error) {
-	return core.ExecuteResultOnly[model.ManagedObject](ctx, s.UpdateB(ID, body))
-}
-
 func (s *Service) UpdateB(ID string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
@@ -164,10 +149,6 @@ type DeleteOptions struct {
 }
 
 // Delete a managed object
-func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) error {
-	return core.ExecuteNoResult(ctx, s.DeleteB(ID, opt))
-}
-
 func (s *Service) DeleteB(ID string, opt DeleteOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).

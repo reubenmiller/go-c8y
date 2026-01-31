@@ -16,27 +16,29 @@ func Test_IdentityCRUD(t *testing.T) {
 	client.Client.SetDebug(true)
 
 	slog.Info("Setup")
-	mo, err := testcore.CreateManagedObject(t, client)
-	assert.NoError(t, err)
+	mo := testcore.CreateManagedObject(t, client)
+	assert.NoError(t, mo.Err)
+
+	id := mo.Data.ID()
 
 	// Create
 	slog.Info("Create")
 	externalID := testingutils.RandomString(16)
-	ident, err := client.Identity.Create(context.Background(), mo.ID, identity.IdentityOptions{
+	ident, err := client.Identity.Create(context.Background(), id, identity.IdentityOptions{
 		ExternalID: externalID,
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, ident.ExternalID, externalID)
-	assert.Equal(t, ident.ManagedObject.ID, mo.ID)
+	assert.Equal(t, ident.ManagedObject.ID, id)
 
 	// List
 	slog.Info("List")
-	idents, err := client.Identity.List(context.Background(), mo.ID)
+	idents, err := client.Identity.List(context.Background(), id)
 	assert.NoError(t, err)
 	assert.Len(t, idents.Identities, 1)
 	assert.Equal(t, idents.Identities[0].ExternalID, externalID)
 	assert.Equal(t, idents.Identities[0].Type, identity.DefaultType)
-	assert.Equal(t, idents.Identities[0].ManagedObject.ID, mo.ID)
+	assert.Equal(t, idents.Identities[0].ManagedObject.ID, id)
 	assert.NotEmpty(t, idents.Identities[0].ManagedObject.Self)
 
 	// Get
@@ -46,7 +48,7 @@ func Test_IdentityCRUD(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, ident.ExternalID, externalID)
-	assert.Equal(t, ident.ManagedObject.ID, mo.ID)
+	assert.Equal(t, ident.ManagedObject.ID, id)
 
 	// Delete
 	slog.Info("Delete")

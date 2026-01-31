@@ -43,7 +43,7 @@ func Test_ManagedObjectGetOrCreateByName(t *testing.T) {
 	assert.True(t, result2.Meta["found"].(bool))
 
 	// Cleanup
-	deleteResult := client.ManagedObjects.Delete2(ctx, id, managedobjects.DeleteOptions{})
+	deleteResult := client.ManagedObjects.Delete(ctx, id, managedobjects.DeleteOptions{})
 	assert.NoError(t, deleteResult.Err)
 }
 
@@ -75,7 +75,7 @@ func Test_ManagedObjectGetOrCreateByFragment(t *testing.T) {
 	assert.True(t, result2.Meta["found"].(bool))
 
 	// Cleanup
-	deleteResult := client.ManagedObjects.Delete2(ctx, id, managedobjects.DeleteOptions{})
+	deleteResult := client.ManagedObjects.Delete(ctx, id, managedobjects.DeleteOptions{})
 	assert.NoError(t, deleteResult.Err)
 }
 
@@ -111,6 +111,6 @@ func Test_ManagedObjectGetOrCreateWith(t *testing.T) {
 	assert.True(t, result2.Meta["found"].(bool))
 
 	// Cleanup
-	deleteResult := client.ManagedObjects.Delete2(ctx, id, managedobjects.DeleteOptions{})
+	deleteResult := client.ManagedObjects.Delete(ctx, id, managedobjects.DeleteOptions{})
 	assert.NoError(t, deleteResult.Err)
 }

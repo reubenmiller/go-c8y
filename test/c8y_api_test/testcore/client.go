@@ -8,6 +8,8 @@ import (
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/authentication"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
@@ -51,20 +53,19 @@ func NewService() *core.Service {
 	}
 }
 
-func CreateManagedObject(t *testing.T, client *c8y_api.Client) (*model.ManagedObject, error) {
-	mo, err := client.ManagedObjects.Create(context.TODO(), map[string]any{})
-	if err != nil {
-		return nil, err
+func CreateManagedObject(t *testing.T, client *c8y_api.Client) op.Result[jsonmodels.ManagedObject] {
+	mo := client.ManagedObjects.Create(context.TODO(), map[string]any{})
+	if !mo.IsError() {
+		t.Cleanup(func() {
+			client.ManagedObjects.Delete(context.TODO(), mo.Data.ID(), managedobjects.DeleteOptions{})
+		})
 	}
-	t.Cleanup(func() {
-		client.ManagedObjects.Delete(context.TODO(), mo.ID, managedobjects.DeleteOptions{})
-	})
-	return mo, err
+	return mo
 }
 
-func CreateEvent(t *testing.T, client *c8y_api.Client, mo *model.ManagedObject) (*model.Event, error) {
+func CreateEvent(t *testing.T, client *c8y_api.Client, mo *jsonmodels.ManagedObject) (*model.Event, error) {
 	return client.Events.Create(context.TODO(), model.Event{
-		Source: model.NewSource(mo.ID),
+		Source: model.NewSource(mo.ID()),
 		Type:   "ci_" + testingutils.RandomString(10),
 		Text:   "Test event",
 		Time:   time.Now(),

@@ -18,7 +18,7 @@ func Test_ManagedObjectCreation(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	client.Client.SetDebug(true)
 
-	result := client.ManagedObjects.Create2(context.Background(), map[string]any{
+	result := client.ManagedObjects.Create(context.Background(), map[string]any{
 		"name": testingutils.RandomString(16),
 	})
 	assert.NoError(t, result.Err)
@@ -30,15 +30,15 @@ func Test_ManagedObjectCreation(t *testing.T) {
 	assert.Equal(t, mo.ID, result.Data.ID())
 
 	// Delete object
-	err = client.ManagedObjects.Delete(context.Background(), result.Data.ID(), managedobjects.DeleteOptions{})
-	assert.NoError(t, err)
+	result = client.ManagedObjects.Delete(context.Background(), result.Data.ID(), managedobjects.DeleteOptions{})
+	assert.NoError(t, result.Err)
 }
 
 func Test_ManagedObjectList(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	// client.Client.SetDebug(true)
 
-	result := client.ManagedObjects.List2(context.Background(), managedobjects.ListOptions{})
+	result := client.ManagedObjects.List(context.Background(), managedobjects.ListOptions{})
 	assert.NoError(t, result.Err)
 	assert.GreaterOrEqual(t, result.Data.Length(), 1)
 
@@ -87,7 +87,7 @@ func Test_ManagedObjectCRUD(t *testing.T) {
 
 	// Create
 	name := testingutils.RandomString(16)
-	createResult := client.ManagedObjects.Create2(ctx, map[string]any{
+	createResult := client.ManagedObjects.Create(ctx, map[string]any{
 		"name":         name,
 		"type":         "test_device",
 		"c8y_IsDevice": map[string]any{},
@@ -100,7 +100,7 @@ func Test_ManagedObjectCRUD(t *testing.T) {
 	id := createResult.Data.ID()
 
 	// Get
-	getResult := client.ManagedObjects.Get2(ctx, id, managedobjects.GetOptions{})
+	getResult := client.ManagedObjects.Get(ctx, id, managedobjects.GetOptions{})
 	assert.NoError(t, getResult.Err)
 	assert.Equal(t, "OK", string(getResult.Status))
 	assert.Equal(t, id, getResult.Data.ID())
@@ -108,7 +108,7 @@ func Test_ManagedObjectCRUD(t *testing.T) {
 
 	// Update
 	newName := testingutils.RandomString(16)
-	updateResult := client.ManagedObjects.Update2(ctx, id, map[string]any{
+	updateResult := client.ManagedObjects.Update(ctx, id, map[string]any{
 		"name": newName,
 	})
 	assert.NoError(t, updateResult.Err)
@@ -117,11 +117,11 @@ func Test_ManagedObjectCRUD(t *testing.T) {
 	assert.Equal(t, newName, updateResult.Data.Name())
 
 	// Delete
-	deleteResult := client.ManagedObjects.Delete2(ctx, id, managedobjects.DeleteOptions{})
+	deleteResult := client.ManagedObjects.Delete(ctx, id, managedobjects.DeleteOptions{})
 	assert.NoError(t, deleteResult.Err)
 
 	// Verify deleted
-	getAfterDelete := client.ManagedObjects.Get2(ctx, id, managedobjects.GetOptions{})
+	getAfterDelete := client.ManagedObjects.Get(ctx, id, managedobjects.GetOptions{})
 	assert.Error(t, getAfterDelete.Err)
 	assert.True(t, c8y_api.ErrHasStatus(getAfterDelete.Err, 404))
 }
