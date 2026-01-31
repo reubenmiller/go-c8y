@@ -3,12 +3,13 @@ package managedobjects
 import (
 	"context"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/identity"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects/childadditions"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects/childassets"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects/childdevices"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
@@ -112,8 +113,8 @@ func (s *Service) UpdateB(ID string, body any) *core.TryRequest {
 }
 
 // List of supported measurement types for a given managed object
-func (s *Service) ListSupportedMeasurements(ctx context.Context, ID string) (*model.SupportedMeasurements, error) {
-	return core.ExecuteResultOnly[model.SupportedMeasurements](ctx, s.ListSupportedMeasurementsB(ID))
+func (s *Service) ListSupportedMeasurements(ctx context.Context, ID string) op.Result[jsonmodels.SupportedMeasurements] {
+	return core.ExecuteReturnResult(ctx, s.ListSupportedMeasurementsB(ID), jsonmodels.NewSupportedMeasurements)
 }
 
 func (s *Service) ListSupportedMeasurementsB(ID string) *core.TryRequest {
@@ -126,8 +127,8 @@ func (s *Service) ListSupportedMeasurementsB(ID string) *core.TryRequest {
 }
 
 // List of supported measurement series for a given managed object
-func (s *Service) ListSupportedSeries(ctx context.Context, ID string) (*model.SupportedSeries, error) {
-	return core.ExecuteResultOnly[model.SupportedSeries](ctx, s.ListSupportedSeriesB(ID))
+func (s *Service) ListSupportedSeries(ctx context.Context, ID string) op.Result[jsonmodels.SupportedSeries] {
+	return core.ExecuteReturnResult(ctx, s.ListSupportedSeriesB(ID), jsonmodels.NewSupportedSeries)
 }
 func (s *Service) ListSupportedSeriesB(ID string) *core.TryRequest {
 	req := s.Client.R().
