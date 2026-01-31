@@ -8,11 +8,12 @@ import (
 type Status string
 
 const (
-	StatusOK      Status = "OK"      // Existing resource retrieved
-	StatusCreated Status = "Created" // New resource created
-	StatusUpdated Status = "Updated" // Existing resource modified
-	StatusSkipped Status = "Skipped" // Operation skipped (e.g., no-op update)
-	StatusFailed  Status = "Failed"  // Operation failed
+	StatusOK        Status = "OK"        // Existing resource retrieved
+	StatusCreated   Status = "Created"   // New resource created
+	StatusUpdated   Status = "Updated"   // Existing resource modified
+	StatusSkipped   Status = "Skipped"   // Operation skipped (e.g., no-op update)
+	StatusDuplicate Status = "Duplicate" // Resource already exists (conflict)
+	StatusFailed    Status = "Failed"    // Operation failed
 )
 
 // Result wraps operation results with comprehensive metadata
@@ -102,6 +103,22 @@ func NewSkipped[T any](data T, reason string) Result[T] {
 			"reason": reason,
 		},
 	}
+}
+
+// NewDuplicate creates a result for duplicate/conflict scenarios
+func NewDuplicate[T any](data T, meta ...map[string]any) Result[T] {
+	r := Result[T]{
+		Data:       data,
+		Status:     StatusDuplicate,
+		HTTPStatus: 409,
+		Idempotent: true,
+		Timestamp:  time.Now(),
+		Meta:       make(map[string]any),
+	}
+	if len(meta) > 0 && meta[0] != nil {
+		r.Meta = meta[0]
+	}
+	return r
 }
 
 // NewFailed creates a failed result with error

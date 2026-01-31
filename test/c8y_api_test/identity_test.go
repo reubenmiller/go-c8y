@@ -2,58 +2,69 @@ package c8y_api_test
 
 import (
 	"context"
-	"log/slog"
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/identity"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 )
 
 func Test_IdentityCRUD(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	ctx := context.Background()
 
-	slog.Info("Setup")
+	// Create a managed object first
 	mo := testcore.CreateManagedObject(t, client)
 	assert.NoError(t, mo.Err)
 
 	id := mo.Data.ID()
-
-	// Create
-	slog.Info("Create")
 	externalID := testingutils.RandomString(16)
-	ident, err := client.Identity.Create(context.Background(), id, identity.IdentityOptions{
+
+	// Create identity
+	createResult := client.Identity.Create(ctx, id, identity.IdentityOptions{
 		ExternalID: externalID,
 	})
-	assert.NoError(t, err)
-	assert.Equal(t, ident.ExternalID, externalID)
-	assert.Equal(t, ident.ManagedObject.ID, id)
+	assert.NoError(t, createResult.Err)
+	assert.Equal(t, "Created", string(createResult.Status))
+	assert.Equal(t, externalID, createResult.Data.ExternalID())
+	assert.Equal(t, id, createResult.Data.ManagedObjectID())
 
-	// List
-	slog.Info("List")
-	idents, err := client.Identity.List(context.Background(), id)
-	assert.NoError(t, err)
-	assert.Len(t, idents.Identities, 1)
-	assert.Equal(t, idents.Identities[0].ExternalID, externalID)
-	assert.Equal(t, idents.Identities[0].Type, identity.DefaultType)
-	assert.Equal(t, idents.Identities[0].ManagedObject.ID, id)
-	assert.NotEmpty(t, idents.Identities[0].ManagedObject.Self)
+	// List identities
+	listResult := client.Identity.List(ctx, id)
+	assert.NoError(t, listResult.Err)
+	assert.Equal(t, "OK", string(listResult.Status))
 
-	// Get
-	slog.Info("Get")
-	ident, err = client.Identity.Get(context.Background(), identity.IdentityOptions{
+	var foundIdentity bool
+	for doc := range listResult.Data.Iter() {
+		ident := jsonmodels.NewIdentity(doc.Bytes())
+		if ident.ExternalID() == externalID {
+			foundIdentity = true
+			assert.Equal(t, identity.DefaultType, ident.Type())
+			assert.Equal(t, id, ident.ManagedObjectID())
+			break
+		}
+	}
+	assert.True(t, foundIdentity, "Created identity should be in list")
+
+	// Get identity
+	getResult := client.Identity.Get(ctx, identity.IdentityOptions{
 		ExternalID: externalID,
 	})
-	assert.NoError(t, err)
-	assert.Equal(t, ident.ExternalID, externalID)
-	assert.Equal(t, ident.ManagedObject.ID, id)
+	assert.NoError(t, getResult.Err)
+	assert.Equal(t, "OK", string(getResult.Status))
+	assert.Equal(t, externalID, getResult.Data.ExternalID())
+	assert.Equal(t, id, getResult.Data.ManagedObjectID())
 
-	// Delete
-	slog.Info("Delete")
-	err = client.Identity.Delete(context.Background(), identity.IdentityOptions{
+	// Delete identity
+	deleteResult := client.Identity.Delete(ctx, identity.IdentityOptions{
 		ExternalID: externalID,
 	})
-	assert.NoError(t, err)
+	assert.NoError(t, deleteResult.Err)
+
+	// Cleanup managed object
+	delMO := client.ManagedObjects.Delete(ctx, id, managedobjects.DeleteOptions{})
+	assert.NoError(t, delMO.Err)
 }

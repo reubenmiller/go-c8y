@@ -9,6 +9,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/identity"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 )
 
@@ -96,6 +97,222 @@ func (s *Service) getOrCreateWithQuery(ctx context.Context, body map[string]any,
 
 	// Execute get-or-create pattern (automatically sets Meta["found"])
 	return op.GetOrCreateR(ctx, finder, creator)
+}
+
+// GetOrCreateByExternalIDOptions options for GetOrCreateByExternalID
+type GetOrCreateByExternalIDOptions struct {
+	ExternalID     string // External ID to lookup
+	ExternalIDType string // External ID type (defaults to "c8y_Serial")
+	Body           any    // Managed object body to create if not found
+}
+
+// GetOrCreateByExternalID looks up a managed object by external identity,
+// creating both the managed object and identity if not found.
+//
+// This is useful for device provisioning workflows where devices are identified
+// by serial numbers or other external identifiers.
+//
+// Flow:
+//  1. Try to get managed object by external identity
+//  2. If found, return it with Status=OK and Meta["found"]=true
+//  3. If not found:
+//     - Create the managed object
+//     - Assign the external identity
+//     - Return with Status=Created and Meta["found"]=false
+//
+// Example:
+//
+//	result := client.ManagedObjects.GetOrCreateByExternalID(ctx,
+//	    GetOrCreateByExternalIDOptions{
+//	        ExternalID: "device-serial-12345",
+//	        ExternalIDType: "c8y_Serial",
+//	        Body: map[string]any{
+//	            "name": "My Device",
+//	            "type": "c8y_Device",
+//	            "c8y_IsDevice": map[string]any{},
+//	        },
+//	    },
+//	)
+
+// externalIDState tracks the workflow state for GetOrCreateByExternalID
+type externalIDState struct {
+	// Input parameters
+	externalID     string
+	externalIDType string
+	body           any
+	service        *Service
+
+	// Workflow state
+	managedObject jsonmodels.ManagedObject
+	found         bool
+	created       bool
+	duplicate     bool
+
+	// Error tracking
+	err        error
+	httpStatus int
+}
+
+func (s *Service) GetOrCreateByExternalID(
+	ctx context.Context,
+	opts GetOrCreateByExternalIDOptions,
+) op.Result[jsonmodels.ManagedObject] {
+	// Default external ID type
+	if opts.ExternalIDType == "" {
+		opts.ExternalIDType = "c8y_Serial"
+	}
+
+	// Initialize state
+	state := &externalIDState{
+		externalID:     opts.ExternalID,
+		externalIDType: opts.ExternalIDType,
+		body:           opts.Body,
+		service:        s,
+	}
+
+	// Step 1: Lookup by external identity
+	lookup := func(ctx context.Context, st *externalIDState) (*externalIDState, error) {
+		if st.err != nil {
+			return st, st.err
+		}
+
+		identResult := st.service.identityService.Get(ctx, identity.IdentityOptions{
+			ExternalID: st.externalID,
+			Type:       st.externalIDType,
+		})
+
+		if identResult.Err != nil {
+			// Identity not found - need to create
+			return st, nil
+		}
+
+		// Identity exists, get the managed object
+		moID := identResult.Data.ManagedObjectID()
+		getResult := st.service.Get(ctx, moID, GetOptions{})
+		if getResult.Err != nil {
+			st.err = getResult.Err
+			st.httpStatus = getResult.HTTPStatus
+			return st, getResult.Err
+		}
+
+		st.managedObject = getResult.Data
+		st.found = true
+		st.httpStatus = getResult.HTTPStatus
+		return st, nil
+	}
+
+	// Step 2: Create managed object if not found
+	create := func(ctx context.Context, st *externalIDState) (*externalIDState, error) {
+		if st.err != nil || st.found {
+			return st, st.err
+		}
+
+		createResult := st.service.Create(ctx, st.body)
+		if createResult.Err != nil {
+			st.err = createResult.Err
+			st.httpStatus = createResult.HTTPStatus
+			return st, createResult.Err
+		}
+
+		st.managedObject = createResult.Data
+		st.created = true
+		st.httpStatus = createResult.HTTPStatus
+		return st, nil
+	}
+
+	// Step 3: Assign external identity
+	assignIdentity := func(ctx context.Context, st *externalIDState) (*externalIDState, error) {
+		if st.err != nil || st.found {
+			return st, st.err
+		}
+
+		moID := st.managedObject.ID()
+		identResult := st.service.identityService.Create(ctx, moID, identity.IdentityOptions{
+			ExternalID: st.externalID,
+			Type:       st.externalIDType,
+		})
+
+		if identResult.Err == nil {
+			// Success
+			return st, nil
+		}
+
+		// Identity assignment failed
+		if identResult.HTTPStatus == 409 {
+			// Conflict: identity already exists
+			// Delete the newly created MO
+			_ = st.service.Delete(ctx, moID, DeleteOptions{})
+
+			// Fetch the existing managed object
+			lookupResult := st.service.identityService.Get(ctx, identity.IdentityOptions{
+				ExternalID: st.externalID,
+				Type:       st.externalIDType,
+			})
+			if lookupResult.Err != nil {
+				st.err = fmt.Errorf("identity conflict but failed to retrieve existing managed object: %w", identResult.Err)
+				return st, st.err
+			}
+
+			existingMOID := lookupResult.Data.ManagedObjectID()
+			getResult := st.service.Get(ctx, existingMOID, GetOptions{})
+			if getResult.Err != nil {
+				st.err = fmt.Errorf("identity conflict but failed to retrieve existing managed object: %w", getResult.Err)
+				return st, st.err
+			}
+
+			st.managedObject = getResult.Data
+			st.created = false
+			st.duplicate = true
+			st.httpStatus = 409
+			return st, nil
+		}
+
+		// Other failure - cleanup the created managed object
+		deleteResult := st.service.Delete(ctx, moID, DeleteOptions{})
+		if deleteResult.Err != nil {
+			st.err = fmt.Errorf("failed to assign identity and cleanup failed: identity error: %w, delete error: %v", identResult.Err, deleteResult.Err)
+		} else {
+			st.err = fmt.Errorf("failed to assign identity (managed object deleted): %w", identResult.Err)
+		}
+		st.httpStatus = identResult.HTTPStatus
+		return st, st.err
+	}
+
+	// Execute pipeline
+	pipeline := op.Pipe(lookup, create, assignIdentity)
+	finalState, _ := pipeline(ctx, state)
+
+	// Convert state to Result
+	if finalState.err != nil {
+		return op.NewFailed[jsonmodels.ManagedObject](finalState.err, true).
+			WithHTTPStatus(finalState.httpStatus).
+			WithMeta("externalID", finalState.externalID).
+			WithMeta("externalIDType", finalState.externalIDType)
+	}
+
+	if finalState.duplicate {
+		return op.NewDuplicate(finalState.managedObject, map[string]any{
+			"externalID":      finalState.externalID,
+			"externalIDType":  finalState.externalIDType,
+			"orphanedDeleted": true,
+		}).WithHTTPStatus(finalState.httpStatus)
+	}
+
+	if finalState.created {
+		return op.NewCreated(finalState.managedObject, map[string]any{
+			"externalID":       finalState.externalID,
+			"externalIDType":   finalState.externalIDType,
+			"identityAssigned": true,
+			"found":            false,
+		}).WithHTTPStatus(finalState.httpStatus)
+	}
+
+	return op.NewOK(finalState.managedObject, map[string]any{
+		"externalID":     finalState.externalID,
+		"externalIDType": finalState.externalIDType,
+		"found":          true,
+		"lookupMethod":   "externalIdentity",
+	}).WithHTTPStatus(finalState.httpStatus)
 }
 
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.ManagedObject] {

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/identity"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects/childadditions"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects/childassets"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects/childdevices"
@@ -25,10 +26,11 @@ const ResponseFieldStatistics = "statistics"
 
 func NewService(s *core.Service) *Service {
 	return &Service{
-		Service:        *s,
-		ChildAdditions: childadditions.NewService(s),
-		ChildAssets:    childassets.NewService(s),
-		ChildDevices:   childdevices.NewService(s),
+		Service:         *s,
+		identityService: identity.NewService(s),
+		ChildAdditions:  childadditions.NewService(s),
+		ChildAssets:     childassets.NewService(s),
+		ChildDevices:    childdevices.NewService(s),
 	}
 }
 
@@ -36,9 +38,10 @@ func NewService(s *core.Service) *Service {
 // type Service core.Service
 type Service struct {
 	core.Service
-	ChildAdditions *childadditions.Service
-	ChildAssets    *childassets.Service
-	ChildDevices   *childdevices.Service
+	identityService *identity.Service
+	ChildAdditions  *childadditions.Service
+	ChildAssets     *childassets.Service
+	ChildDevices    *childdevices.Service
 }
 
 // ListOptions filter managed object
