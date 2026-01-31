@@ -29,7 +29,11 @@ func ExecuteReturnResult[T any](ctx context.Context, req *TryRequest, fromBytes 
 	if err != nil {
 		return op.Failed[T](err, true)
 	}
-	return op.NewCreated(fromBytes(resp.Bytes()))
+	if resp.StatusCode() == http.StatusCreated {
+		return op.NewCreated(fromBytes(resp.Bytes()))
+	}
+	// TODO: Should it return different status for update, delete etc.?
+	return op.Ok(fromBytes(resp.Bytes()))
 }
 
 // ExecuteReturnCollection extracts an array from a collection response and puts metadata in Result.Meta

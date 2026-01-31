@@ -19,7 +19,7 @@ func (m ManagedObject) ID() string {
 }
 
 func (m ManagedObject) Type() string {
-	return m.Get("id").String()
+	return m.Get("type").String()
 }
 
 func (m ManagedObject) Owner() string {

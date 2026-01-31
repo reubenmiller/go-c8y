@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsondoc"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
@@ -78,4 +79,49 @@ func Test_ManagedObjectList(t *testing.T) {
 	if err := it2.Err(); err != nil {
 		t.Fatalf("pagination error: %v", err)
 	}
+}
+
+func Test_ManagedObjectCRUD(t *testing.T) {
+	client := testcore.CreateTestClient(t)
+	ctx := context.Background()
+
+	// Create
+	name := testingutils.RandomString(16)
+	createResult := client.ManagedObjects.Create2(ctx, map[string]any{
+		"name":         name,
+		"type":         "test_device",
+		"c8y_IsDevice": map[string]any{},
+	})
+	assert.NoError(t, createResult.Err)
+	assert.Equal(t, "Created", string(createResult.Status))
+	assert.NotEmpty(t, createResult.Data.ID())
+	assert.Equal(t, name, createResult.Data.Name())
+
+	id := createResult.Data.ID()
+
+	// Get
+	getResult := client.ManagedObjects.Get2(ctx, id, managedobjects.GetOptions{})
+	assert.NoError(t, getResult.Err)
+	assert.Equal(t, "OK", string(getResult.Status))
+	assert.Equal(t, id, getResult.Data.ID())
+	assert.Equal(t, name, getResult.Data.Name())
+
+	// Update
+	newName := testingutils.RandomString(16)
+	updateResult := client.ManagedObjects.Update2(ctx, id, map[string]any{
+		"name": newName,
+	})
+	assert.NoError(t, updateResult.Err)
+	assert.Equal(t, "OK", string(updateResult.Status))
+	assert.Equal(t, id, updateResult.Data.ID())
+	assert.Equal(t, newName, updateResult.Data.Name())
+
+	// Delete
+	deleteResult := client.ManagedObjects.Delete2(ctx, id, managedobjects.DeleteOptions{})
+	assert.NoError(t, deleteResult.Err)
+
+	// Verify deleted
+	getAfterDelete := client.ManagedObjects.Get2(ctx, id, managedobjects.GetOptions{})
+	assert.Error(t, getAfterDelete.Err)
+	assert.True(t, c8y_api.ErrHasStatus(getAfterDelete.Err, 404))
 }

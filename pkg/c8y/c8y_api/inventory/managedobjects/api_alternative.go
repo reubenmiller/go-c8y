@@ -2,16 +2,98 @@ package managedobjects
 
 import (
 	"context"
+	"fmt"
 	"iter"
 	"log/slog"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 )
 
 func (s *Service) Create2(ctx context.Context, body any) op.Result[jsonmodels.ManagedObject] {
 	return core.ExecuteReturnResult(ctx, s.CreateB(body), jsonmodels.NewManagedObject)
+}
+
+func (s *Service) Get2(ctx context.Context, ID string, opt GetOptions) op.Result[jsonmodels.ManagedObject] {
+	return core.ExecuteReturnResult(ctx, s.GetB(ID, opt), jsonmodels.NewManagedObject)
+}
+
+func (s *Service) Update2(ctx context.Context, ID string, body any) op.Result[jsonmodels.ManagedObject] {
+	return core.ExecuteReturnResult(ctx, s.UpdateB(ID, body), jsonmodels.NewManagedObject)
+}
+
+func (s *Service) Delete2(ctx context.Context, ID string, opt DeleteOptions) op.Result[jsonmodels.ManagedObject] {
+	return core.ExecuteReturnResult(ctx, s.DeleteB(ID, opt), jsonmodels.NewManagedObject)
+}
+
+// GetOrCreateByName searches by name and optionally type, creating if not found
+func (s *Service) GetOrCreateByName(ctx context.Context, name, objType string, body map[string]any) op.Result[jsonmodels.ManagedObject] {
+	query := model.NewInventoryQuery().
+		AddFilterEqStr("name", name).
+		AddFilterEqStr("type", objType).
+		Build()
+	return s.getOrCreateWithQuery(ctx, body, query)
+}
+
+// GetOrCreateByFragment searches for objects with a specific fragment property
+func (s *Service) GetOrCreateByFragment(ctx context.Context, fragment string, body map[string]any) op.Result[jsonmodels.ManagedObject] {
+	if fragment == "" {
+		return op.Failed[jsonmodels.ManagedObject](fmt.Errorf("fragment must be set"), false)
+	}
+	query := model.NewInventoryQuery().
+		HasFragment(fragment).
+		Build()
+	return s.getOrCreateWithQuery(ctx, body, query)
+}
+
+// GetOrCreateWith provides a generic query-based lookup
+// Example queries:
+//   - "name eq 'device01' and type eq 'c8y_Device'"
+//   - "has(c8y_IsDevice) and c8y_Serial eq '12345'"
+//   - "fragmentType eq 'c8y_CustomFragment'"
+func (s *Service) GetOrCreateWith(ctx context.Context, body map[string]any, query string) op.Result[jsonmodels.ManagedObject] {
+	query_ := model.NewInventoryQuery().
+		AddFilterPart(query).
+		Build()
+	return s.getOrCreateWithQuery(ctx, body, query_)
+}
+
+// getOrCreateWithQuery is the internal implementation
+func (s *Service) getOrCreateWithQuery(ctx context.Context, body map[string]any, query string) op.Result[jsonmodels.ManagedObject] {
+	searchOpts := ListOptions{}
+	searchOpts.PaginationOptions.PageSize = 1
+	searchOpts.Query = query
+
+	listResult := s.List2(ctx, searchOpts)
+	if listResult.Err != nil {
+		return op.NewFailed[jsonmodels.ManagedObject](listResult.Err, true)
+	}
+
+	// Check if any items were found
+	for item := range listResult.Data.Iter() {
+		found := jsonmodels.NewManagedObject(item.Bytes())
+		result := op.NewOK(found)
+		result.HTTPStatus = listResult.HTTPStatus
+		result.RequestID = listResult.RequestID
+		result.Meta["found"] = true
+		result.Meta["query"] = query
+		return result
+	}
+
+	// Not found, create it
+	createResult := s.Create2(ctx, body)
+	if createResult.Err != nil {
+		return createResult
+	}
+
+	result := op.NewCreated(createResult.Data)
+	result.HTTPStatus = createResult.HTTPStatus
+	result.RequestID = createResult.RequestID
+	result.Meta["found"] = false
+	result.Meta["query"] = query
+	return result
 }
 
 func (s *Service) List2(ctx context.Context, opt ListOptions) op.Result[jsonmodels.ManagedObject] {
