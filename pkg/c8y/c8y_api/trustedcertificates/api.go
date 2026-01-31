@@ -61,7 +61,7 @@ type ListOptions struct {
 
 // List trusted certificates
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.TrustedCertificate] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewTrustedCertificate)
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTrustedCertificate)
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {
@@ -99,7 +99,7 @@ func (s *Service) CreateB(opt CreateOptions, body any) *core.TryRequest {
 
 // Create multiple trusted certificate
 func (s *Service) CreateMultiple(ctx context.Context, opt CreateOptions, body any) op.Result[jsonmodels.TrustedCertificate] {
-	return core.ExecuteReturnCollection(ctx, s.CreateMultipleB(opt, body), ResultProperty, "", jsonmodels.NewTrustedCertificate)
+	return core.ExecuteReturnCollection(ctx, s.CreateMultipleB(opt, body), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTrustedCertificate)
 }
 
 func (s *Service) CreateMultipleB(opt CreateOptions, body any) *core.TryRequest {

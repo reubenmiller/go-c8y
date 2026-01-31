@@ -14,6 +14,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/repository/software/softwareitems"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 )
 
 var ApiManagedObjects = "/inventory/managedObjects"
@@ -76,7 +77,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 		softwareID = softwareResult.Data.ID()
 	}
 
-	return core.ExecuteReturnCollection(ctx, s.ListB(softwareID, opt), ResultProperty, "", jsonmodels.NewSoftwareVersion)
+	return core.ExecuteReturnCollection(ctx, s.ListB(softwareID, opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewSoftwareVersion)
 }
 
 func (s *Service) ListB(softwareID string, opt ListOptions) *core.TryRequest {

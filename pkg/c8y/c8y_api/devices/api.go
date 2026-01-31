@@ -8,6 +8,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
 )
 
@@ -53,7 +54,7 @@ type ListOptions struct {
 
 // List managed objects
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.ManagedObject] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), managedobjects.ResultProperty, "", jsonmodels.NewManagedObject)
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), managedobjects.ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {
@@ -83,7 +84,7 @@ type FindOptions struct {
 
 // List managed objects
 func (s *Service) Find(ctx context.Context, opt FindOptions) op.Result[jsonmodels.ManagedObject] {
-	return core.ExecuteReturnCollection(ctx, s.FindB(opt), managedobjects.ResultProperty, managedobjects.ResponseFieldStatistics, jsonmodels.NewManagedObject)
+	return core.ExecuteReturnCollection(ctx, s.FindB(opt), managedobjects.ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
 func (s *Service) FindB(opt FindOptions) *core.TryRequest {

@@ -43,7 +43,7 @@ type ListOptions struct {
 
 // Retrieve all user roles in the tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Role] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewRole)
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewRole)
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {

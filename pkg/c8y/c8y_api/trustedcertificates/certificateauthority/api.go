@@ -40,7 +40,7 @@ type GetOptions struct {
 
 // Get the certificate authority
 func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.TrustedCertificate] {
-	result := core.ExecuteReturnCollection(ctx, s.GetB(opt), ResultProperty, "", jsonmodels.NewTrustedCertificate)
+	result := core.ExecuteReturnCollection(ctx, s.GetB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTrustedCertificate)
 	if result.Err != nil {
 		return result
 	}

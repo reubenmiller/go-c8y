@@ -10,6 +10,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
 )
 
@@ -111,7 +112,7 @@ func paginateOperations(ctx context.Context, fetch func(page int) op.Result[json
 
 // List operations
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Operation] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewOperation)
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewOperation)
 }
 
 // ListAll returns an iterator for all operations

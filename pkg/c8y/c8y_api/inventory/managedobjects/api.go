@@ -22,7 +22,6 @@ var ApiManagedObjectSupportedSeries = "/inventory/managedObjects/{id}/supportedS
 const ParamId = "id"
 
 const ResultProperty = "managedObjects"
-const ResponseFieldStatistics = "statistics"
 
 func NewService(s *core.Service) *Service {
 	return &Service{

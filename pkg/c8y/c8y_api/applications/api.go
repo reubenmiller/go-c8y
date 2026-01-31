@@ -78,7 +78,7 @@ type ListOptions struct {
 
 // List all applications on your tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Application] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewApplication)
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {
@@ -99,7 +99,7 @@ type ListByNameOptions struct {
 
 // List applications by name
 func (s *Service) ListByName(ctx context.Context, opt ListByNameOptions) op.Result[jsonmodels.Application] {
-	return core.ExecuteReturnCollection(ctx, s.ListByNameB(opt), ResultProperty, "", jsonmodels.NewApplication)
+	return core.ExecuteReturnCollection(ctx, s.ListByNameB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
 }
 
 func (s *Service) ListByNameB(opt ListByNameOptions) *core.TryRequest {
@@ -120,7 +120,7 @@ type ListByTenantOptions struct {
 
 // List applications by name
 func (s *Service) ListByTenant(ctx context.Context, opt ListByTenantOptions) op.Result[jsonmodels.Application] {
-	return core.ExecuteReturnCollection(ctx, s.ListByTenantB(opt), ResultProperty, "", jsonmodels.NewApplication)
+	return core.ExecuteReturnCollection(ctx, s.ListByTenantB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
 }
 
 func (s *Service) ListByTenantB(opt ListByTenantOptions) *core.TryRequest {
@@ -141,7 +141,7 @@ type ListByOwnerOptions struct {
 
 // Retrieve all applications owned by a particular tenant (by a given tenant ID)
 func (s *Service) ListByOwner(ctx context.Context, opt ListByOwnerOptions) op.Result[jsonmodels.Application] {
-	return core.ExecuteReturnCollection(ctx, s.ListByOwnerB(opt), ResultProperty, "", jsonmodels.NewApplication)
+	return core.ExecuteReturnCollection(ctx, s.ListByOwnerB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
 }
 
 func (s *Service) ListByOwnerB(opt ListByOwnerOptions) *core.TryRequest {
@@ -162,7 +162,7 @@ type ListByUserOptions struct {
 
 // Retrieve all applications for a particular user (by a given username)
 func (s *Service) ListByUser(ctx context.Context, opt ListByUserOptions) op.Result[jsonmodels.Application] {
-	return core.ExecuteReturnCollection(ctx, s.ListByUserB(opt), ResultProperty, "", jsonmodels.NewApplication)
+	return core.ExecuteReturnCollection(ctx, s.ListByUserB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
 }
 
 func (s *Service) ListByUserB(opt ListByUserOptions) *core.TryRequest {

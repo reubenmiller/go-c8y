@@ -136,7 +136,7 @@ func paginateAlarms(ctx context.Context, fetch func(page int) op.Result[jsonmode
 
 // List alarms
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Alarm] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewAlarm)
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewAlarm)
 }
 
 // ListAll returns an iterator for all alarms

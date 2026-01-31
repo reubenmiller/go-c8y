@@ -99,7 +99,7 @@ func paginateMeasurements(ctx context.Context, fetch func(page int) op.Result[js
 
 // GetMeasurements return a measurement collection (multiple measurements)
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Measurement] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewMeasurement)
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewMeasurement)
 }
 
 // ListAll returns an iterator for all measurements

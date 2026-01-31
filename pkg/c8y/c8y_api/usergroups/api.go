@@ -51,7 +51,7 @@ type ListOptions struct {
 
 // Retrieve all groups in the tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.UserGroup] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewUserGroup)
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewUserGroup)
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {

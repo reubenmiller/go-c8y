@@ -65,7 +65,7 @@ type ListOptions struct {
 
 // Retrieve all users in the tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.User] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewUser)
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewUser)
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {

@@ -39,7 +39,7 @@ type ListOptions struct {
 
 // Retrieve all login options available in the tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.LoginOption] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewLoginOption)
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewLoginOption)
 }
 
 func (s *Service) ListB(opt any) *core.TryRequest {
@@ -52,7 +52,7 @@ func (s *Service) ListB(opt any) *core.TryRequest {
 
 // Retrieve all login options available in the tenant without using credentials
 func (s *Service) ListNoAuth(ctx context.Context, opt ListOptions) op.Result[jsonmodels.LoginOption] {
-	return core.ExecuteReturnCollection(ctx, s.ListNoAuthB(opt), ResultProperty, "", jsonmodels.NewLoginOption)
+	return core.ExecuteReturnCollection(ctx, s.ListNoAuthB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewLoginOption)
 }
 
 func (s *Service) ListNoAuthB(opt any) *core.TryRequest {

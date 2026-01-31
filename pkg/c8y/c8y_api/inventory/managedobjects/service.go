@@ -11,6 +11,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/identity"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 )
 
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.ManagedObject] {
@@ -316,7 +317,7 @@ func (s *Service) GetOrCreateByExternalID(
 }
 
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.ManagedObject] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, ResponseFieldStatistics, jsonmodels.NewManagedObject)
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
 type ManagedObjectIterator struct {

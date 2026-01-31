@@ -56,7 +56,7 @@ type ListOptions struct {
 
 // List binaries
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Binary] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewBinary)
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewBinary)
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {

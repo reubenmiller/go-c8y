@@ -12,6 +12,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/microservices/currentmicroservice"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 )
 
 const ResultProperty = "applications"
@@ -86,7 +87,7 @@ func (s *Service) FindFirst(ctx context.Context, opt ListOptions) (*model.Micros
 
 // List all microservices on your tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Microservice] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewMicroservice)
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewMicroservice)
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {

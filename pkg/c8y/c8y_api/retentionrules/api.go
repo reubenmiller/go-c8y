@@ -36,7 +36,7 @@ type ListOptions struct {
 
 // Retrieve all login options available in the tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.RetentionRule] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewRetentionRule)
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewRetentionRule)
 }
 
 func (s *Service) ListB(opt any) *core.TryRequest {

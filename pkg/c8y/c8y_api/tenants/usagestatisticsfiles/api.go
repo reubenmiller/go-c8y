@@ -40,7 +40,7 @@ type ListOptions struct {
 
 // List usage statistics summary files report metadata
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.UsageStatisticsFile] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewUsageStatisticsFile)
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewUsageStatisticsFile)
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {

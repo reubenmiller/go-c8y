@@ -59,7 +59,7 @@ type ListOptions struct {
 
 // List software
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Software] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewSoftware)
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewSoftware)
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {

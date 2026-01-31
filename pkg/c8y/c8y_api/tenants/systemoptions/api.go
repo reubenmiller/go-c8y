@@ -35,7 +35,7 @@ type ListOptions struct{}
 
 // List system options
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.SystemOption] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewSystemOption)
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewSystemOption)
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {

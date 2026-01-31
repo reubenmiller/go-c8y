@@ -31,7 +31,7 @@ type ListOptions child.ListOptions
 
 // List child additions of a parent
 func (s *Service) List(ctx context.Context, parentID string, opt ListOptions) op.Result[jsonmodels.ManagedObject] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(parentID, opt), ResultProperty, "", jsonmodels.NewManagedObject)
+	return core.ExecuteReturnCollection(ctx, s.ListB(parentID, opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
 func (s *Service) ListB(parentID string, opt ListOptions) *core.TryRequest {

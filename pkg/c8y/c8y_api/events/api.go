@@ -152,7 +152,7 @@ func paginateEvents(ctx context.Context, fetch func(page int) op.Result[jsonmode
 
 // List events
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Event] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewEvent)
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewEvent)
 }
 
 // ListAll returns an iterator for all events
