@@ -7,7 +7,6 @@ import (
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/repository/software/softwareitems"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
@@ -53,21 +52,17 @@ func Test_Software(t *testing.T) {
 	t.Cleanup(func() {
 		client.ManagedObjects.Delete(context.Background(), software2.Data.ID(), managedobjects.DeleteOptions{})
 	})
-	assert.Equal(t, true, software.Meta["found"])
+	assert.Equal(t, true, software2.Meta["found"])
 	assert.Equal(t, softwareName, software.Data.Name())
 	assert.NotEmpty(t, software2.Data.ID())
 	assert.Equal(t, software2.Data.ID(), software.Data.ID())
 
 	// Custom GetOrCreate command
-	pagination.FindOrCreate[model.Software](
-		context.Background(),
-		client.Repository.Software.ListB(softwareitems.ListOptions{
-			Name:         softwareName,
-			SoftwareType: softwareType,
-		}),
-		client.Repository.Software.CreateB(model.Software{}),
-		pagination.DefaultSearch(),
-	)
+	result := client.Repository.Software.GetOrCreateByName(context.Background(), softwareName, softwareType, model.Software{
+		Name:         softwareName,
+		SoftwareType: softwareType,
+	})
+	assert.NoError(t, result.Err)
 
 	// get
 	software3 := client.Repository.Software.Get(context.Background(), softwareitems.GetOptions{
@@ -78,6 +73,8 @@ func Test_Software(t *testing.T) {
 	assert.Equal(t, software3.Data.Name(), software.Data.Name())
 
 	// delete
-	result := client.Repository.Software.Delete(context.Background(), softwareitems.DeleteOptions{})
+	result = client.Repository.Software.Delete(context.Background(), softwareitems.DeleteOptions{
+		ID: software.Data.ID(),
+	})
 	assert.NoError(t, result.Err)
 }

@@ -333,12 +333,12 @@ func (it *ManagedObjectIterator) Err() error {
 	return it.err
 }
 
-func paginateManagedObjects(ctx context.Context, fetch func(page int) op.Result[jsonmodels.ManagedObject], maxItems int) *ManagedObjectIterator {
+func paginateManagedObjects(ctx context.Context, fetch func(page int) op.Result[jsonmodels.ManagedObject], maxItems int64) *ManagedObjectIterator {
 	iterator := &ManagedObjectIterator{}
 
 	iterator.items = func(yield func(jsonmodels.ManagedObject) bool) {
 		page := 1
-		count := 0
+		count := int64(0)
 		for {
 			result := fetch(page)
 			if result.Err != nil {
@@ -374,17 +374,11 @@ func paginateManagedObjects(ctx context.Context, fetch func(page int) op.Result[
 }
 
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *ManagedObjectIterator {
+	if opts.PageSize == 0 {
+		opts.PageSize = 2000
+	}
 	return paginateManagedObjects(ctx, func(page int) op.Result[jsonmodels.ManagedObject] {
 		opts.CurrentPage = page
-		opts.PageSize = 2000
 		return s.List(ctx, opts)
-	}, 0)
-}
-
-func (s *Service) ListLimit(ctx context.Context, opts ListOptions, maxItems int) *ManagedObjectIterator {
-	return paginateManagedObjects(ctx, func(page int) op.Result[jsonmodels.ManagedObject] {
-		opts.CurrentPage = page
-		opts.PageSize = 2000
-		return s.List(ctx, opts)
-	}, maxItems)
+	}, opts.GetMaxItems())
 }

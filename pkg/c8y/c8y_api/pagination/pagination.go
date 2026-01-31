@@ -33,10 +33,20 @@ type PaginationOptions struct {
 
 	// Defines the slice of data to be returned, starting with 1. By default, the first page is returned.
 	CurrentPage int `url:"currentPage,omitempty,omitzero"`
+
+	// Limit to the maximum given pages when doing client side paging
+	MaxPages int64 `url:"-"`
+
+	// Limit to the maximum number of items when doing client side paging
+	MaxItems int64 `url:"-"`
 }
 
 func (o PaginationOptions) IsZero() bool {
 	return o.PageSize <= 0 || o.PageSize == 5 // Define zero as any non-positive value
+}
+
+func (o PaginationOptions) GetMaxItems() int64 {
+	return max(o.MaxItems, o.MaxPages*int64(o.PageSize))
 }
 
 // Set the current page to return
@@ -78,31 +88,6 @@ func NewPaginationOptions(pageSize int) PaginationOptions {
 	return PaginationOptions{
 		PageSize: pageSize,
 	}
-}
-
-func ForEachWhere[A any](ctx context.Context, r *core.TryRequest, pagerOpts PagerOptions, predicate func(A) bool) (*A, bool, error) {
-	out := make(chan A)
-	go ForEach(ctx, r, pagerOpts, out)
-	for item := range out {
-		if predicate(item) {
-			return &item, true, nil
-		}
-	}
-	return nil, false, nil
-}
-
-func First[A any](ctx context.Context, r *core.TryRequest, pagerOpts PagerOptions) (*A, bool, error) {
-	predicate := func(A) bool { return true }
-	return ForEachWhere(ctx, r, pagerOpts, predicate)
-}
-
-func FindOrCreate[A any](ctx context.Context, find *core.TryRequest, create *core.TryRequest, pagerOpts PagerOptions) (item *A, found bool, err error) {
-	item, found, err = First[A](ctx, find, pagerOpts)
-	if err != nil || found {
-		return
-	}
-	item, err = core.ExecuteResultOnly[A](ctx, create)
-	return
 }
 
 // ForEach paginates of a result set return every individual item

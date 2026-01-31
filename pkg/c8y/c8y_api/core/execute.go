@@ -128,21 +128,6 @@ func ExecuteResultOnly[T any](ctx context.Context, req *TryRequest) (*T, error) 
 	return result, nil
 }
 
-func ExecuteResultMap[k string, T any](ctx context.Context, req *TryRequest) (map[k]T, error) {
-	result := make(map[k]T)
-	req.SetDefaultAcceptHeader()
-	_, err := coupleAPIErrors(req.Request.
-		SetContext(ctx).
-		SetResult(&result).
-		Send())
-
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
 // Execute a request that doesn't any result only if there was an error or not
 func ExecuteNoResult(ctx context.Context, req *TryRequest) error {
 	_, err := coupleAPIErrors(req.Request.

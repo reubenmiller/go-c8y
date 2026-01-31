@@ -2,6 +2,7 @@ package tenantoptions
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
@@ -170,8 +171,12 @@ type ListByCategoryOptions struct {
 }
 
 // List tenant options by category
-func (s *Service) ListByCategory(ctx context.Context, opt ListByCategoryOptions) (map[string]string, error) {
-	return core.ExecuteResultMap[string, string](ctx, s.ListByCategoryB(opt))
+func (s *Service) ListByCategory(ctx context.Context, opt ListByCategoryOptions) op.Result[map[string]string] {
+	return core.ExecuteReturnResult(ctx, s.ListByCategoryB(opt), func(b []byte) map[string]string {
+		data := make(map[string]string)
+		_ = json.Unmarshal(b, &data)
+		return data
+	})
 }
 
 func (s *Service) ListByCategoryB(opt ListByCategoryOptions) *core.TryRequest {
@@ -190,8 +195,12 @@ type UpdateByCategoryOption struct {
 }
 
 // Update a tenant option
-func (s *Service) UpdateByCategory(ctx context.Context, opt UpdateByCategoryOption) (map[string]string, error) {
-	return core.ExecuteResultMap[string, string](ctx, s.UpdateByCategoryOptionB(opt))
+func (s *Service) UpdateByCategory(ctx context.Context, opt UpdateByCategoryOption) op.Result[map[string]string] {
+	return core.ExecuteReturnResult(ctx, s.UpdateByCategoryOptionB(opt), func(b []byte) map[string]string {
+		data := make(map[string]string)
+		_ = json.Unmarshal(b, &data)
+		return data
+	})
 }
 
 func (s *Service) UpdateByCategoryOptionB(opt UpdateByCategoryOption) *core.TryRequest {

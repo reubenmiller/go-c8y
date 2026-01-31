@@ -37,9 +37,9 @@ func Test_TenantOptions(t *testing.T) {
 	assert.Equal(t, option.Data.Key(), firstOption.Key)
 
 	// list by category
-	category, err := client.Tenants.Options.ListByCategory(context.Background(), tenantoptions.ListByCategoryOptions{
+	category := client.Tenants.Options.ListByCategory(context.Background(), tenantoptions.ListByCategoryOptions{
 		Category: firstOption.Category,
 	})
-	assert.NoError(t, err)
-	assert.GreaterOrEqual(t, len(category), 1)
+	assert.NoError(t, category.Err)
+	assert.GreaterOrEqual(t, len(category.Data), 1)
 }

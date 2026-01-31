@@ -10,6 +10,8 @@ import (
 
 	"github.com/destel/rill"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsondoc"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
@@ -20,19 +22,19 @@ import (
 func Test_ForEachManagedObjectsIncludeAll(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
-	out := make(chan model.ManagedObject)
-
-	// Start pager and iterate through all of the results
-	go pagination.ForEach(
-		context.Background(),
-		client.ManagedObjects.ListB(managedobjects.ListOptions{}),
-		pagination.IncludeAll(),
-		out,
-	)
-
-	// Range over the output channel
-	for item := range out {
-		slog.Info("Processing message", "id", item.ID)
+	it := client.ManagedObjects.ListAll(context.Background(), managedobjects.ListOptions{
+		PaginationOptions: pagination.PaginationOptions{
+			MaxItems: 5000,
+		},
+	})
+	assert.NoError(t, it.Err())
+	count := 0
+	for item := range it.Items() {
+		if count > 2001 {
+			break
+		}
+		slog.Info("Processing message", "id", item.ID())
+		count += 1
 	}
 }
 
@@ -71,31 +73,27 @@ func Test_ForEachCustomModel(t *testing.T) {
 		Agent map[string]string `json:"c8y_Agent,omitempty"`
 	}
 
-	// Create output channel with custom data model
-	out := make(chan CustomModel)
-
-	// Create list pager and iterate over the results
-	go c8y_api.ForEach(
-		context.Background(),
-		client.ManagedObjects.ListB(managedobjects.ListOptions{
-			Type: "thin-edge.io",
-		}),
-		pagination.PagerOptions{
+	it := client.ManagedObjects.ListAll(context.Background(), managedobjects.ListOptions{
+		Type: "thin-edge.io",
+		PaginationOptions: pagination.PaginationOptions{
 			MaxPages: 2,
 			PageSize: 10,
 		},
-		out,
-	)
+	})
+	assert.NoError(t, it.Err())
 
 	// Process the results
 	matches := 0
-	for item := range out {
-		if v, ok := item.Agent["name"]; ok {
+	for item := range it.Items() {
+		mo, err := jsondoc.Decode[CustomModel](item.JSONDoc)
+		if err != nil {
+			continue
+		}
+		if v, ok := mo.Agent["name"]; ok {
 			if v == "thin-edge.io" {
 				matches += 1
 			}
 		}
-
 	}
 	assert.GreaterOrEqual(t, matches, 1)
 }
@@ -104,23 +102,16 @@ func Test_ForEachCustomModel(t *testing.T) {
 func Test_ManagedObjectsAdvanced(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
-	// Create channel with desired data model
-	out := make(chan model.ManagedObject)
-
-	// List managed objects and iterate of the list
-	go c8y_api.ForEach(
-		context.Background(),
-		client.ManagedObjects.ListB(managedobjects.ListOptions{}),
-		pagination.PagerOptions{
-			MaxPages: 5,
-			PageSize: 2000,
+	it := client.ManagedObjects.ListAll(context.Background(), managedobjects.ListOptions{
+		PaginationOptions: pagination.PaginationOptions{
+			MaxPages: 2,
 		},
-		out,
-	)
+	})
+	assert.NoError(t, it.Err())
 
 	// Apply client side filter
-	matchingMos := rill.Filter(rill.FromChan(out, nil), 1, func(mo model.ManagedObject) (bool, error) {
-		return strings.HasPrefix(mo.Name, "TestDevice"), nil
+	matchingMos := rill.Filter(rill.FromSeq(it.Items(), it.Err()), 1, func(mo jsonmodels.ManagedObject) (bool, error) {
+		return strings.HasPrefix(mo.Name(), "TestDevice"), nil
 	})
 
 	// Apply batching
@@ -128,7 +119,7 @@ func Test_ManagedObjectsAdvanced(t *testing.T) {
 
 	// Process the results
 	matches := atomic.Int64{}
-	rill.ForEach(batches, 2, func(mos []model.ManagedObject) error {
+	rill.ForEach(batches, 2, func(mos []jsonmodels.ManagedObject) error {
 		slog.Info("Processing batch", "size", len(mos))
 		matches.Add(int64(len(mos)))
 		return nil

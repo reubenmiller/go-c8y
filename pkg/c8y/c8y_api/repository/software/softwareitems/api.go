@@ -299,6 +299,8 @@ func (s *Service) GetOrCreateByName(ctx context.Context, name, softwareType stri
 		AddFilterEqStr("type", FragmentSoftware).
 		AddFilterEqStr("name", name).
 		AddFilterEqStr("softwareType", softwareType).
+		AddOrderBy("name").
+		AddOrderBy("creationTime").
 		Build()
 	return s.getOrCreateWithQuery(ctx, body, query)
 }
@@ -311,6 +313,8 @@ func (s *Service) GetOrCreateWith(ctx context.Context, body any, query string) o
 	query_ := model.NewInventoryQuery().
 		AddFilterEqStr("type", FragmentSoftware).
 		AddFilterPart(query).
+		AddOrderBy("name").
+		AddOrderBy("creationTime").
 		Build()
 	return s.getOrCreateWithQuery(ctx, body, query_)
 }
@@ -338,7 +342,6 @@ func (s *Service) getOrCreateWithQuery(ctx context.Context, body any, query stri
 			found := jsonmodels.NewSoftware(item.Bytes())
 			result := op.OK(found)
 			result.HTTPStatus = moResult.HTTPStatus
-			result.Meta["found"] = true
 			result.Meta["lookupMethod"] = "query"
 			result.Meta["query"] = query
 			return result, true
@@ -354,7 +357,6 @@ func (s *Service) getOrCreateWithQuery(ctx context.Context, body any, query stri
 		if createResult.Err != nil {
 			return createResult
 		}
-		createResult.Meta["found"] = false
 		return createResult
 	}
 

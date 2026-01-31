@@ -10,6 +10,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsondoc"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 )
@@ -70,9 +71,12 @@ func Test_ManagedObjectList(t *testing.T) {
 
 	// paginate over first N items
 	count = 0
-	it2 := client.ManagedObjects.ListLimit(context.Background(), managedobjects.ListOptions{
+	it2 := client.ManagedObjects.ListAll(context.Background(), managedobjects.ListOptions{
 		Type: "thin-edge.io",
-	}, 10)
+		PaginationOptions: pagination.PaginationOptions{
+			MaxItems: 10,
+		},
+	})
 	for item := range it2.Items() {
 		fmt.Printf("count=%d | id=%s, type=%s\n", count, item.ID(), item.Type())
 	}
