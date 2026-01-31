@@ -30,10 +30,10 @@ func ExecuteReturnResult[T any](ctx context.Context, req *TryRequest, fromBytes 
 		return op.Failed[T](err, true)
 	}
 	if resp.StatusCode() == http.StatusCreated {
-		return op.NewCreated(fromBytes(resp.Bytes()))
+		return op.Created(fromBytes(resp.Bytes()))
 	}
 	// TODO: Should it return different status for update, delete etc.?
-	return op.Ok(fromBytes(resp.Bytes()))
+	return op.OK(fromBytes(resp.Bytes()))
 }
 
 // ExecuteReturnCollection extracts an array from a collection response and puts metadata in Result.Meta
@@ -52,7 +52,7 @@ func ExecuteReturnCollection[T any](ctx context.Context, req *TryRequest, arrayP
 	arrayResult := doc.Get(arrayPath)
 
 	// Extract metadata
-	result := op.NewOK(fromBytes([]byte(arrayResult.Raw)))
+	result := op.OK(fromBytes([]byte(arrayResult.Raw)))
 	if metaPath != "" {
 		stats := doc.Get(metaPath)
 		if stats.Exists() {

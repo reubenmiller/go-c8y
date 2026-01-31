@@ -31,26 +31,26 @@ func Upsert[T any](
 			// Resource exists, update it
 			updated, err := updater(ctx, obj)
 			if err != nil {
-				return NewFailed[T](err, isRetryableError(err)), err
+				return Failed[T](err, isRetryableError(err)), err
 			}
 
-			return NewUpdated(updated, map[string]any{
+			return Updated(updated, map[string]any{
 				"key": key,
 			}).WithDuration(time.Since(start)), nil
 		}
 
 		// If error is not "not found", return it
 		if !errors.Is(err, ErrNotFound) {
-			return NewFailed[T](err, isRetryableError(err)), err
+			return Failed[T](err, isRetryableError(err)), err
 		}
 
 		// Resource doesn't exist, create it
 		created, err := creator(ctx, obj)
 		if err != nil {
-			return NewFailed[T](err, isRetryableError(err)), err
+			return Failed[T](err, isRetryableError(err)), err
 		}
 
-		return NewCreated(created, map[string]any{
+		return Created(created, map[string]any{
 			"key": key,
 		}).WithDuration(time.Since(start)), nil
 	}
@@ -77,17 +77,17 @@ func UpsertWithMerge[T any](
 
 			// Check if there are actual changes
 			if reflect.DeepEqual(existing, merged) {
-				return NewSkipped(existing, "no changes detected").
+				return Skipped(existing, "no changes detected").
 					WithDuration(time.Since(start)), nil
 			}
 
 			// Update with merged data
 			updated, err := updater(ctx, merged)
 			if err != nil {
-				return NewFailed[T](err, isRetryableError(err)), err
+				return Failed[T](err, isRetryableError(err)), err
 			}
 
-			return NewUpdated(updated, map[string]any{
+			return Updated(updated, map[string]any{
 				"key":     key,
 				"changed": true,
 			}).WithDuration(time.Since(start)), nil
@@ -95,16 +95,16 @@ func UpsertWithMerge[T any](
 
 		// If error is not "not found", return it
 		if !errors.Is(err, ErrNotFound) {
-			return NewFailed[T](err, isRetryableError(err)), err
+			return Failed[T](err, isRetryableError(err)), err
 		}
 
 		// Resource doesn't exist, create it
 		created, err := creator(ctx, desired)
 		if err != nil {
-			return NewFailed[T](err, isRetryableError(err)), err
+			return Failed[T](err, isRetryableError(err)), err
 		}
 
-		return NewCreated(created, map[string]any{
+		return Created(created, map[string]any{
 			"key": key,
 		}).WithDuration(time.Since(start)), nil
 	}
@@ -144,10 +144,10 @@ func UpsertWithConflictResolution[T any](
 						time.Sleep(time.Duration(attempt+1) * 100 * time.Millisecond)
 						continue
 					}
-					return NewFailed[T](err, isRetryableError(err)), err
+					return Failed[T](err, isRetryableError(err)), err
 				}
 
-				return NewUpdated(updated, map[string]any{
+				return Updated(updated, map[string]any{
 					"key":      key,
 					"attempts": attempt + 1,
 				}).WithDuration(time.Since(start)).WithAttempts(attempt + 1), nil
@@ -160,7 +160,7 @@ func UpsertWithConflictResolution[T any](
 					time.Sleep(time.Duration(attempt+1) * 100 * time.Millisecond)
 					continue
 				}
-				return NewFailed[T](err, isRetryableError(err)), err
+				return Failed[T](err, isRetryableError(err)), err
 			}
 
 			// Resource doesn't exist, create it
@@ -173,10 +173,10 @@ func UpsertWithConflictResolution[T any](
 					time.Sleep(time.Duration(attempt+1) * 100 * time.Millisecond)
 					continue
 				}
-				return NewFailed[T](err, isRetryableError(err)), err
+				return Failed[T](err, isRetryableError(err)), err
 			}
 
-			return NewCreated(created, map[string]any{
+			return Created(created, map[string]any{
 				"key":      key,
 				"attempts": attempt + 1,
 			}).WithDuration(time.Since(start)).WithAttempts(attempt + 1), nil
@@ -252,7 +252,7 @@ func UpsertWithOptimisticLocking[T any](
 						time.Sleep(time.Duration(attempt+1) * 100 * time.Millisecond)
 						continue
 					}
-					return NewFailed[T](errors.New("version conflict after max retries"), false),
+					return Failed[T](errors.New("version conflict after max retries"), false),
 						errors.New("version conflict")
 				}
 
@@ -263,10 +263,10 @@ func UpsertWithOptimisticLocking[T any](
 						time.Sleep(time.Duration(attempt+1) * 100 * time.Millisecond)
 						continue
 					}
-					return NewFailed[T](err, isRetryableError(err)), err
+					return Failed[T](err, isRetryableError(err)), err
 				}
 
-				return NewUpdated(updated, map[string]any{
+				return Updated(updated, map[string]any{
 					"key":      key,
 					"version":  versionFunc(updated),
 					"attempts": attempt + 1,
@@ -281,10 +281,10 @@ func UpsertWithOptimisticLocking[T any](
 						time.Sleep(time.Duration(attempt+1) * 100 * time.Millisecond)
 						continue
 					}
-					return NewFailed[T](err, isRetryableError(err)), err
+					return Failed[T](err, isRetryableError(err)), err
 				}
 
-				return NewCreated(created, map[string]any{
+				return Created(created, map[string]any{
 					"key":      key,
 					"version":  versionFunc(created),
 					"attempts": attempt + 1,
@@ -297,10 +297,10 @@ func UpsertWithOptimisticLocking[T any](
 				continue
 			}
 
-			return NewFailed[T](err, isRetryableError(err)), err
+			return Failed[T](err, isRetryableError(err)), err
 		}
 
-		return NewFailed[T](errors.New("max retries exceeded"), false),
+		return Failed[T](errors.New("max retries exceeded"), false),
 			errors.New("max retries exceeded")
 	}
 }

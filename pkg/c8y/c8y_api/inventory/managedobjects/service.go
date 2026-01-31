@@ -77,7 +77,7 @@ func (s *Service) getOrCreateWithQuery(ctx context.Context, body map[string]any,
 		// Check if any items were found
 		for item := range listResult.Data.Iter() {
 			found := jsonmodels.NewManagedObject(item.Bytes())
-			result := op.NewOK(found)
+			result := op.OK(found)
 			result.HTTPStatus = listResult.HTTPStatus
 			result.RequestID = listResult.RequestID
 			result.Meta["query"] = query
@@ -284,14 +284,14 @@ func (s *Service) GetOrCreateByExternalID(
 
 	// Convert state to Result
 	if finalState.err != nil {
-		return op.NewFailed[jsonmodels.ManagedObject](finalState.err, true).
+		return op.Failed[jsonmodels.ManagedObject](finalState.err, true).
 			WithHTTPStatus(finalState.httpStatus).
 			WithMeta("externalID", finalState.externalID).
 			WithMeta("externalIDType", finalState.externalIDType)
 	}
 
 	if finalState.duplicate {
-		return op.NewDuplicate(finalState.managedObject, map[string]any{
+		return op.Duplicate(finalState.managedObject, map[string]any{
 			"externalID":      finalState.externalID,
 			"externalIDType":  finalState.externalIDType,
 			"orphanedDeleted": true,
@@ -299,7 +299,7 @@ func (s *Service) GetOrCreateByExternalID(
 	}
 
 	if finalState.created {
-		return op.NewCreated(finalState.managedObject, map[string]any{
+		return op.Created(finalState.managedObject, map[string]any{
 			"externalID":       finalState.externalID,
 			"externalIDType":   finalState.externalIDType,
 			"identityAssigned": true,
@@ -307,7 +307,7 @@ func (s *Service) GetOrCreateByExternalID(
 		}).WithHTTPStatus(finalState.httpStatus)
 	}
 
-	return op.NewOK(finalState.managedObject, map[string]any{
+	return op.OK(finalState.managedObject, map[string]any{
 		"externalID":     finalState.externalID,
 		"externalIDType": finalState.externalIDType,
 		"found":          true,

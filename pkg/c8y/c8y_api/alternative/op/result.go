@@ -35,20 +35,8 @@ type Result[T any] struct {
 	Timestamp time.Time     // When the operation completed
 }
 
-func Ok[T any](v T) Result[T] {
-	return Result[T]{Data: v, Status: StatusOK}
-}
-
-func Created[T any](v T) Result[T] {
-	return Result[T]{Data: v, Status: StatusCreated}
-}
-
-func Failed[T any](err error, retryable bool) Result[T] {
-	return Result[T]{Err: err, Status: StatusFailed, Retryable: retryable}
-}
-
-// NewOK creates a successful result for retrieved resource
-func NewOK[T any](data T, meta ...map[string]any) Result[T] {
+// OK creates a successful result for retrieved resource
+func OK[T any](data T, meta ...map[string]any) Result[T] {
 	r := Result[T]{
 		Data:      data,
 		Status:    StatusOK,
@@ -61,8 +49,8 @@ func NewOK[T any](data T, meta ...map[string]any) Result[T] {
 	return r
 }
 
-// NewCreated creates a result for newly created resource
-func NewCreated[T any](data T, meta ...map[string]any) Result[T] {
+// Created creates a result for newly created resource
+func Created[T any](data T, meta ...map[string]any) Result[T] {
 	r := Result[T]{
 		Data:       data,
 		Status:     StatusCreated,
@@ -77,8 +65,8 @@ func NewCreated[T any](data T, meta ...map[string]any) Result[T] {
 	return r
 }
 
-// NewUpdated creates a result for updated resource
-func NewUpdated[T any](data T, meta ...map[string]any) Result[T] {
+// Updated creates a result for updated resource
+func Updated[T any](data T, meta ...map[string]any) Result[T] {
 	r := Result[T]{
 		Data:       data,
 		Status:     StatusUpdated,
@@ -92,8 +80,8 @@ func NewUpdated[T any](data T, meta ...map[string]any) Result[T] {
 	return r
 }
 
-// NewSkipped creates a result for skipped operation
-func NewSkipped[T any](data T, reason string) Result[T] {
+// Skipped creates a result for skipped operation
+func Skipped[T any](data T, reason string) Result[T] {
 	return Result[T]{
 		Data:       data,
 		Status:     StatusSkipped,
@@ -105,8 +93,8 @@ func NewSkipped[T any](data T, reason string) Result[T] {
 	}
 }
 
-// NewDuplicate creates a result for duplicate/conflict scenarios
-func NewDuplicate[T any](data T, meta ...map[string]any) Result[T] {
+// Duplicate creates a result for duplicate/conflict scenarios
+func Duplicate[T any](data T, meta ...map[string]any) Result[T] {
 	r := Result[T]{
 		Data:       data,
 		Status:     StatusDuplicate,
@@ -121,8 +109,8 @@ func NewDuplicate[T any](data T, meta ...map[string]any) Result[T] {
 	return r
 }
 
-// NewFailed creates a failed result with error
-func NewFailed[T any](err error, retryable bool) Result[T] {
+// Failed creates a failed result with error
+func Failed[T any](err error, retryable bool) Result[T] {
 	var zero T
 	return Result[T]{
 		Data:      zero,

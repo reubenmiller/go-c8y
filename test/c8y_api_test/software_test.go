@@ -20,47 +20,43 @@ func Test_Software(t *testing.T) {
 	// Get Or Create software item (new item)
 	softwareName := "software" + testingutils.RandomString(16)
 	softwareType := "ci-artifact"
-	software, found, err := client.Repository.Software.GetOrCreate(context.Background(), softwareitems.GetOrCreateOptions{
-		Software: model.Software{
-			Name:         softwareName,
-			Type:         "c8y_Software",
-			SoftwareType: softwareType,
-			Description:  "Some custom artifact name",
-		},
+	software := client.Repository.Software.GetOrCreateByName(context.Background(), softwareName, softwareType, model.Software{
+		Name:         softwareName,
+		Type:         "c8y_Software",
+		SoftwareType: softwareType,
+		Description:  "Some custom artifact name",
 	})
-	assert.NoError(t, err)
+	assert.NoError(t, software.Err)
 	t.Cleanup(func() {
-		client.ManagedObjects.Delete(context.Background(), software.ID, managedobjects.DeleteOptions{})
+		client.ManagedObjects.Delete(context.Background(), software.Data.ID(), managedobjects.DeleteOptions{})
 	})
-	assert.False(t, found)
-	assert.Equal(t, softwareName, software.Name)
-	assert.NotEmpty(t, software.ID)
+	assert.Equal(t, false, software.Meta["found"])
+	assert.Equal(t, softwareName, software.Data.Name())
+	assert.NotEmpty(t, software.Data.ID())
 
 	// list
-	collection, err := client.Repository.Software.List(context.Background(), softwareitems.ListOptions{
+	collection := client.Repository.Software.List(context.Background(), softwareitems.ListOptions{
 		Name:         softwareName,
 		SoftwareType: softwareType,
 	})
-	assert.NoError(t, err)
-	assert.Len(t, collection.ManagedObjects, 1)
+	assert.NoError(t, collection.Err)
+	assert.Equal(t, 1, collection.Data.Length())
 
 	// Get Or Create software item (existing item)
-	software2, found, err := client.Repository.Software.GetOrCreate(context.Background(), softwareitems.GetOrCreateOptions{
-		Software: model.Software{
-			Name:         softwareName,
-			Type:         "c8y_Software",
-			SoftwareType: softwareType,
-			Description:  "Some custom artifact name",
-		},
+	software2 := client.Repository.Software.GetOrCreateByName(context.Background(), softwareName, softwareType, model.Software{
+		Name:         softwareName,
+		Type:         "c8y_Software",
+		SoftwareType: softwareType,
+		Description:  "Some custom artifact name",
 	})
-	assert.NoError(t, err)
+	assert.NoError(t, software2.Err)
 	t.Cleanup(func() {
-		client.ManagedObjects.Delete(context.Background(), software2.ID, managedobjects.DeleteOptions{})
+		client.ManagedObjects.Delete(context.Background(), software2.Data.ID(), managedobjects.DeleteOptions{})
 	})
-	assert.True(t, found)
-	assert.Equal(t, softwareName, software.Name)
-	assert.NotEmpty(t, software2.ID)
-	assert.Equal(t, software2.ID, software.ID)
+	assert.Equal(t, true, software.Meta["found"])
+	assert.Equal(t, softwareName, software.Data.Name())
+	assert.NotEmpty(t, software2.Data.ID())
+	assert.Equal(t, software2.Data.ID(), software.Data.ID())
 
 	// Custom GetOrCreate command
 	pagination.FindOrCreate[model.Software](
@@ -74,14 +70,14 @@ func Test_Software(t *testing.T) {
 	)
 
 	// get
-	software3, err := client.Repository.Software.Get(context.Background(), softwareitems.GetOptions{
-		ID: software.ID,
+	software3 := client.Repository.Software.Get(context.Background(), softwareitems.GetOptions{
+		ID: software.Data.ID(),
 	})
-	assert.NoError(t, err)
-	assert.Equal(t, software3.ID, software.ID)
-	assert.Equal(t, software3.Name, software.Name)
+	assert.NoError(t, software3.Err)
+	assert.Equal(t, software3.Data.ID(), software.Data.ID())
+	assert.Equal(t, software3.Data.Name(), software.Data.Name())
 
 	// delete
-	err = client.Repository.Software.Delete(context.Background(), softwareitems.DeleteOptions{})
-	assert.NoError(t, err)
+	result := client.Repository.Software.Delete(context.Background(), softwareitems.DeleteOptions{})
+	assert.NoError(t, result.Err)
 }

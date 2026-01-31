@@ -3,7 +3,11 @@ package softwareitems
 import (
 	"context"
 	"fmt"
+	"iter"
+	"log/slog"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
@@ -24,16 +28,20 @@ const FragmentSoftwareBinary = "c8y_SoftwareBinary"
 
 func NewService(s *core.Service) *Service {
 	return &Service{
-		Service:   *s,
-		inventory: managedobjects.NewService(s),
+		Service:        *s,
+		managedObjects: managedobjects.NewService(s),
 	}
 }
 
 // Service api to interact with software items
-// type Service core.Service
 type Service struct {
 	core.Service
-	inventory *managedobjects.Service
+	managedObjects *managedobjects.Service
+}
+
+// Create a software item
+func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Software] {
+	return core.ExecuteReturnResult(ctx, s.CreateB(body), jsonmodels.NewSoftware)
 }
 
 // ListOptions filter software
@@ -45,17 +53,17 @@ type ListOptions struct {
 	DeviceType string `url:"-"`
 
 	// Pagination options
-	pagination.PaginationOptions
+	CurrentPage int `url:"-"`
+	PageSize    int `url:"-"`
 }
 
 // List software
-func (s *Service) List(ctx context.Context, opt ListOptions) (*model.SoftwareCollection, error) {
-	return core.ExecuteResultOnly[model.SoftwareCollection](ctx, s.ListB(opt))
+func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Software] {
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, "", jsonmodels.NewSoftware)
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {
-	// inventoryQuery := model.InventoryQuery{}
-	return s.inventory.ListB(managedobjects.ListOptions{
+	return s.managedObjects.ListB(managedobjects.ListOptions{
 		Query: model.NewInventoryQuery().
 			AddOrderBy("name").
 			AddOrderBy("creationTime").
@@ -64,22 +72,297 @@ func (s *Service) ListB(opt ListOptions) *core.TryRequest {
 			AddFilterEqStr("softwareType", opt.SoftwareType).
 			AddFilterEqStr("c8y_Filter.type", opt.DeviceType).
 			Build(),
-		PaginationOptions: opt.PaginationOptions,
+		PaginationOptions: pagination.PaginationOptions{
+			CurrentPage: opt.CurrentPage,
+			PageSize:    opt.PageSize,
+		},
 	})
 }
 
-type GetOptions struct {
-	ID                string `url:"-"`
-	WithParents       bool   `url:"withParents,omitempty"`
-	WithChildren      bool   `url:"withChildren,omitempty"`
-	withChildrenCount bool   `url:"withChildrenCount,omitempty"`
-	SkipChildrenNames bool   `url:"skipChildrenNames,omitempty"`
+// SoftwareIterator provides iteration over software items
+type SoftwareIterator struct {
+	items iter.Seq[jsonmodels.Software]
+	err   error
 }
 
-// Create a software item
-func (s *Service) Create(ctx context.Context, body any) (*model.Software, error) {
-	return core.ExecuteResultOnly[model.Software](ctx, s.CreateB(body))
+func (it *SoftwareIterator) Items() iter.Seq[jsonmodels.Software] {
+	return it.items
 }
+
+func (it *SoftwareIterator) Err() error {
+	return it.err
+}
+
+func paginateSoftware(ctx context.Context, fetch func(page int) op.Result[jsonmodels.Software], maxItems int) *SoftwareIterator {
+	iterator := &SoftwareIterator{}
+
+	iterator.items = func(yield func(jsonmodels.Software) bool) {
+		page := 1
+		count := 0
+		for {
+			result := fetch(page)
+			if result.Err != nil {
+				iterator.err = result.Err
+				return
+			}
+			countBeforeResults := count
+			for doc := range result.Data.Iter() {
+				if maxItems > 0 && count >= maxItems {
+					return
+				}
+				item := jsonmodels.NewSoftware(doc.Bytes())
+				if !yield(item) {
+					return
+				}
+				count++
+			}
+			if countBeforeResults == count {
+				slog.Info("Stopping pagination as results array is empty")
+				return
+			}
+
+			totalPages, ok := result.Meta["totalPages"].(int64)
+			if ok && page >= int(totalPages) {
+				return
+			}
+			page++
+		}
+	}
+
+	return iterator
+}
+
+// ListAll returns an iterator for all software items
+func (s *Service) ListAll(ctx context.Context, opts ListOptions) *SoftwareIterator {
+	return paginateSoftware(ctx, func(page int) op.Result[jsonmodels.Software] {
+		opts.CurrentPage = page
+		opts.PageSize = 2000
+		return s.List(ctx, opts)
+	}, 0)
+}
+
+// ListLimit returns an iterator for up to maxItems software items
+func (s *Service) ListLimit(ctx context.Context, opts ListOptions, maxItems int) *SoftwareIterator {
+	return paginateSoftware(ctx, func(page int) op.Result[jsonmodels.Software] {
+		opts.CurrentPage = page
+		opts.PageSize = 2000
+		return s.List(ctx, opts)
+	}, maxItems)
+}
+
+type GetOptions struct {
+	// Lookup strategies (at least one required)
+	ID           string `url:"-"`
+	Name         string `url:"-"`
+	SoftwareType string `url:"-"` // Used with Name for more specific lookup
+
+	// Query options
+	WithParents       bool `url:"withParents,omitempty"`
+	WithChildren      bool `url:"withChildren,omitempty"`
+	withChildrenCount bool `url:"withChildrenCount,omitempty"`
+	SkipChildrenNames bool `url:"skipChildrenNames,omitempty"`
+}
+
+// UpdateOptions options for updating a software item
+type UpdateOptions struct {
+	// Lookup strategies (at least one required)
+	ID           string `url:"-"`
+	Name         string `url:"-"`
+	SoftwareType string `url:"-"` // Used with Name for more specific lookup
+}
+
+// DeleteOptions options to delete a software item
+type DeleteOptions struct {
+	// Lookup strategies (at least one required)
+	ID           string `url:"-"`
+	Name         string `url:"-"`
+	SoftwareType string `url:"-"` // Used with Name for more specific lookup
+
+	// Delete options
+	SkipCascade bool `url:"-"`
+}
+
+// resolveID resolves a software ID from various lookup strategies
+func (s *Service) resolveID(ctx context.Context, id, name, softwareType string) (string, op.Result[jsonmodels.Software]) {
+	// Direct ID provided
+	if id != "" {
+		return id, op.Result[jsonmodels.Software]{}
+	}
+
+	// Lookup by name (and optional softwareType)
+	if name != "" {
+		query := model.NewInventoryQuery().
+			AddFilterEqStr("type", FragmentSoftware).
+			AddFilterEqStr("name", name).
+			AddFilterEqStr("softwareType", softwareType).
+			Build()
+
+		listResult := s.managedObjects.List(ctx, managedobjects.ListOptions{
+			Query: query,
+			PaginationOptions: pagination.PaginationOptions{
+				PageSize: 1,
+			},
+		})
+
+		if listResult.Err != nil {
+			return "", op.Failed[jsonmodels.Software](
+				fmt.Errorf("failed to lookup software by name: %w", listResult.Err),
+				true,
+			)
+		}
+
+		// Check if any items were found
+		for item := range listResult.Data.Iter() {
+			found := jsonmodels.NewSoftware(item.Bytes())
+			return found.ID(), op.Result[jsonmodels.Software]{}
+		}
+
+		return "", op.Failed[jsonmodels.Software](
+			fmt.Errorf("software not found with name=%s, softwareType=%s", name, softwareType),
+			false,
+		)
+	}
+
+	// No lookup strategy provided
+	return "", op.Failed[jsonmodels.Software](
+		fmt.Errorf("no lookup strategy provided: must specify ID or Name"),
+		false,
+	)
+}
+
+// Get a software item
+func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.Software] {
+	id, resolveResult := s.resolveID(ctx, opt.ID, opt.Name, opt.SoftwareType)
+	if resolveResult.Err != nil {
+		return resolveResult
+	}
+
+	result := core.ExecuteReturnResult(ctx, s.GetB(id, opt), jsonmodels.NewSoftware)
+
+	// Add lookup metadata
+	if opt.ID != "" {
+		result.Meta["lookupMethod"] = "id"
+	} else if opt.Name != "" {
+		result.Meta["lookupMethod"] = "name"
+		result.Meta["lookupName"] = opt.Name
+		if opt.SoftwareType != "" {
+			result.Meta["lookupSoftwareType"] = opt.SoftwareType
+		}
+	}
+
+	return result
+}
+
+// Update a software item
+func (s *Service) Update(ctx context.Context, opt UpdateOptions, body any) op.Result[jsonmodels.Software] {
+	id, resolveResult := s.resolveID(ctx, opt.ID, opt.Name, opt.SoftwareType)
+	if resolveResult.Err != nil {
+		return resolveResult
+	}
+
+	result := core.ExecuteReturnResult(ctx, s.UpdateB(id, body), jsonmodels.NewSoftware)
+
+	// Add lookup metadata
+	if opt.ID != "" {
+		result.Meta["lookupMethod"] = "id"
+	} else if opt.Name != "" {
+		result.Meta["lookupMethod"] = "name"
+		result.Meta["lookupName"] = opt.Name
+	}
+
+	return result
+}
+
+// Delete a software item
+func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[jsonmodels.Software] {
+	id, resolveResult := s.resolveID(ctx, opt.ID, opt.Name, opt.SoftwareType)
+	if resolveResult.Err != nil {
+		return resolveResult
+	}
+
+	result := core.ExecuteReturnResult(ctx, s.DeleteB(id, opt), jsonmodels.NewSoftware)
+
+	// Add lookup metadata
+	if opt.ID != "" {
+		result.Meta["lookupMethod"] = "id"
+	} else if opt.Name != "" {
+		result.Meta["lookupMethod"] = "name"
+		result.Meta["lookupName"] = opt.Name
+	}
+
+	return result
+}
+
+// GetOrCreateByName searches by name and optional software type, creating if not found
+func (s *Service) GetOrCreateByName(ctx context.Context, name, softwareType string, body any) op.Result[jsonmodels.Software] {
+	query := model.NewInventoryQuery().
+		AddFilterEqStr("type", FragmentSoftware).
+		AddFilterEqStr("name", name).
+		AddFilterEqStr("softwareType", softwareType).
+		Build()
+	return s.getOrCreateWithQuery(ctx, body, query)
+}
+
+// GetOrCreateWith provides a generic query-based lookup
+// Example queries:
+//   - "name eq 'MySoftware' and softwareType eq 'application'"
+//   - "name eq 'MySoftware'"
+func (s *Service) GetOrCreateWith(ctx context.Context, body any, query string) op.Result[jsonmodels.Software] {
+	query_ := model.NewInventoryQuery().
+		AddFilterEqStr("type", FragmentSoftware).
+		AddFilterPart(query).
+		Build()
+	return s.getOrCreateWithQuery(ctx, body, query_)
+}
+
+// getOrCreateWithQuery is the internal implementation
+func (s *Service) getOrCreateWithQuery(ctx context.Context, body any, query string) op.Result[jsonmodels.Software] {
+	// Define finder function
+	finder := func(ctx context.Context) (op.Result[jsonmodels.Software], bool) {
+		searchOpts := ListOptions{}
+		searchOpts.PageSize = 1
+		// Build query with the search criteria
+		moResult := s.managedObjects.List(ctx, managedobjects.ListOptions{
+			Query: query,
+			PaginationOptions: pagination.PaginationOptions{
+				PageSize: 1,
+			},
+		})
+
+		if moResult.Err != nil {
+			return op.Result[jsonmodels.Software]{}, false
+		}
+
+		// Check if any items were found
+		for item := range moResult.Data.Iter() {
+			found := jsonmodels.NewSoftware(item.Bytes())
+			result := op.OK(found)
+			result.HTTPStatus = moResult.HTTPStatus
+			result.Meta["found"] = true
+			result.Meta["lookupMethod"] = "query"
+			result.Meta["query"] = query
+			return result, true
+		}
+
+		// Not found
+		return op.Result[jsonmodels.Software]{}, false
+	}
+
+	// Define creator function
+	creator := func(ctx context.Context) op.Result[jsonmodels.Software] {
+		createResult := s.Create(ctx, body)
+		if createResult.Err != nil {
+			return createResult
+		}
+		createResult.Meta["found"] = false
+		return createResult
+	}
+
+	// Execute get-or-create pattern
+	return op.GetOrCreateR(ctx, finder, creator)
+}
+
+// Builder methods for backwards compatibility and flexibility
 
 func (s *Service) CreateB(body any) *core.TryRequest {
 	req := s.Service.Client.R().
@@ -90,40 +373,14 @@ func (s *Service) CreateB(body any) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req)
 }
 
-type GetOrCreateOptions struct {
-	Software model.Software
-}
-
-func (s *Service) GetOrCreate(ctx context.Context, opt GetOrCreateOptions) (*model.Software, bool, error) {
-	return pagination.FindOrCreate[model.Software](
-		ctx,
-		s.ListB(ListOptions{
-			Name:         opt.Software.Name,
-			SoftwareType: opt.Software.SoftwareType,
-		}),
-		s.CreateB(opt.Software),
-		pagination.DefaultSearch(),
-	)
-}
-
-// Get a software item
-func (s *Service) Get(ctx context.Context, opt GetOptions) (*model.Software, error) {
-	return core.ExecuteResultOnly[model.Software](ctx, s.GetB(opt))
-}
-
-func (s *Service) GetB(opt GetOptions) *core.TryRequest {
+func (s *Service) GetB(ID string, opt GetOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamId, opt.ID).
+		SetPathParam(ParamId, ID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObject)
 	return core.NewTryRequest(s.Client, req)
-}
-
-// Update a software item
-func (s *Service) Update(ctx context.Context, ID string, body any) (*model.Software, error) {
-	return core.ExecuteResultOnly[model.Software](ctx, s.UpdateB(ID, body))
 }
 
 func (s *Service) UpdateB(ID string, body any) *core.TryRequest {
@@ -136,25 +393,10 @@ func (s *Service) UpdateB(ID string, body any) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req)
 }
 
-// DeleteOptions options to delete a software item
-type DeleteOptions struct {
-	ID string `url:"-"`
-
-	// When set to true all the hierarchy will be deleted without checking the type of managed object. It takes precedence over the parameter cascade
-	// ForceCascade *bool `url:"forceCascade,omitempty"`
-
-	SkipCascade bool `url:"-"`
-}
-
-// Delete a software item
-func (s *Service) Delete(ctx context.Context, opt DeleteOptions) error {
-	return core.ExecuteNoResult(ctx, s.DeleteB(opt))
-}
-
-func (s *Service) DeleteB(opt DeleteOptions) *core.TryRequest {
+func (s *Service) DeleteB(ID string, opt DeleteOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamId, opt.ID).
+		SetPathParam(ParamId, ID).
 		SetQueryParam("forceCascade", fmt.Sprintf("%v", !opt.SkipCascade)).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiManagedObject)
