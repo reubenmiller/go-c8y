@@ -143,10 +143,9 @@ func Test_TrustedCertifcates(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Revocation list
-	crl, err := client.TrustedCertificates.RevocationList.List(context.Background(), certificaterevocationlist.GetOptions{})
-	assert.NoError(t, err)
-	assert.NotNil(t, crl)
-	crlBinary, err := io.ReadAll(crl.Reader())
+	crl := client.TrustedCertificates.RevocationList.List(context.Background(), certificaterevocationlist.GetOptions{})
+	assert.NoError(t, crl.Err)
+	crlBinary, err := io.ReadAll(crl.Data.Reader())
 	assert.NoError(t, err)
 	assert.NotEmpty(t, crlBinary)
 

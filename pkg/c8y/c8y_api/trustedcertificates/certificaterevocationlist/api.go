@@ -3,6 +3,7 @@ package certificaterevocationlist
 import (
 	"context"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
@@ -28,7 +29,7 @@ type Service struct {
 type GetOptions struct{}
 
 // List the certificate revocation list
-func (s *Service) List(ctx context.Context, opt GetOptions) (*core.BinaryResponse, error) {
+func (s *Service) List(ctx context.Context, opt GetOptions) op.Result[core.BinaryResponse] {
 	return core.ExecuteBinaryResponse(ctx, s.GetB(opt))
 }
 

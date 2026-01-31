@@ -33,9 +33,8 @@ func Test_CreateBinary(t *testing.T) {
 	assert.NotEmpty(t, binary.Data.Name())
 
 	// TODO: Add special binary handling which will read the response based on the exit code
-	resp, err := client.Binaries.Get(context.Background(), "0")
-	assert.Error(t, err)
-	assert.Nil(t, resp)
+	resp := client.Binaries.Get(context.Background(), "0")
+	assert.Error(t, resp.Err)
 
 	sdkError := err.(*c8y_api.Error)
 	assert.Equal(t, sdkError.Code, 404)
@@ -43,18 +42,18 @@ func Test_CreateBinary(t *testing.T) {
 	assert.ErrorAs(t, c8y_api.ErrAPINotFound, err)
 
 	// Get but don't read the response
-	binaryFile, err := client.Binaries.Get(context.Background(), binary.Data.ID())
+	binaryFile := client.Binaries.Get(context.Background(), binary.Data.ID())
 	assert.NoError(t, err)
-	defer binaryFile.Close()
-	assert.NotEmpty(t, binaryFile.FileName())
-	assert.NotEmpty(t, binaryFile.URL())
-	assert.Greater(t, binaryFile.Size(), int64(0))
+	defer binaryFile.Data.Close()
+	assert.NotEmpty(t, binaryFile.Data.FileName())
+	assert.NotEmpty(t, binaryFile.Data.URL())
+	assert.Greater(t, binaryFile.Data.Size(), int64(0))
 
 	var buf bytes.Buffer
-	_, err = io.Copy(&buf, binaryFile.Reader())
+	_, err = io.Copy(&buf, binaryFile.Data.Reader())
 	assert.NoError(t, err)
 
 	assert.NoError(t, err)
-	assert.Equal(t, binaryFile.Response.StatusCode(), 200)
+	assert.Equal(t, binaryFile.Data.Response.StatusCode(), 200)
 	assert.Equal(t, buf.String(), "foo")
 }

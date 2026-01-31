@@ -22,7 +22,7 @@ func NewService(common *core.Service) *Service {
 }
 
 // Get an event binary
-func (s *Service) Get(ctx context.Context, eventID string) (*core.BinaryResponse, error) {
+func (s *Service) Get(ctx context.Context, eventID string) op.Result[core.BinaryResponse] {
 	return core.ExecuteBinaryResponse(ctx, s.GetB(eventID))
 }
 

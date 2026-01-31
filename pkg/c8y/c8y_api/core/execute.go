@@ -88,17 +88,28 @@ func ExecuteResponseOnly(ctx context.Context, req *TryRequest) (*resty.Response,
 }
 
 // Execute a request which expects a binary response which allows the user to read the body
-func ExecuteBinaryResponse(ctx context.Context, req *TryRequest) (*BinaryResponse, error) {
+func ExecuteBinaryResponse(ctx context.Context, req *TryRequest) op.Result[BinaryResponse] {
 	resp, err := coupleAPIErrors(req.Request.
 		SetContext(ctx).
 		SetDoNotParseResponse(true).
 		Send())
 
 	if err != nil {
-		return nil, err
+		return op.Failed[BinaryResponse](err, false)
 	}
 
-	return NewBinaryResponse(resp), nil
+	bin := NewBinaryResponse(resp)
+
+	if resp.StatusCode() == http.StatusCreated {
+		return op.Created(*bin)
+	}
+
+	if resp.StatusCode() == http.StatusOK {
+		if req.Request.Method == http.MethodPut {
+			return op.Updated(*bin)
+		}
+	}
+	return op.OK(*bin)
 }
 
 // Execute a request and return the typed response
