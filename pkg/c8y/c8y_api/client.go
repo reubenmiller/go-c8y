@@ -330,15 +330,15 @@ func (c *Client) Login(ctx context.Context) (token string, err error) {
 }
 
 func (c *Client) loginInternalSSO(ctx context.Context) (string, error) {
-	tok, err := c.LoginTokens.Create(ctx, logintokens.CreateTokenOptions{
+	tok := c.LoginTokens.Create(ctx, logintokens.CreateTokenOptions{
 		Username:  c.Auth.Username,
 		Password:  c.Auth.Password,
 		GrantType: logintokens.GrantTypePassword,
 	})
-	if err != nil {
-		return "", err
+	if tok.IsError() {
+		return "", tok.Err
 	}
-	return tok.AccessToken, nil
+	return tok.Data.AccessToken(), nil
 }
 
 func (c *Client) loginDeviceCertificate(ctx context.Context) (string, error) {
