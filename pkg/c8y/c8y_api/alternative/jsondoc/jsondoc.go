@@ -33,6 +33,10 @@ func (d JSONDoc) Exists(path string) bool {
 	return d.Get(path).Exists()
 }
 
+func (d JSONDoc) GetJSONDoc() JSONDoc {
+	return d
+}
+
 func (d JSONDoc) Length() int {
 	if len(d.raw) == 0 {
 		return 0
@@ -89,14 +93,75 @@ func Decode[T any](d JSONDoc) (*T, error) {
 	return &out, nil
 }
 
-func DecodeIter[T any](seq iter.Seq[JSONDoc]) iter.Seq[*T] {
+// DecodeIter transforms an iterator of types that embed JSONDoc by JSON unmarshaling to type T.
+// Items that fail to unmarshal are skipped.
+// Works with both iter.Seq[JSONDoc] and iter.Seq[jsonmodels.X] (any type embedding JSONDoc).
+// The input type is inferred from the iterator, you only need to specify the output type.
+// Example: jsondoc.DecodeIter[CustomModel](iterator.Items())
+// Example: jsondoc.DecodeIter[CustomModel](result.Data.Iter())
+func DecodeIter[T any, F Unwrapper](seq iter.Seq[F]) iter.Seq[*T] {
 	return func(yield func(*T) bool) {
 		for doc := range seq {
-			v, err := Decode[T](doc)
+			v, err := Decode[T](doc.GetJSONDoc())
 			if err != nil {
 				continue
 			}
 			if !yield(v) {
+				return
+			}
+		}
+	}
+}
+
+// DecodeIterErr transforms an iterator of types that embed JSONDoc by JSON unmarshaling to type T.
+// Unlike DecodeIter, this yields both the value and any decoding error, allowing callers to handle errors.
+// Works with both iter.Seq[JSONDoc] and iter.Seq[jsonmodels.X] (any type embedding JSONDoc).
+// The input type is inferred from the iterator, you only need to specify the output type.
+// Example: for item, err := range jsondoc.DecodeIterErr[CustomModel](iterator.Items()) { }
+func DecodeIterErr[T any, F Unwrapper](seq iter.Seq[F]) iter.Seq2[*T, error] {
+	return func(yield func(*T, error) bool) {
+		for doc := range seq {
+			v, err := Decode[T](doc.GetJSONDoc())
+			if !yield(v, err) {
+				return
+			}
+		}
+	}
+}
+
+// Unwrapper is a constraint for types that can provide access to their embedded JSONDoc.
+type Unwrapper interface {
+	GetJSONDoc() JSONDoc
+}
+
+// IterWith transforms an iterator of types that embed JSONDoc using a constructor function.
+// Works with both iter.Seq[JSONDoc] and iter.Seq[jsonmodels.X] (any type embedding JSONDoc).
+// Example: jsondoc.IterWith(result.Data.Iter(), jsonmodels.NewMicroservice)
+// Example: jsondoc.IterWith(iterator.Items(), customConstructor)
+func IterWith[F Unwrapper, T any](seq iter.Seq[F], constructor func([]byte) T) iter.Seq[T] {
+	return func(yield func(T) bool) {
+		for doc := range seq {
+			item := constructor(doc.GetJSONDoc().Bytes())
+			if !yield(item) {
+				return
+			}
+		}
+	}
+}
+
+// IterWithErr transforms an iterator of types that embed JSONDoc using a fallible constructor.
+// Items that fail to construct are skipped (similar to DecodeIter behavior).
+// Works with both iter.Seq[JSONDoc] and iter.Seq[jsonmodels.X] (any type embedding JSONDoc).
+// Example: jsondoc.IterWithErr(result.Data.Iter(), parseCustomModel)
+// Example: jsondoc.IterWithErr(iterator.Items(), parseCustomModel)
+func IterWithErr[F Unwrapper, T any](seq iter.Seq[F], constructor func([]byte) (T, error)) iter.Seq[T] {
+	return func(yield func(T) bool) {
+		for doc := range seq {
+			item, err := constructor(doc.GetJSONDoc().Bytes())
+			if err != nil {
+				continue // Skip items that fail to construct
+			}
+			if !yield(item) {
 				return
 			}
 		}
@@ -134,4 +199,9 @@ func IterToChan[T any](seq iter.Seq[T]) <-chan T {
 
 type Facade struct {
 	JSONDoc
+}
+
+// GetJSONDoc returns the embedded JSONDoc. This allows Facade types to satisfy the Unwrapper interface.
+func (f Facade) GetJSONDoc() JSONDoc {
+	return f.JSONDoc
 }

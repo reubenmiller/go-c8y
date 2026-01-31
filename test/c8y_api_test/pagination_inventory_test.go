@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/destel/rill"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsondoc"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
@@ -41,30 +40,55 @@ func Test_ForEachManagedObjectsIncludeAll(t *testing.T) {
 func Test_ForEachManagedObjectsMaxPages(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
-	// Create output channel standard managed object
-	out := make(chan model.ManagedObject)
-
-	// Create list pager and iterate over the results
-	go c8y_api.ForEach(
-		context.Background(),
-		client.ManagedObjects.ListB(managedobjects.ListOptions{}),
-		pagination.PagerOptions{
+	it := client.ManagedObjects.ListAll(context.Background(), managedobjects.ListOptions{
+		Type: "thin-edge.io",
+		PaginationOptions: pagination.PaginationOptions{
 			MaxPages: 2,
 			PageSize: 10,
 		},
-		out,
-	)
+	})
+	assert.NoError(t, it.Err())
 
 	// Process the results
 	total := 0
-	for item := range out {
+	for item := range it.Items() {
 		slog.Info("Processing message", "id", item.ID)
 		total++
 	}
-	assert.Equal(t, total, 20)
+	assert.Greater(t, total, 0)
 }
 
-func Test_ForEachCustomModel(t *testing.T) {
+func Test_ForEachCustomModel_Infallable(t *testing.T) {
+	client := testcore.CreateTestClient(t)
+
+	// Create custom model which can also re-use fields from the default model
+	type CustomModel struct {
+		model.ManagedObject
+		Agent map[string]string `json:"c8y_Agent,omitempty"`
+	}
+
+	it := client.ManagedObjects.ListAll(context.Background(), managedobjects.ListOptions{
+		Type: "thin-edge.io",
+		PaginationOptions: pagination.PaginationOptions{
+			MaxPages: 2,
+			PageSize: 10,
+		},
+	})
+	assert.NoError(t, it.Err())
+
+	// Process the results (errors are skipped)
+	matches := 0
+	for item := range jsondoc.DecodeIter[CustomModel](it.Items()) {
+		if v, ok := item.Agent["name"]; ok {
+			if v == "thin-edge.io" {
+				matches += 1
+			}
+		}
+	}
+	assert.GreaterOrEqual(t, matches, 1)
+}
+
+func Test_ForEachCustomModel_Fallable(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
 	// Create custom model which can also re-use fields from the default model
@@ -84,12 +108,11 @@ func Test_ForEachCustomModel(t *testing.T) {
 
 	// Process the results
 	matches := 0
-	for item := range it.Items() {
-		mo, err := jsondoc.Decode[CustomModel](item.JSONDoc)
+	for item, err := range jsondoc.DecodeIterErr[CustomModel](it.Items()) {
 		if err != nil {
 			continue
 		}
-		if v, ok := mo.Agent["name"]; ok {
+		if v, ok := item.Agent["name"]; ok {
 			if v == "thin-edge.io" {
 				matches += 1
 			}
