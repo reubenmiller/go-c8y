@@ -143,55 +143,6 @@ func ExecuteResultMap[k string, T any](ctx context.Context, req *TryRequest) (ma
 	return result, nil
 }
 
-func ExecuteResultsArrayOnly[T any](ctx context.Context, req *TryRequest) ([]T, error) {
-	result := make([]T, 0)
-	req.SetDefaultAcceptHeader()
-	_, err := coupleAPIErrors(req.Request.
-		SetContext(ctx).
-		SetResult(&result).
-		Send())
-
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
-}
-
-func ExecuteUpsertResultOnly[T any](ctx context.Context, create *TryRequest, update *TryRequest) (*T, error) {
-	result, err := ExecuteResultOnly[T](ctx, create)
-	if err == nil {
-		return result, nil
-	}
-
-	if !ErrHasStatus(err, http.StatusConflict) {
-		return result, err
-	}
-	return ExecuteResultOnly[T](ctx, update)
-}
-
-// Execute a request and return the response as text
-func ExecuteResultText(ctx context.Context, req *TryRequest) (string, error) {
-	resp, err := coupleAPIErrors(req.Request.
-		SetContext(ctx).
-		Send())
-
-	if err != nil {
-		return "", err
-	}
-	return resp.String(), nil
-}
-
-func ExecuteResultBytes(ctx context.Context, req *TryRequest) ([]byte, error) {
-	resp, err := coupleAPIErrors(req.Request.
-		SetContext(ctx).
-		Send())
-
-	if err != nil {
-		return nil, err
-	}
-	return resp.Bytes(), nil
-}
-
 // Execute a request that doesn't any result only if there was an error or not
 func ExecuteNoResult(ctx context.Context, req *TryRequest) error {
 	_, err := coupleAPIErrors(req.Request.
