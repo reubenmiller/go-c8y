@@ -4,6 +4,8 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsondoc"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"resty.dev/v3"
 )
 
@@ -20,6 +22,52 @@ func Execute[T any](ctx context.Context, req *TryRequest) (*T, *resty.Response, 
 	}
 
 	return result, resp, nil
+}
+
+func ExecuteReturnResult[T any](ctx context.Context, req *TryRequest, fromBytes func([]byte) T) op.Result[T] {
+	resp, err := ExecuteResponseOnly(ctx, req)
+	if err != nil {
+		return op.Failed[T](err, true)
+	}
+	return op.NewCreated(fromBytes(resp.Bytes()))
+}
+
+// ExecuteReturnCollection extracts an array from a collection response and puts metadata in Result.Meta
+// arrayPath is the JSON path to the array (e.g., "managedObjects")
+// metaPath is the JSON path to pagination metadata (e.g., "statistics")
+func ExecuteReturnCollection[T any](ctx context.Context, req *TryRequest, arrayPath, metaPath string, fromBytes func([]byte) T) op.Result[T] {
+	resp, err := ExecuteResponseOnly(ctx, req)
+	if err != nil {
+		return op.Failed[T](err, true)
+	}
+
+	// TODO: how to do this more efficiently
+	doc := jsondoc.New(resp.Bytes())
+
+	// Extract the array as the main data
+	arrayResult := doc.Get(arrayPath)
+
+	// Extract metadata
+	result := op.NewOK(fromBytes([]byte(arrayResult.Raw)))
+	if metaPath != "" {
+		stats := doc.Get(metaPath)
+		if stats.Exists() {
+			result.Meta["currentPage"] = stats.Get("currentPage").Int()
+			result.Meta["pageSize"] = stats.Get("pageSize").Int()
+			if totalPages := stats.Get("totalPages"); totalPages.Exists() {
+				result.Meta["totalPages"] = totalPages.Int()
+			}
+		}
+	}
+	// Pagination info
+	result.Meta["next"] = doc.Get("next").String()
+	result.Meta["self"] = doc.Get("self").String()
+	result.Meta["prev"] = doc.Get("prev").String()
+
+	result.HTTPStatus = resp.StatusCode()
+	result.RequestID = resp.Header().Get("X-Request-ID")
+
+	return result
 }
 
 // Execute a request and return the typed response
