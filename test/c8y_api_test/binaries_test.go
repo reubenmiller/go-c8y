@@ -32,14 +32,14 @@ func Test_CreateBinary(t *testing.T) {
 	assert.NoError(t, binary.Err)
 	assert.NotEmpty(t, binary.Data.Name())
 
-	// TODO: Add special binary handling which will read the response based on the exit code
+	// TODO: Add special binary handling which will read the response based on the status code
 	resp := client.Binaries.Get(context.Background(), "0")
 	assert.Error(t, resp.Err)
 
-	sdkError := err.(*c8y_api.Error)
+	sdkError := resp.Err.(*c8y_api.Error)
 	assert.Equal(t, sdkError.Code, 404)
 
-	assert.ErrorAs(t, c8y_api.ErrAPINotFound, err)
+	assert.ErrorAs(t, c8y_api.ErrAPINotFound, resp.Err)
 
 	// Get but don't read the response
 	binaryFile := client.Binaries.Get(context.Background(), binary.Data.ID())
