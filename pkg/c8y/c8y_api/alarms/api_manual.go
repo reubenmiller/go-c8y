@@ -3,6 +3,7 @@ package alarms
 import (
 	"context"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"github.com/tidwall/gjson"
@@ -10,12 +11,10 @@ import (
 )
 
 // Count the total number of active alarms on your tenant
-func (s *Service) Count(ctx context.Context, opt ListOptions) (int64, error) {
-	count, err := core.ExecuteResultText(ctx, s.CountB(opt))
-	if count == "" {
-		return 0, err
-	}
-	return gjson.Parse(count).Int(), err
+func (s *Service) Count(ctx context.Context, opt ListOptions) op.Result[int64] {
+	return core.ExecuteReturnResult(ctx, s.CountB(opt), func(b []byte) int64 {
+		return gjson.ParseBytes(b).Int()
+	})
 }
 
 func (s *Service) CountB(opt ListOptions) *core.TryRequest {

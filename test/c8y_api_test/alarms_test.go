@@ -12,7 +12,7 @@ import (
 func Test_AlarmCount(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	client.Client.SetDebug(true)
-	count, err := client.Alarms.Count(context.Background(), alarms.ListOptions{})
-	assert.NoError(t, err)
-	assert.Greater(t, count, int64(0))
+	count := client.Alarms.Count(context.Background(), alarms.ListOptions{})
+	assert.NoError(t, count.Err)
+	assert.Greater(t, count.Data, int64(0))
 }
