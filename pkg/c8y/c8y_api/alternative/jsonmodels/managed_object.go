@@ -1,6 +1,7 @@
 package jsonmodels
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsondoc"
@@ -12,6 +13,19 @@ type ManagedObject struct {
 
 func NewManagedObject(b []byte) ManagedObject {
 	return ManagedObject{jsondoc.Facade{JSONDoc: jsondoc.New(b)}}
+}
+
+func NewManagedObjectWithOptions(name, deviceType string) ManagedObject {
+	data := map[string]any{}
+	if name != "" {
+		data["name"] = name
+	}
+	if deviceType != "" {
+		data["type"] = deviceType
+	}
+	b, _ := json.Marshal(data)
+	return ManagedObject{jsondoc.Facade{JSONDoc: jsondoc.New(b)}}
+
 }
 
 func (m ManagedObject) ID() string {

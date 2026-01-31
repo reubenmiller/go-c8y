@@ -62,38 +62,43 @@ func (s *Service) GetOrCreateWith(ctx context.Context, body map[string]any, quer
 
 // getOrCreateWithQuery is the internal implementation
 func (s *Service) getOrCreateWithQuery(ctx context.Context, body map[string]any, query string) op.Result[jsonmodels.ManagedObject] {
-	searchOpts := ListOptions{}
-	searchOpts.PaginationOptions.PageSize = 1
-	searchOpts.Query = query
+	// Define finder function
+	finder := func(ctx context.Context) (op.Result[jsonmodels.ManagedObject], bool) {
+		searchOpts := ListOptions{}
+		searchOpts.PaginationOptions.PageSize = 1
+		searchOpts.Query = query
 
-	listResult := s.List2(ctx, searchOpts)
-	if listResult.Err != nil {
-		return op.NewFailed[jsonmodels.ManagedObject](listResult.Err, true)
+		listResult := s.List2(ctx, searchOpts)
+		if listResult.Err != nil {
+			return listResult, false
+		}
+
+		// Check if any items were found
+		for item := range listResult.Data.Iter() {
+			found := jsonmodels.NewManagedObject(item.Bytes())
+			result := op.NewOK(found)
+			result.HTTPStatus = listResult.HTTPStatus
+			result.RequestID = listResult.RequestID
+			result.Meta["query"] = query
+			return result, true
+		}
+
+		return op.Result[jsonmodels.ManagedObject]{}, false
 	}
 
-	// Check if any items were found
-	for item := range listResult.Data.Iter() {
-		found := jsonmodels.NewManagedObject(item.Bytes())
-		result := op.NewOK(found)
-		result.HTTPStatus = listResult.HTTPStatus
-		result.RequestID = listResult.RequestID
-		result.Meta["found"] = true
+	// Define creator function
+	creator := func(ctx context.Context) op.Result[jsonmodels.ManagedObject] {
+		createResult := s.Create2(ctx, body)
+		result := op.NewCreated(createResult.Data)
+		result.Err = createResult.Err
+		result.HTTPStatus = createResult.HTTPStatus
+		result.RequestID = createResult.RequestID
 		result.Meta["query"] = query
 		return result
 	}
 
-	// Not found, create it
-	createResult := s.Create2(ctx, body)
-	if createResult.Err != nil {
-		return createResult
-	}
-
-	result := op.NewCreated(createResult.Data)
-	result.HTTPStatus = createResult.HTTPStatus
-	result.RequestID = createResult.RequestID
-	result.Meta["found"] = false
-	result.Meta["query"] = query
-	return result
+	// Execute get-or-create pattern (automatically sets Meta["found"])
+	return op.GetOrCreateR(ctx, finder, creator)
 }
 
 func (s *Service) List2(ctx context.Context, opt ListOptions) op.Result[jsonmodels.ManagedObject] {

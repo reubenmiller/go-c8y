@@ -199,6 +199,34 @@ func isRetryableError(err error) bool {
 	return false
 }
 
+// GetOrCreateR is a Result-based get-or-create pattern
+// finder returns (result, found) - if found is true, returns the result
+// creator is only called if finder returns found=false
+// Automatically sets Meta["found"] to indicate if resource was found or created
+func GetOrCreateR[T any](
+	ctx context.Context,
+	finder func(context.Context) (Result[T], bool),
+	creator func(context.Context) Result[T],
+) Result[T] {
+	// Try to find existing resource
+	result, found := finder(ctx)
+	if found {
+		if result.Meta == nil {
+			result.Meta = make(map[string]any)
+		}
+		result.Meta["found"] = true
+		return result
+	}
+
+	// Not found, create it
+	createResult := creator(ctx)
+	if createResult.Meta == nil {
+		createResult.Meta = make(map[string]any)
+	}
+	createResult.Meta["found"] = false
+	return createResult
+}
+
 // contains checks if a string contains a substring
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && (s[:len(substr)] == substr || s[len(s)-len(substr):] == substr || findInString(s, substr)))
