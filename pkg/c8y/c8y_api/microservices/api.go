@@ -97,12 +97,12 @@ func (it *MicroserviceIterator) Err() error {
 	return it.err
 }
 
-func paginateMicroservices(ctx context.Context, fetch func(page int) op.Result[jsonmodels.Microservice], maxItems int) *MicroserviceIterator {
+func paginateMicroservices(ctx context.Context, fetch func(page int) op.Result[jsonmodels.Microservice], maxItems int64) *MicroserviceIterator {
 	iterator := &MicroserviceIterator{}
 
 	iterator.items = func(yield func(jsonmodels.Microservice) bool) {
 		page := 1
-		count := 0
+		count := int64(0)
 		for {
 			result := fetch(page)
 			if result.Err != nil {
@@ -137,7 +137,8 @@ func paginateMicroservices(ctx context.Context, fetch func(page int) op.Result[j
 }
 
 func (s *Service) FindFirst(ctx context.Context, opt ListOptions) (op.Result[jsonmodels.Microservice], bool) {
-	iterator := s.ListLimit(ctx, opt, 1)
+	opt.MaxItems = 1
+	iterator := s.ListAll(ctx, opt)
 	if iterator.Err() != nil {
 		return op.Failed[jsonmodels.Microservice](iterator.Err(), false), false
 	}
@@ -151,20 +152,13 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 
 // ListAll returns an iterator for all microservices
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *MicroserviceIterator {
+	if opts.PageSize == 0 {
+		opts.PageSize = 2000
+	}
 	return paginateMicroservices(ctx, func(page int) op.Result[jsonmodels.Microservice] {
 		opts.CurrentPage = page
-		opts.PageSize = 2000
 		return s.List(ctx, opts)
-	}, 0)
-}
-
-// ListLimit returns an iterator for up to maxItems microservices
-func (s *Service) ListLimit(ctx context.Context, opts ListOptions, maxItems int) *MicroserviceIterator {
-	return paginateMicroservices(ctx, func(page int) op.Result[jsonmodels.Microservice] {
-		opts.CurrentPage = page
-		opts.PageSize = 2000
-		return s.List(ctx, opts)
-	}, maxItems)
+	}, opts.GetMaxItems())
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {

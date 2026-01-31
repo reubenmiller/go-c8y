@@ -58,12 +58,12 @@ func (it *MeasurementIterator) Err() error {
 	return it.err
 }
 
-func paginateMeasurements(ctx context.Context, fetch func(page int) op.Result[jsonmodels.Measurement], maxItems int) *MeasurementIterator {
+func paginateMeasurements(ctx context.Context, fetch func(page int) op.Result[jsonmodels.Measurement], maxItems int64) *MeasurementIterator {
 	iterator := &MeasurementIterator{}
 
 	iterator.items = func(yield func(jsonmodels.Measurement) bool) {
 		page := 1
-		count := 0
+		count := int64(0)
 		for {
 			result := fetch(page)
 			if result.Err != nil {
@@ -104,20 +104,13 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 
 // ListAll returns an iterator for all measurements
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *MeasurementIterator {
+	if opts.PageSize == 0 {
+		opts.PageSize = 2000
+	}
 	return paginateMeasurements(ctx, func(page int) op.Result[jsonmodels.Measurement] {
 		opts.CurrentPage = page
-		opts.PageSize = 2000
 		return s.List(ctx, opts)
-	}, 0)
-}
-
-// ListLimit returns an iterator for up to maxItems measurements
-func (s *Service) ListLimit(ctx context.Context, opts ListOptions, maxItems int) *MeasurementIterator {
-	return paginateMeasurements(ctx, func(page int) op.Result[jsonmodels.Measurement] {
-		opts.CurrentPage = page
-		opts.PageSize = 2000
-		return s.List(ctx, opts)
-	}, maxItems)
+	}, opts.GetMaxItems())
 }
 
 func (s *Service) ListB(opt any) *core.TryRequest {

@@ -2,6 +2,8 @@ package auditrecords
 
 import (
 	"context"
+	"iter"
+	"log/slog"
 	"time"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
@@ -49,9 +51,73 @@ type ListOptions struct {
 	pagination.PaginationOptions
 }
 
+// AuditRecordIterator provides iteration over audit records
+type AuditRecordIterator struct {
+	items iter.Seq[jsonmodels.AuditRecord]
+	err   error
+}
+
+func (it *AuditRecordIterator) Items() iter.Seq[jsonmodels.AuditRecord] {
+	return it.items
+}
+
+func (it *AuditRecordIterator) Err() error {
+	return it.err
+}
+
+func paginateAuditRecords(ctx context.Context, fetch func(page int) op.Result[jsonmodels.AuditRecord], maxItems int64) *AuditRecordIterator {
+	iterator := &AuditRecordIterator{}
+
+	iterator.items = func(yield func(jsonmodels.AuditRecord) bool) {
+		page := 1
+		count := int64(0)
+		for {
+			result := fetch(page)
+			if result.Err != nil {
+				iterator.err = result.Err
+				return
+			}
+			countBeforeResults := count
+			for doc := range result.Data.Iter() {
+				if maxItems > 0 && count >= maxItems {
+					return
+				}
+				item := jsonmodels.NewAuditRecord(doc.Bytes())
+				if !yield(item) {
+					return
+				}
+				count++
+			}
+			if countBeforeResults == count {
+				slog.Info("Stopping pagination as results array is empty")
+				return
+			}
+
+			totalPages, ok := result.Meta["totalPages"].(int64)
+			if ok && page >= int(totalPages) {
+				return
+			}
+			page++
+		}
+	}
+
+	return iterator
+}
+
 // List the audit records
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.AuditRecord] {
 	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewAuditRecord)
+}
+
+// ListAll returns an iterator for all audit records
+func (s *Service) ListAll(ctx context.Context, opts ListOptions) *AuditRecordIterator {
+	if opts.PageSize == 0 {
+		opts.PageSize = 2000
+	}
+	return paginateAuditRecords(ctx, func(page int) op.Result[jsonmodels.AuditRecord] {
+		opts.CurrentPage = page
+		return s.List(ctx, opts)
+	}, opts.GetMaxItems())
 }
 
 func (s *Service) ListB(opt any) *core.TryRequest {

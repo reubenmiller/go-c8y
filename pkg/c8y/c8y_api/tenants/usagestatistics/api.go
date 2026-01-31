@@ -2,6 +2,8 @@ package usagestatistics
 
 import (
 	"context"
+	"iter"
+	"log/slog"
 	"time"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
@@ -38,9 +40,73 @@ type ListOptions struct {
 	pagination.PaginationOptions
 }
 
+// TenantUsageStatisticsIterator provides iteration over tenant usage statistics
+type TenantUsageStatisticsIterator struct {
+	items iter.Seq[jsonmodels.TenantUsageStatistics]
+	err   error
+}
+
+func (it *TenantUsageStatisticsIterator) Items() iter.Seq[jsonmodels.TenantUsageStatistics] {
+	return it.items
+}
+
+func (it *TenantUsageStatisticsIterator) Err() error {
+	return it.err
+}
+
+func paginateTenantUsageStatistics(ctx context.Context, fetch func(page int) op.Result[jsonmodels.TenantUsageStatistics], maxItems int64) *TenantUsageStatisticsIterator {
+	iterator := &TenantUsageStatisticsIterator{}
+
+	iterator.items = func(yield func(jsonmodels.TenantUsageStatistics) bool) {
+		page := 1
+		count := int64(0)
+		for {
+			result := fetch(page)
+			if result.Err != nil {
+				iterator.err = result.Err
+				return
+			}
+			countBeforeResults := count
+			for doc := range result.Data.Iter() {
+				if maxItems > 0 && count >= maxItems {
+					return
+				}
+				item := jsonmodels.NewTenantUsageStatistics(doc.Bytes())
+				if !yield(item) {
+					return
+				}
+				count++
+			}
+			if countBeforeResults == count {
+				slog.Info("Stopping pagination as results array is empty")
+				return
+			}
+
+			totalPages, ok := result.Meta["totalPages"].(int64)
+			if ok && page >= int(totalPages) {
+				return
+			}
+			page++
+		}
+	}
+
+	return iterator
+}
+
 // List tenant statistics
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.TenantUsageStatistics] {
 	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTenantUsageStatistics)
+}
+
+// ListAll returns an iterator for all tenant usage statistics
+func (s *Service) ListAll(ctx context.Context, opts ListOptions) *TenantUsageStatisticsIterator {
+	if opts.PageSize == 0 {
+		opts.PageSize = 2000
+	}
+	return paginateTenantUsageStatistics(ctx, func(page int) op.Result[jsonmodels.TenantUsageStatistics] {
+		opts.CurrentPage = page
+		return s.List(ctx, opts)
+	}, opts.GetMaxItems())
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {

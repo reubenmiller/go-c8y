@@ -2,6 +2,8 @@ package usagestatistics
 
 import (
 	"context"
+	"iter"
+	"log/slog"
 	"time"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
@@ -38,9 +40,73 @@ type ListOptions struct {
 	pagination.PaginationOptions
 }
 
+// UsageStatisticsFileIterator provides iteration over usage statistics files
+type UsageStatisticsFileIterator struct {
+	items iter.Seq[jsonmodels.UsageStatisticsFile]
+	err   error
+}
+
+func (it *UsageStatisticsFileIterator) Items() iter.Seq[jsonmodels.UsageStatisticsFile] {
+	return it.items
+}
+
+func (it *UsageStatisticsFileIterator) Err() error {
+	return it.err
+}
+
+func paginateUsageStatisticsFiles(ctx context.Context, fetch func(page int) op.Result[jsonmodels.UsageStatisticsFile], maxItems int64) *UsageStatisticsFileIterator {
+	iterator := &UsageStatisticsFileIterator{}
+
+	iterator.items = func(yield func(jsonmodels.UsageStatisticsFile) bool) {
+		page := 1
+		count := int64(0)
+		for {
+			result := fetch(page)
+			if result.Err != nil {
+				iterator.err = result.Err
+				return
+			}
+			countBeforeResults := count
+			for doc := range result.Data.Iter() {
+				if maxItems > 0 && count >= maxItems {
+					return
+				}
+				item := jsonmodels.NewUsageStatisticsFile(doc.Bytes())
+				if !yield(item) {
+					return
+				}
+				count++
+			}
+			if countBeforeResults == count {
+				slog.Info("Stopping pagination as results array is empty")
+				return
+			}
+
+			totalPages, ok := result.Meta["totalPages"].(int64)
+			if ok && page >= int(totalPages) {
+				return
+			}
+			page++
+		}
+	}
+
+	return iterator
+}
+
 // List usage statistics summary files report metadata
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.UsageStatisticsFile] {
 	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewUsageStatisticsFile)
+}
+
+// ListAll returns an iterator for all usage statistics files
+func (s *Service) ListAll(ctx context.Context, opts ListOptions) *UsageStatisticsFileIterator {
+	if opts.PageSize == 0 {
+		opts.PageSize = 2000
+	}
+	return paginateUsageStatisticsFiles(ctx, func(page int) op.Result[jsonmodels.UsageStatisticsFile] {
+		opts.CurrentPage = page
+		return s.List(ctx, opts)
+	}, opts.GetMaxItems())
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {

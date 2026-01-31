@@ -95,12 +95,12 @@ func (it *AlarmIterator) Err() error {
 	return it.err
 }
 
-func paginateAlarms(ctx context.Context, fetch func(page int) op.Result[jsonmodels.Alarm], maxItems int) *AlarmIterator {
+func paginateAlarms(ctx context.Context, fetch func(page int) op.Result[jsonmodels.Alarm], maxItems int64) *AlarmIterator {
 	iterator := &AlarmIterator{}
 
 	iterator.items = func(yield func(jsonmodels.Alarm) bool) {
 		page := 1
-		count := 0
+		count := int64(0)
 		for {
 			result := fetch(page)
 			if result.Err != nil {
@@ -141,20 +141,13 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 
 // ListAll returns an iterator for all alarms
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *AlarmIterator {
+	if opts.PageSize == 0 {
+		opts.PageSize = 2000
+	}
 	return paginateAlarms(ctx, func(page int) op.Result[jsonmodels.Alarm] {
 		opts.CurrentPage = page
-		opts.PageSize = 2000
 		return s.List(ctx, opts)
-	}, 0)
-}
-
-// ListLimit returns an iterator for up to maxItems alarms
-func (s *Service) ListLimit(ctx context.Context, opts ListOptions, maxItems int) *AlarmIterator {
-	return paginateAlarms(ctx, func(page int) op.Result[jsonmodels.Alarm] {
-		opts.CurrentPage = page
-		opts.PageSize = 2000
-		return s.List(ctx, opts)
-	}, maxItems)
+	}, opts.GetMaxItems())
 }
 
 func (s *Service) ListB(opt any) *core.TryRequest {

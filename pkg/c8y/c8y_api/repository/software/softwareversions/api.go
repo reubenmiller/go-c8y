@@ -56,8 +56,7 @@ type ListOptions struct {
 	Version      string `url:"-"`
 
 	// Pagination options
-	CurrentPage int `url:"-"`
-	PageSize    int `url:"-"`
+	pagination.PaginationOptions
 }
 
 // List software versions
@@ -109,12 +108,12 @@ func (it *SoftwareVersionIterator) Err() error {
 	return it.err
 }
 
-func paginateSoftwareVersions(ctx context.Context, fetch func(page int) op.Result[jsonmodels.SoftwareVersion], maxItems int) *SoftwareVersionIterator {
+func paginateSoftwareVersions(ctx context.Context, fetch func(page int) op.Result[jsonmodels.SoftwareVersion], maxItems int64) *SoftwareVersionIterator {
 	iterator := &SoftwareVersionIterator{}
 
 	iterator.items = func(yield func(jsonmodels.SoftwareVersion) bool) {
 		page := 1
-		count := 0
+		count := int64(0)
 		for {
 			result := fetch(page)
 			if result.Err != nil {
@@ -150,20 +149,13 @@ func paginateSoftwareVersions(ctx context.Context, fetch func(page int) op.Resul
 
 // ListAll returns an iterator for all software versions
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *SoftwareVersionIterator {
+	if opts.PageSize == 0 {
+		opts.PageSize = 2000
+	}
 	return paginateSoftwareVersions(ctx, func(page int) op.Result[jsonmodels.SoftwareVersion] {
 		opts.CurrentPage = page
-		opts.PageSize = 2000
 		return s.List(ctx, opts)
-	}, 0)
-}
-
-// ListLimit returns an iterator for up to maxItems software versions
-func (s *Service) ListLimit(ctx context.Context, opts ListOptions, maxItems int) *SoftwareVersionIterator {
-	return paginateSoftwareVersions(ctx, func(page int) op.Result[jsonmodels.SoftwareVersion] {
-		opts.CurrentPage = page
-		opts.PageSize = 2000
-		return s.List(ctx, opts)
-	}, maxItems)
+	}, opts.GetMaxItems())
 }
 
 type GetOptions struct {
@@ -241,7 +233,9 @@ func (s *Service) resolveID(ctx context.Context, id, version, softwareID, softwa
 		listResult := s.List(ctx, ListOptions{
 			SoftwareID: resolvedSoftwareID,
 			Version:    version,
-			PageSize:   1,
+			PaginationOptions: pagination.PaginationOptions{
+				PageSize: 1,
+			},
 		})
 
 		if listResult.Err != nil {
@@ -424,7 +418,9 @@ func (s *Service) GetOrCreateVersion(ctx context.Context, opt CreateOptions) op.
 		listResult := s.List(ctx, ListOptions{
 			SoftwareID: softwareID,
 			Version:    opt.Version,
-			PageSize:   1,
+			PaginationOptions: pagination.PaginationOptions{
+				PageSize: 1,
+			},
 		})
 
 		if listResult.Err != nil {

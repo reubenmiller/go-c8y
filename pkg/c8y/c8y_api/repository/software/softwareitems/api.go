@@ -53,8 +53,7 @@ type ListOptions struct {
 	DeviceType string `url:"-"`
 
 	// Pagination options
-	CurrentPage int `url:"-"`
-	PageSize    int `url:"-"`
+	pagination.PaginationOptions
 }
 
 // List software
@@ -93,12 +92,12 @@ func (it *SoftwareIterator) Err() error {
 	return it.err
 }
 
-func paginateSoftware(ctx context.Context, fetch func(page int) op.Result[jsonmodels.Software], maxItems int) *SoftwareIterator {
+func paginateSoftware(ctx context.Context, fetch func(page int) op.Result[jsonmodels.Software], maxItems int64) *SoftwareIterator {
 	iterator := &SoftwareIterator{}
 
 	iterator.items = func(yield func(jsonmodels.Software) bool) {
 		page := 1
-		count := 0
+		count := int64(0)
 		for {
 			result := fetch(page)
 			if result.Err != nil {
@@ -134,20 +133,13 @@ func paginateSoftware(ctx context.Context, fetch func(page int) op.Result[jsonmo
 
 // ListAll returns an iterator for all software items
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *SoftwareIterator {
+	if opts.PageSize == 0 {
+		opts.PageSize = 2000
+	}
 	return paginateSoftware(ctx, func(page int) op.Result[jsonmodels.Software] {
 		opts.CurrentPage = page
-		opts.PageSize = 2000
 		return s.List(ctx, opts)
-	}, 0)
-}
-
-// ListLimit returns an iterator for up to maxItems software items
-func (s *Service) ListLimit(ctx context.Context, opts ListOptions, maxItems int) *SoftwareIterator {
-	return paginateSoftware(ctx, func(page int) op.Result[jsonmodels.Software] {
-		opts.CurrentPage = page
-		opts.PageSize = 2000
-		return s.List(ctx, opts)
-	}, maxItems)
+	}, opts.GetMaxItems())
 }
 
 type GetOptions struct {

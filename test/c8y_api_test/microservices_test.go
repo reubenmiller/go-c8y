@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/microservices"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/tools/microservice_builder"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
@@ -25,9 +26,14 @@ func Test_MicroserviceListAll(t *testing.T) {
 	assert.Greater(t, total, 0)
 }
 
-func Test_MicroserviceListLimit(t *testing.T) {
+func Test_MicroserviceListAll_WithLimit(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	items := client.Microservices.ListLimit(context.Background(), microservices.ListOptions{}, 10)
+	items := client.Microservices.ListAll(context.Background(), microservices.ListOptions{
+		PaginationOptions: pagination.PaginationOptions{
+			MaxItems: 10,
+			PageSize: 10,
+		},
+	})
 	assert.NoError(t, items.Err())
 	total := 0
 	for item := range items.Items() {

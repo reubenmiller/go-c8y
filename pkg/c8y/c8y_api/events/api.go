@@ -111,12 +111,12 @@ func (it *EventIterator) Err() error {
 	return it.err
 }
 
-func paginateEvents(ctx context.Context, fetch func(page int) op.Result[jsonmodels.Event], maxItems int) *EventIterator {
+func paginateEvents(ctx context.Context, fetch func(page int) op.Result[jsonmodels.Event], maxItems int64) *EventIterator {
 	iterator := &EventIterator{}
 
 	iterator.items = func(yield func(jsonmodels.Event) bool) {
 		page := 1
-		count := 0
+		count := int64(0)
 		for {
 			result := fetch(page)
 			if result.Err != nil {
@@ -157,20 +157,13 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 
 // ListAll returns an iterator for all events
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *EventIterator {
+	if opts.PageSize == 0 {
+		opts.PageSize = 2000
+	}
 	return paginateEvents(ctx, func(page int) op.Result[jsonmodels.Event] {
 		opts.CurrentPage = page
-		opts.PageSize = 2000
 		return s.List(ctx, opts)
-	}, 0)
-}
-
-// ListLimit returns an iterator for up to maxItems events
-func (s *Service) ListLimit(ctx context.Context, opts ListOptions, maxItems int) *EventIterator {
-	return paginateEvents(ctx, func(page int) op.Result[jsonmodels.Event] {
-		opts.CurrentPage = page
-		opts.PageSize = 2000
-		return s.List(ctx, opts)
-	}, maxItems)
+	}, opts.GetMaxItems())
 }
 
 func (s *Service) ListB(opt any) *core.TryRequest {

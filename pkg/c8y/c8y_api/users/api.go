@@ -2,6 +2,8 @@ package users
 
 import (
 	"context"
+	"iter"
+	"log/slog"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
@@ -63,9 +65,73 @@ type ListOptions struct {
 	pagination.PaginationOptions
 }
 
+// UserIterator provides iteration over users
+type UserIterator struct {
+	items iter.Seq[jsonmodels.User]
+	err   error
+}
+
+func (it *UserIterator) Items() iter.Seq[jsonmodels.User] {
+	return it.items
+}
+
+func (it *UserIterator) Err() error {
+	return it.err
+}
+
+func paginateUsers(ctx context.Context, fetch func(page int) op.Result[jsonmodels.User], maxItems int64) *UserIterator {
+	iterator := &UserIterator{}
+
+	iterator.items = func(yield func(jsonmodels.User) bool) {
+		page := 1
+		count := int64(0)
+		for {
+			result := fetch(page)
+			if result.Err != nil {
+				iterator.err = result.Err
+				return
+			}
+			countBeforeResults := count
+			for doc := range result.Data.Iter() {
+				if maxItems > 0 && count >= maxItems {
+					return
+				}
+				item := jsonmodels.NewUser(doc.Bytes())
+				if !yield(item) {
+					return
+				}
+				count++
+			}
+			if countBeforeResults == count {
+				slog.Info("Stopping pagination as results array is empty")
+				return
+			}
+
+			totalPages, ok := result.Meta["totalPages"].(int64)
+			if ok && page >= int(totalPages) {
+				return
+			}
+			page++
+		}
+	}
+
+	return iterator
+}
+
 // Retrieve all users in the tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.User] {
 	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewUser)
+}
+
+// ListAll returns an iterator for all users
+func (s *Service) ListAll(ctx context.Context, opts ListOptions) *UserIterator {
+	if opts.PageSize == 0 {
+		opts.PageSize = 2000
+	}
+	return paginateUsers(ctx, func(page int) op.Result[jsonmodels.User] {
+		opts.CurrentPage = page
+		return s.List(ctx, opts)
+	}, opts.GetMaxItems())
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {
