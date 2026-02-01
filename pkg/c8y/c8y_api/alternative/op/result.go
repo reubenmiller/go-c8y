@@ -2,6 +2,7 @@ package op
 
 import (
 	"iter"
+	"net/http"
 	"time"
 )
 
@@ -12,6 +13,7 @@ const (
 	StatusOK        Status = "OK"        // Existing resource retrieved
 	StatusCreated   Status = "Created"   // New resource created
 	StatusUpdated   Status = "Updated"   // Existing resource modified
+	StatusNoContent Status = "NoContent" // Response does not contain any content
 	StatusSkipped   Status = "Skipped"   // Operation skipped (e.g., no-op update)
 	StatusDuplicate Status = "Duplicate" // Resource already exists (conflict)
 	StatusNoMatch   Status = "NoMatch"   // No matches found
@@ -73,6 +75,21 @@ func Updated[T any](data T, meta ...map[string]any) Result[T] {
 		Data:       data,
 		Status:     StatusUpdated,
 		HTTPStatus: 200,
+		Timestamp:  time.Now(),
+		Meta:       make(map[string]any),
+	}
+	if len(meta) > 0 && meta[0] != nil {
+		r.Meta = meta[0]
+	}
+	return r
+}
+
+func NoContent[T any](data T, meta ...map[string]any) Result[T] {
+	r := Result[T]{
+		Data:       data,
+		Status:     StatusNoContent,
+		HTTPStatus: http.StatusNoContent,
+		Idempotent: false,
 		Timestamp:  time.Now(),
 		Meta:       make(map[string]any),
 	}

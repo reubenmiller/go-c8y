@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"resty.dev/v3"
 )
@@ -14,7 +15,7 @@ func NoAcceptHeader(r *resty.Request) *resty.Request {
 	return r
 }
 
-func ExecuteNoResult(ctx context.Context, req *core.TryRequest) error {
+func ExecuteNoResult(ctx context.Context, req *core.TryRequest) op.Result[core.NoContent] {
 	return core.ExecuteNoResult(ctx, req)
 }
 

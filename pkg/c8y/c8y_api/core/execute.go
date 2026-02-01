@@ -97,10 +97,23 @@ func ExecuteBinaryResponse(ctx context.Context, req *TryRequest) op.Result[Binar
 	return op.OK(*bin)
 }
 
+type NoContent []byte
+
 // Execute a request that doesn't any result only if there was an error or not
-func ExecuteNoResult(ctx context.Context, req *TryRequest) error {
-	_, err := coupleAPIErrors(req.Request.
-		SetContext(ctx).
-		Send())
-	return err
+func ExecuteNoResult(ctx context.Context, req *TryRequest) op.Result[NoContent] {
+	resp, err := ExecuteResponseOnly(ctx, req)
+
+	meta := map[string]any{}
+	meta["url"] = req.URL().String()
+	meta["path"] = req.URL().Path
+
+	if err != nil {
+		return op.Failed[NoContent](err, true)
+	}
+	var empty NoContent
+	if resp.StatusCode() == http.StatusNoContent {
+		return op.NoContent(empty, meta)
+	}
+	// TODO: Should it return different status for update, delete etc.?
+	return op.OK(empty, meta)
 }

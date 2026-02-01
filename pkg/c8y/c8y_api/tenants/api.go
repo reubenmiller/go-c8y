@@ -131,7 +131,7 @@ type DeleteOptions struct{}
 //
 // Important: Deleting a subtenant cannot be reverted. For security reasons, it is therefore only available in the management tenant. You cannot delete tenants from any tenant but the management tenant.
 // Administrators in Enterprise Tenants are only allowed to suspend active subtenants, but not to delete them.
-func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) error {
+func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.Result[core.NoContent] {
 	return core.ExecuteNoResult(ctx, s.DeleteB(ID, opt))
 }
 

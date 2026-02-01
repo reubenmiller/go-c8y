@@ -86,7 +86,7 @@ func (s *Service) UpdateB(eventID string, opt UploadFileOptions) *core.TryReques
 }
 
 // Delete an event binary
-func (s *Service) Delete(ctx context.Context, eventID string) error {
+func (s *Service) Delete(ctx context.Context, eventID string) op.Result[core.NoContent] {
 	return core.ExecuteNoResult(ctx, s.DeleteB(eventID))
 }
 

@@ -62,7 +62,7 @@ type UnassignRoleOptions struct {
 }
 
 // Unassign a role from a user
-func (s *Service) UnassignRole(ctx context.Context, opt UnassignRoleOptions) error {
+func (s *Service) UnassignRole(ctx context.Context, opt UnassignRoleOptions) op.Result[core.NoContent] {
 	return core.ExecuteNoResult(ctx, s.UnassignRoleB(opt))
 }
 

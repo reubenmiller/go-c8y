@@ -84,7 +84,7 @@ func (s *Service) Disable(ctx context.Context, key string) op.Result[jsonmodels.
 }
 
 // Delete a feature override
-func (s *Service) Delete(ctx context.Context, key string) error {
+func (s *Service) Delete(ctx context.Context, key string) op.Result[core.NoContent] {
 	return core.ExecuteNoResult(ctx, s.DeleteB(key))
 }
 

@@ -124,11 +124,11 @@ func Test_TrustedCertifcates(t *testing.T) {
 	assert.GreaterOrEqual(t, listCerts.Data.Length(), 1)
 
 	// delete
-	err = client.TrustedCertificates.Delete(context.Background(), trustedcertificates.DeleteOptions{
+	result := client.TrustedCertificates.Delete(context.Background(), trustedcertificates.DeleteOptions{
 		Fingerprint: updatedCert.Data.Fingerprint(),
 		TenantID:    client.Auth.Tenant,
 	})
-	assert.NoError(t, err)
+	assert.NoError(t, result.Err)
 
 	//
 	// Certificate Revocation List
@@ -139,8 +139,8 @@ func Test_TrustedCertifcates(t *testing.T) {
 	assert.NoError(t, unmarshalErr)
 
 	toAddCRL := model.NewTrustedCertificateRevocationCollectionFromCertificates(*cert2)
-	err = client.TrustedCertificates.RevocationList.Add(context.Background(), toAddCRL)
-	assert.NoError(t, err)
+	result = client.TrustedCertificates.RevocationList.Add(context.Background(), toAddCRL)
+	assert.NoError(t, result.Err)
 
 	// Revocation list
 	crl := client.TrustedCertificates.RevocationList.List(context.Background(), certificaterevocationlist.GetOptions{})
@@ -159,8 +159,8 @@ func Test_TrustedCertifcates(t *testing.T) {
 	_ = toAddCRL.WriteCSV(buf)
 	assert.NotEmpty(t, buf.Bytes())
 
-	err = client.TrustedCertificates.RevocationList.AddFile(context.Background(), certificaterevocationlist.AddFileFileOptions{
+	result = client.TrustedCertificates.RevocationList.AddFile(context.Background(), certificaterevocationlist.AddFileFileOptions{
 		Reader: bytes.NewReader(buf.Bytes()),
 	})
-	assert.NoError(t, err, "CRL file list should be able to be uploaded")
+	assert.NoError(t, result.Err, "CRL file list should be able to be uploaded")
 }

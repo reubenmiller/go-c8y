@@ -85,7 +85,7 @@ func (s *Service) CreateB(parentID string, body any) *core.TryRequest {
 }
 
 // Assign an existing child asset to a managed object
-func (s *Service) Assign(ctx context.Context, parentID string, child any) error {
+func (s *Service) Assign(ctx context.Context, parentID string, child any) op.Result[core.NoContent] {
 	return core.ExecuteNoResult(ctx, s.AssignB(parentID, child))
 }
 
@@ -101,7 +101,7 @@ func (s *Service) AssignB(parentID string, child any) *core.TryRequest {
 }
 
 // Unassign a child asset from a managed object
-func (s *Service) Unassign(ctx context.Context, parentID string, child any) error {
+func (s *Service) Unassign(ctx context.Context, parentID string, child any) op.Result[core.NoContent] {
 	return core.ExecuteNoResult(ctx, s.UnassignB(parentID, child))
 }
 

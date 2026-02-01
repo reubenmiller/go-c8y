@@ -232,7 +232,7 @@ type DeleteOptions struct {
 }
 
 // Delete an application
-func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) error {
+func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.Result[core.NoContent] {
 	return core.ExecuteNoResult(ctx, s.DeleteB(ID, opt))
 }
 
@@ -282,7 +282,7 @@ func (s *Service) SubscribeB(tenantID string, selfURL string) *core.TryRequest {
 }
 
 // Unsubscribe an application from a tenant
-func (s *Service) Unsubscribe(ctx context.Context, tenantID string, ID string) error {
+func (s *Service) Unsubscribe(ctx context.Context, tenantID string, ID string) op.Result[core.NoContent] {
 	return core.ExecuteNoResult(ctx, s.UnsubscribeB(tenantID, ID))
 }
 

@@ -158,7 +158,7 @@ type DeleteOptions struct {
 }
 
 // Delete a tenant option
-func (s *Service) Delete(ctx context.Context, opt DeleteOptions) error {
+func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.NoContent] {
 	return core.ExecuteNoResult(ctx, s.DeleteB(opt))
 }
 

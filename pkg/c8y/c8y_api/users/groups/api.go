@@ -88,7 +88,7 @@ type UnassignUserOptions struct {
 }
 
 // UnassignUser unassign a user from a user group
-func (s *Service) UnassignUser(ctx context.Context, opt UnassignUserOptions) error {
+func (s *Service) UnassignUser(ctx context.Context, opt UnassignUserOptions) op.Result[core.NoContent] {
 	return core.ExecuteNoResult(ctx, s.UnassignUserB(opt))
 }
 

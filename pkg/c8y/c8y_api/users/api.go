@@ -161,7 +161,7 @@ func (s *Service) UpdateB(target Target, body any) *core.TryRequest {
 }
 
 // Delete a user
-func (s *Service) Delete(ctx context.Context, target Target) error {
+func (s *Service) Delete(ctx context.Context, target Target) op.Result[core.NoContent] {
 	return core.ExecuteNoResult(ctx, s.DeleteB(target))
 }
 

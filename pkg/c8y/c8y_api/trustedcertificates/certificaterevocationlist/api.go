@@ -43,7 +43,7 @@ func (s *Service) GetB(opt GetOptions) *core.TryRequest {
 }
 
 // Add certificates to the revocation list
-func (s *Service) Add(ctx context.Context, body any) error {
+func (s *Service) Add(ctx context.Context, body any) op.Result[core.NoContent] {
 	return core.ExecuteNoResult(ctx, s.CreateB(body))
 }
 
@@ -59,7 +59,7 @@ func (s *Service) CreateB(body any) *core.TryRequest {
 type AddFileFileOptions = core.UploadFileOptions
 
 // Add CRL list from file
-func (s *Service) AddFile(ctx context.Context, opt AddFileFileOptions) error {
+func (s *Service) AddFile(ctx context.Context, opt AddFileFileOptions) op.Result[core.NoContent] {
 	return core.ExecuteNoResult(ctx, s.AddFileB(opt))
 }
 

@@ -311,7 +311,7 @@ type DeleteListOptions struct {
 }
 
 // Remove alarm collections specified by query parameters
-func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) error {
+func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Result[core.NoContent] {
 	return core.ExecuteNoResult(ctx, s.DeleteListB(opt))
 }
 
