@@ -10,18 +10,16 @@ import (
 )
 
 // Execute a request and return the typed response
-func Execute[T any](ctx context.Context, req *TryRequest) (*T, *resty.Response, error) {
-	result := new(T)
+func ExecuteResponseOnly(ctx context.Context, req *TryRequest) (*resty.Response, error) {
 	resp, err := coupleAPIErrors(req.Request.
 		SetContext(ctx).
-		SetResult(result).
 		Send())
 
 	if err != nil {
-		return nil, resp, err
+		return nil, err
 	}
 
-	return result, resp, nil
+	return resp, nil
 }
 
 func ExecuteReturnResult[T any](ctx context.Context, req *TryRequest, fromBytes func([]byte) T) op.Result[T] {
@@ -74,19 +72,6 @@ func ExecuteReturnCollection[T any](ctx context.Context, req *TryRequest, arrayP
 	return result
 }
 
-// Execute a request and return the typed response
-func ExecuteResponseOnly(ctx context.Context, req *TryRequest) (*resty.Response, error) {
-	resp, err := coupleAPIErrors(req.Request.
-		SetContext(ctx).
-		Send())
-
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
-}
-
 // Execute a request which expects a binary response which allows the user to read the body
 func ExecuteBinaryResponse(ctx context.Context, req *TryRequest) op.Result[BinaryResponse] {
 	resp, err := coupleAPIErrors(req.Request.
@@ -110,22 +95,6 @@ func ExecuteBinaryResponse(ctx context.Context, req *TryRequest) op.Result[Binar
 		}
 	}
 	return op.OK(*bin)
-}
-
-// Execute a request and return the typed response
-func ExecuteResultOnly[T any](ctx context.Context, req *TryRequest) (*T, error) {
-	result := new(T)
-	req.SetDefaultAcceptHeader()
-	_, err := coupleAPIErrors(req.Request.
-		SetContext(ctx).
-		SetResult(result).
-		Send())
-
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
 }
 
 // Execute a request that doesn't any result only if there was an error or not

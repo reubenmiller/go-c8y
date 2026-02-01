@@ -100,31 +100,3 @@ func Test_CreateRequestDecodeHelper(t *testing.T) {
 	assert.Contains(t, out, "id")
 	assert.Equal(t, out["name"].(string), "custom")
 }
-
-func Test_CreateResultWithCustomResult(t *testing.T) {
-
-	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
-
-	type bodyT struct {
-		model.ManagedObject
-		Model string `json:"model,omitempty"`
-		Name  string `json:"display,omitempty"`
-	}
-	body := &bodyT{
-		ManagedObject: model.ManagedObject{
-			Name: "custom",
-		},
-		Name:  "Custom Device",
-		Model: "linuxA",
-	}
-
-	result, resp, err := c8y_api.Execute[bodyT](context.Background(), client.ManagedObjects.CreateB(body))
-	assert.NoError(t, err)
-	assert.NotNil(t, resp)
-	assert.NotEmpty(t, result.ID)
-	assert.NotEmpty(t, resp.String())
-	assert.Equal(t, result.ManagedObject.Name, "custom")
-	assert.Equal(t, result.Name, "Custom Device")
-	assert.Equal(t, result.Model, "linuxA")
-}

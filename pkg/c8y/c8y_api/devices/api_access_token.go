@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"github.com/reubenmiller/go-c8y/pkg/certutil"
 	"resty.dev/v3"
@@ -23,8 +24,8 @@ import (
 //   - whole certificate chain (Optional - This API requires the client to send a custom header X-SSL-CERT-CHAIN only
 //     if the immediate issuer of the client's certificate is not uploaded as a trusted certificate on the platform.
 //     If the immediate issuer is already uploaded and trusted, the header can be omitted)
-func (s *Service) CreateAccessToken(ctx context.Context) (*model.DeviceAccessToken, error) {
-	return core.ExecuteResultOnly[model.DeviceAccessToken](ctx, s.CreateAccessTokenB())
+func (s *Service) CreateAccessToken(ctx context.Context) op.Result[jsonmodels.DeviceAccessToken] {
+	return core.ExecuteReturnResult(ctx, s.CreateAccessTokenB(), jsonmodels.NewDeviceAccessToken)
 }
 
 func (s *Service) CreateAccessTokenB() *core.TryRequest {

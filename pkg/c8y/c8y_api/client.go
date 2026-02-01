@@ -342,11 +342,11 @@ func (c *Client) loginInternalSSO(ctx context.Context) (string, error) {
 }
 
 func (c *Client) loginDeviceCertificate(ctx context.Context) (string, error) {
-	tok, err := c.Devices.CreateAccessToken(ctx)
-	if err != nil {
-		return "", err
+	tok := c.Devices.CreateAccessToken(ctx)
+	if tok.IsError() {
+		return "", tok.Err
 	}
-	return tok.AccessToken, nil
+	return tok.Data.AccessToken(), nil
 }
 
 func TokenRenewalRetry(c *Client) func(res *resty.Response, err error) bool {

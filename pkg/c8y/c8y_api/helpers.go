@@ -8,11 +8,6 @@ import (
 	"resty.dev/v3"
 )
 
-// Execute a request and return the typed response
-func Execute[T any](ctx context.Context, req *core.TryRequest) (*T, *resty.Response, error) {
-	return core.Execute[T](ctx, req)
-}
-
 // Remove Accept Header
 func NoAcceptHeader(r *resty.Request) *resty.Request {
 	r.Header.Del("Accept")
