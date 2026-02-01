@@ -9,6 +9,7 @@
             "type": "go",
             "request": "launch",
             "mode": "test",
+            "console": "integratedTerminal",
             "envFile": "${workspaceFolder}/c8y.env",
             "program": "${workspaceFolder}"
         },
@@ -19,6 +20,7 @@
             "mode": "auto",
             "program": "${fileDirname}",
             "env": {},
+            "console": "integratedTerminal",
             "envFile": "${workspaceFolder}/c8y.env",
             "args": []
         },
