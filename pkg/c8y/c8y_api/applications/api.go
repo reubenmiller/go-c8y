@@ -29,6 +29,7 @@ var (
 
 var (
 	TypeMicroservice = "MICROSERVICE"
+	TypeHosted       = "HOSTED"
 )
 
 var ParamId = "id"
@@ -348,7 +349,8 @@ func (s *Service) ByID(id string) source.Resolver {
 // ByName creates a resolver that looks up an application by its name.
 // The lookup will be performed when ResolveID() is called on the returned resolver.
 // Returns a source.Resolver that can be used with any API that accepts source resolution.
-func (s *Service) ByName(name string) source.Resolver {
+// appType is an optional type filter
+func (s *Service) ByName(name string, appType string) source.Resolver {
 	return source.Name{
 		Name: name,
 		Lookup: func(ctx context.Context, n string) (string, map[string]any, error) {
@@ -363,15 +365,20 @@ func (s *Service) ByName(name string) source.Resolver {
 			if result.Data.Length() == 0 {
 				return "", nil, fmt.Errorf("no application found with name: %s", n)
 			}
-			if result.Data.Length() > 1 {
-				return "", nil, fmt.Errorf("multiple applications found with name: %s", n)
-			}
 
 			// Get the first (and only) application and construct Application from JSONDoc
 			var app jsonmodels.Application
+			found := false
 			for doc := range result.Data.Iter() {
-				app = jsonmodels.NewApplication(doc.Bytes())
-				break
+				if appType == "" || appType == doc.Get("type").String() {
+					app = jsonmodels.NewApplication(doc.Bytes())
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				return "", nil, fmt.Errorf("no application found: name=%s, type=%s", n, appType)
 			}
 
 			// Return metadata about the resolved application

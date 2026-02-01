@@ -13,7 +13,7 @@ func Test_ApplicationGetWithResolver(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	name := "cockpit"
 	item := client.Applications.Get(context.Background(), applications.GetOptions{
-		ApplicationRef: client.Applications.ByName(name),
+		ApplicationRef: client.Applications.ByName(name, applications.TypeHosted),
 	})
 	assert.NoError(t, item.Err)
 	assert.NotEmpty(t, item.Data.ID())
