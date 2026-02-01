@@ -8,6 +8,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/source"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
 )
@@ -40,6 +41,10 @@ type ListOptions struct {
 	// The ID of the device the operation is performed for
 	DeviceID string `url:"deviceId,omitempty"`
 
+	// DeviceRef allows resolving the device from various references (external ID, name, query, etc.)
+	// If set, this takes precedence over DeviceID field
+	DeviceRef source.Resolver `url:"-"`
+
 	// The type of fragment that must be part of the operation
 	FragmentType string `url:"fragmentType,omitempty"`
 
@@ -55,11 +60,28 @@ type ListOptions struct {
 	pagination.PaginationOptions
 }
 
+// Resolve resolves all reference fields (DeviceRef) to their concrete values.
+// Only resolves if the direct field (DeviceID) is not already set.
+func (opt *ListOptions) Resolve(ctx context.Context) error {
+	if opt.DeviceRef != nil && opt.DeviceID == "" {
+		result, err := opt.DeviceRef.ResolveID(ctx)
+		if err != nil {
+			return err
+		}
+		opt.DeviceID = result.ID
+	}
+	return nil
+}
+
 // OperationIterator provides iteration over operations
 type OperationIterator = pagination.Iterator[jsonmodels.Operation]
 
 // List operations
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Operation] {
+	if err := opt.Resolve(ctx); err != nil {
+		return op.Failed[jsonmodels.Operation](err, true)
+	}
+
 	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewOperation)
 }
 

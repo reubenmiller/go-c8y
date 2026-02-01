@@ -9,6 +9,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/events/eventbinaries"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/source"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
 )
@@ -72,6 +73,10 @@ type ListOptions struct {
 	// The managed object ID to which the event is associated
 	Source string `url:"source,omitempty"`
 
+	// SourceRef allows resolving the source from various references (external ID, name, query, etc.)
+	// If set, this takes precedence over Source field
+	SourceRef source.Resolver `url:"-"`
+
 	// The type of event to search for
 	Type string `url:"type,omitempty"`
 
@@ -95,11 +100,28 @@ type ListOptions struct {
 	pagination.PaginationOptions
 }
 
+// Resolve resolves all reference fields (SourceRef) to their concrete values.
+// Only resolves if the direct field (Source) is not already set.
+func (opt *ListOptions) Resolve(ctx context.Context) error {
+	if opt.SourceRef != nil && opt.Source == "" {
+		result, err := opt.SourceRef.ResolveID(ctx)
+		if err != nil {
+			return err
+		}
+		opt.Source = result.ID
+	}
+	return nil
+}
+
 // EventIterator provides iteration over events
 type EventIterator = pagination.Iterator[jsonmodels.Event]
 
 // List events
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Event] {
+	if err := opt.Resolve(ctx); err != nil {
+		return op.Failed[jsonmodels.Event](err, true)
+	}
+
 	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewEvent)
 }
 

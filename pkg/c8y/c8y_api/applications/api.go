@@ -2,12 +2,14 @@ package applications
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/source"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
 )
@@ -183,15 +185,36 @@ func (s *Service) ListByUserB(opt ListByUserOptions) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req, ResultProperty)
 }
 
-// Get an application
-func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Application] {
-	return core.ExecuteReturnResult(ctx, s.GetB(ID), jsonmodels.NewApplication)
+type GetOptions struct {
+	ID             string          `url:"-"`
+	ApplicationRef source.Resolver `url:"-"`
 }
 
-func (s *Service) GetB(ID string) *core.TryRequest {
+// Resolve resolves all reference fields (ApplicationRef) to their concrete values.
+// Only resolves if the direct field (ID) is not already set.
+func (opt *GetOptions) Resolve(ctx context.Context) error {
+	if opt.ApplicationRef != nil && opt.ID == "" {
+		result, err := opt.ApplicationRef.ResolveID(ctx)
+		if err != nil {
+			return err
+		}
+		opt.ID = result.ID
+	}
+	return nil
+}
+
+// Get an application
+func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.Application] {
+	if err := opt.Resolve(ctx); err != nil {
+		return op.Failed[jsonmodels.Application](err, true)
+	}
+	return core.ExecuteReturnResult(ctx, s.GetB(opt), jsonmodels.NewApplication)
+}
+
+func (s *Service) GetB(opt GetOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamId, opt.ID).
 		SetURL(ApiApplication)
 	return core.NewTryRequest(s.Client, req)
 }
@@ -310,4 +333,63 @@ func (s *Service) UploadB(ID string, opt UploadFileOptions) *core.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiApplicationBinaries)
 	return core.NewTryRequest(s.Client, req)
+}
+
+// Application Resolution Convenience Methods
+// These methods provide a more discoverable way to create source resolvers
+// for applications, while still returning the generic source.Resolver interface.
+
+// ByID creates a resolver for an application by its direct ID.
+// Returns a source.Resolver that can be used with any API that accepts source resolution.
+func (s *Service) ByID(id string) source.Resolver {
+	return source.ID(id)
+}
+
+// ByName creates a resolver that looks up an application by its name.
+// The lookup will be performed when ResolveID() is called on the returned resolver.
+// Returns a source.Resolver that can be used with any API that accepts source resolution.
+func (s *Service) ByName(name string) source.Resolver {
+	return source.Name{
+		Name: name,
+		Lookup: func(ctx context.Context, n string) (string, map[string]any, error) {
+			result := s.ListByName(ctx, ListByNameOptions{
+				Name: n,
+			})
+			if result.Err != nil {
+				return "", nil, result.Err
+			}
+
+			// Check if we got exactly one result
+			if result.Data.Length() == 0 {
+				return "", nil, fmt.Errorf("no application found with name: %s", n)
+			}
+			if result.Data.Length() > 1 {
+				return "", nil, fmt.Errorf("multiple applications found with name: %s", n)
+			}
+
+			// Get the first (and only) application and construct Application from JSONDoc
+			var app jsonmodels.Application
+			for doc := range result.Data.Iter() {
+				app = jsonmodels.NewApplication(doc.Bytes())
+				break
+			}
+
+			// Return metadata about the resolved application
+			meta := map[string]any{
+				"name": app.Name(),
+				"type": app.Type(),
+			}
+			return app.ID(), meta, nil
+		},
+	}
+}
+
+// Custom creates a resolver with custom resolution logic.
+// This allows you to define your own logic for resolving an application ID.
+// Returns a source.Resolver that can be used with any API that accepts source resolution.
+func (s *Service) Custom(description string, resolve func(context.Context) (string, map[string]any, error)) source.Resolver {
+	return source.Custom{
+		Description: description,
+		Resolve:     resolve,
+	}
 }

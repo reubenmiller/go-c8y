@@ -11,6 +11,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects/childassets"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects/childdevices"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/source"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
 )
@@ -159,4 +160,63 @@ func (s *Service) DeleteB(ID string, opt DeleteOptions) *core.TryRequest {
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiManagedObject)
 	return core.NewTryRequest(s.Client, req)
+}
+
+// Source Resolution Convenience Methods
+// These methods provide a more discoverable way to create source resolvers
+// for managed objects, while still returning the generic source.Resolver interface.
+
+// ByID creates a resolver for a managed object by its direct ID.
+// Returns a source.Resolver that can be used with any API that accepts source resolution.
+func (s *Service) ByID(id string) source.Resolver {
+	return source.ID(id)
+}
+
+// ByExternalID creates a resolver that looks up a managed object by its external ID.
+// The lookup will be performed when ResolveID() is called on the returned resolver.
+// Returns a source.Resolver that can be used with any API that accepts source resolution.
+func (s *Service) ByExternalID(typ, externalID string) source.Resolver {
+	return source.ExternalID{
+		Type:       typ,
+		ExternalID: externalID,
+		Lookup: func(ctx context.Context, t, extID string) (string, map[string]any, error) {
+			result := s.identityService.Get(ctx, identity.IdentityOptions{
+				Type:       t,
+				ExternalID: extID,
+			})
+			if result.Err != nil {
+				return "", nil, result.Err
+			}
+			// Return metadata about the resolved object
+			meta := map[string]any{
+				"externalType": t,
+				"externalID":   extID,
+			}
+			return result.Data.ManagedObjectID(), meta, nil
+		},
+	}
+}
+
+// ByName creates a resolver that looks up a managed object by its name.
+// Note: This requires implementing a List method that supports name filtering.
+// Returns a source.Resolver that can be used with any API that accepts source resolution.
+//
+// TODO: Implement once ManagedObjects.List is available
+// func (s *Service) ByName(name string) source.Resolver {
+//     return source.Name{
+//         Name: name,
+//         Lookup: func(ctx context.Context, n string) (string, error) {
+//             // Implementation pending
+//         },
+//     }
+// }
+
+// Custom creates a resolver with custom resolution logic.
+// This allows you to define your own logic for resolving a managed object ID.
+// Returns a source.Resolver that can be used with any API that accepts source resolution.
+func (s *Service) Custom(description string, resolve func(context.Context) (string, map[string]any, error)) source.Resolver {
+	return source.Custom{
+		Description: description,
+		Resolve:     resolve,
+	}
 }

@@ -115,7 +115,9 @@ func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Micro
 }
 
 func (s *Service) GetB(ID string) *core.TryRequest {
-	return s.applicationAPI.GetB(ID)
+	return s.applicationAPI.GetB(applications.GetOptions{
+		ID: ID,
+	})
 }
 
 // Create a microservice

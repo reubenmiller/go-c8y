@@ -8,6 +8,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/source"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
 )
@@ -24,6 +25,10 @@ type Service core.Service
 type ListOptions struct {
 	// Source device to filter measurements by
 	Source string `url:"source,omitempty"`
+
+	// SourceRef allows resolving the source from various references (external ID, name, query, etc.)
+	// If set, this takes precedence over Source field
+	SourceRef source.Resolver `url:"-"`
 
 	// DateFrom Timestamp `url:"dateFrom,omitempty"`
 	DateFrom time.Time `url:"dateFrom,omitempty,omitzero"`
@@ -42,11 +47,28 @@ type ListOptions struct {
 	pagination.PaginationOptions
 }
 
+// Resolve resolves all reference fields (SourceRef) to their concrete values.
+// Only resolves if the direct field (Source) is not already set.
+func (opt *ListOptions) Resolve(ctx context.Context) error {
+	if opt.SourceRef != nil && opt.Source == "" {
+		result, err := opt.SourceRef.ResolveID(ctx)
+		if err != nil {
+			return err
+		}
+		opt.Source = result.ID
+	}
+	return nil
+}
+
 // MeasurementIterator provides iteration over measurements
 type MeasurementIterator = pagination.Iterator[jsonmodels.Measurement]
 
 // GetMeasurements return a measurement collection (multiple measurements)
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Measurement] {
+	if err := opt.Resolve(ctx); err != nil {
+		return op.Failed[jsonmodels.Measurement](err, true)
+	}
+
 	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewMeasurement)
 }
 

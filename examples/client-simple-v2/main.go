@@ -44,8 +44,9 @@ func main() {
 	collection := client.Measurements.List(
 		context.Background(),
 		measurements.ListOptions{
-			DateFrom: time.Now().Add(-20 * 24 * time.Hour),
-			DateTo:   time.Now(),
+			DateFrom:  time.Now().Add(-20 * 24 * time.Hour),
+			DateTo:    time.Now(),
+			SourceRef: client.ManagedObjects.ByExternalID("", "rpi4-d83add90fe56"),
 			PaginationOptions: pagination.PaginationOptions{
 				PageSize:          1,
 				WithTotalElements: true,
