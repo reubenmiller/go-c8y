@@ -71,6 +71,10 @@ func Paginate[T any, D JSONDocument](
 				return
 			}
 
+			if next, ok := result.Meta["next"].(string); !ok || next == "" {
+				return
+			}
+
 			totalPages, ok := result.Meta["totalPages"].(int64)
 			if ok && page >= int(totalPages) {
 				return
