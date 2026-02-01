@@ -2,8 +2,6 @@ package binaries
 
 import (
 	"context"
-	"iter"
-	"log/slog"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
@@ -57,57 +55,7 @@ type ListOptions struct {
 }
 
 // BinaryIterator provides iteration over binaries
-type BinaryIterator struct {
-	items iter.Seq[jsonmodels.Binary]
-	err   error
-}
-
-func (it *BinaryIterator) Items() iter.Seq[jsonmodels.Binary] {
-	return it.items
-}
-
-func (it *BinaryIterator) Err() error {
-	return it.err
-}
-
-func paginateBinaries(ctx context.Context, fetch func(page int) op.Result[jsonmodels.Binary], maxItems int64) *BinaryIterator {
-	iterator := &BinaryIterator{}
-
-	iterator.items = func(yield func(jsonmodels.Binary) bool) {
-		page := 1
-		count := int64(0)
-		for {
-			result := fetch(page)
-			if result.Err != nil {
-				iterator.err = result.Err
-				return
-			}
-			countBeforeResults := count
-			for doc := range result.Data.Iter() {
-				if maxItems > 0 && count >= maxItems {
-					return
-				}
-				item := jsonmodels.NewBinary(doc.Bytes())
-				if !yield(item) {
-					return
-				}
-				count++
-			}
-			if countBeforeResults == count {
-				slog.Info("Stopping pagination as results array is empty")
-				return
-			}
-
-			totalPages, ok := result.Meta["totalPages"].(int64)
-			if ok && page >= int(totalPages) {
-				return
-			}
-			page++
-		}
-	}
-
-	return iterator
-}
+type BinaryIterator = pagination.Iterator[jsonmodels.Binary]
 
 // List binaries
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Binary] {
@@ -119,10 +67,10 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *BinaryIterator
 	if opts.PageSize == 0 {
 		opts.PageSize = 2000
 	}
-	return paginateBinaries(ctx, func(page int) op.Result[jsonmodels.Binary] {
+	return pagination.Paginate(ctx, func(page int) op.Result[jsonmodels.Binary] {
 		opts.CurrentPage = page
 		return s.List(ctx, opts)
-	}, opts.GetMaxItems())
+	}, jsonmodels.NewBinary, opts.GetMaxItems())
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {

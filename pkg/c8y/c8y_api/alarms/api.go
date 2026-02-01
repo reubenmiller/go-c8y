@@ -2,8 +2,6 @@ package alarms
 
 import (
 	"context"
-	"iter"
-	"log/slog"
 	"time"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
@@ -82,57 +80,7 @@ type ListOptions struct {
 }
 
 // AlarmIterator provides iteration over alarms
-type AlarmIterator struct {
-	items iter.Seq[jsonmodels.Alarm]
-	err   error
-}
-
-func (it *AlarmIterator) Items() iter.Seq[jsonmodels.Alarm] {
-	return it.items
-}
-
-func (it *AlarmIterator) Err() error {
-	return it.err
-}
-
-func paginateAlarms(ctx context.Context, fetch func(page int) op.Result[jsonmodels.Alarm], maxItems int64) *AlarmIterator {
-	iterator := &AlarmIterator{}
-
-	iterator.items = func(yield func(jsonmodels.Alarm) bool) {
-		page := 1
-		count := int64(0)
-		for {
-			result := fetch(page)
-			if result.Err != nil {
-				iterator.err = result.Err
-				return
-			}
-			countBeforeResults := count
-			for doc := range result.Data.Iter() {
-				if maxItems > 0 && count >= maxItems {
-					return
-				}
-				item := jsonmodels.NewAlarm(doc.Bytes())
-				if !yield(item) {
-					return
-				}
-				count++
-			}
-			if countBeforeResults == count {
-				slog.Info("Stopping pagination as results array is empty")
-				return
-			}
-
-			totalPages, ok := result.Meta["totalPages"].(int64)
-			if ok && page >= int(totalPages) {
-				return
-			}
-			page++
-		}
-	}
-
-	return iterator
-}
+type AlarmIterator = pagination.Iterator[jsonmodels.Alarm]
 
 // List alarms
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Alarm] {
@@ -144,10 +92,10 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *AlarmIterator 
 	if opts.PageSize == 0 {
 		opts.PageSize = 2000
 	}
-	return paginateAlarms(ctx, func(page int) op.Result[jsonmodels.Alarm] {
+	return pagination.Paginate(ctx, func(page int) op.Result[jsonmodels.Alarm] {
 		opts.CurrentPage = page
 		return s.List(ctx, opts)
-	}, opts.GetMaxItems())
+	}, jsonmodels.NewAlarm, opts.GetMaxItems())
 }
 
 func (s *Service) ListB(opt any) *core.TryRequest {

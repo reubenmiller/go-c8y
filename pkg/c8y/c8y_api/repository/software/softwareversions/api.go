@@ -3,8 +3,6 @@ package softwareversions
 import (
 	"context"
 	"fmt"
-	"iter"
-	"log/slog"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
@@ -95,67 +93,17 @@ func (s *Service) ListB(softwareID string, opt ListOptions) *core.TryRequest {
 }
 
 // SoftwareVersionIterator provides iteration over software versions
-type SoftwareVersionIterator struct {
-	items iter.Seq[jsonmodels.SoftwareVersion]
-	err   error
-}
-
-func (it *SoftwareVersionIterator) Items() iter.Seq[jsonmodels.SoftwareVersion] {
-	return it.items
-}
-
-func (it *SoftwareVersionIterator) Err() error {
-	return it.err
-}
-
-func paginateSoftwareVersions(ctx context.Context, fetch func(page int) op.Result[jsonmodels.SoftwareVersion], maxItems int64) *SoftwareVersionIterator {
-	iterator := &SoftwareVersionIterator{}
-
-	iterator.items = func(yield func(jsonmodels.SoftwareVersion) bool) {
-		page := 1
-		count := int64(0)
-		for {
-			result := fetch(page)
-			if result.Err != nil {
-				iterator.err = result.Err
-				return
-			}
-			countBeforeResults := count
-			for doc := range result.Data.Iter() {
-				if maxItems > 0 && count >= maxItems {
-					return
-				}
-				item := jsonmodels.NewSoftwareVersion(doc.Bytes())
-				if !yield(item) {
-					return
-				}
-				count++
-			}
-			if countBeforeResults == count {
-				slog.Info("Stopping pagination as results array is empty")
-				return
-			}
-
-			totalPages, ok := result.Meta["totalPages"].(int64)
-			if ok && page >= int(totalPages) {
-				return
-			}
-			page++
-		}
-	}
-
-	return iterator
-}
+type SoftwareVersionIterator = pagination.Iterator[jsonmodels.SoftwareVersion]
 
 // ListAll returns an iterator for all software versions
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *SoftwareVersionIterator {
 	if opts.PageSize == 0 {
 		opts.PageSize = 2000
 	}
-	return paginateSoftwareVersions(ctx, func(page int) op.Result[jsonmodels.SoftwareVersion] {
+	return pagination.Paginate(ctx, func(page int) op.Result[jsonmodels.SoftwareVersion] {
 		opts.CurrentPage = page
 		return s.List(ctx, opts)
-	}, opts.GetMaxItems())
+	}, jsonmodels.NewSoftwareVersion, opts.GetMaxItems())
 }
 
 type GetOptions struct {

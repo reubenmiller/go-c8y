@@ -2,8 +2,6 @@ package microservices
 
 import (
 	"context"
-	"iter"
-	"log/slog"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsondoc"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
@@ -84,57 +82,7 @@ func First(m model.Microservice) bool {
 }
 
 // MicroserviceIterator provides iteration over microservices
-type MicroserviceIterator struct {
-	items iter.Seq[jsonmodels.Microservice]
-	err   error
-}
-
-func (it *MicroserviceIterator) Items() iter.Seq[jsonmodels.Microservice] {
-	return it.items
-}
-
-func (it *MicroserviceIterator) Err() error {
-	return it.err
-}
-
-func paginateMicroservices(ctx context.Context, fetch func(page int) op.Result[jsonmodels.Microservice], maxItems int64) *MicroserviceIterator {
-	iterator := &MicroserviceIterator{}
-
-	iterator.items = func(yield func(jsonmodels.Microservice) bool) {
-		page := 1
-		count := int64(0)
-		for {
-			result := fetch(page)
-			if result.Err != nil {
-				iterator.err = result.Err
-				return
-			}
-			countBeforeResults := count
-			for doc := range result.Data.Iter() {
-				if maxItems > 0 && count >= maxItems {
-					return
-				}
-				item := jsonmodels.NewMicroservice(doc.Bytes())
-				if !yield(item) {
-					return
-				}
-				count++
-			}
-			if countBeforeResults == count {
-				slog.Info("Stopping pagination as results array is empty")
-				return
-			}
-
-			totalPages, ok := result.Meta["totalPages"].(int64)
-			if ok && page >= int(totalPages) {
-				return
-			}
-			page++
-		}
-	}
-
-	return iterator
-}
+type MicroserviceIterator = pagination.Iterator[jsonmodels.Microservice]
 
 func (s *Service) FindFirst(ctx context.Context, opt ListOptions) (op.Result[jsonmodels.Microservice], bool) {
 	opt.MaxItems = 1
@@ -155,10 +103,10 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *MicroserviceIt
 	if opts.PageSize == 0 {
 		opts.PageSize = 2000
 	}
-	return paginateMicroservices(ctx, func(page int) op.Result[jsonmodels.Microservice] {
+	return pagination.Paginate(ctx, func(page int) op.Result[jsonmodels.Microservice] {
 		opts.CurrentPage = page
 		return s.List(ctx, opts)
-	}, opts.GetMaxItems())
+	}, jsonmodels.NewMicroservice, opts.GetMaxItems())
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {

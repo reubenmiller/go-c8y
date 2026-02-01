@@ -3,8 +3,6 @@ package softwareitems
 import (
 	"context"
 	"fmt"
-	"iter"
-	"log/slog"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
@@ -79,67 +77,17 @@ func (s *Service) ListB(opt ListOptions) *core.TryRequest {
 }
 
 // SoftwareIterator provides iteration over software items
-type SoftwareIterator struct {
-	items iter.Seq[jsonmodels.Software]
-	err   error
-}
-
-func (it *SoftwareIterator) Items() iter.Seq[jsonmodels.Software] {
-	return it.items
-}
-
-func (it *SoftwareIterator) Err() error {
-	return it.err
-}
-
-func paginateSoftware(ctx context.Context, fetch func(page int) op.Result[jsonmodels.Software], maxItems int64) *SoftwareIterator {
-	iterator := &SoftwareIterator{}
-
-	iterator.items = func(yield func(jsonmodels.Software) bool) {
-		page := 1
-		count := int64(0)
-		for {
-			result := fetch(page)
-			if result.Err != nil {
-				iterator.err = result.Err
-				return
-			}
-			countBeforeResults := count
-			for doc := range result.Data.Iter() {
-				if maxItems > 0 && count >= maxItems {
-					return
-				}
-				item := jsonmodels.NewSoftware(doc.Bytes())
-				if !yield(item) {
-					return
-				}
-				count++
-			}
-			if countBeforeResults == count {
-				slog.Info("Stopping pagination as results array is empty")
-				return
-			}
-
-			totalPages, ok := result.Meta["totalPages"].(int64)
-			if ok && page >= int(totalPages) {
-				return
-			}
-			page++
-		}
-	}
-
-	return iterator
-}
+type SoftwareIterator = pagination.Iterator[jsonmodels.Software]
 
 // ListAll returns an iterator for all software items
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *SoftwareIterator {
 	if opts.PageSize == 0 {
 		opts.PageSize = 2000
 	}
-	return paginateSoftware(ctx, func(page int) op.Result[jsonmodels.Software] {
+	return pagination.Paginate(ctx, func(page int) op.Result[jsonmodels.Software] {
 		opts.CurrentPage = page
 		return s.List(ctx, opts)
-	}, opts.GetMaxItems())
+	}, jsonmodels.NewSoftware, opts.GetMaxItems())
 }
 
 type GetOptions struct {

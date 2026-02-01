@@ -2,8 +2,6 @@ package events
 
 import (
 	"context"
-	"iter"
-	"log/slog"
 	"time"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
@@ -98,57 +96,7 @@ type ListOptions struct {
 }
 
 // EventIterator provides iteration over events
-type EventIterator struct {
-	items iter.Seq[jsonmodels.Event]
-	err   error
-}
-
-func (it *EventIterator) Items() iter.Seq[jsonmodels.Event] {
-	return it.items
-}
-
-func (it *EventIterator) Err() error {
-	return it.err
-}
-
-func paginateEvents(ctx context.Context, fetch func(page int) op.Result[jsonmodels.Event], maxItems int64) *EventIterator {
-	iterator := &EventIterator{}
-
-	iterator.items = func(yield func(jsonmodels.Event) bool) {
-		page := 1
-		count := int64(0)
-		for {
-			result := fetch(page)
-			if result.Err != nil {
-				iterator.err = result.Err
-				return
-			}
-			countBeforeResults := count
-			for doc := range result.Data.Iter() {
-				if maxItems > 0 && count >= maxItems {
-					return
-				}
-				item := jsonmodels.NewEvent(doc.Bytes())
-				if !yield(item) {
-					return
-				}
-				count++
-			}
-			if countBeforeResults == count {
-				slog.Info("Stopping pagination as results array is empty")
-				return
-			}
-
-			totalPages, ok := result.Meta["totalPages"].(int64)
-			if ok && page >= int(totalPages) {
-				return
-			}
-			page++
-		}
-	}
-
-	return iterator
-}
+type EventIterator = pagination.Iterator[jsonmodels.Event]
 
 // List events
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Event] {
@@ -160,10 +108,10 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *EventIterator 
 	if opts.PageSize == 0 {
 		opts.PageSize = 2000
 	}
-	return paginateEvents(ctx, func(page int) op.Result[jsonmodels.Event] {
+	return pagination.Paginate(ctx, func(page int) op.Result[jsonmodels.Event] {
 		opts.CurrentPage = page
 		return s.List(ctx, opts)
-	}, opts.GetMaxItems())
+	}, jsonmodels.NewEvent, opts.GetMaxItems())
 }
 
 func (s *Service) ListB(opt any) *core.TryRequest {

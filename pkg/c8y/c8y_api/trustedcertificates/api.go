@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"iter"
-	"log/slog"
 	"time"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
@@ -62,57 +60,7 @@ type ListOptions struct {
 }
 
 // TrustedCertificateIterator provides iteration over trusted certificates
-type TrustedCertificateIterator struct {
-	items iter.Seq[jsonmodels.TrustedCertificate]
-	err   error
-}
-
-func (it *TrustedCertificateIterator) Items() iter.Seq[jsonmodels.TrustedCertificate] {
-	return it.items
-}
-
-func (it *TrustedCertificateIterator) Err() error {
-	return it.err
-}
-
-func paginateTrustedCertificates(ctx context.Context, fetch func(page int) op.Result[jsonmodels.TrustedCertificate], maxItems int64) *TrustedCertificateIterator {
-	iterator := &TrustedCertificateIterator{}
-
-	iterator.items = func(yield func(jsonmodels.TrustedCertificate) bool) {
-		page := 1
-		count := int64(0)
-		for {
-			result := fetch(page)
-			if result.Err != nil {
-				iterator.err = result.Err
-				return
-			}
-			countBeforeResults := count
-			for doc := range result.Data.Iter() {
-				if maxItems > 0 && count >= maxItems {
-					return
-				}
-				item := jsonmodels.NewTrustedCertificate(doc.Bytes())
-				if !yield(item) {
-					return
-				}
-				count++
-			}
-			if countBeforeResults == count {
-				slog.Info("Stopping pagination as results array is empty")
-				return
-			}
-
-			totalPages, ok := result.Meta["totalPages"].(int64)
-			if ok && page >= int(totalPages) {
-				return
-			}
-			page++
-		}
-	}
-
-	return iterator
-}
+type TrustedCertificateIterator = pagination.Iterator[jsonmodels.TrustedCertificate]
 
 // List trusted certificates
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.TrustedCertificate] {
@@ -124,10 +72,10 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *TrustedCertifi
 	if opts.PageSize == 0 {
 		opts.PageSize = 2000
 	}
-	return paginateTrustedCertificates(ctx, func(page int) op.Result[jsonmodels.TrustedCertificate] {
+	return pagination.Paginate(ctx, func(page int) op.Result[jsonmodels.TrustedCertificate] {
 		opts.CurrentPage = page
 		return s.List(ctx, opts)
-	}, opts.GetMaxItems())
+	}, jsonmodels.NewTrustedCertificate, opts.GetMaxItems())
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {

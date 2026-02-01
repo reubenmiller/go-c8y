@@ -2,12 +2,11 @@ package loginoptions
 
 import (
 	"context"
-	"iter"
-	"log/slog"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
 )
@@ -40,57 +39,7 @@ type ListOptions struct {
 }
 
 // LoginOptionIterator provides iteration over login options
-type LoginOptionIterator struct {
-	items iter.Seq[jsonmodels.LoginOption]
-	err   error
-}
-
-func (it *LoginOptionIterator) Items() iter.Seq[jsonmodels.LoginOption] {
-	return it.items
-}
-
-func (it *LoginOptionIterator) Err() error {
-	return it.err
-}
-
-func paginateLoginOptions(ctx context.Context, fetch func(page int) op.Result[jsonmodels.LoginOption], maxItems int64) *LoginOptionIterator {
-	iterator := &LoginOptionIterator{}
-
-	iterator.items = func(yield func(jsonmodels.LoginOption) bool) {
-		page := 1
-		count := int64(0)
-		for {
-			result := fetch(page)
-			if result.Err != nil {
-				iterator.err = result.Err
-				return
-			}
-			countBeforeResults := count
-			for doc := range result.Data.Iter() {
-				if maxItems > 0 && count >= maxItems {
-					return
-				}
-				item := jsonmodels.NewLoginOption(doc.Bytes())
-				if !yield(item) {
-					return
-				}
-				count++
-			}
-			if countBeforeResults == count {
-				slog.Info("Stopping pagination as results array is empty")
-				return
-			}
-
-			totalPages, ok := result.Meta["totalPages"].(int64)
-			if ok && page >= int(totalPages) {
-				return
-			}
-			page++
-		}
-	}
-
-	return iterator
-}
+type LoginOptionIterator = pagination.Iterator[jsonmodels.LoginOption]
 
 // Retrieve all login options available in the tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.LoginOption] {
@@ -100,9 +49,9 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 // ListAll returns an iterator for all login options
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *LoginOptionIterator {
 	// Note: loginoptions does not support PageSize parameter
-	return paginateLoginOptions(ctx, func(page int) op.Result[jsonmodels.LoginOption] {
+	return pagination.Paginate(ctx, func(page int) op.Result[jsonmodels.LoginOption] {
 		return s.List(ctx, opts)
-	}, 0)
+	}, jsonmodels.NewLoginOption, 0)
 }
 
 func (s *Service) ListB(opt any) *core.TryRequest {

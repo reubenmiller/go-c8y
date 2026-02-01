@@ -2,8 +2,6 @@ package usergroups
 
 import (
 	"context"
-	"iter"
-	"log/slog"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
@@ -52,57 +50,7 @@ type ListOptions struct {
 }
 
 // UserGroupIterator provides iteration over user groups
-type UserGroupIterator struct {
-	items iter.Seq[jsonmodels.UserGroup]
-	err   error
-}
-
-func (it *UserGroupIterator) Items() iter.Seq[jsonmodels.UserGroup] {
-	return it.items
-}
-
-func (it *UserGroupIterator) Err() error {
-	return it.err
-}
-
-func paginateUserGroups(ctx context.Context, fetch func(page int) op.Result[jsonmodels.UserGroup], maxItems int64) *UserGroupIterator {
-	iterator := &UserGroupIterator{}
-
-	iterator.items = func(yield func(jsonmodels.UserGroup) bool) {
-		page := 1
-		count := int64(0)
-		for {
-			result := fetch(page)
-			if result.Err != nil {
-				iterator.err = result.Err
-				return
-			}
-			countBeforeResults := count
-			for doc := range result.Data.Iter() {
-				if maxItems > 0 && count >= maxItems {
-					return
-				}
-				item := jsonmodels.NewUserGroup(doc.Bytes())
-				if !yield(item) {
-					return
-				}
-				count++
-			}
-			if countBeforeResults == count {
-				slog.Info("Stopping pagination as results array is empty")
-				return
-			}
-
-			totalPages, ok := result.Meta["totalPages"].(int64)
-			if ok && page >= int(totalPages) {
-				return
-			}
-			page++
-		}
-	}
-
-	return iterator
-}
+type UserGroupIterator = pagination.Iterator[jsonmodels.UserGroup]
 
 // Retrieve all groups in the tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.UserGroup] {
@@ -114,10 +62,10 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *UserGroupItera
 	if opts.PageSize == 0 {
 		opts.PageSize = 2000
 	}
-	return paginateUserGroups(ctx, func(page int) op.Result[jsonmodels.UserGroup] {
+	return pagination.Paginate(ctx, func(page int) op.Result[jsonmodels.UserGroup] {
 		opts.CurrentPage = page
 		return s.List(ctx, opts)
-	}, opts.GetMaxItems())
+	}, jsonmodels.NewUserGroup, opts.GetMaxItems())
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {
