@@ -1,6 +1,7 @@
 package op
 
 import (
+	"encoding/json"
 	"iter"
 	"net/http"
 	"time"
@@ -282,4 +283,77 @@ func First[T any](items iter.Seq[T]) (Result[T], bool) {
 		return OK(item), true
 	}
 	return NoMatch[T](), false
+}
+
+// Unwrapper is a constraint for types that can provide their raw bytes
+type Unwrapper interface {
+	Bytes() []byte
+}
+
+// IterAs transforms an iterator of JSONDoc-based items into an iterator of type U by unmarshaling.
+// Items that fail to unmarshal are skipped.
+// This is a convenience method for Result types containing collection data.
+//
+// Example:
+//
+//	type CustomMeasurement struct {
+//	    ID string `json:"id"`
+//	    Temperature struct {
+//	        Value float64 `json:"value"`
+//	    } `json:"c8y_Temperature"`
+//	}
+//	collection := client.Measurements.List(ctx, opts)
+//	for m := range collection.IterAs[CustomMeasurement]() {
+//	    fmt.Printf("Temp: %.2f\n", m.Temperature.Value)
+//	}
+func IterAs[U any, T Unwrapper](r Result[T]) iter.Seq[*U] {
+	return func(yield func(*U) bool) {
+		// Type switch to check if Data has an Iter() method
+		type Iterable interface {
+			Iter() iter.Seq[T]
+		}
+
+		if iterable, ok := any(r.Data).(Iterable); ok {
+			for item := range iterable.Iter() {
+				var decoded U
+				if err := json.Unmarshal(item.Bytes(), &decoded); err != nil {
+					continue // Skip items that fail to unmarshal
+				}
+				if !yield(&decoded) {
+					return
+				}
+			}
+		}
+	}
+}
+
+// IterAsErr transforms an iterator of JSONDoc-based items into an iterator of type U by unmarshaling.
+// Unlike IterAs, this yields both the value and any unmarshaling error.
+//
+// Example:
+//
+//	for m, err := range collection.IterAsErr[CustomMeasurement]() {
+//	    if err != nil {
+//	        log.Printf("unmarshal error: %v", err)
+//	        continue
+//	    }
+//	    fmt.Printf("Temp: %.2f\n", m.Temperature.Value)
+//	}
+func IterAsErr[U any, T Unwrapper](r Result[T]) iter.Seq2[*U, error] {
+	return func(yield func(*U, error) bool) {
+		// Type switch to check if Data has an Iter() method
+		type Iterable interface {
+			Iter() iter.Seq[T]
+		}
+
+		if iterable, ok := any(r.Data).(Iterable); ok {
+			for item := range iterable.Iter() {
+				var decoded U
+				err := json.Unmarshal(item.Bytes(), &decoded)
+				if !yield(&decoded, err) {
+					return
+				}
+			}
+		}
+	}
 }

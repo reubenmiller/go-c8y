@@ -25,13 +25,13 @@ func ExecuteResponseOnly(ctx context.Context, req *TryRequest) (*resty.Response,
 func ExecuteReturnResult[T any](ctx context.Context, req *TryRequest, fromBytes func([]byte) T) op.Result[T] {
 	resp, err := ExecuteResponseOnly(ctx, req)
 	if err != nil {
-		return op.Failed[T](err, true)
+		return op.Failed[T](err, true).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
 	}
 	if resp.StatusCode() == http.StatusCreated {
-		return op.Created(fromBytes(resp.Bytes()))
+		return op.Created(fromBytes(resp.Bytes())).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
 	}
 	// TODO: Should it return different status for update, delete etc.?
-	return op.OK(fromBytes(resp.Bytes()))
+	return op.OK(fromBytes(resp.Bytes())).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
 }
 
 // ExecuteReturnCollection extracts an array from a collection response and puts metadata in Result.Meta
@@ -40,7 +40,7 @@ func ExecuteReturnResult[T any](ctx context.Context, req *TryRequest, fromBytes 
 func ExecuteReturnCollection[T any](ctx context.Context, req *TryRequest, arrayPath, metaPath string, fromBytes func([]byte) T) op.Result[T] {
 	resp, err := ExecuteResponseOnly(ctx, req)
 	if err != nil {
-		return op.Failed[T](err, true)
+		return op.Failed[T](err, true).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
 	}
 
 	// TODO: how to do this more efficiently
@@ -66,8 +66,14 @@ func ExecuteReturnCollection[T any](ctx context.Context, req *TryRequest, arrayP
 	result.Meta["self"] = doc.Get("self").String()
 	result.Meta["prev"] = doc.Get("prev").String()
 
+	result.Meta["currentPage"] = doc.Get("statistics.currentPage").Int()
+	result.Meta["pageSize"] = doc.Get("statistics.pageSize").Int()
+	result.Meta["totalPages"] = doc.Get("statistics.totalPages").Int()
+	result.Meta["totalElements"] = doc.Get("statistics.totalElements").Int()
+
 	result.HTTPStatus = resp.StatusCode()
 	result.RequestID = resp.Header().Get("X-Request-ID")
+	result.Duration = resp.Duration()
 
 	return result
 }
@@ -86,15 +92,15 @@ func ExecuteBinaryResponse(ctx context.Context, req *TryRequest) op.Result[Binar
 	bin := NewBinaryResponse(resp)
 
 	if resp.StatusCode() == http.StatusCreated {
-		return op.Created(*bin)
+		return op.Created(*bin).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
 	}
 
 	if resp.StatusCode() == http.StatusOK {
 		if req.Request.Method == http.MethodPut {
-			return op.Updated(*bin)
+			return op.Updated(*bin).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
 		}
 	}
-	return op.OK(*bin)
+	return op.OK(*bin).WithDuration(resp.Duration())
 }
 
 type NoContent []byte
@@ -108,12 +114,12 @@ func ExecuteNoResult(ctx context.Context, req *TryRequest) op.Result[NoContent] 
 	meta["path"] = req.URL().Path
 
 	if err != nil {
-		return op.Failed[NoContent](err, true)
+		return op.Failed[NoContent](err, true).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
 	}
 	var empty NoContent
 	if resp.StatusCode() == http.StatusNoContent {
-		return op.NoContent(empty, meta)
+		return op.NoContent(empty, meta).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
 	}
 	// TODO: Should it return different status for update, delete etc.?
-	return op.OK(empty, meta)
+	return op.OK(empty, meta).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
 }

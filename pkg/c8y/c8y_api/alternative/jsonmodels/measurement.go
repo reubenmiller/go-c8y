@@ -2,6 +2,7 @@ package jsonmodels
 
 import (
 	"encoding/json"
+	"iter"
 	"time"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsondoc"
@@ -48,4 +49,10 @@ func (m Measurement) Time() time.Time {
 
 func (m Measurement) Self() string {
 	return m.Get("self").String()
+}
+
+// IterAs returns an iterator over measurements in the collection.
+// This properly constructs Measurement instances from the underlying JSON data.
+func (m Measurement) IterAs() iter.Seq[Measurement] {
+	return jsondoc.IterWith(m.Iter(), NewMeasurement)
 }

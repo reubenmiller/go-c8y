@@ -1,6 +1,8 @@
 package jsonmodels
 
 import (
+	"time"
+
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsondoc"
 )
 
@@ -26,6 +28,14 @@ func (b Binary) Type() string {
 
 func (b Binary) Self() string {
 	return b.Get("self").String()
+}
+
+func (b Binary) CreationTime() time.Time {
+	return b.Get("creationTime").Time()
+}
+
+func (b Binary) LastUpdated() time.Time {
+	return b.Get("lastUpdated").Time()
 }
 
 func (b Binary) Length() int64 {

@@ -15,9 +15,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/authentication"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/binaries"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/measurements"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
-	"github.com/tidwall/gjson"
 )
 
 type CustomField struct {
@@ -43,59 +41,59 @@ func main() {
 	}
 
 	// Get list of measurements
-	collection := new(model.MeasurementCollection)
-	resp, err := client.Measurements.ListB(measurements.ListOptions{
-		DateFrom: time.Now().Add(-20 * 24 * time.Hour),
-		DateTo:   time.Now(),
-		PaginationOptions: pagination.PaginationOptions{
-			PageSize:          1,
-			WithTotalElements: true,
-		},
-	}).
-		SetResponseBodyUnlimitedReads(true).
-		SetResult(collection).
-		SetContext(context.Background()).
-		Send()
+	collection := client.Measurements.List(
+		context.Background(),
+		measurements.ListOptions{
+			DateFrom: time.Now().Add(-20 * 24 * time.Hour),
+			DateTo:   time.Now(),
+			PaginationOptions: pagination.PaginationOptions{
+				PageSize:          1,
+				WithTotalElements: true,
+			},
+		})
 
 	// Always check for errors
-	if err != nil {
-		slog.Error("Could not retrieve alarms", "err", err)
+	if collection.Err != nil {
+		slog.Error("Could not retrieve alarms", "err", collection.Err)
 		os.Exit(1)
 	}
-	slog.Info("Response", "status", resp.Response.Status(), "duration", resp.Response.Duration())
-	// Or access the raw json (in addition to the setting the result)
-	raw := gjson.Parse(resp.String())
-	slog.Info("Measurement found", "id", raw.Get("measurements.0.id").String(), "type", raw.Get("measurements.0.type").String())
 
-	slog.Info("Measurements", "total", collection.Statistics.TotalElements)
+	slog.Info("Response", "status", collection.HTTPStatus, "duration", collection.Duration)
+
+	// Generic iteration - access only common fields
+	for measurement := range collection.Data.IterAs() {
+		slog.Info("Measurement found", "id", measurement.ID(), "type", measurement.Type())
+	}
+
+	slog.Info("Measurements", "total", collection.Meta["totalElements"])
 
 	//
 	// Alarms
-	alarmCollection, err := client.Alarms.List(context.Background(), alarms.ListOptions{
+	alarmCollection := client.Alarms.List(context.Background(), alarms.ListOptions{
 		DateFrom: time.Now().Add(-30 * 24 * time.Hour),
 	})
-	if err != nil {
-		log.Panic(err)
+	if alarmCollection.Err != nil {
+		log.Panic(alarmCollection.Err)
 	}
-	slog.Info("Alarms", "total", len(alarmCollection.Alarms))
+	slog.Info("Alarms", "total", alarmCollection.Data.Length())
 
 	// Inventory binaries
 	exampleCreateBinary(client)
 }
 
 func exampleCreateBinary(client *c8y_api.Client) error {
-	binary, err := client.Binaries.Create(context.Background(), binaries.UploadFileOptions{
+	binary := client.Binaries.Create(context.Background(), binaries.UploadFileOptions{
 		Reader: strings.NewReader(`hello`),
 		Name:   "unknown",
 	})
-	if err != nil {
-		return err
+	if binary.Err != nil {
+		return binary.Err
 	}
 
-	slog.Info("Successfully created binary", "id", binary.ID, "lastUpdated(ago)", time.Since(binary.LastUpdated))
+	slog.Info("Successfully created binary", "id", binary.Data.ID(), "lastUpdated(ago)", time.Since(binary.Data.LastUpdated()))
 
-	if err := client.Binaries.Delete(context.TODO(), binary.ID); err != nil {
-		slog.Error("Failed to delete binary", "err", err)
+	if result := client.Binaries.Delete(context.TODO(), binary.Data.ID()); result.Err != nil {
+		slog.Error("Failed to delete binary", "err", result.Err)
 	}
 	return nil
 }
