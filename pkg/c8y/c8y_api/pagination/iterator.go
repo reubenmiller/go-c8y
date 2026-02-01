@@ -30,22 +30,27 @@ func (it *Iterator[T]) Err() error {
 }
 
 // Paginate creates an iterator that fetches pages and constructs items of type T
-// fetch: function to fetch a page (receives page number, returns Result with collection)
+// paginationOpts: pagination options (passed by value - will not modify caller's copy)
+// fetch: function to fetch a page (returns Result with collection)
 // constructor: function to construct a T from JSON bytes
-// maxItems: maximum number of items to return (0 for unlimited)
 func Paginate[T any, D JSONDocument](
 	ctx context.Context,
-	fetch func(page int) op.Result[D],
+	paginationOpts PaginationOptions,
+	fetch func() op.Result[D],
 	constructor func([]byte) T,
-	maxItems int64,
 ) *Iterator[T] {
 	iterator := &Iterator[T]{}
+
+	// Set optimal page size if not already set
+	paginationOpts.PageSize = paginationOpts.OptimalPageSize()
+	maxItems := paginationOpts.GetMaxItems()
 
 	iterator.items = func(yield func(T) bool) {
 		page := 1
 		count := int64(0)
 		for {
-			result := fetch(page)
+			paginationOpts.CurrentPage = page
+			result := fetch()
 			if result.Err != nil {
 				iterator.err = result.Err
 				return

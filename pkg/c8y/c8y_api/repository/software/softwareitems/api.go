@@ -81,13 +81,9 @@ type SoftwareIterator = pagination.Iterator[jsonmodels.Software]
 
 // ListAll returns an iterator for all software items
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *SoftwareIterator {
-	if opts.PageSize == 0 {
-		opts.PageSize = 2000
-	}
-	return pagination.Paginate(ctx, func(page int) op.Result[jsonmodels.Software] {
-		opts.CurrentPage = page
+	return pagination.Paginate(ctx, opts.PaginationOptions, func() op.Result[jsonmodels.Software] {
 		return s.List(ctx, opts)
-	}, jsonmodels.NewSoftware, opts.GetMaxItems())
+	}, jsonmodels.NewSoftware)
 }
 
 type GetOptions struct {

@@ -51,13 +51,9 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 
 // ListAll returns an iterator for all user roles
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *RoleIterator {
-	if opts.PageSize == 0 {
-		opts.PageSize = 2000
-	}
-	return pagination.Paginate(ctx, func(page int) op.Result[jsonmodels.Role] {
-		opts.CurrentPage = page
+	return pagination.Paginate(ctx, opts.PaginationOptions, func() op.Result[jsonmodels.Role] {
 		return s.List(ctx, opts)
-	}, jsonmodels.NewRole, opts.GetMaxItems())
+	}, jsonmodels.NewRole)
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {

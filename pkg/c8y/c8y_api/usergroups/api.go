@@ -59,13 +59,9 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 
 // ListAll returns an iterator for all user groups
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *UserGroupIterator {
-	if opts.PageSize == 0 {
-		opts.PageSize = 2000
-	}
-	return pagination.Paginate(ctx, func(page int) op.Result[jsonmodels.UserGroup] {
-		opts.CurrentPage = page
+	return pagination.Paginate(ctx, opts.PaginationOptions, func() op.Result[jsonmodels.UserGroup] {
 		return s.List(ctx, opts)
-	}, jsonmodels.NewUserGroup, opts.GetMaxItems())
+	}, jsonmodels.NewUserGroup)
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {

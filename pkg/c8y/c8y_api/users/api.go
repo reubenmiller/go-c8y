@@ -73,13 +73,9 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 
 // ListAll returns an iterator for all users
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *UserIterator {
-	if opts.PageSize == 0 {
-		opts.PageSize = 2000
-	}
-	return pagination.Paginate(ctx, func(page int) op.Result[jsonmodels.User] {
-		opts.CurrentPage = page
+	return pagination.Paginate(ctx, opts.PaginationOptions, func() op.Result[jsonmodels.User] {
 		return s.List(ctx, opts)
-	}, jsonmodels.NewUser, opts.GetMaxItems())
+	}, jsonmodels.NewUser)
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {

@@ -52,13 +52,9 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 
 // ListAll returns an iterator for all measurements
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *MeasurementIterator {
-	if opts.PageSize == 0 {
-		opts.PageSize = 2000
-	}
-	return pagination.Paginate(ctx, func(page int) op.Result[jsonmodels.Measurement] {
-		opts.CurrentPage = page
+	return pagination.Paginate(ctx, opts.PaginationOptions, func() op.Result[jsonmodels.Measurement] {
 		return s.List(ctx, opts)
-	}, jsonmodels.NewMeasurement, opts.GetMaxItems())
+	}, jsonmodels.NewMeasurement)
 }
 
 func (s *Service) ListB(opt any) *core.TryRequest {

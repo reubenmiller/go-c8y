@@ -40,13 +40,9 @@ func (s *Service) List(ctx context.Context, parentID string, opt ListOptions) op
 
 // ListAll returns an iterator for all child assets
 func (s *Service) ListAll(ctx context.Context, parentID string, opts ListOptions) *ManagedObjectIterator {
-	if opts.PageSize == 0 {
-		opts.PageSize = 2000
-	}
-	return pagination.Paginate(ctx, func(page int) op.Result[jsonmodels.ManagedObject] {
-		opts.CurrentPage = page
+	return pagination.Paginate(ctx, opts.PaginationOptions, func() op.Result[jsonmodels.ManagedObject] {
 		return s.List(ctx, parentID, opts)
-	}, jsonmodels.NewManagedObject, opts.GetMaxItems())
+	}, jsonmodels.NewManagedObject)
 }
 
 func (s *Service) ListB(parentID string, opt ListOptions) *core.TryRequest {

@@ -36,6 +36,9 @@ type ListOptions struct {
 
 	// Unique identifier of a Cumulocity tenant
 	TenantID bool `url:"tenantId,omitempty"`
+
+	// Pagination options
+	pagination.PaginationOptions
 }
 
 // LoginOptionIterator provides iteration over login options
@@ -48,10 +51,9 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 
 // ListAll returns an iterator for all login options
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *LoginOptionIterator {
-	// Note: loginoptions does not support PageSize parameter
-	return pagination.Paginate(ctx, func(page int) op.Result[jsonmodels.LoginOption] {
+	return pagination.Paginate(ctx, opts.PaginationOptions, func() op.Result[jsonmodels.LoginOption] {
 		return s.List(ctx, opts)
-	}, jsonmodels.NewLoginOption, 0)
+	}, jsonmodels.NewLoginOption)
 }
 
 func (s *Service) ListB(opt any) *core.TryRequest {

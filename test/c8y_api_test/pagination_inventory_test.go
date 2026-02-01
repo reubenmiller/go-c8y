@@ -43,7 +43,7 @@ func Test_ForEachManagedObjectsMaxPages(t *testing.T) {
 	it := client.ManagedObjects.ListAll(context.Background(), managedobjects.ListOptions{
 		Type: "thin-edge.io",
 		PaginationOptions: pagination.PaginationOptions{
-			MaxPages: 2,
+			MaxItems: 20,
 			PageSize: 10,
 		},
 	})
@@ -70,7 +70,7 @@ func Test_ForEachCustomModel_Infallable(t *testing.T) {
 	it := client.ManagedObjects.ListAll(context.Background(), managedobjects.ListOptions{
 		Type: "thin-edge.io",
 		PaginationOptions: pagination.PaginationOptions{
-			MaxPages: 2,
+			MaxItems: 20,
 			PageSize: 10,
 		},
 	})
@@ -100,7 +100,7 @@ func Test_ForEachCustomModel_Fallable(t *testing.T) {
 	it := client.ManagedObjects.ListAll(context.Background(), managedobjects.ListOptions{
 		Type: "thin-edge.io",
 		PaginationOptions: pagination.PaginationOptions{
-			MaxPages: 2,
+			MaxItems: 20,
 			PageSize: 10,
 		},
 	})
@@ -127,7 +127,7 @@ func Test_ManagedObjectsAdvanced(t *testing.T) {
 
 	it := client.ManagedObjects.ListAll(context.Background(), managedobjects.ListOptions{
 		PaginationOptions: pagination.PaginationOptions{
-			MaxPages: 2,
+			MaxItems: 100,
 		},
 	})
 	assert.NoError(t, it.Err())

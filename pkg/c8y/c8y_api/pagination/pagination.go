@@ -34,9 +34,6 @@ type PaginationOptions struct {
 	// Defines the slice of data to be returned, starting with 1. By default, the first page is returned.
 	CurrentPage int `url:"currentPage,omitempty,omitzero"`
 
-	// Limit to the maximum given pages when doing client side paging
-	MaxPages int64 `url:"-"`
-
 	// Limit to the maximum number of items when doing client side paging
 	MaxItems int64 `url:"-"`
 }
@@ -46,7 +43,29 @@ func (o PaginationOptions) IsZero() bool {
 }
 
 func (o PaginationOptions) GetMaxItems() int64 {
-	return max(o.MaxItems, o.MaxPages*int64(o.PageSize))
+	return o.MaxItems
+}
+
+// OptimalPageSize calculates the optimal page size based on MaxItems
+// Returns the smaller of: MaxItems (if set), current PageSize (if set), or 2000 (max allowed)
+func (o PaginationOptions) OptimalPageSize() int {
+	const maxAllowed = 2000
+
+	// If PageSize is already set, respect it but cap at max
+	if o.PageSize > 0 {
+		if o.PageSize > maxAllowed {
+			return maxAllowed
+		}
+		return o.PageSize
+	}
+
+	// If MaxItems is set and less than max, use it as PageSize
+	if o.MaxItems > 0 && o.MaxItems < maxAllowed {
+		return int(o.MaxItems)
+	}
+
+	// Default to max allowed
+	return maxAllowed
 }
 
 // Set the current page to return

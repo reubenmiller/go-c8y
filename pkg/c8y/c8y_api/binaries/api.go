@@ -64,13 +64,9 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 
 // ListAll returns an iterator for all binaries
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *BinaryIterator {
-	if opts.PageSize == 0 {
-		opts.PageSize = 2000
-	}
-	return pagination.Paginate(ctx, func(page int) op.Result[jsonmodels.Binary] {
-		opts.CurrentPage = page
+	return pagination.Paginate(ctx, opts.PaginationOptions, func() op.Result[jsonmodels.Binary] {
 		return s.List(ctx, opts)
-	}, jsonmodels.NewBinary, opts.GetMaxItems())
+	}, jsonmodels.NewBinary)
 }
 
 func (s *Service) ListB(opt ListOptions) *core.TryRequest {
