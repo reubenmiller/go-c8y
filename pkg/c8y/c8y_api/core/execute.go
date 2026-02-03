@@ -24,6 +24,26 @@ func ExecuteResponseOnly(ctx context.Context, req *TryRequest) (*resty.Response,
 }
 
 func ExecuteReturnResult[T any](ctx context.Context, req *TryRequest, fromBytes func([]byte) T) op.Result[T] {
+	// Check if execution should be deferred
+	if ctxhelpers.IsDeferredExecution(ctx) {
+		// Build the request to capture all parameters (including resolved IDs)
+		// but don't send it yet
+		dryRunCtx := ctxhelpers.WithDryRun(ctx, true)
+		resp, _ := req.Request.SetContext(dryRunCtx).Send()
+
+		var httpReq *http.Request
+		if resp != nil {
+			httpReq = resp.Request.RawRequest
+		}
+
+		// Return a result with the executor function
+		return op.Result[T]{
+			Request: httpReq,
+		}.WithExecutor(func(execCtx context.Context) op.Result[T] {
+			return ExecuteReturnResult(execCtx, req, fromBytes)
+		})
+	}
+
 	resp, err := ExecuteResponseOnly(ctx, req)
 
 	// Only capture request in dry run mode for inspection
@@ -50,6 +70,25 @@ func ExecuteReturnResult[T any](ctx context.Context, req *TryRequest, fromBytes 
 // arrayPath is the JSON path to the array (e.g., "managedObjects")
 // metaPath is the JSON path to pagination metadata (e.g., "statistics")
 func ExecuteReturnCollection[T any](ctx context.Context, req *TryRequest, arrayPath, metaPath string, fromBytes func([]byte) T) op.Result[T] {
+	// Check if execution should be deferred
+	if ctxhelpers.IsDeferredExecution(ctx) {
+		// Build the request to capture all parameters
+		dryRunCtx := ctxhelpers.WithDryRun(ctx, true)
+		resp, _ := req.Request.SetContext(dryRunCtx).Send()
+
+		var httpReq *http.Request
+		if resp != nil {
+			httpReq = resp.Request.RawRequest
+		}
+
+		// Return a result with the executor function
+		return op.Result[T]{
+			Request: httpReq,
+		}.WithExecutor(func(execCtx context.Context) op.Result[T] {
+			return ExecuteReturnCollection(execCtx, req, arrayPath, metaPath, fromBytes)
+		})
+	}
+
 	resp, err := ExecuteResponseOnly(ctx, req)
 
 	// Only capture request in dry run mode for inspection
@@ -104,6 +143,25 @@ func ExecuteReturnCollection[T any](ctx context.Context, req *TryRequest, arrayP
 
 // Execute a request which expects a binary response which allows the user to read the body
 func ExecuteBinaryResponse(ctx context.Context, req *TryRequest) op.Result[BinaryResponse] {
+	// Check if execution should be deferred
+	if ctxhelpers.IsDeferredExecution(ctx) {
+		// Build the request to capture all parameters
+		dryRunCtx := ctxhelpers.WithDryRun(ctx, true)
+		resp, _ := req.Request.SetContext(dryRunCtx).SetDoNotParseResponse(true).Send()
+
+		var httpReq *http.Request
+		if resp != nil {
+			httpReq = resp.Request.RawRequest
+		}
+
+		// Return a result with the executor function
+		return op.Result[BinaryResponse]{
+			Request: httpReq,
+		}.WithExecutor(func(execCtx context.Context) op.Result[BinaryResponse] {
+			return ExecuteBinaryResponse(execCtx, req)
+		})
+	}
+
 	resp, err := coupleAPIErrors(req.Request.
 		SetContext(ctx).
 		SetDoNotParseResponse(true).
@@ -137,6 +195,25 @@ type NoContent []byte
 
 // Execute a request that doesn't any result only if there was an error or not
 func ExecuteNoResult(ctx context.Context, req *TryRequest) op.Result[NoContent] {
+	// Check if execution should be deferred
+	if ctxhelpers.IsDeferredExecution(ctx) {
+		// Build the request to capture all parameters
+		dryRunCtx := ctxhelpers.WithDryRun(ctx, true)
+		resp, _ := req.Request.SetContext(dryRunCtx).Send()
+
+		var httpReq *http.Request
+		if resp != nil {
+			httpReq = resp.Request.RawRequest
+		}
+
+		// Return a result with the executor function
+		return op.Result[NoContent]{
+			Request: httpReq,
+		}.WithExecutor(func(execCtx context.Context) op.Result[NoContent] {
+			return ExecuteNoResult(execCtx, req)
+		})
+	}
+
 	resp, err := ExecuteResponseOnly(ctx, req)
 
 	meta := map[string]any{}

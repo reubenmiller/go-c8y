@@ -1,6 +1,7 @@
 package op
 
 import (
+	"context"
 	"encoding/json"
 	"iter"
 	"net/http"
@@ -43,6 +44,9 @@ type Result[T any] struct {
 
 	// Request details for inspection (e.g., dry run, debugging)
 	Request *http.Request // The HTTP request that was (or would be) sent
+
+	// Deferred execution support
+	executor func(context.Context) Result[T] // Function to execute the actual operation
 }
 
 // OK creates a successful result for retrieved resource
@@ -188,6 +192,26 @@ func (r Result[T]) WithDuration(duration time.Duration) Result[T] {
 func (r Result[T]) WithRequest(req *http.Request) Result[T] {
 	r.Request = req
 	return r
+}
+
+// WithExecutor stores the execution function for deferred execution
+func (r Result[T]) WithExecutor(executor func(context.Context) Result[T]) Result[T] {
+	r.executor = executor
+	return r
+}
+
+// IsDeferred returns true if this result has deferred execution
+func (r Result[T]) IsDeferred() bool {
+	return r.executor != nil
+}
+
+// Execute runs the deferred operation if present, otherwise returns self
+// This allows: prepared := client.Delete(ctx, id); result := prepared.Execute(ctx)
+func (r Result[T]) Execute(ctx context.Context) Result[T] {
+	if r.executor != nil {
+		return r.executor(ctx)
+	}
+	return r // Already executed
 }
 
 // WithMeta adds metadata to the result

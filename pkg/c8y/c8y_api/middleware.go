@@ -39,6 +39,19 @@ func ShouldRedactHeaders(ctx context.Context) bool {
 	return ctxhelpers.ShouldRedactHeaders(ctx)
 }
 
+// WithDeferredExecution returns a context with deferred execution enabled
+// When enabled, operations will prepare the request (including parameter resolution)
+// but won't execute the HTTP call until Result.Execute() is called.
+// This is useful for confirmation prompts before destructive operations.
+func WithDeferredExecution(ctx context.Context, enabled bool) context.Context {
+	return ctxhelpers.WithDeferredExecution(ctx, enabled)
+}
+
+// IsDeferredExecution checks if deferred execution is enabled in the context
+func IsDeferredExecution(ctx context.Context) bool {
+	return ctxhelpers.IsDeferredExecution(ctx)
+}
+
 // DryRunTransport wraps an http.RoundTripper and intercepts requests when dry run is enabled
 type DryRunTransport struct {
 	Transport http.RoundTripper
