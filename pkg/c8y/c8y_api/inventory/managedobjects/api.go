@@ -2,6 +2,7 @@ package managedobjects
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
@@ -10,6 +11,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects/childadditions"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects/childassets"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects/childdevices"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/source"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
@@ -57,6 +59,8 @@ type ListOptions struct {
 	Ids []string `url:"ids,omitempty"`
 
 	Query string `url:"query,omitempty"`
+
+	DeviceQuery string `url:"q,omitempty"`
 
 	GetOptions
 
@@ -198,18 +202,41 @@ func (s *Service) ByExternalID(typ, externalID string) source.Resolver {
 }
 
 // ByName creates a resolver that looks up a managed object by its name.
-// Note: This requires implementing a List method that supports name filtering.
-// Returns a source.Resolver that can be used with any API that accepts source resolution.
-//
-// TODO: Implement once ManagedObjects.List is available
-// func (s *Service) ByName(name string) source.Resolver {
-//     return source.Name{
-//         Name: name,
-//         Lookup: func(ctx context.Context, n string) (string, error) {
-//             // Implementation pending
-//         },
-//     }
-// }
+func (s *Service) ByName(name string, additionalQueries ...string) source.Resolver {
+	return source.Name{
+		Name: name,
+		Lookup: func(ctx context.Context, n string) (string, map[string]any, error) {
+			result := s.List(context.Background(), ListOptions{
+				DeviceQuery: model.NewInventoryQuery().
+					AddFilterEqStr("name", n).
+					AddFilterPart(additionalQueries...).
+					AddOrderBy("name").
+					AddOrderBy("creationTime").
+					Build(),
+				PaginationOptions: pagination.PaginationOptions{
+					PageSize: 1,
+				},
+			})
+			if result.Err != nil {
+				return "", nil, result.Err
+			}
+
+			// if result.Data.Length() == 0 {
+			// 	return "", nil, fmt.Errorf("no device found with name: %s", n)
+			// }
+
+			for item := range op.Iter(result) {
+				meta := map[string]any{
+					"name":  item.Name(),
+					"owner": item.Owner(),
+				}
+				return item.ID(), meta, nil
+			}
+
+			return "", nil, fmt.Errorf("no device found with name: %s", n)
+		},
+	}
+}
 
 // Custom creates a resolver with custom resolution logic.
 // This allows you to define your own logic for resolving a managed object ID.
