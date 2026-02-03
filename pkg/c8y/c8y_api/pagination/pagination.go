@@ -70,30 +70,6 @@ func (o PaginationOptions) SetPageSize(v int) *PaginationOptions {
 	return &o
 }
 
-type PagerOptions struct {
-	MaxPages    int64 `url:"-"`
-	MaxItems    int64 `url:"-"`
-	PageSize    int64 `url:"pageSize"`
-	CurrentPage int64 `url:"currentPage"`
-}
-
-func IncludeAll() PagerOptions {
-	return PagerOptions{}
-}
-
-func DefaultSearch() PagerOptions {
-	return PagerOptions{
-		MaxItems: 6000,
-	}
-}
-
-func (p *PagerOptions) GetPageSize() int64 {
-	if p.PageSize <= 0 {
-		return 2000
-	}
-	return p.PageSize
-}
-
 // NewPaginationOptions returns a pagination options object with a specified pagesize and WithTotalPages set to false
 func NewPaginationOptions(pageSize int) PaginationOptions {
 	return PaginationOptions{
