@@ -24,6 +24,6 @@ func (s *Service) Create(ctx context.Context, id string, opts IdentityOptions) o
 }
 
 // Delete removes an external identity
-func (s *Service) Delete(ctx context.Context, opts IdentityOptions) op.Result[jsonmodels.Identity] {
-	return core.ExecuteReturnResult(ctx, s.DeleteB(opts), jsonmodels.NewIdentity)
+func (s *Service) Delete(ctx context.Context, opts IdentityOptions) op.Result[core.NoContent] {
+	return core.ExecuteNoResult(ctx, s.DeleteB(opts))
 }
