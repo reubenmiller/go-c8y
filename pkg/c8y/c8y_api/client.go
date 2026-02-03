@@ -27,6 +27,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/measurements"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/microservices"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/operations"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/remoteaccess"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/repository"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/retentionrules"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/source"
@@ -115,7 +116,7 @@ type Client struct {
 	Identity            *identity.Service
 	TrustedCertificates *trustedcertificates.Service
 	// Notification2        *Notification2Service
-	// RemoteAccess         *RemoteAccessService
+	RemoteAccess   *remoteaccess.Service
 	RetentionRules *retentionrules.Service
 	// Firmware             *InventoryFirmwareService
 	Users      *users.Service
@@ -253,7 +254,7 @@ func NewClient(opts ClientOptions) *Client {
 	// c.UIExtension = (*UIExtensionService)(&c.common)
 	// c.Notification2 = (*Notification2Service)(&c.common)
 	// c.Context = (*ContextService)(&c.common)
-	// c.RemoteAccess = (*RemoteAccessService)(&c.common)
+	c.RemoteAccess = remoteaccess.NewService(&c.common)
 	c.RetentionRules = retentionrules.NewService(&c.common)
 	// c.Software = (*InventorySoftwareService)(&c.common)
 	// c.Firmware = (*InventoryFirmwareService)(&c.common)

@@ -1,0 +1,143 @@
+package remoteaccess_configurations
+
+import (
+	"context"
+
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/source"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
+	"resty.dev/v3"
+)
+
+var ApiConfigurations = "/service/remoteaccess/devices/{managedObjectID}/configurations"
+var ApiConfiguration = "/service/remoteaccess/devices/{managedObjectID}/configurations/{id}"
+
+var ParamId = "id"
+var ParamManagedObjectID = "managedObjectID"
+
+// Service provides api to managed Cloud Remote Access configurations
+type Service core.Service
+
+func NewService(common *core.Service) *Service {
+	return (*Service)(common)
+}
+
+type ListOptions struct {
+	ManagedObjectID  string `url:"-"`
+	ManagedObjectRef source.Resolver
+}
+
+// Resolve resolves all reference fields (ApplicationRef) to their concrete values.
+// Only resolves if the direct field (ID) is not already set.
+func (opt *ListOptions) Resolve(ctx context.Context) error {
+	if opt.ManagedObjectRef != nil && opt.ManagedObjectID == "" {
+		result, err := opt.ManagedObjectRef.ResolveID(ctx)
+		if err != nil {
+			return err
+		}
+		opt.ManagedObjectID = result.ID
+	}
+	return nil
+}
+
+// List remote access configurations
+func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.RemoteAccessConfiguration] {
+	if err := opt.Resolve(ctx); err != nil {
+		return op.Failed[jsonmodels.RemoteAccessConfiguration](err, true)
+	}
+	return core.ExecuteReturnCollection(ctx, s.ListB(opt), "", "", jsonmodels.NewRemoteAccessConfiguration)
+}
+
+func (s *Service) ListB(opt ListOptions) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodGet).
+		SetPathParam(ParamManagedObjectID, opt.ManagedObjectID).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetURL(ApiConfigurations)
+	return core.NewTryRequest(s.Client, req)
+}
+
+type GetOptions struct {
+	ManagedObjectID string `url:"-"`
+	ConfigurationID string `url:"-"`
+}
+
+// Get remote access configuration
+func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.RemoteAccessConfiguration] {
+	return core.ExecuteReturnResult(ctx, s.GetB(opt), jsonmodels.NewRemoteAccessConfiguration)
+}
+
+func (s *Service) GetB(opt GetOptions) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodGet).
+		SetPathParam(ParamManagedObjectID, opt.ManagedObjectID).
+		SetPathParam(ParamId, opt.ConfigurationID).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetURL(ApiConfiguration)
+	return core.NewTryRequest(s.Client, req)
+}
+
+type CreateOptions struct {
+	ManagedObjectID string
+	Body            any
+}
+
+// Create remote access configuration
+func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.RemoteAccessConfiguration] {
+	return core.ExecuteReturnResult(ctx, s.CreateB(opt, opt.Body), jsonmodels.NewRemoteAccessConfiguration)
+}
+
+func (s *Service) CreateB(opt CreateOptions, body any) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodPost).
+		SetPathParam(ParamManagedObjectID, opt.ManagedObjectID).
+		SetContentType(types.MimeTypeApplicationJSON).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetBody(body).
+		SetURL(ApiConfigurations)
+	return core.NewTryRequest(s.Client, req)
+}
+
+type UpdateOptions struct {
+	ManagedObjectID string
+	ConfigurationID string
+	Body            any
+}
+
+// Update remote access configuration
+func (s *Service) Update(ctx context.Context, opt UpdateOptions) op.Result[jsonmodels.RemoteAccessConfiguration] {
+	return core.ExecuteReturnResult(ctx, s.UpdateB(opt), jsonmodels.NewRemoteAccessConfiguration)
+}
+
+func (s *Service) UpdateB(opt UpdateOptions) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodPut).
+		SetPathParam(ParamManagedObjectID, opt.ManagedObjectID).
+		SetPathParam(ParamId, opt.ConfigurationID).
+		SetBody(opt.Body).
+		SetContentType(types.MimeTypeApplicationJSON).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetURL(ApiConfiguration)
+	return core.NewTryRequest(s.Client, req)
+}
+
+type DeleteOptions struct {
+	ManagedObjectID string
+	ConfigurationID string
+}
+
+// Delete remote access configuration
+func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.NoContent] {
+	return core.ExecuteNoResult(ctx, s.DeleteB(opt))
+}
+
+func (s *Service) DeleteB(opt DeleteOptions) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodDelete).
+		SetPathParam(ParamManagedObjectID, opt.ManagedObjectID).
+		SetPathParam(ParamId, opt.ConfigurationID).
+		SetURL(ApiConfiguration)
+	return core.NewTryRequest(s.Client, req)
+}
