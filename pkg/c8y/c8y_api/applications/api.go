@@ -361,7 +361,6 @@ func (s *Service) ByName(name string, appType string) source.Resolver {
 				return "", nil, result.Err
 			}
 
-			// Check if we got exactly one result
 			if result.Data.Length() == 0 {
 				return "", nil, fmt.Errorf("no application found with name: %s", n)
 			}
