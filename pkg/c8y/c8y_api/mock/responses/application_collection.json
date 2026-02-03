@@ -1,0 +1,15 @@
+{
+  "applications": [
+    {
+      "id": "33333",
+      "name": "Mock Application",
+      "key": "mock-app-key",
+      "type": "HOSTED"
+    }
+  ],
+  "statistics": {
+    "currentPage": 1,
+    "pageSize": 1,
+    "totalPages": 1
+  }
+}

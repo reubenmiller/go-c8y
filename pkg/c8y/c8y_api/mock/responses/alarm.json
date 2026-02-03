@@ -1,0 +1,14 @@
+{
+  "id": "54321",
+  "type": "c8y_TemperatureAlarm",
+  "severity": "MAJOR",
+  "status": "ACTIVE",
+  "text": "Mock temperature alarm",
+  "source": {
+    "id": "12345",
+    "self": "https://mock.c8y.io/inventory/managedObjects/12345"
+  },
+  "time": "2024-01-01T00:00:00.000Z",
+  "creationTime": "2024-01-01T00:00:00.000Z",
+  "self": "https://mock.c8y.io/alarm/alarms/54321"
+}

@@ -1,0 +1,13 @@
+{
+  "id": "33333",
+  "name": "Mock Application",
+  "key": "mock-app-key",
+  "type": "HOSTED",
+  "availability": "MARKET",
+  "owner": {
+    "tenant": {
+      "id": "t12345"
+    }
+  },
+  "self": "https://mock.c8y.io/application/applications/33333"
+}

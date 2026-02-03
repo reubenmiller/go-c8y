@@ -40,6 +40,9 @@ type Result[T any] struct {
 	Duration  time.Duration // Total operation duration
 	RequestID string        // Correlation ID for debugging
 	Timestamp time.Time     // When the operation completed
+
+	// Request details for inspection (e.g., dry run, debugging)
+	Request *http.Request // The HTTP request that was (or would be) sent
 }
 
 // OK creates a successful result for retrieved resource
@@ -178,6 +181,12 @@ func (r Result[T]) WithAttempts(attempts int) Result[T] {
 // WithDuration sets the operation duration
 func (r Result[T]) WithDuration(duration time.Duration) Result[T] {
 	r.Duration = duration
+	return r
+}
+
+// WithRequest sets the HTTP request
+func (r Result[T]) WithRequest(req *http.Request) Result[T] {
+	r.Request = req
 	return r
 }
 

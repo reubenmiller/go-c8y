@@ -1,0 +1,8 @@
+{
+  "id": "11111",
+  "status": "PENDING",
+  "deviceId": "12345",
+  "creationTime": "2024-01-01T00:00:00.000Z",
+  "self": "https://mock.c8y.io/devicecontrol/operations/11111",
+  "c8y_Restart": {}
+}

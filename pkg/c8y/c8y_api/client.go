@@ -198,7 +198,17 @@ func NewClient(opts ClientOptions) *Client {
 		rclient.SetBaseURL(targetBaseURL.String())
 	}
 
-	rclient.TLSClientConfig().InsecureSkipVerify = opts.InsecureSkipVerify
+	// Configure TLS
+	tlsConfig := rclient.TLSClientConfig()
+	tlsConfig.InsecureSkipVerify = opts.InsecureSkipVerify
+
+	// Wrap the default transport with DryRunTransport to support context-based dry run
+	defaultTransport := http.DefaultTransport.(*http.Transport).Clone()
+	defaultTransport.TLSClientConfig = tlsConfig
+
+	rclient.SetTransport(&DryRunTransport{
+		Transport: defaultTransport,
+	})
 
 	if opts.UseKeyRing {
 		if tok, err := keyring.Get(KeyringName(targetBaseURL, opts.Auth.Tenant), opts.Auth.Username); err == nil {

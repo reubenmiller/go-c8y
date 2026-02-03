@@ -1,0 +1,16 @@
+{
+  "operations": [
+    {
+      "id": "11111",
+      "status": "PENDING",
+      "deviceId": "12345",
+      "creationTime": "2024-01-01T00:00:00.000Z",
+      "c8y_Restart": {}
+    }
+  ],
+  "statistics": {
+    "currentPage": 1,
+    "pageSize": 1,
+    "totalPages": 1
+  }
+}

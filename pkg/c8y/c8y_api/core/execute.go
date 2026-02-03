@@ -6,6 +6,7 @@ import (
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsondoc"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
+	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/internal/context"
 	"resty.dev/v3"
 )
 
@@ -24,14 +25,25 @@ func ExecuteResponseOnly(ctx context.Context, req *TryRequest) (*resty.Response,
 
 func ExecuteReturnResult[T any](ctx context.Context, req *TryRequest, fromBytes func([]byte) T) op.Result[T] {
 	resp, err := ExecuteResponseOnly(ctx, req)
+
+	// Only capture request in dry run mode for inspection
+	var httpReq *http.Request
+	if resp != nil && ctxhelpers.IsDryRun(ctx) {
+		httpReq = resp.Request.RawRequest
+	}
+
 	if err != nil {
-		return op.Failed[T](err, true).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
+		result := op.Failed[T](err, true)
+		if resp != nil {
+			result = result.WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
+		}
+		return result.WithRequest(httpReq)
 	}
 	if resp.StatusCode() == http.StatusCreated {
-		return op.Created(fromBytes(resp.Bytes())).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
+		return op.Created(fromBytes(resp.Bytes())).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
 	}
 	// TODO: Should it return different status for update, delete etc.?
-	return op.OK(fromBytes(resp.Bytes())).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
+	return op.OK(fromBytes(resp.Bytes())).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
 }
 
 // ExecuteReturnCollection extracts an array from a collection response and puts metadata in Result.Meta
@@ -39,8 +51,19 @@ func ExecuteReturnResult[T any](ctx context.Context, req *TryRequest, fromBytes 
 // metaPath is the JSON path to pagination metadata (e.g., "statistics")
 func ExecuteReturnCollection[T any](ctx context.Context, req *TryRequest, arrayPath, metaPath string, fromBytes func([]byte) T) op.Result[T] {
 	resp, err := ExecuteResponseOnly(ctx, req)
+
+	// Only capture request in dry run mode for inspection
+	var httpReq *http.Request
+	if resp != nil && ctxhelpers.IsDryRun(ctx) {
+		httpReq = resp.Request.RawRequest
+	}
+
 	if err != nil {
-		return op.Failed[T](err, true).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
+		result := op.Failed[T](err, true)
+		if resp != nil {
+			result = result.WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
+		}
+		return result.WithRequest(httpReq)
 	}
 
 	// TODO: how to do this more efficiently
@@ -74,6 +97,7 @@ func ExecuteReturnCollection[T any](ctx context.Context, req *TryRequest, arrayP
 	result.HTTPStatus = resp.StatusCode()
 	result.RequestID = resp.Header().Get("X-Request-ID")
 	result.Duration = resp.Duration()
+	result.Request = httpReq
 
 	return result
 }
@@ -91,16 +115,22 @@ func ExecuteBinaryResponse(ctx context.Context, req *TryRequest) op.Result[Binar
 
 	bin := NewBinaryResponse(resp)
 
+	// Only capture request in dry run mode for inspection
+	var httpReq *http.Request
+	if resp != nil && ctxhelpers.IsDryRun(ctx) {
+		httpReq = resp.Request.RawRequest
+	}
+
 	if resp.StatusCode() == http.StatusCreated {
-		return op.Created(*bin).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
+		return op.Created(*bin).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
 	}
 
 	if resp.StatusCode() == http.StatusOK {
 		if req.Request.Method == http.MethodPut {
-			return op.Updated(*bin).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
+			return op.Updated(*bin).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
 		}
 	}
-	return op.OK(*bin).WithDuration(resp.Duration())
+	return op.OK(*bin).WithDuration(resp.Duration()).WithRequest(httpReq)
 }
 
 type NoContent []byte
@@ -113,13 +143,23 @@ func ExecuteNoResult(ctx context.Context, req *TryRequest) op.Result[NoContent] 
 	meta["url"] = req.URL().String()
 	meta["path"] = req.URL().Path
 
+	// Only capture request in dry run mode for inspection
+	var httpReq *http.Request
+	if resp != nil && ctxhelpers.IsDryRun(ctx) {
+		httpReq = resp.Request.RawRequest
+	}
+
 	if err != nil {
-		return op.Failed[NoContent](err, true).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
+		result := op.Failed[NoContent](err, true)
+		if resp != nil {
+			result = result.WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
+		}
+		return result.WithRequest(httpReq)
 	}
 	var empty NoContent
 	if resp.StatusCode() == http.StatusNoContent {
-		return op.NoContent(empty, meta).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
+		return op.NoContent(empty, meta).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
 	}
 	// TODO: Should it return different status for update, delete etc.?
-	return op.OK(empty, meta).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
+	return op.OK(empty, meta).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
 }

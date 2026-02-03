@@ -1,0 +1,25 @@
+{
+  "managedObjects": [
+    {
+      "id": "12345",
+      "type": "c8y_Device",
+      "name": "Mock Device 1",
+      "owner": "device_mock",
+      "self": "https://mock.c8y.io/inventory/managedObjects/12345"
+    },
+    {
+      "id": "12346",
+      "type": "c8y_Device",
+      "name": "Mock Device 2",
+      "owner": "device_mock",
+      "self": "https://mock.c8y.io/inventory/managedObjects/12346"
+    }
+  ],
+  "statistics": {
+    "currentPage": 1,
+    "pageSize": 2,
+    "totalPages": 1
+  },
+  "self": "https://mock.c8y.io/inventory/managedObjects",
+  "next": ""
+}
