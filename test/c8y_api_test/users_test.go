@@ -25,7 +25,7 @@ func Test_Users(t *testing.T) {
 			userID = user.ID
 			break
 		}
-		user := client.Users.Get(context.Background(), users.Target{
+		user := client.Users.Get(context.Background(), users.GetOptions{
 			ID: userID,
 		})
 		assert.NoError(t, user.Err)

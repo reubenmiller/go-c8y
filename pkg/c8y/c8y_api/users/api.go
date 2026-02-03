@@ -93,17 +93,19 @@ type Target struct {
 	Tenant string
 }
 
+type GetOptions Target
+
 // Get a user
-func (s *Service) Get(ctx context.Context, target Target) op.Result[jsonmodels.User] {
-	return core.ExecuteReturnResult(ctx, s.GetB(target), jsonmodels.NewUser)
+func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.User] {
+	return core.ExecuteReturnResult(ctx, s.GetB(opt), jsonmodels.NewUser)
 }
 
-func (s *Service) GetB(target Target) *core.TryRequest {
+func (s *Service) GetB(opt GetOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamTenantId, target.Tenant).
-		SetPathParam(ParamId, target.ID).
+		SetPathParam(ParamTenantId, opt.Tenant).
+		SetPathParam(ParamId, opt.ID).
 		SetURL(ApiUser)
 	return core.NewTryRequest(s.Client, req)
 }
@@ -143,33 +145,37 @@ func (s *Service) CreateB(body any) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req)
 }
 
+type UpdateOptions Target
+
 // Update a user
-func (s *Service) Update(ctx context.Context, target Target, body any) op.Result[jsonmodels.User] {
-	return core.ExecuteReturnResult(ctx, s.UpdateB(target, body), jsonmodels.NewUser)
+func (s *Service) Update(ctx context.Context, opt UpdateOptions, body any) op.Result[jsonmodels.User] {
+	return core.ExecuteReturnResult(ctx, s.UpdateB(opt, body), jsonmodels.NewUser)
 }
 
-func (s *Service) UpdateB(target Target, body any) *core.TryRequest {
+func (s *Service) UpdateB(opt UpdateOptions, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamId, target.ID).
-		SetPathParam(ParamTenantId, target.Tenant).
+		SetPathParam(ParamId, opt.ID).
+		SetPathParam(ParamTenantId, opt.Tenant).
 		SetBody(body).
 		SetURL(ApiUser)
 	return core.NewTryRequest(s.Client, req)
 }
 
+type DeleteOptions Target
+
 // Delete a user
-func (s *Service) Delete(ctx context.Context, target Target) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.DeleteB(target))
+func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.NoContent] {
+	return core.ExecuteNoResult(ctx, s.DeleteB(opt))
 }
 
-func (s *Service) DeleteB(target Target) *core.TryRequest {
+func (s *Service) DeleteB(opt DeleteOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamId, target.ID).
-		SetPathParam(ParamTenantId, target.Tenant).
+		SetPathParam(ParamId, opt.ID).
+		SetPathParam(ParamTenantId, opt.Tenant).
 		SetURL(ApiUser)
 	return core.NewTryRequest(s.Client, req)
 }
