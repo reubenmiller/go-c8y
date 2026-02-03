@@ -17,6 +17,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/authentication"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/binaries"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/deviceregistration"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/devices"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/events"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/features"
@@ -92,9 +93,10 @@ type Client struct {
 	// Context              *ContextService
 	Alarms       *alarms.Service
 	AuditRecords *auditrecords.Service
-	// DeviceCredentials    *DeviceCredentialsService
-	Measurements *measurements.Service
-	Binaries     *binaries.Service
+
+	DeviceRegistration *deviceregistration.Service
+	Measurements       *measurements.Service
+	Binaries           *binaries.Service
 
 	LoginOptions *loginoptions.Service
 
@@ -115,7 +117,6 @@ type Client struct {
 	// Notification2        *Notification2Service
 	// RemoteAccess         *RemoteAccessService
 	RetentionRules *retentionrules.Service
-	// Software             *InventorySoftwareService
 	// Firmware             *InventoryFirmwareService
 	Users      *users.Service
 	UserGroups *usergroups.Service
@@ -233,7 +234,7 @@ func NewClient(opts ClientOptions) *Client {
 	c.Alarms = (*alarms.Service)(&c.common)
 	c.AuditRecords = (*auditrecords.Service)(&c.common)
 	c.TrustedCertificates = trustedcertificates.NewService(&c.common)
-	// c.DeviceCredentials = (*DeviceCredentialsService)(&c.common)
+	c.DeviceRegistration = deviceregistration.NewService(&c.common)
 	c.Measurements = (*measurements.Service)(&c.common)
 	c.Binaries = (*binaries.Service)(&c.common)
 	c.Identity = identity.NewService(&c.common)

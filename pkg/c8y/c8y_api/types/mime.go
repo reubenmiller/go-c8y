@@ -11,3 +11,6 @@ var MimeTypeCumulocityMeasurementCollection = "application/vnd.com.nsn.cumulocit
 var MimeTypeManagedObjectCollection = "application/vnd.com.nsn.cumulocity.managedobjectreferencecollection+json"
 var MimeTypeManagedObject = "application/vnd.com.nsn.cumulocity.managedobject+json"
 var MimeTypeManagedObjectReference = "application/vnd.com.nsn.cumulocity.managedobjectreference+json"
+
+var MimeTypeNewDeviceRequest = "application/vnd.com.nsn.cumulocity.newdevicerequest+json"
+var MimeTypeDeviceCredentials = "application/vnd.com.nsn.cumulocity.devicecredentials+json"
