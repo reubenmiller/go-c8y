@@ -22,9 +22,11 @@ func (b *InventoryQuery) AddOrderBy(key string) *InventoryQuery {
 	return b
 }
 
-func (b *InventoryQuery) AddFilterPart(v string) *InventoryQuery {
-	if v != "" {
-		b.Filter = append(b.Filter, v)
+func (b *InventoryQuery) AddFilterPart(parts ...string) *InventoryQuery {
+	for _, v := range parts {
+		if v != "" {
+			b.Filter = append(b.Filter, v)
+		}
 	}
 	return b
 }
