@@ -5,6 +5,8 @@ import (
 	"iter"
 	"net/http"
 	"time"
+
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 )
 
 // Status represents the outcome of an operation
@@ -320,6 +322,23 @@ func IterAs[U any, T Unwrapper](r Result[T]) iter.Seq[*U] {
 					continue // Skip items that fail to unmarshal
 				}
 				if !yield(&decoded) {
+					return
+				}
+			}
+		}
+	}
+}
+
+func Iter[T Unwrapper](r Result[T]) iter.Seq[*T] {
+	return func(yield func(*T) bool) {
+		// Check if Data implements CollectionIterator
+		if iterable, ok := any(r.Data).(types.CollectionIterator); ok {
+			for item := range iterable.IterBytes() {
+				decoded := new(T)
+				if err := json.Unmarshal(item.Bytes(), &decoded); err != nil {
+					continue // Skip items that fail to unmarshal
+				}
+				if !yield(decoded) {
 					return
 				}
 			}

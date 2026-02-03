@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"iter"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
@@ -25,8 +26,18 @@ func (d JSONDoc) Bytes() []byte {
 	return append([]byte(nil), d.raw...)
 }
 
-func (d JSONDoc) Get(path string) gjson.Result {
-	return gjson.GetBytes(d.raw, path)
+// UnmarshalJSON implements json.Unmarshaler to allow JSONDoc to be
+// unmarshaled by simply assigning the raw bytes rather than parsing
+func (d *JSONDoc) UnmarshalJSON(data []byte) error {
+	d.raw = append([]byte(nil), data...)
+	return nil
+}
+
+func (d JSONDoc) Get(path ...string) gjson.Result {
+	if len(path) == 0 || path[0] == "" {
+		return gjson.ParseBytes(d.raw)
+	}
+	return gjson.GetBytes(d.raw, path[0])
 }
 
 func (d JSONDoc) Exists(path string) bool {
@@ -83,6 +94,18 @@ func (d JSONDoc) Iter() iter.Seq[JSONDoc] {
 
 	// Return empty iterator for invalid JSON
 	return func(yield func(JSONDoc) bool) {}
+}
+
+// IterBytes returns an iterator that yields items as ByteProvider interface.
+// This satisfies the types.CollectionIterator interface.
+func (d JSONDoc) IterBytes() iter.Seq[types.ByteProvider] {
+	return func(yield func(types.ByteProvider) bool) {
+		for doc := range d.Iter() {
+			if !yield(doc) {
+				return
+			}
+		}
+	}
 }
 
 func Decode[T any](d JSONDoc) (*T, error) {
