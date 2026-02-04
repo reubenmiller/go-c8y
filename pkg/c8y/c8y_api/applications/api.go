@@ -84,7 +84,7 @@ type ApplicationIterator = pagination.Iterator[jsonmodels.Application]
 
 // List all applications on your tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Application] {
-	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
+	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
 }
 
 // ListAll returns an iterator for all applications
@@ -112,7 +112,7 @@ type ListByNameOptions struct {
 
 // List applications by name
 func (s *Service) ListByName(ctx context.Context, opt ListByNameOptions) op.Result[jsonmodels.Application] {
-	return core.ExecuteReturnCollection(ctx, s.listByNameB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
+	return core.ExecuteCollection(ctx, s.listByNameB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
 }
 
 func (s *Service) listByNameB(opt ListByNameOptions) *core.TryRequest {
@@ -133,7 +133,7 @@ type ListByTenantOptions struct {
 
 // List applications by name
 func (s *Service) ListByTenant(ctx context.Context, opt ListByTenantOptions) op.Result[jsonmodels.Application] {
-	return core.ExecuteReturnCollection(ctx, s.listByTenantB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
+	return core.ExecuteCollection(ctx, s.listByTenantB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
 }
 
 func (s *Service) listByTenantB(opt ListByTenantOptions) *core.TryRequest {
@@ -154,7 +154,7 @@ type ListByOwnerOptions struct {
 
 // Retrieve all applications owned by a particular tenant (by a given tenant ID)
 func (s *Service) ListByOwner(ctx context.Context, opt ListByOwnerOptions) op.Result[jsonmodels.Application] {
-	return core.ExecuteReturnCollection(ctx, s.listByOwnerB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
+	return core.ExecuteCollection(ctx, s.listByOwnerB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
 }
 
 func (s *Service) listByOwnerB(opt ListByOwnerOptions) *core.TryRequest {
@@ -175,7 +175,7 @@ type ListByUserOptions struct {
 
 // Retrieve all applications for a particular user (by a given username)
 func (s *Service) ListByUser(ctx context.Context, opt ListByUserOptions) op.Result[jsonmodels.Application] {
-	return core.ExecuteReturnCollection(ctx, s.listByUserB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
+	return core.ExecuteCollection(ctx, s.listByUserB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
 }
 
 func (s *Service) listByUserB(opt ListByUserOptions) *core.TryRequest {
@@ -209,7 +209,7 @@ func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.
 	if err := opt.Resolve(ctx); err != nil {
 		return op.Failed[jsonmodels.Application](err, true)
 	}
-	return core.ExecuteReturnResult(ctx, s.getB(opt), jsonmodels.NewApplication)
+	return core.Execute(ctx, s.getB(opt), jsonmodels.NewApplication)
 }
 
 func (s *Service) getB(opt GetOptions) *core.TryRequest {
@@ -222,7 +222,7 @@ func (s *Service) getB(opt GetOptions) *core.TryRequest {
 
 // Create an application
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Application] {
-	return core.ExecuteReturnResult(ctx, s.createB(body), jsonmodels.NewApplication)
+	return core.Execute(ctx, s.createB(body), jsonmodels.NewApplication)
 }
 
 func (s *Service) createB(body any) *core.TryRequest {
@@ -236,7 +236,7 @@ func (s *Service) createB(body any) *core.TryRequest {
 
 // Update an application
 func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.Application] {
-	return core.ExecuteReturnResult(ctx, s.updateB(ID, body), jsonmodels.NewApplication)
+	return core.Execute(ctx, s.updateB(ID, body), jsonmodels.NewApplication)
 }
 
 func (s *Service) updateB(ID string, body any) *core.TryRequest {
@@ -257,7 +257,7 @@ type DeleteOptions struct {
 
 // Delete an application
 func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.deleteB(ID, opt))
+	return core.ExecuteNoContent(ctx, s.deleteB(ID, opt))
 }
 
 func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
@@ -279,7 +279,7 @@ type CopyOptions struct {
 
 // Copy an application (by a given ID)
 func (s *Service) Copy(ctx context.Context, ID string, opt CopyOptions) op.Result[jsonmodels.Application] {
-	return core.ExecuteReturnResult(ctx, s.copyB(ID, opt), jsonmodels.NewApplication)
+	return core.Execute(ctx, s.copyB(ID, opt), jsonmodels.NewApplication)
 }
 
 func (s *Service) copyB(ID string, opt CopyOptions) *core.TryRequest {
@@ -292,7 +292,7 @@ func (s *Service) copyB(ID string, opt CopyOptions) *core.TryRequest {
 
 // Subscribe an application to a tenant
 func (s *Service) Subscribe(ctx context.Context, tenantID string, selfLink string) op.Result[jsonmodels.Application] {
-	return core.ExecuteReturnResult(ctx, s.subscribeB(tenantID, selfLink), jsonmodels.NewApplication)
+	return core.Execute(ctx, s.subscribeB(tenantID, selfLink), jsonmodels.NewApplication)
 }
 
 func (s *Service) subscribeB(tenantID string, selfURL string) *core.TryRequest {
@@ -307,7 +307,7 @@ func (s *Service) subscribeB(tenantID string, selfURL string) *core.TryRequest {
 
 // Unsubscribe an application from a tenant
 func (s *Service) Unsubscribe(ctx context.Context, tenantID string, ID string) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.unsubscribeB(tenantID, ID))
+	return core.ExecuteNoContent(ctx, s.unsubscribeB(tenantID, ID))
 }
 
 func (s *Service) unsubscribeB(tenantID string, ID string) *core.TryRequest {
@@ -323,7 +323,7 @@ type UploadFileOptions = core.UploadFileOptions
 
 // Upload an application binary
 func (s *Service) Upload(ctx context.Context, ID string, opt UploadFileOptions) op.Result[jsonmodels.Application] {
-	return core.ExecuteReturnResult(ctx, s.uploadB(ID, opt), jsonmodels.NewApplication)
+	return core.Execute(ctx, s.uploadB(ID, opt), jsonmodels.NewApplication)
 }
 
 func (s *Service) uploadB(ID string, opt UploadFileOptions) *core.TryRequest {

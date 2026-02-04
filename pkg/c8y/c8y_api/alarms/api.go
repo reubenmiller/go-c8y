@@ -106,7 +106,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 		return op.Failed[jsonmodels.Alarm](err, true)
 	}
 
-	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewAlarm)
+	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewAlarm)
 }
 
 // ListAll returns an iterator for all alarms
@@ -170,7 +170,7 @@ type CountOptions struct {
 
 // Get an alarm
 func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Alarm] {
-	return core.ExecuteReturnResult(ctx, s.getB(ID), jsonmodels.NewAlarm)
+	return core.Execute(ctx, s.getB(ID), jsonmodels.NewAlarm)
 }
 
 func (s *Service) getB(ID string) *core.TryRequest {
@@ -183,7 +183,7 @@ func (s *Service) getB(ID string) *core.TryRequest {
 
 // Create an alarm
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Alarm] {
-	return core.ExecuteReturnResult(ctx, s.createB(body), jsonmodels.NewAlarm)
+	return core.Execute(ctx, s.createB(body), jsonmodels.NewAlarm)
 }
 
 func (s *Service) createB(body any) *core.TryRequest {
@@ -197,7 +197,7 @@ func (s *Service) createB(body any) *core.TryRequest {
 
 // Update an alarm
 func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.Alarm] {
-	return core.ExecuteReturnResult(ctx, s.updateB(ID, body), jsonmodels.NewAlarm)
+	return core.Execute(ctx, s.updateB(ID, body), jsonmodels.NewAlarm)
 }
 
 func (s *Service) updateB(ID string, body any) *core.TryRequest {
@@ -267,7 +267,7 @@ type BulkUpdateOptions struct {
 //
 // Since this operations can take a lot of time, request returns after maximum 0.5 sec of processing, and updating is continued as a background process in the platform.
 func (s *Service) UpdateList(ctx context.Context, opt BulkUpdateOptions, body any) op.Result[jsonmodels.Alarm] {
-	return core.ExecuteReturnResult(ctx, s.updateListB(opt, body), jsonmodels.NewAlarm)
+	return core.Execute(ctx, s.updateListB(opt, body), jsonmodels.NewAlarm)
 }
 
 func (s *Service) updateListB(opt BulkUpdateOptions, body any) *core.TryRequest {
@@ -334,7 +334,7 @@ type DeleteListOptions struct {
 
 // Remove alarm collections specified by query parameters
 func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.deleteListB(opt))
+	return core.ExecuteNoContent(ctx, s.deleteListB(opt))
 }
 
 func (s *Service) deleteListB(opt DeleteListOptions) *core.TryRequest {

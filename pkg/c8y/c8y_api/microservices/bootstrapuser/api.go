@@ -25,7 +25,7 @@ func NewService(common *core.Service) *Service {
 
 // Get an microservice bootstrap user
 func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.BootstrapUser] {
-	return core.ExecuteReturnResult(ctx, s.getB(ID), jsonmodels.NewBootstrapUser)
+	return core.Execute(ctx, s.getB(ID), jsonmodels.NewBootstrapUser)
 }
 
 func (s *Service) getB(ID string) *core.TryRequest {

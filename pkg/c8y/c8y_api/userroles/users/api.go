@@ -36,7 +36,7 @@ type AssignRoleOptions struct {
 
 // AssignRole assigns a role to a user
 func (s *Service) AssignRole(ctx context.Context, opt AssignRoleOptions, body any) op.Result[jsonmodels.Role] {
-	return core.ExecuteReturnResult(ctx, s.assignRoleB(opt, body), func(b []byte) jsonmodels.Role {
+	return core.Execute(ctx, s.assignRoleB(opt, body), func(b []byte) jsonmodels.Role {
 		// Extract role from reference wrapper
 		doc := jsondoc.New(b)
 		return jsonmodels.NewRole([]byte(doc.Get("role").Raw))
@@ -63,7 +63,7 @@ type UnassignRoleOptions struct {
 
 // Unassign a role from a user
 func (s *Service) UnassignRole(ctx context.Context, opt UnassignRoleOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.unassignRoleB(opt))
+	return core.ExecuteNoContent(ctx, s.unassignRoleB(opt))
 }
 
 func (s *Service) unassignRoleB(opt UnassignRoleOptions) *core.TryRequest {

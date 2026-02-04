@@ -63,7 +63,7 @@ type TenantIterator = pagination.Iterator[jsonmodels.Tenant]
 
 // List tenants
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Tenant] {
-	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTenant)
+	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTenant)
 }
 
 // ListAll returns an iterator for all tenants
@@ -83,7 +83,7 @@ func (s *Service) listB(opt ListOptions) *core.TryRequest {
 
 // Create a tenant
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Tenant] {
-	return core.ExecuteReturnResult(ctx, s.createB(body), jsonmodels.NewTenant)
+	return core.Execute(ctx, s.createB(body), jsonmodels.NewTenant)
 }
 
 func (s *Service) createB(body any) *core.TryRequest {
@@ -97,7 +97,7 @@ func (s *Service) createB(body any) *core.TryRequest {
 
 // Get a tenant
 func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Tenant] {
-	return core.ExecuteReturnResult(ctx, s.getB(ID), jsonmodels.NewTenant)
+	return core.Execute(ctx, s.getB(ID), jsonmodels.NewTenant)
 }
 
 func (s *Service) getB(ID string) *core.TryRequest {
@@ -111,7 +111,7 @@ func (s *Service) getB(ID string) *core.TryRequest {
 
 // Update a tenant
 func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.Tenant] {
-	return core.ExecuteReturnResult(ctx, s.updateB(ID, body), jsonmodels.NewTenant)
+	return core.Execute(ctx, s.updateB(ID, body), jsonmodels.NewTenant)
 }
 
 func (s *Service) updateB(ID string, body any) *core.TryRequest {
@@ -132,7 +132,7 @@ type DeleteOptions struct{}
 // Important: Deleting a subtenant cannot be reverted. For security reasons, it is therefore only available in the management tenant. You cannot delete tenants from any tenant but the management tenant.
 // Administrators in Enterprise Tenants are only allowed to suspend active subtenants, but not to delete them.
 func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.deleteB(ID, opt))
+	return core.ExecuteNoContent(ctx, s.deleteB(ID, opt))
 }
 
 func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {

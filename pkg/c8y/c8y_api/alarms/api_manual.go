@@ -12,7 +12,7 @@ import (
 
 // Count the total number of active alarms on your tenant
 func (s *Service) Count(ctx context.Context, opt ListOptions) op.Result[int64] {
-	return core.ExecuteReturnResult(ctx, s.CountB(opt), func(b []byte) int64 {
+	return core.Execute(ctx, s.CountB(opt), func(b []byte) int64 {
 		return gjson.ParseBytes(b).Int()
 	})
 }

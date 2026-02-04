@@ -122,7 +122,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 		return op.Failed[jsonmodels.Event](err, true)
 	}
 
-	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewEvent)
+	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewEvent)
 }
 
 // ListAll returns an iterator for all events
@@ -142,7 +142,7 @@ func (s *Service) listB(opt any) *core.TryRequest {
 
 // Get an event
 func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Event] {
-	return core.ExecuteReturnResult(ctx, s.getB(ID), jsonmodels.NewEvent)
+	return core.Execute(ctx, s.getB(ID), jsonmodels.NewEvent)
 }
 
 func (s *Service) getB(ID string) *core.TryRequest {
@@ -155,7 +155,7 @@ func (s *Service) getB(ID string) *core.TryRequest {
 
 // Create an event
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Event] {
-	return core.ExecuteReturnResult(ctx, s.createB(body), jsonmodels.NewEvent)
+	return core.Execute(ctx, s.createB(body), jsonmodels.NewEvent)
 }
 
 func (s *Service) createB(body any) *core.TryRequest {
@@ -169,7 +169,7 @@ func (s *Service) createB(body any) *core.TryRequest {
 
 // Update an event
 func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.Event] {
-	return core.ExecuteReturnResult(ctx, s.updateB(ID, body), jsonmodels.NewEvent)
+	return core.Execute(ctx, s.updateB(ID, body), jsonmodels.NewEvent)
 }
 
 func (s *Service) updateB(ID string, body any) *core.TryRequest {
@@ -215,7 +215,7 @@ type DeleteListOptions struct {
 // request, the platform starts deleting the associated data in an asynchronous way.
 // Finally, the requested event is deleted after all associated data has been deleted.
 func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Result[jsonmodels.Event] {
-	return core.ExecuteReturnResult(ctx, s.deleteListB(opt), jsonmodels.NewEvent)
+	return core.Execute(ctx, s.deleteListB(opt), jsonmodels.NewEvent)
 }
 
 func (s *Service) deleteListB(opt DeleteListOptions) *core.TryRequest {

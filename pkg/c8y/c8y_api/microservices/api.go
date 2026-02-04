@@ -96,7 +96,7 @@ func (s *Service) FindFirst(ctx context.Context, opt ListOptions) (op.Result[jso
 
 // List all microservices on your tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Microservice] {
-	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewMicroservice)
+	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewMicroservice)
 }
 
 // ListAll returns an iterator for all microservices
@@ -117,7 +117,7 @@ func (s *Service) listB(opt ListOptions) *core.TryRequest {
 
 // Get an application
 func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Microservice] {
-	return core.ExecuteReturnResult(ctx, s.getB(ID), jsonmodels.NewMicroservice)
+	return core.Execute(ctx, s.getB(ID), jsonmodels.NewMicroservice)
 }
 
 func (s *Service) getB(ID string) *core.TryRequest {
@@ -132,7 +132,7 @@ func (s *Service) getB(ID string) *core.TryRequest {
 
 // Create a microservice
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Microservice] {
-	return core.ExecuteReturnResult(ctx, s.createB(body), jsonmodels.NewMicroservice)
+	return core.Execute(ctx, s.createB(body), jsonmodels.NewMicroservice)
 }
 
 func (s *Service) createB(body any) *core.TryRequest {
@@ -147,7 +147,7 @@ func (s *Service) createB(body any) *core.TryRequest {
 
 // Update a microservice
 func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.Microservice] {
-	return core.ExecuteReturnResult(ctx, s.updateB(ID, body), jsonmodels.NewMicroservice)
+	return core.Execute(ctx, s.updateB(ID, body), jsonmodels.NewMicroservice)
 }
 
 func (s *Service) updateB(ID string, body any) *core.TryRequest {
@@ -165,7 +165,7 @@ type DeleteOptions = applications.DeleteOptions
 
 // Delete a microservice
 func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.Result[jsonmodels.Microservice] {
-	return core.ExecuteReturnResult(ctx, s.deleteB(ID, opt), jsonmodels.NewMicroservice)
+	return core.Execute(ctx, s.deleteB(ID, opt), jsonmodels.NewMicroservice)
 }
 
 func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
@@ -181,7 +181,7 @@ func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
 // Subscribe a microservice to a tenant
 // TODO: Should 409 errors be ignored? Or should another function be created to allow 409s to be ignored
 func (s *Service) Subscribe(ctx context.Context, tenantID string, selfURL string) op.Result[jsonmodels.Microservice] {
-	result := core.ExecuteReturnResult(ctx, s.subscribeB(tenantID, selfURL), func(b []byte) jsonmodels.Microservice {
+	result := core.Execute(ctx, s.subscribeB(tenantID, selfURL), func(b []byte) jsonmodels.Microservice {
 		// Extract application from MicroserviceReference wrapper
 		doc := jsondoc.New(b)
 		return jsonmodels.NewMicroservice([]byte(doc.Get("application").Raw))
@@ -202,7 +202,7 @@ func (s *Service) subscribeB(tenantID string, selfURL string) *core.TryRequest {
 
 // Unsubscribe a microservice from a tenant
 func (s *Service) Unsubscribe(ctx context.Context, tenantID string, ID string) op.Result[jsonmodels.Microservice] {
-	return core.ExecuteReturnResult(ctx, s.unsubscribeB(tenantID, ID), jsonmodels.NewMicroservice)
+	return core.Execute(ctx, s.unsubscribeB(tenantID, ID), jsonmodels.NewMicroservice)
 }
 
 func (s *Service) unsubscribeB(tenantID string, ID string) *core.TryRequest {
@@ -219,7 +219,7 @@ type UploadFileOptions = applications.UploadFileOptions
 
 // Upload a new microservice binary
 func (s *Service) Upload(ctx context.Context, ID string, opt UploadFileOptions) op.Result[jsonmodels.MicroserviceBinary] {
-	return core.ExecuteReturnResult(ctx, s.uploadB(ID, opt), jsonmodels.NewMicroserviceBinary)
+	return core.Execute(ctx, s.uploadB(ID, opt), jsonmodels.NewMicroserviceBinary)
 }
 
 func (s *Service) uploadB(ID string, opt UploadFileOptions) *core.TryRequest {

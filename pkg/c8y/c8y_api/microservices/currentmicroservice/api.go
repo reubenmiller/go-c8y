@@ -24,7 +24,7 @@ func NewService(common *core.Service) *Service {
 
 // Get the current microservice
 func (s *Service) Get(ctx context.Context) op.Result[jsonmodels.Microservice] {
-	return core.ExecuteReturnResult(ctx, s.getB(), jsonmodels.NewMicroservice)
+	return core.Execute(ctx, s.getB(), jsonmodels.NewMicroservice)
 }
 
 func (s *Service) getB() *core.TryRequest {
@@ -36,7 +36,7 @@ func (s *Service) getB() *core.TryRequest {
 
 // Retrieve the subscribed users of the current application
 func (s *Service) ListUsers(ctx context.Context) op.Result[jsonmodels.MicroserviceUser] {
-	return core.ExecuteReturnCollection(ctx, s.listUsersB(), "users", "", jsonmodels.NewMicroserviceUser)
+	return core.ExecuteCollection(ctx, s.listUsersB(), "users", "", jsonmodels.NewMicroserviceUser)
 }
 
 func (s *Service) listUsersB() *core.TryRequest {
@@ -48,7 +48,7 @@ func (s *Service) listUsersB() *core.TryRequest {
 
 // ListSettings returns the current application settings
 func (s *Service) ListSettings(ctx context.Context) op.Result[jsonmodels.MicroserviceSetting] {
-	return core.ExecuteReturnCollection(ctx, s.listSettingsB(), "", "", jsonmodels.NewMicroserviceSetting)
+	return core.ExecuteCollection(ctx, s.listSettingsB(), "", "", jsonmodels.NewMicroserviceSetting)
 }
 
 func (s *Service) listSettingsB() *core.TryRequest {

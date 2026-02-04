@@ -23,7 +23,7 @@ func ExecuteResponseOnly(ctx context.Context, req *TryRequest) (*resty.Response,
 	return resp, nil
 }
 
-func ExecuteReturnResult[T any](ctx context.Context, req *TryRequest, fromBytes func([]byte) T, extraMeta ...map[string]any) op.Result[T] {
+func Execute[T any](ctx context.Context, req *TryRequest, fromBytes func([]byte) T, extraMeta ...map[string]any) op.Result[T] {
 	// Check if execution should be deferred
 	if ctxhelpers.IsDeferredExecution(ctx) {
 		// Build the request to capture all parameters (including resolved IDs)
@@ -52,7 +52,7 @@ func ExecuteReturnResult[T any](ctx context.Context, req *TryRequest, fromBytes 
 		}
 
 		return result.WithExecutor(func(execCtx context.Context) op.Result[T] {
-			return ExecuteReturnResult(execCtx, req, fromBytes, extraMeta...)
+			return Execute(execCtx, req, fromBytes, extraMeta...)
 		})
 	}
 
@@ -102,10 +102,10 @@ func ExecuteReturnResult[T any](ctx context.Context, req *TryRequest, fromBytes 
 	return result
 }
 
-// ExecuteReturnCollection extracts an array from a collection response and puts metadata in Result.Meta
+// ExecuteCollection extracts an array from a collection response and puts metadata in Result.Meta
 // arrayPath is the JSON path to the array (e.g., "managedObjects")
 // metaPath is the JSON path to pagination metadata (e.g., "statistics")
-func ExecuteReturnCollection[T any](ctx context.Context, req *TryRequest, arrayPath, metaPath string, fromBytes func([]byte) T, extraMeta ...map[string]any) op.Result[T] {
+func ExecuteCollection[T any](ctx context.Context, req *TryRequest, arrayPath, metaPath string, fromBytes func([]byte) T, extraMeta ...map[string]any) op.Result[T] {
 	// Check if execution should be deferred
 	if ctxhelpers.IsDeferredExecution(ctx) {
 		// Build the request to capture all parameters
@@ -133,7 +133,7 @@ func ExecuteReturnCollection[T any](ctx context.Context, req *TryRequest, arrayP
 		}
 
 		return result.WithExecutor(func(execCtx context.Context) op.Result[T] {
-			return ExecuteReturnCollection(execCtx, req, arrayPath, metaPath, fromBytes, extraMeta...)
+			return ExecuteCollection(execCtx, req, arrayPath, metaPath, fromBytes, extraMeta...)
 		})
 	}
 
@@ -197,7 +197,7 @@ func ExecuteReturnCollection[T any](ctx context.Context, req *TryRequest, arrayP
 }
 
 // Execute a request which expects a binary response which allows the user to read the body
-func ExecuteBinaryResponse(ctx context.Context, req *TryRequest) op.Result[BinaryResponse] {
+func ExecuteBinary(ctx context.Context, req *TryRequest) op.Result[BinaryResponse] {
 	// Check if execution should be deferred
 	if ctxhelpers.IsDeferredExecution(ctx) {
 		// Build the request to capture all parameters
@@ -213,7 +213,7 @@ func ExecuteBinaryResponse(ctx context.Context, req *TryRequest) op.Result[Binar
 		return op.Result[BinaryResponse]{
 			Request: httpReq,
 		}.WithExecutor(func(execCtx context.Context) op.Result[BinaryResponse] {
-			return ExecuteBinaryResponse(execCtx, req)
+			return ExecuteBinary(execCtx, req)
 		})
 	}
 
@@ -249,7 +249,7 @@ func ExecuteBinaryResponse(ctx context.Context, req *TryRequest) op.Result[Binar
 type NoContent []byte
 
 // Execute a request that doesn't any result only if there was an error or not
-func ExecuteNoResult(ctx context.Context, req *TryRequest) op.Result[NoContent] {
+func ExecuteNoContent(ctx context.Context, req *TryRequest) op.Result[NoContent] {
 	// Check if execution should be deferred
 	if ctxhelpers.IsDeferredExecution(ctx) {
 		// Build the request to capture all parameters
@@ -265,7 +265,7 @@ func ExecuteNoResult(ctx context.Context, req *TryRequest) op.Result[NoContent] 
 		return op.Result[NoContent]{
 			Request: httpReq,
 		}.WithExecutor(func(execCtx context.Context) op.Result[NoContent] {
-			return ExecuteNoResult(execCtx, req)
+			return ExecuteNoContent(execCtx, req)
 		})
 	}
 

@@ -51,7 +51,7 @@ func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Sof
 		SetBody(body).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(managedobjects.ApiManagedObjects)
-	return core.ExecuteReturnResult(ctx, core.NewTryRequest(s.managedObjects.Client, req, ""), jsonmodels.NewSoftwareVersion)
+	return core.Execute(ctx, core.NewTryRequest(s.managedObjects.Client, req, ""), jsonmodels.NewSoftwareVersion)
 }
 
 // ListOptions filter software versions
@@ -81,7 +81,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 		softwareID = softwareResult.Data.ID()
 	}
 
-	return core.ExecuteReturnCollection(ctx, s.listB(softwareID, opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewSoftwareVersion)
+	return core.ExecuteCollection(ctx, s.listB(softwareID, opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewSoftwareVersion)
 }
 
 func (s *Service) listB(softwareID string, opt ListOptions) *core.TryRequest {
@@ -227,7 +227,7 @@ func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.
 		return resolveResult
 	}
 
-	result := core.ExecuteReturnResult(ctx, s.getB(id, opt), jsonmodels.NewSoftwareVersion)
+	result := core.Execute(ctx, s.getB(id, opt), jsonmodels.NewSoftwareVersion)
 
 	// Add lookup metadata
 	if opt.ID != "" {
@@ -252,7 +252,7 @@ func (s *Service) Update(ctx context.Context, opt UpdateOptions, body any) op.Re
 		return resolveResult
 	}
 
-	result := core.ExecuteReturnResult(ctx, s.updateB(id, body, opt), jsonmodels.NewSoftwareVersion)
+	result := core.Execute(ctx, s.updateB(id, body, opt), jsonmodels.NewSoftwareVersion)
 
 	// Add lookup metadata
 	if opt.ID != "" {
@@ -272,7 +272,7 @@ func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[jsonm
 		return resolveResult
 	}
 
-	result := core.ExecuteReturnResult(ctx, s.deleteB(id, opt), jsonmodels.NewSoftwareVersion)
+	result := core.Execute(ctx, s.deleteB(id, opt), jsonmodels.NewSoftwareVersion)
 
 	// Add lookup metadata
 	if opt.ID != "" {
@@ -347,7 +347,7 @@ func (s *Service) CreateVersion(ctx context.Context, opt CreateOptions) op.Resul
 		versionBody["c8y_Software"].(map[string]any)["url"] = url
 	}
 
-	return core.ExecuteReturnResult(ctx, s.createB(softwareID, versionBody), jsonmodels.NewSoftwareVersion)
+	return core.Execute(ctx, s.createB(softwareID, versionBody), jsonmodels.NewSoftwareVersion)
 }
 
 // GetOrCreateVersion searches by software + version, creating if not found

@@ -31,7 +31,7 @@ type Service struct {
 
 // Retrieve all the features for the current tenant
 func (s *Service) List(ctx context.Context) op.Result[jsonmodels.Feature] {
-	return core.ExecuteReturnCollection(ctx, s.listB(), "", "", jsonmodels.NewFeature)
+	return core.ExecuteCollection(ctx, s.listB(), "", "", jsonmodels.NewFeature)
 }
 
 func (s *Service) listB() *core.TryRequest {
@@ -43,7 +43,7 @@ func (s *Service) listB() *core.TryRequest {
 
 // Get a feature
 func (s *Service) Get(ctx context.Context, key string) op.Result[jsonmodels.Feature] {
-	return core.ExecuteReturnResult(ctx, s.getB(key), jsonmodels.NewFeature)
+	return core.Execute(ctx, s.getB(key), jsonmodels.NewFeature)
 }
 
 func (s *Service) getB(key string) *core.TryRequest {
@@ -56,7 +56,7 @@ func (s *Service) getB(key string) *core.TryRequest {
 
 // Update a feature
 func (s *Service) Update(ctx context.Context, key string, body any) op.Result[jsonmodels.Feature] {
-	return core.ExecuteReturnResult(ctx, s.updateB(key, body), jsonmodels.NewFeature)
+	return core.Execute(ctx, s.updateB(key, body), jsonmodels.NewFeature)
 }
 
 func (s *Service) updateB(key string, body any) *core.TryRequest {
@@ -71,21 +71,21 @@ func (s *Service) updateB(key string, body any) *core.TryRequest {
 
 // Enable a feature
 func (s *Service) Enable(ctx context.Context, key string) op.Result[jsonmodels.Feature] {
-	return core.ExecuteReturnResult(ctx, s.updateB(key, &model.Feature{
+	return core.Execute(ctx, s.updateB(key, &model.Feature{
 		Active: true,
 	}), jsonmodels.NewFeature)
 }
 
 // Disable a feature
 func (s *Service) Disable(ctx context.Context, key string) op.Result[jsonmodels.Feature] {
-	return core.ExecuteReturnResult(ctx, s.updateB(key, &model.Feature{
+	return core.Execute(ctx, s.updateB(key, &model.Feature{
 		Active: false,
 	}), jsonmodels.NewFeature)
 }
 
 // Delete a feature override
 func (s *Service) Delete(ctx context.Context, key string) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.deleteB(key))
+	return core.ExecuteNoContent(ctx, s.deleteB(key))
 }
 
 func (s *Service) deleteB(key string) *core.TryRequest {

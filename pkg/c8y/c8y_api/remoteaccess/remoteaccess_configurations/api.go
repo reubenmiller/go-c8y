@@ -47,7 +47,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 	if err := opt.Resolve(ctx); err != nil {
 		return op.Failed[jsonmodels.RemoteAccessConfiguration](err, true)
 	}
-	return core.ExecuteReturnCollection(ctx, s.listB(opt), "", "", jsonmodels.NewRemoteAccessConfiguration)
+	return core.ExecuteCollection(ctx, s.listB(opt), "", "", jsonmodels.NewRemoteAccessConfiguration)
 }
 
 func (s *Service) listB(opt ListOptions) *core.TryRequest {
@@ -66,7 +66,7 @@ type GetOptions struct {
 
 // Get remote access configuration
 func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.RemoteAccessConfiguration] {
-	return core.ExecuteReturnResult(ctx, s.getB(opt), jsonmodels.NewRemoteAccessConfiguration)
+	return core.Execute(ctx, s.getB(opt), jsonmodels.NewRemoteAccessConfiguration)
 }
 
 func (s *Service) getB(opt GetOptions) *core.TryRequest {
@@ -86,7 +86,7 @@ type CreateOptions struct {
 
 // Create remote access configuration
 func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.RemoteAccessConfiguration] {
-	return core.ExecuteReturnResult(ctx, s.createB(opt, opt.Body), jsonmodels.NewRemoteAccessConfiguration)
+	return core.Execute(ctx, s.createB(opt, opt.Body), jsonmodels.NewRemoteAccessConfiguration)
 }
 
 func (s *Service) createB(opt CreateOptions, body any) *core.TryRequest {
@@ -108,7 +108,7 @@ type UpdateOptions struct {
 
 // Update remote access configuration
 func (s *Service) Update(ctx context.Context, opt UpdateOptions) op.Result[jsonmodels.RemoteAccessConfiguration] {
-	return core.ExecuteReturnResult(ctx, s.updateB(opt), jsonmodels.NewRemoteAccessConfiguration)
+	return core.Execute(ctx, s.updateB(opt), jsonmodels.NewRemoteAccessConfiguration)
 }
 
 func (s *Service) updateB(opt UpdateOptions) *core.TryRequest {
@@ -130,7 +130,7 @@ type DeleteOptions struct {
 
 // Delete remote access configuration
 func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.deleteB(opt))
+	return core.ExecuteNoContent(ctx, s.deleteB(opt))
 }
 
 func (s *Service) deleteB(opt DeleteOptions) *core.TryRequest {

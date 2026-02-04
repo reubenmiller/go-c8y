@@ -39,7 +39,7 @@ type ListUsersOptions struct {
 
 // ListUsers in a group
 func (s *Service) ListUsers(ctx context.Context, opt ListUsersOptions) op.Result[jsonmodels.User] {
-	return core.ExecuteReturnCollection(ctx, s.listUsersB(opt), "references", "", func(b []byte) jsonmodels.User {
+	return core.ExecuteCollection(ctx, s.listUsersB(opt), "references", "", func(b []byte) jsonmodels.User {
 		// Extract user from reference wrapper
 		doc := jsondoc.New(b)
 		return jsonmodels.NewUser([]byte(doc.Get("user").Raw))
@@ -64,7 +64,7 @@ type AssignUserOptions struct {
 
 // AssignUser assigns a user to a user group
 func (s *Service) AssignUser(ctx context.Context, opt AssignUserOptions, user any) op.Result[jsonmodels.User] {
-	return core.ExecuteReturnResult(ctx, s.assignUserB(opt, user), func(b []byte) jsonmodels.User {
+	return core.Execute(ctx, s.assignUserB(opt, user), func(b []byte) jsonmodels.User {
 		// Extract user from reference wrapper
 		doc := jsondoc.New(b)
 		return jsonmodels.NewUser([]byte(doc.Get("user").Raw))
@@ -89,7 +89,7 @@ type UnassignUserOptions struct {
 
 // UnassignUser unassign a user from a user group
 func (s *Service) UnassignUser(ctx context.Context, opt UnassignUserOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.unassignUserB(opt))
+	return core.ExecuteNoContent(ctx, s.unassignUserB(opt))
 }
 
 func (s *Service) unassignUserB(opt UnassignUserOptions) *core.TryRequest {

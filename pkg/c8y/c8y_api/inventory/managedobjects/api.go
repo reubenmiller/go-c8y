@@ -184,7 +184,7 @@ func (s *Service) updateB(ID string, body any) *core.TryRequest {
 
 // List of supported measurement types for a given managed object
 func (s *Service) ListSupportedMeasurements(ctx context.Context, ID string) op.Result[jsonmodels.SupportedMeasurements] {
-	return core.ExecuteReturnResult(ctx, s.listSupportedMeasurementsB(ID), jsonmodels.NewSupportedMeasurements)
+	return core.Execute(ctx, s.listSupportedMeasurementsB(ID), jsonmodels.NewSupportedMeasurements)
 }
 
 func (s *Service) listSupportedMeasurementsB(ID string) *core.TryRequest {
@@ -198,7 +198,7 @@ func (s *Service) listSupportedMeasurementsB(ID string) *core.TryRequest {
 
 // List of supported measurement series for a given managed object
 func (s *Service) ListSupportedSeries(ctx context.Context, ID string) op.Result[jsonmodels.SupportedSeries] {
-	return core.ExecuteReturnResult(ctx, s.listSupportedSeriesB(ID), jsonmodels.NewSupportedSeries)
+	return core.Execute(ctx, s.listSupportedSeriesB(ID), jsonmodels.NewSupportedSeries)
 }
 func (s *Service) listSupportedSeriesB(ID string) *core.TryRequest {
 	req := s.Client.R().

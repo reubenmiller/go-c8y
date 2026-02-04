@@ -40,7 +40,7 @@ type GetOptions struct {
 
 // Get the certificate authority
 func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.TrustedCertificate] {
-	result := core.ExecuteReturnCollection(ctx, s.getB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTrustedCertificate)
+	result := core.ExecuteCollection(ctx, s.getB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTrustedCertificate)
 	if result.Err != nil {
 		return result
 	}
@@ -82,7 +82,7 @@ func (s *Service) getB(opt GetOptions) *core.TryRequest {
 
 // Create certificate authority
 func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.TrustedCertificate] {
-	return core.ExecuteReturnResult(ctx, s.createB(opt), jsonmodels.NewTrustedCertificate)
+	return core.Execute(ctx, s.createB(opt), jsonmodels.NewTrustedCertificate)
 }
 
 func (s *Service) createB(opt CreateOptions) *core.TryRequest {
@@ -107,7 +107,7 @@ type RenewOptions struct{}
 
 // Renew certificate authority
 func (s *Service) Renew(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.TrustedCertificate] {
-	return core.ExecuteReturnResult(ctx, s.renewB(opt), jsonmodels.NewTrustedCertificate)
+	return core.Execute(ctx, s.renewB(opt), jsonmodels.NewTrustedCertificate)
 }
 
 func (s *Service) renewB(opt CreateOptions) *core.TryRequest {

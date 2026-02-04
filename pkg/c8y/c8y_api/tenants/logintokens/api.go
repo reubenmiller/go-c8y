@@ -50,7 +50,7 @@ type CreateTokenOptions struct {
 
 // Obtain an OAI-Secure access token
 func (s *Service) Create(ctx context.Context, opt CreateTokenOptions) op.Result[jsonmodels.OAIToken] {
-	return core.ExecuteReturnResult(ctx, s.createB(opt), jsonmodels.NewOAIToken)
+	return core.Execute(ctx, s.createB(opt), jsonmodels.NewOAIToken)
 }
 
 // Obtain an OAI-Secure access token

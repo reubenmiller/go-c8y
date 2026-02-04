@@ -39,7 +39,7 @@ type RetentionRuleIterator = pagination.Iterator[jsonmodels.RetentionRule]
 
 // Retrieve all login options available in the tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.RetentionRule] {
-	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewRetentionRule)
+	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewRetentionRule)
 }
 
 // ListAll returns an iterator for all retention rules
@@ -59,7 +59,7 @@ func (s *Service) listB(opt any) *core.TryRequest {
 
 // Get a retention rule
 func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.RetentionRule] {
-	return core.ExecuteReturnResult(ctx, s.getB(ID), jsonmodels.NewRetentionRule)
+	return core.Execute(ctx, s.getB(ID), jsonmodels.NewRetentionRule)
 }
 
 func (s *Service) getB(ID string) *core.TryRequest {
@@ -72,7 +72,7 @@ func (s *Service) getB(ID string) *core.TryRequest {
 
 // Create a retention rule
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.RetentionRule] {
-	return core.ExecuteReturnResult(ctx, s.createB(body), jsonmodels.NewRetentionRule)
+	return core.Execute(ctx, s.createB(body), jsonmodels.NewRetentionRule)
 }
 
 func (s *Service) createB(body any) *core.TryRequest {
@@ -87,7 +87,7 @@ func (s *Service) createB(body any) *core.TryRequest {
 
 // Update a retention rule
 func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.RetentionRule] {
-	return core.ExecuteReturnResult(ctx, s.updateB(ID, body), jsonmodels.NewRetentionRule)
+	return core.Execute(ctx, s.updateB(ID, body), jsonmodels.NewRetentionRule)
 }
 
 func (s *Service) updateB(ID string, body any) *core.TryRequest {
@@ -103,7 +103,7 @@ func (s *Service) updateB(ID string, body any) *core.TryRequest {
 
 // Delete a retention rule
 func (s *Service) Delete(ctx context.Context, ID string) op.Result[jsonmodels.RetentionRule] {
-	return core.ExecuteReturnResult(ctx, s.deleteB(ID), jsonmodels.NewRetentionRule)
+	return core.Execute(ctx, s.deleteB(ID), jsonmodels.NewRetentionRule)
 }
 
 func (s *Service) deleteB(ID string) *core.TryRequest {

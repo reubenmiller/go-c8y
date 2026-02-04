@@ -46,7 +46,7 @@ type LoginOptionIterator = pagination.Iterator[jsonmodels.LoginOption]
 
 // Retrieve all login options available in the tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.LoginOption] {
-	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewLoginOption)
+	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewLoginOption)
 }
 
 // ListAll returns an iterator for all login options
@@ -66,7 +66,7 @@ func (s *Service) listB(opt any) *core.TryRequest {
 
 // Retrieve all login options available in the tenant without using credentials
 func (s *Service) ListNoAuth(ctx context.Context, opt ListOptions) op.Result[jsonmodels.LoginOption] {
-	return core.ExecuteReturnCollection(ctx, s.listNoAuthB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewLoginOption)
+	return core.ExecuteCollection(ctx, s.listNoAuthB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewLoginOption)
 }
 
 func (s *Service) listNoAuthB(opt any) *core.TryRequest {
@@ -80,7 +80,7 @@ func (s *Service) listNoAuthB(opt any) *core.TryRequest {
 
 // Get an event
 func (s *Service) Get(ctx context.Context, typeOrID string) op.Result[jsonmodels.LoginOption] {
-	return core.ExecuteReturnResult(ctx, s.getB(typeOrID), jsonmodels.NewLoginOption)
+	return core.Execute(ctx, s.getB(typeOrID), jsonmodels.NewLoginOption)
 }
 
 func (s *Service) getB(typeOrID string) *core.TryRequest {
@@ -93,7 +93,7 @@ func (s *Service) getB(typeOrID string) *core.TryRequest {
 
 // Create a login option
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.LoginOption] {
-	return core.ExecuteReturnResult(ctx, s.createB(body), jsonmodels.NewLoginOption)
+	return core.Execute(ctx, s.createB(body), jsonmodels.NewLoginOption)
 }
 
 func (s *Service) createB(body any) *core.TryRequest {
@@ -107,7 +107,7 @@ func (s *Service) createB(body any) *core.TryRequest {
 
 // Update a login option
 func (s *Service) Update(ctx context.Context, typeOrID string, body any) op.Result[jsonmodels.LoginOption] {
-	return core.ExecuteReturnResult(ctx, s.updateB(typeOrID, body), jsonmodels.NewLoginOption)
+	return core.Execute(ctx, s.updateB(typeOrID, body), jsonmodels.NewLoginOption)
 }
 
 func (s *Service) updateB(typeOrID string, body any) *core.TryRequest {
@@ -122,7 +122,7 @@ func (s *Service) updateB(typeOrID string, body any) *core.TryRequest {
 
 // Delete a specific login option in the tenant by a given type or ID
 func (s *Service) Delete(ctx context.Context, typeOrID string) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.deleteB(typeOrID))
+	return core.ExecuteNoContent(ctx, s.deleteB(typeOrID))
 }
 
 func (s *Service) deleteB(typeOrID string) *core.TryRequest {
@@ -149,7 +149,7 @@ type LoginOptionTenantAccess struct {
 // Update the tenant's access to the authentication configuration.
 // TODO: This function signature is awkward
 func (s *Service) UpdateAccess(ctx context.Context, opt UpdateAccessOptions, body LoginOptionTenantAccess) op.Result[jsonmodels.LoginOption] {
-	return core.ExecuteReturnResult(ctx, s.updateAccessB(opt, body), jsonmodels.NewLoginOption)
+	return core.Execute(ctx, s.updateAccessB(opt, body), jsonmodels.NewLoginOption)
 }
 
 func (s *Service) updateAccessB(opt UpdateAccessOptions, body any) *core.TryRequest {

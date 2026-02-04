@@ -46,7 +46,7 @@ type RoleIterator = pagination.Iterator[jsonmodels.Role]
 
 // Retrieve all user roles in the tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Role] {
-	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewRole)
+	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewRole)
 }
 
 // ListAll returns an iterator for all user roles
@@ -71,7 +71,7 @@ type GetOption struct {
 
 // Get a user role
 func (s *Service) Get(ctx context.Context, opt GetOption) op.Result[jsonmodels.Role] {
-	return core.ExecuteReturnResult(ctx, s.getB(opt), jsonmodels.NewRole)
+	return core.Execute(ctx, s.getB(opt), jsonmodels.NewRole)
 }
 
 func (s *Service) getB(opt GetOption) *core.TryRequest {

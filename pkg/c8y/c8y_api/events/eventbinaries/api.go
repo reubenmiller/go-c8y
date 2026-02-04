@@ -23,7 +23,7 @@ func NewService(common *core.Service) *Service {
 
 // Get an event binary
 func (s *Service) Get(ctx context.Context, eventID string) op.Result[core.BinaryResponse] {
-	return core.ExecuteBinaryResponse(ctx, s.getB(eventID))
+	return core.ExecuteBinary(ctx, s.getB(eventID))
 }
 
 func (s *Service) getB(eventID string) *core.TryRequest {
@@ -38,7 +38,7 @@ type UploadFileOptions = core.UploadFileOptions
 
 // Upload a binary file to an event
 func (s *Service) Create(ctx context.Context, eventID string, opt UploadFileOptions) op.Result[jsonmodels.EventBinary] {
-	return core.ExecuteReturnResult(ctx, s.createB(eventID, opt), jsonmodels.NewEventBinary)
+	return core.Execute(ctx, s.createB(eventID, opt), jsonmodels.NewEventBinary)
 }
 
 func (s *Service) createB(eventID string, opt UploadFileOptions) *core.TryRequest {
@@ -58,7 +58,7 @@ func (s *Service) createB(eventID string, opt UploadFileOptions) *core.TryReques
 // If the existing binary is only replaced, then some meta information might not be updated
 func (s *Service) Upsert(ctx context.Context, eventID string, opt UploadFileOptions) op.Result[jsonmodels.EventBinary] {
 	// slog.Debug("Replacing existing event binary", "eventID", eventID)
-	result := core.ExecuteReturnResult(ctx, s.createB(eventID, opt), jsonmodels.NewEventBinary)
+	result := core.Execute(ctx, s.createB(eventID, opt), jsonmodels.NewEventBinary)
 	if result.Err == nil {
 		return result
 	}
@@ -66,12 +66,12 @@ func (s *Service) Upsert(ctx context.Context, eventID string, opt UploadFileOpti
 	if !core.ErrHasStatus(result.Err, 409) {
 		return result
 	}
-	return core.ExecuteReturnResult(ctx, s.updateB(eventID, opt), jsonmodels.NewEventBinary)
+	return core.Execute(ctx, s.updateB(eventID, opt), jsonmodels.NewEventBinary)
 }
 
 // Update an event binary
 func (s *Service) Update(ctx context.Context, eventID string, opt UploadFileOptions) op.Result[jsonmodels.EventBinary] {
-	return core.ExecuteReturnResult(ctx, s.updateB(eventID, opt), jsonmodels.NewEventBinary)
+	return core.Execute(ctx, s.updateB(eventID, opt), jsonmodels.NewEventBinary)
 }
 
 func (s *Service) updateB(eventID string, opt UploadFileOptions) *core.TryRequest {
@@ -87,7 +87,7 @@ func (s *Service) updateB(eventID string, opt UploadFileOptions) *core.TryReques
 
 // Delete an event binary
 func (s *Service) Delete(ctx context.Context, eventID string) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.deleteB(eventID))
+	return core.ExecuteNoContent(ctx, s.deleteB(eventID))
 }
 
 func (s *Service) deleteB(eventID string) *core.TryRequest {

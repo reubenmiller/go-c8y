@@ -45,7 +45,7 @@ type TenantOptionIterator = pagination.Iterator[jsonmodels.TenantOption]
 
 // List tenant options
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.TenantOption] {
-	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTenantOption)
+	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTenantOption)
 }
 
 // ListAll returns an iterator for all tenant options
@@ -65,7 +65,7 @@ func (s *Service) listB(opt ListOptions) *core.TryRequest {
 
 // Create a tenant option
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.TenantOption] {
-	return core.ExecuteReturnResult(ctx, s.createB(body), jsonmodels.NewTenantOption)
+	return core.Execute(ctx, s.createB(body), jsonmodels.NewTenantOption)
 }
 
 func (s *Service) createB(body any) *core.TryRequest {
@@ -85,7 +85,7 @@ type GetOption struct {
 
 // Get a tenant option
 func (s *Service) Get(ctx context.Context, opt GetOption) op.Result[jsonmodels.TenantOption] {
-	return core.ExecuteReturnResult(ctx, s.getB(opt), jsonmodels.NewTenantOption)
+	return core.Execute(ctx, s.getB(opt), jsonmodels.NewTenantOption)
 }
 
 func (s *Service) getB(opt GetOption) *core.TryRequest {
@@ -107,7 +107,7 @@ type UpdateOption struct {
 
 // Update a tenant option
 func (s *Service) Update(ctx context.Context, opt UpdateOption) op.Result[jsonmodels.TenantOption] {
-	return core.ExecuteReturnResult(ctx, s.updateB(opt), jsonmodels.NewTenantOption)
+	return core.Execute(ctx, s.updateB(opt), jsonmodels.NewTenantOption)
 }
 
 func (s *Service) updateB(opt UpdateOption) *core.TryRequest {
@@ -134,7 +134,7 @@ type UpdateEditableFlagOption struct {
 
 // Updates the editable flag of a specific option (by a given category and key) on target tenant which determines if the option can be edited
 func (s *Service) UpdateEditableFlag(ctx context.Context, opt UpdateEditableFlagOption) op.Result[jsonmodels.TenantOption] {
-	return core.ExecuteReturnResult(ctx, s.updateEditableFlagB(opt), jsonmodels.NewTenantOption)
+	return core.Execute(ctx, s.updateEditableFlagB(opt), jsonmodels.NewTenantOption)
 }
 
 func (s *Service) updateEditableFlagB(opt UpdateEditableFlagOption) *core.TryRequest {
@@ -159,7 +159,7 @@ type DeleteOptions struct {
 
 // Delete a tenant option
 func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.deleteB(opt))
+	return core.ExecuteNoContent(ctx, s.deleteB(opt))
 }
 
 func (s *Service) deleteB(opt DeleteOptions) *core.TryRequest {
@@ -182,7 +182,7 @@ type ListByCategoryOptions struct {
 
 // List tenant options by category
 func (s *Service) ListByCategory(ctx context.Context, opt ListByCategoryOptions) op.Result[map[string]string] {
-	return core.ExecuteReturnResult(ctx, s.listByCategoryB(opt), func(b []byte) map[string]string {
+	return core.Execute(ctx, s.listByCategoryB(opt), func(b []byte) map[string]string {
 		data := make(map[string]string)
 		_ = json.Unmarshal(b, &data)
 		return data
@@ -206,7 +206,7 @@ type UpdateByCategoryOption struct {
 
 // Update a tenant option
 func (s *Service) UpdateByCategory(ctx context.Context, opt UpdateByCategoryOption) op.Result[map[string]string] {
-	return core.ExecuteReturnResult(ctx, s.updateByCategoryOptionB(opt), func(b []byte) map[string]string {
+	return core.Execute(ctx, s.updateByCategoryOptionB(opt), func(b []byte) map[string]string {
 		data := make(map[string]string)
 		_ = json.Unmarshal(b, &data)
 		return data

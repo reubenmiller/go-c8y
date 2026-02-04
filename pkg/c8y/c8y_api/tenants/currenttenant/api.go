@@ -31,7 +31,7 @@ type GetOptions struct {
 
 // Get current tenant
 func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.Tenant] {
-	return core.ExecuteReturnResult(ctx, s.getB(opt), jsonmodels.NewTenant)
+	return core.Execute(ctx, s.getB(opt), jsonmodels.NewTenant)
 }
 
 func (s *Service) getB(opt GetOptions) *core.TryRequest {

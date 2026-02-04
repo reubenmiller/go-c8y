@@ -15,8 +15,8 @@ func NoAcceptHeader(r *resty.Request) *resty.Request {
 	return r
 }
 
-func ExecuteNoResult(ctx context.Context, req *core.TryRequest) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, req)
+func ExecuteNoContent(ctx context.Context, req *core.TryRequest) op.Result[core.NoContent] {
+	return core.ExecuteNoContent(ctx, req)
 }
 
 func ExecuteResponseOnly(ctx context.Context, req *core.TryRequest) (*resty.Response, error) {

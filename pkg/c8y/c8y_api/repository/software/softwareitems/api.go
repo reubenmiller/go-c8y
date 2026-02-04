@@ -39,7 +39,7 @@ type Service struct {
 
 // Create a software item
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Software] {
-	return core.ExecuteReturnResult(ctx, s.createB(body), jsonmodels.NewSoftware)
+	return core.Execute(ctx, s.createB(body), jsonmodels.NewSoftware)
 }
 
 // ListOptions filter software
@@ -56,7 +56,7 @@ type ListOptions struct {
 
 // List software
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Software] {
-	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewSoftware)
+	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewSoftware)
 }
 
 func (s *Service) listB(opt ListOptions) *core.TryRequest {
@@ -180,7 +180,7 @@ func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.
 		return resolveResult
 	}
 
-	result := core.ExecuteReturnResult(ctx, s.getB(id, opt), jsonmodels.NewSoftware)
+	result := core.Execute(ctx, s.getB(id, opt), jsonmodels.NewSoftware)
 
 	// Add lookup metadata
 	if opt.ID != "" {
@@ -203,7 +203,7 @@ func (s *Service) Update(ctx context.Context, opt UpdateOptions, body any) op.Re
 		return resolveResult
 	}
 
-	result := core.ExecuteReturnResult(ctx, s.updateB(id, body), jsonmodels.NewSoftware)
+	result := core.Execute(ctx, s.updateB(id, body), jsonmodels.NewSoftware)
 
 	// Add lookup metadata
 	if opt.ID != "" {
@@ -223,7 +223,7 @@ func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[jsonm
 		return resolveResult
 	}
 
-	result := core.ExecuteReturnResult(ctx, s.deleteB(id, opt), jsonmodels.NewSoftware)
+	result := core.Execute(ctx, s.deleteB(id, opt), jsonmodels.NewSoftware)
 
 	// Add lookup metadata
 	if opt.ID != "" {

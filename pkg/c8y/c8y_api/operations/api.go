@@ -82,7 +82,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 		return op.Failed[jsonmodels.Operation](err, true)
 	}
 
-	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewOperation)
+	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewOperation)
 }
 
 // ListAll returns an iterator for all operations
@@ -102,7 +102,7 @@ func (s *Service) listB(opt any) *core.TryRequest {
 
 // Get an operation
 func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Operation] {
-	return core.ExecuteReturnResult(ctx, s.getB(ID), jsonmodels.NewOperation)
+	return core.Execute(ctx, s.getB(ID), jsonmodels.NewOperation)
 }
 
 func (s *Service) getB(ID string) *core.TryRequest {
@@ -115,7 +115,7 @@ func (s *Service) getB(ID string) *core.TryRequest {
 
 // Create an operation
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Operation] {
-	return core.ExecuteReturnResult(ctx, s.createB(body), jsonmodels.NewOperation)
+	return core.Execute(ctx, s.createB(body), jsonmodels.NewOperation)
 }
 
 func (s *Service) createB(body any) *core.TryRequest {
@@ -128,7 +128,7 @@ func (s *Service) createB(body any) *core.TryRequest {
 
 // Update an operation
 func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.Operation] {
-	return core.ExecuteReturnResult(ctx, s.updateB(ID, body), jsonmodels.NewOperation)
+	return core.Execute(ctx, s.updateB(ID, body), jsonmodels.NewOperation)
 }
 
 func (s *Service) updateB(ID string, body any) *core.TryRequest {
@@ -160,7 +160,7 @@ type DeleteListOptions struct {
 
 // Delete a list of operations
 func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Result[jsonmodels.Operation] {
-	return core.ExecuteReturnResult(ctx, s.deleteListB(opt), jsonmodels.NewOperation)
+	return core.Execute(ctx, s.deleteListB(opt), jsonmodels.NewOperation)
 }
 
 func (s *Service) deleteListB(opt DeleteListOptions) *core.TryRequest {

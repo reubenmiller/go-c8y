@@ -54,7 +54,7 @@ type UserGroupIterator = pagination.Iterator[jsonmodels.UserGroup]
 
 // Retrieve all groups in the tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.UserGroup] {
-	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewUserGroup)
+	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewUserGroup)
 }
 
 // ListAll returns an iterator for all user groups
@@ -82,7 +82,7 @@ type Target struct {
 
 // Get a user group
 func (s *Service) Get(ctx context.Context, opt Target) op.Result[jsonmodels.UserGroup] {
-	return core.ExecuteReturnResult(ctx, s.getB(opt), jsonmodels.NewUserGroup)
+	return core.Execute(ctx, s.getB(opt), jsonmodels.NewUserGroup)
 }
 
 func (s *Service) getB(target Target) *core.TryRequest {
@@ -102,7 +102,7 @@ type GetByNameOptions struct {
 
 // Get a group by name
 func (s *Service) GetByName(ctx context.Context, opt GetByNameOptions) op.Result[jsonmodels.UserGroup] {
-	return core.ExecuteReturnResult(ctx, s.getByNameB(opt), jsonmodels.NewUserGroup)
+	return core.Execute(ctx, s.getByNameB(opt), jsonmodels.NewUserGroup)
 }
 
 func (s *Service) getByNameB(opt GetByNameOptions) *core.TryRequest {
@@ -117,7 +117,7 @@ func (s *Service) getByNameB(opt GetByNameOptions) *core.TryRequest {
 
 // Create a user group
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.UserGroup] {
-	return core.ExecuteReturnResult(ctx, s.createB(body), jsonmodels.NewUserGroup)
+	return core.Execute(ctx, s.createB(body), jsonmodels.NewUserGroup)
 }
 
 func (s *Service) createB(body any) *core.TryRequest {
@@ -138,7 +138,7 @@ type UpdateOptions struct {
 
 // Update a user group
 func (s *Service) Update(ctx context.Context, opt UpdateOptions, body any) op.Result[jsonmodels.UserGroup] {
-	return core.ExecuteReturnResult(ctx, s.updateB(opt, body), jsonmodels.NewUserGroup)
+	return core.Execute(ctx, s.updateB(opt, body), jsonmodels.NewUserGroup)
 }
 
 func (s *Service) updateB(opt UpdateOptions, body any) *core.TryRequest {
@@ -162,7 +162,7 @@ type DeleteOptions struct {
 
 // Delete a user group
 func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.deleteB(opt))
+	return core.ExecuteNoContent(ctx, s.deleteB(opt))
 }
 
 func (s *Service) deleteB(opt DeleteOptions) *core.TryRequest {
@@ -187,7 +187,7 @@ type ListByUserOptions struct {
 
 // List groups that contain a given user in the tenant
 func (s *Service) ListByUser(ctx context.Context, opt ListByUserOptions) op.Result[jsonmodels.UserGroup] {
-	return core.ExecuteReturnCollection(ctx, s.listByUserB(opt), "references", "group", jsonmodels.NewUserGroup)
+	return core.ExecuteCollection(ctx, s.listByUserB(opt), "references", "group", jsonmodels.NewUserGroup)
 }
 
 func (s *Service) listByUserB(opt ListByUserOptions) *core.TryRequest {

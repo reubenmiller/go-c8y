@@ -39,7 +39,7 @@ type ListOptions struct {
 
 // List returns all device requests
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.DeviceRequest] {
-	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewDeviceRequest)
+	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewDeviceRequest)
 }
 
 func (s *Service) listB(opt ListOptions) *core.TryRequest {
@@ -52,7 +52,7 @@ func (s *Service) listB(opt ListOptions) *core.TryRequest {
 
 // Get retrieves a device request
 func (s *Service) Get(ctx context.Context, id string) op.Result[jsonmodels.DeviceRequest] {
-	return core.ExecuteReturnResult(ctx, s.getB(id), jsonmodels.NewDeviceRequest)
+	return core.Execute(ctx, s.getB(id), jsonmodels.NewDeviceRequest)
 }
 
 func (s *Service) getB(id string) *core.TryRequest {
@@ -80,7 +80,7 @@ type CreateOptions struct {
 
 // Create creates a new device request
 func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.DeviceRequest] {
-	return core.ExecuteReturnResult(ctx, s.createB(opt), jsonmodels.NewDeviceRequest)
+	return core.Execute(ctx, s.createB(opt), jsonmodels.NewDeviceRequest)
 }
 
 func (s *Service) createB(body any) *core.TryRequest {
@@ -109,7 +109,7 @@ type UpdateOptions struct {
 
 // Update a specific new device request (by a given ID). You can only update its status
 func (s *Service) Update(ctx context.Context, id string, opt UpdateOptions) op.Result[jsonmodels.DeviceRequest] {
-	return core.ExecuteReturnResult(ctx, s.updateB(id, opt), jsonmodels.NewDeviceRequest)
+	return core.Execute(ctx, s.updateB(id, opt), jsonmodels.NewDeviceRequest)
 }
 
 func (s *Service) updateB(id string, body any) *core.TryRequest {
@@ -125,7 +125,7 @@ func (s *Service) updateB(id string, body any) *core.TryRequest {
 
 // Delete removes a device request
 func (s *Service) Delete(ctx context.Context, id string) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.deleteB(id))
+	return core.ExecuteNoContent(ctx, s.deleteB(id))
 }
 
 func (s *Service) deleteB(id string) *core.TryRequest {
@@ -151,7 +151,7 @@ type CreateCredentialsOptions struct {
 
 // Create creates a new device request
 func (s *Service) CreateCredentials(ctx context.Context, opt CreateCredentialsOptions) op.Result[jsonmodels.DeviceCredentials] {
-	return core.ExecuteReturnResult(ctx, s.createB(opt), jsonmodels.NewDeviceCredentials)
+	return core.Execute(ctx, s.createB(opt), jsonmodels.NewDeviceCredentials)
 }
 
 func (s *Service) createCredentialsB(body any) *core.TryRequest {
@@ -211,7 +211,7 @@ type UploadFileOptions = core.UploadFileOptions
  */
 // CreateBulk allows multiple devices to be registered in one request
 func (s *Service) CreateBulk(ctx context.Context, opt UploadFileOptions) op.Result[jsonmodels.BulkNewDeviceRequests] {
-	return core.ExecuteReturnResult(ctx, s.createBulkB(opt), jsonmodels.NewBulkNewDeviceRequests)
+	return core.Execute(ctx, s.createBulkB(opt), jsonmodels.NewBulkNewDeviceRequests)
 }
 
 func (s *Service) createBulkB(opt UploadFileOptions) *core.TryRequest {

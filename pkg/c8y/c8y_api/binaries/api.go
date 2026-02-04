@@ -59,7 +59,7 @@ type BinaryIterator = pagination.Iterator[jsonmodels.Binary]
 
 // List binaries
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Binary] {
-	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewBinary)
+	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewBinary)
 }
 
 // ListAll returns an iterator for all binaries
@@ -80,7 +80,7 @@ func (s *Service) listB(opt ListOptions) *core.TryRequest {
 // Get a binary
 // TODO: How to wrap the a binary type response in op.Result? A io.Reader or io.ReadCloser might make the most sense
 func (s *Service) Get(ctx context.Context, ID string) op.Result[core.BinaryResponse] {
-	return core.ExecuteBinaryResponse(ctx, s.getB(ID))
+	return core.ExecuteBinary(ctx, s.getB(ID))
 }
 
 // TODO: For binaries the response shouldn't be read by default as this would
@@ -97,7 +97,7 @@ type UploadFileOptions = core.UploadFileOptions
 
 // Create/Upload a binary
 func (s *Service) Create(ctx context.Context, opt UploadFileOptions) op.Result[jsonmodels.Binary] {
-	return core.ExecuteReturnResult(ctx, s.createB(opt), jsonmodels.NewBinary)
+	return core.Execute(ctx, s.createB(opt), jsonmodels.NewBinary)
 }
 
 func (s *Service) createB(opt UploadFileOptions) *core.TryRequest {
@@ -111,7 +111,7 @@ func (s *Service) createB(opt UploadFileOptions) *core.TryRequest {
 
 // Update/replace a binary
 func (s *Service) Update(ctx context.Context, ID string, opt UploadFileOptions) op.Result[jsonmodels.Binary] {
-	return core.ExecuteReturnResult(ctx, s.updateB(ID, opt), jsonmodels.NewBinary)
+	return core.Execute(ctx, s.updateB(ID, opt), jsonmodels.NewBinary)
 }
 
 func (s *Service) updateB(eventID string, opt UploadFileOptions) *core.TryRequest {
@@ -127,7 +127,7 @@ func (s *Service) updateB(eventID string, opt UploadFileOptions) *core.TryReques
 
 // Delete a binary
 func (s *Service) Delete(ctx context.Context, ID string) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.deleteB(ID))
+	return core.ExecuteNoContent(ctx, s.deleteB(ID))
 }
 
 func (s *Service) deleteB(ID string) *core.TryRequest {

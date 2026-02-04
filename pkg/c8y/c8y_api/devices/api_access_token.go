@@ -25,7 +25,7 @@ import (
 //     if the immediate issuer of the client's certificate is not uploaded as a trusted certificate on the platform.
 //     If the immediate issuer is already uploaded and trusted, the header can be omitted)
 func (s *Service) CreateAccessToken(ctx context.Context) op.Result[jsonmodels.DeviceAccessToken] {
-	return core.ExecuteReturnResult(ctx, s.CreateAccessTokenB(), jsonmodels.NewDeviceAccessToken)
+	return core.Execute(ctx, s.CreateAccessTokenB(), jsonmodels.NewDeviceAccessToken)
 }
 
 func (s *Service) CreateAccessTokenB() *core.TryRequest {

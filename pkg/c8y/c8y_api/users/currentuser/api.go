@@ -26,7 +26,7 @@ type Service struct {
 
 // Get the current user
 func (s *Service) Get(ctx context.Context) op.Result[jsonmodels.User] {
-	return core.ExecuteReturnResult(ctx, s.getB(), jsonmodels.NewUser)
+	return core.Execute(ctx, s.getB(), jsonmodels.NewUser)
 }
 
 func (s *Service) getB() *core.TryRequest {
@@ -39,7 +39,7 @@ func (s *Service) getB() *core.TryRequest {
 
 // Update the current user
 func (s *Service) Update(ctx context.Context, body any) op.Result[jsonmodels.User] {
-	return core.ExecuteReturnResult(ctx, s.updateB(body), jsonmodels.NewUser)
+	return core.Execute(ctx, s.updateB(body), jsonmodels.NewUser)
 }
 
 func (s *Service) updateB(body any) *core.TryRequest {
@@ -62,7 +62,7 @@ type UpdatePasswordOptions struct {
 
 // Update the current user's password
 func (s *Service) UpdatePassword(ctx context.Context, body UpdatePasswordOptions) op.Result[jsonmodels.User] {
-	return core.ExecuteReturnResult(ctx, s.updatePasswordB(body), jsonmodels.NewUser)
+	return core.Execute(ctx, s.updatePasswordB(body), jsonmodels.NewUser)
 }
 
 func (s *Service) updatePasswordB(body any) *core.TryRequest {

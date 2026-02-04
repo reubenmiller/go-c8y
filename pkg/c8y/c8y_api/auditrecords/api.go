@@ -54,7 +54,7 @@ type AuditRecordIterator = pagination.Iterator[jsonmodels.AuditRecord]
 
 // List the audit records
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.AuditRecord] {
-	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewAuditRecord)
+	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewAuditRecord)
 }
 
 // ListAll returns an iterator for all audit records
@@ -74,7 +74,7 @@ func (s *Service) listB(opt any) *core.TryRequest {
 
 // Get an audit record
 func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.AuditRecord] {
-	return core.ExecuteReturnResult(ctx, s.getB(ID), jsonmodels.NewAuditRecord)
+	return core.Execute(ctx, s.getB(ID), jsonmodels.NewAuditRecord)
 }
 
 func (s *Service) getB(ID string) *core.TryRequest {
@@ -87,7 +87,7 @@ func (s *Service) getB(ID string) *core.TryRequest {
 
 // Create an audit record
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.AuditRecord] {
-	return core.ExecuteReturnResult(ctx, s.createB(body), jsonmodels.NewAuditRecord)
+	return core.Execute(ctx, s.createB(body), jsonmodels.NewAuditRecord)
 }
 
 func (s *Service) createB(body any) *core.TryRequest {

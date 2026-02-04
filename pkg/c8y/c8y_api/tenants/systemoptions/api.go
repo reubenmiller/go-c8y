@@ -42,7 +42,7 @@ type SystemOptionIterator = pagination.Iterator[jsonmodels.SystemOption]
 
 // List system options
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.SystemOption] {
-	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewSystemOption)
+	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewSystemOption)
 }
 
 // ListAll returns an iterator for all system options
@@ -68,7 +68,7 @@ type GetOption struct {
 
 // Get a system option
 func (s *Service) Get(ctx context.Context, opt GetOption) op.Result[jsonmodels.SystemOption] {
-	return core.ExecuteReturnResult(ctx, s.getB(opt), jsonmodels.NewSystemOption)
+	return core.Execute(ctx, s.getB(opt), jsonmodels.NewSystemOption)
 }
 
 func (s *Service) getB(opt GetOption) *core.TryRequest {
