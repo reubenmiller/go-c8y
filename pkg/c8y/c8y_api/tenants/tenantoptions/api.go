@@ -45,7 +45,7 @@ type TenantOptionIterator = pagination.Iterator[jsonmodels.TenantOption]
 
 // List tenant options
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.TenantOption] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTenantOption)
+	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTenantOption)
 }
 
 // ListAll returns an iterator for all tenant options
@@ -55,7 +55,7 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *TenantOptionIt
 	}, jsonmodels.NewTenantOption)
 }
 
-func (s *Service) ListB(opt ListOptions) *core.TryRequest {
+func (s *Service) listB(opt ListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
@@ -65,10 +65,10 @@ func (s *Service) ListB(opt ListOptions) *core.TryRequest {
 
 // Create a tenant option
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.TenantOption] {
-	return core.ExecuteReturnResult(ctx, s.CreateB(body), jsonmodels.NewTenantOption)
+	return core.ExecuteReturnResult(ctx, s.createB(body), jsonmodels.NewTenantOption)
 }
 
-func (s *Service) CreateB(body any) *core.TryRequest {
+func (s *Service) createB(body any) *core.TryRequest {
 	req := s.Service.Client.R().
 		SetMethod(resty.MethodPost).
 		SetBody(body).
@@ -85,10 +85,10 @@ type GetOption struct {
 
 // Get a tenant option
 func (s *Service) Get(ctx context.Context, opt GetOption) op.Result[jsonmodels.TenantOption] {
-	return core.ExecuteReturnResult(ctx, s.GetB(opt), jsonmodels.NewTenantOption)
+	return core.ExecuteReturnResult(ctx, s.getB(opt), jsonmodels.NewTenantOption)
 }
 
-func (s *Service) GetB(opt GetOption) *core.TryRequest {
+func (s *Service) getB(opt GetOption) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamCategory, opt.Category).
@@ -107,10 +107,10 @@ type UpdateOption struct {
 
 // Update a tenant option
 func (s *Service) Update(ctx context.Context, opt UpdateOption) op.Result[jsonmodels.TenantOption] {
-	return core.ExecuteReturnResult(ctx, s.UpdateB(opt), jsonmodels.NewTenantOption)
+	return core.ExecuteReturnResult(ctx, s.updateB(opt), jsonmodels.NewTenantOption)
 }
 
-func (s *Service) UpdateB(opt UpdateOption) *core.TryRequest {
+func (s *Service) updateB(opt UpdateOption) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamCategory, opt.Category).
@@ -134,10 +134,10 @@ type UpdateEditableFlagOption struct {
 
 // Updates the editable flag of a specific option (by a given category and key) on target tenant which determines if the option can be edited
 func (s *Service) UpdateEditableFlag(ctx context.Context, opt UpdateEditableFlagOption) op.Result[jsonmodels.TenantOption] {
-	return core.ExecuteReturnResult(ctx, s.UpdateEditableFlagB(opt), jsonmodels.NewTenantOption)
+	return core.ExecuteReturnResult(ctx, s.updateEditableFlagB(opt), jsonmodels.NewTenantOption)
 }
 
-func (s *Service) UpdateEditableFlagB(opt UpdateEditableFlagOption) *core.TryRequest {
+func (s *Service) updateEditableFlagB(opt UpdateEditableFlagOption) *core.TryRequest {
 	body := map[string]any{
 		"editable": opt.Editable,
 	}
@@ -159,10 +159,10 @@ type DeleteOptions struct {
 
 // Delete a tenant option
 func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.DeleteB(opt))
+	return core.ExecuteNoResult(ctx, s.deleteB(opt))
 }
 
-func (s *Service) DeleteB(opt DeleteOptions) *core.TryRequest {
+func (s *Service) deleteB(opt DeleteOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamCategory, opt.Category).
@@ -182,14 +182,14 @@ type ListByCategoryOptions struct {
 
 // List tenant options by category
 func (s *Service) ListByCategory(ctx context.Context, opt ListByCategoryOptions) op.Result[map[string]string] {
-	return core.ExecuteReturnResult(ctx, s.ListByCategoryB(opt), func(b []byte) map[string]string {
+	return core.ExecuteReturnResult(ctx, s.listByCategoryB(opt), func(b []byte) map[string]string {
 		data := make(map[string]string)
 		_ = json.Unmarshal(b, &data)
 		return data
 	})
 }
 
-func (s *Service) ListByCategoryB(opt ListByCategoryOptions) *core.TryRequest {
+func (s *Service) listByCategoryB(opt ListByCategoryOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamCategory, opt.Category).
@@ -206,14 +206,14 @@ type UpdateByCategoryOption struct {
 
 // Update a tenant option
 func (s *Service) UpdateByCategory(ctx context.Context, opt UpdateByCategoryOption) op.Result[map[string]string] {
-	return core.ExecuteReturnResult(ctx, s.UpdateByCategoryOptionB(opt), func(b []byte) map[string]string {
+	return core.ExecuteReturnResult(ctx, s.updateByCategoryOptionB(opt), func(b []byte) map[string]string {
 		data := make(map[string]string)
 		_ = json.Unmarshal(b, &data)
 		return data
 	})
 }
 
-func (s *Service) UpdateByCategoryOptionB(opt UpdateByCategoryOption) *core.TryRequest {
+func (s *Service) updateByCategoryOptionB(opt UpdateByCategoryOption) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamCategory, opt.Category).

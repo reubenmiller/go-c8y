@@ -64,7 +64,7 @@ type TrustedCertificateIterator = pagination.Iterator[jsonmodels.TrustedCertific
 
 // List trusted certificates
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.TrustedCertificate] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTrustedCertificate)
+	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTrustedCertificate)
 }
 
 // ListAll returns an iterator for all trusted certificates
@@ -74,7 +74,7 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *TrustedCertifi
 	}, jsonmodels.NewTrustedCertificate)
 }
 
-func (s *Service) ListB(opt ListOptions) *core.TryRequest {
+func (s *Service) listB(opt ListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamTenant, opt.TenantID).
@@ -94,10 +94,10 @@ type CreateOptions struct {
 
 // Create a trusted certificate
 func (s *Service) Create(ctx context.Context, opt CreateOptions, body any) op.Result[jsonmodels.TrustedCertificate] {
-	return core.ExecuteReturnResult(ctx, s.CreateB(opt, body), jsonmodels.NewTrustedCertificate)
+	return core.ExecuteReturnResult(ctx, s.createB(opt, body), jsonmodels.NewTrustedCertificate)
 }
 
-func (s *Service) CreateB(opt CreateOptions, body any) *core.TryRequest {
+func (s *Service) createB(opt CreateOptions, body any) *core.TryRequest {
 	req := s.Service.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(ParamTenant, opt.TenantID).
@@ -109,10 +109,10 @@ func (s *Service) CreateB(opt CreateOptions, body any) *core.TryRequest {
 
 // Create multiple trusted certificate
 func (s *Service) CreateMultiple(ctx context.Context, opt CreateOptions, body any) op.Result[jsonmodels.TrustedCertificate] {
-	return core.ExecuteReturnCollection(ctx, s.CreateMultipleB(opt, body), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTrustedCertificate)
+	return core.ExecuteReturnCollection(ctx, s.createMultipleB(opt, body), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTrustedCertificate)
 }
 
-func (s *Service) CreateMultipleB(opt CreateOptions, body any) *core.TryRequest {
+func (s *Service) createMultipleB(opt CreateOptions, body any) *core.TryRequest {
 	req := s.Service.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(ParamTenant, opt.TenantID).
@@ -130,10 +130,10 @@ type GetOptions struct {
 
 // Get a trusted certificate
 func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.TrustedCertificate] {
-	return core.ExecuteReturnResult(ctx, s.GetB(opt), jsonmodels.NewTrustedCertificate)
+	return core.ExecuteReturnResult(ctx, s.getB(opt), jsonmodels.NewTrustedCertificate)
 }
 
-func (s *Service) GetB(opt GetOptions) *core.TryRequest {
+func (s *Service) getB(opt GetOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamTenant, opt.TenantID).
@@ -151,10 +151,10 @@ type UpdateOptions struct {
 
 // Update a trusted certificate
 func (s *Service) Update(ctx context.Context, opt UpdateOptions, body any) op.Result[jsonmodels.TrustedCertificate] {
-	return core.ExecuteReturnResult(ctx, s.UpdateB(opt, body), jsonmodels.NewTrustedCertificate)
+	return core.ExecuteReturnResult(ctx, s.updateB(opt, body), jsonmodels.NewTrustedCertificate)
 }
 
-func (s *Service) UpdateB(opt UpdateOptions, body any) *core.TryRequest {
+func (s *Service) updateB(opt UpdateOptions, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamTenant, opt.TenantID).
@@ -174,10 +174,10 @@ type DeleteOptions struct {
 
 // Delete a trusted certificate
 func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.DeleteB(opt))
+	return core.ExecuteNoResult(ctx, s.deleteB(opt))
 }
 
-func (s *Service) DeleteB(opt DeleteOptions) *core.TryRequest {
+func (s *Service) deleteB(opt DeleteOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamTenant, opt.TenantID).
@@ -252,10 +252,10 @@ func (s *Service) Proof(ctx context.Context, opt ProofOptions) op.Result[jsonmod
 	body := &model.ProofOfPossession{
 		ProofOfPossessionSignedVerificationCode: opt.Code,
 	}
-	return core.ExecuteReturnResult(ctx, s.ProofB(opt, body), jsonmodels.NewTrustedCertificate)
+	return core.ExecuteReturnResult(ctx, s.proofB(opt, body), jsonmodels.NewTrustedCertificate)
 }
 
-func (s *Service) ProofB(opt ProofOptions, body any) *core.TryRequest {
+func (s *Service) proofB(opt ProofOptions, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(ParamTenant, opt.TenantID).
@@ -275,10 +275,10 @@ type CreateVerificationCodeOptions struct {
 
 // Generate a verification code for the proof of possession operation for the certificate (by a given fingerprint)
 func (s *Service) CreateVerificationCode(ctx context.Context, opt CreateVerificationCodeOptions) op.Result[jsonmodels.TrustedCertificate] {
-	return core.ExecuteReturnResult(ctx, s.CreateVerificationCodeB(opt), jsonmodels.NewTrustedCertificate)
+	return core.ExecuteReturnResult(ctx, s.createVerificationCodeB(opt), jsonmodels.NewTrustedCertificate)
 }
 
-func (s *Service) CreateVerificationCodeB(opt CreateVerificationCodeOptions) *core.TryRequest {
+func (s *Service) createVerificationCodeB(opt CreateVerificationCodeOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(ParamTenant, opt.TenantID).
@@ -297,10 +297,10 @@ type ConfirmOptions struct {
 // Confirm the proof of possession of an already uploaded certificate (by a given fingerprint) for a specific tenant
 // TODO: This api calls always returns a 403 error
 func (s *Service) Confirm(ctx context.Context, opt ConfirmOptions) op.Result[jsonmodels.TrustedCertificate] {
-	return core.ExecuteReturnResult(ctx, s.ConfirmB(opt), jsonmodels.NewTrustedCertificate)
+	return core.ExecuteReturnResult(ctx, s.confirmB(opt), jsonmodels.NewTrustedCertificate)
 }
 
-func (s *Service) ConfirmB(opt ConfirmOptions) *core.TryRequest {
+func (s *Service) confirmB(opt ConfirmOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(ParamTenant, opt.TenantID).

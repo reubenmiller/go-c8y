@@ -68,7 +68,7 @@ type UserIterator = pagination.Iterator[jsonmodels.User]
 
 // Retrieve all users in the tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.User] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewUser)
+	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewUser)
 }
 
 // ListAll returns an iterator for all users
@@ -78,7 +78,7 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *UserIterator {
 	}, jsonmodels.NewUser)
 }
 
-func (s *Service) ListB(opt ListOptions) *core.TryRequest {
+func (s *Service) listB(opt ListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -97,10 +97,10 @@ type GetOptions Target
 
 // Get a user
 func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.User] {
-	return core.ExecuteReturnResult(ctx, s.GetB(opt), jsonmodels.NewUser)
+	return core.ExecuteReturnResult(ctx, s.getB(opt), jsonmodels.NewUser)
 }
 
-func (s *Service) GetB(opt GetOptions) *core.TryRequest {
+func (s *Service) getB(opt GetOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -117,10 +117,10 @@ type GetByUsernameOptions struct {
 
 // Get a user by username
 func (s *Service) GetByUsername(ctx context.Context, opt GetByUsernameOptions) op.Result[jsonmodels.User] {
-	return core.ExecuteReturnResult(ctx, s.GetByUsernameB(opt), jsonmodels.NewUser)
+	return core.ExecuteReturnResult(ctx, s.getByUsernameB(opt), jsonmodels.NewUser)
 }
 
-func (s *Service) GetByUsernameB(opt GetByUsernameOptions) *core.TryRequest {
+func (s *Service) getByUsernameB(opt GetByUsernameOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -132,10 +132,10 @@ func (s *Service) GetByUsernameB(opt GetByUsernameOptions) *core.TryRequest {
 
 // Create a user
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.User] {
-	return core.ExecuteReturnResult(ctx, s.CreateB(body), jsonmodels.NewUser)
+	return core.ExecuteReturnResult(ctx, s.createB(body), jsonmodels.NewUser)
 }
 
-func (s *Service) CreateB(body any) *core.TryRequest {
+func (s *Service) createB(body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -149,10 +149,10 @@ type UpdateOptions Target
 
 // Update a user
 func (s *Service) Update(ctx context.Context, opt UpdateOptions, body any) op.Result[jsonmodels.User] {
-	return core.ExecuteReturnResult(ctx, s.UpdateB(opt, body), jsonmodels.NewUser)
+	return core.ExecuteReturnResult(ctx, s.updateB(opt, body), jsonmodels.NewUser)
 }
 
-func (s *Service) UpdateB(opt UpdateOptions, body any) *core.TryRequest {
+func (s *Service) updateB(opt UpdateOptions, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -168,10 +168,10 @@ type DeleteOptions Target
 
 // Delete a user
 func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.DeleteB(opt))
+	return core.ExecuteNoResult(ctx, s.deleteB(opt))
 }
 
-func (s *Service) DeleteB(opt DeleteOptions) *core.TryRequest {
+func (s *Service) deleteB(opt DeleteOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamId, opt.ID).
@@ -192,10 +192,10 @@ type ListGroupsOptions struct {
 
 // List groups that contain a given user in the tenant
 func (s *Service) ListGroupsWithUser(ctx context.Context, opt ListGroupsOptions) op.Result[jsonmodels.UserGroup] {
-	return core.ExecuteReturnCollection(ctx, s.ListGroupsWithUserB(opt), "references", "group", jsonmodels.NewUserGroup)
+	return core.ExecuteReturnCollection(ctx, s.listGroupsWithUserB(opt), "references", "group", jsonmodels.NewUserGroup)
 }
 
-func (s *Service) ListGroupsWithUserB(opt ListGroupsOptions) *core.TryRequest {
+func (s *Service) listGroupsWithUserB(opt ListGroupsOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).

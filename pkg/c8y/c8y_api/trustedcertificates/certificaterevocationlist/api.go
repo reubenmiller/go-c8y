@@ -30,10 +30,10 @@ type GetOptions struct{}
 
 // List the certificate revocation list
 func (s *Service) List(ctx context.Context, opt GetOptions) op.Result[core.BinaryResponse] {
-	return core.ExecuteBinaryResponse(ctx, s.GetB(opt))
+	return core.ExecuteBinaryResponse(ctx, s.getB(opt))
 }
 
-func (s *Service) GetB(opt GetOptions) *core.TryRequest {
+func (s *Service) getB(opt GetOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
@@ -44,10 +44,10 @@ func (s *Service) GetB(opt GetOptions) *core.TryRequest {
 
 // Add certificates to the revocation list
 func (s *Service) Add(ctx context.Context, body any) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.CreateB(body))
+	return core.ExecuteNoResult(ctx, s.createB(body))
 }
 
-func (s *Service) CreateB(body any) *core.TryRequest {
+func (s *Service) createB(body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
@@ -60,10 +60,10 @@ type AddFileFileOptions = core.UploadFileOptions
 
 // Add CRL list from file
 func (s *Service) AddFile(ctx context.Context, opt AddFileFileOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.AddFileB(opt))
+	return core.ExecuteNoResult(ctx, s.addFileB(opt))
 }
 
-func (s *Service) AddFileB(opt AddFileFileOptions) *core.TryRequest {
+func (s *Service) addFileB(opt AddFileFileOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetMultipartFields(core.NewMultiPartFileFields(opt)...).

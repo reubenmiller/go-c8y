@@ -106,7 +106,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 		return op.Failed[jsonmodels.Alarm](err, true)
 	}
 
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewAlarm)
+	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewAlarm)
 }
 
 // ListAll returns an iterator for all alarms
@@ -116,7 +116,7 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *AlarmIterator 
 	}, jsonmodels.NewAlarm)
 }
 
-func (s *Service) ListB(opt any) *core.TryRequest {
+func (s *Service) listB(opt any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
@@ -170,10 +170,10 @@ type CountOptions struct {
 
 // Get an alarm
 func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Alarm] {
-	return core.ExecuteReturnResult(ctx, s.GetB(ID), jsonmodels.NewAlarm)
+	return core.ExecuteReturnResult(ctx, s.getB(ID), jsonmodels.NewAlarm)
 }
 
-func (s *Service) GetB(ID string) *core.TryRequest {
+func (s *Service) getB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamId, ID).
@@ -183,10 +183,10 @@ func (s *Service) GetB(ID string) *core.TryRequest {
 
 // Create an alarm
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Alarm] {
-	return core.ExecuteReturnResult(ctx, s.CreateB(body), jsonmodels.NewAlarm)
+	return core.ExecuteReturnResult(ctx, s.createB(body), jsonmodels.NewAlarm)
 }
 
-func (s *Service) CreateB(body any) *core.TryRequest {
+func (s *Service) createB(body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -197,10 +197,10 @@ func (s *Service) CreateB(body any) *core.TryRequest {
 
 // Update an alarm
 func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.Alarm] {
-	return core.ExecuteReturnResult(ctx, s.UpdateB(ID, body), jsonmodels.NewAlarm)
+	return core.ExecuteReturnResult(ctx, s.updateB(ID, body), jsonmodels.NewAlarm)
 }
 
-func (s *Service) UpdateB(ID string, body any) *core.TryRequest {
+func (s *Service) updateB(ID string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamId, ID).
@@ -267,10 +267,10 @@ type BulkUpdateOptions struct {
 //
 // Since this operations can take a lot of time, request returns after maximum 0.5 sec of processing, and updating is continued as a background process in the platform.
 func (s *Service) UpdateList(ctx context.Context, opt BulkUpdateOptions, body any) op.Result[jsonmodels.Alarm] {
-	return core.ExecuteReturnResult(ctx, s.UpdateListB(opt, body), jsonmodels.NewAlarm)
+	return core.ExecuteReturnResult(ctx, s.updateListB(opt, body), jsonmodels.NewAlarm)
 }
 
-func (s *Service) UpdateListB(opt BulkUpdateOptions, body any) *core.TryRequest {
+func (s *Service) updateListB(opt BulkUpdateOptions, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
@@ -334,10 +334,10 @@ type DeleteListOptions struct {
 
 // Remove alarm collections specified by query parameters
 func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.DeleteListB(opt))
+	return core.ExecuteNoResult(ctx, s.deleteListB(opt))
 }
 
-func (s *Service) DeleteListB(opt DeleteListOptions) *core.TryRequest {
+func (s *Service) deleteListB(opt DeleteListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).

@@ -31,10 +31,10 @@ type GetOptions struct {
 
 // Get current tenant
 func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.Tenant] {
-	return core.ExecuteReturnResult(ctx, s.GetB(opt), jsonmodels.NewTenant)
+	return core.ExecuteReturnResult(ctx, s.getB(opt), jsonmodels.NewTenant)
 }
 
-func (s *Service) GetB(opt GetOptions) *core.TryRequest {
+func (s *Service) getB(opt GetOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).

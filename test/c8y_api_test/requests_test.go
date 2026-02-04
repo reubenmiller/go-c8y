@@ -2,7 +2,6 @@ package c8y_api_test
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"testing"
 
@@ -56,47 +55,47 @@ func Test_SimpleDefaultRequest(t *testing.T) {
 	assert.Equal(t, mo.Data.Name(), "custom")
 }
 
-func Test_CreateRequestWithCustomHeaders(t *testing.T) {
-	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+// func Test_CreateRequestWithCustomHeaders(t *testing.T) {
+// 	client := testcore.CreateTestClient(t)
+// 	client.Client.SetDebug(true)
 
-	body := map[string]any{
-		"name": "custom",
-	}
+// 	body := map[string]any{
+// 		"name": "custom",
+// 	}
 
-	out := map[string]any{}
-	resp, err := client.ManagedObjects.CreateB(body).
-		SetProcessingMode("QUIESCENT").
-		SetContext(context.Background()).
-		SetResult(&out).
-		Send()
+// 	out := map[string]any{}
+// 	resp, err := client.ManagedObjects.CreateB(body).
+// 		SetProcessingMode("QUIESCENT").
+// 		SetContext(context.Background()).
+// 		SetResult(&out).
+// 		Send()
 
-	assert.NoError(t, err)
-	assert.NotNil(t, resp)
-	assert.Contains(t, out, "id")
-	assert.Equal(t, out["name"].(string), "custom")
-}
+// 	assert.NoError(t, err)
+// 	assert.NotNil(t, resp)
+// 	assert.Contains(t, out, "id")
+// 	assert.Equal(t, out["name"].(string), "custom")
+// }
 
-func Test_CreateRequestDecodeHelper(t *testing.T) {
-	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+// func Test_CreateRequestDecodeHelper(t *testing.T) {
+// 	client := testcore.CreateTestClient(t)
+// 	client.Client.SetDebug(true)
 
-	body := map[string]any{
-		"name": "custom",
-	}
+// 	body := map[string]any{
+// 		"name": "custom",
+// 	}
 
-	resp, err := client.ManagedObjects.CreateB(body).
-		SetContext(context.Background()).
-		Send()
+// 	resp, err := client.ManagedObjects.CreateB(body).
+// 		SetContext(context.Background()).
+// 		Send()
 
-	assert.NoError(t, err)
-	assert.NotNil(t, resp)
+// 	assert.NoError(t, err)
+// 	assert.NotNil(t, resp)
 
-	out := make(map[string]any)
-	err = json.Unmarshal([]byte(resp.String()), &out)
+// 	out := make(map[string]any)
+// 	err = json.Unmarshal([]byte(resp.String()), &out)
 
-	// err = c8y_api.UnmarshalJSON(resp, &out)
-	assert.NoError(t, err)
-	assert.Contains(t, out, "id")
-	assert.Equal(t, out["name"].(string), "custom")
-}
+// 	// err = c8y_api.UnmarshalJSON(resp, &out)
+// 	assert.NoError(t, err)
+// 	assert.Contains(t, out, "id")
+// 	assert.Equal(t, out["name"].(string), "custom")
+// }

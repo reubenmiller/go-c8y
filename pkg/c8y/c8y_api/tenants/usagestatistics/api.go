@@ -43,7 +43,7 @@ type TenantUsageStatisticsIterator = pagination.Iterator[jsonmodels.TenantUsageS
 
 // List tenant statistics
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.TenantUsageStatistics] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTenantUsageStatistics)
+	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTenantUsageStatistics)
 }
 
 // ListAll returns an iterator for all tenant usage statistics
@@ -53,7 +53,7 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *TenantUsageSta
 	}, jsonmodels.NewTenantUsageStatistics)
 }
 
-func (s *Service) ListB(opt ListOptions) *core.TryRequest {
+func (s *Service) listB(opt ListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
@@ -72,10 +72,10 @@ type ListSummaryOptions struct {
 
 // List tenant statistics
 func (s *Service) ListSummary(ctx context.Context, opt ListSummaryOptions) op.Result[jsonmodels.TenantUsageStatistics] {
-	return core.ExecuteReturnResult(ctx, s.ListSummaryB(opt), jsonmodels.NewTenantUsageStatistics)
+	return core.ExecuteReturnResult(ctx, s.listSummaryB(opt), jsonmodels.NewTenantUsageStatistics)
 }
 
-func (s *Service) ListSummaryB(opt ListSummaryOptions) *core.TryRequest {
+func (s *Service) listSummaryB(opt ListSummaryOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
@@ -92,10 +92,10 @@ type ListSummaryAllTenantsOptions struct {
 
 // // List usage statistics of all tenants
 func (s *Service) ListSummaryAllTenants(ctx context.Context, opt ListSummaryAllTenantsOptions) op.Result[jsonmodels.TenantUsageStatisticsSummary] {
-	return core.ExecuteReturnCollection(ctx, s.ListSummaryAllTenantsB(opt), "", "", jsonmodels.NewTenantUsageStatisticsSummary)
+	return core.ExecuteReturnCollection(ctx, s.listSummaryAllTenantsB(opt), "", "", jsonmodels.NewTenantUsageStatisticsSummary)
 }
 
-func (s *Service) ListSummaryAllTenantsB(opt ListSummaryAllTenantsOptions) *core.TryRequest {
+func (s *Service) listSummaryAllTenantsB(opt ListSummaryAllTenantsOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).

@@ -134,7 +134,7 @@ type ListOptions struct {
 }
 
 // List managed objects
-func (s *Service) ListB(opt ListOptions) *core.TryRequest {
+func (s *Service) listB(opt ListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
@@ -151,7 +151,7 @@ type GetOptions struct {
 }
 
 // Create a managed object
-func (s *Service) CreateB(body any) *core.TryRequest {
+func (s *Service) createB(body any) *core.TryRequest {
 	req := s.Service.Client.R().
 		SetMethod(resty.MethodPost).
 		SetBody(body).
@@ -161,7 +161,7 @@ func (s *Service) CreateB(body any) *core.TryRequest {
 }
 
 // Get a managed object
-func (s *Service) GetB(ID string, opt GetOptions) *core.TryRequest {
+func (s *Service) getB(ID string, opt GetOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamId, ID).
@@ -172,7 +172,7 @@ func (s *Service) GetB(ID string, opt GetOptions) *core.TryRequest {
 }
 
 // Update a managed object
-func (s *Service) UpdateB(ID string, body any) *core.TryRequest {
+func (s *Service) updateB(ID string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamId, ID).
@@ -184,10 +184,10 @@ func (s *Service) UpdateB(ID string, body any) *core.TryRequest {
 
 // List of supported measurement types for a given managed object
 func (s *Service) ListSupportedMeasurements(ctx context.Context, ID string) op.Result[jsonmodels.SupportedMeasurements] {
-	return core.ExecuteReturnResult(ctx, s.ListSupportedMeasurementsB(ID), jsonmodels.NewSupportedMeasurements)
+	return core.ExecuteReturnResult(ctx, s.listSupportedMeasurementsB(ID), jsonmodels.NewSupportedMeasurements)
 }
 
-func (s *Service) ListSupportedMeasurementsB(ID string) *core.TryRequest {
+func (s *Service) listSupportedMeasurementsB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamId, ID).
@@ -198,9 +198,9 @@ func (s *Service) ListSupportedMeasurementsB(ID string) *core.TryRequest {
 
 // List of supported measurement series for a given managed object
 func (s *Service) ListSupportedSeries(ctx context.Context, ID string) op.Result[jsonmodels.SupportedSeries] {
-	return core.ExecuteReturnResult(ctx, s.ListSupportedSeriesB(ID), jsonmodels.NewSupportedSeries)
+	return core.ExecuteReturnResult(ctx, s.listSupportedSeriesB(ID), jsonmodels.NewSupportedSeries)
 }
-func (s *Service) ListSupportedSeriesB(ID string) *core.TryRequest {
+func (s *Service) listSupportedSeriesB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamId, ID).
@@ -222,7 +222,7 @@ type DeleteOptions struct {
 }
 
 // Delete a managed object
-func (s *Service) DeleteB(ID string, opt DeleteOptions) *core.TryRequest {
+func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamId, ID).

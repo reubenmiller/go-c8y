@@ -46,7 +46,7 @@ type RoleIterator = pagination.Iterator[jsonmodels.Role]
 
 // Retrieve all user roles in the tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Role] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewRole)
+	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewRole)
 }
 
 // ListAll returns an iterator for all user roles
@@ -56,7 +56,7 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *RoleIterator {
 	}, jsonmodels.NewRole)
 }
 
-func (s *Service) ListB(opt ListOptions) *core.TryRequest {
+func (s *Service) listB(opt ListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -71,10 +71,10 @@ type GetOption struct {
 
 // Get a user role
 func (s *Service) Get(ctx context.Context, opt GetOption) op.Result[jsonmodels.Role] {
-	return core.ExecuteReturnResult(ctx, s.GetB(opt), jsonmodels.NewRole)
+	return core.ExecuteReturnResult(ctx, s.getB(opt), jsonmodels.NewRole)
 }
 
-func (s *Service) GetB(opt GetOption) *core.TryRequest {
+func (s *Service) getB(opt GetOption) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).

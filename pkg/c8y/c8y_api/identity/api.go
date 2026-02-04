@@ -47,7 +47,7 @@ func (i *IdentityOptions) GetType() string {
 	return string(i.Type)
 }
 
-func (s *Service) ListB(id string) *core.TryRequest {
+func (s *Service) listB(id string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -56,7 +56,7 @@ func (s *Service) ListB(id string) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req, ResultProperty)
 }
 
-func (s *Service) GetB(opts IdentityOptions) *core.TryRequest {
+func (s *Service) getB(opts IdentityOptions) *core.TryRequest {
 	opts.withDefaults()
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
@@ -67,7 +67,7 @@ func (s *Service) GetB(opts IdentityOptions) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req)
 }
 
-func (s *Service) CreateB(id string, opts IdentityOptions) *core.TryRequest {
+func (s *Service) createB(id string, opts IdentityOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(ParamId, id).
@@ -77,7 +77,7 @@ func (s *Service) CreateB(id string, opts IdentityOptions) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req)
 }
 
-func (s *Service) DeleteB(opts IdentityOptions) *core.TryRequest {
+func (s *Service) deleteB(opts IdentityOptions) *core.TryRequest {
 	opts.withDefaults()
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).

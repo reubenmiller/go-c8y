@@ -39,10 +39,10 @@ type ListOptions struct {
 
 // List returns all device requests
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.DeviceRequest] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewDeviceRequest)
+	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewDeviceRequest)
 }
 
-func (s *Service) ListB(opt ListOptions) *core.TryRequest {
+func (s *Service) listB(opt ListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -52,10 +52,10 @@ func (s *Service) ListB(opt ListOptions) *core.TryRequest {
 
 // Get retrieves a device request
 func (s *Service) Get(ctx context.Context, id string) op.Result[jsonmodels.DeviceRequest] {
-	return core.ExecuteReturnResult(ctx, s.GetB(id), jsonmodels.NewDeviceRequest)
+	return core.ExecuteReturnResult(ctx, s.getB(id), jsonmodels.NewDeviceRequest)
 }
 
-func (s *Service) GetB(id string) *core.TryRequest {
+func (s *Service) getB(id string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -80,10 +80,10 @@ type CreateOptions struct {
 
 // Create creates a new device request
 func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.DeviceRequest] {
-	return core.ExecuteReturnResult(ctx, s.CreateB(opt), jsonmodels.NewDeviceRequest)
+	return core.ExecuteReturnResult(ctx, s.createB(opt), jsonmodels.NewDeviceRequest)
 }
 
-func (s *Service) CreateB(body any) *core.TryRequest {
+func (s *Service) createB(body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -109,10 +109,10 @@ type UpdateOptions struct {
 
 // Update a specific new device request (by a given ID). You can only update its status
 func (s *Service) Update(ctx context.Context, id string, opt UpdateOptions) op.Result[jsonmodels.DeviceRequest] {
-	return core.ExecuteReturnResult(ctx, s.UpdateB(id, opt), jsonmodels.NewDeviceRequest)
+	return core.ExecuteReturnResult(ctx, s.updateB(id, opt), jsonmodels.NewDeviceRequest)
 }
 
-func (s *Service) UpdateB(id string, body any) *core.TryRequest {
+func (s *Service) updateB(id string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamId, id).
@@ -125,10 +125,10 @@ func (s *Service) UpdateB(id string, body any) *core.TryRequest {
 
 // Delete removes a device request
 func (s *Service) Delete(ctx context.Context, id string) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.DeleteB(id))
+	return core.ExecuteNoResult(ctx, s.deleteB(id))
 }
 
-func (s *Service) DeleteB(id string) *core.TryRequest {
+func (s *Service) deleteB(id string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamId, id).
@@ -151,10 +151,10 @@ type CreateCredentialsOptions struct {
 
 // Create creates a new device request
 func (s *Service) CreateCredentials(ctx context.Context, opt CreateCredentialsOptions) op.Result[jsonmodels.DeviceCredentials] {
-	return core.ExecuteReturnResult(ctx, s.CreateB(opt), jsonmodels.NewDeviceCredentials)
+	return core.ExecuteReturnResult(ctx, s.createB(opt), jsonmodels.NewDeviceCredentials)
 }
 
-func (s *Service) CreateCredentialsB(body any) *core.TryRequest {
+func (s *Service) createCredentialsB(body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -211,10 +211,10 @@ type UploadFileOptions = core.UploadFileOptions
  */
 // CreateBulk allows multiple devices to be registered in one request
 func (s *Service) CreateBulk(ctx context.Context, opt UploadFileOptions) op.Result[jsonmodels.BulkNewDeviceRequests] {
-	return core.ExecuteReturnResult(ctx, s.CreateBulkB(opt), jsonmodels.NewBulkNewDeviceRequests)
+	return core.ExecuteReturnResult(ctx, s.createBulkB(opt), jsonmodels.NewBulkNewDeviceRequests)
 }
 
-func (s *Service) CreateBulkB(opt UploadFileOptions) *core.TryRequest {
+func (s *Service) createBulkB(opt UploadFileOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetMultipartFields(core.NewMultiPartFileFields(opt)...).

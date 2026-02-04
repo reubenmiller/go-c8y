@@ -25,10 +25,10 @@ func NewService(common *core.Service) *Service {
 
 // Get an microservice bootstrap user
 func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.BootstrapUser] {
-	return core.ExecuteReturnResult(ctx, s.GetB(ID), jsonmodels.NewBootstrapUser)
+	return core.ExecuteReturnResult(ctx, s.getB(ID), jsonmodels.NewBootstrapUser)
 }
 
-func (s *Service) GetB(ID string) *core.TryRequest {
+func (s *Service) getB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamId, ID).

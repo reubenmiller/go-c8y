@@ -35,7 +35,7 @@ type ManagedObjectIterator = pagination.Iterator[jsonmodels.ManagedObject]
 
 // List child assets of a parent
 func (s *Service) List(ctx context.Context, parentID string, opt ListOptions) op.Result[jsonmodels.ManagedObject] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(parentID, opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
+	return core.ExecuteReturnCollection(ctx, s.listB(parentID, opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
 // ListAll returns an iterator for all child assets
@@ -45,7 +45,7 @@ func (s *Service) ListAll(ctx context.Context, parentID string, opts ListOptions
 	}, jsonmodels.NewManagedObject)
 }
 
-func (s *Service) ListB(parentID string, opt ListOptions) *core.TryRequest {
+func (s *Service) listB(parentID string, opt ListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(parentID, parentID).
@@ -56,10 +56,10 @@ func (s *Service) ListB(parentID string, opt ListOptions) *core.TryRequest {
 
 // Get existing child asset from a parent
 func (s *Service) Get(ctx context.Context, parentID string, childID string) op.Result[jsonmodels.ManagedObject] {
-	return core.ExecuteReturnResult(ctx, s.GetB(parentID, childID), jsonmodels.NewManagedObject)
+	return core.ExecuteReturnResult(ctx, s.getB(parentID, childID), jsonmodels.NewManagedObject)
 }
 
-func (s *Service) GetB(parentID string, childID string) *core.TryRequest {
+func (s *Service) getB(parentID string, childID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamId, parentID).
@@ -71,10 +71,10 @@ func (s *Service) GetB(parentID string, childID string) *core.TryRequest {
 
 // Create a new child asset and assign it to an existing managed object
 func (s *Service) Create(ctx context.Context, parentID string, body any) op.Result[jsonmodels.ManagedObject] {
-	return core.ExecuteReturnResult(ctx, s.CreateB(parentID, body), jsonmodels.NewManagedObject)
+	return core.ExecuteReturnResult(ctx, s.createB(parentID, body), jsonmodels.NewManagedObject)
 }
 
-func (s *Service) CreateB(parentID string, body any) *core.TryRequest {
+func (s *Service) createB(parentID string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(ParamId, parentID).
@@ -86,10 +86,10 @@ func (s *Service) CreateB(parentID string, body any) *core.TryRequest {
 
 // Assign an existing child asset to a managed object
 func (s *Service) Assign(ctx context.Context, parentID string, child any) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.AssignB(parentID, child))
+	return core.ExecuteNoResult(ctx, s.assignB(parentID, child))
 }
 
-func (s *Service) AssignB(parentID string, child any) *core.TryRequest {
+func (s *Service) assignB(parentID string, child any) *core.TryRequest {
 	contentType, body := model.FromManagedObjectChildReferences(child)
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
@@ -102,10 +102,10 @@ func (s *Service) AssignB(parentID string, child any) *core.TryRequest {
 
 // Unassign a child asset from a managed object
 func (s *Service) Unassign(ctx context.Context, parentID string, child any) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.UnassignB(parentID, child))
+	return core.ExecuteNoResult(ctx, s.unassignB(parentID, child))
 }
 
-func (s *Service) UnassignB(parentID string, child any) *core.TryRequest {
+func (s *Service) unassignB(parentID string, child any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetContentType(types.MimeTypeManagedObjectCollection).

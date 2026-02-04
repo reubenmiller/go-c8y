@@ -13,6 +13,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/repository/software/softwareitems"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
+	"resty.dev/v3"
 )
 
 var ApiManagedObjects = "/inventory/managedObjects"
@@ -44,7 +45,13 @@ type Service struct {
 
 // Create a software version
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.SoftwareVersion] {
-	return core.ExecuteReturnResult(ctx, s.managedObjects.CreateB(body), jsonmodels.NewSoftwareVersion)
+	// Build request directly
+	req := s.managedObjects.Client.R().
+		SetMethod(resty.MethodPost).
+		SetBody(body).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetURL(managedobjects.ApiManagedObjects)
+	return core.ExecuteReturnResult(ctx, core.NewTryRequest(s.managedObjects.Client, req, ""), jsonmodels.NewSoftwareVersion)
 }
 
 // ListOptions filter software versions
@@ -74,11 +81,12 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 		softwareID = softwareResult.Data.ID()
 	}
 
-	return core.ExecuteReturnCollection(ctx, s.ListB(softwareID, opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewSoftwareVersion)
+	return core.ExecuteReturnCollection(ctx, s.listB(softwareID, opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewSoftwareVersion)
 }
 
-func (s *Service) ListB(softwareID string, opt ListOptions) *core.TryRequest {
-	return s.managedObjects.ListB(managedobjects.ListOptions{
+func (s *Service) listB(softwareID string, opt ListOptions) *core.TryRequest {
+	// Build request directly since managedObjects.listB is now private
+	listOpts := managedobjects.ListOptions{
 		Query: model.NewInventoryQuery().
 			AddFilterEqStr("c8y_Software.version", opt.Version).
 			ByGroupID(softwareID).
@@ -89,7 +97,12 @@ func (s *Service) ListB(softwareID string, opt ListOptions) *core.TryRequest {
 			CurrentPage: opt.CurrentPage,
 			PageSize:    opt.PageSize,
 		},
-	})
+	}
+	req := s.managedObjects.Client.R().
+		SetMethod(resty.MethodGet).
+		SetQueryParamsFromValues(core.QueryParameters(listOpts)).
+		SetURL(managedobjects.ApiManagedObjects)
+	return core.NewTryRequest(s.managedObjects.Client, req, managedobjects.ResultProperty)
 }
 
 // SoftwareVersionIterator provides iteration over software versions
@@ -214,7 +227,7 @@ func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.
 		return resolveResult
 	}
 
-	result := core.ExecuteReturnResult(ctx, s.GetB(id, opt), jsonmodels.NewSoftwareVersion)
+	result := core.ExecuteReturnResult(ctx, s.getB(id, opt), jsonmodels.NewSoftwareVersion)
 
 	// Add lookup metadata
 	if opt.ID != "" {
@@ -239,7 +252,7 @@ func (s *Service) Update(ctx context.Context, opt UpdateOptions, body any) op.Re
 		return resolveResult
 	}
 
-	result := core.ExecuteReturnResult(ctx, s.UpdateB(id, body, opt), jsonmodels.NewSoftwareVersion)
+	result := core.ExecuteReturnResult(ctx, s.updateB(id, body, opt), jsonmodels.NewSoftwareVersion)
 
 	// Add lookup metadata
 	if opt.ID != "" {
@@ -259,7 +272,7 @@ func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[jsonm
 		return resolveResult
 	}
 
-	result := core.ExecuteReturnResult(ctx, s.DeleteB(id, opt), jsonmodels.NewSoftwareVersion)
+	result := core.ExecuteReturnResult(ctx, s.deleteB(id, opt), jsonmodels.NewSoftwareVersion)
 
 	// Add lookup metadata
 	if opt.ID != "" {
@@ -334,7 +347,7 @@ func (s *Service) CreateVersion(ctx context.Context, opt CreateOptions) op.Resul
 		versionBody["c8y_Software"].(map[string]any)["url"] = url
 	}
 
-	return core.ExecuteReturnResult(ctx, s.CreateB(softwareID, versionBody), jsonmodels.NewSoftwareVersion)
+	return core.ExecuteReturnResult(ctx, s.createB(softwareID, versionBody), jsonmodels.NewSoftwareVersion)
 }
 
 // GetOrCreateVersion searches by software + version, creating if not found
@@ -400,22 +413,51 @@ func (s *Service) GetOrCreateVersion(ctx context.Context, opt CreateOptions) op.
 
 // Builder methods
 
-func (s *Service) CreateB(softwareID string, body any) *core.TryRequest {
-	return s.managedObjects.ChildAdditions.CreateB(softwareID, body)
+func (s *Service) createB(softwareID string, body any) *core.TryRequest {
+	// Build request directly since childAdditions.createB is now private
+	req := s.managedObjects.Client.R().
+		SetMethod(resty.MethodPost).
+		SetPathParam("id", softwareID).
+		SetBody(body).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetURL("/inventory/managedObjects/{id}/childAdditions")
+	return core.NewTryRequest(s.managedObjects.Client, req, "")
 }
 
-func (s *Service) GetB(ID string, opt GetOptions) *core.TryRequest {
-	return s.managedObjects.GetB(ID, managedobjects.GetOptions{
+func (s *Service) getB(ID string, opt GetOptions) *core.TryRequest {
+	// Build request directly since managedObjects.getB is now private
+	getOpts := managedobjects.GetOptions{
 		WithParents: opt.WithParents,
-	})
+	}
+	req := s.managedObjects.Client.R().
+		SetMethod(resty.MethodGet).
+		SetPathParam("id", ID).
+		SetQueryParamsFromValues(core.QueryParameters(getOpts)).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetURL(managedobjects.ApiManagedObject)
+	return core.NewTryRequest(s.managedObjects.Client, req, "")
 }
 
-func (s *Service) UpdateB(ID string, body any, opt UpdateOptions) *core.TryRequest {
-	return s.managedObjects.UpdateB(ID, body)
+func (s *Service) updateB(ID string, body any, opt UpdateOptions) *core.TryRequest {
+	// Build request directly since managedObjects.updateB is now private
+	req := s.managedObjects.Client.R().
+		SetMethod(resty.MethodPut).
+		SetPathParam("id", ID).
+		SetBody(body).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetURL(managedobjects.ApiManagedObject)
+	return core.NewTryRequest(s.managedObjects.Client, req, "")
 }
 
-func (s *Service) DeleteB(ID string, opt DeleteOptions) *core.TryRequest {
-	return s.managedObjects.DeleteB(ID, managedobjects.DeleteOptions{
+func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
+	// Build request directly since managedObjects.deleteB is now private
+	deleteOpts := managedobjects.DeleteOptions{
 		ForceCascade: opt.ForceCascade,
-	})
+	}
+	req := s.managedObjects.Client.R().
+		SetMethod(resty.MethodDelete).
+		SetPathParam("id", ID).
+		SetQueryParamsFromValues(core.QueryParameters(deleteOpts)).
+		SetURL(managedobjects.ApiManagedObject)
+	return core.NewTryRequest(s.managedObjects.Client, req, "")
 }

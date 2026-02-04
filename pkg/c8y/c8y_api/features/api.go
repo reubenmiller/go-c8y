@@ -31,10 +31,10 @@ type Service struct {
 
 // Retrieve all the features for the current tenant
 func (s *Service) List(ctx context.Context) op.Result[jsonmodels.Feature] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(), "", "", jsonmodels.NewFeature)
+	return core.ExecuteReturnCollection(ctx, s.listB(), "", "", jsonmodels.NewFeature)
 }
 
-func (s *Service) ListB() *core.TryRequest {
+func (s *Service) listB() *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetURL(ApiFeatures)
@@ -43,10 +43,10 @@ func (s *Service) ListB() *core.TryRequest {
 
 // Get a feature
 func (s *Service) Get(ctx context.Context, key string) op.Result[jsonmodels.Feature] {
-	return core.ExecuteReturnResult(ctx, s.GetB(key), jsonmodels.NewFeature)
+	return core.ExecuteReturnResult(ctx, s.getB(key), jsonmodels.NewFeature)
 }
 
-func (s *Service) GetB(key string) *core.TryRequest {
+func (s *Service) getB(key string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamKey, key).
@@ -56,10 +56,10 @@ func (s *Service) GetB(key string) *core.TryRequest {
 
 // Update a feature
 func (s *Service) Update(ctx context.Context, key string, body any) op.Result[jsonmodels.Feature] {
-	return core.ExecuteReturnResult(ctx, s.UpdateB(key, body), jsonmodels.NewFeature)
+	return core.ExecuteReturnResult(ctx, s.updateB(key, body), jsonmodels.NewFeature)
 }
 
-func (s *Service) UpdateB(key string, body any) *core.TryRequest {
+func (s *Service) updateB(key string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -71,24 +71,24 @@ func (s *Service) UpdateB(key string, body any) *core.TryRequest {
 
 // Enable a feature
 func (s *Service) Enable(ctx context.Context, key string) op.Result[jsonmodels.Feature] {
-	return core.ExecuteReturnResult(ctx, s.UpdateB(key, &model.Feature{
+	return core.ExecuteReturnResult(ctx, s.updateB(key, &model.Feature{
 		Active: true,
 	}), jsonmodels.NewFeature)
 }
 
 // Disable a feature
 func (s *Service) Disable(ctx context.Context, key string) op.Result[jsonmodels.Feature] {
-	return core.ExecuteReturnResult(ctx, s.UpdateB(key, &model.Feature{
+	return core.ExecuteReturnResult(ctx, s.updateB(key, &model.Feature{
 		Active: false,
 	}), jsonmodels.NewFeature)
 }
 
 // Delete a feature override
 func (s *Service) Delete(ctx context.Context, key string) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.DeleteB(key))
+	return core.ExecuteNoResult(ctx, s.deleteB(key))
 }
 
-func (s *Service) DeleteB(key string) *core.TryRequest {
+func (s *Service) deleteB(key string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamKey, key).

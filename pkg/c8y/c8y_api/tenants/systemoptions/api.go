@@ -42,7 +42,7 @@ type SystemOptionIterator = pagination.Iterator[jsonmodels.SystemOption]
 
 // List system options
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.SystemOption] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewSystemOption)
+	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewSystemOption)
 }
 
 // ListAll returns an iterator for all system options
@@ -52,7 +52,7 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *SystemOptionIt
 	}, jsonmodels.NewSystemOption)
 }
 
-func (s *Service) ListB(opt ListOptions) *core.TryRequest {
+func (s *Service) listB(opt ListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
@@ -68,10 +68,10 @@ type GetOption struct {
 
 // Get a system option
 func (s *Service) Get(ctx context.Context, opt GetOption) op.Result[jsonmodels.SystemOption] {
-	return core.ExecuteReturnResult(ctx, s.GetB(opt), jsonmodels.NewSystemOption)
+	return core.ExecuteReturnResult(ctx, s.getB(opt), jsonmodels.NewSystemOption)
 }
 
-func (s *Service) GetB(opt GetOption) *core.TryRequest {
+func (s *Service) getB(opt GetOption) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamCategory, opt.Category).

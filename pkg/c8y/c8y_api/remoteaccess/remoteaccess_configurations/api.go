@@ -47,10 +47,10 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 	if err := opt.Resolve(ctx); err != nil {
 		return op.Failed[jsonmodels.RemoteAccessConfiguration](err, true)
 	}
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), "", "", jsonmodels.NewRemoteAccessConfiguration)
+	return core.ExecuteReturnCollection(ctx, s.listB(opt), "", "", jsonmodels.NewRemoteAccessConfiguration)
 }
 
-func (s *Service) ListB(opt ListOptions) *core.TryRequest {
+func (s *Service) listB(opt ListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamManagedObjectID, opt.ManagedObjectID).
@@ -66,10 +66,10 @@ type GetOptions struct {
 
 // Get remote access configuration
 func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.RemoteAccessConfiguration] {
-	return core.ExecuteReturnResult(ctx, s.GetB(opt), jsonmodels.NewRemoteAccessConfiguration)
+	return core.ExecuteReturnResult(ctx, s.getB(opt), jsonmodels.NewRemoteAccessConfiguration)
 }
 
-func (s *Service) GetB(opt GetOptions) *core.TryRequest {
+func (s *Service) getB(opt GetOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamManagedObjectID, opt.ManagedObjectID).
@@ -86,10 +86,10 @@ type CreateOptions struct {
 
 // Create remote access configuration
 func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.RemoteAccessConfiguration] {
-	return core.ExecuteReturnResult(ctx, s.CreateB(opt, opt.Body), jsonmodels.NewRemoteAccessConfiguration)
+	return core.ExecuteReturnResult(ctx, s.createB(opt, opt.Body), jsonmodels.NewRemoteAccessConfiguration)
 }
 
-func (s *Service) CreateB(opt CreateOptions, body any) *core.TryRequest {
+func (s *Service) createB(opt CreateOptions, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(ParamManagedObjectID, opt.ManagedObjectID).
@@ -108,10 +108,10 @@ type UpdateOptions struct {
 
 // Update remote access configuration
 func (s *Service) Update(ctx context.Context, opt UpdateOptions) op.Result[jsonmodels.RemoteAccessConfiguration] {
-	return core.ExecuteReturnResult(ctx, s.UpdateB(opt), jsonmodels.NewRemoteAccessConfiguration)
+	return core.ExecuteReturnResult(ctx, s.updateB(opt), jsonmodels.NewRemoteAccessConfiguration)
 }
 
-func (s *Service) UpdateB(opt UpdateOptions) *core.TryRequest {
+func (s *Service) updateB(opt UpdateOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamManagedObjectID, opt.ManagedObjectID).
@@ -130,10 +130,10 @@ type DeleteOptions struct {
 
 // Delete remote access configuration
 func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.DeleteB(opt))
+	return core.ExecuteNoResult(ctx, s.deleteB(opt))
 }
 
-func (s *Service) DeleteB(opt DeleteOptions) *core.TryRequest {
+func (s *Service) deleteB(opt DeleteOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamManagedObjectID, opt.ManagedObjectID).

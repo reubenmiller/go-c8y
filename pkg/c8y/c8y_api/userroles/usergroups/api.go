@@ -49,14 +49,14 @@ type ListRolesOptions struct {
 
 // Retrieve all roles assigned to a specific user group (by a given user group ID) in a specific tenant (by a given tenant ID)
 func (s *Service) ListRoles(ctx context.Context, opt ListRolesOptions) op.Result[jsonmodels.Role] {
-	return core.ExecuteReturnCollection(ctx, s.ListRolesB(opt), ResultProperty, types.ResponseFieldStatistics, func(b []byte) jsonmodels.Role {
+	return core.ExecuteReturnCollection(ctx, s.listRolesB(opt), ResultProperty, types.ResponseFieldStatistics, func(b []byte) jsonmodels.Role {
 		// Extract role from reference wrapper
 		doc := jsondoc.New(b)
 		return jsonmodels.NewRole([]byte(doc.Get("role").Raw))
 	})
 }
 
-func (s *Service) ListRolesB(opt ListRolesOptions) *core.TryRequest {
+func (s *Service) listRolesB(opt ListRolesOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -74,14 +74,14 @@ type AssignRoleOptions struct {
 
 // AssignRole assigns a role to a user group
 func (s *Service) AssignRole(ctx context.Context, opt AssignRoleOptions, body any) op.Result[jsonmodels.Role] {
-	return core.ExecuteReturnResult(ctx, s.AssignRoleB(opt, body), func(b []byte) jsonmodels.Role {
+	return core.ExecuteReturnResult(ctx, s.assignRoleB(opt, body), func(b []byte) jsonmodels.Role {
 		// Extract role from reference wrapper
 		doc := jsondoc.New(b)
 		return jsonmodels.NewRole([]byte(doc.Get("role").Raw))
 	})
 }
 
-func (s *Service) AssignRoleB(opt AssignRoleOptions, body any) *core.TryRequest {
+func (s *Service) assignRoleB(opt AssignRoleOptions, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -101,10 +101,10 @@ type UnassignRoleOptions struct {
 
 // Unassign a role from a user group
 func (s *Service) UnassignRole(ctx context.Context, opt UnassignRoleOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.UnassignRoleB(opt))
+	return core.ExecuteNoResult(ctx, s.unassignRoleB(opt))
 }
 
-func (s *Service) UnassignRoleB(opt UnassignRoleOptions) *core.TryRequest {
+func (s *Service) unassignRoleB(opt UnassignRoleOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamTenantId, opt.TenantID).

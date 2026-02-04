@@ -39,7 +39,7 @@ type RetentionRuleIterator = pagination.Iterator[jsonmodels.RetentionRule]
 
 // Retrieve all login options available in the tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.RetentionRule] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewRetentionRule)
+	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewRetentionRule)
 }
 
 // ListAll returns an iterator for all retention rules
@@ -49,7 +49,7 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *RetentionRuleI
 	}, jsonmodels.NewRetentionRule)
 }
 
-func (s *Service) ListB(opt any) *core.TryRequest {
+func (s *Service) listB(opt any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
@@ -59,10 +59,10 @@ func (s *Service) ListB(opt any) *core.TryRequest {
 
 // Get a retention rule
 func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.RetentionRule] {
-	return core.ExecuteReturnResult(ctx, s.GetB(ID), jsonmodels.NewRetentionRule)
+	return core.ExecuteReturnResult(ctx, s.getB(ID), jsonmodels.NewRetentionRule)
 }
 
-func (s *Service) GetB(ID string) *core.TryRequest {
+func (s *Service) getB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamId, ID).
@@ -72,10 +72,10 @@ func (s *Service) GetB(ID string) *core.TryRequest {
 
 // Create a retention rule
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.RetentionRule] {
-	return core.ExecuteReturnResult(ctx, s.CreateB(body), jsonmodels.NewRetentionRule)
+	return core.ExecuteReturnResult(ctx, s.createB(body), jsonmodels.NewRetentionRule)
 }
 
-func (s *Service) CreateB(body any) *core.TryRequest {
+func (s *Service) createB(body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -87,10 +87,10 @@ func (s *Service) CreateB(body any) *core.TryRequest {
 
 // Update a retention rule
 func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.RetentionRule] {
-	return core.ExecuteReturnResult(ctx, s.UpdateB(ID, body), jsonmodels.NewRetentionRule)
+	return core.ExecuteReturnResult(ctx, s.updateB(ID, body), jsonmodels.NewRetentionRule)
 }
 
-func (s *Service) UpdateB(ID string, body any) *core.TryRequest {
+func (s *Service) updateB(ID string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -103,10 +103,10 @@ func (s *Service) UpdateB(ID string, body any) *core.TryRequest {
 
 // Delete a retention rule
 func (s *Service) Delete(ctx context.Context, ID string) op.Result[jsonmodels.RetentionRule] {
-	return core.ExecuteReturnResult(ctx, s.DeleteB(ID), jsonmodels.NewRetentionRule)
+	return core.ExecuteReturnResult(ctx, s.deleteB(ID), jsonmodels.NewRetentionRule)
 }
 
-func (s *Service) DeleteB(ID string) *core.TryRequest {
+func (s *Service) deleteB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamId, ID).

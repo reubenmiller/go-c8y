@@ -26,10 +26,10 @@ type Service struct {
 
 // Get the current user
 func (s *Service) Get(ctx context.Context) op.Result[jsonmodels.User] {
-	return core.ExecuteReturnResult(ctx, s.GetB(), jsonmodels.NewUser)
+	return core.ExecuteReturnResult(ctx, s.getB(), jsonmodels.NewUser)
 }
 
-func (s *Service) GetB() *core.TryRequest {
+func (s *Service) getB() *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -39,10 +39,10 @@ func (s *Service) GetB() *core.TryRequest {
 
 // Update the current user
 func (s *Service) Update(ctx context.Context, body any) op.Result[jsonmodels.User] {
-	return core.ExecuteReturnResult(ctx, s.UpdateB(body), jsonmodels.NewUser)
+	return core.ExecuteReturnResult(ctx, s.updateB(body), jsonmodels.NewUser)
 }
 
-func (s *Service) UpdateB(body any) *core.TryRequest {
+func (s *Service) updateB(body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -62,10 +62,10 @@ type UpdatePasswordOptions struct {
 
 // Update the current user's password
 func (s *Service) UpdatePassword(ctx context.Context, body UpdatePasswordOptions) op.Result[jsonmodels.User] {
-	return core.ExecuteReturnResult(ctx, s.UpdatePasswordB(body), jsonmodels.NewUser)
+	return core.ExecuteReturnResult(ctx, s.updatePasswordB(body), jsonmodels.NewUser)
 }
 
-func (s *Service) UpdatePasswordB(body any) *core.TryRequest {
+func (s *Service) updatePasswordB(body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).

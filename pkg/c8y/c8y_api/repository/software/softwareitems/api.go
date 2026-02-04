@@ -39,7 +39,7 @@ type Service struct {
 
 // Create a software item
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Software] {
-	return core.ExecuteReturnResult(ctx, s.CreateB(body), jsonmodels.NewSoftware)
+	return core.ExecuteReturnResult(ctx, s.createB(body), jsonmodels.NewSoftware)
 }
 
 // ListOptions filter software
@@ -56,11 +56,12 @@ type ListOptions struct {
 
 // List software
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Software] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewSoftware)
+	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewSoftware)
 }
 
-func (s *Service) ListB(opt ListOptions) *core.TryRequest {
-	return s.managedObjects.ListB(managedobjects.ListOptions{
+func (s *Service) listB(opt ListOptions) *core.TryRequest {
+	// Build request directly since managedObjects.listB is now private
+	listOpts := managedobjects.ListOptions{
 		Query: model.NewInventoryQuery().
 			AddOrderBy("name").
 			AddOrderBy("creationTime").
@@ -73,7 +74,13 @@ func (s *Service) ListB(opt ListOptions) *core.TryRequest {
 			CurrentPage: opt.CurrentPage,
 			PageSize:    opt.PageSize,
 		},
-	})
+	}
+	// Build the request directly
+	req := s.managedObjects.Client.R().
+		SetMethod(resty.MethodGet).
+		SetQueryParamsFromValues(core.QueryParameters(listOpts)).
+		SetURL(managedobjects.ApiManagedObjects)
+	return core.NewTryRequest(s.managedObjects.Client, req, managedobjects.ResultProperty)
 }
 
 // SoftwareIterator provides iteration over software items
@@ -173,7 +180,7 @@ func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.
 		return resolveResult
 	}
 
-	result := core.ExecuteReturnResult(ctx, s.GetB(id, opt), jsonmodels.NewSoftware)
+	result := core.ExecuteReturnResult(ctx, s.getB(id, opt), jsonmodels.NewSoftware)
 
 	// Add lookup metadata
 	if opt.ID != "" {
@@ -196,7 +203,7 @@ func (s *Service) Update(ctx context.Context, opt UpdateOptions, body any) op.Re
 		return resolveResult
 	}
 
-	result := core.ExecuteReturnResult(ctx, s.UpdateB(id, body), jsonmodels.NewSoftware)
+	result := core.ExecuteReturnResult(ctx, s.updateB(id, body), jsonmodels.NewSoftware)
 
 	// Add lookup metadata
 	if opt.ID != "" {
@@ -216,7 +223,7 @@ func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[jsonm
 		return resolveResult
 	}
 
-	result := core.ExecuteReturnResult(ctx, s.DeleteB(id, opt), jsonmodels.NewSoftware)
+	result := core.ExecuteReturnResult(ctx, s.deleteB(id, opt), jsonmodels.NewSoftware)
 
 	// Add lookup metadata
 	if opt.ID != "" {
@@ -302,7 +309,7 @@ func (s *Service) getOrCreateWithQuery(ctx context.Context, body any, query stri
 
 // Builder methods for backwards compatibility and flexibility
 
-func (s *Service) CreateB(body any) *core.TryRequest {
+func (s *Service) createB(body any) *core.TryRequest {
 	req := s.Service.Client.R().
 		SetMethod(resty.MethodPost).
 		SetBody(body).
@@ -311,7 +318,7 @@ func (s *Service) CreateB(body any) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req)
 }
 
-func (s *Service) GetB(ID string, opt GetOptions) *core.TryRequest {
+func (s *Service) getB(ID string, opt GetOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamId, ID).
@@ -321,7 +328,7 @@ func (s *Service) GetB(ID string, opt GetOptions) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req)
 }
 
-func (s *Service) UpdateB(ID string, body any) *core.TryRequest {
+func (s *Service) updateB(ID string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamId, ID).
@@ -331,7 +338,7 @@ func (s *Service) UpdateB(ID string, body any) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req)
 }
 
-func (s *Service) DeleteB(ID string, opt DeleteOptions) *core.TryRequest {
+func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamId, ID).

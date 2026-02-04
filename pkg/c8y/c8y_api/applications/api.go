@@ -84,7 +84,7 @@ type ApplicationIterator = pagination.Iterator[jsonmodels.Application]
 
 // List all applications on your tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Application] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
+	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
 }
 
 // ListAll returns an iterator for all applications
@@ -94,7 +94,7 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *ApplicationIte
 	}, jsonmodels.NewApplication)
 }
 
-func (s *Service) ListB(opt ListOptions) *core.TryRequest {
+func (s *Service) listB(opt ListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
@@ -112,10 +112,10 @@ type ListByNameOptions struct {
 
 // List applications by name
 func (s *Service) ListByName(ctx context.Context, opt ListByNameOptions) op.Result[jsonmodels.Application] {
-	return core.ExecuteReturnCollection(ctx, s.ListByNameB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
+	return core.ExecuteReturnCollection(ctx, s.listByNameB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
 }
 
-func (s *Service) ListByNameB(opt ListByNameOptions) *core.TryRequest {
+func (s *Service) listByNameB(opt ListByNameOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamName, opt.Name).
@@ -133,10 +133,10 @@ type ListByTenantOptions struct {
 
 // List applications by name
 func (s *Service) ListByTenant(ctx context.Context, opt ListByTenantOptions) op.Result[jsonmodels.Application] {
-	return core.ExecuteReturnCollection(ctx, s.ListByTenantB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
+	return core.ExecuteReturnCollection(ctx, s.listByTenantB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
 }
 
-func (s *Service) ListByTenantB(opt ListByTenantOptions) *core.TryRequest {
+func (s *Service) listByTenantB(opt ListByTenantOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamTenantID, opt.TenantID).
@@ -154,10 +154,10 @@ type ListByOwnerOptions struct {
 
 // Retrieve all applications owned by a particular tenant (by a given tenant ID)
 func (s *Service) ListByOwner(ctx context.Context, opt ListByOwnerOptions) op.Result[jsonmodels.Application] {
-	return core.ExecuteReturnCollection(ctx, s.ListByOwnerB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
+	return core.ExecuteReturnCollection(ctx, s.listByOwnerB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
 }
 
-func (s *Service) ListByOwnerB(opt ListByOwnerOptions) *core.TryRequest {
+func (s *Service) listByOwnerB(opt ListByOwnerOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamTenantID, opt.TenantID).
@@ -175,10 +175,10 @@ type ListByUserOptions struct {
 
 // Retrieve all applications for a particular user (by a given username)
 func (s *Service) ListByUser(ctx context.Context, opt ListByUserOptions) op.Result[jsonmodels.Application] {
-	return core.ExecuteReturnCollection(ctx, s.ListByUserB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
+	return core.ExecuteReturnCollection(ctx, s.listByUserB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
 }
 
-func (s *Service) ListByUserB(opt ListByUserOptions) *core.TryRequest {
+func (s *Service) listByUserB(opt ListByUserOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamUsername, opt.Username).
@@ -209,10 +209,10 @@ func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.
 	if err := opt.Resolve(ctx); err != nil {
 		return op.Failed[jsonmodels.Application](err, true)
 	}
-	return core.ExecuteReturnResult(ctx, s.GetB(opt), jsonmodels.NewApplication)
+	return core.ExecuteReturnResult(ctx, s.getB(opt), jsonmodels.NewApplication)
 }
 
-func (s *Service) GetB(opt GetOptions) *core.TryRequest {
+func (s *Service) getB(opt GetOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamId, opt.ID).
@@ -222,10 +222,10 @@ func (s *Service) GetB(opt GetOptions) *core.TryRequest {
 
 // Create an application
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Application] {
-	return core.ExecuteReturnResult(ctx, s.CreateB(body), jsonmodels.NewApplication)
+	return core.ExecuteReturnResult(ctx, s.createB(body), jsonmodels.NewApplication)
 }
 
-func (s *Service) CreateB(body any) *core.TryRequest {
+func (s *Service) createB(body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetBody(body).
@@ -236,10 +236,10 @@ func (s *Service) CreateB(body any) *core.TryRequest {
 
 // Update an application
 func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.Application] {
-	return core.ExecuteReturnResult(ctx, s.UpdateB(ID, body), jsonmodels.NewApplication)
+	return core.ExecuteReturnResult(ctx, s.updateB(ID, body), jsonmodels.NewApplication)
 }
 
-func (s *Service) UpdateB(ID string, body any) *core.TryRequest {
+func (s *Service) updateB(ID string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamId, ID).
@@ -257,10 +257,10 @@ type DeleteOptions struct {
 
 // Delete an application
 func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.DeleteB(ID, opt))
+	return core.ExecuteNoResult(ctx, s.deleteB(ID, opt))
 }
 
-func (s *Service) DeleteB(ID string, opt DeleteOptions) *core.TryRequest {
+func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamId, ID).
@@ -279,10 +279,10 @@ type CopyOptions struct {
 
 // Copy an application (by a given ID)
 func (s *Service) Copy(ctx context.Context, ID string, opt CopyOptions) op.Result[jsonmodels.Application] {
-	return core.ExecuteReturnResult(ctx, s.CopyB(ID, opt), jsonmodels.NewApplication)
+	return core.ExecuteReturnResult(ctx, s.copyB(ID, opt), jsonmodels.NewApplication)
 }
 
-func (s *Service) CopyB(ID string, opt CopyOptions) *core.TryRequest {
+func (s *Service) copyB(ID string, opt CopyOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(ParamId, ID).
@@ -292,10 +292,10 @@ func (s *Service) CopyB(ID string, opt CopyOptions) *core.TryRequest {
 
 // Subscribe an application to a tenant
 func (s *Service) Subscribe(ctx context.Context, tenantID string, selfLink string) op.Result[jsonmodels.Application] {
-	return core.ExecuteReturnResult(ctx, s.SubscribeB(tenantID, selfLink), jsonmodels.NewApplication)
+	return core.ExecuteReturnResult(ctx, s.subscribeB(tenantID, selfLink), jsonmodels.NewApplication)
 }
 
-func (s *Service) SubscribeB(tenantID string, selfURL string) *core.TryRequest {
+func (s *Service) subscribeB(tenantID string, selfURL string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(ParamTenantID, tenantID).
@@ -307,10 +307,10 @@ func (s *Service) SubscribeB(tenantID string, selfURL string) *core.TryRequest {
 
 // Unsubscribe an application from a tenant
 func (s *Service) Unsubscribe(ctx context.Context, tenantID string, ID string) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.UnsubscribeB(tenantID, ID))
+	return core.ExecuteNoResult(ctx, s.unsubscribeB(tenantID, ID))
 }
 
-func (s *Service) UnsubscribeB(tenantID string, ID string) *core.TryRequest {
+func (s *Service) unsubscribeB(tenantID string, ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamTenantID, tenantID).
@@ -323,10 +323,10 @@ type UploadFileOptions = core.UploadFileOptions
 
 // Upload an application binary
 func (s *Service) Upload(ctx context.Context, ID string, opt UploadFileOptions) op.Result[jsonmodels.Application] {
-	return core.ExecuteReturnResult(ctx, s.UploadB(ID, opt), jsonmodels.NewApplication)
+	return core.ExecuteReturnResult(ctx, s.uploadB(ID, opt), jsonmodels.NewApplication)
 }
 
-func (s *Service) UploadB(ID string, opt UploadFileOptions) *core.TryRequest {
+func (s *Service) uploadB(ID string, opt UploadFileOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(ParamId, ID).

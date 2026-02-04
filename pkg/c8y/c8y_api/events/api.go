@@ -122,7 +122,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 		return op.Failed[jsonmodels.Event](err, true)
 	}
 
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewEvent)
+	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewEvent)
 }
 
 // ListAll returns an iterator for all events
@@ -132,7 +132,7 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *EventIterator 
 	}, jsonmodels.NewEvent)
 }
 
-func (s *Service) ListB(opt any) *core.TryRequest {
+func (s *Service) listB(opt any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
@@ -142,10 +142,10 @@ func (s *Service) ListB(opt any) *core.TryRequest {
 
 // Get an event
 func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Event] {
-	return core.ExecuteReturnResult(ctx, s.GetB(ID), jsonmodels.NewEvent)
+	return core.ExecuteReturnResult(ctx, s.getB(ID), jsonmodels.NewEvent)
 }
 
-func (s *Service) GetB(ID string) *core.TryRequest {
+func (s *Service) getB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamId, ID).
@@ -155,10 +155,10 @@ func (s *Service) GetB(ID string) *core.TryRequest {
 
 // Create an event
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Event] {
-	return core.ExecuteReturnResult(ctx, s.CreateB(body), jsonmodels.NewEvent)
+	return core.ExecuteReturnResult(ctx, s.createB(body), jsonmodels.NewEvent)
 }
 
-func (s *Service) CreateB(body any) *core.TryRequest {
+func (s *Service) createB(body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -169,10 +169,10 @@ func (s *Service) CreateB(body any) *core.TryRequest {
 
 // Update an event
 func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.Event] {
-	return core.ExecuteReturnResult(ctx, s.UpdateB(ID, body), jsonmodels.NewEvent)
+	return core.ExecuteReturnResult(ctx, s.updateB(ID, body), jsonmodels.NewEvent)
 }
 
-func (s *Service) UpdateB(ID string, body any) *core.TryRequest {
+func (s *Service) updateB(ID string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamId, ID).
@@ -215,10 +215,10 @@ type DeleteListOptions struct {
 // request, the platform starts deleting the associated data in an asynchronous way.
 // Finally, the requested event is deleted after all associated data has been deleted.
 func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Result[jsonmodels.Event] {
-	return core.ExecuteReturnResult(ctx, s.DeleteListB(opt), jsonmodels.NewEvent)
+	return core.ExecuteReturnResult(ctx, s.deleteListB(opt), jsonmodels.NewEvent)
 }
 
-func (s *Service) DeleteListB(opt DeleteListOptions) *core.TryRequest {
+func (s *Service) deleteListB(opt DeleteListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).

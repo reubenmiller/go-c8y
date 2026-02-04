@@ -82,7 +82,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 		return op.Failed[jsonmodels.Operation](err, true)
 	}
 
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewOperation)
+	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewOperation)
 }
 
 // ListAll returns an iterator for all operations
@@ -92,7 +92,7 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *OperationItera
 	}, jsonmodels.NewOperation)
 }
 
-func (s *Service) ListB(opt any) *core.TryRequest {
+func (s *Service) listB(opt any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
@@ -102,10 +102,10 @@ func (s *Service) ListB(opt any) *core.TryRequest {
 
 // Get an operation
 func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Operation] {
-	return core.ExecuteReturnResult(ctx, s.GetB(ID), jsonmodels.NewOperation)
+	return core.ExecuteReturnResult(ctx, s.getB(ID), jsonmodels.NewOperation)
 }
 
-func (s *Service) GetB(ID string) *core.TryRequest {
+func (s *Service) getB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamId, ID).
@@ -115,10 +115,10 @@ func (s *Service) GetB(ID string) *core.TryRequest {
 
 // Create an operation
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Operation] {
-	return core.ExecuteReturnResult(ctx, s.CreateB(body), jsonmodels.NewOperation)
+	return core.ExecuteReturnResult(ctx, s.createB(body), jsonmodels.NewOperation)
 }
 
-func (s *Service) CreateB(body any) *core.TryRequest {
+func (s *Service) createB(body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetBody(body).
@@ -128,10 +128,10 @@ func (s *Service) CreateB(body any) *core.TryRequest {
 
 // Update an operation
 func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.Operation] {
-	return core.ExecuteReturnResult(ctx, s.UpdateB(ID, body), jsonmodels.NewOperation)
+	return core.ExecuteReturnResult(ctx, s.updateB(ID, body), jsonmodels.NewOperation)
 }
 
-func (s *Service) UpdateB(ID string, body any) *core.TryRequest {
+func (s *Service) updateB(ID string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamId, ID).
@@ -160,10 +160,10 @@ type DeleteListOptions struct {
 
 // Delete a list of operations
 func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Result[jsonmodels.Operation] {
-	return core.ExecuteReturnResult(ctx, s.DeleteListB(opt), jsonmodels.NewOperation)
+	return core.ExecuteReturnResult(ctx, s.deleteListB(opt), jsonmodels.NewOperation)
 }
 
-func (s *Service) DeleteListB(opt DeleteListOptions) *core.TryRequest {
+func (s *Service) deleteListB(opt DeleteListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).

@@ -50,11 +50,11 @@ type CreateTokenOptions struct {
 
 // Obtain an OAI-Secure access token
 func (s *Service) Create(ctx context.Context, opt CreateTokenOptions) op.Result[jsonmodels.OAIToken] {
-	return core.ExecuteReturnResult(ctx, s.CreateB(opt), jsonmodels.NewOAIToken)
+	return core.ExecuteReturnResult(ctx, s.createB(opt), jsonmodels.NewOAIToken)
 }
 
 // Obtain an OAI-Secure access token
-func (s *Service) CreateB(opt CreateTokenOptions) *core.TryRequest {
+func (s *Service) createB(opt CreateTokenOptions) *core.TryRequest {
 	params := map[string]string{}
 	if opt.Tenant != "" {
 		params["tenant_id"] = opt.Tenant
@@ -78,7 +78,7 @@ var (
 
 // Obtain an OAI-Secure and XSRF tokens in cookies
 func (s *Service) CreateCookies(ctx context.Context, opt CreateTokenOptions) error {
-	resp, err := core.ExecuteResponseOnly(ctx, s.CreateCookiesB(opt))
+	resp, err := core.ExecuteResponseOnly(ctx, s.createCookiesB(opt))
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func (s *Service) CreateCookies(ctx context.Context, opt CreateTokenOptions) err
 }
 
 // Obtain an OAI-Secure and XSRF tokens in cookies
-func (s *Service) CreateCookiesB(opt CreateTokenOptions) *core.TryRequest {
+func (s *Service) createCookiesB(opt CreateTokenOptions) *core.TryRequest {
 	params := map[string]string{}
 	if opt.Tenant != "" {
 		params["tenant_id"] = opt.Tenant

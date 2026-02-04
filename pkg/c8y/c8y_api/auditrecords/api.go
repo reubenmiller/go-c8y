@@ -54,7 +54,7 @@ type AuditRecordIterator = pagination.Iterator[jsonmodels.AuditRecord]
 
 // List the audit records
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.AuditRecord] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewAuditRecord)
+	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewAuditRecord)
 }
 
 // ListAll returns an iterator for all audit records
@@ -64,7 +64,7 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *AuditRecordIte
 	}, jsonmodels.NewAuditRecord)
 }
 
-func (s *Service) ListB(opt any) *core.TryRequest {
+func (s *Service) listB(opt any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
@@ -74,10 +74,10 @@ func (s *Service) ListB(opt any) *core.TryRequest {
 
 // Get an audit record
 func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.AuditRecord] {
-	return core.ExecuteReturnResult(ctx, s.GetB(ID), jsonmodels.NewAuditRecord)
+	return core.ExecuteReturnResult(ctx, s.getB(ID), jsonmodels.NewAuditRecord)
 }
 
-func (s *Service) GetB(ID string) *core.TryRequest {
+func (s *Service) getB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamId, ID).
@@ -87,10 +87,10 @@ func (s *Service) GetB(ID string) *core.TryRequest {
 
 // Create an audit record
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.AuditRecord] {
-	return core.ExecuteReturnResult(ctx, s.CreateB(body), jsonmodels.NewAuditRecord)
+	return core.ExecuteReturnResult(ctx, s.createB(body), jsonmodels.NewAuditRecord)
 }
 
-func (s *Service) CreateB(body any) *core.TryRequest {
+func (s *Service) createB(body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetBody(body).

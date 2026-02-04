@@ -24,10 +24,10 @@ func NewService(common *core.Service) *Service {
 
 // Get the current microservice
 func (s *Service) Get(ctx context.Context) op.Result[jsonmodels.Microservice] {
-	return core.ExecuteReturnResult(ctx, s.GetB(), jsonmodels.NewMicroservice)
+	return core.ExecuteReturnResult(ctx, s.getB(), jsonmodels.NewMicroservice)
 }
 
-func (s *Service) GetB() *core.TryRequest {
+func (s *Service) getB() *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetURL(ApiApplication)
@@ -36,10 +36,10 @@ func (s *Service) GetB() *core.TryRequest {
 
 // Retrieve the subscribed users of the current application
 func (s *Service) ListUsers(ctx context.Context) op.Result[jsonmodels.MicroserviceUser] {
-	return core.ExecuteReturnCollection(ctx, s.ListUsersB(), "users", "", jsonmodels.NewMicroserviceUser)
+	return core.ExecuteReturnCollection(ctx, s.listUsersB(), "users", "", jsonmodels.NewMicroserviceUser)
 }
 
-func (s *Service) ListUsersB() *core.TryRequest {
+func (s *Service) listUsersB() *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetURL(ApiApplicationSubscriptions)
@@ -48,10 +48,10 @@ func (s *Service) ListUsersB() *core.TryRequest {
 
 // ListSettings returns the current application settings
 func (s *Service) ListSettings(ctx context.Context) op.Result[jsonmodels.MicroserviceSetting] {
-	return core.ExecuteReturnCollection(ctx, s.ListSettingsB(), "", "", jsonmodels.NewMicroserviceSetting)
+	return core.ExecuteReturnCollection(ctx, s.listSettingsB(), "", "", jsonmodels.NewMicroserviceSetting)
 }
 
-func (s *Service) ListSettingsB() *core.TryRequest {
+func (s *Service) listSettingsB() *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetURL(ApiApplicationSettings)

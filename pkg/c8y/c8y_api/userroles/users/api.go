@@ -36,14 +36,14 @@ type AssignRoleOptions struct {
 
 // AssignRole assigns a role to a user
 func (s *Service) AssignRole(ctx context.Context, opt AssignRoleOptions, body any) op.Result[jsonmodels.Role] {
-	return core.ExecuteReturnResult(ctx, s.AssignRoleB(opt, body), func(b []byte) jsonmodels.Role {
+	return core.ExecuteReturnResult(ctx, s.assignRoleB(opt, body), func(b []byte) jsonmodels.Role {
 		// Extract role from reference wrapper
 		doc := jsondoc.New(b)
 		return jsonmodels.NewRole([]byte(doc.Get("role").Raw))
 	})
 }
 
-func (s *Service) AssignRoleB(opt AssignRoleOptions, body any) *core.TryRequest {
+func (s *Service) assignRoleB(opt AssignRoleOptions, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -63,10 +63,10 @@ type UnassignRoleOptions struct {
 
 // Unassign a role from a user
 func (s *Service) UnassignRole(ctx context.Context, opt UnassignRoleOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.UnassignRoleB(opt))
+	return core.ExecuteNoResult(ctx, s.unassignRoleB(opt))
 }
 
-func (s *Service) UnassignRoleB(opt UnassignRoleOptions) *core.TryRequest {
+func (s *Service) unassignRoleB(opt UnassignRoleOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamTenantId, opt.TenantID).

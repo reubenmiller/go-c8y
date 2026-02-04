@@ -16,7 +16,7 @@ import (
 )
 
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.ManagedObject] {
-	return core.ExecuteReturnResult(ctx, s.CreateB(body), jsonmodels.NewManagedObject)
+	return core.ExecuteReturnResult(ctx, s.createB(body), jsonmodels.NewManagedObject)
 }
 
 func (s *Service) Get(ctx context.Context, ID string, opt GetOptions) op.Result[jsonmodels.ManagedObject] {
@@ -36,7 +36,7 @@ func (s *Service) Get(ctx context.Context, ID string, opt GetOptions) op.Result[
 		return op.Failed[jsonmodels.ManagedObject](err, false)
 	}
 
-	return core.ExecuteReturnResult(ctx, s.GetB(resolvedID, opt), jsonmodels.NewManagedObject, meta)
+	return core.ExecuteReturnResult(ctx, s.getB(resolvedID, opt), jsonmodels.NewManagedObject, meta)
 }
 
 func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.ManagedObject] {
@@ -54,7 +54,7 @@ func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jso
 		return op.Failed[jsonmodels.ManagedObject](err, false)
 	}
 
-	return core.ExecuteReturnResult(ctx, s.UpdateB(resolvedID, body), jsonmodels.NewManagedObject, meta)
+	return core.ExecuteReturnResult(ctx, s.updateB(resolvedID, body), jsonmodels.NewManagedObject, meta)
 }
 
 func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.Result[jsonmodels.ManagedObject] {
@@ -72,7 +72,7 @@ func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.R
 		return op.Failed[jsonmodels.ManagedObject](err, false)
 	}
 
-	return core.ExecuteReturnResult(ctx, s.DeleteB(resolvedID, opt), jsonmodels.NewManagedObject, meta)
+	return core.ExecuteReturnResult(ctx, s.deleteB(resolvedID, opt), jsonmodels.NewManagedObject, meta)
 }
 
 // GetOrCreateByName searches by name and optionally type, creating if not found
@@ -382,7 +382,7 @@ func (s *Service) executeGetOrCreateByExternalID(
 }
 
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.ManagedObject] {
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
+	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
 type ManagedObjectIterator struct {

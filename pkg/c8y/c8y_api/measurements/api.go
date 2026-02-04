@@ -69,7 +69,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 		return op.Failed[jsonmodels.Measurement](err, true)
 	}
 
-	return core.ExecuteReturnCollection(ctx, s.ListB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewMeasurement)
+	return core.ExecuteReturnCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewMeasurement)
 }
 
 // ListAll returns an iterator for all measurements
@@ -79,7 +79,7 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *MeasurementIte
 	}, jsonmodels.NewMeasurement)
 }
 
-func (s *Service) ListB(opt any) *core.TryRequest {
+func (s *Service) listB(opt any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
@@ -104,10 +104,10 @@ type DeleteListOptions struct {
 
 // DeleteList removes a collection of measurements
 func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Result[jsonmodels.Measurement] {
-	return core.ExecuteReturnResult(ctx, s.DeleteListB(opt), jsonmodels.NewMeasurement)
+	return core.ExecuteReturnResult(ctx, s.deleteListB(opt), jsonmodels.NewMeasurement)
 }
 
-func (s *Service) DeleteListB(opt DeleteListOptions) *core.TryRequest {
+func (s *Service) deleteListB(opt DeleteListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
@@ -117,10 +117,10 @@ func (s *Service) DeleteListB(opt DeleteListOptions) *core.TryRequest {
 
 // Create posts a new measurement to the platform
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Measurement] {
-	return core.ExecuteReturnResult(ctx, s.CreateB(body), jsonmodels.NewMeasurement)
+	return core.ExecuteReturnResult(ctx, s.createB(body), jsonmodels.NewMeasurement)
 }
 
-func (s *Service) CreateB(body any) *core.TryRequest {
+func (s *Service) createB(body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetContentType(types.MimeTypeApplicationJSON).
@@ -131,10 +131,10 @@ func (s *Service) CreateB(body any) *core.TryRequest {
 
 // CreateList creates multiple measurements to the platform
 func (s *Service) CreateList(ctx context.Context, body any) op.Result[jsonmodels.Measurement] {
-	return core.ExecuteReturnResult(ctx, s.CreateB(body), jsonmodels.NewMeasurement)
+	return core.ExecuteReturnResult(ctx, s.createB(body), jsonmodels.NewMeasurement)
 }
 
-func (s *Service) CreateListB(body any) *core.TryRequest {
+func (s *Service) createListB(body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetContentType(types.MimeTypeCumulocityMeasurementCollection).

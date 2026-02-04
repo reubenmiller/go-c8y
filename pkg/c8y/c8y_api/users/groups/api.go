@@ -39,14 +39,14 @@ type ListUsersOptions struct {
 
 // ListUsers in a group
 func (s *Service) ListUsers(ctx context.Context, opt ListUsersOptions) op.Result[jsonmodels.User] {
-	return core.ExecuteReturnCollection(ctx, s.ListUsersB(opt), "references", "", func(b []byte) jsonmodels.User {
+	return core.ExecuteReturnCollection(ctx, s.listUsersB(opt), "references", "", func(b []byte) jsonmodels.User {
 		// Extract user from reference wrapper
 		doc := jsondoc.New(b)
 		return jsonmodels.NewUser([]byte(doc.Get("user").Raw))
 	})
 }
 
-func (s *Service) ListUsersB(opt ListUsersOptions) *core.TryRequest {
+func (s *Service) listUsersB(opt ListUsersOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -64,14 +64,14 @@ type AssignUserOptions struct {
 
 // AssignUser assigns a user to a user group
 func (s *Service) AssignUser(ctx context.Context, opt AssignUserOptions, user any) op.Result[jsonmodels.User] {
-	return core.ExecuteReturnResult(ctx, s.AssignUserB(opt, user), func(b []byte) jsonmodels.User {
+	return core.ExecuteReturnResult(ctx, s.assignUserB(opt, user), func(b []byte) jsonmodels.User {
 		// Extract user from reference wrapper
 		doc := jsondoc.New(b)
 		return jsonmodels.NewUser([]byte(doc.Get("user").Raw))
 	})
 }
 
-func (s *Service) AssignUserB(opt AssignUserOptions, user any) *core.TryRequest {
+func (s *Service) assignUserB(opt AssignUserOptions, user any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -89,10 +89,10 @@ type UnassignUserOptions struct {
 
 // UnassignUser unassign a user from a user group
 func (s *Service) UnassignUser(ctx context.Context, opt UnassignUserOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoResult(ctx, s.UnassignUserB(opt))
+	return core.ExecuteNoResult(ctx, s.unassignUserB(opt))
 }
 
-func (s *Service) UnassignUserB(opt UnassignUserOptions) *core.TryRequest {
+func (s *Service) unassignUserB(opt UnassignUserOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamTenantId, opt.Tenant).
