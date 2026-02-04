@@ -12,6 +12,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alarms"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/authentication"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/binaries"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/measurements"
@@ -44,9 +45,9 @@ func main() {
 	collection := client.Measurements.List(
 		context.Background(),
 		measurements.ListOptions{
-			DateFrom:  time.Now().Add(-20 * 24 * time.Hour),
-			DateTo:    time.Now(),
-			SourceRef: client.ManagedObjects.ByExternalID("", "rpi4-d83add90fe56"),
+			DateFrom: time.Now().Add(-20 * 24 * time.Hour),
+			DateTo:   time.Now(),
+			Source:   "ext:c8y_Serial:rpi4-d83add90fe56",
 			PaginationOptions: pagination.PaginationOptions{
 				PageSize:          1,
 				WithTotalElements: true,
@@ -62,7 +63,7 @@ func main() {
 	slog.Info("Response", "status", collection.HTTPStatus, "duration", collection.Duration)
 
 	// Generic iteration - access only common fields
-	for measurement := range collection.Data.IterAs() {
+	for measurement := range op.Iter(collection) {
 		slog.Info("Measurement found", "id", measurement.ID(), "type", measurement.Type())
 	}
 
@@ -70,13 +71,29 @@ func main() {
 
 	//
 	// Alarms
-	alarmCollection := client.Alarms.List(context.Background(), alarms.ListOptions{
+	alarmCollection := client.Alarms.ListAll(context.Background(), alarms.ListOptions{
 		DateFrom: time.Now().Add(-30 * 24 * time.Hour),
 	})
-	if alarmCollection.Err != nil {
+	if alarmCollection.Err() != nil {
 		log.Panic(alarmCollection.Err)
 	}
-	slog.Info("Alarms", "total", alarmCollection.Data.Length())
+
+	// check how many alarms there are before we iterate over them (though this is just an estimate)
+	if err := alarmCollection.Preview(); err != nil {
+		slog.Error("Failed to get preview of alarms.", "err", err)
+	}
+
+	slog.Info("Alarm summary", "total", alarmCollection.TotalCount())
+
+	// iterate over the alarms
+	count := 0
+	for alarm := range alarmCollection.Items() {
+		slog.Info("alarm", "id", alarm.ID(), "type", alarm.Type())
+		count += 1
+		if count > 2002 {
+			break
+		}
+	}
 
 	// Inventory binaries
 	exampleCreateBinary(client)
