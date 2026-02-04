@@ -10,6 +10,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/identity"
+	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/internal/context"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 )
@@ -19,15 +20,59 @@ func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Man
 }
 
 func (s *Service) Get(ctx context.Context, ID string, opt GetOptions) op.Result[jsonmodels.ManagedObject] {
-	return core.ExecuteReturnResult(ctx, s.GetB(ID, opt), jsonmodels.NewManagedObject)
+	// Resolve ID (supports "name:device", "externalId:type:id", etc.)
+	// If deferred execution is enabled, we still need to resolve the ID first
+	// But do it in a normal context so the resolution actually completes
+	resolutionCtx := ctx
+	if ctxhelpers.IsDeferredExecution(ctx) {
+		// Use background context for resolution so it doesn't inherit the deferred flag
+		// This allows lookups (like List) to actually execute
+		resolutionCtx = context.Background()
+	}
+
+	meta := make(map[string]any)
+	resolvedID, err := s.ResolveID(resolutionCtx, ID, meta)
+	if err != nil {
+		return op.Failed[jsonmodels.ManagedObject](err, false)
+	}
+
+	return core.ExecuteReturnResult(ctx, s.GetB(resolvedID, opt), jsonmodels.NewManagedObject, meta)
 }
 
 func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.ManagedObject] {
-	return core.ExecuteReturnResult(ctx, s.UpdateB(ID, body), jsonmodels.NewManagedObject)
+	// Resolve ID (supports "name:device", "externalId:type:id", etc.)
+	// If deferred execution is enabled, we still need to resolve the ID first
+	// But do it in a normal context so the resolution actually completes
+	resolutionCtx := ctx
+	if ctxhelpers.IsDeferredExecution(ctx) {
+		resolutionCtx = context.Background()
+	}
+
+	meta := make(map[string]any)
+	resolvedID, err := s.ResolveID(resolutionCtx, ID, meta)
+	if err != nil {
+		return op.Failed[jsonmodels.ManagedObject](err, false)
+	}
+
+	return core.ExecuteReturnResult(ctx, s.UpdateB(resolvedID, body), jsonmodels.NewManagedObject, meta)
 }
 
 func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.Result[jsonmodels.ManagedObject] {
-	return core.ExecuteReturnResult(ctx, s.DeleteB(ID, opt), jsonmodels.NewManagedObject)
+	// Resolve ID (supports "name:device", "externalId:type:id", etc.)
+	// If deferred execution is enabled, we still need to resolve the ID first
+	// But do it in a normal context so the resolution actually completes
+	resolutionCtx := ctx
+	if ctxhelpers.IsDeferredExecution(ctx) {
+		resolutionCtx = context.Background()
+	}
+
+	meta := make(map[string]any)
+	resolvedID, err := s.ResolveID(resolutionCtx, ID, meta)
+	if err != nil {
+		return op.Failed[jsonmodels.ManagedObject](err, false)
+	}
+
+	return core.ExecuteReturnResult(ctx, s.DeleteB(resolvedID, opt), jsonmodels.NewManagedObject, meta)
 }
 
 // GetOrCreateByName searches by name and optionally type, creating if not found

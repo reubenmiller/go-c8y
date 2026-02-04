@@ -54,7 +54,9 @@ func NewService() *core.Service {
 }
 
 func CreateManagedObject(t *testing.T, client *c8y_api.Client) op.Result[jsonmodels.ManagedObject] {
-	mo := client.ManagedObjects.Create(context.TODO(), map[string]any{})
+	mo := client.ManagedObjects.Create(context.TODO(), map[string]any{
+		"name": "ci_" + testingutils.RandomString(16),
+	})
 	if !mo.IsError() {
 		t.Cleanup(func() {
 			client.ManagedObjects.Delete(context.TODO(), mo.Data.ID(), managedobjects.DeleteOptions{})

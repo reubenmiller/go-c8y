@@ -12,6 +12,7 @@ type Builder struct {
 	lookupByExternalID func(ctx context.Context, typ, extID string) (string, map[string]any, error)
 	lookupByName       func(ctx context.Context, name string) (string, map[string]any, error)
 	lookupByQuery      func(ctx context.Context, query string) (string, map[string]any, error)
+	customResolvers    map[string]Resolver
 }
 
 // NewBuilder creates a new source builder with lookup functions
@@ -24,6 +25,7 @@ func NewBuilder(
 		lookupByExternalID: lookupByExternalID,
 		lookupByName:       lookupByName,
 		lookupByQuery:      lookupByQuery,
+		customResolvers:    make(map[string]Resolver),
 	}
 }
 
@@ -72,6 +74,7 @@ func (b *Builder) Custom(description string, resolver func(ctx context.Context) 
 //   - "ext:c8y_Serial:ABC123" -> external ID lookup
 //   - "name:MyDevice" -> name lookup
 //   - "query:name eq 'MyDevice'" -> query lookup
+//   - "custom:..." -> custom resolver (if registered)
 func (b *Builder) Parse(s string) (Resolver, error) {
 	if s == "" {
 		return nil, fmt.Errorf("empty source string")
@@ -86,6 +89,11 @@ func (b *Builder) Parse(s string) (Resolver, error) {
 
 	prefix := s[:idx]
 	value := s[idx+1:]
+
+	// Check custom resolvers first
+	if resolver, ok := b.customResolvers[prefix]; ok {
+		return resolver, nil
+	}
 
 	switch prefix {
 	case "id":
@@ -108,6 +116,11 @@ func (b *Builder) Parse(s string) (Resolver, error) {
 		return b.ByQuery(value), nil
 
 	default:
-		return nil, fmt.Errorf("unknown source prefix: %s", prefix)
+		return nil, fmt.Errorf("unknown resolver scheme: %s", prefix)
 	}
+}
+
+// RegisterResolver registers a custom resolver for a given scheme
+func (b *Builder) RegisterResolver(scheme string, resolver Resolver) {
+	b.customResolvers[scheme] = resolver
 }

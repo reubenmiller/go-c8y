@@ -23,7 +23,7 @@ func ExecuteResponseOnly(ctx context.Context, req *TryRequest) (*resty.Response,
 	return resp, nil
 }
 
-func ExecuteReturnResult[T any](ctx context.Context, req *TryRequest, fromBytes func([]byte) T) op.Result[T] {
+func ExecuteReturnResult[T any](ctx context.Context, req *TryRequest, fromBytes func([]byte) T, extraMeta ...map[string]any) op.Result[T] {
 	// Check if execution should be deferred
 	if ctxhelpers.IsDeferredExecution(ctx) {
 		// Build the request to capture all parameters (including resolved IDs)
@@ -37,10 +37,22 @@ func ExecuteReturnResult[T any](ctx context.Context, req *TryRequest, fromBytes 
 		}
 
 		// Return a result with the executor function
-		return op.Result[T]{
+		result := op.Result[T]{
 			Request: httpReq,
-		}.WithExecutor(func(execCtx context.Context) op.Result[T] {
-			return ExecuteReturnResult(execCtx, req, fromBytes)
+		}
+
+		// Merge extra metadata into the deferred result so it's available for inspection
+		if len(extraMeta) > 0 && extraMeta[0] != nil {
+			if result.Meta == nil {
+				result.Meta = make(map[string]any)
+			}
+			for k, v := range extraMeta[0] {
+				result.Meta[k] = v
+			}
+		}
+
+		return result.WithExecutor(func(execCtx context.Context) op.Result[T] {
+			return ExecuteReturnResult(execCtx, req, fromBytes, extraMeta...)
 		})
 	}
 
@@ -57,19 +69,43 @@ func ExecuteReturnResult[T any](ctx context.Context, req *TryRequest, fromBytes 
 		if resp != nil {
 			result = result.WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
 		}
+		// Merge extra metadata
+		if len(extraMeta) > 0 && extraMeta[0] != nil {
+			if result.Meta == nil {
+				result.Meta = make(map[string]any)
+			}
+			for k, v := range extraMeta[0] {
+				result.Meta[k] = v
+			}
+		}
 		return result.WithRequest(httpReq)
 	}
+
+	var result op.Result[T]
 	if resp.StatusCode() == http.StatusCreated {
-		return op.Created(fromBytes(resp.Bytes())).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
+		result = op.Created(fromBytes(resp.Bytes())).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
+	} else {
+		// TODO: Should it return different status for update, delete etc.?
+		result = op.OK(fromBytes(resp.Bytes())).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
 	}
-	// TODO: Should it return different status for update, delete etc.?
-	return op.OK(fromBytes(resp.Bytes())).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
+
+	// Merge extra metadata
+	if len(extraMeta) > 0 && extraMeta[0] != nil {
+		if result.Meta == nil {
+			result.Meta = make(map[string]any)
+		}
+		for k, v := range extraMeta[0] {
+			result.Meta[k] = v
+		}
+	}
+
+	return result
 }
 
 // ExecuteReturnCollection extracts an array from a collection response and puts metadata in Result.Meta
 // arrayPath is the JSON path to the array (e.g., "managedObjects")
 // metaPath is the JSON path to pagination metadata (e.g., "statistics")
-func ExecuteReturnCollection[T any](ctx context.Context, req *TryRequest, arrayPath, metaPath string, fromBytes func([]byte) T) op.Result[T] {
+func ExecuteReturnCollection[T any](ctx context.Context, req *TryRequest, arrayPath, metaPath string, fromBytes func([]byte) T, extraMeta ...map[string]any) op.Result[T] {
 	// Check if execution should be deferred
 	if ctxhelpers.IsDeferredExecution(ctx) {
 		// Build the request to capture all parameters
@@ -82,10 +118,22 @@ func ExecuteReturnCollection[T any](ctx context.Context, req *TryRequest, arrayP
 		}
 
 		// Return a result with the executor function
-		return op.Result[T]{
+		result := op.Result[T]{
 			Request: httpReq,
-		}.WithExecutor(func(execCtx context.Context) op.Result[T] {
-			return ExecuteReturnCollection(execCtx, req, arrayPath, metaPath, fromBytes)
+		}
+
+		// Merge extra metadata into the deferred result so it's available for inspection
+		if len(extraMeta) > 0 && extraMeta[0] != nil {
+			if result.Meta == nil {
+				result.Meta = make(map[string]any)
+			}
+			for k, v := range extraMeta[0] {
+				result.Meta[k] = v
+			}
+		}
+
+		return result.WithExecutor(func(execCtx context.Context) op.Result[T] {
+			return ExecuteReturnCollection(execCtx, req, arrayPath, metaPath, fromBytes, extraMeta...)
 		})
 	}
 
@@ -132,6 +180,13 @@ func ExecuteReturnCollection[T any](ctx context.Context, req *TryRequest, arrayP
 	result.Meta["pageSize"] = doc.Get("statistics.pageSize").Int()
 	result.Meta["totalPages"] = doc.Get("statistics.totalPages").Int()
 	result.Meta["totalElements"] = doc.Get("statistics.totalElements").Int()
+
+	// Merge extra metadata
+	if len(extraMeta) > 0 && extraMeta[0] != nil {
+		for k, v := range extraMeta[0] {
+			result.Meta[k] = v
+		}
+	}
 
 	result.HTTPStatus = resp.StatusCode()
 	result.RequestID = resp.Header().Get("X-Request-ID")

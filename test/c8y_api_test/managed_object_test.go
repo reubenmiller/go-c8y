@@ -150,3 +150,27 @@ func Test_ManagedObjectDeleteWithPrompt(t *testing.T) {
 	result := req.Execute(ctx)
 	assert.NoError(t, result.Err)
 }
+
+func Test_ManagedObjectGetByName(t *testing.T) {
+	client := testcore.CreateTestClient(t)
+	client.Client.SetDebug(true)
+
+	mo := testcore.CreateManagedObject(t, client)
+	assert.NoError(t, mo.Err)
+
+	ctx := context.Background()
+	deferredCtx := c8y_api.WithDeferredExecution(ctx, true)
+	name := mo.Data.Name()
+	namePattern := name[0:len(name)-4] + "*"
+	source := client.ManagedObjects.ByName(namePattern).String()
+	req := client.ManagedObjects.Delete(deferredCtx, source, managedobjects.DeleteOptions{})
+
+	if req.Request != nil {
+		if c8y_api.IsDeferredExecution(req.Request.Context()) {
+			fmt.Printf("Confirm deletion of %#v", req.Meta["name"])
+		}
+	}
+
+	result := req.Execute(ctx)
+	assert.NoError(t, result.Err)
+}
