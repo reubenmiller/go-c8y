@@ -2,6 +2,7 @@ package operations
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
@@ -11,6 +12,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
+	"github.com/reubenmiller/go-c8y/pkg/jsonUtilities"
 	"resty.dev/v3"
 )
 
@@ -146,15 +148,132 @@ func (s *Service) getB(ID string) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req)
 }
 
+// CreateOptions for creating an operation with resolver support
+type CreateOptions struct {
+	// DeviceID is the target device identifier (supports resolver strings)
+	// Examples: "12345", "name:deviceName", "ext:c8y_Serial:ABC", "query:..."
+	DeviceID string
+
+	// Description of the operation
+	Description string
+
+	// AdditionalProperties allows for custom fields to be added to the operation
+	// Can be a struct, map[string]interface{}, or any JSON-serializable type
+	// These properties are deep-merged with the base operation fields
+	AdditionalProperties interface{}
+}
+
 // Create an operation
+// Accepts either CreateOptions (for resolver support and property merging) or any other type (passed through as-is)
+//
+// Using CreateOptions:
+//
+//	result := client.Operations.Create(ctx, operations.CreateOptions{
+//	    DeviceID: "name:myDevice",  // Resolver string
+//	    Description: "Restart device",
+//	    AdditionalProperties: map[string]interface{}{
+//	        "c8y_Restart": map[string]interface{}{},
+//	    },
+//	})
+//
+// Using direct struct/map:
+//
+//	result := client.Operations.Create(ctx, model.Operation{...})
+//	result := client.Operations.Create(ctx, map[string]interface{}{...})
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Operation] {
+	// Check if body is CreateOptions - if so, handle resolver and merge logic
+	if opts, ok := body.(CreateOptions); ok {
+		return s.createWithOptions(ctx, opts)
+	}
+
+	// Otherwise, pass through as-is
 	return core.Execute(ctx, s.createB(body), jsonmodels.NewOperation)
+}
+
+// createWithOptions handles the CreateOptions case with resolver support and property merging
+func (s *Service) createWithOptions(ctx context.Context, opts CreateOptions) op.Result[jsonmodels.Operation] {
+	// Resolve the device and capture metadata
+	deviceID := opts.DeviceID
+	meta := make(map[string]any)
+
+	if deviceID != "" && s.DeviceResolver != nil {
+		resolutionCtx := ctx
+		if ctxhelpers.IsDeferredExecution(ctx) {
+			// Create a new context that preserves mock responses but not deferred execution
+			resolutionCtx = ctxhelpers.WithMockResponses(context.Background(), ctxhelpers.IsMockResponses(ctx))
+		}
+
+		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, deviceID, meta)
+		if err != nil {
+			return op.Failed[jsonmodels.Operation](err, true)
+		}
+		deviceID = resolvedID
+
+		// Populate metadata with resolved device information
+		meta["id"] = resolvedID
+	} else if deviceID != "" {
+		// Direct ID provided without resolution
+		meta["id"] = deviceID
+	}
+
+	// Build base operation from known fields
+	baseOperation := map[string]interface{}{
+		"deviceId": deviceID,
+	}
+	if opts.Description != "" {
+		baseOperation["description"] = opts.Description
+	}
+
+	// Marshal base operation to JSON
+	baseJSON, err := json.Marshal(baseOperation)
+	if err != nil {
+		return op.Failed[jsonmodels.Operation](err, true)
+	}
+
+	// If there are additional properties, merge them with the base
+	var finalJSON []byte
+	if opts.AdditionalProperties != nil {
+		additionalJSON, err := json.Marshal(opts.AdditionalProperties)
+		if err != nil {
+			return op.Failed[jsonmodels.Operation](err, true)
+		}
+
+		// Deep merge: additional properties override/extend base properties
+		finalJSON, err = jsonUtilities.MergePatch(baseJSON, additionalJSON)
+		if err != nil {
+			return op.Failed[jsonmodels.Operation](err, true)
+		}
+	} else {
+		finalJSON = baseJSON
+	}
+
+	// Create the operation with the merged JSON and add metadata
+	result := core.Execute(ctx, s.createBWithJSON(finalJSON), jsonmodels.NewOperation)
+
+	// Add resolver metadata to result
+	if result.Meta == nil {
+		result.Meta = make(map[string]any)
+	}
+	for k, v := range meta {
+		result.Meta[k] = v
+	}
+
+	return result
 }
 
 func (s *Service) createB(body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetBody(body).
+		SetURL(ApiOperations)
+	return core.NewTryRequest(s.Client, req)
+}
+
+func (s *Service) createBWithJSON(bodyJSON []byte) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodPost).
+		SetHeader("Content-Type", "application/json").
+		SetBody(bodyJSON).
 		SetURL(ApiOperations)
 	return core.NewTryRequest(s.Client, req)
 }

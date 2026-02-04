@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
@@ -12,6 +13,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
+	"github.com/reubenmiller/go-c8y/pkg/jsonUtilities"
 	"resty.dev/v3"
 )
 
@@ -162,9 +164,128 @@ func (s *Service) getB(ID string) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req)
 }
 
+// CreateOptions for creating an event with resolver support
+type CreateOptions struct {
+	// Source device identifier (supports resolver strings)
+	// Examples: "12345", "name:deviceName", "ext:c8y_Serial:ABC", "query:..."
+	Source string
+
+	// Type of the event
+	Type string
+
+	// Text description of the event
+	Text string
+
+	// Time when the event occurred
+	Time time.Time
+
+	// AdditionalProperties allows for custom fields to be added to the event
+	// Can be a struct, map[string]interface{}, or any JSON-serializable type
+	// These properties are deep-merged with the base event fields
+	AdditionalProperties interface{}
+}
+
 // Create an event
+// Accepts either CreateOptions (for resolver support and property merging) or any other type (passed through as-is)
+//
+// Using CreateOptions:
+//
+//	result := client.Events.Create(ctx, events.CreateOptions{
+//	    Source: "name:myDevice",  // Resolver string
+//	    Type: "c8y_TestEvent",
+//	    Text: "Test event",
+//	    AdditionalProperties: map[string]interface{}{"custom": "value"},
+//	})
+//
+// Using direct struct/map:
+//
+//	result := client.Events.Create(ctx, model.Event{...})
+//	result := client.Events.Create(ctx, map[string]interface{}{...})
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Event] {
+	// Check if body is CreateOptions - if so, handle resolver and merge logic
+	if opts, ok := body.(CreateOptions); ok {
+		return s.createWithOptions(ctx, opts)
+	}
+
+	// Otherwise, pass through as-is
 	return core.Execute(ctx, s.createB(body), jsonmodels.NewEvent)
+}
+
+// createWithOptions handles the CreateOptions case with resolver support and property merging
+func (s *Service) createWithOptions(ctx context.Context, opts CreateOptions) op.Result[jsonmodels.Event] {
+	// Resolve the source device and capture metadata
+	sourceID := opts.Source
+	meta := make(map[string]any)
+
+	if sourceID != "" && s.DeviceResolver != nil {
+		resolutionCtx := ctx
+		if ctxhelpers.IsDeferredExecution(ctx) {
+			// Create a new context that preserves mock responses but not deferred execution
+			resolutionCtx = ctxhelpers.WithMockResponses(context.Background(), ctxhelpers.IsMockResponses(ctx))
+		}
+
+		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, sourceID, meta)
+		if err != nil {
+			return op.Failed[jsonmodels.Event](err, true)
+		}
+		sourceID = resolvedID
+
+		// Populate metadata with resolved device information
+		meta["id"] = resolvedID
+	} else if sourceID != "" {
+		// Direct ID provided without resolution
+		meta["id"] = sourceID
+	}
+
+	// Build base event from known fields
+	baseEvent := map[string]interface{}{
+		"source": map[string]interface{}{"id": sourceID},
+	}
+	if opts.Type != "" {
+		baseEvent["type"] = opts.Type
+	}
+	if opts.Text != "" {
+		baseEvent["text"] = opts.Text
+	}
+	if !opts.Time.IsZero() {
+		baseEvent["time"] = opts.Time
+	}
+
+	// Marshal base event to JSON
+	baseJSON, err := json.Marshal(baseEvent)
+	if err != nil {
+		return op.Failed[jsonmodels.Event](err, true)
+	}
+
+	// If there are additional properties, merge them with the base
+	var finalJSON []byte
+	if opts.AdditionalProperties != nil {
+		additionalJSON, err := json.Marshal(opts.AdditionalProperties)
+		if err != nil {
+			return op.Failed[jsonmodels.Event](err, true)
+		}
+
+		// Deep merge: additional properties override/extend base properties
+		finalJSON, err = jsonUtilities.MergePatch(baseJSON, additionalJSON)
+		if err != nil {
+			return op.Failed[jsonmodels.Event](err, true)
+		}
+	} else {
+		finalJSON = baseJSON
+	}
+
+	// Create the event with the merged JSON and add metadata
+	result := core.Execute(ctx, s.createBWithJSON(finalJSON), jsonmodels.NewEvent)
+
+	// Add resolver metadata to result
+	if result.Meta == nil {
+		result.Meta = make(map[string]any)
+	}
+	for k, v := range meta {
+		result.Meta[k] = v
+	}
+
+	return result
 }
 
 func (s *Service) createB(body any) *core.TryRequest {
@@ -172,6 +293,16 @@ func (s *Service) createB(body any) *core.TryRequest {
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
+		SetURL(ApiEvents)
+	return core.NewTryRequest(s.Client, req)
+}
+
+func (s *Service) createBWithJSON(bodyJSON []byte) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodPost).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
+		SetBody(bodyJSON).
 		SetURL(ApiEvents)
 	return core.NewTryRequest(s.Client, req)
 }
