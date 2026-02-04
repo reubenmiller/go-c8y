@@ -238,20 +238,20 @@ func NewClient(opts ClientOptions) *Client {
 		UseKeyRing:    opts.UseKeyRing,
 	}
 	c.common.Client = rclient
-	c.Alarms = (*alarms.Service)(&c.common)
 	c.AuditRecords = (*auditrecords.Service)(&c.common)
 	c.TrustedCertificates = trustedcertificates.NewService(&c.common)
 	c.DeviceRegistration = deviceregistration.NewService(&c.common)
-	c.Measurements = (*measurements.Service)(&c.common)
 	c.Binaries = (*binaries.Service)(&c.common)
 	c.Identity = identity.NewService(&c.common)
 	c.ManagedObjects = managedobjects.NewService(&c.common)
+
+	// Services that use device resolver must be initialized after ManagedObjects
+	c.Alarms = alarms.NewService(&c.common, c.ManagedObjects)
+	c.Measurements = measurements.NewService(&c.common, c.ManagedObjects)
+	c.Operations = operations.NewService(&c.common, c.ManagedObjects)
+	c.Events = events.NewService(&c.common, c.ManagedObjects)
+
 	c.Devices = devices.NewService(&c.common)
-	c.LoginOptions = loginoptions.NewService(&c.common)
-	c.LoginTokens = logintokens.NewService(&c.common)
-	c.Operations = (*operations.Service)(&c.common)
-	c.Tenants = tenants.NewService(&c.common)
-	c.Events = events.NewService(&c.common)
 	// c.DeviceEnrollment = (*DeviceEnrollmentService)(&c.common)
 	c.Applications = applications.NewService(&c.common)
 	c.Microservices = microservices.NewService(&c.common)
@@ -267,7 +267,10 @@ func NewClient(opts ClientOptions) *Client {
 	c.Users = users.NewService(&c.common)
 	c.UserGroups = usergroups.NewService(&c.common)
 	c.UserRoles = userroles.NewService(&c.common)
+	c.Tenants = tenants.NewService(&c.common)
 	c.Features = features.NewService(&c.common)
+	c.LoginOptions = loginoptions.NewService(&c.common)
+	c.LoginTokens = logintokens.NewService(&c.common)
 
 	c.AddMiddleware()
 	c.SetAuth(opts.Auth)

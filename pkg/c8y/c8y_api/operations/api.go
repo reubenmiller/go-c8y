@@ -7,8 +7,9 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
+	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/internal/context"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/source"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
 )
@@ -21,12 +22,24 @@ var ParamId = "id"
 const ResultProperty = "operations"
 
 // Service provides api to get/set/delete operations
-type Service core.Service
+type Service struct {
+	core.Service
+	DeviceResolver *managedobjects.DeviceResolver
+}
+
+// NewService creates a new operations service with device resolution capabilities
+func NewService(common *core.Service, moService *managedobjects.Service) *Service {
+	return &Service{
+		Service:        *common,
+		DeviceResolver: managedobjects.NewDeviceResolver(moService),
+	}
+}
 
 // ListOptions to use when search for operations
 type ListOptions struct {
 	// An agent ID that may be part of the operation. If this parameter is set,
 	// the operation response objects contain the deviceExternalIDs object.
+	// Supports resolver strings: direct ID, "name:deviceName", "ext:type:id", "query:..."
 	AgentID string `url:"agentId,omitempty"`
 
 	// The bulk operation ID that this operation belongs to
@@ -38,12 +51,9 @@ type ListOptions struct {
 	// End date or date and time of the operation
 	DateTo time.Time `url:"dateTo,omitempty,omitzero"`
 
-	// The ID of the device the operation is performed for
+	// The ID of the device the operation is performed for.
+	// Supports resolver strings: direct ID, "name:deviceName", "ext:type:id", "query:..."
 	DeviceID string `url:"deviceId,omitempty"`
-
-	// DeviceRef allows resolving the device from various references (external ID, name, query, etc.)
-	// If set, this takes precedence over DeviceID field
-	DeviceRef source.Resolver `url:"-"`
 
 	// The type of fragment that must be part of the operation
 	FragmentType string `url:"fragmentType,omitempty"`
@@ -60,26 +70,42 @@ type ListOptions struct {
 	pagination.PaginationOptions
 }
 
-// Resolve resolves all reference fields (DeviceRef) to their concrete values.
-// Only resolves if the direct field (DeviceID) is not already set.
-func (opt *ListOptions) Resolve(ctx context.Context) error {
-	if opt.DeviceRef != nil && opt.DeviceID == "" {
-		result, err := opt.DeviceRef.ResolveID(ctx)
-		if err != nil {
-			return err
-		}
-		opt.DeviceID = result.ID
-	}
-	return nil
-}
-
 // OperationIterator provides iteration over operations
 type OperationIterator = pagination.Iterator[jsonmodels.Operation]
 
 // List operations
+// The DeviceID and AgentID fields support resolver strings:
+//   - "12345" - direct ID
+//   - "name:deviceName" - lookup by device name
+//   - "ext:c8y_Serial:ABC123" - lookup by external ID
+//   - "query:type eq 'c8y_Device'" - lookup by inventory query
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Operation] {
-	if err := opt.Resolve(ctx); err != nil {
-		return op.Failed[jsonmodels.Operation](err, true)
+	// Resolve DeviceID if it contains a resolver scheme
+	if opt.DeviceID != "" && s.DeviceResolver != nil {
+		resolutionCtx := ctx
+		if ctxhelpers.IsDeferredExecution(ctx) {
+			resolutionCtx = context.Background()
+		}
+
+		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, opt.DeviceID, nil)
+		if err != nil {
+			return op.Failed[jsonmodels.Operation](err, true)
+		}
+		opt.DeviceID = resolvedID
+	}
+
+	// Resolve AgentID if it contains a resolver scheme
+	if opt.AgentID != "" && s.DeviceResolver != nil {
+		resolutionCtx := ctx
+		if ctxhelpers.IsDeferredExecution(ctx) {
+			resolutionCtx = context.Background()
+		}
+
+		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, opt.AgentID, nil)
+		if err != nil {
+			return op.Failed[jsonmodels.Operation](err, true)
+		}
+		opt.AgentID = resolvedID
 	}
 
 	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewOperation)
@@ -167,6 +193,34 @@ type DeleteListOptions struct {
 
 // Delete a list of operations
 func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Result[jsonmodels.Operation] {
+	// Resolve DeviceID if it contains a resolver scheme
+	if opt.DeviceID != "" && s.DeviceResolver != nil {
+		resolutionCtx := ctx
+		if ctxhelpers.IsDeferredExecution(ctx) {
+			resolutionCtx = context.Background()
+		}
+
+		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, opt.DeviceID, nil)
+		if err != nil {
+			return op.Failed[jsonmodels.Operation](err, true)
+		}
+		opt.DeviceID = resolvedID
+	}
+
+	// Resolve AgentID if it contains a resolver scheme
+	if opt.AgentID != "" && s.DeviceResolver != nil {
+		resolutionCtx := ctx
+		if ctxhelpers.IsDeferredExecution(ctx) {
+			resolutionCtx = context.Background()
+		}
+
+		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, opt.AgentID, nil)
+		if err != nil {
+			return op.Failed[jsonmodels.Operation](err, true)
+		}
+		opt.AgentID = resolvedID
+	}
+
 	return core.Execute(ctx, s.deleteListB(opt), jsonmodels.NewOperation)
 }
 

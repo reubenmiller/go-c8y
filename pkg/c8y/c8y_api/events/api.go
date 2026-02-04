@@ -8,8 +8,9 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/events/eventbinaries"
+	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/internal/context"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/source"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
 )
@@ -21,17 +22,19 @@ var ParamId = "id"
 
 const ResultProperty = "events"
 
-func NewService(s *core.Service) *Service {
+func NewService(s *core.Service, moService *managedobjects.Service) *Service {
 	return &Service{
-		Service:  *s,
-		Binaries: eventbinaries.NewService(s),
+		Service:        *s,
+		Binaries:       eventbinaries.NewService(s),
+		DeviceResolver: managedobjects.NewDeviceResolver(moService),
 	}
 }
 
 // Service provides api to get/set/delete events in Cumulocity
 type Service struct {
 	core.Service
-	Binaries *eventbinaries.Service
+	Binaries       *eventbinaries.Service
+	DeviceResolver *managedobjects.DeviceResolver
 }
 
 // ListOptions to use when search for events
@@ -70,12 +73,9 @@ type ListOptions struct {
 	// events first.
 	Revert bool `url:"revert,omitempty"`
 
-	// The managed object ID to which the event is associated
+	// The managed object ID to which the event is associated.
+	// Supports resolver strings: direct ID, "name:deviceName", "ext:type:id", "query:..."
 	Source string `url:"source,omitempty"`
-
-	// SourceRef allows resolving the source from various references (external ID, name, query, etc.)
-	// If set, this takes precedence over Source field
-	SourceRef source.Resolver `url:"-"`
 
 	// The type of event to search for
 	Type string `url:"type,omitempty"`
@@ -100,26 +100,28 @@ type ListOptions struct {
 	pagination.PaginationOptions
 }
 
-// Resolve resolves all reference fields (SourceRef) to their concrete values.
-// Only resolves if the direct field (Source) is not already set.
-func (opt *ListOptions) Resolve(ctx context.Context) error {
-	if opt.SourceRef != nil && opt.Source == "" {
-		result, err := opt.SourceRef.ResolveID(ctx)
-		if err != nil {
-			return err
-		}
-		opt.Source = result.ID
-	}
-	return nil
-}
-
 // EventIterator provides iteration over events
 type EventIterator = pagination.Iterator[jsonmodels.Event]
 
 // List events
+// The Source field supports resolver strings:
+//   - "12345" - direct ID
+//   - "name:deviceName" - lookup by device name
+//   - "ext:c8y_Serial:ABC123" - lookup by external ID
+//   - "query:type eq 'c8y_Device'" - lookup by inventory query
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Event] {
-	if err := opt.Resolve(ctx); err != nil {
-		return op.Failed[jsonmodels.Event](err, true)
+	// Resolve Source if it contains a resolver scheme
+	if opt.Source != "" && s.DeviceResolver != nil {
+		resolutionCtx := ctx
+		if ctxhelpers.IsDeferredExecution(ctx) {
+			resolutionCtx = context.Background()
+		}
+
+		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, opt.Source, nil)
+		if err != nil {
+			return op.Failed[jsonmodels.Event](err, true)
+		}
+		opt.Source = resolvedID
 	}
 
 	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewEvent)
@@ -222,6 +224,20 @@ type DeleteListOptions struct {
 // request, the platform starts deleting the associated data in an asynchronous way.
 // Finally, the requested event is deleted after all associated data has been deleted.
 func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Result[jsonmodels.Event] {
+	// Resolve Source if it contains a resolver scheme
+	if opt.Source != "" && s.DeviceResolver != nil {
+		resolutionCtx := ctx
+		if ctxhelpers.IsDeferredExecution(ctx) {
+			resolutionCtx = context.Background()
+		}
+
+		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, opt.Source, nil)
+		if err != nil {
+			return op.Failed[jsonmodels.Event](err, true)
+		}
+		opt.Source = resolvedID
+	}
+
 	return core.Execute(ctx, s.deleteListB(opt), jsonmodels.NewEvent)
 }
 

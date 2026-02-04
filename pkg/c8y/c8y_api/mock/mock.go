@@ -12,18 +12,19 @@ var responses embed.FS
 type ResponseType string
 
 const (
-	ManagedObject           ResponseType = "managedobject"
-	ManagedObjectCollection ResponseType = "managedobject_collection"
-	Alarm                   ResponseType = "alarm"
-	AlarmCollection         ResponseType = "alarm_collection"
-	Event                   ResponseType = "event"
-	EventCollection         ResponseType = "event_collection"
-	Operation               ResponseType = "operation"
-	OperationCollection     ResponseType = "operation_collection"
-	Measurement             ResponseType = "measurement"
-	MeasurementCollection   ResponseType = "measurement_collection"
-	Application             ResponseType = "application"
-	ApplicationCollection   ResponseType = "application_collection"
+	ManagedObject               ResponseType = "managedobject"
+	ManagedObjectCollection     ResponseType = "managedobject_collection"
+	Alarm                       ResponseType = "alarm"
+	AlarmCollection             ResponseType = "alarm_collection"
+	Event                       ResponseType = "event"
+	EventCollection             ResponseType = "event_collection"
+	Operation                   ResponseType = "operation"
+	OperationCollection         ResponseType = "operation_collection"
+	Measurement                 ResponseType = "measurement"
+	MeasurementCollection       ResponseType = "measurement_collection"
+	MeasurementSeriesCollection ResponseType = "measurement_series_collection"
+	Application                 ResponseType = "application"
+	ApplicationCollection       ResponseType = "application_collection"
 )
 
 // GetResponse returns the mock response for the given type
@@ -57,6 +58,11 @@ func DetectResponseType(urlPath string, isCollection bool) ResponseType {
 			return OperationCollection
 		}
 		return Operation
+	case strings.Contains(path, "/measurement/measurements/series"):
+		if isCollection {
+			return MeasurementSeriesCollection
+		}
+		return Measurement
 	case strings.Contains(path, "/measurement/measurements"):
 		if isCollection {
 			return MeasurementCollection

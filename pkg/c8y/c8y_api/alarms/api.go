@@ -7,8 +7,9 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
+	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/internal/context"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/source"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
 )
@@ -22,7 +23,18 @@ var ParamId = "id"
 const ResultProperty = "alarms"
 
 // Service provides api to get/set/delete audit entries in Cumulocity
-type Service core.Service
+type Service struct {
+	core.Service
+	DeviceResolver *managedobjects.DeviceResolver
+}
+
+// NewService creates a new alarms service with device resolution capabilities
+func NewService(common *core.Service, moService *managedobjects.Service) *Service {
+	return &Service{
+		Service:        *common,
+		DeviceResolver: managedobjects.NewDeviceResolver(moService),
+	}
+}
 
 // ListOptions to use when search for alarms
 type ListOptions struct {
@@ -44,12 +56,9 @@ type ListOptions struct {
 	// End date or date and time of the alarm occurrence
 	DateTo time.Time `url:"dateTo,omitempty,omitzero"`
 
-	// Source device to filter measurements by
+	// Source device to filter measurements by.
+	// Supports resolver strings: direct ID, "name:deviceName", "ext:type:id", "query:..."
 	Source string `url:"source,omitempty"`
-
-	// SourceRef allows resolving the source from various references (external ID, name, query, etc.)
-	// If set, this takes precedence over Source field
-	SourceRef source.Resolver `url:"-"`
 
 	// The types of alarm to search for
 	Type []string `url:"type,omitempty"`
@@ -84,26 +93,28 @@ type ListOptions struct {
 	pagination.PaginationOptions
 }
 
-// Resolve resolves all reference fields (SourceRef) to their concrete values.
-// Only resolves if the direct field (Source) is not already set.
-func (opt *ListOptions) Resolve(ctx context.Context) error {
-	if opt.SourceRef != nil && opt.Source == "" {
-		result, err := opt.SourceRef.ResolveID(ctx)
-		if err != nil {
-			return err
-		}
-		opt.Source = result.ID
-	}
-	return nil
-}
-
 // AlarmIterator provides iteration over alarms
 type AlarmIterator = pagination.Iterator[jsonmodels.Alarm]
 
 // List alarms
+// The Source field supports resolver strings:
+//   - "12345" - direct ID
+//   - "name:deviceName" - lookup by device name
+//   - "ext:c8y_Serial:ABC123" - lookup by external ID
+//   - "query:type eq 'c8y_Device'" - lookup by inventory query
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Alarm] {
-	if err := opt.Resolve(ctx); err != nil {
-		return op.Failed[jsonmodels.Alarm](err, true)
+	// Resolve Source if it contains a resolver scheme
+	if opt.Source != "" && s.DeviceResolver != nil {
+		resolutionCtx := ctx
+		if ctxhelpers.IsDeferredExecution(ctx) {
+			resolutionCtx = context.Background()
+		}
+
+		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, opt.Source, nil)
+		if err != nil {
+			return op.Failed[jsonmodels.Alarm](err, true)
+		}
+		opt.Source = resolvedID
 	}
 
 	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewAlarm)
@@ -274,6 +285,20 @@ type BulkUpdateOptions struct {
 //
 // Since this operations can take a lot of time, request returns after maximum 0.5 sec of processing, and updating is continued as a background process in the platform.
 func (s *Service) UpdateList(ctx context.Context, opt BulkUpdateOptions, body any) op.Result[jsonmodels.Alarm] {
+	// Resolve Source if it contains a resolver scheme
+	if opt.Source != "" && s.DeviceResolver != nil {
+		resolutionCtx := ctx
+		if ctxhelpers.IsDeferredExecution(ctx) {
+			resolutionCtx = context.Background()
+		}
+
+		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, opt.Source, nil)
+		if err != nil {
+			return op.Failed[jsonmodels.Alarm](err, true)
+		}
+		opt.Source = resolvedID
+	}
+
 	return core.Execute(ctx, s.updateListB(opt, body), jsonmodels.NewAlarm)
 }
 
@@ -341,6 +366,20 @@ type DeleteListOptions struct {
 
 // Remove alarm collections specified by query parameters
 func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Result[core.NoContent] {
+	// Resolve Source if it contains a resolver scheme
+	if opt.Source != "" && s.DeviceResolver != nil {
+		resolutionCtx := ctx
+		if ctxhelpers.IsDeferredExecution(ctx) {
+			resolutionCtx = context.Background()
+		}
+
+		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, opt.Source, nil)
+		if err != nil {
+			return op.Failed[core.NoContent](err, true)
+		}
+		opt.Source = resolvedID
+	}
+
 	return core.ExecuteNoContent(ctx, s.deleteListB(opt))
 }
 

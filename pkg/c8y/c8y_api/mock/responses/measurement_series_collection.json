@@ -1,0 +1,37 @@
+{
+    "values": {
+        "2020-12-04T17:33:01.538+01:00": [
+            {
+                "min": 21.5,
+                "max": 22.3
+            },
+            {
+                "min": 65.2,
+                "max": 68.1
+            }
+        ],
+        "2020-12-04T17:35:01.538+01:00": [
+            {
+                "min": 22.1,
+                "max": 23.0
+            },
+            {
+                "min": 64.8,
+                "max": 67.5
+            }
+        ]
+    },
+    "series": [
+        {
+            "unit": "°C",
+            "name": "c8y_Temperature.T",
+            "type": "c8y_Temperature"
+        },
+        {
+            "unit": "%",
+            "name": "c8y_Humidity.H",
+            "type": "c8y_Humidity"
+        }
+    ],
+    "truncated": false
+}
