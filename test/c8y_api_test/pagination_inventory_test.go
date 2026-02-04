@@ -132,6 +132,10 @@ func Test_ManagedObjectsAdvanced(t *testing.T) {
 	})
 	assert.NoError(t, it.Err())
 
+	assert.NoError(t, it.Preview())
+
+	assert.GreaterOrEqual(t, it.TotalCount(), int64(1))
+
 	// Apply client side filter
 	matchingMos := rill.Filter(rill.FromSeq(it.Items(), it.Err()), 1, func(mo jsonmodels.ManagedObject) (bool, error) {
 		return strings.HasPrefix(mo.Name(), "TestDevice"), nil

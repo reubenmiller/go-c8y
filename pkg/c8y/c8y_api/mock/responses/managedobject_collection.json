@@ -18,7 +18,8 @@
   "statistics": {
     "currentPage": 1,
     "pageSize": 2,
-    "totalPages": 1
+    "totalPages": 1,
+    "totalElements": 2
   },
   "self": "https://mock.c8y.io/inventory/managedObjects",
   "next": ""

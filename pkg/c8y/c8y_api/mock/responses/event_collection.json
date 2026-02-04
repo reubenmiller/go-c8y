@@ -13,6 +13,7 @@
   "statistics": {
     "currentPage": 1,
     "pageSize": 1,
-    "totalPages": 1
+    "totalPages": 1,
+    "totalElements": 1
   }
 }

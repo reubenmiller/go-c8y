@@ -17,6 +17,7 @@ import (
 )
 
 // WithDryRun returns a context with dry run enabled
+// Dry run mode logs requests for inspection/validation without sending them
 func WithDryRun(ctx context.Context, enabled bool) context.Context {
 	return ctxhelpers.WithDryRun(ctx, enabled)
 }
@@ -24,6 +25,19 @@ func WithDryRun(ctx context.Context, enabled bool) context.Context {
 // IsDryRun checks if dry run is enabled in the context
 func IsDryRun(ctx context.Context) bool {
 	return ctxhelpers.IsDryRun(ctx)
+}
+
+// WithMockResponses returns a context with mock responses enabled
+// When enabled, HTTP requests will return mock data from embedded JSON files
+// instead of making real API calls. Useful for unit testing without network dependencies.
+// Can be combined with WithDryRun for logging + mock data, or used independently.
+func WithMockResponses(ctx context.Context, enabled bool) context.Context {
+	return ctxhelpers.WithMockResponses(ctx, enabled)
+}
+
+// IsMockResponses checks if mock responses are enabled in the context
+func IsMockResponses(ctx context.Context) bool {
+	return ctxhelpers.IsMockResponses(ctx)
 }
 
 // WithRedactHeaders returns a context with header redaction control
@@ -59,10 +73,20 @@ type DryRunTransport struct {
 
 // RoundTrip implements http.RoundTripper
 func (t *DryRunTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	if ctxhelpers.IsDryRun(req.Context()) {
+	ctx := req.Context()
+	isDryRun := ctxhelpers.IsDryRun(ctx)
+	isMockResponses := ctxhelpers.IsMockResponses(ctx)
+
+	// If neither flag is set, proceed normally
+	if !isDryRun && !isMockResponses {
+		return t.Transport.RoundTrip(req)
+	}
+
+	// If dry run is enabled, log the request
+	if isDryRun {
 		// Determine which headers to log (redacted or full)
 		headers := req.Header
-		if ctxhelpers.ShouldRedactHeaders(req.Context()) {
+		if ctxhelpers.ShouldRedactHeaders(ctx) {
 			headers = redactSensitiveHeaders(req.Header)
 		}
 
@@ -72,7 +96,10 @@ func (t *DryRunTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 			"url", req.URL.String(),
 			"headers", headers,
 		)
+	}
 
+	// If mock responses are enabled, return mock data
+	if isMockResponses {
 		// Create a mock response based on the request method
 		statusCode := http.StatusOK
 		var body []byte
@@ -127,7 +154,12 @@ func (t *DryRunTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 		// Set common response headers
 		resp.Header.Set("Content-Type", "application/json")
-		resp.Header.Set("X-Dry-Run", "true")
+		if isDryRun {
+			resp.Header.Set("X-Dry-Run", "true")
+		}
+		if isMockResponses {
+			resp.Header.Set("X-Mock-Response", "true")
+		}
 
 		return resp, nil
 	}
