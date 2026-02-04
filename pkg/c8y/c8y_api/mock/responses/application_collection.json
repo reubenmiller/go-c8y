@@ -5,12 +5,20 @@
       "name": "Mock Application",
       "key": "mock-app-key",
       "type": "HOSTED"
+    },
+    {
+      "id": "44444",
+      "name": "my-microservice",
+      "key": "my-microservice-key",
+      "type": "MICROSERVICE",
+      "contextPath": "/my-microservice",
+      "availability": "MARKET"
     }
   ],
   "statistics": {
     "currentPage": 1,
-    "pageSize": 1,
+    "pageSize": 2,
     "totalPages": 1,
-    "totalElements": 1
+    "totalElements": 2
   }
 }

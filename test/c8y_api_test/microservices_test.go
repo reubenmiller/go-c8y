@@ -43,6 +43,26 @@ func Test_MicroserviceListAll_WithLimit(t *testing.T) {
 	assert.LessOrEqual(t, 10, total)
 }
 
+func Test_MicroserviceGetByName(t *testing.T) {
+	client := testcore.CreateTestClient(t)
+	result := client.Microservices.Get(
+		context.Background(),
+		client.Microservices.ByName("reporting"),
+	)
+	assert.NoError(t, result.Err)
+	assert.Equal(t, "reporting", result.Data.Name())
+}
+
+func Test_MicroserviceGetByContext(t *testing.T) {
+	client := testcore.CreateTestClient(t)
+	result := client.Microservices.Get(
+		context.Background(),
+		client.Microservices.ByContextPath("reporting"),
+	)
+	assert.NoError(t, result.Err)
+	assert.Equal(t, "reporting", result.Data.ContextPath())
+}
+
 func Test_MicroserviceUpload(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	client.Client.SetDebug(true)
