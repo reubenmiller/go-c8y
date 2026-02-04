@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/internal/context"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 )
 
@@ -212,6 +213,20 @@ func (r Result[T]) Execute(ctx context.Context) Result[T] {
 		return r.executor(ctx)
 	}
 	return r // Already executed
+}
+
+// ExecuteOrDefer executes the result immediately if deferred execution is not enabled in the context,
+// otherwise returns the result with its executor for later execution.
+// This is the standard pattern for operations that support deferred execution:
+//
+//	return op.Result[T]{}.WithExecutor(func(ctx context.Context) op.Result[T] {
+//	    // implementation
+//	}).WithMeta(...).ExecuteOrDefer(ctx)
+func (r Result[T]) ExecuteOrDefer(ctx context.Context) Result[T] {
+	if ctxhelpers.IsDeferredExecution(ctx) {
+		return r
+	}
+	return r.Execute(ctx)
 }
 
 // WithMeta adds metadata to the result

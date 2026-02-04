@@ -77,22 +77,28 @@ func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.R
 
 // GetOrCreateByName searches by name and optionally type, creating if not found
 func (s *Service) GetOrCreateByName(ctx context.Context, name, objType string, body map[string]any) op.Result[jsonmodels.ManagedObject] {
-	query := model.NewInventoryQuery().
-		AddFilterEqStr("name", name).
-		AddFilterEqStr("type", objType).
-		Build()
-	return s.getOrCreateWithQuery(ctx, body, query)
+	return op.Result[jsonmodels.ManagedObject]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.ManagedObject] {
+		query := model.NewInventoryQuery().
+			AddFilterEqStr("name", name).
+			AddFilterEqStr("type", objType).
+			Build()
+		return s.getOrCreateWithQuery(execCtx, body, query)
+	}).WithMeta("operation", "getOrCreateByName").
+		ExecuteOrDefer(ctx)
 }
 
 // GetOrCreateByFragment searches for objects with a specific fragment property
 func (s *Service) GetOrCreateByFragment(ctx context.Context, fragment string, body map[string]any) op.Result[jsonmodels.ManagedObject] {
-	if fragment == "" {
-		return op.Failed[jsonmodels.ManagedObject](fmt.Errorf("fragment must be set"), false)
-	}
-	query := model.NewInventoryQuery().
-		HasFragment(fragment).
-		Build()
-	return s.getOrCreateWithQuery(ctx, body, query)
+	return op.Result[jsonmodels.ManagedObject]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.ManagedObject] {
+		if fragment == "" {
+			return op.Failed[jsonmodels.ManagedObject](fmt.Errorf("fragment must be set"), false)
+		}
+		query := model.NewInventoryQuery().
+			HasFragment(fragment).
+			Build()
+		return s.getOrCreateWithQuery(execCtx, body, query)
+	}).WithMeta("operation", "getOrCreateByFragment").
+		ExecuteOrDefer(ctx)
 }
 
 // GetOrCreateWith provides a generic query-based lookup
@@ -101,10 +107,13 @@ func (s *Service) GetOrCreateByFragment(ctx context.Context, fragment string, bo
 //   - "has(c8y_IsDevice) and c8y_Serial eq '12345'"
 //   - "fragmentType eq 'c8y_CustomFragment'"
 func (s *Service) GetOrCreateWith(ctx context.Context, body map[string]any, query string) op.Result[jsonmodels.ManagedObject] {
-	query_ := model.NewInventoryQuery().
-		AddFilterPart(query).
-		Build()
-	return s.getOrCreateWithQuery(ctx, body, query_)
+	return op.Result[jsonmodels.ManagedObject]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.ManagedObject] {
+		query_ := model.NewInventoryQuery().
+			AddFilterPart(query).
+			Build()
+		return s.getOrCreateWithQuery(execCtx, body, query_)
+	}).WithMeta("operation", "getOrCreateWith").
+		ExecuteOrDefer(ctx)
 }
 
 // getOrCreateWithQuery is the internal implementation
@@ -203,10 +212,21 @@ func (s *Service) GetOrCreateByExternalID(
 	ctx context.Context,
 	opts GetOrCreateByExternalIDOptions,
 ) op.Result[jsonmodels.ManagedObject] {
-	// Default external ID type
-	if opts.ExternalIDType == "" {
-		opts.ExternalIDType = "c8y_Serial"
-	}
+	return op.Result[jsonmodels.ManagedObject]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.ManagedObject] {
+		// Default external ID type
+		if opts.ExternalIDType == "" {
+			opts.ExternalIDType = "c8y_Serial"
+		}
+
+		return s.executeGetOrCreateByExternalID(execCtx, opts)
+	}).WithMeta("operation", "getOrCreateByExternalID").
+		ExecuteOrDefer(ctx)
+}
+
+func (s *Service) executeGetOrCreateByExternalID(
+	ctx context.Context,
+	opts GetOrCreateByExternalIDOptions,
+) op.Result[jsonmodels.ManagedObject] {
 
 	// Initialize state
 	state := &externalIDState{

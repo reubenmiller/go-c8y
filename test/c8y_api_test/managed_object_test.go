@@ -174,3 +174,50 @@ func Test_ManagedObjectGetByName(t *testing.T) {
 	result := req.Execute(ctx)
 	assert.NoError(t, result.Err)
 }
+
+func Test_ManagedObject_GetOrCreateByNameExists_Deferred(t *testing.T) {
+	client := testcore.CreateTestClient(t)
+	client.Client.SetDebug(true)
+
+	// Create a managed object
+	mo := testcore.CreateManagedObject(t, client)
+	assert.NoError(t, mo.Err)
+
+	// It should retrieve the existing managed object instead of creating it
+	deferredCtx := c8y_api.WithDeferredExecution(context.Background(), true)
+	name := mo.Data.Name()
+	namePattern := name[0:len(name)-4] + "*"
+	req := client.ManagedObjects.GetOrCreateByName(deferredCtx, namePattern, "", map[string]any{
+		"foo": "bar",
+	})
+
+	assert.True(t, req.IsDeferred())
+	assert.NotEmpty(t, req.Meta["operation"])
+
+	result := req.Execute(context.Background())
+	assert.NoError(t, result.Err)
+	assert.False(t, result.Data.Exists("foo"))
+	assert.Equal(t, mo.Data.ID(), result.Data.ID())
+}
+
+func Test_ManagedObject_GetOrCreateByNameNotExists_Deferred(t *testing.T) {
+	client := testcore.CreateTestClient(t)
+	client.Client.SetDebug(true)
+
+	// It should create a new managed object as an existing one matching the same name does not exist
+	deferredCtx := c8y_api.WithDeferredExecution(context.Background(), true)
+	name := testingutils.RandomString(16)
+	req := client.ManagedObjects.GetOrCreateByName(deferredCtx, name, "", map[string]any{
+		"foo": "bar",
+	})
+
+	assert.True(t, req.IsDeferred())
+	assert.NotEmpty(t, req.Meta["operation"])
+	result := req.Execute(context.Background())
+	t.Cleanup(func() {
+		client.ManagedObjects.Delete(context.Background(), result.Data.ID(), managedobjects.DeleteOptions{})
+	})
+	assert.NoError(t, result.Err)
+	assert.True(t, result.Data.Exists("foo"))
+	assert.NotEmpty(t, result.Data.ID())
+}
