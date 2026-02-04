@@ -62,9 +62,16 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 
 // ListAll returns an iterator for all devices
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *ManagedObjectIterator {
-	return pagination.Paginate(ctx, opts.PaginationOptions, func() op.Result[jsonmodels.ManagedObject] {
-		return s.List(ctx, opts)
-	}, jsonmodels.NewManagedObject)
+	return pagination.Paginate(
+		ctx,
+		opts.PaginationOptions,
+		func(pageOpts pagination.PaginationOptions) op.Result[jsonmodels.ManagedObject] {
+			o := opts
+			o.PaginationOptions = pageOpts
+			return s.List(ctx, o)
+		},
+		jsonmodels.NewManagedObject,
+	)
 }
 
 func (s *Service) listB(opt ListOptions) *core.TryRequest {

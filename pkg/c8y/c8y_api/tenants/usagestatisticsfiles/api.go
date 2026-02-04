@@ -48,9 +48,16 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 
 // ListAll returns an iterator for all usage statistics files
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *UsageStatisticsFileIterator {
-	return pagination.Paginate(ctx, opts.PaginationOptions, func() op.Result[jsonmodels.UsageStatisticsFile] {
-		return s.List(ctx, opts)
-	}, jsonmodels.NewUsageStatisticsFile)
+	return pagination.Paginate(
+		ctx,
+		opts.PaginationOptions,
+		func(pageOpts pagination.PaginationOptions) op.Result[jsonmodels.UsageStatisticsFile] {
+			o := opts
+			o.PaginationOptions = pageOpts
+			return s.List(ctx, o)
+		},
+		jsonmodels.NewUsageStatisticsFile,
+	)
 }
 
 func (s *Service) listB(opt ListOptions) *core.TryRequest {

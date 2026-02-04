@@ -3,8 +3,6 @@ package managedobjects
 import (
 	"context"
 	"fmt"
-	"iter"
-	"log/slog"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
@@ -12,6 +10,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/identity"
 	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/internal/context"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 )
 
@@ -385,65 +384,19 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
-type ManagedObjectIterator struct {
-	items iter.Seq[jsonmodels.ManagedObject]
-	err   error
-}
+// ManagedObjectIterator provides iteration over managed objects
+type ManagedObjectIterator = pagination.Iterator[jsonmodels.ManagedObject]
 
-func (it *ManagedObjectIterator) Items() iter.Seq[jsonmodels.ManagedObject] {
-	return it.items
-}
-
-func (it *ManagedObjectIterator) Err() error {
-	return it.err
-}
-
-func paginateManagedObjects(ctx context.Context, fetch func(page int) op.Result[jsonmodels.ManagedObject], maxItems int64) *ManagedObjectIterator {
-	iterator := &ManagedObjectIterator{}
-
-	iterator.items = func(yield func(jsonmodels.ManagedObject) bool) {
-		page := 1
-		count := int64(0)
-		for {
-			result := fetch(page)
-			if result.Err != nil {
-				iterator.err = result.Err
-				return
-			}
-			countBeforeResults := count
-			for doc := range result.Data.Iter() {
-				if maxItems > 0 && count >= maxItems {
-					return
-				}
-				item := jsonmodels.NewManagedObject(doc.Bytes())
-				if !yield(item) {
-					return
-				}
-				count++
-			}
-			if countBeforeResults == count {
-				// No more results
-				slog.Info("Stopping pagination as results array is empty")
-				return
-			}
-
-			totalPages, ok := result.Meta["totalPages"].(int64)
-			if ok && page >= int(totalPages) {
-				return
-			}
-			page++
-		}
-	}
-
-	return iterator
-}
-
+// ListAll returns an iterator for all managed objects
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *ManagedObjectIterator {
-	if opts.PageSize == 0 {
-		opts.PageSize = 2000
-	}
-	return paginateManagedObjects(ctx, func(page int) op.Result[jsonmodels.ManagedObject] {
-		opts.CurrentPage = page
-		return s.List(ctx, opts)
-	}, opts.GetMaxItems())
+	return pagination.Paginate(
+		ctx,
+		opts.PaginationOptions,
+		func(pageOpts pagination.PaginationOptions) op.Result[jsonmodels.ManagedObject] {
+			o := opts
+			o.PaginationOptions = pageOpts
+			return s.List(ctx, o)
+		},
+		jsonmodels.NewManagedObject,
+	)
 }

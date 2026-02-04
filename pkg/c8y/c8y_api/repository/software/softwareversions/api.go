@@ -110,9 +110,16 @@ type SoftwareVersionIterator = pagination.Iterator[jsonmodels.SoftwareVersion]
 
 // ListAll returns an iterator for all software versions
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *SoftwareVersionIterator {
-	return pagination.Paginate(ctx, opts.PaginationOptions, func() op.Result[jsonmodels.SoftwareVersion] {
-		return s.List(ctx, opts)
-	}, jsonmodels.NewSoftwareVersion)
+	return pagination.Paginate(
+		ctx,
+		opts.PaginationOptions,
+		func(pageOpts pagination.PaginationOptions) op.Result[jsonmodels.SoftwareVersion] {
+			o := opts
+			o.PaginationOptions = pageOpts
+			return s.List(ctx, o)
+		},
+		jsonmodels.NewSoftwareVersion,
+	)
 }
 
 type GetOptions struct {

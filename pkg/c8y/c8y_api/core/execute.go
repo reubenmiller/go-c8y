@@ -249,7 +249,7 @@ func ExecuteBinary(ctx context.Context, req *TryRequest) op.Result[BinaryRespons
 type NoContent []byte
 
 // Execute a request that doesn't any result only if there was an error or not
-func ExecuteNoContent(ctx context.Context, req *TryRequest) op.Result[NoContent] {
+func ExecuteNoContent(ctx context.Context, req *TryRequest, extraMeta ...map[string]any) op.Result[NoContent] {
 	// Check if execution should be deferred
 	if ctxhelpers.IsDeferredExecution(ctx) {
 		// Build the request to capture all parameters
@@ -262,10 +262,22 @@ func ExecuteNoContent(ctx context.Context, req *TryRequest) op.Result[NoContent]
 		}
 
 		// Return a result with the executor function
-		return op.Result[NoContent]{
+		result := op.Result[NoContent]{
 			Request: httpReq,
-		}.WithExecutor(func(execCtx context.Context) op.Result[NoContent] {
-			return ExecuteNoContent(execCtx, req)
+		}
+
+		// Merge extra metadata into the deferred result so it's available for inspection
+		if len(extraMeta) > 0 && extraMeta[0] != nil {
+			if result.Meta == nil {
+				result.Meta = make(map[string]any)
+			}
+			for k, v := range extraMeta[0] {
+				result.Meta[k] = v
+			}
+		}
+
+		return result.WithExecutor(func(execCtx context.Context) op.Result[NoContent] {
+			return ExecuteNoContent(execCtx, req, extraMeta...)
 		})
 	}
 
@@ -274,6 +286,13 @@ func ExecuteNoContent(ctx context.Context, req *TryRequest) op.Result[NoContent]
 	meta := map[string]any{}
 	meta["url"] = req.URL().String()
 	meta["path"] = req.URL().Path
+
+	// Merge extra metadata
+	if len(extraMeta) > 0 && extraMeta[0] != nil {
+		for k, v := range extraMeta[0] {
+			meta[k] = v
+		}
+	}
 
 	// Only capture request in dry run mode for inspection
 	var httpReq *http.Request

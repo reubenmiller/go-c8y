@@ -34,82 +34,83 @@ func NewService(s *core.Service) *Service {
 		ChildAdditions:  childadditions.NewService(s),
 		ChildAssets:     childassets.NewService(s),
 		ChildDevices:    childdevices.NewService(s),
+		customResolvers: make(map[string]source.Resolver),
 	}
 
-	// Create the source builder with lookups
-	service.sourceBuilder = source.NewBuilder(
-		// External ID lookup
-		func(ctx context.Context, typ, extID string) (string, map[string]any, error) {
-			result := service.identityService.Get(ctx, identity.IdentityOptions{
-				Type:       typ,
-				ExternalID: extID,
-			})
-			if result.Err != nil {
-				return "", nil, result.Err
-			}
-			return result.Data.ManagedObjectID(), map[string]any{
-				"externalType": typ,
-				"externalID":   extID,
+	// Setup lookup functions for resolvers
+	service.lookupByExternalID = func(ctx context.Context, typ, extID string) (string, map[string]any, error) {
+		result := service.identityService.Get(ctx, identity.IdentityOptions{
+			Type:       typ,
+			ExternalID: extID,
+		})
+		if result.Err != nil {
+			return "", nil, result.Err
+		}
+		return result.Data.ManagedObjectID(), map[string]any{
+			"externalType": typ,
+			"externalID":   extID,
+		}, nil
+	}
+
+	service.lookupByName = func(ctx context.Context, name string) (string, map[string]any, error) {
+		opts := ListOptions{}
+		opts.PaginationOptions.PageSize = 1
+		opts.Query = model.NewInventoryQuery().
+			AddFilterEqStr("name", name).
+			AddOrderBy("name").
+			AddOrderBy("creationTime").
+			Build()
+
+		result := service.List(ctx, opts)
+		if result.Err != nil {
+			return "", nil, result.Err
+		}
+
+		for item := range op.Iter(result) {
+			return item.ID(), map[string]any{
+				"id":    item.ID(),
+				"name":  item.Name(),
+				"owner": item.Owner(),
 			}, nil
-		},
-		// Name lookup
-		func(ctx context.Context, name string) (string, map[string]any, error) {
-			opts := ListOptions{}
-			opts.PaginationOptions.PageSize = 1
-			opts.Query = model.NewInventoryQuery().
-				AddFilterEqStr("name", name).
-				// AddFilterPart(additionalQueries...).
-				AddOrderBy("name").
-				AddOrderBy("creationTime").
-				Build()
+		}
 
-			result := service.List(ctx, opts)
-			if result.Err != nil {
-				return "", nil, result.Err
-			}
+		return "", nil, fmt.Errorf("managed object not found with name: %s", name)
+	}
 
-			for item := range op.Iter(result) {
-				return item.ID(), map[string]any{
-					"id":    item.ID(),
-					"name":  item.Name(),
-					"owner": item.Owner(),
-				}, nil
-			}
+	service.lookupByQuery = func(ctx context.Context, query string) (string, map[string]any, error) {
+		opts := ListOptions{}
+		opts.PaginationOptions.PageSize = 1
+		opts.Query = query
 
-			return "", nil, fmt.Errorf("managed object not found with name: %s", name)
-		},
-		// Query lookup
-		func(ctx context.Context, query string) (string, map[string]any, error) {
-			opts := ListOptions{}
-			opts.PaginationOptions.PageSize = 1
-			opts.Query = query
+		result := service.List(ctx, opts)
+		if result.Err != nil {
+			return "", nil, result.Err
+		}
 
-			result := service.List(ctx, opts)
-			if result.Err != nil {
-				return "", nil, result.Err
-			}
+		for item := range result.Data.Iter() {
+			obj := jsonmodels.NewManagedObject(item.Bytes())
+			return obj.ID(), map[string]any{"query": query}, nil
+		}
 
-			for item := range result.Data.Iter() {
-				obj := jsonmodels.NewManagedObject(item.Bytes())
-				return obj.ID(), map[string]any{"query": query}, nil
-			}
-
-			return "", nil, fmt.Errorf("managed object not found with query: %s", query)
-		},
-	)
+		return "", nil, fmt.Errorf("managed object not found with query: %s", query)
+	}
 
 	return service
 }
 
 // Service inventory api to interact with managed objects
-// type Service core.Service
 type Service struct {
 	core.Service
 	identityService *identity.Service
 	ChildAdditions  *childadditions.Service
 	ChildAssets     *childassets.Service
 	ChildDevices    *childdevices.Service
-	sourceBuilder   *source.Builder
+
+	// Resolver lookup functions
+	lookupByExternalID func(ctx context.Context, typ, extID string) (string, map[string]any, error)
+	lookupByName       func(ctx context.Context, name string) (string, map[string]any, error)
+	lookupByQuery      func(ctx context.Context, query string) (string, map[string]any, error)
+	customResolvers    map[string]source.Resolver
 }
 
 // ListOptions filter managed object
@@ -231,88 +232,6 @@ func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req)
 }
 
-// Source Resolution Convenience Methods
-// These methods provide a more discoverable way to create source resolvers
-// for managed objects, while still returning the generic source.Resolver interface.
-
-// ByID creates a resolver for a managed object by its direct ID.
-// Returns a source.Resolver that can be used with any API that accepts source resolution.
-func (s *Service) ByID(id string) source.Resolver {
-	return source.ID(id)
-}
-
-// ByExternalID creates a resolver that looks up a managed object by its external ID.
-// The lookup will be performed when ResolveID() is called on the returned resolver.
-// Returns a source.Resolver that can be used with any API that accepts source resolution.
-func (s *Service) ByExternalID(typ, externalID string) source.Resolver {
-	return source.ExternalID{
-		Type:       typ,
-		ExternalID: externalID,
-		Lookup: func(ctx context.Context, t, extID string) (string, map[string]any, error) {
-			result := s.identityService.Get(ctx, identity.IdentityOptions{
-				Type:       t,
-				ExternalID: extID,
-			})
-			if result.Err != nil {
-				return "", nil, result.Err
-			}
-			// Return metadata about the resolved object
-			meta := map[string]any{
-				"externalType": t,
-				"externalID":   extID,
-			}
-			return result.Data.ManagedObjectID(), meta, nil
-		},
-	}
-}
-
-// ByName creates a resolver that looks up a managed object by its name.
-func (s *Service) ByName(name string, additionalQueries ...string) source.Resolver {
-	return source.Name{
-		Name: name,
-		Lookup: func(ctx context.Context, n string) (string, map[string]any, error) {
-			result := s.List(context.Background(), ListOptions{
-				DeviceQuery: model.NewInventoryQuery().
-					AddFilterEqStr("name", n).
-					AddFilterPart(additionalQueries...).
-					AddOrderBy("name").
-					AddOrderBy("creationTime").
-					Build(),
-				PaginationOptions: pagination.PaginationOptions{
-					PageSize: 1,
-				},
-			})
-			if result.Err != nil {
-				return "", nil, result.Err
-			}
-
-			// if result.Data.Length() == 0 {
-			// 	return "", nil, fmt.Errorf("no device found with name: %s", n)
-			// }
-
-			for item := range op.Iter(result) {
-				meta := map[string]any{
-					"name":  item.Name(),
-					"owner": item.Owner(),
-				}
-				return item.ID(), meta, nil
-			}
-
-			return "", nil, fmt.Errorf("no device found with name: %s", n)
-		},
-	}
-}
-
-// Custom creates a resolver with custom resolution logic.
-// This allows you to define your own logic for resolving a managed object ID.
-// Returns a source.Resolver that can be used with any API that accepts source resolution.
-func (s *Service) Custom(description string, resolve func(context.Context) (string, map[string]any, error)) source.Resolver {
-	return source.Custom{
-		Description: description,
-		Resolve:     resolve,
-	}
-}
-
 // ResolveID resolves an ID string that may contain a resolver scheme.
 // If meta is not nil, it will be populated with metadata about the resolution (e.g., name, type, etc.).
 // Examples:
@@ -321,7 +240,7 @@ func (s *Service) Custom(description string, resolve func(context.Context) (stri
 //   - "ext:c8y_Serial:ABC123" -> "<id>" (meta: {"externalType": "c8y_Serial", "externalID": "ABC123", ...})
 //   - "query:name eq 'device01'" -> "<id>" (meta: {"query": "...", ...})
 func (s *Service) ResolveID(ctx context.Context, id string, meta map[string]any) (string, error) {
-	resolver, err := s.sourceBuilder.Parse(id)
+	resolver, err := s.parseResolver(id)
 	if err != nil {
 		return "", err
 	}
@@ -341,5 +260,42 @@ func (s *Service) ResolveID(ctx context.Context, id string, meta map[string]any)
 // Example: RegisterResolver("custom", myResolver)
 // Then use: ResolveID(ctx, "custom:value")
 func (s *Service) RegisterResolver(scheme string, resolver source.Resolver) {
-	s.sourceBuilder.RegisterResolver(scheme, resolver)
+	s.customResolvers[scheme] = resolver
+}
+
+// ByID creates a direct ID reference string (no lookup needed).
+// Returns: "12345" or "id:12345"
+// Example: service.Get(ctx, service.ByID("12345"), opts)
+func (s *Service) ByID(id string) string {
+	return id
+}
+
+// ByExternalID creates an external ID reference string.
+// Returns: "ext:type:externalID"
+// Example: service.Get(ctx, service.ByExternalID("c8y_Serial", "ABC123"), opts)
+func (s *Service) ByExternalID(typ, externalID string) string {
+	return externalIDResolver{
+		Type:       typ,
+		ExternalID: externalID,
+	}.String()
+}
+
+// ByName creates a name-based lookup reference string.
+// Supports wildcard patterns using "*".
+// Returns: "name:deviceName"
+// Example: service.Get(ctx, service.ByName("MyDevice"), opts)
+func (s *Service) ByName(name string) string {
+	return nameResolver{
+		Name: name,
+	}.String()
+}
+
+// ByQuery creates a query-based lookup reference string.
+// The query should return exactly one result.
+// Returns: "query:..."
+// Example: service.Get(ctx, service.ByQuery("type eq 'c8y_Device'"), opts)
+func (s *Service) ByQuery(query string) string {
+	return queryResolver{
+		Query: query,
+	}.String()
 }

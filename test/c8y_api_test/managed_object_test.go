@@ -162,7 +162,7 @@ func Test_ManagedObjectGetByName(t *testing.T) {
 	deferredCtx := c8y_api.WithDeferredExecution(ctx, true)
 	name := mo.Data.Name()
 	namePattern := name[0:len(name)-4] + "*"
-	source := client.ManagedObjects.ByName(namePattern).String()
+	source := client.ManagedObjects.ByName(namePattern)
 	req := client.ManagedObjects.Delete(deferredCtx, source, managedobjects.DeleteOptions{})
 
 	if req.Request != nil {

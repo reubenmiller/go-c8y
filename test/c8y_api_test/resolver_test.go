@@ -28,26 +28,35 @@ func Test_Resolver_PlainID(t *testing.T) {
 func Test_Resolver_NameSyntax(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
-	// Use name resolver syntax: "name:device-name"
-	nameID := client.ManagedObjects.ByName("myDevice").String()
-	assert.Equal(t, "name:myDevice", nameID)
+	// Use name resolver syntax helper
+	nameRef := client.ManagedObjects.ByName("myDevice")
+	assert.Equal(t, "name:myDevice", nameRef)
 }
 
 func Test_Resolver_ExternalIDSyntax(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
-	// Create an external ID reference
-	extID := client.ManagedObjects.ByExternalID("c8y_Serial", "SERIAL-12345").String()
-	assert.Equal(t, "ext:c8y_Serial:SERIAL-12345", extID)
+	// Create an external ID reference using helper
+	extRef := client.ManagedObjects.ByExternalID("c8y_Serial", "SERIAL-12345")
+	assert.Equal(t, "ext:c8y_Serial:SERIAL-12345", extRef)
 }
 
-func Test_Resolver_IDBuilderHelpers(t *testing.T) {
+func Test_Resolver_StringSyntax(t *testing.T) {
 	client := testcore.CreateTestClient(t)
+	ctx := context.Background()
 
-	// Test the ID builder helpers
-	assert.Equal(t, "12345", client.ManagedObjects.ByID("12345").String())
-	assert.Equal(t, "name:myDevice", client.ManagedObjects.ByName("myDevice").String())
-	assert.Equal(t, "ext:c8y_Serial:ABC123", client.ManagedObjects.ByExternalID("c8y_Serial", "ABC123").String())
+	// Test helper methods return correct string syntax
+	assert.Equal(t, "12345", client.ManagedObjects.ByID("12345"))
+	assert.Equal(t, "name:myDevice", client.ManagedObjects.ByName("myDevice"))
+	assert.Equal(t, "ext:c8y_Serial:ABC123", client.ManagedObjects.ByExternalID("c8y_Serial", "ABC123"))
+	assert.Equal(t, "query:type eq 'c8y_Device'", client.ManagedObjects.ByQuery("type eq 'c8y_Device'"))
+
+	// Test that strings can be resolved
+	meta := make(map[string]any)
+	resolvedID, err := client.ManagedObjects.ResolveID(ctx, "12345", meta)
+	assert.NoError(t, err)
+	assert.Equal(t, "12345", resolvedID)
+	assert.Equal(t, "direct-id", meta["source"])
 }
 
 func Test_Resolver_UnknownScheme(t *testing.T) {

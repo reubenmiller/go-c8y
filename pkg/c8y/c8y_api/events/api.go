@@ -127,9 +127,16 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 
 // ListAll returns an iterator for all events
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *EventIterator {
-	return pagination.Paginate(ctx, opts.PaginationOptions, func() op.Result[jsonmodels.Event] {
-		return s.List(ctx, opts)
-	}, jsonmodels.NewEvent)
+	return pagination.Paginate(
+		ctx,
+		opts.PaginationOptions,
+		func(pageOpts pagination.PaginationOptions) op.Result[jsonmodels.Event] {
+			o := opts
+			o.PaginationOptions = pageOpts
+			return s.List(ctx, o)
+		},
+		jsonmodels.NewEvent,
+	)
 }
 
 func (s *Service) listB(opt any) *core.TryRequest {

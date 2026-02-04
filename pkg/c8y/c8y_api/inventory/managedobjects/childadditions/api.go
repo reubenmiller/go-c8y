@@ -40,9 +40,16 @@ func (s *Service) List(ctx context.Context, parentID string, opt ListOptions) op
 
 // ListAll returns an iterator for all child additions
 func (s *Service) ListAll(ctx context.Context, parentID string, opts ListOptions) *ManagedObjectIterator {
-	return pagination.Paginate(ctx, opts.PaginationOptions, func() op.Result[jsonmodels.ManagedObject] {
-		return s.List(ctx, parentID, opts)
-	}, jsonmodels.NewManagedObject)
+	return pagination.Paginate(
+		ctx,
+		opts.PaginationOptions,
+		func(pageOpts pagination.PaginationOptions) op.Result[jsonmodels.ManagedObject] {
+			o := opts
+			o.PaginationOptions = pageOpts
+			return s.List(ctx, parentID, o)
+		},
+		jsonmodels.NewManagedObject,
+	)
 }
 
 func (s *Service) listB(parentID string, opt ListOptions) *core.TryRequest {

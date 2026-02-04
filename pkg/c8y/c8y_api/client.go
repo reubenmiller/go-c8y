@@ -30,7 +30,6 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/remoteaccess"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/repository"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/retentionrules"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/source"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/tenants"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/tenants/logintokens"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/trustedcertificates"
@@ -124,9 +123,6 @@ type Client struct {
 	UserRoles  *userroles.Service
 	// DeviceEnrollment     *DeviceEnrollmentService
 	Features *features.Service
-
-	// Source provides helpers for resolving managed object IDs from various sources
-	Source *source.Builder
 }
 
 const (
@@ -272,34 +268,6 @@ func NewClient(opts ClientOptions) *Client {
 	c.UserGroups = usergroups.NewService(&c.common)
 	c.UserRoles = userroles.NewService(&c.common)
 	c.Features = features.NewService(&c.common)
-
-	// Initialize Source builder with lookup functions
-	c.Source = source.NewBuilder(
-		// Lookup by external ID
-		func(ctx context.Context, typ, extID string) (string, map[string]any, error) {
-			result := c.Identity.Get(ctx, identity.IdentityOptions{
-				Type:       typ,
-				ExternalID: extID,
-			})
-			if result.Err != nil {
-				return "", nil, result.Err
-			}
-			// Return metadata about the resolved object
-			meta := map[string]any{
-				"externalType": typ,
-				"externalID":   extID,
-			}
-			return result.Data.ManagedObjectID(), meta, nil
-		},
-		// Lookup by name - TODO: Implement when ManagedObjects.List is available
-		func(ctx context.Context, name string) (string, map[string]any, error) {
-			return "", nil, fmt.Errorf("lookup by name not yet implemented")
-		},
-		// Lookup by query - TODO: Implement when ManagedObjects.List is available
-		func(ctx context.Context, query string) (string, map[string]any, error) {
-			return "", nil, fmt.Errorf("lookup by query not yet implemented")
-		},
-	)
 
 	c.AddMiddleware()
 	c.SetAuth(opts.Auth)

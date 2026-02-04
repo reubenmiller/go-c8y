@@ -101,9 +101,16 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 
 // ListAll returns an iterator for all microservices
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *MicroserviceIterator {
-	return pagination.Paginate(ctx, opts.PaginationOptions, func() op.Result[jsonmodels.Microservice] {
-		return s.List(ctx, opts)
-	}, jsonmodels.NewMicroservice)
+	return pagination.Paginate(
+		ctx,
+		opts.PaginationOptions,
+		func(pageOpts pagination.PaginationOptions) op.Result[jsonmodels.Microservice] {
+			o := opts
+			o.PaginationOptions = pageOpts
+			return s.List(ctx, o)
+		},
+		jsonmodels.NewMicroservice,
+	)
 }
 
 func (s *Service) listB(opt ListOptions) *core.TryRequest {

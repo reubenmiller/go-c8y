@@ -44,9 +44,16 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 
 // ListAll returns an iterator for all retention rules
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *RetentionRuleIterator {
-	return pagination.Paginate(ctx, opts.PaginationOptions, func() op.Result[jsonmodels.RetentionRule] {
-		return s.List(ctx, opts)
-	}, jsonmodels.NewRetentionRule)
+	return pagination.Paginate(
+		ctx,
+		opts.PaginationOptions,
+		func(pageOpts pagination.PaginationOptions) op.Result[jsonmodels.RetentionRule] {
+			o := opts
+			o.PaginationOptions = pageOpts
+			return s.List(ctx, o)
+		},
+		jsonmodels.NewRetentionRule,
+	)
 }
 
 func (s *Service) listB(opt any) *core.TryRequest {

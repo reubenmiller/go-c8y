@@ -51,9 +51,16 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 
 // ListAll returns an iterator for all login options
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *LoginOptionIterator {
-	return pagination.Paginate(ctx, opts.PaginationOptions, func() op.Result[jsonmodels.LoginOption] {
-		return s.List(ctx, opts)
-	}, jsonmodels.NewLoginOption)
+	return pagination.Paginate(
+		ctx,
+		opts.PaginationOptions,
+		func(pageOpts pagination.PaginationOptions) op.Result[jsonmodels.LoginOption] {
+			o := opts
+			o.PaginationOptions = pageOpts
+			return s.List(ctx, o)
+		},
+		jsonmodels.NewLoginOption,
+	)
 }
 
 func (s *Service) listB(opt any) *core.TryRequest {

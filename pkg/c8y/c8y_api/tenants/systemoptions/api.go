@@ -47,9 +47,16 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 
 // ListAll returns an iterator for all system options
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *SystemOptionIterator {
-	return pagination.Paginate(ctx, opts.PaginationOptions, func() op.Result[jsonmodels.SystemOption] {
-		return s.List(ctx, opts)
-	}, jsonmodels.NewSystemOption)
+	return pagination.Paginate(
+		ctx,
+		opts.PaginationOptions,
+		func(pageOpts pagination.PaginationOptions) op.Result[jsonmodels.SystemOption] {
+			o := opts
+			o.PaginationOptions = pageOpts
+			return s.List(ctx, o)
+		},
+		jsonmodels.NewSystemOption,
+	)
 }
 
 func (s *Service) listB(opt ListOptions) *core.TryRequest {

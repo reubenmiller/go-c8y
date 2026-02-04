@@ -7,10 +7,12 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
+	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/internal/context"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/source"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
+	"github.com/reubenmiller/go-c8y/pkg/matcher"
 	"resty.dev/v3"
 )
 
@@ -39,12 +41,53 @@ var ParamUsername = "username"
 
 const ResultProperty = "applications"
 
-// Service to manage binaries
-// Managed objects can perform operations to store, retrieve and delete binaries. One binary can store only one file. Together with the binary, a managed object is created which acts as a metadata information for the binary.
-type Service core.Service
+// Service to manage applications
+type Service struct {
+	core.Service
+
+	// Resolver lookup function
+	lookupByName    func(ctx context.Context, name, appType string) (string, map[string]any, error)
+	customResolvers map[string]source.Resolver
+}
 
 func NewService(common *core.Service) *Service {
-	return (*Service)(common)
+	service := &Service{
+		Service:         *common,
+		customResolvers: make(map[string]source.Resolver),
+	}
+
+	// Setup lookup function for name-based resolution
+	service.lookupByName = func(ctx context.Context, name, appType string) (string, map[string]any, error) {
+		opts := ListOptions{
+			Type: appType,
+			PaginationOptions: pagination.PaginationOptions{
+				MaxItems: 2000,
+			},
+		}
+
+		it := service.ListAll(ctx, opts)
+		if it.Err() != nil {
+			return "", nil, it.Err()
+		}
+
+		// Client-side filtering with wildcard support
+		for item := range it.Items() {
+			if found, _ := matcher.MatchWithWildcards(item.Name(), name); found {
+				return item.ID(), map[string]any{
+					"id":   item.ID(),
+					"name": item.Name(),
+					"type": item.Type(),
+				}, nil
+			}
+		}
+
+		if appType != "" {
+			return "", nil, fmt.Errorf("application not found with name: %s, type: %s", name, appType)
+		}
+		return "", nil, fmt.Errorf("application not found with name: %s", name)
+	}
+
+	return service
 }
 
 // ListOptions filter options
@@ -89,9 +132,16 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 
 // ListAll returns an iterator for all applications
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *ApplicationIterator {
-	return pagination.Paginate(ctx, opts.PaginationOptions, func() op.Result[jsonmodels.Application] {
-		return s.List(ctx, opts)
-	}, jsonmodels.NewApplication)
+	return pagination.Paginate(
+		ctx,
+		opts.PaginationOptions,
+		func(pageOpts pagination.PaginationOptions) op.Result[jsonmodels.Application] {
+			o := opts
+			o.PaginationOptions = pageOpts
+			return s.List(ctx, o)
+		},
+		jsonmodels.NewApplication,
+	)
 }
 
 func (s *Service) listB(opt ListOptions) *core.TryRequest {
@@ -186,43 +236,42 @@ func (s *Service) listByUserB(opt ListByUserOptions) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req, ResultProperty)
 }
 
-type GetOptions struct {
-	ID             string          `url:"-"`
-	ApplicationRef source.Resolver `url:"-"`
-}
-
-// Resolve resolves all reference fields (ApplicationRef) to their concrete values.
-// Only resolves if the direct field (ID) is not already set.
-func (opt *GetOptions) Resolve(ctx context.Context) error {
-	if opt.ApplicationRef != nil && opt.ID == "" {
-		result, err := opt.ApplicationRef.ResolveID(ctx)
-		if err != nil {
-			return err
-		}
-		opt.ID = result.ID
+// Get an application by ID or resolver string
+// Examples:
+//   - Get(ctx, "12345") - direct ID
+//   - Get(ctx, "name:cockpit") - lookup by name
+//   - Get(ctx, "name:cockpit:HOSTED") - lookup by name and type
+func (s *Service) Get(ctx context.Context, id string) op.Result[jsonmodels.Application] {
+	// Resolve ID (supports "name:appName", "name:appName:HOSTED", etc.)
+	// If deferred execution is enabled, we still need to resolve the ID first
+	// But do it in a normal context so the resolution actually completes
+	resolutionCtx := ctx
+	if ctxhelpers.IsDeferredExecution(ctx) {
+		// Use background context for resolution so it doesn't inherit the deferred flag
+		// This allows lookups (like ListAll) to actually execute
+		resolutionCtx = context.Background()
 	}
-	return nil
-}
 
-// Get an application
-func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.Application] {
-	if err := opt.Resolve(ctx); err != nil {
-		return op.Failed[jsonmodels.Application](err, true)
+	meta := make(map[string]any)
+	resolvedID, err := s.ResolveID(resolutionCtx, id, meta)
+	if err != nil {
+		return op.Failed[jsonmodels.Application](err, false)
 	}
-	return core.Execute(ctx, s.getB(opt), jsonmodels.NewApplication)
+
+	return core.Execute(ctx, s.getB(resolvedID), jsonmodels.NewApplication, meta)
 }
 
-func (s *Service) getB(opt GetOptions) *core.TryRequest {
+func (s *Service) getB(id string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamId, opt.ID).
+		SetPathParam(ParamId, id).
 		SetURL(ApiApplication)
 	return core.NewTryRequest(s.Client, req)
 }
 
 // Create an application
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Application] {
-	return core.Execute(ctx, s.createB(body), jsonmodels.NewApplication)
+	return core.Execute(ctx, s.createB(body), jsonmodels.NewApplication, nil)
 }
 
 func (s *Service) createB(body any) *core.TryRequest {
@@ -234,9 +283,24 @@ func (s *Service) createB(body any) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req)
 }
 
-// Update an application
-func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.Application] {
-	return core.Execute(ctx, s.updateB(ID, body), jsonmodels.NewApplication)
+// Update an application by ID or resolver string
+// Examples:
+//   - Update(ctx, "12345", body) - direct ID
+//   - Update(ctx, "name:cockpit", body) - lookup by name
+func (s *Service) Update(ctx context.Context, id string, body any) op.Result[jsonmodels.Application] {
+	// Resolve ID (supports "name:appName", etc.)
+	resolutionCtx := ctx
+	if ctxhelpers.IsDeferredExecution(ctx) {
+		resolutionCtx = context.Background()
+	}
+
+	meta := make(map[string]any)
+	resolvedID, err := s.ResolveID(resolutionCtx, id, meta)
+	if err != nil {
+		return op.Failed[jsonmodels.Application](err, false)
+	}
+
+	return core.Execute(ctx, s.updateB(resolvedID, body), jsonmodels.NewApplication, meta)
 }
 
 func (s *Service) updateB(ID string, body any) *core.TryRequest {
@@ -255,9 +319,24 @@ type DeleteOptions struct {
 	Force bool `url:"force,omitempty"`
 }
 
-// Delete an application
-func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteB(ID, opt))
+// Delete an application by ID or resolver string
+// Examples:
+//   - Delete(ctx, "12345", opts) - direct ID
+//   - Delete(ctx, "name:cockpit", opts) - lookup by name
+func (s *Service) Delete(ctx context.Context, id string, opt DeleteOptions) op.Result[core.NoContent] {
+	// Resolve ID (supports "name:appName", etc.)
+	resolutionCtx := ctx
+	if ctxhelpers.IsDeferredExecution(ctx) {
+		resolutionCtx = context.Background()
+	}
+
+	meta := make(map[string]any)
+	resolvedID, err := s.ResolveID(resolutionCtx, id, meta)
+	if err != nil {
+		return op.Failed[core.NoContent](err, false)
+	}
+
+	return core.ExecuteNoContent(ctx, s.deleteB(resolvedID, opt), meta)
 }
 
 func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
@@ -277,9 +356,24 @@ type CopyOptions struct {
 	Tag string `url:"tag,omitempty"`
 }
 
-// Copy an application (by a given ID)
-func (s *Service) Copy(ctx context.Context, ID string, opt CopyOptions) op.Result[jsonmodels.Application] {
-	return core.Execute(ctx, s.copyB(ID, opt), jsonmodels.NewApplication)
+// Copy an application by ID or resolver string
+// Examples:
+//   - Copy(ctx, "12345", opts) - direct ID
+//   - Copy(ctx, "name:cockpit", opts) - lookup by name
+func (s *Service) Copy(ctx context.Context, id string, opt CopyOptions) op.Result[jsonmodels.Application] {
+	// Resolve ID (supports "name:appName", etc.)
+	resolutionCtx := ctx
+	if ctxhelpers.IsDeferredExecution(ctx) {
+		resolutionCtx = context.Background()
+	}
+
+	meta := make(map[string]any)
+	resolvedID, err := s.ResolveID(resolutionCtx, id, meta)
+	if err != nil {
+		return op.Failed[jsonmodels.Application](err, false)
+	}
+
+	return core.Execute(ctx, s.copyB(resolvedID, opt), jsonmodels.NewApplication, meta)
 }
 
 func (s *Service) copyB(ID string, opt CopyOptions) *core.TryRequest {
@@ -292,7 +386,7 @@ func (s *Service) copyB(ID string, opt CopyOptions) *core.TryRequest {
 
 // Subscribe an application to a tenant
 func (s *Service) Subscribe(ctx context.Context, tenantID string, selfLink string) op.Result[jsonmodels.Application] {
-	return core.Execute(ctx, s.subscribeB(tenantID, selfLink), jsonmodels.NewApplication)
+	return core.Execute(ctx, s.subscribeB(tenantID, selfLink), jsonmodels.NewApplication, nil)
 }
 
 func (s *Service) subscribeB(tenantID string, selfURL string) *core.TryRequest {
@@ -305,9 +399,24 @@ func (s *Service) subscribeB(tenantID string, selfURL string) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req)
 }
 
-// Unsubscribe an application from a tenant
-func (s *Service) Unsubscribe(ctx context.Context, tenantID string, ID string) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.unsubscribeB(tenantID, ID))
+// Unsubscribe an application from a tenant by ID or resolver string
+// Examples:
+//   - Unsubscribe(ctx, "tenant01", "12345") - direct ID
+//   - Unsubscribe(ctx, "tenant01", "name:cockpit") - lookup by name
+func (s *Service) Unsubscribe(ctx context.Context, tenantID string, id string) op.Result[core.NoContent] {
+	// Resolve ID (supports "name:appName", etc.)
+	resolutionCtx := ctx
+	if ctxhelpers.IsDeferredExecution(ctx) {
+		resolutionCtx = context.Background()
+	}
+
+	meta := make(map[string]any)
+	resolvedID, err := s.ResolveID(resolutionCtx, id, meta)
+	if err != nil {
+		return op.Failed[core.NoContent](err, false)
+	}
+
+	return core.ExecuteNoContent(ctx, s.unsubscribeB(tenantID, resolvedID), meta)
 }
 
 func (s *Service) unsubscribeB(tenantID string, ID string) *core.TryRequest {
@@ -321,9 +430,24 @@ func (s *Service) unsubscribeB(tenantID string, ID string) *core.TryRequest {
 
 type UploadFileOptions = core.UploadFileOptions
 
-// Upload an application binary
-func (s *Service) Upload(ctx context.Context, ID string, opt UploadFileOptions) op.Result[jsonmodels.Application] {
-	return core.Execute(ctx, s.uploadB(ID, opt), jsonmodels.NewApplication)
+// Upload an application binary by ID or resolver string
+// Examples:
+//   - Upload(ctx, "12345", opts) - direct ID
+//   - Upload(ctx, "name:myapp", opts) - lookup by name
+func (s *Service) Upload(ctx context.Context, id string, opt UploadFileOptions) op.Result[jsonmodels.Application] {
+	// Resolve ID (supports "name:appName", etc.)
+	resolutionCtx := ctx
+	if ctxhelpers.IsDeferredExecution(ctx) {
+		resolutionCtx = context.Background()
+	}
+
+	meta := make(map[string]any)
+	resolvedID, err := s.ResolveID(resolutionCtx, id, meta)
+	if err != nil {
+		return op.Failed[jsonmodels.Application](err, false)
+	}
+
+	return core.Execute(ctx, s.uploadB(resolvedID, opt), jsonmodels.NewApplication, meta)
 }
 
 func (s *Service) uploadB(ID string, opt UploadFileOptions) *core.TryRequest {
@@ -342,60 +466,48 @@ func (s *Service) uploadB(ID string, opt UploadFileOptions) *core.TryRequest {
 
 // ByID creates a resolver for an application by its direct ID.
 // Returns a source.Resolver that can be used with any API that accepts source resolution.
-func (s *Service) ByID(id string) source.Resolver {
-	return source.ID(id)
+// ByID creates a direct ID reference string (no lookup needed).
+// Returns: "12345"
+func (s *Service) ByID(id string) string {
+	return id
 }
 
-// ByName creates a resolver that looks up an application by its name.
-// The lookup will be performed when ResolveID() is called on the returned resolver.
-// Returns a source.Resolver that can be used with any API that accepts source resolution.
-// appType is an optional type filter
-func (s *Service) ByName(name string, appType string) source.Resolver {
-	return source.Name{
-		Name: name,
-		Lookup: func(ctx context.Context, n string) (string, map[string]any, error) {
-			result := s.ListByName(ctx, ListByNameOptions{
-				Name: n,
-			})
-			if result.Err != nil {
-				return "", nil, result.Err
-			}
-
-			if result.Data.Length() == 0 {
-				return "", nil, fmt.Errorf("no application found with name: %s", n)
-			}
-
-			// Get the first (and only) application and construct Application from JSONDoc
-			var app jsonmodels.Application
-			found := false
-			for doc := range result.Data.Iter() {
-				if appType == "" || appType == doc.Get("type").String() {
-					app = jsonmodels.NewApplication(doc.Bytes())
-					found = true
-					break
-				}
-			}
-
-			if !found {
-				return "", nil, fmt.Errorf("no application found: name=%s, type=%s", n, appType)
-			}
-
-			// Return metadata about the resolved application
-			meta := map[string]any{
-				"name": app.Name(),
-				"type": app.Type(),
-			}
-			return app.ID(), meta, nil
-		},
+// ByName creates a name-based reference string for application lookup.
+// Returns: "name:appName" or "name:appName:type" if type is specified
+// The actual lookup will be performed when this string is resolved via ResolveID
+func (s *Service) ByName(name string, appType string) string {
+	if appType != "" {
+		return fmt.Sprintf("name:%s:%s", name, appType)
 	}
+	return fmt.Sprintf("name:%s", name)
 }
 
-// Custom creates a resolver with custom resolution logic.
-// This allows you to define your own logic for resolving an application ID.
-// Returns a source.Resolver that can be used with any API that accepts source resolution.
-func (s *Service) Custom(description string, resolve func(context.Context) (string, map[string]any, error)) source.Resolver {
-	return source.Custom{
-		Description: description,
-		Resolve:     resolve,
+// ResolveID resolves an application ID string that may contain a resolver scheme.
+// If meta is not nil, it will be populated with metadata about the resolution.
+// Examples:
+//   - "12345" -> "12345" (plain ID, meta: {"source": "direct-id"})
+//   - "name:cockpit" -> "<id>" (meta: {"name": "cockpit", "type": "...", ...})
+//   - "name:cockpit:HOSTED" -> "<id>" (meta: {"name": "cockpit", "type": "HOSTED", ...})
+func (s *Service) ResolveID(ctx context.Context, id string, meta map[string]any) (string, error) {
+	resolver, err := s.parseResolver(id)
+	if err != nil {
+		return "", err
 	}
+	result, err := resolver.ResolveID(ctx)
+	if err != nil {
+		return "", err
+	}
+	if meta != nil {
+		for k, v := range result.Meta {
+			meta[k] = v
+		}
+	}
+	return result.ID, nil
+}
+
+// RegisterResolver allows registering custom ID resolvers for use with ResolveID
+// Example: RegisterResolver("custom", myResolver)
+// Then use: ResolveID(ctx, "custom:value")
+func (s *Service) RegisterResolver(scheme string, resolver source.Resolver) {
+	s.customResolvers[scheme] = resolver
 }

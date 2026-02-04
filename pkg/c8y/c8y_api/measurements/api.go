@@ -74,9 +74,16 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 
 // ListAll returns an iterator for all measurements
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *MeasurementIterator {
-	return pagination.Paginate(ctx, opts.PaginationOptions, func() op.Result[jsonmodels.Measurement] {
-		return s.List(ctx, opts)
-	}, jsonmodels.NewMeasurement)
+	return pagination.Paginate(
+		ctx,
+		opts.PaginationOptions,
+		func(pageOpts pagination.PaginationOptions) op.Result[jsonmodels.Measurement] {
+			o := opts
+			o.PaginationOptions = pageOpts
+			return s.List(ctx, o)
+		},
+		jsonmodels.NewMeasurement,
+	)
 }
 
 func (s *Service) listB(opt any) *core.TryRequest {

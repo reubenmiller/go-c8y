@@ -50,9 +50,16 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 
 // ListAll returns an iterator for all tenant options
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *TenantOptionIterator {
-	return pagination.Paginate(ctx, opts.PaginationOptions, func() op.Result[jsonmodels.TenantOption] {
-		return s.List(ctx, opts)
-	}, jsonmodels.NewTenantOption)
+	return pagination.Paginate(
+		ctx,
+		opts.PaginationOptions,
+		func(pageOpts pagination.PaginationOptions) op.Result[jsonmodels.TenantOption] {
+			o := opts
+			o.PaginationOptions = pageOpts
+			return s.List(ctx, o)
+		},
+		jsonmodels.NewTenantOption,
+	)
 }
 
 func (s *Service) listB(opt ListOptions) *core.TryRequest {

@@ -36,12 +36,12 @@ func (it *Iterator[T]) Err() error {
 func Paginate[T any, D JSONDocument](
 	ctx context.Context,
 	paginationOpts PaginationOptions,
-	fetch func() op.Result[D],
+	fetch func(opts PaginationOptions) op.Result[D],
 	constructor func([]byte) T,
 ) *Iterator[T] {
 	iterator := &Iterator[T]{}
 
-	// Set optimal page size if not already set
+	// Set optimal page size once
 	paginationOpts.PageSize = paginationOpts.OptimalPageSize()
 	maxItems := paginationOpts.GetMaxItems()
 
@@ -49,8 +49,10 @@ func Paginate[T any, D JSONDocument](
 		page := 1
 		count := int64(0)
 		for {
-			paginationOpts.CurrentPage = page
-			result := fetch()
+			// Copy and set current page for this iteration
+			opts := paginationOpts
+			opts.CurrentPage = page
+			result := fetch(opts)
 			if result.Err != nil {
 				iterator.err = result.Err
 				return
