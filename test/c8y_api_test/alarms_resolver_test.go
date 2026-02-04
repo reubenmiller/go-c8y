@@ -153,3 +153,71 @@ func Test_Alarms_DeleteList_WithDeviceResolver(t *testing.T) {
 
 	t.Logf("Successfully bulk deleted alarms with device resolver")
 }
+
+func Test_Alarms_Create_WithResolver_Metadata(t *testing.T) {
+	client := testcore.CreateTestClient(t)
+	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	deferredCtx := c8y_api.WithDeferredExecution(ctx, true)
+
+	opts := alarms.CreateOptions{
+		Source:   client.Alarms.DeviceResolver.ByName("device01"),
+		Type:     "c8y_TestAlarm",
+		Text:     "Test alarm",
+		Severity: "MAJOR",
+		AdditionalProperties: map[string]any{
+			"custom": "value",
+		},
+	}
+
+	result := client.Alarms.Create(deferredCtx, opts)
+	if result.Err != nil {
+		t.Fatalf("Create failed: %v", result.Err)
+	}
+
+	// Check that metadata is populated
+	if result.Meta["id"] == nil {
+		t.Errorf("Expected 'id' in metadata, but it was nil")
+	}
+	if result.Meta["name"] == nil {
+		t.Errorf("Expected 'name' in metadata, but it was nil")
+	}
+
+	t.Logf("Successfully created alarm with device resolver and captured metadata: id=%v, name=%v",
+		result.Meta["id"], result.Meta["name"])
+
+	// Execute deferred result
+	result.Execute(context.Background())
+	if result.Err != nil {
+		t.Fatalf("Execute failed: %v", result.Err)
+	}
+
+	t.Logf("Successfully executed deferred alarm creation")
+}
+
+func Test_Alarms_Create_WithStringResolver_Metadata(t *testing.T) {
+	client := testcore.CreateTestClient(t)
+	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	deferredCtx := c8y_api.WithDeferredExecution(ctx, true)
+
+	opts := alarms.CreateOptions{
+		Source:   "name:device01",
+		Type:     "c8y_TestAlarm",
+		Text:     "Test alarm",
+		Severity: "CRITICAL",
+	}
+
+	result := client.Alarms.Create(deferredCtx, opts)
+	if result.Err != nil {
+		t.Fatalf("Create failed: %v", result.Err)
+	}
+
+	// Check that metadata is populated
+	if result.Meta["id"] == nil {
+		t.Errorf("Expected 'id' in metadata, but it was nil")
+	}
+	if result.Meta["name"] == nil {
+		t.Errorf("Expected 'name' in metadata, but it was nil")
+	}
+
+	t.Logf("Successfully created alarm with string-based resolver and captured metadata")
+}

@@ -2,6 +2,7 @@ package alarms
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
@@ -11,6 +12,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
+	"github.com/reubenmiller/go-c8y/pkg/jsonUtilities"
 	"resty.dev/v3"
 )
 
@@ -199,9 +201,147 @@ func (s *Service) getB(ID string) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req)
 }
 
+// CreateOptions for creating an alarm with resolver support
+type CreateOptions struct {
+	// Source device identifier (supports resolver strings)
+	// Examples: "12345", "name:deviceName", "ext:c8y_Serial:ABC", "query:..."
+	Source string
+
+	// Type of the alarm
+	Type string
+
+	// Text description of the alarm
+	Text string
+
+	// Severity of the alarm (CRITICAL, MAJOR, MINOR, WARNING)
+	Severity string
+
+	// Status of the alarm (ACTIVE, ACKNOWLEDGED, CLEARED)
+	Status string
+
+	// Time when the alarm occurred
+	Time time.Time
+
+	// AdditionalProperties allows for custom fields to be added to the alarm
+	// Can be a struct, map[string]interface{}, or any JSON-serializable type
+	// These properties are deep-merged with the base alarm fields
+	AdditionalProperties interface{}
+}
+
 // Create an alarm
+// Accepts either CreateOptions (for resolver support and property merging) or any other type (passed through as-is)
+//
+// Using CreateOptions:
+//
+//	result := client.Alarms.Create(ctx, alarms.CreateOptions{
+//	    Source: "name:myDevice",  // Resolver string
+//	    Type: "c8y_TestAlarm",
+//	    Text: "Test alarm",
+//	    AdditionalProperties: map[string]interface{}{"custom": "value"},
+//	})
+//
+// Using direct struct/map:
+//
+//	result := client.Alarms.Create(ctx, model.Alarm{...})
+//	result := client.Alarms.Create(ctx, map[string]interface{}{...})
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Alarm] {
+	// Check if body is CreateOptions - if so, handle resolver and merge logic
+	if opts, ok := body.(CreateOptions); ok {
+		return s.createWithOptions(ctx, opts)
+	}
+
+	// Otherwise, pass through as-is
 	return core.Execute(ctx, s.createB(body), jsonmodels.NewAlarm)
+}
+
+// createWithOptions handles the CreateOptions case with resolver support and property merging
+func (s *Service) createWithOptions(ctx context.Context, opts CreateOptions) op.Result[jsonmodels.Alarm] {
+	// Resolve the source device and capture metadata
+	sourceID := opts.Source
+	meta := make(map[string]any)
+
+	if sourceID != "" && s.DeviceResolver != nil {
+		resolutionCtx := ctx
+		if ctxhelpers.IsDeferredExecution(ctx) {
+			// Create a new context that preserves mock responses but not deferred execution
+			// This allows resolution to happen immediately even in deferred mode
+			resolutionCtx = ctxhelpers.WithMockResponses(context.Background(), ctxhelpers.IsMockResponses(ctx))
+		}
+
+		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, sourceID, meta)
+		if err != nil {
+			return op.Failed[jsonmodels.Alarm](err, true)
+		}
+		sourceID = resolvedID
+
+		// Populate metadata with resolved device information
+		meta["id"] = resolvedID
+		if name, ok := meta["name"].(string); ok {
+			// name is already in meta from ResolveID
+			_ = name
+		}
+	} else if sourceID != "" {
+		// Direct ID provided without resolution
+		meta["id"] = sourceID
+	}
+
+	// Build base alarm from known fields
+	baseAlarm := map[string]interface{}{
+		"source": map[string]interface{}{"id": sourceID},
+	}
+	if opts.Type != "" {
+		baseAlarm["type"] = opts.Type
+	}
+	if opts.Text != "" {
+		baseAlarm["text"] = opts.Text
+	}
+	if opts.Severity != "" {
+		baseAlarm["severity"] = opts.Severity
+	}
+	if opts.Status != "" {
+		baseAlarm["status"] = opts.Status
+	}
+	if opts.Time.IsZero() {
+		baseAlarm["time"] = time.Now()
+	} else {
+		baseAlarm["time"] = opts.Time
+	}
+
+	// Marshal base alarm to JSON
+	baseJSON, err := json.Marshal(baseAlarm)
+	if err != nil {
+		return op.Failed[jsonmodels.Alarm](err, true)
+	}
+
+	// If there are additional properties, merge them with the base
+	var finalJSON []byte
+	if opts.AdditionalProperties != nil {
+		additionalJSON, err := json.Marshal(opts.AdditionalProperties)
+		if err != nil {
+			return op.Failed[jsonmodels.Alarm](err, true)
+		}
+
+		// Deep merge: additional properties override/extend base properties
+		finalJSON, err = jsonUtilities.MergePatch(baseJSON, additionalJSON)
+		if err != nil {
+			return op.Failed[jsonmodels.Alarm](err, true)
+		}
+	} else {
+		finalJSON = baseJSON
+	}
+
+	// Create the alarm with the merged JSON and add metadata
+	result := core.Execute(ctx, s.createBWithJSON(finalJSON), jsonmodels.NewAlarm)
+
+	// Add resolver metadata to result
+	if result.Meta == nil {
+		result.Meta = make(map[string]any)
+	}
+	for k, v := range meta {
+		result.Meta[k] = v
+	}
+
+	return result
 }
 
 func (s *Service) createB(body any) *core.TryRequest {
@@ -209,6 +349,16 @@ func (s *Service) createB(body any) *core.TryRequest {
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
+		SetURL(ApiAlarms)
+	return core.NewTryRequest(s.Client, req)
+}
+
+func (s *Service) createBWithJSON(bodyJSON []byte) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodPost).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
+		SetBody(bodyJSON).
 		SetURL(ApiAlarms)
 	return core.NewTryRequest(s.Client, req)
 }
