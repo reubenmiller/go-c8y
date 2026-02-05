@@ -41,13 +41,13 @@ func main() {
 		client.Client.SetDebug(enabledDebug)
 	}
 
-	// Get list of measurements
-	collection := client.Measurements.List(
+	// Get list of measurements (without pagination)
+	measurementsResult := client.Measurements.List(
 		context.Background(),
 		measurements.ListOptions{
 			DateFrom: time.Now().Add(-20 * 24 * time.Hour),
 			DateTo:   time.Now(),
-			Source:   "ext:c8y_Serial:rpi4-d83add90fe56",
+			Source:   "ext:c8y_Serial:rpi4-d83add90fe56", // resolve by external id
 			PaginationOptions: pagination.PaginationOptions{
 				PageSize:          1,
 				WithTotalElements: true,
@@ -55,19 +55,19 @@ func main() {
 		})
 
 	// Always check for errors
-	if collection.Err != nil {
-		slog.Error("Could not retrieve alarms", "err", collection.Err)
+	if measurementsResult.Err != nil {
+		slog.Error("Could not retrieve alarms", "err", measurementsResult.Err)
 		os.Exit(1)
 	}
 
-	slog.Info("Response", "status", collection.HTTPStatus, "duration", collection.Duration)
+	slog.Info("Response", "status", measurementsResult.HTTPStatus, "duration", measurementsResult.Duration)
 
 	// Generic iteration - access only common fields
-	for measurement := range op.Iter(collection) {
+	for measurement := range op.Iter(measurementsResult) {
 		slog.Info("Measurement found", "id", measurement.ID(), "type", measurement.Type())
 	}
 
-	slog.Info("Measurements", "total", collection.Meta["totalElements"])
+	slog.Info("Measurements", "total", measurementsResult.Meta["totalElements"])
 
 	//
 	// Alarms
@@ -85,7 +85,7 @@ func main() {
 
 	slog.Info("Alarm summary", "total", alarmCollection.TotalCount())
 
-	// iterate over the alarms
+	// iterate over the alarms (paging is done automatically)
 	count := 0
 	for alarm := range alarmCollection.Items() {
 		slog.Info("alarm", "id", alarm.ID(), "type", alarm.Type())
