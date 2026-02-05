@@ -3,11 +3,13 @@ package softwareversions
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/binaries"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
+	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/internal/context"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
@@ -27,12 +29,14 @@ const FragmentSoftware = "c8y_Software"
 const FragmentSoftwareBinary = "c8y_SoftwareBinary"
 
 func NewService(s *core.Service) *Service {
-	return &Service{
+	service := &Service{
 		Service:        *s,
 		software:       softwareitems.NewService(s),
 		managedObjects: managedobjects.NewService(s),
 		binaries:       binaries.NewService(s),
 	}
+	service.Resolver = NewResolver(service)
+	return service
 }
 
 // Service api to interact with software versions
@@ -41,6 +45,7 @@ type Service struct {
 	software       *softwareitems.Service
 	managedObjects *managedobjects.Service
 	binaries       *binaries.Service
+	Resolver       *Resolver
 }
 
 // Create a software version
@@ -52,6 +57,17 @@ func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Sof
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(managedobjects.ApiManagedObjects)
 	return core.Execute(ctx, core.NewTryRequest(s.managedObjects.Client, req, ""), jsonmodels.NewSoftwareVersion)
+}
+
+// ResolveID resolves a software version identifier to an ID using the resolver
+// This is a convenience method that wraps the Resolver.ResolveID
+// Supported formats:
+//   - "12345" - direct ID
+//   - "version:1.0.0:software:12345" - lookup by version and software ID
+//   - "version:1.0.0:name:MySoftware" - lookup by version and software name
+//   - "version:1.0.0:name:MySoftware:application" - lookup by version, software name and type
+func (s *Service) ResolveID(ctx context.Context, identifier string, meta map[string]any) (string, error) {
+	return s.Resolver.ResolveID(ctx, identifier, meta)
 }
 
 // ListOptions filter software versions
@@ -69,9 +85,9 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 	// Resolve software name to ID if needed
 	softwareID := opt.SoftwareID
 	if softwareID == "" && opt.SoftwareName != "" {
-		softwareResult := s.software.Get(ctx, softwareitems.GetOptions{
-			Name: opt.SoftwareName,
-		})
+		// Use string-based resolver with name format
+		identifier := "name:" + opt.SoftwareName
+		softwareResult := s.software.Get(ctx, identifier, softwareitems.GetOptions{})
 		if softwareResult.Err != nil {
 			return op.Failed[jsonmodels.SoftwareVersion](
 				fmt.Errorf("failed to resolve software name: %w", softwareResult.Err),
@@ -123,14 +139,6 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *SoftwareVersio
 }
 
 type GetOptions struct {
-	// Lookup strategies (at least one required)
-	ID      string `url:"-"`
-	Version string `url:"-"` // Requires SoftwareID or SoftwareName
-
-	// For version-based lookup
-	SoftwareID   string `url:"-"`
-	SoftwareName string `url:"-"`
-
 	// Query options
 	WithParents       bool `url:"withParents,omitempty"`
 	WithChildren      bool `url:"withChildren,omitempty"`
@@ -138,158 +146,271 @@ type GetOptions struct {
 	SkipChildrenNames bool `url:"skipChildrenNames,omitempty"`
 }
 
-// UpdateOptions options for updating a software version
-type UpdateOptions struct {
-	// Lookup strategies (at least one required)
-	ID      string `url:"-"`
-	Version string `url:"-"`
-
-	// For version-based lookup
-	SoftwareID   string `url:"-"`
-	SoftwareName string `url:"-"`
-}
-
 // DeleteOptions options to delete a software version
 type DeleteOptions struct {
-	// Lookup strategies (at least one required)
-	ID      string `url:"-"`
-	Version string `url:"-"`
-
-	// For version-based lookup
-	SoftwareID   string `url:"-"`
-	SoftwareName string `url:"-"`
-
 	// Delete options
 	ForceCascade bool `url:"forceCascade,omitempty"`
 }
 
-// resolveID resolves a software version ID from various lookup strategies
-func (s *Service) resolveID(ctx context.Context, id, version, softwareID, softwareName string) (string, op.Result[jsonmodels.SoftwareVersion]) {
-	// Direct ID provided
-	if id != "" {
-		return id, op.Result[jsonmodels.SoftwareVersion]{}
-	}
-
-	// Lookup by version (requires software ID or name)
-	if version != "" {
-		// Resolve software ID from name if needed
-		resolvedSoftwareID := softwareID
-		if resolvedSoftwareID == "" && softwareName != "" {
-			softwareResult := s.software.Get(ctx, softwareitems.GetOptions{
-				Name: softwareName,
-			})
-			if softwareResult.Err != nil {
-				return "", op.Failed[jsonmodels.SoftwareVersion](
-					fmt.Errorf("failed to resolve software name: %w", softwareResult.Err),
-					true,
-				)
-			}
-			resolvedSoftwareID = softwareResult.Data.ID()
-		}
-
-		if resolvedSoftwareID == "" {
-			return "", op.Failed[jsonmodels.SoftwareVersion](
-				fmt.Errorf("version lookup requires SoftwareID or SoftwareName"),
-				false,
-			)
-		}
-
-		listResult := s.List(ctx, ListOptions{
-			SoftwareID: resolvedSoftwareID,
-			Version:    version,
-			PaginationOptions: pagination.PaginationOptions{
-				PageSize: 1,
-			},
-		})
-
-		if listResult.Err != nil {
-			return "", op.Failed[jsonmodels.SoftwareVersion](
-				fmt.Errorf("failed to lookup version: %w", listResult.Err),
-				true,
-			)
-		}
-
-		// Check if any items were found
-		for item := range listResult.Data.Iter() {
-			return jsonmodels.NewSoftwareVersion(item.Bytes()).ID(), op.Result[jsonmodels.SoftwareVersion]{}
-		}
-
-		return "", op.Failed[jsonmodels.SoftwareVersion](
-			fmt.Errorf("version not found: software=%s, version=%s", resolvedSoftwareID, version),
-			false,
-		)
-	}
-
-	// No lookup strategy provided
-	return "", op.Failed[jsonmodels.SoftwareVersion](
-		fmt.Errorf("no lookup strategy provided: must specify ID or Version (with SoftwareID/SoftwareName)"),
-		false,
-	)
+// Resolver handles software version resolution from various identifier formats
+type Resolver struct {
+	service *Service
 }
 
-// Get a software version
-func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.SoftwareVersion] {
-	id, resolveResult := s.resolveID(ctx, opt.ID, opt.Version, opt.SoftwareID, opt.SoftwareName)
-	if resolveResult.Err != nil {
-		return resolveResult
+// Ref provides helper methods to construct resolver identifier strings
+type Ref struct{}
+
+func NewRef() *Ref {
+	return &Ref{}
+}
+
+// ByID constructs a direct ID reference
+func (Ref) ByID(id string) string {
+	return id
+}
+
+// ByVersion constructs a version-based reference using software ID
+// Example: Ref{}.ByVersion("1.0.0", "12345") -> "version:1.0.0:software:12345"
+func (Ref) ByVersion(version, softwareID string) string {
+	return "version:" + version + ":software:" + softwareID
+}
+
+// ByVersionAndName constructs a version-based reference using software name with optional type
+// Examples:
+//   - Ref{}.ByVersionAndName("1.0.0", "MySoftware") -> "version:1.0.0:name:MySoftware"
+//   - Ref{}.ByVersionAndName("1.0.0", "MySoftware", "application") -> "version:1.0.0:name:MySoftware:application"
+func (Ref) ByVersionAndName(version, softwareName string, softwareType ...string) string {
+	if len(softwareType) > 0 && softwareType[0] != "" {
+		return "version:" + version + ":name:" + softwareName + ":" + softwareType[0]
+	}
+	return "version:" + version + ":name:" + softwareName
+}
+
+// NewResolver creates a new software version resolver
+func NewResolver(service *Service) *Resolver {
+	return &Resolver{service: service}
+}
+
+// ByID returns the ID directly (for consistency with resolver pattern)
+func (r *Resolver) ByID(ctx context.Context, id string) (string, error) {
+	if id == "" {
+		return "", fmt.Errorf("id cannot be empty")
+	}
+	return id, nil
+}
+
+// ByVersion resolves a software version by version number and software ID
+func (r *Resolver) ByVersion(ctx context.Context, version, softwareID string) (string, error) {
+	return r.resolveByVersionAndSoftwareID(ctx, version, softwareID)
+}
+
+// ByVersionAndName resolves a software version by version number and software name (optionally with type)
+func (r *Resolver) ByVersionAndName(ctx context.Context, version, softwareName, softwareType string) (string, error) {
+	return r.resolveByVersionAndSoftwareName(ctx, version, softwareName, softwareType)
+}
+
+// ResolveID resolves a software version identifier string to an ID
+// Supported formats:
+//   - "12345" - direct ID
+//   - "version:1.0.0:software:12345" - lookup by version and software ID
+//   - "version:1.0.0:name:MySoftware" - lookup by version and software name
+//   - "version:1.0.0:name:MySoftware:application" - lookup by version, software name and type
+func (r *Resolver) ResolveID(ctx context.Context, identifier string, meta map[string]any) (string, error) {
+	if meta == nil {
+		meta = make(map[string]any)
 	}
 
-	result := core.Execute(ctx, s.getB(id, opt), jsonmodels.NewSoftwareVersion)
+	// Validate identifier is not empty
+	if identifier == "" {
+		return "", fmt.Errorf("identifier cannot be empty")
+	}
 
-	// Add lookup metadata
-	if opt.ID != "" {
-		result.Meta["lookupMethod"] = "id"
-	} else if opt.Version != "" {
-		result.Meta["lookupMethod"] = "version"
-		result.Meta["lookupVersion"] = opt.Version
-		if opt.SoftwareName != "" {
-			result.Meta["lookupSoftwareName"] = opt.SoftwareName
-		} else {
-			result.Meta["lookupSoftwareID"] = opt.SoftwareID
+	// Direct ID (no prefix)
+	if !strings.Contains(identifier, ":") {
+		meta["resolverType"] = "id"
+		return identifier, nil
+	}
+
+	parts := strings.Split(identifier, ":")
+	if len(parts) < 2 {
+		return "", fmt.Errorf("invalid identifier format: %s", identifier)
+	}
+
+	resolverType := parts[0]
+
+	switch resolverType {
+	case "version":
+		// Format: "version:1.0.0:software:12345" or "version:1.0.0:name:MySoftware" or "version:1.0.0:name:MySoftware:application"
+		if len(parts) < 4 {
+			return "", fmt.Errorf("version resolver requires format 'version:VERSION:software:ID' or 'version:VERSION:name:NAME[:TYPE]': %s", identifier)
 		}
+		version := parts[1]
+		lookupType := parts[2]
+		lookupValue := parts[3]
+
+		meta["resolverType"] = "version"
+		meta["version"] = version
+
+		switch lookupType {
+		case "software":
+			// Direct software ID
+			meta["softwareID"] = lookupValue
+			return r.resolveByVersionAndSoftwareID(ctx, version, lookupValue)
+
+		case "name":
+			// Software name (optionally with type)
+			// Check if there's a 5th part for software type
+			softwareType := ""
+			if len(parts) == 5 {
+				softwareType = parts[4]
+			}
+			meta["softwareName"] = lookupValue
+			if softwareType != "" {
+				meta["softwareType"] = softwareType
+			}
+			return r.resolveByVersionAndSoftwareName(ctx, version, lookupValue, softwareType)
+
+		default:
+			return "", fmt.Errorf("unsupported version lookup type: %s (must be 'software' or 'name')", lookupType)
+		}
+
+	default:
+		return "", fmt.Errorf("unsupported resolver type: %s (must be 'version')", resolverType)
+	}
+}
+
+// resolveByVersionAndSoftwareID resolves by version number and software ID
+func (r *Resolver) resolveByVersionAndSoftwareID(ctx context.Context, version, softwareID string) (string, error) {
+	if version == "" {
+		return "", fmt.Errorf("version cannot be empty")
+	}
+	if softwareID == "" {
+		return "", fmt.Errorf("softwareID cannot be empty")
 	}
 
-	return result
+	listResult := r.service.List(ctx, ListOptions{
+		SoftwareID: softwareID,
+		Version:    version,
+		PaginationOptions: pagination.PaginationOptions{
+			PageSize: 1,
+		},
+	})
+
+	if listResult.Err != nil {
+		return "", fmt.Errorf("failed to lookup version: %w", listResult.Err)
+	}
+
+	// Check if any items were found
+	for item := range listResult.Data.Iter() {
+		found := jsonmodels.NewSoftwareVersion(item.Bytes())
+		return found.ID(), nil
+	}
+
+	return "", fmt.Errorf("version not found: software=%s, version=%s", softwareID, version)
+}
+
+// resolveByVersionAndSoftwareName resolves by version number and software name (optionally with type)
+func (r *Resolver) resolveByVersionAndSoftwareName(ctx context.Context, version, softwareName, softwareType string) (string, error) {
+	if version == "" {
+		return "", fmt.Errorf("version cannot be empty")
+	}
+	if softwareName == "" {
+		return "", fmt.Errorf("software name cannot be empty")
+	}
+
+	// First resolve software name to ID
+	identifier := "name:" + softwareName
+	if softwareType != "" {
+		identifier = "name:" + softwareName + ":" + softwareType
+	}
+
+	softwareResult := r.service.software.Get(ctx, identifier, softwareitems.GetOptions{})
+	if softwareResult.Err != nil {
+		return "", fmt.Errorf("failed to resolve software name: %w", softwareResult.Err)
+	}
+
+	softwareID := softwareResult.Data.ID()
+	return r.resolveByVersionAndSoftwareID(ctx, version, softwareID)
+}
+
+// Get retrieves a software version
+// ID supports both direct IDs and string-based resolver patterns:
+//   - "12345" - direct ID
+//   - "version:1.0.0:software:12345" - lookup by version and software ID
+//   - "version:1.0.0:name:MySoftware" - lookup by version and software name
+//   - "version:1.0.0:name:MySoftware:application" - lookup by version, software name and type
+func (s *Service) Get(ctx context.Context, ID string, opt GetOptions) op.Result[jsonmodels.SoftwareVersion] {
+	// Resolve ID (supports "version:1.0.0:software:12345", "version:1.0.0:name:MySoftware", etc.)
+	// If deferred execution is enabled, we still need to resolve the ID first
+	// But do it in a normal context so the resolution actually completes
+	resolutionCtx := ctx
+	if ctxhelpers.IsDeferredExecution(ctx) {
+		// Use background context for resolution so it doesn't inherit the deferred flag
+		// This allows lookups (like List) to actually execute
+		resolutionCtx = context.Background()
+	}
+
+	meta := make(map[string]any)
+	meta["identifier"] = ID
+	id, err := s.Resolver.ResolveID(resolutionCtx, ID, meta)
+	if err != nil {
+		return op.Failed[jsonmodels.SoftwareVersion](err, false)
+	}
+	meta["id"] = id
+
+	return core.Execute(ctx, s.getB(id, opt), jsonmodels.NewSoftwareVersion, meta)
 }
 
 // Update a software version
-func (s *Service) Update(ctx context.Context, opt UpdateOptions, body any) op.Result[jsonmodels.SoftwareVersion] {
-	id, resolveResult := s.resolveID(ctx, opt.ID, opt.Version, opt.SoftwareID, opt.SoftwareName)
-	if resolveResult.Err != nil {
-		return resolveResult
+// ID supports both direct IDs and string-based resolver patterns:
+//   - "12345" - direct ID
+//   - "version:1.0.0:software:12345" - lookup by version and software ID
+//   - "version:1.0.0:name:MySoftware" - lookup by version and software name
+//   - "version:1.0.0:name:MySoftware:application" - lookup by version, software name and type
+func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.SoftwareVersion] {
+	// Resolve ID (supports "version:1.0.0:software:12345", "version:1.0.0:name:MySoftware", etc.)
+	// If deferred execution is enabled, we still need to resolve the ID first
+	// But do it in a normal context so the resolution actually completes
+	resolutionCtx := ctx
+	if ctxhelpers.IsDeferredExecution(ctx) {
+		resolutionCtx = context.Background()
 	}
 
-	result := core.Execute(ctx, s.updateB(id, body, opt), jsonmodels.NewSoftwareVersion)
-
-	// Add lookup metadata
-	if opt.ID != "" {
-		result.Meta["lookupMethod"] = "id"
-	} else if opt.Version != "" {
-		result.Meta["lookupMethod"] = "version"
-		result.Meta["lookupVersion"] = opt.Version
+	meta := make(map[string]any)
+	meta["identifier"] = ID
+	id, err := s.Resolver.ResolveID(resolutionCtx, ID, meta)
+	if err != nil {
+		return op.Failed[jsonmodels.SoftwareVersion](err, false)
 	}
+	meta["id"] = id
 
-	return result
+	return core.Execute(ctx, s.updateB(id, body), jsonmodels.NewSoftwareVersion, meta)
 }
 
 // Delete a software version
-func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[jsonmodels.SoftwareVersion] {
-	id, resolveResult := s.resolveID(ctx, opt.ID, opt.Version, opt.SoftwareID, opt.SoftwareName)
-	if resolveResult.Err != nil {
-		return resolveResult
+// ID supports both direct IDs and string-based resolver patterns:
+//   - "12345" - direct ID
+//   - "version:1.0.0:software:12345" - lookup by version and software ID
+//   - "version:1.0.0:name:MySoftware" - lookup by version and software name
+//   - "version:1.0.0:name:MySoftware:application" - lookup by version, software name and type
+func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.Result[jsonmodels.SoftwareVersion] {
+	// Resolve ID (supports "version:1.0.0:software:12345", "version:1.0.0:name:MySoftware", etc.)
+	// If deferred execution is enabled, we still need to resolve the ID first
+	// But do it in a normal context so the resolution actually completes
+	resolutionCtx := ctx
+	if ctxhelpers.IsDeferredExecution(ctx) {
+		resolutionCtx = context.Background()
 	}
 
-	result := core.Execute(ctx, s.deleteB(id, opt), jsonmodels.NewSoftwareVersion)
-
-	// Add lookup metadata
-	if opt.ID != "" {
-		result.Meta["lookupMethod"] = "id"
-	} else if opt.Version != "" {
-		result.Meta["lookupMethod"] = "version"
-		result.Meta["lookupVersion"] = opt.Version
+	meta := make(map[string]any)
+	meta["identifier"] = ID
+	id, err := s.Resolver.ResolveID(resolutionCtx, ID, meta)
+	if err != nil {
+		return op.Failed[jsonmodels.SoftwareVersion](err, false)
 	}
+	meta["id"] = id
 
-	return result
+	return core.Execute(ctx, s.deleteB(id, opt), jsonmodels.NewSoftwareVersion, meta)
 }
 
 type UploadFileOptions = core.UploadFileOptions
@@ -359,63 +480,68 @@ func (s *Service) CreateVersion(ctx context.Context, opt CreateOptions) op.Resul
 
 // GetOrCreateVersion searches by software + version, creating if not found
 func (s *Service) GetOrCreateVersion(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.SoftwareVersion] {
-	// Define finder function
-	finder := func(ctx context.Context) (op.Result[jsonmodels.SoftwareVersion], bool) {
-		// First resolve software ID
-		softwareID := opt.SoftwareID
-		if softwareID == "" && opt.SoftwareName != "" {
-			softwareResult := s.software.Get(ctx, softwareitems.GetOptions{
-				Name:         opt.SoftwareName,
-				SoftwareType: opt.SoftwareType,
-			})
-			if softwareResult.Err != nil {
+	return op.Result[jsonmodels.SoftwareVersion]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.SoftwareVersion] {
+		// Define finder function
+		finder := func(ctx context.Context) (op.Result[jsonmodels.SoftwareVersion], bool) {
+			// First resolve software ID
+			softwareID := opt.SoftwareID
+			if softwareID == "" && opt.SoftwareName != "" {
+				// Use string-based resolver
+				identifier := "name:" + opt.SoftwareName
+				if opt.SoftwareType != "" {
+					identifier = "name:" + opt.SoftwareName + ":" + opt.SoftwareType
+				}
+				softwareResult := s.software.Get(ctx, identifier, softwareitems.GetOptions{})
+				if softwareResult.Err != nil {
+					return op.Result[jsonmodels.SoftwareVersion]{}, false
+				}
+				softwareID = softwareResult.Data.ID()
+			}
+
+			if softwareID == "" {
 				return op.Result[jsonmodels.SoftwareVersion]{}, false
 			}
-			softwareID = softwareResult.Data.ID()
-		}
 
-		if softwareID == "" {
+			// Search for version
+			listResult := s.List(ctx, ListOptions{
+				SoftwareID: softwareID,
+				Version:    opt.Version,
+				PaginationOptions: pagination.PaginationOptions{
+					PageSize: 1,
+				},
+			})
+
+			if listResult.Err != nil {
+				return op.Result[jsonmodels.SoftwareVersion]{}, false
+			}
+
+			// Check if any items were found
+			for item := range listResult.Data.Iter() {
+				version := jsonmodels.NewSoftwareVersion(item.Bytes())
+				result := op.OK(version)
+				result.HTTPStatus = listResult.HTTPStatus
+				result.Meta["found"] = true
+				result.Meta["lookupMethod"] = "version"
+				return result, true
+			}
+
 			return op.Result[jsonmodels.SoftwareVersion]{}, false
 		}
 
-		// Search for version
-		listResult := s.List(ctx, ListOptions{
-			SoftwareID: softwareID,
-			Version:    opt.Version,
-			PaginationOptions: pagination.PaginationOptions{
-				PageSize: 1,
-			},
-		})
-
-		if listResult.Err != nil {
-			return op.Result[jsonmodels.SoftwareVersion]{}, false
-		}
-
-		// Check if any items were found
-		for item := range listResult.Data.Iter() {
-			version := jsonmodels.NewSoftwareVersion(item.Bytes())
-			result := op.OK(version)
-			result.HTTPStatus = listResult.HTTPStatus
-			result.Meta["found"] = true
-			result.Meta["lookupMethod"] = "version"
-			return result, true
-		}
-
-		return op.Result[jsonmodels.SoftwareVersion]{}, false
-	}
-
-	// Define creator function
-	creator := func(ctx context.Context) op.Result[jsonmodels.SoftwareVersion] {
-		createResult := s.CreateVersion(ctx, opt)
-		if createResult.Err != nil {
+		// Define creator function
+		creator := func(ctx context.Context) op.Result[jsonmodels.SoftwareVersion] {
+			createResult := s.CreateVersion(ctx, opt)
+			if createResult.Err != nil {
+				return createResult
+			}
+			createResult.Meta["found"] = false
 			return createResult
 		}
-		createResult.Meta["found"] = false
-		return createResult
-	}
 
-	// Execute get-or-create pattern
-	return op.GetOrCreateR(ctx, finder, creator)
+		// Execute get-or-create pattern
+		return op.GetOrCreateR(execCtx, finder, creator)
+	}).WithMeta("operation", "getOrCreateVersion").
+		ExecuteOrDefer(ctx)
 }
 
 // Builder methods
@@ -426,6 +552,7 @@ func (s *Service) createB(softwareID string, body any) *core.TryRequest {
 		SetMethod(resty.MethodPost).
 		SetPathParam("id", softwareID).
 		SetBody(body).
+		SetContentType(types.MimeTypeManagedObject).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL("/inventory/managedObjects/{id}/childAdditions")
 	return core.NewTryRequest(s.managedObjects.Client, req, "")
@@ -445,7 +572,7 @@ func (s *Service) getB(ID string, opt GetOptions) *core.TryRequest {
 	return core.NewTryRequest(s.managedObjects.Client, req, "")
 }
 
-func (s *Service) updateB(ID string, body any, opt UpdateOptions) *core.TryRequest {
+func (s *Service) updateB(ID string, body any) *core.TryRequest {
 	// Build request directly since managedObjects.updateB is now private
 	req := s.managedObjects.Client.R().
 		SetMethod(resty.MethodPut).
