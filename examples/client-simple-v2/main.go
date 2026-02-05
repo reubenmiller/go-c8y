@@ -9,13 +9,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/destel/rill"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alarms"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/authentication"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/binaries"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/measurements"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 )
 
@@ -93,6 +97,41 @@ func main() {
 		if count > 2002 {
 			break
 		}
+	}
+
+	// Complex task using concurrency and a sequence of actions
+	client.Client.SetDebug(true)
+
+	// Step 1: Select managed objects
+	moIter := client.ManagedObjects.ListAll(context.Background(), managedobjects.ListOptions{
+		Query: model.NewInventoryQuery().AddFilterEqStr("name", "ci_*").Build(),
+		PaginationOptions: pagination.PaginationOptions{
+			MaxItems: 10,
+		},
+	})
+	devices := rill.FromSeq(moIter.Items(), moIter.Err())
+
+	// Step 2: Create an alarm and return it
+	createdAlarms := rill.Map[jsonmodels.ManagedObject, jsonmodels.Alarm](devices, 5, func(device jsonmodels.ManagedObject) (jsonmodels.Alarm, error) {
+		slog.Info("Current device", "id", device.ID(), "creationTime", device.CreationTime())
+		alarm := client.Alarms.Create(context.Background(), alarms.CreateOptions{
+			Source:   device.ID(),
+			Type:     "ci_rill_test",
+			Text:     "Test create alarm",
+			Severity: "MAJOR",
+			Time:     time.Now(),
+		})
+		return alarm.Data, alarm.Err
+	})
+
+	// Step 3: Process the created alarm
+	procErrs := rill.ForEach(createdAlarms, 2, func(alarm jsonmodels.Alarm) error {
+		slog.Info("Created new alarm", "id", alarm.ID(), "creationTime", alarm.CreationTime())
+		return nil
+	})
+
+	if procErrs != nil {
+		log.Panic(procErrs)
 	}
 
 	// Inventory binaries
