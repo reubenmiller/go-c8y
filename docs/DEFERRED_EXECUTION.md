@@ -1,6 +1,13 @@
 # Deferred Execution
 
+> **Part of:** [API_DESIGN.md](./API_DESIGN.md) - Cumulocity Go SDK v2  
+> **Context:** This document describes the deferred execution pattern, a context-driven execution control feature in the v2 API.
+
+## Summary
+
 Deferred execution allows you to prepare an operation (including parameter resolution) without actually sending the HTTP request. This is useful for implementing confirmation prompts before destructive operations.
+
+**Use this when:** You need to show users what will happen before executing a potentially destructive operation (delete, update, etc.).
 
 ## Overview
 

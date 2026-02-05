@@ -7,7 +7,69 @@ Unofficial Go client for [Cumulocity IoT](https://cumulocity.com/api/core/).
 [![Documentation c8y](https://godoc.org/github.com/reubenmiller/go-c8y/pkg/c8y?status.svg)](https://godoc.org/github.com/reubenmiller/go-c8y/pkg/c8y)
 [![Documentation microservice ](https://godoc.org/github.com/reubenmiller/go-c8y/pkg/microservice?status.svg)](https://godoc.org/github.com/reubenmiller/go-c8y/pkg/microservice)
 
-## Caveats
+## v2 API (New!)
+
+🎉 **The v2 API is under active development!** It features a modern, type-safe design with Go generics, rich result metadata, and flexible JSON handling.
+
+**📖 [Read the complete v2 API Design Documentation](./docs/API_DESIGN.md)**
+
+### Quick v2 Example
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
+    "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/operations"
+)
+
+func main() {
+    // Create client
+    client := c8y_api.NewClient(baseURL, username, password)
+    ctx := context.Background()
+    
+    // List operations with smart device resolution
+    result := client.Operations.List(ctx, operations.ListOptions{
+        DeviceID: "name:my-device",  // Automatically resolved to ID
+        Status:   "PENDING",
+    })
+    
+    // Rich result handling
+    if result.Err != nil {
+        panic(result.Err)
+    }
+    
+    // Iterate over operations
+    for _, op := range result.Data.Items() {
+        fmt.Printf("%s: %s\n", op.ID(), op.Status())
+    }
+}
+```
+
+### v2 Key Features
+
+- **Rich Result Type** - Every operation returns metadata: status, HTTP details, duration, retry info
+- **Flexible JSON Handling** - JSONDoc models with both structured and raw access
+- **Context-Driven Behavior** - Dry run, deferred execution, and more via context
+- **Smart Resolvers** - Reference devices by name, external ID, or query
+- **Powerful Pagination** - Simple collections or iterators for large datasets
+
+### v2 Documentation
+
+- **[API_DESIGN.md](./docs/API_DESIGN.md)** - Complete API architecture and usage patterns
+- **[V2.md](./docs/V2.md)** - Feature overview and implementation status
+- **[IMPLEMENTATION_PATTERNS.md](./docs/IMPLEMENTATION_PATTERNS.md)** - Internal patterns (pipelines, upsert, retry)
+- **[DEFERRED_EXECUTION.md](./docs/DEFERRED_EXECUTION.md)** - User confirmation prompts pattern
+- **[DEVICE_RESOLVER_PATTERN.md](./docs/DEVICE_RESOLVER_PATTERN.md)** - Device resolution architecture
+- **[REQUEST_INSPECTION.md](./docs/REQUEST_INSPECTION.md)** - Request debugging and security
+
+---
+
+## v1 API (Current Stable)
+
+## v1 Caveats
 
 We encourage you to try the package in your projects, just keep these caveats in mind, please:
 
@@ -15,7 +77,7 @@ We encourage you to try the package in your projects, just keep these caveats in
 
 * **There are no guarantees on API stability.** The general mechanics of the golang API are still being worked out. The balance between helpers and clarity is still being found. Given limited access to all available Cumulocity IoT versions, compatibility to all Cumulocity IoT versions is not guaranteed, however since Cumulocity IoT takes an additive approach to new features, it is more likely that the new features will be missing rather than existing API breaking (excluding deprecated features)
 
-## Usage
+## v1 Usage
 
 1. Add the package to your project using `go get`:
 

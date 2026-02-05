@@ -1,10 +1,17 @@
 # Request Inspection in Results
 
-The `Result` type now includes the `Request *http.Request` field, which allows you to inspect the HTTP request that was (or would have been) sent. This is particularly useful for:
+> **Part of:** [API_DESIGN.md](./API_DESIGN.md) - Cumulocity Go SDK v2  
+> **Context:** This document describes request inspection capabilities, including dry run mode and security considerations for header redaction.
 
+## Summary
+
+The `Result` type includes the `Request *http.Request` field, which allows you to inspect the HTTP request that was (or would have been) sent.
+
+**Use this for:**
 1. **Dry run mode** - Inspect requests without sending them
 2. **Debugging** - See exactly what was sent to the server
 3. **CLI tools** - Format requests for display (curl, markdown, JSON, etc.)
+4. **Testing** - Verify request construction without hitting the API
 
 ## Security Note
 
