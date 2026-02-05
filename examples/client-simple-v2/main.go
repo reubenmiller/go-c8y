@@ -51,7 +51,7 @@ func main() {
 		measurements.ListOptions{
 			DateFrom: time.Now().Add(-20 * 24 * time.Hour),
 			DateTo:   time.Now(),
-			Source:   "ext:c8y_Serial:rpi4-d83add90fe56", // resolve by external id
+			Source:   client.ManagedObjects.ByExternalID("c8y_Serial", "rpi4-d83add90fe56"), // resolve by external id
 			PaginationOptions: pagination.PaginationOptions{
 				PageSize:          1,
 				WithTotalElements: true,
@@ -79,7 +79,7 @@ func main() {
 		DateFrom: time.Now().Add(-30 * 24 * time.Hour),
 	})
 	if alarmCollection.Err() != nil {
-		log.Panic(alarmCollection.Err)
+		log.Panic(alarmCollection.Err())
 	}
 
 	// check how many alarms there are before we iterate over them (though this is just an estimate)
@@ -112,7 +112,7 @@ func main() {
 	devices := rill.FromSeq(moIter.Items(), moIter.Err())
 
 	// Step 2: Create an alarm and return it
-	createdAlarms := rill.Map[jsonmodels.ManagedObject, jsonmodels.Alarm](devices, 5, func(device jsonmodels.ManagedObject) (jsonmodels.Alarm, error) {
+	createdAlarms := rill.Map(devices, 5, func(device jsonmodels.ManagedObject) (jsonmodels.Alarm, error) {
 		slog.Info("Current device", "id", device.ID(), "creationTime", device.CreationTime())
 		alarm := client.Alarms.Create(context.Background(), alarms.CreateOptions{
 			Source:   device.ID(),
