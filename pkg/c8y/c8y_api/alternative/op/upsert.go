@@ -377,3 +377,39 @@ func isZero(v reflect.Value) bool {
 		return v.Interface() == reflect.Zero(v.Type()).Interface()
 	}
 }
+
+// UpsertR is a Result-based upsert pattern
+// finder returns (result, found) - if found is true, calls updater with the result
+// updater is called with the found result and should return an updated result
+// creator is only called if finder returns found=false
+// Automatically sets Meta["found"] to indicate if resource was found or created
+func UpsertR[T any](
+	ctx context.Context,
+	finder func(context.Context) (Result[T], bool),
+	updater func(context.Context, Result[T]) Result[T],
+	creator func(context.Context) Result[T],
+) Result[T] {
+	// Try to find existing resource
+	result, found := finder(ctx)
+	if found {
+		// Resource exists, update it
+		updateResult := updater(ctx, result)
+		if updateResult.Meta == nil {
+			updateResult.Meta = make(map[string]any)
+		}
+		updateResult.Meta["found"] = true
+		// Override status to Updated if the update was successful
+		if updateResult.Err == nil && updateResult.Status == StatusOK {
+			updateResult.Status = StatusUpdated
+		}
+		return updateResult
+	}
+
+	// Not found, create it
+	createResult := creator(ctx)
+	if createResult.Meta == nil {
+		createResult.Meta = make(map[string]any)
+	}
+	createResult.Meta["found"] = false
+	return createResult
+}

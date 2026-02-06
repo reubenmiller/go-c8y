@@ -104,6 +104,7 @@ func (s *Service) listB(softwareID string, opt ListOptions) *core.TryRequest {
 	// Build request directly since managedObjects.listB is now private
 	listOpts := managedobjects.ListOptions{
 		Query: model.NewInventoryQuery().
+			AddFilterEqStr("type", "c8y_SoftwareBinary").
 			AddFilterEqStr("c8y_Software.version", opt.Version).
 			ByGroupID(softwareID).
 			AddOrderBy("c8y_Software.version").

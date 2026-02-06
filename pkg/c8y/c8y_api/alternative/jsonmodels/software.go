@@ -60,3 +60,7 @@ func (s Software) CreationTime() time.Time {
 func (s Software) LastUpdated() time.Time {
 	return s.Get("lastUpdated").Time()
 }
+
+func (s Software) FilterType() string {
+	return s.Get("c8y_Filter.type").String()
+}

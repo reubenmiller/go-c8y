@@ -416,7 +416,7 @@ func (s *Service) GetOrCreateByName(ctx context.Context, name, softwareType stri
 // Example queries:
 //   - "name eq 'MySoftware' and softwareType eq 'application'"
 //   - "name eq 'MySoftware'"
-func (s *Service) GetOrCreateWith(ctx context.Context, body any, query string) op.Result[jsonmodels.Software] {
+func (s *Service) GetOrCreateWith(ctx context.Context, query string, body any) op.Result[jsonmodels.Software] {
 	return op.Result[jsonmodels.Software]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.Software] {
 		query_ := model.NewInventoryQuery().
 			AddFilterEqStr("type", FragmentSoftware).
@@ -472,6 +472,93 @@ func (s *Service) getOrCreateWithQuery(ctx context.Context, body any, query stri
 
 	// Execute get-or-create pattern
 	return op.GetOrCreateR(ctx, finder, creator)
+}
+
+// UpsertByName searches by name and optional software type, updating if found or creating if not found
+// This ensures metadata stays up-to-date on subsequent calls
+func (s *Service) UpsertByName(ctx context.Context, name, softwareType string, body any) op.Result[jsonmodels.Software] {
+	return op.Result[jsonmodels.Software]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.Software] {
+		query := model.NewInventoryQuery().
+			AddFilterEqStr("type", FragmentSoftware).
+			AddFilterEqStr("name", name).
+			AddFilterEqStr("softwareType", softwareType).
+			AddOrderBy("name").
+			AddOrderBy("creationTime").
+			Build()
+		return s.upsertWithQuery(execCtx, query, body)
+	}).WithMeta("operation", "upsertByName").
+		ExecuteOrDefer(ctx)
+}
+
+// UpsertWith provides a generic query-based upsert
+// Updates existing item if found, creates if not found
+// Example queries:
+//   - "name eq 'MySoftware' and softwareType eq 'application'"
+//   - "name eq 'MySoftware' and softwareType eq 'apt' and deviceType eq 'arm64'"
+func (s *Service) UpsertWith(ctx context.Context, query string, body any) op.Result[jsonmodels.Software] {
+	return op.Result[jsonmodels.Software]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.Software] {
+		query_ := model.NewInventoryQuery().
+			AddFilterEqStr("type", FragmentSoftware).
+			AddFilterPart(query).
+			AddOrderBy("name").
+			AddOrderBy("creationTime").
+			Build()
+		return s.upsertWithQuery(execCtx, query_, body)
+	}).WithMeta("operation", "upsertWith").
+		ExecuteOrDefer(ctx)
+}
+
+// upsertWithQuery is the internal implementation for upsert
+func (s *Service) upsertWithQuery(ctx context.Context, query string, body any) op.Result[jsonmodels.Software] {
+	// Define finder function
+	finder := func(ctx context.Context) (op.Result[jsonmodels.Software], bool) {
+		// Build query with the search criteria
+		moResult := s.managedObjects.List(ctx, managedobjects.ListOptions{
+			Query: query,
+			PaginationOptions: pagination.PaginationOptions{
+				PageSize: 1,
+			},
+		})
+
+		if moResult.Err != nil {
+			return op.Result[jsonmodels.Software]{}, false
+		}
+
+		// Check if any items were found
+		for item := range moResult.Data.Iter() {
+			found := jsonmodels.NewSoftware(item.Bytes())
+			result := op.OK(found)
+			result.HTTPStatus = moResult.HTTPStatus
+			result.Meta["lookupMethod"] = "query"
+			result.Meta["query"] = query
+			return result, true
+		}
+
+		// Not found
+		return op.Result[jsonmodels.Software]{}, false
+	}
+
+	// Define updater function
+	updater := func(ctx context.Context, existing op.Result[jsonmodels.Software]) op.Result[jsonmodels.Software] {
+		// Update the existing software item with new data
+		updateResult := s.Update(ctx, existing.Data.ID(), body)
+		if updateResult.Err != nil {
+			return updateResult
+		}
+		return updateResult
+	}
+
+	// Define creator function
+	creator := func(ctx context.Context) op.Result[jsonmodels.Software] {
+		createResult := s.Create(ctx, body)
+		if createResult.Err != nil {
+			return createResult
+		}
+		return createResult
+	}
+
+	// Execute upsert pattern
+	return op.UpsertR(ctx, finder, updater, creator)
 }
 
 // Builder methods for backwards compatibility and flexibility
