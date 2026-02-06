@@ -79,4 +79,4 @@ replace github.com/reubenmiller/go-c8y/test/c8y_api_test => ./test/c8y_api_test
 
 replace github.com/reubenmiller/go-c8y/test/c8y_microservice => ./test/c8y_microservice
 
-go 1.24.6
+go 1.25
