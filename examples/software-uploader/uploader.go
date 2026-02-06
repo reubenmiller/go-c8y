@@ -334,7 +334,7 @@ func uploadVersion(
 		"file", info.Filename,
 		"force", config.Force)
 
-	createOpts := softwareversions.CreateOptions{
+	createOpts := softwareversions.CreateVersionOptions{
 		SoftwareID: softwareID,
 		Version:    info.Version,
 		File: softwareversions.UploadFileOptions{

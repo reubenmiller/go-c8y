@@ -23,7 +23,7 @@ func Test_SoftwareVersion(t *testing.T) {
 	softwareType := "ci-artifact"
 	tempFile := testingutils.CreateTempFile(t, "test binary content")
 
-	result := client.Repository.Software.Versions.GetOrCreateVersion(context.Background(), softwareversions.CreateOptions{
+	result := client.Repository.Software.Versions.GetOrCreateVersion(context.Background(), softwareversions.CreateVersionOptions{
 		SoftwareName: softwareName,
 		SoftwareType: softwareType,
 		Version:      version,
@@ -70,7 +70,7 @@ func Test_SoftwareVersion(t *testing.T) {
 	assert.Equal(t, softwareName, getByVersionResult.Meta["softwareName"])
 
 	// GetOrCreate again (should find existing)
-	result2 := client.Repository.Software.Versions.GetOrCreateVersion(context.Background(), softwareversions.CreateOptions{
+	result2 := client.Repository.Software.Versions.GetOrCreateVersion(context.Background(), softwareversions.CreateVersionOptions{
 		SoftwareName: softwareName,
 		SoftwareType: softwareType,
 		Version:      version,
@@ -99,7 +99,7 @@ func Test_SoftwareVersionResolver_ByID(t *testing.T) {
 	tempFile := testingutils.CreateTempFile(t, "test binary content")
 
 	// Create software version
-	result := client.Repository.Software.Versions.GetOrCreateVersion(context.Background(), softwareversions.CreateOptions{
+	result := client.Repository.Software.Versions.GetOrCreateVersion(context.Background(), softwareversions.CreateVersionOptions{
 		SoftwareName: softwareName,
 		SoftwareType: softwareType,
 		Version:      version,
@@ -142,7 +142,7 @@ func Test_SoftwareVersionResolver_ByVersion(t *testing.T) {
 	tempFile := testingutils.CreateTempFile(t, "test binary content")
 
 	// Create software version
-	result := client.Repository.Software.Versions.GetOrCreateVersion(context.Background(), softwareversions.CreateOptions{
+	result := client.Repository.Software.Versions.GetOrCreateVersion(context.Background(), softwareversions.CreateVersionOptions{
 		SoftwareName: softwareName,
 		SoftwareType: softwareType,
 		Version:      version,
@@ -187,7 +187,7 @@ func Test_SoftwareVersionResolver_ByVersionAndName(t *testing.T) {
 	tempFile := testingutils.CreateTempFile(t, "test binary content")
 
 	// Create software version
-	result := client.Repository.Software.Versions.GetOrCreateVersion(context.Background(), softwareversions.CreateOptions{
+	result := client.Repository.Software.Versions.GetOrCreateVersion(context.Background(), softwareversions.CreateVersionOptions{
 		SoftwareName: softwareName,
 		SoftwareType: softwareType,
 		Version:      version,
@@ -269,7 +269,7 @@ func Test_SoftwareVersionUpdate_WithResolver(t *testing.T) {
 	tempFile := testingutils.CreateTempFile(t, "test binary content")
 
 	// Create software version
-	result := client.Repository.Software.Versions.GetOrCreateVersion(context.Background(), softwareversions.CreateOptions{
+	result := client.Repository.Software.Versions.GetOrCreateVersion(context.Background(), softwareversions.CreateVersionOptions{
 		SoftwareName: softwareName,
 		SoftwareType: softwareType,
 		Version:      version,
@@ -306,7 +306,7 @@ func Test_SoftwareVersionDelete_WithResolver(t *testing.T) {
 	tempFile := testingutils.CreateTempFile(t, "test binary content")
 
 	// Create software version
-	result := client.Repository.Software.Versions.GetOrCreateVersion(context.Background(), softwareversions.CreateOptions{
+	result := client.Repository.Software.Versions.GetOrCreateVersion(context.Background(), softwareversions.CreateVersionOptions{
 		SoftwareName: softwareName,
 		SoftwareType: softwareType,
 		Version:      version,
@@ -344,7 +344,7 @@ func Test_SoftwareVersionDeferredExecution(t *testing.T) {
 	tempFile := testingutils.CreateTempFile(t, "test binary content")
 
 	// Create software version
-	result := client.Repository.Software.Versions.GetOrCreateVersion(context.Background(), softwareversions.CreateOptions{
+	result := client.Repository.Software.Versions.GetOrCreateVersion(context.Background(), softwareversions.CreateVersionOptions{
 		SoftwareName: softwareName,
 		SoftwareType: softwareType,
 		Version:      version,
@@ -428,7 +428,7 @@ func Test_SoftwareVersionMetadata(t *testing.T) {
 	tempFile := testingutils.CreateTempFile(t, "test binary content")
 
 	// Create software version
-	result := client.Repository.Software.Versions.GetOrCreateVersion(context.Background(), softwareversions.CreateOptions{
+	result := client.Repository.Software.Versions.GetOrCreateVersion(context.Background(), softwareversions.CreateVersionOptions{
 		SoftwareName: softwareName,
 		SoftwareType: softwareType,
 		Version:      version,
@@ -465,7 +465,7 @@ func Test_SoftwareVersionGetOrCreate_MultipleVersions(t *testing.T) {
 	tempFile := testingutils.CreateTempFile(t, "test binary content")
 
 	// Create first version
-	v1Result := client.Repository.Software.Versions.GetOrCreateVersion(context.Background(), softwareversions.CreateOptions{
+	v1Result := client.Repository.Software.Versions.GetOrCreateVersion(context.Background(), softwareversions.CreateVersionOptions{
 		SoftwareName: softwareName,
 		SoftwareType: softwareType,
 		Version:      "1.0.0",
@@ -479,7 +479,7 @@ func Test_SoftwareVersionGetOrCreate_MultipleVersions(t *testing.T) {
 	assert.False(t, v1Result.Meta["found"].(bool))
 
 	// Create second version (same software, different version)
-	v2Result := client.Repository.Software.Versions.GetOrCreateVersion(context.Background(), softwareversions.CreateOptions{
+	v2Result := client.Repository.Software.Versions.GetOrCreateVersion(context.Background(), softwareversions.CreateVersionOptions{
 		SoftwareName: softwareName,
 		SoftwareType: softwareType,
 		Version:      "2.0.0",
@@ -495,7 +495,7 @@ func Test_SoftwareVersionGetOrCreate_MultipleVersions(t *testing.T) {
 	// Both versions should belong to the same software item (verified by name)
 
 	// GetOrCreate v1 again (should find existing)
-	v1AgainResult := client.Repository.Software.Versions.GetOrCreateVersion(context.Background(), softwareversions.CreateOptions{
+	v1AgainResult := client.Repository.Software.Versions.GetOrCreateVersion(context.Background(), softwareversions.CreateVersionOptions{
 		SoftwareName: softwareName,
 		SoftwareType: softwareType,
 		Version:      "1.0.0",
