@@ -61,33 +61,36 @@ type CreateOptions struct {
 // softwareID can be a direct ID or use string-based resolver patterns (e.g., "name:MySoftware")
 // Assumes the software item exists (does not create it)
 func (s *Service) Create(ctx context.Context, softwareID string, opt CreateOptions) op.Result[jsonmodels.SoftwareVersion] {
-	// Resolve software ID if needed
-	resolvedID, err := s.software.Resolver.ResolveID(ctx, softwareID, nil)
-	if err != nil {
-		return op.Failed[jsonmodels.SoftwareVersion](
-			fmt.Errorf("failed to resolve software ID: %w", err),
-			false,
-		)
-	}
+	return op.Result[jsonmodels.SoftwareVersion]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.SoftwareVersion] {
+		// Resolve software ID if needed
+		resolvedID, err := s.software.Resolver.ResolveID(execCtx, softwareID, nil)
+		if err != nil {
+			return op.Failed[jsonmodels.SoftwareVersion](
+				fmt.Errorf("failed to resolve software ID: %w", err),
+				false,
+			)
+		}
 
-	// Upload binary if needed
-	url, err := s.uploadBinaryIfNeeded(ctx, opt.URL, opt.File)
-	if err != nil {
-		return op.Failed[jsonmodels.SoftwareVersion](err, true)
-	}
+		// Upload binary if needed
+		url, err := s.uploadBinaryIfNeeded(execCtx, opt.URL, opt.File)
+		if err != nil {
+			return op.Failed[jsonmodels.SoftwareVersion](err, true)
+		}
 
-	// Build version body
-	versionBody := map[string]any{
-		"type": "c8y_SoftwareBinary",
-		"c8y_Software": map[string]any{
-			"version": opt.Version,
-		},
-	}
-	if url != "" {
-		versionBody["c8y_Software"].(map[string]any)["url"] = url
-	}
+		// Build version body
+		versionBody := map[string]any{
+			"type": "c8y_SoftwareBinary",
+			"c8y_Software": map[string]any{
+				"version": opt.Version,
+			},
+		}
+		if url != "" {
+			versionBody["c8y_Software"].(map[string]any)["url"] = url
+		}
 
-	return core.Execute(ctx, s.createB(resolvedID, versionBody), jsonmodels.NewSoftwareVersion)
+		return core.Execute(execCtx, s.createB(resolvedID, versionBody), jsonmodels.NewSoftwareVersion)
+	}).WithMeta("operation", "create").
+		ExecuteOrDefer(ctx)
 }
 
 // ResolveID resolves a software version identifier to an ID using the resolver
@@ -459,37 +462,40 @@ type CreateVersionOptions struct {
 
 // CreateVersion creates a software version, automatically handling software item lookup/creation and binary upload
 func (s *Service) CreateVersion(ctx context.Context, opt CreateVersionOptions) op.Result[jsonmodels.SoftwareVersion] {
-	// Step 1: Get or create software item
-	var softwareID string
-	if opt.SoftwareID != "" {
-		softwareID = opt.SoftwareID
-	} else if opt.SoftwareName != "" {
-		softwareResult := s.software.GetOrCreateByName(ctx, opt.SoftwareName, opt.SoftwareType, map[string]any{
-			"name":         opt.SoftwareName,
-			"type":         "c8y_Software",
-			"softwareType": opt.SoftwareType,
-		})
-		if softwareResult.Err != nil {
+	return op.Result[jsonmodels.SoftwareVersion]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.SoftwareVersion] {
+		// Step 1: Get or create software item
+		var softwareID string
+		if opt.SoftwareID != "" {
+			softwareID = opt.SoftwareID
+		} else if opt.SoftwareName != "" {
+			softwareResult := s.software.GetOrCreateByName(execCtx, opt.SoftwareName, opt.SoftwareType, map[string]any{
+				"name":         opt.SoftwareName,
+				"type":         "c8y_Software",
+				"softwareType": opt.SoftwareType,
+			})
+			if softwareResult.Err != nil {
+				return op.Failed[jsonmodels.SoftwareVersion](
+					fmt.Errorf("failed to get/create software item: %w", softwareResult.Err),
+					true,
+				)
+			}
+			softwareID = softwareResult.Data.ID()
+		} else {
 			return op.Failed[jsonmodels.SoftwareVersion](
-				fmt.Errorf("failed to get/create software item: %w", softwareResult.Err),
-				true,
+				fmt.Errorf("must specify SoftwareID or SoftwareName"),
+				false,
 			)
 		}
-		softwareID = softwareResult.Data.ID()
-	} else {
-		return op.Failed[jsonmodels.SoftwareVersion](
-			fmt.Errorf("must specify SoftwareID or SoftwareName"),
-			false,
-		)
-	}
 
-	// Step 2: Create version (handles binary upload internally)
-	createOpt := CreateOptions{
-		Version: opt.Version,
-		URL:     opt.URL,
-		File:    opt.File,
-	}
-	return s.Create(ctx, softwareID, createOpt)
+		// Step 2: Create version (handles binary upload internally)
+		createOpt := CreateOptions{
+			Version: opt.Version,
+			URL:     opt.URL,
+			File:    opt.File,
+		}
+		return s.Create(execCtx, softwareID, createOpt)
+	}).WithMeta("operation", "createVersion").
+		ExecuteOrDefer(ctx)
 }
 
 // GetOrCreateVersion searches by software + version, creating if not found
@@ -559,65 +565,71 @@ func (s *Service) GetOrCreateVersion(ctx context.Context, opt CreateVersionOptio
 }
 
 func (s *Service) DeleteAndCreate(ctx context.Context, versionID string, opt CreateVersionOptions) op.Result[jsonmodels.SoftwareVersion] {
-	// Step 1: Delete any existing version (if it exists)
-	deleteResult := s.Delete(ctx, versionID, DeleteOptions{})
-	if deleteResult.HTTPStatus != 404 && deleteResult.Err != nil {
-		return op.Failed[jsonmodels.SoftwareVersion](
-			fmt.Errorf("failed to get existing version: %w", deleteResult.Err),
-			true,
-		)
-	}
+	return op.Result[jsonmodels.SoftwareVersion]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.SoftwareVersion] {
+		// Step 1: Delete any existing version (if it exists)
+		deleteResult := s.Delete(execCtx, versionID, DeleteOptions{})
+		if deleteResult.HTTPStatus != 404 && deleteResult.Err != nil {
+			return op.Failed[jsonmodels.SoftwareVersion](
+				fmt.Errorf("failed to delete existing version: %w", deleteResult.Err),
+				true,
+			)
+		}
 
-	// Step 2: Create new version
-	return s.CreateVersion(ctx, opt)
+		// Step 2: Create new version
+		return s.CreateVersion(execCtx, opt)
+	}).WithMeta("operation", "deleteAndCreate").
+		ExecuteOrDefer(ctx)
 }
 
 // ReplaceVersion replaces an existing software version's binary, or creates it if it doesn't exist (upsert)
 // It deletes the old binary (if it's hosted on the same tenant) and uploads a new one
 func (s *Service) ReplaceVersion(ctx context.Context, versionID string, opt CreateVersionOptions) op.Result[jsonmodels.SoftwareVersion] {
-	// Step 1: Try to get the existing version
-	getResult := s.Get(ctx, versionID, GetOptions{})
+	return op.Result[jsonmodels.SoftwareVersion]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.SoftwareVersion] {
+		// Step 1: Try to get the existing version
+		getResult := s.Get(execCtx, versionID, GetOptions{})
 
-	// If version doesn't exist (404), create it instead
-	if getResult.HTTPStatus == 404 {
-		return s.CreateVersion(ctx, opt)
-	}
+		// If version doesn't exist (404), create it instead
+		if getResult.HTTPStatus == 404 {
+			return s.CreateVersion(execCtx, opt)
+		}
 
-	if getResult.Err != nil {
-		return op.Failed[jsonmodels.SoftwareVersion](
-			fmt.Errorf("failed to get existing version: %w", getResult.Err),
-			true,
-		)
-	}
+		if getResult.Err != nil {
+			return op.Failed[jsonmodels.SoftwareVersion](
+				fmt.Errorf("failed to get existing version: %w", getResult.Err),
+				true,
+			)
+		}
 
-	existingVersion := getResult.Data
+		existingVersion := getResult.Data
 
-	// Step 2: Delete the old binary if it exists
-	s.deleteBinaryFromURL(ctx, existingVersion.URL())
+		// Step 2: Delete the old binary if it exists
+		s.deleteBinaryFromURL(execCtx, existingVersion.URL())
 
-	// Step 3: Upload new binary and update version
-	createOpt := CreateOptions{
-		Version: opt.Version,
-		URL:     opt.URL,
-		File:    opt.File,
-	}
+		// Step 3: Upload new binary and update version
+		createOpt := CreateOptions{
+			Version: opt.Version,
+			URL:     opt.URL,
+			File:    opt.File,
+		}
 
-	url, err := s.uploadBinaryIfNeeded(ctx, opt.URL, createOpt.File)
-	if err != nil {
-		return op.Failed[jsonmodels.SoftwareVersion](err, true)
-	}
+		url, err := s.uploadBinaryIfNeeded(execCtx, opt.URL, createOpt.File)
+		if err != nil {
+			return op.Failed[jsonmodels.SoftwareVersion](err, true)
+		}
 
-	// Step 4: Update the version with new URL
-	updateBody := map[string]any{
-		"c8y_Software": map[string]any{
-			"version": opt.Version,
-		},
-	}
-	if url != "" {
-		updateBody["c8y_Software"].(map[string]any)["url"] = url
-	}
+		// Step 4: Update the version with new URL
+		updateBody := map[string]any{
+			"c8y_Software": map[string]any{
+				"version": opt.Version,
+			},
+		}
+		if url != "" {
+			updateBody["c8y_Software"].(map[string]any)["url"] = url
+		}
 
-	return s.Update(ctx, versionID, updateBody)
+		return s.Update(execCtx, versionID, updateBody)
+	}).WithMeta("operation", "replaceVersion").
+		ExecuteOrDefer(ctx)
 }
 
 // extractBinaryID extracts the binary ID from a Cumulocity binary URL
