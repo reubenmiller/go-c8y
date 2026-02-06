@@ -372,12 +372,12 @@ func TokenRenewalRetry(c *Client) func(res *resty.Response, err error) bool {
 		}
 		if res.StatusCode() == 401 {
 			if res.Request.Attempt > 1 {
-				slog.Warn("More than 1 401 detected, giving up", "err", err)
+				slog.Warn("More than 1 401 detected, giving up", "err", res.Error())
 				return false
 			}
 
 			if res.Request.AuthToken != "" && core.ErrTokenRevoked(res.Error()) {
-				slog.Warn("Token is not longer valid", "err", err)
+				slog.Warn("Token is not longer valid", "err", res.Error())
 				loginTok, loginErr := c.Login(res.Request.Context())
 				if loginErr != nil {
 					return false
