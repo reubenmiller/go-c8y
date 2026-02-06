@@ -1,0 +1,425 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+	"path/filepath"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
+
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/repository/software/softwareversions"
+)
+
+// UploadConfig contains configuration for the upload process
+type UploadConfig struct {
+	Client       *c8y_api.Client
+	Concurrency  int
+	SoftwareType string
+	DryRun       bool
+}
+
+// UploadResult contains the results of an upload operation
+type UploadResult struct {
+	TotalFiles      int
+	SuccessCount    int
+	FailureCount    int
+	Errors          []UploadError
+	SoftwareCreated int
+	SoftwareFound   int
+	VersionsCreated int // Number of versions newly uploaded
+	VersionsFound   int // Number of versions that already existed
+}
+
+// UploadError represents an error during upload
+type UploadError struct {
+	FilePath string
+	Name     string
+	Version  string
+	Error    error
+}
+
+// ProgressCallback is called to report upload progress
+type ProgressCallback func(completed, total int, currentFile string)
+
+// EnsureSoftwarePackages creates or retrieves software packages for all unique names
+// Groups by name and architecture to create separate software items per architecture
+func EnsureSoftwarePackages(
+	ctx context.Context,
+	client *c8y_api.Client,
+	groups map[string][]*SoftwareInfo,
+	dryRun bool,
+) (map[string]string, []error) {
+	softwareIDs := make(map[string]string)
+	var errors []error
+
+	for key, infos := range groups {
+		if len(infos) == 0 {
+			continue
+		}
+
+		// Get name, architecture, and software type from first info (all in group have same)
+		name := infos[0].Name
+		arch := infos[0].Architecture
+		softwareType := infos[0].SoftwareType
+
+		slog.Debug("Processing software package",
+			"name", name,
+			"type", softwareType,
+			"architecture", arch,
+			"version_count", len(infos))
+
+		if dryRun {
+			softwareIDs[key] = fmt.Sprintf("dry-run-id-%s", key)
+			continue
+		}
+
+		// Build description with architecture info
+		description := fmt.Sprintf("Software package: %s", name)
+		if arch != "" {
+			description = fmt.Sprintf("Software package: %s (Architecture: %s)", name, arch)
+		}
+
+		// Build query to find software by name, type, and deviceType (architecture)
+		var query string
+		if arch != "" {
+			// Include deviceType in query to find software with matching architecture
+			query = fmt.Sprintf("name eq '%s' and softwareType eq '%s' and c8y_Filter.type eq '%s'", name, softwareType, arch)
+			slog.Debug("Looking up software with architecture",
+				"name", name,
+				"type", softwareType,
+				"architecture", arch,
+				"query", query)
+		} else {
+			// No architecture - just query by name and type
+			query = fmt.Sprintf("name eq '%s' and softwareType eq '%s'", name, softwareType)
+			slog.Debug("Looking up software without architecture",
+				"name", name,
+				"type", softwareType,
+				"query", query)
+		}
+
+		// Create body
+		body := map[string]any{
+			"name":         name,
+			"type":         "c8y_Software",
+			"softwareType": softwareType,
+			"description":  description,
+			// Add fragment to identify software uploaded by this tool
+			"c8y_SoftwareUploader": map[string]any{
+				"uploadedAt": time.Now(),
+				"tool":       "software-uploader",
+			},
+		}
+
+		// store architecture and use it as the device type filter
+		if arch != "" {
+			body["arch"] = arch
+			body["c8y_Filter"] = map[string]string{
+				"type": arch,
+			}
+		}
+
+		// Use UpsertWith to ensure metadata stays up-to-date
+		result := client.Repository.Software.UpsertWith(
+			ctx,
+			query,
+			body,
+		)
+
+		if result.Err != nil {
+			slog.Error("Failed to create/find software",
+				"name", name,
+				"type", softwareType,
+				"architecture", arch,
+				"error", result.Err)
+			errors = append(errors, fmt.Errorf("failed to create/get software %s: %w", name, result.Err))
+			continue
+		}
+
+		softwareID := result.Data.ID()
+
+		// Check if this was newly created, updated, or already existed
+		if result.Status == "Created" || (result.Meta != nil && result.Meta["found"] == false) {
+			slog.Info("Created new software item",
+				"id", softwareID,
+				"name", name,
+				"type", softwareType,
+				"architecture", arch)
+		} else if result.Status == "Updated" {
+			slog.Info("Updated software item",
+				"id", softwareID,
+				"name", name,
+				"type", softwareType,
+				"architecture", arch)
+		} else {
+			slog.Debug("Found existing software item (no changes)",
+				"id", softwareID,
+				"name", name,
+				"type", softwareType,
+				"architecture", arch)
+		}
+
+		softwareIDs[key] = softwareID
+	}
+
+	return softwareIDs, errors
+}
+
+// UploadSoftwareVersions uploads software versions concurrently
+func UploadSoftwareVersions(
+	ctx context.Context,
+	config *UploadConfig,
+	infos []*SoftwareInfo,
+	progressCallback ProgressCallback,
+) *UploadResult {
+	result := &UploadResult{
+		TotalFiles: len(infos),
+	}
+
+	if len(infos) == 0 {
+		return result
+	}
+
+	// Group by software name and architecture
+	groups := GroupBySoftwareNameAndArch(infos)
+
+	// Ensure all software packages exist
+	if progressCallback != nil {
+		progressCallback(0, len(infos), "Creating software packages...")
+	}
+
+	softwareIDs, ensureErrors := EnsureSoftwarePackages(
+		ctx,
+		config.Client,
+		groups,
+		config.DryRun,
+	)
+
+	if len(ensureErrors) > 0 {
+		for _, err := range ensureErrors {
+			result.Errors = append(result.Errors, UploadError{
+				Error: err,
+			})
+			result.FailureCount++
+		}
+		return result
+	}
+
+	result.SoftwareCreated = len(softwareIDs)
+
+	// Create a work queue
+	workQueue := make(chan *SoftwareInfo, len(infos))
+	for _, info := range infos {
+		workQueue <- info
+	}
+	close(workQueue)
+
+	// Track progress
+	var completed atomic.Int32
+	var successCount atomic.Int32
+	var versionsCreated atomic.Int32
+	var versionsFound atomic.Int32
+	var mu sync.Mutex
+	var uploadErrors []UploadError
+
+	// Worker pool
+	var wg sync.WaitGroup
+	concurrency := config.Concurrency
+	if concurrency <= 0 {
+		concurrency = 5
+	}
+	if concurrency > 20 {
+		concurrency = 20
+	}
+
+	for i := 0; i < concurrency; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			for info := range workQueue {
+				// Get software ID using name+arch key
+				key := GetSoftwareKey(info.Name, info.Architecture)
+				softwareID, ok := softwareIDs[key]
+				if !ok {
+					mu.Lock()
+					uploadErrors = append(uploadErrors, UploadError{
+						FilePath: info.FilePath,
+						Name:     info.Name,
+						Version:  info.Version,
+						Error:    fmt.Errorf("software package not found for %s", key),
+					})
+					mu.Unlock()
+					completed.Add(1)
+					if progressCallback != nil {
+						progressCallback(int(completed.Load()), len(infos), info.Filename)
+					}
+					continue
+				}
+
+				// Upload version
+				created, err := uploadVersion(ctx, config, info, softwareID)
+
+				completed.Add(1)
+
+				if err != nil {
+					mu.Lock()
+					uploadErrors = append(uploadErrors, UploadError{
+						FilePath: info.FilePath,
+						Name:     info.Name,
+						Version:  info.Version,
+						Error:    err,
+					})
+					mu.Unlock()
+				} else {
+					successCount.Add(1)
+					if created {
+						versionsCreated.Add(1)
+					} else {
+						versionsFound.Add(1)
+					}
+				}
+
+				if progressCallback != nil {
+					progressCallback(int(completed.Load()), len(infos), info.Filename)
+				}
+			}
+		}()
+	}
+
+	// Wait for all workers to complete
+	wg.Wait()
+
+	result.SuccessCount = int(successCount.Load())
+	result.FailureCount = len(uploadErrors)
+	result.Errors = uploadErrors
+	result.VersionsCreated = int(versionsCreated.Load())
+	result.VersionsFound = int(versionsFound.Load())
+
+	return result
+}
+
+// uploadVersion uploads a single software version
+// Returns (created bool, error) where created indicates if the version was newly uploaded
+func uploadVersion(
+	ctx context.Context,
+	config *UploadConfig,
+	info *SoftwareInfo,
+	softwareID string,
+) (bool, error) {
+	if config.DryRun {
+		return false, nil
+	}
+
+	slog.Debug("Uploading version",
+		"software_id", softwareID,
+		"version", info.Version,
+		"file", info.Filename)
+
+	// Use GetOrCreateVersion
+	result := config.Client.Repository.Software.Versions.GetOrCreateVersion(
+		ctx,
+		softwareversions.CreateOptions{
+			SoftwareID: softwareID,
+			Version:    info.Version,
+			File: softwareversions.UploadFileOptions{
+				Name:        info.Filename,
+				ContentType: detectContentType(info.Filename),
+				FilePath:    info.FilePath,
+			},
+		},
+	)
+
+	if result.Err != nil {
+		slog.Error("Failed to upload version",
+			"software_id", softwareID,
+			"version", info.Version,
+			"file", info.Filename,
+			"error", result.Err)
+		return false, fmt.Errorf("upload failed: %w", result.Err)
+	}
+
+	versionID := result.Data.ID()
+
+	// Debug logging to inspect actual result values
+	slog.Debug("Version upload result details",
+		"software_id", softwareID,
+		"version_id", versionID,
+		"version", info.Version,
+		"status", result.Status,
+		"meta_found", result.Meta["found"],
+		"http_status", result.HTTPStatus)
+
+	// Check if this was newly created or already existed
+	// Meta["found"] is set by GetOrCreateVersion:
+	//   - true if version already existed
+	//   - false if version was newly created
+	var created bool
+	if result.Meta != nil {
+		if foundVal, ok := result.Meta["found"].(bool); ok {
+			created = !foundVal // created = true when found = false
+		}
+	}
+
+	// Fallback to checking Status if Meta["found"] is not set
+	if result.Meta == nil || result.Meta["found"] == nil {
+		created = result.Status == "Created"
+	}
+
+	if created {
+		slog.Info("Uploaded new software version",
+			"software_id", softwareID,
+			"version_id", versionID,
+			"version", info.Version,
+			"file", info.Filename)
+	} else {
+		slog.Debug("Version already exists",
+			"software_id", softwareID,
+			"version_id", versionID,
+			"version", info.Version,
+			"file", info.Filename)
+	}
+
+	return created, nil
+}
+
+// detectContentType returns an appropriate content type based on file extension
+func detectContentType(filename string) string {
+	ext := filepath.Ext(filename)
+
+	contentTypes := map[string]string{
+		".tar.gz": "application/gzip",
+		".tgz":    "application/gzip",
+		".tar":    "application/x-tar",
+		".zip":    "application/zip",
+		".bin":    "application/octet-stream",
+		".deb":    "application/vnd.debian.binary-package",
+		".rpm":    "application/x-rpm",
+		".apk":    "application/vnd.android.package-archive",
+		".jar":    "application/java-archive",
+		".war":    "application/java-archive",
+		".exe":    "application/x-msdownload",
+		".msi":    "application/x-msi",
+	}
+
+	if ct, ok := contentTypes[strings.ToLower(ext)]; ok {
+		return ct
+	}
+
+	// Check for double extensions
+	if strings.HasSuffix(strings.ToLower(filename), ".tar.gz") {
+		return "application/gzip"
+	}
+	if strings.HasSuffix(strings.ToLower(filename), ".tar.bz2") {
+		return "application/x-bzip2"
+	}
+	if strings.HasSuffix(strings.ToLower(filename), ".tar.xz") {
+		return "application/x-xz"
+	}
+
+	return "application/octet-stream"
+}
