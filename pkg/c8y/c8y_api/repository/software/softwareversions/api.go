@@ -507,11 +507,11 @@ func (s *Service) GetOrCreateVersion(ctx context.Context, opt CreateVersionOptio
 			softwareID := opt.SoftwareID
 			if softwareID == "" && opt.SoftwareName != "" {
 				// Use string-based resolver
-				identifier := "name:" + opt.SoftwareName
-				if opt.SoftwareType != "" {
-					identifier = "name:" + opt.SoftwareName + ":" + opt.SoftwareType
-				}
-				softwareResult := s.software.Get(ctx, identifier, softwareitems.GetOptions{})
+				softwareResult := s.software.Get(
+					ctx,
+					softwareitems.NewRef().ByName(opt.SoftwareName, opt.SoftwareType),
+					softwareitems.GetOptions{},
+				)
 				if softwareResult.Err != nil {
 					return op.Result[jsonmodels.SoftwareVersion]{}, false
 				}
