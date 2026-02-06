@@ -545,6 +545,85 @@ func (s *Service) GetOrCreateVersion(ctx context.Context, opt CreateOptions) op.
 		ExecuteOrDefer(ctx)
 }
 
+// ReplaceVersion replaces an existing software version's binary
+// It deletes the old binary (if it's hosted on the same tenant) and uploads a new one
+func (s *Service) ReplaceVersion(ctx context.Context, versionID string, opt CreateOptions) op.Result[jsonmodels.SoftwareVersion] {
+	// Step 1: Get the existing version
+	getResult := s.Get(ctx, versionID, GetOptions{})
+	if getResult.Err != nil {
+		return op.Failed[jsonmodels.SoftwareVersion](
+			fmt.Errorf("failed to get existing version: %w", getResult.Err),
+			true,
+		)
+	}
+
+	existingVersion := getResult.Data
+
+	// Step 2: Check if there's an existing binary URL and delete it
+	existingURL := existingVersion.URL()
+	if existingURL != "" {
+		// Step 3: Extract binary ID if it's from the same tenant
+		// URL format: /inventory/binaries/{id} or full URL with same base
+		if binaryID := extractBinaryID(existingURL); binaryID != "" {
+			// Step 4: Delete the old binary
+			deleteResult := s.binaries.Delete(ctx, binaryID)
+			if deleteResult.Err != nil {
+				// Log warning but continue - the binary might already be deleted
+				fmt.Printf("Warning: failed to delete old binary %s: %v\n", binaryID, deleteResult.Err)
+			}
+		}
+	}
+
+	// Step 5: Upload new binary if file provided
+	url := opt.URL
+	if url == "" && opt.File.Name != "" {
+		binaryResult := s.binaries.Create(ctx, opt.File)
+		if binaryResult.IsError() {
+			return op.Failed[jsonmodels.SoftwareVersion](
+				fmt.Errorf("failed to upload new binary: %w", binaryResult.Err),
+				true,
+			)
+		}
+		url = binaryResult.Data.Self()
+	}
+
+	// Step 6: Update the version with new URL
+	updateBody := map[string]any{
+		"c8y_Software": map[string]any{
+			"version": opt.Version,
+		},
+	}
+	if url != "" {
+		updateBody["c8y_Software"].(map[string]any)["url"] = url
+	}
+
+	return s.Update(ctx, versionID, updateBody)
+}
+
+// extractBinaryID extracts the binary ID from a Cumulocity binary URL
+// Returns empty string if the URL is external or invalid
+func extractBinaryID(url string) string {
+	// Handle relative URLs: /inventory/binaries/{id}
+	if strings.HasPrefix(url, "/inventory/binaries/") {
+		parts := strings.Split(url, "/")
+		if len(parts) >= 4 {
+			return parts[3]
+		}
+	}
+
+	// Handle full URLs: https://tenant.cumulocity.com/inventory/binaries/{id}
+	if strings.Contains(url, "/inventory/binaries/") {
+		parts := strings.Split(url, "/inventory/binaries/")
+		if len(parts) == 2 {
+			// Remove any query parameters
+			binaryID := strings.Split(parts[1], "?")[0]
+			return binaryID
+		}
+	}
+
+	return ""
+}
+
 // Builder methods
 
 func (s *Service) createB(softwareID string, body any) *core.TryRequest {

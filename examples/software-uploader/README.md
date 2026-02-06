@@ -13,8 +13,10 @@ A CLI tool for bulk uploading software packages to Cumulocity IoT. It recursivel
 - 📊 **Progress Tracking**: Real-time progress bars showing upload status
 - 🎯 **Efficient Deduplication**: Groups files by software name and architecture to minimize API calls
 - 🔄 **Idempotent**: Uses GetOrCreate pattern - safe to run multiple times
+- � **Force Replacement**: Optional --force mode to replace existing version binaries
 - 🛡️ **Error Handling**: Graceful error handling with detailed reporting
 - 🔧 **Auto Type Detection**: Automatically detects software type from file extension (.deb→apt, .rpm→rpm, etc.)
+- 🐛 **Debug Mode**: HTTP request/response logging for troubleshooting
 
 ## Installation
 
@@ -52,6 +54,8 @@ go build -o software-uploader
 - `--concurrency` (default: `5`): Number of concurrent uploads (1-20)
 - `--dry-run`: Preview what would be uploaded without actually uploading
 - `--verbose`: Enable detailed logging to track software creation and version uploads
+- `--debug`: Enable debug mode (verbose logging + HTTP request/response details)
+- `--force`: Force replacement of existing version binaries (deletes old binary, uploads new one)
 
 ## Filename Parsing Examples
 
@@ -115,14 +119,41 @@ The tool uses extension-specific parsers to accurately extract software name, ve
 ⏱️  Total time: 12.3s
 
 ──────────────────────────────────────────────────
-Total: 27 processed (15 new, 12 existing), 0 failed
+Total: 27 processed (15 new, 0 replaced, 12 existing), 0 failed
 ```
 
 The tool now tracks and displays:
 - **Newly uploaded versions**: Versions that were uploaded to Cumulocity for the first time
+- **Replaced**: Versions that were forcibly replaced with new binaries (only in --force mode)
 - **Already existed**: Versions that were already present (skipped, idempotent operation)
 
-This helps you understand on subsequent runs how many versions are new vs. already synchronized.
+This helps you understand on subsequent runs how many versions are new vs. already synchronized vs. forcibly updated.
+
+### Force Replacement Mode
+
+Use the `--force` flag to replace existing version binaries. This is useful when you've rebuilt packages and want to update them in Cumulocity:
+
+```bash
+./software-uploader --dir ./releases --pattern "*.deb" --force
+```
+
+With `--force`, the tool will:
+1. Check if each version already exists
+2. If it exists, delete the old binary from Cumulocity
+3. Upload the new binary file
+4. Update the version to reference the new binary
+5. Count it as "Replaced" in the statistics
+
+**Example output with --force:**
+```
+✅ Successfully processed 9 version(s)
+   🔄 Replaced: 9
+
+⏱️  Total time: 8.5s
+
+──────────────────────────────────────────────────
+Total: 9 processed (0 new, 9 replaced, 0 existing), 0 failed
+```
 
 ### Verbose Logging
 
@@ -148,13 +179,33 @@ level=DEBUG msg="Version upload result details" software_id=123456 version_id=78
 level=INFO msg="Uploaded new software version" software_id=123456 version_id=789012 version="1.6.2~584+gd629c53" file="tedge-flows_1.6.2~584+gd629c53_arm64.deb"
 ```
 
+### Debug Mode
+
+Use the `--debug` flag to enable HTTP request/response logging for troubleshooting:
+
+```bash
+./software-uploader --dir ./releases --pattern "*.deb" --debug
+```
+
+This enables both verbose logging AND shows:
+- Full HTTP request URLs and query parameters
+- Request headers and body
+- Response status codes and bodies
+- Timing information for each API call
+
+Use `--debug` when diagnosing issues with API calls, authentication, or query behavior.
+```
+
 ### Verifying Version Statistics
 
-The "Newly uploaded" vs "Already existed" counts are determined by the `meta_found` field:
-- **`meta_found=false`**: Version was newly created → counts as "Newly uploaded"
-- **`meta_found=true`**: Version already existed → counts as "Already existed"
+The version statistics are determined by the upload operation:
+- **Newly uploaded** (`meta_found=false`): Version was newly created
+- **Replaced** (--force mode): Version existed but binary was replaced with a new one
+- **Already existed** (`meta_found=true`): Version already existed and was not modified
 
 To verify the statistics are accurate, run with `--verbose` and check the `meta_found` values in the debug logs. This will show you exactly which versions were created vs found for each file.
+
+With `--force` mode, existing versions will always be replaced, regardless of the `meta_found` value.
 
 ## Identifying Uploaded Software
 

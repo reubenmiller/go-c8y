@@ -20,18 +20,20 @@ type UploadConfig struct {
 	Concurrency  int
 	SoftwareType string
 	DryRun       bool
+	Force        bool // Force replacement of existing versions
 }
 
 // UploadResult contains the results of an upload operation
 type UploadResult struct {
-	TotalFiles      int
-	SuccessCount    int
-	FailureCount    int
-	Errors          []UploadError
-	SoftwareCreated int
-	SoftwareFound   int
-	VersionsCreated int // Number of versions newly uploaded
-	VersionsFound   int // Number of versions that already existed
+	TotalFiles       int
+	SuccessCount     int
+	FailureCount     int
+	Errors           []UploadError
+	SoftwareCreated  int
+	SoftwareFound    int
+	VersionsCreated  int // Number of versions newly uploaded
+	VersionsFound    int // Number of versions that already existed
+	VersionsReplaced int // Number of versions that were replaced (force mode)
 }
 
 // UploadError represents an error during upload
@@ -223,6 +225,7 @@ func UploadSoftwareVersions(
 	var successCount atomic.Int32
 	var versionsCreated atomic.Int32
 	var versionsFound atomic.Int32
+	var versionsReplaced atomic.Int32
 	var mu sync.Mutex
 	var uploadErrors []UploadError
 
@@ -262,7 +265,7 @@ func UploadSoftwareVersions(
 				}
 
 				// Upload version
-				created, err := uploadVersion(ctx, config, info, softwareID)
+				status, err := uploadVersion(ctx, config, info, softwareID)
 
 				completed.Add(1)
 
@@ -277,9 +280,11 @@ func UploadSoftwareVersions(
 					mu.Unlock()
 				} else {
 					successCount.Add(1)
-					if created {
+					if status.Created {
 						versionsCreated.Add(1)
-					} else {
+					} else if status.Replaced {
+						versionsReplaced.Add(1)
+					} else if status.Found {
 						versionsFound.Add(1)
 					}
 				}
@@ -299,39 +304,50 @@ func UploadSoftwareVersions(
 	result.Errors = uploadErrors
 	result.VersionsCreated = int(versionsCreated.Load())
 	result.VersionsFound = int(versionsFound.Load())
+	result.VersionsReplaced = int(versionsReplaced.Load())
 
 	return result
 }
 
+// VersionStatus indicates what happened during version upload
+type VersionStatus struct {
+	Created  bool // Newly created version
+	Replaced bool // Existing version was replaced (force mode)
+	Found    bool // Version already existed and was not modified
+}
+
 // uploadVersion uploads a single software version
-// Returns (created bool, error) where created indicates if the version was newly uploaded
+// Returns (status VersionStatus, error)
 func uploadVersion(
 	ctx context.Context,
 	config *UploadConfig,
 	info *SoftwareInfo,
 	softwareID string,
-) (bool, error) {
+) (VersionStatus, error) {
 	if config.DryRun {
-		return false, nil
+		return VersionStatus{}, nil
 	}
 
 	slog.Debug("Uploading version",
 		"software_id", softwareID,
 		"version", info.Version,
-		"file", info.Filename)
+		"file", info.Filename,
+		"force", config.Force)
 
-	// Use GetOrCreateVersion
+	createOpts := softwareversions.CreateOptions{
+		SoftwareID: softwareID,
+		Version:    info.Version,
+		File: softwareversions.UploadFileOptions{
+			Name:        info.Filename,
+			ContentType: detectContentType(info.Filename),
+			FilePath:    info.FilePath,
+		},
+	}
+
+	// Use GetOrCreateVersion to check if version exists
 	result := config.Client.Repository.Software.Versions.GetOrCreateVersion(
 		ctx,
-		softwareversions.CreateOptions{
-			SoftwareID: softwareID,
-			Version:    info.Version,
-			File: softwareversions.UploadFileOptions{
-				Name:        info.Filename,
-				ContentType: detectContentType(info.Filename),
-				FilePath:    info.FilePath,
-			},
-		},
+		createOpts,
 	)
 
 	if result.Err != nil {
@@ -340,7 +356,7 @@ func uploadVersion(
 			"version", info.Version,
 			"file", info.Filename,
 			"error", result.Err)
-		return false, fmt.Errorf("upload failed: %w", result.Err)
+		return VersionStatus{}, fmt.Errorf("upload failed: %w", result.Err)
 	}
 
 	versionID := result.Data.ID()
@@ -359,8 +375,10 @@ func uploadVersion(
 	//   - true if version already existed
 	//   - false if version was newly created
 	var created bool
+	var existed bool
 	if result.Meta != nil {
 		if foundVal, ok := result.Meta["found"].(bool); ok {
+			existed = foundVal
 			created = !foundVal // created = true when found = false
 		}
 	}
@@ -368,6 +386,41 @@ func uploadVersion(
 	// Fallback to checking Status if Meta["found"] is not set
 	if result.Meta == nil || result.Meta["found"] == nil {
 		created = result.Status == "Created"
+		existed = !created
+	}
+
+	// If force mode is enabled and version already existed, replace it
+	if config.Force && existed {
+		slog.Info("Replacing existing software version",
+			"software_id", softwareID,
+			"version_id", versionID,
+			"version", info.Version,
+			"file", info.Filename)
+
+		replaceResult := config.Client.Repository.Software.Versions.ReplaceVersion(
+			ctx,
+			versionID,
+			createOpts,
+		)
+
+		if replaceResult.Err != nil {
+			slog.Error("Failed to replace version",
+				"software_id", softwareID,
+				"version_id", versionID,
+				"version", info.Version,
+				"file", info.Filename,
+				"error", replaceResult.Err)
+			return VersionStatus{}, fmt.Errorf("replace failed: %w", replaceResult.Err)
+		}
+
+		slog.Info("Successfully replaced software version",
+			"software_id", softwareID,
+			"version_id", versionID,
+			"version", info.Version,
+			"file", info.Filename)
+
+		// Return replaced status
+		return VersionStatus{Replaced: true}, nil
 	}
 
 	if created {
@@ -384,7 +437,7 @@ func uploadVersion(
 			"file", info.Filename)
 	}
 
-	return created, nil
+	return VersionStatus{Created: created, Found: !created}, nil
 }
 
 // detectContentType returns an appropriate content type based on file extension

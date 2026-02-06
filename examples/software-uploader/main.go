@@ -41,6 +41,7 @@ func main() {
 		dryRun       = flag.Bool("dry-run", false, "Preview what would be uploaded without actually uploading")
 		verbose      = flag.Bool("verbose", false, "Enable detailed logging")
 		debug        = flag.Bool("debug", false, "Enable debug mode (verbose logging + HTTP debug)")
+		force        = flag.Bool("force", false, "Force replacement of existing versions (deletes old binary and uploads new one)")
 	)
 
 	flag.Var(&patterns, "pattern", "Glob pattern for matching files (can be specified multiple times, default: *)")
@@ -151,6 +152,7 @@ func main() {
 		Concurrency:  *concurrency,
 		SoftwareType: *softwareType,
 		DryRun:       *dryRun,
+		Force:        *force,
 	}
 
 	// Upload software versions with progress  tracking
@@ -283,6 +285,9 @@ func printResults(result *UploadResult, elapsed time.Duration) {
 		if result.VersionsCreated > 0 {
 			fmt.Printf("   📤 Newly uploaded: %d\n", result.VersionsCreated)
 		}
+		if result.VersionsReplaced > 0 {
+			fmt.Printf("   🔄 Replaced: %d\n", result.VersionsReplaced)
+		}
 		if result.VersionsFound > 0 {
 			fmt.Printf("   ♻️  Already existed: %d\n", result.VersionsFound)
 		}
@@ -305,6 +310,6 @@ func printResults(result *UploadResult, elapsed time.Duration) {
 
 	// Print summary
 	fmt.Println("\n" + strings.Repeat("─", 50))
-	fmt.Printf("Total: %d processed (%d new, %d existing), %d failed\n",
-		result.SuccessCount, result.VersionsCreated, result.VersionsFound, result.FailureCount)
+	fmt.Printf("Total: %d processed (%d new, %d replaced, %d existing), %d failed\n",
+		result.SuccessCount, result.VersionsCreated, result.VersionsReplaced, result.VersionsFound, result.FailureCount)
 }
