@@ -445,7 +445,7 @@ func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.R
 	}
 	meta["id"] = id
 
-	return core.Execute(ctx, s.deleteB(id, opt), jsonmodels.NewSoftwareVersion, meta)
+	return core.Execute(ctx, s.deleteB(id, opt), jsonmodels.NewSoftwareVersion, meta).IgnoreNotFound()
 }
 
 type UploadFileOptions = core.UploadFileOptions
@@ -568,7 +568,7 @@ func (s *Service) DeleteAndCreate(ctx context.Context, versionID string, opt Cre
 	return op.Result[jsonmodels.SoftwareVersion]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.SoftwareVersion] {
 		// Step 1: Delete any existing version (if it exists)
 		deleteResult := s.Delete(execCtx, versionID, DeleteOptions{})
-		if deleteResult.HTTPStatus != 404 && deleteResult.Err != nil {
+		if deleteResult.Err != nil {
 			return op.Failed[jsonmodels.SoftwareVersion](
 				fmt.Errorf("failed to delete existing version: %w", deleteResult.Err),
 				true,

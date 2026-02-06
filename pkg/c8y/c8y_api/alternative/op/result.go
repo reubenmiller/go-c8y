@@ -238,6 +238,44 @@ func (r Result[T]) WithMeta(key string, value any) Result[T] {
 	return r
 }
 
+// IgnoreNotFound clears any error if the HTTP status is 404 Not Found.
+// This is useful for DELETE operations where a 404 indicates the resource
+// is already absent (desired state achieved).
+//
+// Example:
+//
+//	deleteResult := client.Delete(ctx, id).IgnoreNotFound()
+//	if deleteResult.Err != nil {
+//	    // Only real errors, not 404s
+//	}
+func (r Result[T]) IgnoreNotFound() Result[T] {
+	if r.HTTPStatus == 404 {
+		r.Err = nil
+		r = r.WithMeta("ignoredStatus", 404)
+	}
+	return r
+}
+
+// IgnoreStatusCodes clears any error if the HTTP status matches any of the provided codes.
+// This is useful for operations where certain HTTP status codes are acceptable.
+//
+// Example:
+//
+//	result := client.Update(ctx, data).IgnoreStatusCodes(404, 409)
+//	if result.Err != nil {
+//	    // Only errors not related to 404 or 409
+//	}
+func (r Result[T]) IgnoreStatusCodes(codes ...int) Result[T] {
+	for _, code := range codes {
+		if r.HTTPStatus == code {
+			r.Err = nil
+			r = r.WithMeta("ignoredStatus", code)
+			break
+		}
+	}
+	return r
+}
+
 // IsError returns true if the result contains an error
 func (r Result[T]) IsError() bool {
 	return r.Err != nil || r.Status == StatusFailed
@@ -246,6 +284,11 @@ func (r Result[T]) IsError() bool {
 // IsSuccess returns true if the operation succeeded
 func (r Result[T]) IsSuccess() bool {
 	return r.Status == StatusOK || r.Status == StatusCreated || r.Status == StatusUpdated || r.Status == StatusSkipped
+}
+
+// IsNotFound returns true if the HTTP status is 404
+func (r Result[T]) IsNotFound() bool {
+	return r.HTTPStatus == 404
 }
 
 // Unwrap returns data and error (compatible with standard error handling)
