@@ -14,6 +14,7 @@ import (
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
 	"github.com/schollz/progressbar/v3"
+	"golang.org/x/term"
 )
 
 // patternsFlag is a custom flag type that allows multiple pattern values
@@ -42,6 +43,7 @@ func main() {
 		verbose      = flag.Bool("verbose", false, "Enable detailed logging")
 		debug        = flag.Bool("debug", false, "Enable debug mode (verbose logging + HTTP debug)")
 		force        = flag.Bool("force", false, "Force replacement of existing versions (deletes old binary and uploads new one)")
+		noProgress   = flag.Bool("no-progress", false, "Disable progress bar (automatic in non-TTY environments)")
 	)
 
 	flag.Var(&patterns, "pattern", "Glob pattern for matching files (can be specified multiple times, default: *)")
@@ -158,6 +160,10 @@ func main() {
 	// Upload software versions with progress  tracking
 	startTime := time.Now()
 
+	// Determine if progress bar should be shown
+	// Disable if: explicitly disabled via flag OR output is not a TTY (e.g., CI environment)
+	showProgress := !*noProgress && term.IsTerminal(int(os.Stdout.Fd()))
+
 	fmt.Println("📤 Uploading versions...")
 	bar := progressbar.NewOptions(len(softwareInfos),
 		progressbar.OptionSetDescription("Uploading"),
@@ -170,6 +176,7 @@ func main() {
 		progressbar.OptionShowCount(),
 		progressbar.OptionSetWidth(40),
 		progressbar.OptionSetPredictTime(true),
+		progressbar.OptionSetVisibility(showProgress),
 	)
 
 	result := UploadSoftwareVersions(ctx, config, softwareInfos, func(completed, total int, currentFile string) {

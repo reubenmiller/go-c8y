@@ -44,6 +44,27 @@ go build -o software-uploader
 
 # Dry run to preview what would be uploaded
 ./software-uploader --dir ./releases --pattern "*.tar.gz" --pattern "*.zip" --dry-run
+
+# CI/CD usage (progress bar automatically disabled in non-TTY environments)
+./software-uploader --dir ./dist --pattern "*.deb"
+
+# Explicitly disable progress bar
+./software-uploader --dir ./releases --pattern "*.deb" --no-progress
+```
+
+### CI/CD Integration
+
+The tool automatically detects when running in a CI/CD environment (non-TTY output) and disables the progress bar. This ensures clean, parseable log output in CI systems like GitHub Actions, GitLab CI, Jenkins, etc.
+
+**Automatic behavior:**
+- **Interactive terminal**: Progress bar is shown
+- **CI/CD pipeline**: Progress bar is automatically hidden
+- **Explicit control**: Use `--no-progress` to force disable
+
+Example CI usage:
+```bash
+# GitHub Actions, GitLab CI, etc. - progress bar automatically disabled
+./software-uploader --dir ./artifacts --pattern "*.deb" --verbose
 ```
 
 ### Flags
@@ -56,6 +77,7 @@ go build -o software-uploader
 - `--verbose`: Enable detailed logging to track software creation and version uploads
 - `--debug`: Enable debug mode (verbose logging + HTTP request/response details)
 - `--force`: Force replacement of existing version binaries (deletes old binary, uploads new one)
+- `--no-progress`: Disable progress bar (automatically disabled in non-TTY environments like CI)
 
 ## Filename Parsing Examples
 
