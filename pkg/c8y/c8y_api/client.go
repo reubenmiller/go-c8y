@@ -115,12 +115,10 @@ type Client struct {
 	// Notification2        *Notification2Service
 	RemoteAccess   *remoteaccess.Service
 	RetentionRules *retentionrules.Service
-	// Firmware             *InventoryFirmwareService
-	Users      *users.Service
-	UserGroups *usergroups.Service
-	UserRoles  *userroles.Service
-	// DeviceEnrollment     *DeviceEnrollmentService
-	Features *features.Service
+	Users          *users.Service
+	UserGroups     *usergroups.Service
+	UserRoles      *userroles.Service
+	Features       *features.Service
 }
 
 const (
