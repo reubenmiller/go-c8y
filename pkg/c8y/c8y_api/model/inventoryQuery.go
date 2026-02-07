@@ -39,12 +39,15 @@ func (b *InventoryQuery) HasFragment(v string) *InventoryQuery {
 }
 
 func (b *InventoryQuery) AddFilterEqStr(k string, v any) *InventoryQuery {
-	if v != "" {
-		switch value := v.(type) {
-		case string:
+	switch value := v.(type) {
+	case string:
+		if value != "" {
 			b.Filter = append(b.Filter, fmt.Sprintf("(%s eq '%v')", k, value))
-		default:
-			b.Filter = append(b.Filter, fmt.Sprintf("(%s eq %v)", k, value))
+		}
+	default:
+		strValue := fmt.Sprintf("%v", value)
+		if strValue != "" {
+			b.Filter = append(b.Filter, fmt.Sprintf("(%s eq %v)", k, strValue))
 		}
 	}
 	return b
