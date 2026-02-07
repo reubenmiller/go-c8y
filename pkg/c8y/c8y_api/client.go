@@ -13,6 +13,7 @@ import (
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alarms"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/applications"
+	appversions "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/applications/versions"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/auditrecords"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/authentication"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/binaries"
@@ -104,16 +105,15 @@ type Client struct {
 
 	LoginTokens *logintokens.Service
 
-	Devices        *devices.Service
-	ManagedObjects *managedobjects.Service
-	Operations     *operations.Service
-	Tenants        *tenants.Service
-	Events         *events.Service
-	Applications   *applications.Service
-	Microservices  *microservices.Service
-	Repository     *repository.Service
-	// UIExtension          *UIExtensionService
-	// ApplicationVersions  *ApplicationVersionsService
+	Devices              *devices.Service
+	ManagedObjects       *managedobjects.Service
+	Operations           *operations.Service
+	Tenants              *tenants.Service
+	Events               *events.Service
+	Applications         *applications.Service
+	ApplicationVersions  *appversions.Service
+	Microservices        *microservices.Service
+	Repository           *repository.Service
 	UIPlugins            *plugins.Service
 	UIPluginVersions     *versions.Service
 	UIApplicationPlugins *applicationplugins.Service
@@ -255,10 +255,9 @@ func NewClient(opts ClientOptions) *Client {
 
 	c.Devices = devices.NewService(&c.common)
 	c.Applications = applications.NewService(&c.common)
+	c.ApplicationVersions = appversions.NewService(&c.common)
 	c.Microservices = microservices.NewService(&c.common)
 	c.Repository = repository.NewService(&c.common)
-	// c.ApplicationVersions = (*ApplicationVersionsService)(&c.common)
-	// c.UIExtension = (*UIExtensionService)(&c.common)
 	c.UIPlugins = plugins.NewService(&c.common)
 	c.UIPluginVersions = versions.NewService(&c.common)
 	c.UIApplicationPlugins = applicationplugins.NewService(&c.common)
