@@ -106,9 +106,9 @@ func (s *Service) ResolveID(ctx context.Context, identifier string, meta map[str
 
 // ListOptions filter software versions
 type ListOptions struct {
-	SoftwareID   string `url:"-"`
-	SoftwareName string `url:"-"`
-	Version      string `url:"-"`
+	SoftwareID string `url:"-"`
+	Version    string `url:"-"`
+	Query      string `url:"-"`
 
 	// Pagination options
 	pagination.PaginationOptions
@@ -117,30 +117,26 @@ type ListOptions struct {
 // List software versions
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.SoftwareVersion] {
 	// Resolve software name to ID if needed
-	softwareID := opt.SoftwareID
-	if softwareID == "" && opt.SoftwareName != "" {
-		// Use string-based resolver with name format
-		identifier := "name:" + opt.SoftwareName
-		softwareResult := s.software.Get(ctx, identifier, softwareitems.GetOptions{})
-		if softwareResult.Err != nil {
-			return op.Failed[jsonmodels.SoftwareVersion](
-				fmt.Errorf("failed to resolve software name: %w", softwareResult.Err),
-				true,
-			)
-		}
-		softwareID = softwareResult.Data.ID()
+	softwareResult := s.software.Get(ctx, opt.SoftwareID, softwareitems.GetOptions{})
+	if softwareResult.Err != nil {
+		return op.Failed[jsonmodels.SoftwareVersion](
+			fmt.Errorf("failed to resolve software name: %w", softwareResult.Err),
+			true,
+		)
 	}
+	opt.SoftwareID = softwareResult.Data.ID()
 
-	return core.ExecuteCollection(ctx, s.listB(softwareID, opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewSoftwareVersion)
+	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewSoftwareVersion)
 }
 
-func (s *Service) listB(softwareID string, opt ListOptions) *core.TryRequest {
+func (s *Service) listB(opt ListOptions) *core.TryRequest {
 	// Build request directly since managedObjects.listB is now private
 	listOpts := managedobjects.ListOptions{
 		Query: model.NewInventoryQuery().
 			AddFilterEqStr("type", "c8y_SoftwareBinary").
 			AddFilterEqStr("c8y_Software.version", opt.Version).
-			ByGroupID(softwareID).
+			AddFilterPart(opt.Query).
+			ByGroupID(opt.SoftwareID).
 			AddOrderBy("c8y_Software.version").
 			AddOrderBy("creationTime").
 			Build(),
@@ -581,43 +577,123 @@ func (s *Service) DeleteAndCreate(ctx context.Context, versionID string, opt Cre
 		ExecuteOrDefer(ctx)
 }
 
-// ReplaceVersion replaces an existing software version's binary, or creates it if it doesn't exist (upsert)
-// It deletes the old binary (if it's hosted on the same tenant) and uploads a new one
-func (s *Service) ReplaceVersion(ctx context.Context, versionID string, opt CreateVersionOptions) op.Result[jsonmodels.SoftwareVersion] {
-	return op.Result[jsonmodels.SoftwareVersion]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.SoftwareVersion] {
-		// Step 1: Try to get the existing version
-		getResult := s.Get(execCtx, versionID, GetOptions{})
+// Upsert Methods
+// These methods follow the finder/updater/creator pattern from op.UpsertR
+// They search for an existing version, update it if found (optionally replacing binaries), or create it if not found.
+//
+// Key behaviors:
+// - When updating: deletes old binary (if hosted on tenant) and uploads new one
+// - When creating: uploads binary and creates version
+// - Returns Status: "Created" or "Updated" with Meta["found"] indicating if resource existed
+//
+// Available methods:
+// - UpsertByVersion: Upserts by version number and software ID/name (most common)
+// - UpsertWith: Generic query-based upsert (for advanced filtering)
 
-		// If version doesn't exist (404), create it instead
-		if getResult.HTTPStatus == 404 {
-			return s.CreateVersion(execCtx, opt)
+// UpsertByVersion upserts a software version by version number and software ID
+// If the version exists, updates it (optionally replacing the binary).
+// If the version doesn't exist, creates it.
+// This is useful for ensuring a version exists with the latest binary.
+func (s *Service) UpsertByVersion(ctx context.Context, opt CreateVersionOptions) op.Result[jsonmodels.SoftwareVersion] {
+	return op.Result[jsonmodels.SoftwareVersion]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.SoftwareVersion] {
+		// Resolve software ID if needed
+		softwareID := opt.SoftwareID
+		if softwareID == "" && opt.SoftwareName != "" {
+			softwareResult := s.software.Get(
+				execCtx,
+				softwareitems.NewRef().ByName(opt.SoftwareName, opt.SoftwareType),
+				softwareitems.GetOptions{},
+			)
+			if softwareResult.Err != nil {
+				return op.Failed[jsonmodels.SoftwareVersion](
+					fmt.Errorf("failed to resolve software name: %w", softwareResult.Err),
+					true,
+				)
+			}
+			softwareID = softwareResult.Data.ID()
 		}
 
-		if getResult.Err != nil {
+		if softwareID == "" {
 			return op.Failed[jsonmodels.SoftwareVersion](
-				fmt.Errorf("failed to get existing version: %w", getResult.Err),
-				true,
+				fmt.Errorf("must specify SoftwareID or SoftwareName"),
+				false,
 			)
 		}
 
-		existingVersion := getResult.Data
+		// Build query for lookup
+		query := model.NewInventoryQuery().
+			AddFilterEqStr("type", "c8y_SoftwareBinary").
+			AddFilterEqStr("c8y_Software.version", opt.Version).
+			ByGroupID(softwareID).
+			Build()
 
-		// Step 2: Delete the old binary if it exists
-		s.deleteBinaryFromURL(execCtx, existingVersion.URL())
+		return s.upsertWithQuery(execCtx, query, opt)
+	}).WithMeta("operation", "upsertByVersion").
+		ExecuteOrDefer(ctx)
+}
 
-		// Step 3: Upload new binary and update version
-		createOpt := CreateOptions{
-			Version: opt.Version,
-			URL:     opt.URL,
-			File:    opt.File,
+// UpsertWith provides a generic query-based upsert for software versions
+// Updates existing version if found, creates if not found
+// Example queries:
+//   - "c8y_Software.version eq '1.0.0'" (requires softwareID in opt)
+func (s *Service) UpsertWith(ctx context.Context, query string, opt CreateVersionOptions) op.Result[jsonmodels.SoftwareVersion] {
+	return op.Result[jsonmodels.SoftwareVersion]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.SoftwareVersion] {
+		query_ := model.NewInventoryQuery().
+			AddFilterEqStr("type", "c8y_SoftwareBinary").
+			AddFilterPart(query).
+			AddOrderBy("c8y_Software.version").
+			AddOrderBy("creationTime").
+			Build()
+
+		return s.upsertWithQuery(execCtx, query_, opt)
+	}).WithMeta("operation", "upsertWith").
+		ExecuteOrDefer(ctx)
+}
+
+// upsertWithQuery is the internal implementation for upsert
+func (s *Service) upsertWithQuery(ctx context.Context, query string, opt CreateVersionOptions) op.Result[jsonmodels.SoftwareVersion] {
+	// Define finder function
+	finder := func(ctx context.Context) (op.Result[jsonmodels.SoftwareVersion], bool) {
+		// Search for existing version
+		moResult := s.managedObjects.List(ctx, managedobjects.ListOptions{
+			Query: query,
+			PaginationOptions: pagination.PaginationOptions{
+				PageSize: 1,
+			},
+		})
+
+		if moResult.Err != nil {
+			return op.Result[jsonmodels.SoftwareVersion]{}, false
 		}
 
-		url, err := s.uploadBinaryIfNeeded(execCtx, opt.URL, createOpt.File)
+		// Check if any items were found
+		for item := range moResult.Data.Iter() {
+			found := jsonmodels.NewSoftwareVersion(item.Bytes())
+			result := op.OK(found)
+			result.HTTPStatus = moResult.HTTPStatus
+			result.Meta["lookupMethod"] = "query"
+			result.Meta["query"] = query
+			return result, true
+		}
+
+		// Not found
+		return op.Result[jsonmodels.SoftwareVersion]{}, false
+	}
+
+	// Define updater function
+	updater := func(ctx context.Context, existing op.Result[jsonmodels.SoftwareVersion]) op.Result[jsonmodels.SoftwareVersion] {
+		// Delete old binary if we're uploading a new one
+		if opt.File.FilePath != "" || opt.URL != "" {
+			s.deleteBinaryFromURL(ctx, existing.Data.URL())
+		}
+
+		// Upload new binary if needed
+		url, err := s.uploadBinaryIfNeeded(ctx, opt.URL, opt.File)
 		if err != nil {
 			return op.Failed[jsonmodels.SoftwareVersion](err, true)
 		}
 
-		// Step 4: Update the version with new URL
+		// Build update body
 		updateBody := map[string]any{
 			"c8y_Software": map[string]any{
 				"version": opt.Version,
@@ -627,9 +703,25 @@ func (s *Service) ReplaceVersion(ctx context.Context, versionID string, opt Crea
 			updateBody["c8y_Software"].(map[string]any)["url"] = url
 		}
 
-		return s.Update(execCtx, versionID, updateBody)
-	}).WithMeta("operation", "replaceVersion").
-		ExecuteOrDefer(ctx)
+		// Update the version
+		updateResult := s.Update(ctx, existing.Data.ID(), updateBody)
+		if updateResult.Err != nil {
+			return updateResult
+		}
+		return updateResult
+	}
+
+	// Define creator function
+	creator := func(ctx context.Context) op.Result[jsonmodels.SoftwareVersion] {
+		createResult := s.CreateVersion(ctx, opt)
+		if createResult.Err != nil {
+			return createResult
+		}
+		return createResult
+	}
+
+	// Execute upsert pattern
+	return op.UpsertR(ctx, finder, updater, creator)
 }
 
 // extractBinaryID extracts the binary ID from a Cumulocity binary URL

@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/repository/software/softwareversions"
 )
 
@@ -344,11 +346,15 @@ func uploadVersion(
 		},
 	}
 
-	// Use GetOrCreateVersion to check if version exists
-	result := config.Client.Repository.Software.Versions.GetOrCreateVersion(
-		ctx,
-		createOpts,
-	)
+	// Choose method based on Force mode:
+	// - Force mode: UpsertByVersion (always updates if found, replacing binary)
+	// - Normal mode: GetOrCreateVersion (skips if already exists)
+	var result op.Result[jsonmodels.SoftwareVersion]
+	if config.Force {
+		result = config.Client.Repository.Software.Versions.UpsertByVersion(ctx, createOpts)
+	} else {
+		result = config.Client.Repository.Software.Versions.GetOrCreateVersion(ctx, createOpts)
+	}
 
 	if result.Err != nil {
 		slog.Error("Failed to upload version",
@@ -361,70 +367,37 @@ func uploadVersion(
 
 	versionID := result.Data.ID()
 
-	// Debug logging to inspect actual result values
-	slog.Debug("Version upload result details",
-		"software_id", softwareID,
-		"version_id", versionID,
-		"version", info.Version,
-		"status", result.Status,
-		"meta_found", result.Meta["found"],
-		"http_status", result.HTTPStatus)
-
-	// Check if this was newly created or already existed
-	// Meta["found"] is set by GetOrCreateVersion:
-	//   - true if version already existed
-	//   - false if version was newly created
+	// Parse result status
+	// Meta["found"]: true if version existed, false if newly created
+	// Status: "Created" for new, "Updated" for replaced
 	var created bool
-	var existed bool
+	var replaced bool
+	var found bool
+
 	if result.Meta != nil {
 		if foundVal, ok := result.Meta["found"].(bool); ok {
-			existed = foundVal
-			created = !foundVal // created = true when found = false
+			found = foundVal
+			created = !foundVal && result.Status == "Created"
+			replaced = foundVal && result.Status == "Updated"
 		}
 	}
 
 	// Fallback to checking Status if Meta["found"] is not set
 	if result.Meta == nil || result.Meta["found"] == nil {
 		created = result.Status == "Created"
-		existed = !created
+		replaced = result.Status == "Updated"
+		found = !created && !replaced
 	}
 
-	// If force mode is enabled and version already existed, replace it
-	if config.Force && existed {
-		slog.Info("Replacing existing software version",
-			"software_id", softwareID,
-			"version_id", versionID,
-			"version", info.Version,
-			"file", info.Filename)
-
-		replaceResult := config.Client.Repository.Software.Versions.ReplaceVersion(
-			ctx,
-			versionID,
-			createOpts,
-		)
-
-		if replaceResult.Err != nil {
-			slog.Error("Failed to replace version",
-				"software_id", softwareID,
-				"version_id", versionID,
-				"version", info.Version,
-				"file", info.Filename,
-				"error", replaceResult.Err)
-			return VersionStatus{}, fmt.Errorf("replace failed: %w", replaceResult.Err)
-		}
-
-		slog.Info("Successfully replaced software version",
-			"software_id", softwareID,
-			"version_id", versionID,
-			"version", info.Version,
-			"file", info.Filename)
-
-		// Return replaced status
-		return VersionStatus{Replaced: true}, nil
-	}
-
+	// Log the outcome
 	if created {
 		slog.Info("Uploaded new software version",
+			"software_id", softwareID,
+			"version_id", versionID,
+			"version", info.Version,
+			"file", info.Filename)
+	} else if replaced {
+		slog.Info("Replaced existing software version",
 			"software_id", softwareID,
 			"version_id", versionID,
 			"version", info.Version,
@@ -437,7 +410,7 @@ func uploadVersion(
 			"file", info.Filename)
 	}
 
-	return VersionStatus{Created: created, Found: !created}, nil
+	return VersionStatus{Created: created, Replaced: replaced, Found: found}, nil
 }
 
 // detectContentType returns an appropriate content type based on file extension
