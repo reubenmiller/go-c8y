@@ -33,6 +33,9 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/tenants"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/tenants/logintokens"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/trustedcertificates"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/ui/applicationplugins"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/ui/plugins"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/ui/plugins/versions"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/usergroups"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/userroles"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/users"
@@ -111,15 +114,18 @@ type Client struct {
 	Repository     *repository.Service
 	// UIExtension          *UIExtensionService
 	// ApplicationVersions  *ApplicationVersionsService
-	Identity            *identity.Service
-	TrustedCertificates *trustedcertificates.Service
-	Notification2       *notification2.Service
-	RemoteAccess        *remoteaccess.Service
-	RetentionRules      *retentionrules.Service
-	Users               *users.Service
-	UserGroups          *usergroups.Service
-	UserRoles           *userroles.Service
-	Features            *features.Service
+	UIPlugins            *plugins.Service
+	UIPluginVersions     *versions.Service
+	UIApplicationPlugins *applicationplugins.Service
+	Identity             *identity.Service
+	TrustedCertificates  *trustedcertificates.Service
+	Notification2        *notification2.Service
+	RemoteAccess         *remoteaccess.Service
+	RetentionRules       *retentionrules.Service
+	Users                *users.Service
+	UserGroups           *usergroups.Service
+	UserRoles            *userroles.Service
+	Features             *features.Service
 }
 
 const (
@@ -253,6 +259,9 @@ func NewClient(opts ClientOptions) *Client {
 	c.Repository = repository.NewService(&c.common)
 	// c.ApplicationVersions = (*ApplicationVersionsService)(&c.common)
 	// c.UIExtension = (*UIExtensionService)(&c.common)
+	c.UIPlugins = plugins.NewService(&c.common)
+	c.UIPluginVersions = versions.NewService(&c.common)
+	c.UIApplicationPlugins = applicationplugins.NewService(&c.common)
 	c.Notification2 = notification2.NewService(&c.common)
 	// c.Context = (*ContextService)(&c.common)
 	c.RemoteAccess = remoteaccess.NewService(&c.common)
