@@ -368,10 +368,19 @@ func (c *Client) loginDeviceCertificate(ctx context.Context) (string, error) {
 
 func TokenRenewalRetry(c *Client) func(res *resty.Response, err error) bool {
 	return func(res *resty.Response, err error) bool {
+		// Network errors (no response) are always retryable
+		if err != nil && res == nil {
+			return true
+		}
+
 		if !res.IsError() {
 			return false
 		}
-		if res.StatusCode() == 401 {
+
+		statusCode := res.StatusCode()
+
+		// Handle 401 with token renewal
+		if statusCode == 401 {
 			if res.Request.Attempt > 1 {
 				slog.Warn("More than 1 401 detected, giving up", "err", res.Error())
 				return false
@@ -391,7 +400,10 @@ func TokenRenewalRetry(c *Client) func(res *resty.Response, err error) bool {
 			}
 			return false
 		}
-		return true
+
+		// Only retry on server errors (5xx) and rate limiting (429)
+		// Do NOT retry on client errors (4xx) like 404, 400, 403, etc.
+		return statusCode == 429 || (statusCode >= 500 && statusCode < 600)
 	}
 
 }
