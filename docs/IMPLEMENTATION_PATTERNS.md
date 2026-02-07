@@ -429,7 +429,125 @@ func (s *Service) GetOrCreateWith(ctx, body any, query string) op.Result[T]
 
 ---
 
-## 9. Best Practices
+## 9. API Discovery with go-c8y-cli ✅
+
+**Status:** Available tool for development
+
+When implementing new services, use `go-c8y-cli` (accessible via the `c8y` command) to discover API endpoints, request/response formats, and required fields.
+
+### Using --dry Flag
+
+The `--dry` flag shows the HTTP request that would be sent without actually executing it:
+
+```bash
+# Discover configuration repository API
+c8y inventory create \
+    --type c8y_ConfigurationDump \
+    --name config1 \
+    --data "configurationType=agentConfig" \
+    --dry
+
+# Output shows the request details:
+# POST /inventory/managedObjects
+# {
+#   "type": "c8y_ConfigurationDump",
+#   "name": "config1",
+#   "configurationType": "agentConfig"
+# }
+```
+
+### Using --help Flag
+
+Get detailed information about available commands and parameters:
+
+```bash
+# List all inventory commands
+c8y inventory --help
+
+# Get details about creating managed objects
+c8y inventory create --help
+
+# Discover filtering options for listing
+c8y inventory list --help
+```
+
+### Discovery Workflow
+
+**Step 1: Find the command**
+```bash
+c8y --help  # Browse top-level categories
+c8y inventory --help  # List inventory operations
+```
+
+**Step 2: Test with --dry**
+```bash
+# Try creating a resource with --dry to see the API call
+c8y inventory create --type c8y_MyType --name test --dry
+```
+
+**Step 3: Examine the output**
+- Note the HTTP method (GET, POST, PUT, DELETE)
+- Note the endpoint path
+- Note the request body structure
+- Note required vs optional fields
+
+**Step 4: Implement in Go**
+```go
+// Based on the dry-run output:
+// POST /inventory/managedObjects
+// {"type": "c8y_ConfigurationDump", "name": "config1"}
+
+func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[T] {
+    body := map[string]any{
+        "type": "c8y_ConfigurationDump",
+        "name": opt.Name,
+    }
+    return core.Execute(ctx, s.createB(body), NewModel)
+}
+```
+
+### Common Discovery Patterns
+
+**Find query parameters:**
+```bash
+c8y inventory list --help  # See available filters
+c8y inventory list --type c8y_Device --dry  # See query construction
+```
+
+**Find update patterns:**
+```bash
+c8y inventory update --id 12345 --data "description=Updated" --dry
+```
+
+**Find binary upload patterns:**
+```bash
+c8y binaries create --file config.toml --dry
+```
+
+**Find child additions:**
+```bash
+c8y inventory childAdditions create --id 12345 --childId 67890 --dry
+```
+
+### Benefits
+
+- **Fast API discovery** - No need to search documentation
+- **Accurate request formats** - See exactly what Cumulocity expects
+- **Field validation** - Discover required vs optional fields
+- **Query syntax** - Learn inventory query patterns
+- **Authentication** - CLI handles auth, focus on API structure
+
+### Tips
+
+1. Use `--dry` liberally during development
+2. Combine with `--help` to understand all available options
+3. Save dry-run outputs as reference for implementation
+4. Test edge cases (empty values, special characters) with `--dry`
+5. Use `c8y` with session management to avoid repeated login
+
+---
+
+## 10. Best Practices
 
 When implementing or using these patterns:
 
@@ -443,10 +561,11 @@ When implementing or using these patterns:
 8. **Test with Result assertions** - Verify status, not just errors
 9. **Use deferred execution for confirmations** - See DEFERRED_EXECUTION.md
 10. **Leverage device resolvers** - See DEVICE_RESOLVER_PATTERN.md
+11. **Discover APIs with go-c8y-cli** - Use `c8y` with `--dry` and `--help` for implementation guidance
 
 ---
 
-## Future Plans
+## 11. Future Plans
 
 The following features are planned but not yet implemented:
 
