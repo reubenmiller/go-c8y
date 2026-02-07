@@ -3,6 +3,7 @@ package repository
 import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/repository/configuration"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/repository/firmware"
 	software "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/repository/software"
 )
 
@@ -10,6 +11,7 @@ func NewService(s *core.Service) *Service {
 	return &Service{
 		Service:       *s,
 		Software:      software.NewService(s),
+		Firmware:      firmware.NewService(s),
 		Configuration: configuration.NewService(s),
 	}
 }
@@ -19,5 +21,6 @@ type Service struct {
 	core.Service
 
 	Software      *software.Service
+	Firmware      *firmware.Service
 	Configuration *configuration.Service
 }

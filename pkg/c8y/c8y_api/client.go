@@ -262,8 +262,6 @@ func NewClient(opts ClientOptions) *Client {
 	// c.Context = (*ContextService)(&c.common)
 	c.RemoteAccess = remoteaccess.NewService(&c.common)
 	c.RetentionRules = retentionrules.NewService(&c.common)
-	// c.Software = (*InventorySoftwareService)(&c.common)
-	// c.Firmware = (*InventoryFirmwareService)(&c.common)
 	c.Users = users.NewService(&c.common)
 	c.UserGroups = usergroups.NewService(&c.common)
 	c.UserRoles = userroles.NewService(&c.common)

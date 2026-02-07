@@ -58,16 +58,16 @@ func (sv SoftwareVersion) LastUpdated() time.Time {
 }
 
 func (sv SoftwareVersion) SoftwareID() string {
-	return sv.Get(`additionParents.references.#(managedObject.type=="c8y_Software").managedObject.id"`).String()
+	return sv.Get(`additionParents.references.#(managedObject.type=="c8y_Software").managedObject.id`).String()
 }
 
 func (sv SoftwareVersion) SoftwareName() string {
-	return sv.Get(`additionParents.references.#(managedObject.type=="c8y_Software").managedObject.name"`).String()
+	return sv.Get(`additionParents.references.#(managedObject.type=="c8y_Software").managedObject.name`).String()
 }
 
 func (sv SoftwareVersion) SoftwareSelf() string {
-	return sv.Get(`additionParents.references.#(managedObject.type=="c8y_Software").managedObject.self"`).String()
+	return sv.Get(`additionParents.references.#(managedObject.type=="c8y_Software").managedObject.self`).String()
 }
 func (sv SoftwareVersion) SoftwareType() string {
-	return sv.Get(`additionParents.references.#(managedObject.type=="c8y_Software").managedObject.type"`).String()
+	return sv.Get(`additionParents.references.#(managedObject.type=="c8y_Software").managedObject.type`).String()
 }
