@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsondoc"
@@ -68,6 +69,15 @@ func Execute[T any](ctx context.Context, req *TryRequest, fromBytes func([]byte)
 		result := op.Failed[T](err, true)
 		if resp != nil {
 			result = result.WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
+		} else {
+			// Extract HTTP status from error if response is nil
+			var apiErr *Error
+			if errors.As(err, &apiErr) && apiErr.Code >= 100 && apiErr.Code < 600 {
+				result = result.WithHTTPStatus(apiErr.Code)
+				if apiErr.Duration > 0 {
+					result = result.WithDuration(apiErr.Duration)
+				}
+			}
 		}
 		// Merge extra metadata
 		if len(extraMeta) > 0 && extraMeta[0] != nil {
@@ -149,6 +159,15 @@ func ExecuteCollection[T any](ctx context.Context, req *TryRequest, arrayPath, m
 		result := op.Failed[T](err, true)
 		if resp != nil {
 			result = result.WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
+		} else {
+			// Extract HTTP status from error if response is nil
+			var apiErr *Error
+			if errors.As(err, &apiErr) && apiErr.Code >= 100 && apiErr.Code < 600 {
+				result = result.WithHTTPStatus(apiErr.Code)
+				if apiErr.Duration > 0 {
+					result = result.WithDuration(apiErr.Duration)
+				}
+			}
 		}
 		return result.WithRequest(httpReq)
 	}

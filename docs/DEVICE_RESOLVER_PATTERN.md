@@ -247,6 +247,42 @@ func Test_Service_DeviceResolver_StringBased(t *testing.T) {
 }
 ```
 
+### Best Practices for Resolver Testing
+
+**Always use `Ref` helper methods to construct resolver identifiers in tests:**
+
+✅ **Correct:**
+```go
+// Use the NewRef() helper
+identifier := configuration.NewRef().ByName(name)
+result := client.Repository.Configuration.Get(ctx, identifier, opts)
+
+identifier := software.NewRef().ByQuery("name eq 'package1'")
+result := client.Repository.Software.Get(ctx, identifier, opts)
+```
+
+❌ **Incorrect:**
+```go
+// Don't manually construct resolver strings
+identifier := "name:" + name  // Brittle, breaks if format changes
+result := client.Repository.Configuration.Get(ctx, identifier, opts)
+
+identifier := "query:name eq 'package1'"  // Hardcoded format
+result := client.Repository.Software.Get(ctx, identifier, opts)
+```
+
+**Rationale:**
+- Enables refactoring resolver string syntax without breaking tests
+- Centralizes format logic in one place (`Ref` struct)
+- Provides type safety and consistency
+- Makes tests resistant to API changes
+- Easier to discover available resolver methods via IDE autocomplete
+
+**This pattern applies to all services with resolvers:**
+- Device resolvers: `managedobjects.DeviceResolver`
+- Repository resolvers: `configuration.Ref`, `software.Ref`, `firmware.Ref`
+- Identity resolvers: `identity.Ref`
+
 ## Future Enhancements
 
 - Consider adding resolver helpers directly to ListOptions for more ergonomic API

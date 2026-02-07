@@ -18,6 +18,125 @@ func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Man
 	return core.Execute(ctx, s.createB(body), jsonmodels.NewManagedObject)
 }
 
+// CreateWithBinaryOptions options for creating a managed object with an associated binary file
+type CreateWithBinaryOptions struct {
+	// Body is the custom managed object body structure
+	Body map[string]any
+
+	// File upload options for the binary
+	File core.UploadFileOptions
+
+	// SetURLField determines whether to set the URL field in the body after binary upload
+	SetURLField bool
+
+	// URLFieldPath is the path in the body where the URL should be set (e.g., "url" or "c8y_Software.url")
+	// If empty and SetURLField is true, defaults to "url"
+	URLFieldPath string
+
+	// AddChildAddition determines whether to link the uploaded binary as a child addition to the created managed object
+	// Defaults to true if File is provided
+	AddChildAddition bool
+
+	// FailOnChildAdditionError determines whether to fail the entire operation if child addition linking fails
+	// If true: cleanup created resources (managed object and binary) and return error
+	// If false (default): log error in meta and return successful result with the created managed object
+	FailOnChildAdditionError bool
+}
+
+// CreateWithBinary creates a managed object with an optional associated binary file
+// This is a common pattern in Cumulocity where binaries need to be uploaded and linked to managed objects
+// Example use cases: configuration files, software binaries, firmware files, device certificates
+func (s *Service) CreateWithBinary(ctx context.Context, opt CreateWithBinaryOptions) op.Result[jsonmodels.ManagedObject] {
+	return op.Result[jsonmodels.ManagedObject]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.ManagedObject] {
+		var binaryID string
+		var binaryURL string
+
+		// Step 1: Upload binary if file is provided
+		if !opt.File.IsZero() {
+			binaryResult := s.binariesService.Create(execCtx, opt.File)
+			if binaryResult.IsError() {
+				return op.Failed[jsonmodels.ManagedObject](
+					fmt.Errorf("failed to upload binary: %w", binaryResult.Err),
+					true,
+				)
+			}
+			binaryID = binaryResult.Data.ID()
+			binaryURL = binaryResult.Data.Self()
+
+			// Set URL in body if requested
+			if opt.SetURLField {
+				urlPath := opt.URLFieldPath
+				if urlPath == "" {
+					urlPath = "url"
+				}
+				opt.Body[urlPath] = binaryURL
+			}
+		}
+
+		// Step 2: Create the managed object
+		createResult := s.Create(execCtx, opt.Body)
+		if createResult.IsError() {
+			return createResult
+		}
+
+		// Step 3: Link binary as child addition if requested and binary was uploaded
+		if binaryID != "" && opt.AddChildAddition {
+			additionResult := s.ChildAdditions.Create(execCtx, createResult.Data.ID(), binaryID)
+			if additionResult.IsError() {
+				if opt.FailOnChildAdditionError {
+					// Cleanup: Attempt to delete all created resources
+					// Always attempt all cleanups, collect errors, and report them together
+					var cleanupErrors []error
+
+					// Try to delete the managed object
+					deleteResult := s.Delete(execCtx, createResult.Data.ID(), DeleteOptions{})
+					if deleteResult.IsError() {
+						cleanupErrors = append(cleanupErrors, fmt.Errorf("managed object cleanup failed: %w", deleteResult.Err))
+					}
+
+					// Try to delete the binary
+					if binaryID != "" {
+						binaryDeleteResult := s.binariesService.Delete(execCtx, binaryID)
+						if binaryDeleteResult.IsError() {
+							cleanupErrors = append(cleanupErrors, fmt.Errorf("binary cleanup failed: %w", binaryDeleteResult.Err))
+						}
+					}
+
+					// Build comprehensive error message
+					if len(cleanupErrors) > 0 {
+						cleanupMsg := ""
+						for i, err := range cleanupErrors {
+							if i > 0 {
+								cleanupMsg += "; "
+							}
+							cleanupMsg += err.Error()
+						}
+						return op.Failed[jsonmodels.ManagedObject](
+							fmt.Errorf("failed to link child addition: %w (cleanup errors: %s)", additionResult.Err, cleanupMsg),
+							true,
+						)
+					}
+
+					// All cleanup successful
+					return op.Failed[jsonmodels.ManagedObject](
+						fmt.Errorf("failed to link child addition: %w (managed object and binary cleaned up)", additionResult.Err),
+						true,
+					)
+				} else {
+					// Non-fatal: log the error in meta and continue
+					createResult.Meta["childAdditionError"] = additionResult.Err.Error()
+				}
+			} else {
+				createResult.Meta["binaryID"] = binaryID
+				createResult.Meta["childAdditionCreated"] = true
+			}
+		}
+
+		return createResult
+	}).WithMeta("operation", "createWithBinary").
+		ExecuteOrDefer(ctx)
+}
+
 func (s *Service) Get(ctx context.Context, ID string, opt GetOptions) op.Result[jsonmodels.ManagedObject] {
 	// Resolve ID (supports "name:device", "externalId:type:id", etc.)
 	// If deferred execution is enabled, we still need to resolve the ID first

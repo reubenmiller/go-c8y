@@ -18,6 +18,15 @@ type UploadFileOptions struct {
 	ContentType string
 }
 
+// Check if a read is defined or not. Either the FilePath or Reader must be set
+func (s *UploadFileOptions) IsZero() bool {
+	return s.FilePath == "" && s.Reader == nil
+}
+
+func (s *UploadFileOptions) IsSet() bool {
+	return !s.IsZero()
+}
+
 func (s *UploadFileOptions) GetReader() any {
 	if s.FilePath != "" {
 		return SafeOpenFile(s.FilePath)

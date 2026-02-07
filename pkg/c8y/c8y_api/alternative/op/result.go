@@ -291,6 +291,14 @@ func (r Result[T]) IsNotFound() bool {
 	return r.HTTPStatus == 404
 }
 
+// IsRetryable returns true if the HTTP status indicates a retryable error
+// Retryable errors include server errors (5xx) and rate limiting (429)
+// Note: For 429 responses, clients should respect the Retry-After header to determine
+// when to retry. This method only indicates that the error category is retryable.
+func (r Result[T]) IsRetryable() bool {
+	return r.HTTPStatus >= 500 || r.HTTPStatus == 429
+}
+
 // Unwrap returns data and error (compatible with standard error handling)
 func (r Result[T]) Unwrap() (T, error) {
 	return r.Data, r.Err

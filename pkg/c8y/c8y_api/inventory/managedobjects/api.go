@@ -6,6 +6,7 @@ import (
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/binaries"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/identity"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects/childadditions"
@@ -31,6 +32,7 @@ func NewService(s *core.Service) *Service {
 	service := &Service{
 		Service:         *s,
 		identityService: identity.NewService(s),
+		binariesService: binaries.NewService(s),
 		ChildAdditions:  childadditions.NewService(s),
 		ChildAssets:     childassets.NewService(s),
 		ChildDevices:    childdevices.NewService(s),
@@ -102,6 +104,7 @@ func NewService(s *core.Service) *Service {
 type Service struct {
 	core.Service
 	identityService *identity.Service
+	binariesService *binaries.Service
 	ChildAdditions  *childadditions.Service
 	ChildAssets     *childassets.Service
 	ChildDevices    *childdevices.Service
