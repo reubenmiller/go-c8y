@@ -153,7 +153,7 @@ func Paginate[T any, D JSONDocument](
 				count++
 			}
 			if countBeforeResults == count {
-				slog.Info("Stopping pagination as results array is empty")
+				slog.Debug("Stopping pagination as results array is empty")
 				return
 			}
 
