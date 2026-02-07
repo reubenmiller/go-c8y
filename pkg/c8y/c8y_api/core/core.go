@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/google/go-querystring/query"
+	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/internal/context"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
 )
@@ -41,29 +42,38 @@ func (r *TryRequest) URL() *url.URL {
 
 func (r *TryRequest) SetContext(ctx context.Context) *TryRequest {
 	r.Request.SetContext(ctx)
+	// Apply processing mode from context if set
+	r.ApplyProcessingModeFromContext(ctx)
 	return r
 }
-func (r *TryRequest) SetProcessingMode(mode string) *TryRequest {
-	r.Request.SetHeader(types.HeaderProcessingMode, mode)
+
+// ApplyProcessingModeFromContext sets the processing mode header if one is specified in the context
+func (r *TryRequest) ApplyProcessingModeFromContext(ctx context.Context) *TryRequest {
+	if mode := ctxhelpers.GetProcessingMode(ctx); mode != "" {
+		r.SetProcessingMode(mode)
+	}
 	return r
 }
+
+func (r *TryRequest) SetProcessingMode(mode types.ProcessingMode) *TryRequest {
+	r.Request.SetHeader(types.HeaderProcessingMode, string(mode))
+	return r
+}
+
 func (r *TryRequest) SetProcessingModePersistent() *TryRequest {
-	r.Request.SetHeader(types.HeaderProcessingMode, types.ProcessingModePersistent)
-	return r
+	return r.SetProcessingMode(types.ProcessingModePersistent)
 }
+
 func (r *TryRequest) SetProcessingModeTransient() *TryRequest {
-	r.Request.SetHeader(types.HeaderProcessingMode, types.ProcessingModeTransient)
-	return r
+	return r.SetProcessingMode(types.ProcessingModeTransient)
 }
 
 func (r *TryRequest) SetProcessingModeCEP() *TryRequest {
-	r.Request.SetHeader(types.HeaderProcessingMode, types.ProcessingModeCEP)
-	return r
+	return r.SetProcessingMode(types.ProcessingModeCEP)
 }
 
 func (r *TryRequest) SetProcessingModeQuiescent() *TryRequest {
-	r.Request.SetHeader(types.HeaderProcessingMode, types.ProcessingModeQuiescent)
-	return r
+	return r.SetProcessingMode(types.ProcessingModeQuiescent)
 }
 
 func (r *TryRequest) SetNoResponse() *TryRequest {
