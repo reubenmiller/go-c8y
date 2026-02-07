@@ -17,7 +17,6 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/authentication"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/binaries"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/deviceregistration"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/devices"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/events"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/features"
@@ -94,9 +93,8 @@ type Client struct {
 	Alarms       *alarms.Service
 	AuditRecords *auditrecords.Service
 
-	DeviceRegistration *deviceregistration.Service
-	Measurements       *measurements.Service
-	Binaries           *binaries.Service
+	Measurements *measurements.Service
+	Binaries     *binaries.Service
 
 	LoginOptions *loginoptions.Service
 
@@ -240,7 +238,6 @@ func NewClient(opts ClientOptions) *Client {
 	c.common.Client = rclient
 	c.AuditRecords = (*auditrecords.Service)(&c.common)
 	c.TrustedCertificates = trustedcertificates.NewService(&c.common)
-	c.DeviceRegistration = deviceregistration.NewService(&c.common)
 	c.Binaries = (*binaries.Service)(&c.common)
 	c.Identity = identity.NewService(&c.common)
 	c.ManagedObjects = managedobjects.NewService(&c.common)
@@ -252,7 +249,6 @@ func NewClient(opts ClientOptions) *Client {
 	c.Events = events.NewService(&c.common, c.ManagedObjects)
 
 	c.Devices = devices.NewService(&c.common)
-	// c.DeviceEnrollment = (*DeviceEnrollmentService)(&c.common)
 	c.Applications = applications.NewService(&c.common)
 	c.Microservices = microservices.NewService(&c.common)
 	c.Repository = repository.NewService(&c.common)

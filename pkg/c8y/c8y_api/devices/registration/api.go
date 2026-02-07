@@ -1,4 +1,4 @@
-package deviceregistration
+package registration
 
 import (
 	"context"

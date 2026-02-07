@@ -6,6 +6,8 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/devices/enrollment"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/devices/registration"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
@@ -21,6 +23,8 @@ const ResultProperty = managedobjects.ResultProperty
 func NewService(s *core.Service) *Service {
 	return &Service{
 		Service:        *s,
+		Enrollment:     enrollment.NewService(s),
+		Registration:   registration.NewService(s),
 		managedObjects: *managedobjects.NewService(s),
 	}
 }
@@ -29,6 +33,9 @@ func NewService(s *core.Service) *Service {
 // type Service core.Service
 type Service struct {
 	core.Service
+
+	Enrollment   *enrollment.Service
+	Registration *registration.Service
 
 	managedObjects managedobjects.Service
 }

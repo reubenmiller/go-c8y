@@ -46,7 +46,7 @@ func Test_BulkRegistration(t *testing.T) {
 	b := &bytes.Buffer{}
 	err := model.BulkRegistrationRecordWriter(b, registrations...)
 	assert.NoError(t, err)
-	result := client.DeviceRegistration.CreateBulk(context.Background(), core.UploadFileOptions{
+	result := client.Devices.Registration.CreateBulk(context.Background(), core.UploadFileOptions{
 		Reader: b,
 	})
 	assert.NoError(t, result.Err)
