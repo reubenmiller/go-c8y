@@ -25,6 +25,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/loginoptions"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/measurements"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/microservices"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/notification2"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/operations"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/remoteaccess"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/repository"
@@ -112,13 +113,13 @@ type Client struct {
 	// ApplicationVersions  *ApplicationVersionsService
 	Identity            *identity.Service
 	TrustedCertificates *trustedcertificates.Service
-	// Notification2        *Notification2Service
-	RemoteAccess   *remoteaccess.Service
-	RetentionRules *retentionrules.Service
-	Users          *users.Service
-	UserGroups     *usergroups.Service
-	UserRoles      *userroles.Service
-	Features       *features.Service
+	Notification2       *notification2.Service
+	RemoteAccess        *remoteaccess.Service
+	RetentionRules      *retentionrules.Service
+	Users               *users.Service
+	UserGroups          *usergroups.Service
+	UserRoles           *userroles.Service
+	Features            *features.Service
 }
 
 const (
@@ -252,7 +253,7 @@ func NewClient(opts ClientOptions) *Client {
 	c.Repository = repository.NewService(&c.common)
 	// c.ApplicationVersions = (*ApplicationVersionsService)(&c.common)
 	// c.UIExtension = (*UIExtensionService)(&c.common)
-	// c.Notification2 = (*Notification2Service)(&c.common)
+	c.Notification2 = notification2.NewService(&c.common)
 	// c.Context = (*ContextService)(&c.common)
 	c.RemoteAccess = remoteaccess.NewService(&c.common)
 	c.RetentionRules = retentionrules.NewService(&c.common)
