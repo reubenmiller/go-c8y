@@ -72,16 +72,16 @@ func main() {
 
 	pendingOps2 := pipeline.Expand(pendingOps, func(operation jsonmodels.Operation) iter.Seq2[jsonmodels.Operation, error] {
 		item := client.Operations.Update(ctx, operation.ID(), map[string]any{
-			"status": "EXECUTING",
+			"status": "EXECUTING2",
 		})
 		// conditional
 		if item.Data.Exists("c8y_Command") {
 			// skip
 			return pipeline.EmptyOf(operation)
 		}
-		// op.Single returns iter.Seq2[T, error] - errors are propagated through the pipeline
-		// This ensures Update errors are caught and counted in the error statistics
-		return op.Single(item)
+		// op.SingleWithItem preserves the original operation on error
+		// This ensures OnError callback receives the actual operation, not a zero-value
+		return op.SingleWithItem(operation, item)
 	})
 
 	// Step 4: Update each pending operation to FAILED
@@ -91,7 +91,19 @@ func main() {
 		Delay:     1000 * time.Millisecond,
 		MaxErrors: 2,
 		OnProgress: func(stats pipeline.Stats) {
-			fmt.Printf("\rOperations updated: %d (failed: %d)", stats.Completed, stats.Failed)
+			msg := fmt.Sprintf("\rOperations updated: %d (failed: %d)", stats.Completed, stats.Failed)
+			if stats.LastError != nil {
+				msg += fmt.Sprintf(" | Last error: %v", stats.LastError)
+			}
+			fmt.Print(msg)
+		},
+		OnError: func(item any, err error) {
+			// Correlate the error with the specific item that failed
+			if op, ok := item.(jsonmodels.Operation); ok {
+				log.Printf("Failed to update operation %s: %v", op.ID(), err)
+			} else {
+				log.Printf("Failed to process item: %v", err)
+			}
 		},
 	},
 		func(ctx context.Context, op jsonmodels.Operation) error {
@@ -111,8 +123,28 @@ func main() {
 			fmt.Printf("%s %s: %d\n", method, path, count)
 		}
 	}
+
 	if err != nil {
-		log.Fatalf("Pipeline failed: %v", err)
+		// Display detailed error information
+		switch e := err.(type) {
+		case *pipeline.PipelineError:
+			log.Printf("Pipeline completed with %d errors out of %d items", e.Failed, e.Completed)
+			log.Printf("Sample errors:")
+			for i, sampleErr := range e.SampleErrors {
+				log.Printf("  %d: %v", i+1, sampleErr)
+			}
+		case *pipeline.AbortError:
+			log.Printf("Pipeline aborted: %s", e.Reason)
+			log.Printf("Failed: %d/%d", e.Failed, e.Completed)
+			if len(e.SampleErrors) > 0 {
+				log.Printf("Sample errors:")
+				for i, sampleErr := range e.SampleErrors {
+					log.Printf("  %d: %v", i+1, sampleErr)
+				}
+			}
+		default:
+			log.Fatalf("Pipeline failed: %v", err)
+		}
 	}
 	fmt.Println("Done")
 }

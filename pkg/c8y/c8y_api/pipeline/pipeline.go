@@ -31,6 +31,18 @@ type Options struct {
 	// It is called from an unspecified goroutine; the callback must be safe
 	// for concurrent use.
 	OnProgress func(Stats)
+
+	// OnError is called each time an error occurs (from iterator or user function).
+	// It receives the item that failed and the error.
+	// The item is passed as interface{} - use type assertion to access its fields.
+	// This is called from an unspecified goroutine; the callback must be safe
+	// for concurrent use.
+	// Example: OnError: func(item any, err error) {
+	//     if op, ok := item.(jsonmodels.Operation); ok {
+	//         log.Printf("Failed to process %s: %v", op.ID(), err)
+	//     }
+	// }
+	OnError func(item any, err error)
 }
 
 func (o Options) workers() int {
@@ -54,6 +66,10 @@ type Stats struct {
 
 	// InFlight is the number of items currently being processed by workers.
 	InFlight int
+
+	// LastError is the most recent error encountered (from iterator or user function).
+	// This is updated each time an error occurs.
+	LastError error
 }
 
 // ForEach processes each item yielded by items, calling fn for each one.
@@ -65,10 +81,12 @@ type Stats struct {
 //   - MaxErrors is reached (if > 0)
 //   - ErrorThreshold is exceeded (if > 0)
 //
-// ForEach returns the first error that caused an abort, or nil if all items
-// completed (even if some individual items failed — use OnProgress to track those).
-// If the pipeline is aborted due to error limits, the returned error wraps
-// the most recent item error.
+// ForEach returns:
+//   - nil if all items completed (even if some failed — use OnProgress to track those)
+//   - PipelineError if aborted due to MaxErrors/ErrorThreshold (includes sample errors)
+//   - context error if ctx was cancelled
+//
+// Use Stats.LastError in OnProgress callback to see individual errors as they occur.
 func ForEach[T any](
 	ctx context.Context,
 	items iter.Seq2[T, error],
@@ -397,6 +415,7 @@ func execute[T, R any](
 	work := make(chan workItem, numWorkers)
 
 	type resultItem struct {
+		item  T // Original item for error correlation
 		value R
 		err   error
 	}
@@ -406,6 +425,12 @@ func execute[T, R any](
 	var completed atomic.Int64
 	var failed atomic.Int64
 	var inFlight atomic.Int64
+
+	// Error tracking
+	var errorsMu sync.Mutex
+	var errors []error // Collect first N errors
+	const maxErrors = 10
+	var lastError error
 
 	// Abort error (set at most once)
 	var abortErr error
@@ -461,9 +486,9 @@ func execute[T, R any](
 					failed.Add(1)
 				}
 
-				// Send result (even on error, for Collect to know about it)
+				// Send result (include original item for error correlation)
 				select {
-				case results <- resultItem{value: value, err: err}:
+				case results <- resultItem{item: wi.item, value: value, err: err}:
 				case <-ctx.Done():
 					return
 				}
@@ -497,7 +522,7 @@ func execute[T, R any](
 				completed.Add(1)
 				failed.Add(1)
 				select {
-				case results <- resultItem{value: *new(R), err: err}:
+				case results <- resultItem{item: item, value: *new(R), err: err}:
 				case <-ctx.Done():
 					return
 				}
@@ -518,45 +543,127 @@ func execute[T, R any](
 	for r := range results {
 		if r.err == nil {
 			collected = append(collected, r.value)
+		} else {
+			// Track errors
+			errorsMu.Lock()
+			if len(errors) < maxErrors {
+				errors = append(errors, r.err)
+			}
+			lastError = r.err
+			errorsMu.Unlock()
+
+			// Call OnError callback if provided
+			if opts.OnError != nil {
+				opts.OnError(r.item, r.err)
+			}
 		}
 
 		if opts.OnProgress != nil {
 			c := completed.Load()
 			f := failed.Load()
 			inf := inFlight.Load()
+			errorsMu.Lock()
+			lastErr := lastError
+			errorsMu.Unlock()
 			opts.OnProgress(Stats{
 				Completed: int(c),
 				Failed:    int(f),
 				Total:     int(c) + int(inf),
 				InFlight:  int(inf),
+				LastError: lastErr,
 			})
 		}
 	}
 
 	if abortErr != nil {
+		// Wrap abort error with sample errors
+		errorsMu.Lock()
+		sampleErrs := make([]error, len(errors))
+		copy(sampleErrs, errors)
+		errorsMu.Unlock()
+
+		if ae, ok := abortErr.(*AbortError); ok {
+			ae.SampleErrors = sampleErrs
+		}
 		return collected, abortErr
+	}
+
+	// If there were errors but we didn't abort, still return them
+	errorsMu.Lock()
+	hasErrors := len(errors) > 0
+	sampleErrs := make([]error, len(errors))
+	copy(sampleErrs, errors)
+	errorsMu.Unlock()
+
+	if hasErrors {
+		c := completed.Load()
+		f := failed.Load()
+		return collected, &PipelineError{
+			Completed:    int(c),
+			Failed:       int(f),
+			SampleErrors: sampleErrs,
+		}
 	}
 
 	return collected, ctx.Err()
 }
 
+// PipelineError is returned when the pipeline completes with errors
+// but was not aborted early. It includes samples of the errors encountered.
+type PipelineError struct {
+	Completed    int
+	Failed       int
+	SampleErrors []error // First N errors encountered
+}
+
+func (e *PipelineError) Error() string {
+	msg := "pipeline completed with errors: " + itoa(e.Failed) + " failed out of " + itoa(e.Completed)
+	if len(e.SampleErrors) > 0 {
+		msg += " (first error: " + e.SampleErrors[0].Error() + ")"
+	}
+	return msg
+}
+
+// Unwrap returns the first sample error for error chain inspection
+func (e *PipelineError) Unwrap() error {
+	if len(e.SampleErrors) > 0 {
+		return e.SampleErrors[0]
+	}
+	return nil
+}
+
 // AbortError is returned when pipeline processing is stopped early
 // due to MaxErrors or ErrorThreshold limits being exceeded.
 type AbortError struct {
-	Reason    string
-	Completed int
-	Failed    int
-	Threshold float64
+	Reason       string
+	Completed    int
+	Failed       int
+	Threshold    float64
+	SampleErrors []error // First N errors encountered
 }
 
 func (e *AbortError) Error() string {
+	msg := ""
 	if e.Threshold > 0 {
-		return "pipeline aborted: " + e.Reason +
+		msg = "pipeline aborted: " + e.Reason +
 			" (failed " + itoa(e.Failed) + "/" + itoa(e.Completed) +
 			", threshold " + ftoa(e.Threshold) + ")"
+	} else {
+		msg = "pipeline aborted: " + e.Reason +
+			" (failed " + itoa(e.Failed) + "/" + itoa(e.Completed) + ")"
 	}
-	return "pipeline aborted: " + e.Reason +
-		" (failed " + itoa(e.Failed) + "/" + itoa(e.Completed) + ")"
+	if len(e.SampleErrors) > 0 {
+		msg += " (first error: " + e.SampleErrors[0].Error() + ")"
+	}
+	return msg
+}
+
+// Unwrap returns the first sample error for error chain inspection
+func (e *AbortError) Unwrap() error {
+	if len(e.SampleErrors) > 0 {
+		return e.SampleErrors[0]
+	}
+	return nil
 }
 
 // itoa is a simple int-to-string without importing strconv.

@@ -565,3 +565,27 @@ func Single[T any](r Result[T]) iter.Seq2[T, error] {
 		yield(r.Data, nil)
 	}
 }
+
+// SingleWithItem converts a Result containing a single item into an iterator,
+// preserving the original item when there's an error. This is useful for error
+// correlation in pipelines where you need to know which item failed.
+//
+// When the Result has an error, original is yielded instead of a zero-value.
+// This allows OnError callbacks to access the actual item that was being processed.
+//
+// Example in a pipeline:
+//
+//	pipeline.Expand(ops, func(operation jsonmodels.Operation) iter.Seq2[jsonmodels.Operation, error] {
+//	    result := client.Operations.Update(ctx, operation.ID(), updates)
+//	    // If update fails, 'operation' (not zero-value) will be available in OnError
+//	    return op.SingleWithItem(operation, result)
+//	})
+func SingleWithItem[T any](original T, r Result[T]) iter.Seq2[T, error] {
+	return func(yield func(T, error) bool) {
+		if r.Err != nil {
+			yield(original, r.Err)
+			return
+		}
+		yield(r.Data, nil)
+	}
+}
