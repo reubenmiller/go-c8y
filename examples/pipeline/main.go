@@ -72,7 +72,7 @@ func main() {
 
 	pendingOps2 := pipeline.Expand(pendingOps, func(operation jsonmodels.Operation) iter.Seq2[jsonmodels.Operation, error] {
 		item := client.Operations.Update(ctx, operation.ID(), map[string]any{
-			"status": "EXECUTING2",
+			"status": "EXECUTING",
 		})
 		// conditional
 		if item.Data.Exists("c8y_Command") {
