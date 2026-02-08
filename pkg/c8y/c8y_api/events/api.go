@@ -322,6 +322,19 @@ func (s *Service) updateB(ID string, body any) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req)
 }
 
+// Delete removes an event by its ID
+func (s *Service) Delete(ctx context.Context, ID string) op.Result[core.NoContent] {
+	return core.ExecuteNoContent(ctx, s.deleteB(ID))
+}
+
+func (s *Service) deleteB(ID string) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodDelete).
+		SetPathParam(ParamId, ID).
+		SetURL(ApiEvent)
+	return core.NewTryRequest(s.Client, req)
+}
+
 // DeleteListOptions option when deleting a collection of events
 type DeleteListOptions struct {
 	// Start date or date and time of the event's creation (set by the platform during creation)
