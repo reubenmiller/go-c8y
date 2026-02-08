@@ -84,6 +84,24 @@ func CreateDevice(t *testing.T, client *c8y_api.Client) op.Result[jsonmodels.Man
 	return mo
 }
 
+// CreateDeviceAgent creates a new test agent in Cumulocity IoT and registers a cleanup function
+// to delete the agent after the test completes.
+func CreateDeviceAgent(t *testing.T, client *c8y_api.Client) op.Result[jsonmodels.ManagedObject] {
+	mo := client.ManagedObjects.Create(context.TODO(), map[string]any{
+		"name":                       "ci_" + testingutils.RandomString(16),
+		"com_cumulocity_model_Agent": map[string]any{},
+	})
+	if !mo.IsError() {
+		t.Cleanup(func() {
+			client.ManagedObjects.Delete(context.TODO(), mo.Data.ID(), managedobjects.DeleteOptions{
+				Cascade: true,
+			})
+		})
+	}
+	require.NoError(t, mo.Err)
+	return mo
+}
+
 func CreateEvent(t *testing.T, client *c8y_api.Client, mo *jsonmodels.ManagedObject) op.Result[jsonmodels.Event] {
 	return client.Events.Create(context.TODO(), model.Event{
 		Source: model.NewSource(mo.ID()),
