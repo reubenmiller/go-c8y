@@ -276,6 +276,7 @@ func (s *Service) createB(body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetContentType(types.MimeTypeApplicationJSON).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiMeasurements)
 	return core.NewTryRequest(s.Client, req)
@@ -285,6 +286,7 @@ func (s *Service) createBWithJSON(bodyJSON []byte) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetContentType(types.MimeTypeApplicationJSON).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(bodyJSON).
 		SetURL(ApiMeasurements)
 	return core.NewTryRequest(s.Client, req)
@@ -292,16 +294,17 @@ func (s *Service) createBWithJSON(bodyJSON []byte) *core.TryRequest {
 
 // CreateList creates multiple measurements to the platform
 func (s *Service) CreateList(ctx context.Context, body any) op.Result[jsonmodels.Measurement] {
-	return core.Execute(ctx, s.createB(body), jsonmodels.NewMeasurement)
+	return core.ExecuteCollection(ctx, s.createListB(body), ResultProperty, "", jsonmodels.NewMeasurement)
 }
 
 func (s *Service) createListB(body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetContentType(types.MimeTypeCumulocityMeasurementCollection).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiMeasurements)
-	return core.NewTryRequest(s.Client, req)
+	return core.NewTryRequest(s.Client, req, ResultProperty)
 }
 
 // ListSeriesOptions todo
@@ -310,9 +313,9 @@ type ListSeriesOptions struct {
 	// Supports resolver strings: direct ID, "name:deviceName", "ext:type:id", "query:..."
 	Source string `url:"source,omitempty"`
 
-	DateFrom string `url:"dateFrom,omitempty"`
+	DateFrom time.Time `url:"dateFrom,omitzero"`
 
-	DateTo string `url:"dateTo,omitempty"`
+	DateTo time.Time `url:"dateTo,omitzero"`
 
 	AggregationFunction []string `url:"aggregationFunction,omitempty"`
 
