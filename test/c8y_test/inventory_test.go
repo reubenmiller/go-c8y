@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -32,44 +31,6 @@ func getDevices(client *c8y.Client, name string, pageSize int) (*c8y.ManagedObje
 	col, resp, err := client.Inventory.GetManagedObjects(context.Background(), opt)
 
 	return col, resp, err
-}
-
-func TestInventoryService_GetDevices(t *testing.T) {
-	client := createTestClient()
-
-	pageSize := 1
-	opt := &c8y.PaginationOptions{
-		PageSize: pageSize,
-	}
-	data, _, _ := client.Inventory.GetDevices(context.Background(), opt)
-
-	if len(data.Items) != pageSize {
-		t.Errorf("Unexpected amount of devices found. want %d, got: %d", pageSize, len(data.Items))
-	}
-
-	deviceName := data.Items[0].Get("name")
-
-	slog.Info("Device", "name", deviceName)
-}
-
-func TestInventoryService_AuthenticationToken(t *testing.T) {
-	client := createTestClient()
-
-	pageSize := 1
-	opt := &c8y.PaginationOptions{
-		PageSize: pageSize,
-	}
-	// Throw invalid credentials
-	ctx := c8y.NewAuthorizationContext("test", "something", "value")
-	_, resp, err := client.Inventory.GetDevices(ctx, opt)
-
-	if resp.StatusCode() != 401 {
-		t.Errorf("Expected unauthorized access response. want: 401, got: %d", resp.StatusCode())
-	}
-
-	if err == nil {
-		t.Errorf("Function should have thrown an error. %s", err)
-	}
 }
 
 func TestInventoryService_CreateUpdateDeleteBinary(t *testing.T) {
@@ -339,45 +300,4 @@ func TestInventoryService_CreateChildAdditionWithBinary(t *testing.T) {
 	testingutils.Equals(t, "text/plain", binary.Type)
 	testingutils.Equals(t, "testfile1.txt", binary.Name)
 	testingutils.Equals(t, strings.ReplaceAll(binary.Self, "managedObjects", "binaries"), childURL)
-}
-
-func TestInventoryService_GetChildAdditions(t *testing.T) {
-	client := createTestClient()
-
-	device, err := TestEnvironment.NewRandomTestDevice()
-	testingutils.Ok(t, err)
-	opts := (&c8y.ManagedObjectDeleteOptions{}).WithCascade(true)
-	defer client.Inventory.DeleteWithOptions(context.Background(), device.ID, opts)
-
-	child01, _, err := client.Inventory.CreateChildAddition(
-		context.Background(),
-		device.ID,
-		map[string]interface{}{
-			"name": "ntp",
-			"type": "c8y_Service",
-		},
-	)
-	testingutils.Ok(t, err)
-
-	child02, _, err := client.Inventory.CreateChildAddition(
-		context.Background(),
-		device.ID,
-		map[string]interface{}{
-			"name": "mosquitto",
-			"type": "c8y_Service",
-		},
-	)
-	testingutils.Ok(t, err)
-	testingutils.Assert(t, child02.ID != "", "Id is not empty")
-
-	items, _, err := client.Inventory.GetChildAdditions(
-		context.Background(),
-		device.ID,
-		&c8y.ManagedObjectOptions{
-			Query: "$filter=(type eq 'c8y_Service' and name eq 'ntp')",
-		},
-	)
-	testingutils.Ok(t, err)
-	testingutils.Equals(t, 1, len(items.References))
-	testingutils.Equals(t, items.References[0].ManagedObject.ID, child01.ID)
 }

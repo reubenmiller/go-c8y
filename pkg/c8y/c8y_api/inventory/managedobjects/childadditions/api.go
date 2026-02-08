@@ -19,7 +19,7 @@ var ApiManagedObjectChildAddition = "/inventory/managedObjects/{id}/childAdditio
 const ParamId = "id"
 const ParamChild = "child"
 
-const ResultProperty = "managedObjects"
+const ResultProperty = "references.#.managedObject"
 
 // Service
 type Service core.Service
