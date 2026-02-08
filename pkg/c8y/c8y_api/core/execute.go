@@ -242,7 +242,7 @@ func ExecuteBinary(ctx context.Context, req *TryRequest) op.Result[BinaryRespons
 		Send())
 
 	if err != nil {
-		return op.Failed[BinaryResponse](err, false)
+		return op.Failed[BinaryResponse](err, false).WithHTTPStatus(getStatusCodeFromError(err))
 	}
 
 	bin := NewBinaryResponse(resp)
@@ -262,7 +262,7 @@ func ExecuteBinary(ctx context.Context, req *TryRequest) op.Result[BinaryRespons
 			return op.Updated(*bin).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
 		}
 	}
-	return op.OK(*bin).WithDuration(resp.Duration()).WithRequest(httpReq)
+	return op.OK(*bin).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
 }
 
 type NoContent []byte

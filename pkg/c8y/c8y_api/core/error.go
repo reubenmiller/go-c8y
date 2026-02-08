@@ -210,3 +210,15 @@ func ErrTokenRevoked(err any) bool {
 	}
 	return false
 }
+
+// getStatusCodeFromError extracts the HTTP status code from an error if it's an *Error type
+func getStatusCodeFromError(err error) int {
+	if err == nil {
+		return 0
+	}
+	var e *Error
+	if errors.As(err, &e) {
+		return e.StatusCode()
+	}
+	return 0
+}
