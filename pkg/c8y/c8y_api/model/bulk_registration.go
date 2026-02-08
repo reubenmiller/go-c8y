@@ -151,7 +151,7 @@ var BulkRegistrationCertificateAuthorityColumns = []string{
 func BulkRegistrationCertificateAuthorityWriter(w io.Writer, records ...BulkRegistrationRecord) error {
 	csvWriter := csv.NewWriter(w)
 	csvWriter.Comma = '\t'
-	if err := csvWriter.Write(BulkRegistrationColumns); err != nil {
+	if err := csvWriter.Write(BulkRegistrationCertificateAuthorityColumns); err != nil {
 		return err
 	}
 	for _, item := range records {
