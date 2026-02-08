@@ -116,3 +116,27 @@ func CreateTempFile(tb testing.TB, content string) string {
 
 	return tempFile.Name()
 }
+
+// SaveBinaryToFile saves the contents from a reader to a file at the specified path.
+func SaveBinaryToFile(tb testing.TB, reader io.Reader, filepath string) {
+	f, err := os.Create(filepath)
+	if err != nil {
+		tb.Fatalf("failed to create file %s: %v", filepath, err)
+	}
+	defer f.Close()
+
+	if _, err := io.Copy(f, reader); err != nil {
+		tb.Fatalf("failed to write to file %s: %v", filepath, err)
+	}
+
+	if err := f.Sync(); err != nil {
+		tb.Fatalf("failed to sync file %s: %v", filepath, err)
+	}
+}
+
+// DeleteFile deletes a file and fails the test if an error occurs.
+func DeleteFile(tb testing.TB, filepath string) {
+	if err := os.Remove(filepath); err != nil && !os.IsNotExist(err) {
+		tb.Fatalf("failed to delete file %s: %v", filepath, err)
+	}
+}
