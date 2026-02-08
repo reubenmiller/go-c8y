@@ -72,7 +72,9 @@ func CreateDevice(t *testing.T, client *c8y_api.Client) op.Result[jsonmodels.Man
 	mo := client.Devices.Create(context.TODO(), jsonmodels.NewDevice("ci_"+testingutils.RandomString(16)))
 	if !mo.IsError() {
 		t.Cleanup(func() {
-			client.ManagedObjects.Delete(context.TODO(), mo.Data.ID(), managedobjects.DeleteOptions{})
+			client.ManagedObjects.Delete(context.TODO(), mo.Data.ID(), managedobjects.DeleteOptions{
+				Cascade: true,
+			})
 		})
 	}
 	require.NoError(t, mo.Err)
