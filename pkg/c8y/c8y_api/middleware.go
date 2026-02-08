@@ -306,6 +306,10 @@ var HeaderAuthorization = "Authorization"
 
 func MiddlewareAuthorization(auth authentication.AuthOptions) resty.RequestMiddleware {
 	return func(c *resty.Client, r *resty.Request) error {
+		// Don't override the authorization header if already set
+		if v := r.Header.Get(HeaderAuthorization); v != "" {
+			return nil
+		}
 		for _, authType := range auth.GetAuthTypes() {
 			switch authType {
 			case authentication.AuthTypeBasic:
