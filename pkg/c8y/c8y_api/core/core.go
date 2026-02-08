@@ -55,6 +55,21 @@ func (r *TryRequest) ApplyProcessingModeFromContext(ctx context.Context) *TryReq
 	return r
 }
 
+func (r *TryRequest) SetBasicAuth(username, password string) *TryRequest {
+	r.Request.
+		SetAuthToken("").
+		SetAuthScheme("Basic").
+		SetBasicAuth(username, password)
+	return r
+}
+
+func (r *TryRequest) SetToken(token string) *TryRequest {
+	r.Request.
+		SetAuthScheme("Bearer").
+		SetAuthToken(token)
+	return r
+}
+
 func (r *TryRequest) SetProcessingMode(mode types.ProcessingMode) *TryRequest {
 	r.Request.SetHeader(types.HeaderProcessingMode, string(mode))
 	return r

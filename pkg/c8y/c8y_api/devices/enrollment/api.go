@@ -19,6 +19,7 @@ import (
 	"github.com/mdp/qrterminal/v3"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
+	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/internal/context"
 	"github.com/reubenmiller/go-c8y/pkg/certutil"
 	"github.com/reubenmiller/go-c8y/pkg/password"
 	"go.mozilla.org/pkcs7"
@@ -51,20 +52,22 @@ func (s *Service) Enroll(ctx context.Context, opt EnrollOptions) op.Result[X509C
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Content-Transfer-Encoding", "base64").
-		SetHeader("Authorization", fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte(":"+opt.ExternalID+":"+opt.OneTimePassword)))).
 		SetContentType("application/pkcs10").
 		SetBody(base64.StdEncoding.EncodeToString(opt.CSR.Raw)).
-		SetURL(ApiEnroll).
-		Funcs(core.NoAuthorization())
+		SetURL(ApiEnroll)
 
-	b := core.NewTryRequest(s.Client, req)
+	b := core.NewTryRequest(s.Client, req).
+		SetBasicAuth(opt.ExternalID, opt.OneTimePassword)
 	return executeWithCertParse(ctx, b)
 }
 
 // ReEnrollOptions options for re-enrolling a device
 type ReEnrollOptions struct {
+	// Certificate Signing Request to use to re-issue a certificate from Cumulocity
+	CSR *x509.CertificateRequest
+
+	// Override the default token. Don't set this unless you know what you are doing
 	Token string
-	CSR   *x509.CertificateRequest
 }
 
 // ReEnroll an already enrolled device using an existing device certificate
@@ -80,11 +83,10 @@ func (s *Service) ReEnroll(ctx context.Context, opt ReEnrollOptions) op.Result[X
 		SetBody(base64.StdEncoding.EncodeToString(opt.CSR.Raw)).
 		SetURL(ApiReEnroll)
 
-	if opt.Token != "" {
-		req.SetHeader("Authorization", "Bearer "+opt.Token)
-	}
-
 	b := core.NewTryRequest(s.Client, req)
+	if opt.Token != "" {
+		b.SetToken(opt.Token)
+	}
 	return executeWithCertParse(ctx, b)
 }
 
@@ -110,17 +112,38 @@ func (s *Service) GenerateOneTimePassword(opts ...password.PasswordOption) (stri
 
 // executeWithCertParse executes a request and parses the PKCS7/PEM certificate response
 func executeWithCertParse(ctx context.Context, req *core.TryRequest) op.Result[X509Certificate] {
+	// TODO: Add dry run support
 	resp, err := core.ExecuteResponseOnly(ctx, req)
+
+	// Only capture request in dry run mode for inspection
+	var httpReq *http.Request
+	if resp != nil && ctxhelpers.IsDryRun(ctx) {
+		httpReq = resp.Request.RawRequest
+	}
+
 	if err != nil {
-		return op.Failed[X509Certificate](err, true)
+		result := op.Failed[X509Certificate](err, true)
+		if resp != nil {
+			result = result.WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
+		} else {
+			// Extract HTTP status from error if response is nil
+			var apiErr *core.Error
+			if errors.As(err, &apiErr) && apiErr.Code >= 100 && apiErr.Code < 600 {
+				result = result.WithHTTPStatus(apiErr.Code)
+				if apiErr.Duration > 0 {
+					result = result.WithDuration(apiErr.Duration)
+				}
+			}
+		}
+		return result
 	}
 
 	cert, parseErr := parsePKCS7Response(resp.Bytes(), resp.Header())
 	if parseErr != nil {
-		return op.Failed[X509Certificate](parseErr, false)
+		return op.Failed[X509Certificate](parseErr, false).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
 	}
 
-	return op.OK(X509Certificate{cert})
+	return op.OK(X509Certificate{cert}).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
 }
 
 // parsePKCS7Response parses the PKCS7 response

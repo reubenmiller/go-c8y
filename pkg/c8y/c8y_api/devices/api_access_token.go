@@ -9,7 +9,6 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
-	"github.com/reubenmiller/go-c8y/pkg/certutil"
 	"resty.dev/v3"
 )
 
@@ -29,15 +28,9 @@ func (s *Service) CreateAccessToken(ctx context.Context) op.Result[jsonmodels.De
 }
 
 func (s *Service) CreateAccessTokenB() *core.TryRequest {
-	headers := map[string]string{}
-	if v, err := certutil.CertificateChain(s.Client.TLSClientConfig().Certificates).Header(); err == nil && len(v) > 0 {
-		headers[types.HeaderSSLCertificateChain] = string(v)
-	}
-
 	req := s.Service.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetHeaders(headers).
 		SetURL(mtlsEndpoint(s.Client.BaseURL(), ApiDeviceControlAccessToken))
 	return core.NewTryRequest(s.Client, req)
 }

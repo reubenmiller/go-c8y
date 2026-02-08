@@ -2,11 +2,13 @@ package c8y_api
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -34,12 +36,14 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/tenants"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/tenants/logintokens"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/trustedcertificates"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/ui/applicationplugins"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/ui/plugins"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/ui/plugins/versions"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/usergroups"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/userroles"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/users"
+	"github.com/reubenmiller/go-c8y/pkg/certutil"
 	"github.com/zalando/go-keyring"
 	"resty.dev/v3"
 )
@@ -178,6 +182,25 @@ func NewClientFromEnvironment(opt ClientOptions) *Client {
 	return NewClient(opt)
 }
 
+func SetCertificateChainHeaderIfRequired(client *resty.Client, auth authentication.AuthOptions) *resty.Client {
+	certs := make([]tls.Certificate, 0)
+	if _, err := os.Stat(auth.CertificateKey); err == nil {
+		client.SetCertificateFromFile(auth.Certificate, auth.CertificateKey)
+		if cert, err := tls.LoadX509KeyPair(auth.Certificate, auth.CertificateKey); err == nil {
+			certs = append(certs, cert)
+		}
+	} else {
+		client.SetCertificateFromString(auth.Certificate, auth.CertificateKey)
+		if cert, err := tls.X509KeyPair([]byte(auth.Certificate), []byte(auth.CertificateKey)); err == nil {
+			certs = append(certs, cert)
+		}
+	}
+	if headerValue, err := certutil.CertificateChain(certs).Header(); err == nil && len(headerValue) > 0 {
+		client.SetHeader(types.HeaderSSLCertificateChain, string(headerValue))
+	}
+	return client
+}
+
 // NewClient returns a new Cumulocity API client. If a nil httpClient is
 // provided, http.DefaultClient will be used. To use API methods which require
 // authentication, provide an http.Client that will perform the authentication
@@ -191,6 +214,11 @@ func NewClient(opts ClientOptions) *Client {
 		SetRetryMaxWaitTime(30 * time.Second).
 		SetError(core.APIError{}).
 		SetCircuitBreaker(circuitBreaker)
+
+	// Set any certificate before any other Transports are set as these will
+	// make the TLS config inaccessible
+	// TODO: Check if there is a better way to do this
+	SetCertificateChainHeaderIfRequired(rclient, opts.Auth)
 
 	targetBaseURL, _ := url.Parse(FormatBaseURL(opts.BaseURL))
 	if targetBaseURL != nil {
