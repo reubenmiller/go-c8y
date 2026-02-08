@@ -88,6 +88,7 @@ func (s *Service) getB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamId, ID).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiAuditRecord)
 	return core.NewTryRequest(s.Client, req)
 }
@@ -100,6 +101,7 @@ func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Aud
 func (s *Service) createB(body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiAuditRecords)
 	return core.NewTryRequest(s.Client, req)
