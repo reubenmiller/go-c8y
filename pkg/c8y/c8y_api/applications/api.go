@@ -379,6 +379,7 @@ func (s *Service) Copy(ctx context.Context, id string, opt CopyOptions) op.Resul
 func (s *Service) copyB(ID string, opt CopyOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamId, ID).
 		SetURL(ApiApplicationClone)
 	return core.NewTryRequest(s.Client, req)
