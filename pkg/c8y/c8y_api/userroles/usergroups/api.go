@@ -21,7 +21,7 @@ var ParamGroupId = "groupId"
 var ParamRoleId = "roleId"
 var ParamTenantId = "tenantID"
 
-const ResultProperty = "references"
+const ResultProperty = "references.#.role"
 
 func NewService(s *core.Service) *Service {
 	return &Service{
@@ -49,11 +49,7 @@ type ListRolesOptions struct {
 
 // Retrieve all roles assigned to a specific user group (by a given user group ID) in a specific tenant (by a given tenant ID)
 func (s *Service) ListRoles(ctx context.Context, opt ListRolesOptions) op.Result[jsonmodels.Role] {
-	return core.ExecuteCollection(ctx, s.listRolesB(opt), ResultProperty, types.ResponseFieldStatistics, func(b []byte) jsonmodels.Role {
-		// Extract role from reference wrapper
-		doc := jsondoc.New(b)
-		return jsonmodels.NewRole([]byte(doc.Get("role").Raw))
-	})
+	return core.ExecuteCollection(ctx, s.listRolesB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewRole)
 }
 
 func (s *Service) listRolesB(opt ListRolesOptions) *core.TryRequest {

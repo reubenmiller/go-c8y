@@ -19,7 +19,7 @@ var ParamTenantId = "tenantID"
 var ParamGroupId = "groupId"
 var ParamUserId = "userId"
 
-const ResultProperty = "users"
+const ResultProperty = "references.#.user"
 
 func NewService(s *core.Service) *Service {
 	return &Service{
@@ -39,11 +39,7 @@ type ListUsersOptions struct {
 
 // ListUsers in a group
 func (s *Service) ListUsers(ctx context.Context, opt ListUsersOptions) op.Result[jsonmodels.User] {
-	return core.ExecuteCollection(ctx, s.listUsersB(opt), "references", "", func(b []byte) jsonmodels.User {
-		// Extract user from reference wrapper
-		doc := jsondoc.New(b)
-		return jsonmodels.NewUser([]byte(doc.Get("user").Raw))
-	})
+	return core.ExecuteCollection(ctx, s.listUsersB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewUser)
 }
 
 func (s *Service) listUsersB(opt ListUsersOptions) *core.TryRequest {
@@ -53,7 +49,7 @@ func (s *Service) listUsersB(opt ListUsersOptions) *core.TryRequest {
 		SetPathParam(ParamTenantId, opt.Tenant).
 		SetPathParam(ParamGroupId, opt.GroupID).
 		SetURL(ApiUserGroupUsers)
-	return core.NewTryRequest(s.Client, req)
+	return core.NewTryRequest(s.Client, req, ResultProperty)
 }
 
 type AssignUserOptions struct {
@@ -74,8 +70,10 @@ func (s *Service) AssignUser(ctx context.Context, opt AssignUserOptions, user an
 func (s *Service) assignUserB(opt AssignUserOptions, user any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
+		SetPathParam(ParamTenantId, opt.Tenant).
+		SetPathParam(ParamGroupId, opt.GroupID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
+		SetHeader("Content-Type", types.MimeTypeUserReference).
 		SetBody(user).
 		SetURL(ApiUserGroupUsers)
 	return core.NewTryRequest(s.Client, req)
@@ -98,6 +96,6 @@ func (s *Service) unassignUserB(opt UnassignUserOptions) *core.TryRequest {
 		SetPathParam(ParamTenantId, opt.Tenant).
 		SetPathParam(ParamGroupId, opt.GroupID).
 		SetPathParam(ParamUserId, opt.UserID).
-		SetURL(ApiUserGroupUsers)
+		SetURL(ApiUserGroupReference)
 	return core.NewTryRequest(s.Client, req)
 }

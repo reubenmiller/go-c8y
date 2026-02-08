@@ -14,3 +14,5 @@ var MimeTypeManagedObjectReference = "application/vnd.com.nsn.cumulocity.managed
 
 var MimeTypeNewDeviceRequest = "application/vnd.com.nsn.cumulocity.newdevicerequest+json"
 var MimeTypeDeviceCredentials = "application/vnd.com.nsn.cumulocity.devicecredentials+json"
+
+var MimeTypeUserReference = "application/vnd.com.nsn.cumulocity.userreference+json"
