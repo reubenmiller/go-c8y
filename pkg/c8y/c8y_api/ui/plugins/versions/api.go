@@ -1,9 +1,10 @@
 package versions
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"io"
-	"strings"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
@@ -101,32 +102,32 @@ func (s *Service) Create(ctx context.Context, pluginID string, opt CreateOptions
 }
 
 func (s *Service) createB(pluginID string, opt CreateOptions) *core.TryRequest {
-	fields := []*resty.MultipartField{
-		{
-			Name:   "version",
-			Reader: strings.NewReader(opt.Version),
-		},
-	}
 
-	// Add tags if provided
-	if len(opt.Tags) > 0 {
-		for _, tag := range opt.Tags {
-			fields = append(fields, &resty.MultipartField{
-				Name:   "tags",
-				Reader: strings.NewReader(tag),
-			})
-		}
+	// build version meta information
+	applicationVersion := map[string]any{}
+	if opt.Version != "" {
+		applicationVersion["version"] = opt.Version
 	}
+	if len(opt.Tags) > 0 {
+		applicationVersion["tags"] = opt.Tags
+	}
+	fields := []*resty.MultipartField{}
+
+	applicationVersionJSON, _ := json.Marshal(applicationVersion)
+	fields = append(fields, &resty.MultipartField{
+		Name:   "applicationVersion",
+		Reader: bytes.NewBuffer(applicationVersionJSON),
+	})
 
 	// Add file from path or reader
 	if opt.Filename != "" {
 		fields = append(fields, &resty.MultipartField{
-			Name:     "file",
+			Name:     "applicationBinary",
 			FilePath: opt.Filename,
 		})
 	} else if opt.Reader != nil {
 		fields = append(fields, &resty.MultipartField{
-			Name:     "file",
+			Name:     "applicationBinary",
 			Reader:   opt.Reader,
 			FileName: "plugin.zip",
 		})
