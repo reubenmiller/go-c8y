@@ -589,3 +589,52 @@ func SingleWithItem[T any](original T, r Result[T]) iter.Seq2[T, error] {
 		yield(r.Data, nil)
 	}
 }
+
+// ToSlice converts an iterator to a slice, collecting all items.
+// Returns the slice and the first error encountered (if any).
+// Stops iteration on first error.
+//
+// Example:
+//
+//	alarms, err := op.ToSlice(alarmCollection.Data.Iter2())
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	fmt.Printf("Found %d alarms\n", len(alarms))
+func ToSlice[T any](items iter.Seq2[T, error]) ([]T, error) {
+	var result []T
+	for item, err := range items {
+		if err != nil {
+			return result, err
+		}
+		result = append(result, item)
+	}
+	return result, nil
+}
+
+// ToSliceR converts a Result containing a collection to a slice.
+// This is a convenience wrapper around ToSlice for Result types.
+//
+// Example:
+//
+//	alarms, err := op.ToSliceR(alarmCollection)
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	fmt.Printf("Found %d alarms\n", len(alarms))
+func ToSliceR[T Unwrapper](r Result[T]) ([]T, error) {
+	if r.Err != nil {
+		return nil, r.Err
+	}
+	return ToSlice(Iter2(r))
+}
+
+// Collect is an alias for ToSlice for familiarity with other iterator patterns
+func Collect[T any](items iter.Seq2[T, error]) ([]T, error) {
+	return ToSlice(items)
+}
+
+// CollectR is an alias for ToSliceR for familiarity with other iterator patterns
+func CollectR[T Unwrapper](r Result[T]) ([]T, error) {
+	return ToSliceR(r)
+}
