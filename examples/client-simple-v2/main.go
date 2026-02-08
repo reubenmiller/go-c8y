@@ -109,7 +109,7 @@ func main() {
 			MaxItems: 10,
 		},
 	})
-	devices := rill.FromSeq(moIter.Items(), moIter.Err())
+	devices := rill.FromSeq(moIter.Seq(), moIter.Err())
 
 	// Step 2: Create an alarm and return it
 	createdAlarms := rill.Map(devices, 5, func(device jsonmodels.ManagedObject) (jsonmodels.Alarm, error) {

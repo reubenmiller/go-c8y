@@ -23,11 +23,12 @@ func Test_SystemOptions(t *testing.T) {
 
 	// compatible with include all even through the api does not support pagination
 	it := client.Tenants.SystemOptions.ListAll(context.Background(), systemoptions.ListOptions{})
-	for item := range it.Items() {
+	for item, err := range it.Items() {
+		assert.NoError(t, err)
 		_ = item
 	}
 
-	firstOption, found := op.First(jsondoc.DecodeIter[model.SystemOption](it.Items()))
+	firstOption, found := op.First(jsondoc.DecodeSeq2[model.SystemOption](it.Items()))
 	assert.True(t, found)
 	assert.NoError(t, firstOption.Err)
 

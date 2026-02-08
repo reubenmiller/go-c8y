@@ -20,7 +20,7 @@ type JSONDocument interface {
 // Call Preview() to fetch metadata (totalCount, totalPages) before iteration,
 // which allows inspection and confirmation workflows.
 type Iterator[T any] struct {
-	items       iter.Seq[T]
+	items       iter.Seq2[T, error]
 	err         error
 	totalCount  int64
 	totalPages  int64
@@ -28,8 +28,25 @@ type Iterator[T any] struct {
 	previewFunc func() error // Closure to perform preview call
 }
 
-func (it *Iterator[T]) Items() iter.Seq[T] {
+func (it *Iterator[T]) Items() iter.Seq2[T, error] {
 	return it.items
+}
+
+// Seq returns an iterator that yields only successful items, discarding errors.
+// This is provided for compatibility with libraries that expect iter.Seq[T].
+// Use Items() if you need to handle errors from the iteration.
+func (it *Iterator[T]) Seq() iter.Seq[T] {
+	return func(yield func(T) bool) {
+		for item, err := range it.items {
+			if err != nil {
+				// Skip errors - they're lost in this conversion
+				continue
+			}
+			if !yield(item) {
+				return
+			}
+		}
+	}
 }
 
 func (it *Iterator[T]) Err() error {
@@ -114,7 +131,7 @@ func Paginate[T any, D JSONDocument](
 	paginationOpts.PageSize = paginationOpts.OptimalPageSize()
 	maxItems := paginationOpts.GetMaxItems()
 
-	iterator.items = func(yield func(T) bool) {
+	iterator.items = func(yield func(T, error) bool) {
 		page := 1
 		count := int64(0)
 		for {
@@ -127,6 +144,8 @@ func Paginate[T any, D JSONDocument](
 			result := fetch(opts)
 			if result.Err != nil {
 				iterator.err = result.Err
+				// Yield the error and stop iteration
+				yield(*new(T), result.Err)
 				return
 			}
 
@@ -147,7 +166,7 @@ func Paginate[T any, D JSONDocument](
 					return
 				}
 				item := constructor(doc.Bytes())
-				if !yield(item) {
+				if !yield(item, nil) {
 					return
 				}
 				count++

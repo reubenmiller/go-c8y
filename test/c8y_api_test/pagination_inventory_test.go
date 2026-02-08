@@ -78,7 +78,7 @@ func Test_ForEachCustomModel_Infallable(t *testing.T) {
 
 	// Process the results (errors are skipped)
 	matches := 0
-	for item := range jsondoc.DecodeIter[CustomModel](it.Items()) {
+	for item := range jsondoc.DecodeIter[CustomModel](it.Seq()) {
 		if v, ok := item.Agent["name"]; ok {
 			if v == "thin-edge.io" {
 				matches += 1
@@ -108,7 +108,7 @@ func Test_ForEachCustomModel_Fallable(t *testing.T) {
 
 	// Process the results
 	matches := 0
-	for item, err := range jsondoc.DecodeIterErr[CustomModel](it.Items()) {
+	for item, err := range jsondoc.DecodeIterErr[CustomModel](it.Seq()) {
 		if err != nil {
 			continue
 		}
@@ -137,7 +137,7 @@ func Test_ManagedObjectsAdvanced(t *testing.T) {
 	assert.GreaterOrEqual(t, it.TotalCount(), int64(1))
 
 	// Apply client side filter
-	matchingMos := rill.Filter(rill.FromSeq(it.Items(), it.Err()), 1, func(mo jsonmodels.ManagedObject) (bool, error) {
+	matchingMos := rill.Filter(rill.FromSeq(it.Seq(), it.Err()), 1, func(mo jsonmodels.ManagedObject) (bool, error) {
 		return strings.HasPrefix(mo.Name(), "TestDevice"), nil
 	})
 

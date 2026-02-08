@@ -57,7 +57,7 @@ func main() {
 	// throttledDevices := pipeline.Throttle(allDevices, 1000*time.Millisecond)
 
 	// Step 3: Expand each device into its pending operations (flat, no nesting)
-	pendingOps := pipeline.Expand(allDevices, func(device jsonmodels.ManagedObject) iter.Seq[jsonmodels.Operation] {
+	pendingOps := pipeline.Expand(allDevices, func(device jsonmodels.ManagedObject) iter.Seq2[jsonmodels.Operation, error] {
 		pending := client.Operations.ListAll(ctx, operations.ListOptions{
 			DeviceID: device.ID(),
 			Status:   "PENDING",
@@ -70,7 +70,7 @@ func main() {
 		return pipeline.Concat(pending, executing)
 	})
 
-	pendingOps2 := pipeline.Expand(pendingOps, func(operation jsonmodels.Operation) iter.Seq[jsonmodels.Operation] {
+	pendingOps2 := pipeline.Expand(pendingOps, func(operation jsonmodels.Operation) iter.Seq2[jsonmodels.Operation, error] {
 		item := client.Operations.Update(ctx, operation.ID(), map[string]any{
 			"status": "EXECUTING",
 		})
@@ -79,7 +79,9 @@ func main() {
 			// skip
 			return pipeline.EmptyOf(operation)
 		}
-		return op.Iter(item)
+		// op.Single returns iter.Seq2[T, error] - errors are propagated through the pipeline
+		// This ensures Update errors are caught and counted in the error statistics
+		return op.Single(item)
 	})
 
 	// Step 4: Update each pending operation to FAILED

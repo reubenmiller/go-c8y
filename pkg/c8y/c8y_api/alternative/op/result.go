@@ -379,8 +379,13 @@ func Combine[T, U, V any](r1 Result[T], r2 Result[U], fn func(T, U) V) Result[V]
 	}
 }
 
-func First[T any](items iter.Seq[T]) (Result[T], bool) {
-	for item := range items {
+// First returns a Result containing the first item from an iterator, or NoMatch if empty.
+// If the iterator yields an error, First returns a Failed result with that error.
+func First[T any](items iter.Seq2[T, error]) (Result[T], bool) {
+	for item, err := range items {
+		if err != nil {
+			return Failed[T](err, false), true
+		}
 		return OK(item), true
 	}
 	return NoMatch[T](), false
@@ -428,16 +433,75 @@ func IterAs[U any, T Unwrapper](r Result[T]) iter.Seq[U] {
 	}
 }
 
+// Iter transforms a Result containing collection data into an iterator yielding items of type T.
+// This is a convenience method for simple iteration patterns.
+//
+// IMPORTANT: This panics if the Result has an error or if unmarshaling fails.
+// Use Iter2() if you need explicit error handling.
+//
+// Example:
+//
+//	result := client.Operations.List(ctx, opts)
+//	for op := range op.Iter(result) {
+//	    fmt.Printf("Operation: %s\n", op.ID())
+//	}
 func Iter[T Unwrapper](r Result[T]) iter.Seq[T] {
 	return func(yield func(T) bool) {
+		// Panic if the Result itself has an error
+		if r.Err != nil {
+			panic("cannot iterate failed result: " + r.Err.Error())
+		}
+
 		// Check if Data implements CollectionIterator
 		if iterable, ok := any(r.Data).(types.CollectionIterator); ok {
 			for item := range iterable.IterBytes() {
 				var decoded T
 				if err := json.Unmarshal(item.Bytes(), &decoded); err != nil {
-					continue // Skip items that fail to unmarshal
+					panic("unmarshal error in Iter: " + err.Error())
 				}
 				if !yield(decoded) {
+					return
+				}
+			}
+		}
+	}
+}
+
+// Iter2 transforms a Result containing collection data into an iterator yielding items and errors.
+// This is the error-safe version of Iter() that yields both values and errors.
+//
+// Use this when you need explicit error handling in your iteration.
+//
+// Example:
+//
+//	result := client.Operations.List(ctx, opts)
+//	for op, err := range op.Iter2(result) {
+//	    if err != nil {
+//	        log.Printf("error: %v", err)
+//	        continue
+//	    }
+//	    fmt.Printf("Operation: %s\n", op.ID())
+//	}
+func Iter2[T Unwrapper](r Result[T]) iter.Seq2[T, error] {
+	return func(yield func(T, error) bool) {
+		// First check if the Result itself has an error
+		if r.Err != nil {
+			yield(*new(T), r.Err)
+			return
+		}
+
+		// Check if Data implements CollectionIterator
+		if iterable, ok := any(r.Data).(types.CollectionIterator); ok {
+			for item := range iterable.IterBytes() {
+				var decoded T
+				if err := json.Unmarshal(item.Bytes(), &decoded); err != nil {
+					// Yield unmarshal errors instead of silently skipping
+					if !yield(*new(T), err) {
+						return
+					}
+					continue
+				}
+				if !yield(decoded, nil) {
 					return
 				}
 			}
@@ -473,5 +537,31 @@ func IterAsErr[U any, T Unwrapper](r Result[T]) iter.Seq2[U, error] {
 				}
 			}
 		}
+	}
+}
+
+// Single converts a Result containing a single item into an iterator that yields
+// either the item (if successful) or an error (if the operation failed).
+//
+// This is designed for pipeline composition where you need to convert single
+// operation results into the Seq2[T, error] iterator form.
+//
+// Example:
+//
+//	result := client.Operations.Update(ctx, id, data)
+//	for op, err := range op.Single(result) {
+//	    if err != nil {
+//	        log.Printf("update failed: %v", err)
+//	        continue
+//	    }
+//	    fmt.Printf("Updated: %s\n", op.ID())
+//	}
+func Single[T any](r Result[T]) iter.Seq2[T, error] {
+	return func(yield func(T, error) bool) {
+		if r.Err != nil {
+			yield(*new(T), r.Err)
+			return
+		}
+		yield(r.Data, nil)
 	}
 }

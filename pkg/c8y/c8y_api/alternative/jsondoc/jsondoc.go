@@ -152,6 +152,29 @@ func DecodeIterErr[T any, F Unwrapper](seq iter.Seq[F]) iter.Seq2[*T, error] {
 	}
 }
 
+// DecodeSeq2 transforms an error-aware iterator (Seq2) of types that embed JSONDoc by JSON unmarshaling to type T.
+// This propagates both input sequence errors and decoding errors.
+// Use this with iterator.Items() which returns Seq2[T, error].
+// Example: for item, err := range jsondoc.DecodeSeq2[CustomModel](iterator.Items()) { }
+func DecodeSeq2[T any, F Unwrapper](seq iter.Seq2[F, error]) iter.Seq2[*T, error] {
+	return func(yield func(*T, error) bool) {
+		for doc, err := range seq {
+			if err != nil {
+				// Propagate input errors
+				if !yield(nil, err) {
+					return
+				}
+				continue
+			}
+			// Decode and yield (may have decoding error)
+			v, err := Decode[T](doc.GetJSONDoc())
+			if !yield(v, err) {
+				return
+			}
+		}
+	}
+}
+
 // Unwrapper is a constraint for types that can provide access to their embedded JSONDoc.
 type Unwrapper interface {
 	GetJSONDoc() JSONDoc

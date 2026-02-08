@@ -59,6 +59,7 @@ type Stats struct {
 // ForEach processes each item yielded by items, calling fn for each one.
 // It respects context cancellation and the error limits in Options.
 //
+// Errors from the input sequence are counted toward MaxErrors and ErrorThreshold.
 // Processing stops early when:
 //   - ctx is cancelled
 //   - MaxErrors is reached (if > 0)
@@ -70,7 +71,7 @@ type Stats struct {
 // the most recent item error.
 func ForEach[T any](
 	ctx context.Context,
-	items iter.Seq[T],
+	items iter.Seq2[T, error],
 	opts Options,
 	fn func(ctx context.Context, item T) error,
 ) error {
@@ -85,21 +86,35 @@ func ForEach[T any](
 // divisible. Batch is lazy — it yields each batch as soon as enough items
 // have been collected.
 //
+// Errors from the input sequence are yielded immediately without batching.
+//
 // Example — bulk-create alarms in batches of 100:
 //
-//	for batch := range pipeline.Batch(alarms, 100) {
+//	for batch, err := range pipeline.Batch(alarms, 100) {
+//	    if err != nil {
+//	        log.Printf("error: %v", err)
+//	        continue
+//	    }
 //	    client.Bulk.CreateAlarms(ctx, batch)
 //	}
-func Batch[T any](items iter.Seq[T], size int) iter.Seq[[]T] {
+func Batch[T any](items iter.Seq2[T, error], size int) iter.Seq2[[]T, error] {
 	if size <= 0 {
 		size = 1
 	}
-	return func(yield func([]T) bool) {
+	return func(yield func([]T, error) bool) {
 		batch := make([]T, 0, size)
-		for item := range items {
+		for item, err := range items {
+			if err != nil {
+				// Yield errors immediately without batching
+				if !yield(nil, err) {
+					return
+				}
+				continue
+			}
+
 			batch = append(batch, item)
 			if len(batch) >= size {
-				if !yield(batch) {
+				if !yield(batch, nil) {
 					return
 				}
 				batch = make([]T, 0, size)
@@ -107,7 +122,7 @@ func Batch[T any](items iter.Seq[T], size int) iter.Seq[[]T] {
 		}
 		// Yield any remaining items
 		if len(batch) > 0 {
-			yield(batch)
+			yield(batch, nil)
 		}
 	}
 }
@@ -115,6 +130,8 @@ func Batch[T any](items iter.Seq[T], size int) iter.Seq[[]T] {
 // Throttle limits the rate at which items are yielded from the input sequence.
 // It ensures at least the given interval elapses between consecutive items.
 // The first item is yielded immediately without delay.
+//
+// Errors pass through immediately without applying throttling delay.
 //
 // Use Throttle to prevent overwhelming a rate-limited API:
 //
@@ -124,15 +141,23 @@ func Batch[T any](items iter.Seq[T], size int) iter.Seq[[]T] {
 //
 // For concurrent workers, use Options.Delay instead — it applies a per-worker
 // delay. Throttle applies a global rate limit before items reach the workers.
-func Throttle[T any](items iter.Seq[T], interval time.Duration) iter.Seq[T] {
-	return func(yield func(T) bool) {
+func Throttle[T any](items iter.Seq2[T, error], interval time.Duration) iter.Seq2[T, error] {
+	return func(yield func(T, error) bool) {
 		first := true
-		for item := range items {
+		for item, err := range items {
+			if err != nil {
+				// Errors pass through without throttling
+				if !yield(*new(T), err) {
+					return
+				}
+				continue
+			}
+
 			if !first && interval > 0 {
 				time.Sleep(interval)
 			}
 			first = false
-			if !yield(item) {
+			if !yield(item, nil) {
 				return
 			}
 		}
@@ -145,17 +170,17 @@ func Throttle[T any](items iter.Seq[T], interval time.Duration) iter.Seq[T] {
 //
 // Use Concat when you want deterministic ordering by source:
 //
-//	ops1 := client.Operations.ListAll(ctx, operations.ListOptions{Status: "PENDING"}).Items()
-//	ops2 := client.Operations.ListAll(ctx, operations.ListOptions{Status: "EXECUTING"}).Items()
+//	ops1 := op.Iter(client.Operations.ListAll(ctx, operations.ListOptions{Status: "PENDING"}))
+//	ops2 := op.Iter(client.Operations.ListAll(ctx, operations.ListOptions{Status: "EXECUTING"}))
 //	allOps := pipeline.Concat(ops1, ops2)  // All PENDING first, then all EXECUTING
 //	err := pipeline.ForEach(ctx, allOps, pipeline.Options{}, updateFn)
 //
 // For interleaved/concurrent consumption from multiple sources, use Merge instead.
-func Concat[T any](sequences ...iter.Seq[T]) iter.Seq[T] {
-	return func(yield func(T) bool) {
+func Concat[T any](sequences ...iter.Seq2[T, error]) iter.Seq2[T, error] {
+	return func(yield func(T, error) bool) {
 		for _, seq := range sequences {
-			for item := range seq {
-				if !yield(item) {
+			for item, err := range seq {
+				if !yield(item, err) {
 					return
 				}
 			}
@@ -169,40 +194,44 @@ func Concat[T any](sequences ...iter.Seq[T]) iter.Seq[T] {
 //
 // This gives you interleaved, non-deterministic ordering based on API response times:
 //
-//	ops1 := client.Operations.ListAll(ctx, operations.ListOptions{Status: "PENDING"}).Items()
-//	ops2 := client.Operations.ListAll(ctx, operations.ListOptions{Status: "EXECUTING"}).Items()
+//	ops1 := op.Iter(client.Operations.ListAll(ctx, operations.ListOptions{Status: "PENDING"}))
+//	ops2 := op.Iter(client.Operations.ListAll(ctx, operations.ListOptions{Status: "EXECUTING"}))
 //	allOps := pipeline.Merge(ops1, ops2)  // Items interleaved as they arrive
 //	err := pipeline.ForEach(ctx, allOps, pipeline.Options{}, updateFn)
 //
 // Merge is useful when you want to start processing items immediately from any source,
 // rather than waiting for the first source to complete.
-func Merge[T any](sequences ...iter.Seq[T]) iter.Seq[T] {
-	return func(yield func(T) bool) {
+func Merge[T any](sequences ...iter.Seq2[T, error]) iter.Seq2[T, error] {
+	return func(yield func(T, error) bool) {
 		if len(sequences) == 0 {
 			return
 		}
 		if len(sequences) == 1 {
-			for item := range sequences[0] {
-				if !yield(item) {
+			for item, err := range sequences[0] {
+				if !yield(item, err) {
 					return
 				}
 			}
 			return
 		}
 
-		// Channel to collect items from all sequences
-		items := make(chan T)
+		// Channel to collect items and errors from all sequences
+		type result struct {
+			item T
+			err  error
+		}
+		items := make(chan result)
 		done := make(chan struct{})
 		var wg sync.WaitGroup
 
 		// Start a goroutine for each sequence
 		for _, seq := range sequences {
 			wg.Add(1)
-			go func(s iter.Seq[T]) {
+			go func(s iter.Seq2[T, error]) {
 				defer wg.Done()
-				for item := range s {
+				for item, err := range s {
 					select {
-					case items <- item:
+					case items <- result{item, err}:
 					case <-done:
 						return
 					}
@@ -217,8 +246,8 @@ func Merge[T any](sequences ...iter.Seq[T]) iter.Seq[T] {
 		}()
 
 		// Yield items as they arrive
-		for item := range items {
-			if !yield(item) {
+		for r := range items {
+			if !yield(r.item, r.err) {
 				close(done)
 				return
 			}
@@ -239,17 +268,25 @@ func Merge[T any](sequences ...iter.Seq[T]) iter.Seq[T] {
 //
 //	devices := client.Devices.ListAll(ctx, opts).Items()
 //	throttled := pipeline.Throttle(devices, 500 * time.Millisecond)
-//	pendingOps := pipeline.Expand(throttled, func(d jsonmodels.ManagedObject) iter.Seq[jsonmodels.Operation] {
-//	    return client.Operations.ListAll(ctx, operations.ListOptions{
+//	pendingOps := pipeline.Expand(throttled, func(d jsonmodels.ManagedObject) iter.Seq2[jsonmodels.Operation, error] {
+//	    return op.Iter(client.Operations.ListAll(ctx, operations.ListOptions{
 //	        DeviceID: d.ID(), Status: "PENDING",
-//	    }).Items()
+//	    }))
 //	})
 //	err := pipeline.ForEach(ctx, pendingOps, pipeline.Options{Workers: 5}, updateFn)
-func Expand[T, U any](items iter.Seq[T], fn func(T) iter.Seq[U]) iter.Seq[U] {
-	return func(yield func(U) bool) {
-		for item := range items {
-			for u := range fn(item) {
-				if !yield(u) {
+func Expand[T, U any](items iter.Seq2[T, error], fn func(T) iter.Seq2[U, error]) iter.Seq2[U, error] {
+	return func(yield func(U, error) bool) {
+		for item, err := range items {
+			if err != nil {
+				// Propagate input errors
+				if !yield(*new(U), err) {
+					return
+				}
+				continue
+			}
+			// Expand successful items
+			for u, err := range fn(item) {
+				if !yield(u, err) {
 					return
 				}
 			}
@@ -261,45 +298,42 @@ func Expand[T, U any](items iter.Seq[T], fn func(T) iter.Seq[U]) iter.Seq[U] {
 // Useful for conditional logic in Expand when you want to skip an item.
 // Note: Requires explicit type parameter. Use EmptyOf for type inference.
 //
-//	result := pipeline.Expand(ops, func(op jsonmodels.Operation) iter.Seq[jsonmodels.Operation] {
+//	result := pipeline.Expand(ops, func(op jsonmodels.Operation) iter.Seq2[jsonmodels.Operation, error] {
 //	    if op.Status() == "SUCCESSFUL" {
 //	        return pipeline.Empty[jsonmodels.Operation]()  // Skip successful operations
 //	    }
-//	    item := client.Operations.Update(ctx, op.ID(), body)
-//	    return op.Iter(item)
+//	    return op.Single(client.Operations.Update(ctx, op.ID(), body))
 //	})
-func Empty[T any]() iter.Seq[T] {
-	return func(yield func(T) bool) {}
+func Empty[T any]() iter.Seq2[T, error] {
+	return func(yield func(T, error) bool) {}
 }
 
 // EmptyOf returns an empty sequence that yields no items.
 // The type is inferred from the dummy parameter, avoiding explicit type parameters.
 // Useful for conditional logic in Expand when you want to skip an item:
 //
-//	result := pipeline.Expand(ops, func(op jsonmodels.Operation) iter.Seq[jsonmodels.Operation] {
+//	result := pipeline.Expand(ops, func(op jsonmodels.Operation) iter.Seq2[jsonmodels.Operation, error] {
 //	    if op.Status() == "SUCCESSFUL" {
 //	        return pipeline.EmptyOf(op)  // Skip - type inferred from op
 //	    }
-//	    item := client.Operations.Update(ctx, op.ID(), body)
-//	    return op.Iter(item)
+//	    return op.Single(client.Operations.Update(ctx, op.ID(), body))
 //	})
-func EmptyOf[T any](_ T) iter.Seq[T] {
-	return func(yield func(T) bool) {}
+func EmptyOf[T any](_ T) iter.Seq2[T, error] {
+	return func(yield func(T, error) bool) {}
 }
 
-// Single returns a sequence that yields exactly one item.
+// Single returns a sequence that yields exactly one item without error.
 // Useful for conditional logic in Expand when you want to pass through unchanged:
 //
-//	result := pipeline.Expand(ops, func(op jsonmodels.Operation) iter.Seq[jsonmodels.Operation] {
+//	result := pipeline.Expand(ops, func(op jsonmodels.Operation) iter.Seq2[jsonmodels.Operation, error] {
 //	    if op.Status() == "SUCCESSFUL" {
 //	        return pipeline.Single(op)  // Pass through unchanged
 //	    }
-//	    item := client.Operations.Update(ctx, op.ID(), body)
-//	    return op.Iter(item)
+//	    return op.Single(client.Operations.Update(ctx, op.ID(), body))
 //	})
-func Single[T any](item T) iter.Seq[T] {
-	return func(yield func(T) bool) {
-		yield(item)
+func Single[T any](item T) iter.Seq2[T, error] {
+	return func(yield func(T, error) bool) {
+		yield(item, nil)
 	}
 }
 
@@ -311,11 +345,18 @@ func Single[T any](item T) iter.Seq[T] {
 //	    return op.Status() == "FAILED"
 //	})
 //	err := pipeline.ForEach(ctx, failedOps, opts, updateFn)
-func Filter[T any](items iter.Seq[T], predicate func(T) bool) iter.Seq[T] {
-	return func(yield func(T) bool) {
-		for item := range items {
+func Filter[T any](items iter.Seq2[T, error], predicate func(T) bool) iter.Seq2[T, error] {
+	return func(yield func(T, error) bool) {
+		for item, err := range items {
+			if err != nil {
+				// Always propagate errors
+				if !yield(*new(T), err) {
+					return
+				}
+				continue
+			}
 			if predicate(item) {
-				if !yield(item) {
+				if !yield(item, nil) {
 					return
 				}
 			}
@@ -326,11 +367,12 @@ func Filter[T any](items iter.Seq[T], predicate func(T) bool) iter.Seq[T] {
 // Collect processes each item yielded by items, calling fn for each one,
 // and returns a slice of all successful results.
 //
+// Errors from the input sequence are counted toward error limits.
 // Results are returned in completion order (not input order) when Workers > 1.
 // Error handling follows the same rules as ForEach.
 func Collect[T, R any](
 	ctx context.Context,
-	items iter.Seq[T],
+	items iter.Seq2[T, error],
 	opts Options,
 	fn func(ctx context.Context, item T) (R, error),
 ) ([]R, error) {
@@ -340,7 +382,7 @@ func Collect[T, R any](
 // execute is the shared implementation for ForEach and Collect.
 func execute[T, R any](
 	ctx context.Context,
-	items iter.Seq[T],
+	items iter.Seq2[T, error],
 	opts Options,
 	fn func(ctx context.Context, item T) (R, error),
 ) ([]R, error) {
@@ -449,7 +491,20 @@ func execute[T, R any](
 	// Feed items to workers (in a goroutine so we can collect results concurrently)
 	go func() {
 		defer close(work)
-		for item := range items {
+		for item, err := range items {
+			// If the sequence itself has an error, report it as a failure
+			if err != nil {
+				completed.Add(1)
+				failed.Add(1)
+				select {
+				case results <- resultItem{value: *new(R), err: err}:
+				case <-ctx.Done():
+					return
+				}
+				checkLimits()
+				continue
+			}
+
 			select {
 			case work <- workItem{item: item}:
 			case <-ctx.Done():
