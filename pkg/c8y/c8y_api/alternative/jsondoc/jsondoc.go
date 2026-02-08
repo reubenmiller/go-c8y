@@ -26,6 +26,12 @@ func (d JSONDoc) Bytes() []byte {
 	return append([]byte(nil), d.raw...)
 }
 
+// MarshalJSON implements json.Marshaler to allow JSONDoc to be
+// marshaled by returning the raw bytes directly
+func (d JSONDoc) MarshalJSON() ([]byte, error) {
+	return d.raw, nil
+}
+
 // UnmarshalJSON implements json.Unmarshaler to allow JSONDoc to be
 // unmarshaled by simply assigning the raw bytes rather than parsing
 func (d *JSONDoc) UnmarshalJSON(data []byte) error {
