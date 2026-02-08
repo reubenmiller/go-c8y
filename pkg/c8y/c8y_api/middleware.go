@@ -9,12 +9,94 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
+	"sync/atomic"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/authentication"
 	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/internal/context"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/mock"
 	"resty.dev/v3"
 )
+
+// StatsMap tracks counts by HTTP method and path (thread-safe)
+type StatsMap struct {
+	mu    sync.Mutex
+	stats map[string]map[string]int64 // method -> path -> count
+}
+
+func NewStatsMap() *StatsMap {
+	return &StatsMap{stats: make(map[string]map[string]int64)}
+}
+
+// Inc increments the count for the given method and path
+func (s *StatsMap) Inc(method, path string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.stats[method] == nil {
+		s.stats[method] = make(map[string]int64)
+	}
+	s.stats[method][path]++
+}
+
+// Get returns the count for a method and path
+func (s *StatsMap) Get(method, path string) int64 {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.stats[method][path]
+}
+
+// All returns a copy of the stats map
+func (s *StatsMap) All() map[string]map[string]int64 {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := make(map[string]map[string]int64, len(s.stats))
+	for m, paths := range s.stats {
+		out[m] = make(map[string]int64, len(paths))
+		for p, c := range paths {
+			out[m][p] = c
+		}
+	}
+	return out
+}
+
+// MiddlewareCountByMethodAndPath returns a resty.ResponseMiddleware that increments stats by HTTP method and path.
+// Pass a pointer to a StatsMap to collect stats during execution.
+// Uses ResponseMiddleware to capture the actual URL after path parameters are substituted.
+// Note: Does not count dry run or mock responses, as they are not actually sent to the server.
+func MiddlewareCountByMethodAndPath(stats *StatsMap) resty.ResponseMiddleware {
+	return func(_ *resty.Client, r *resty.Response) error {
+		// Skip counting if this was a dry run or mock response (not actually sent to server)
+		if r.Request != nil && r.Request.RawRequest != nil {
+			ctx := r.Request.RawRequest.Context()
+			if ctxhelpers.IsDryRun(ctx) || ctxhelpers.IsMockResponses(ctx) {
+				return nil
+			}
+		}
+
+		path := ""
+		method := ""
+
+		// Get the actual request that was sent
+		if r.Request != nil && r.Request.RawRequest != nil && r.Request.RawRequest.URL != nil {
+			path = r.Request.RawRequest.URL.Path
+			method = r.Request.Method
+		}
+
+		if path != "" && method != "" {
+			stats.Inc(method, path)
+		}
+		return nil
+	}
+}
+
+// MiddlewareCountRequests returns a resty.RequestMiddleware that increments the given counter for each HTTP request sent.
+// Useful for gathering API call statistics in tests, benchmarks, or debugging.
+func MiddlewareCountRequests(counter *int64) resty.RequestMiddleware {
+	return func(_ *resty.Client, _ *resty.Request) error {
+		atomic.AddInt64(counter, 1)
+		return nil
+	}
+}
 
 // WithDryRun returns a context with dry run enabled
 // Dry run mode logs requests for inspection/validation without sending them

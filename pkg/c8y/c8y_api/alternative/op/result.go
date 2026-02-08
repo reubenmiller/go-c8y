@@ -407,8 +407,8 @@ type Unwrapper interface {
 //	for m := range collection.IterAs[CustomMeasurement]() {
 //	    fmt.Printf("Temp: %.2f\n", m.Temperature.Value)
 //	}
-func IterAs[U any, T Unwrapper](r Result[T]) iter.Seq[*U] {
-	return func(yield func(*U) bool) {
+func IterAs[U any, T Unwrapper](r Result[T]) iter.Seq[U] {
+	return func(yield func(U) bool) {
 		// Type switch to check if Data has an Iter() method
 		type Iterable interface {
 			Iter() iter.Seq[T]
@@ -420,7 +420,7 @@ func IterAs[U any, T Unwrapper](r Result[T]) iter.Seq[*U] {
 				if err := json.Unmarshal(item.Bytes(), &decoded); err != nil {
 					continue // Skip items that fail to unmarshal
 				}
-				if !yield(&decoded) {
+				if !yield(decoded) {
 					return
 				}
 			}
@@ -428,12 +428,12 @@ func IterAs[U any, T Unwrapper](r Result[T]) iter.Seq[*U] {
 	}
 }
 
-func Iter[T Unwrapper](r Result[T]) iter.Seq[*T] {
-	return func(yield func(*T) bool) {
+func Iter[T Unwrapper](r Result[T]) iter.Seq[T] {
+	return func(yield func(T) bool) {
 		// Check if Data implements CollectionIterator
 		if iterable, ok := any(r.Data).(types.CollectionIterator); ok {
 			for item := range iterable.IterBytes() {
-				decoded := new(T)
+				var decoded T
 				if err := json.Unmarshal(item.Bytes(), &decoded); err != nil {
 					continue // Skip items that fail to unmarshal
 				}
@@ -457,8 +457,8 @@ func Iter[T Unwrapper](r Result[T]) iter.Seq[*T] {
 //	    }
 //	    fmt.Printf("Temp: %.2f\n", m.Temperature.Value)
 //	}
-func IterAsErr[U any, T Unwrapper](r Result[T]) iter.Seq2[*U, error] {
-	return func(yield func(*U, error) bool) {
+func IterAsErr[U any, T Unwrapper](r Result[T]) iter.Seq2[U, error] {
+	return func(yield func(U, error) bool) {
 		// Type switch to check if Data has an Iter() method
 		type Iterable interface {
 			Iter() iter.Seq[T]
@@ -468,7 +468,7 @@ func IterAsErr[U any, T Unwrapper](r Result[T]) iter.Seq2[*U, error] {
 			for item := range iterable.Iter() {
 				var decoded U
 				err := json.Unmarshal(item.Bytes(), &decoded)
-				if !yield(&decoded, err) {
+				if !yield(decoded, err) {
 					return
 				}
 			}

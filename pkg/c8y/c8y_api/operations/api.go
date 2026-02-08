@@ -158,9 +158,9 @@ type CreateOptions struct {
 	Description string
 
 	// AdditionalProperties allows for custom fields to be added to the operation
-	// Can be a struct, map[string]interface{}, or any JSON-serializable type
+	// Can be a struct, map[string]any, or any JSON-serializable type
 	// These properties are deep-merged with the base operation fields
-	AdditionalProperties interface{}
+	AdditionalProperties any
 }
 
 // Create an operation
@@ -171,15 +171,15 @@ type CreateOptions struct {
 //	result := client.Operations.Create(ctx, operations.CreateOptions{
 //	    DeviceID: "name:myDevice",  // Resolver string
 //	    Description: "Restart device",
-//	    AdditionalProperties: map[string]interface{}{
-//	        "c8y_Restart": map[string]interface{}{},
+//	    AdditionalProperties: map[string]any{
+//	        "c8y_Restart": map[string]any{},
 //	    },
 //	})
 //
 // Using direct struct/map:
 //
 //	result := client.Operations.Create(ctx, model.Operation{...})
-//	result := client.Operations.Create(ctx, map[string]interface{}{...})
+//	result := client.Operations.Create(ctx, map[string]any{...})
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Operation] {
 	// Check if body is CreateOptions - if so, handle resolver and merge logic
 	if opts, ok := body.(CreateOptions); ok {
@@ -264,6 +264,7 @@ func (s *Service) createWithOptions(ctx context.Context, opts CreateOptions) op.
 func (s *Service) createB(body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiOperations)
 	return core.NewTryRequest(s.Client, req)
@@ -272,7 +273,8 @@ func (s *Service) createB(body any) *core.TryRequest {
 func (s *Service) createBWithJSON(bodyJSON []byte) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
-		SetHeader("Content-Type", "application/json").
+		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(bodyJSON).
 		SetURL(ApiOperations)
 	return core.NewTryRequest(s.Client, req)
@@ -287,6 +289,7 @@ func (s *Service) updateB(ID string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamId, ID).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiOperation)
 	return core.NewTryRequest(s.Client, req)
