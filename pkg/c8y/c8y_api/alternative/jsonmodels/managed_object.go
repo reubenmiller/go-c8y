@@ -28,6 +28,28 @@ func NewManagedObjectWithOptions(name, deviceType string) ManagedObject {
 
 }
 
+// NewDevice creates a new device managed object with the c8y_IsDevice fragment.
+// This ensures the object is properly marked as a device in Cumulocity.
+func NewDevice(name string) ManagedObject {
+	data := map[string]any{
+		"name":         name,
+		"c8y_IsDevice": map[string]any{},
+	}
+	b, _ := json.Marshal(data)
+	return ManagedObject{jsondoc.Facade{JSONDoc: jsondoc.New(b)}}
+}
+
+// NewDeviceWithType creates a new device with both name and type
+func NewDeviceWithType(name, deviceType string) ManagedObject {
+	data := map[string]any{
+		"name":         name,
+		"type":         deviceType,
+		"c8y_IsDevice": map[string]any{},
+	}
+	b, _ := json.Marshal(data)
+	return ManagedObject{jsondoc.Facade{JSONDoc: jsondoc.New(b)}}
+}
+
 func (m ManagedObject) ID() string {
 	return m.Get("id").String()
 }

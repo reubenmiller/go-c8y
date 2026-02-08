@@ -15,6 +15,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8ytestutils"
+	"github.com/stretchr/testify/require"
 	"resty.dev/v3"
 )
 
@@ -62,6 +63,19 @@ func CreateManagedObject(t *testing.T, client *c8y_api.Client) op.Result[jsonmod
 			client.ManagedObjects.Delete(context.TODO(), mo.Data.ID(), managedobjects.DeleteOptions{})
 		})
 	}
+	return mo
+}
+
+// CreateDevice creates a new test device in Cumulocity IoT and registers a cleanup function
+// to delete the device after the test completes.
+func CreateDevice(t *testing.T, client *c8y_api.Client) op.Result[jsonmodels.ManagedObject] {
+	mo := client.Devices.Create(context.TODO(), jsonmodels.NewDevice("ci_"+testingutils.RandomString(16)))
+	if !mo.IsError() {
+		t.Cleanup(func() {
+			client.ManagedObjects.Delete(context.TODO(), mo.Data.ID(), managedobjects.DeleteOptions{})
+		})
+	}
+	require.NoError(t, mo.Err)
 	return mo
 }
 
