@@ -118,7 +118,20 @@ func NewError(err any) *Error {
 		apiError, ok := e.Error().(*APIError)
 
 		if !ok {
-			return &Error{Code: ErrorUnsupported, Message: "Unexpected Resty Error Response, no error"}
+			// If Build error manually if the APIError wasn't serialized
+			wrappedErr := &Error{
+				Code:       e.StatusCode(),
+				Type:       "NoContent",
+				Message:    e.String(),
+				MessageRaw: e.String(),
+				Response:   e.RawResponse,
+				Duration:   e.Duration(),
+				ReceivedAt: e.ReceivedAt(),
+			}
+			if e.Err != nil {
+				wrappedErr.Message = e.Err.Error()
+			}
+			return wrappedErr
 		}
 
 		return &Error{
