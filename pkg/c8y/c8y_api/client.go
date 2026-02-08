@@ -183,6 +183,10 @@ func NewClientFromEnvironment(opt ClientOptions) *Client {
 }
 
 func SetCertificateChainHeaderIfRequired(client *resty.Client, auth authentication.AuthOptions) *resty.Client {
+	if auth.Certificate == "" || auth.CertificateKey == "" {
+		return client
+	}
+
 	certs := make([]tls.Certificate, 0)
 	if _, err := os.Stat(auth.CertificateKey); err == nil {
 		client.SetCertificateFromFile(auth.Certificate, auth.CertificateKey)
