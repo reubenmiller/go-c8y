@@ -457,7 +457,7 @@ func (s *Service) updateListB(opt BulkUpdateOptions, body any) *core.TryRequest 
 		SetMethod(resty.MethodPut).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetBody(opt).
+		SetBody(body).
 		SetURL(ApiAlarms)
 	return core.NewTryRequest(s.Client, req, ResultProperty)
 }
