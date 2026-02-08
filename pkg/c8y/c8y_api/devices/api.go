@@ -9,6 +9,9 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/devices/enrollment"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/devices/registration"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects/childadditions"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects/childassets"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects/childdevices"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
@@ -21,11 +24,15 @@ const ParamId = "id"
 const ResultProperty = managedobjects.ResultProperty
 
 func NewService(s *core.Service) *Service {
+	mos := managedobjects.NewService(s)
 	return &Service{
 		Service:        *s,
 		Enrollment:     enrollment.NewService(s),
 		Registration:   registration.NewService(s),
-		managedObjects: *managedobjects.NewService(s),
+		ChildAdditions: mos.ChildAdditions,
+		ChildAssets:    mos.ChildAssets,
+		ChildDevices:   mos.ChildDevices,
+		managedObjects: *mos,
 	}
 }
 
@@ -34,8 +41,11 @@ func NewService(s *core.Service) *Service {
 type Service struct {
 	core.Service
 
-	Enrollment   *enrollment.Service
-	Registration *registration.Service
+	Enrollment     *enrollment.Service
+	Registration   *registration.Service
+	ChildAdditions *childadditions.Service
+	ChildAssets    *childassets.Service
+	ChildDevices   *childdevices.Service
 
 	managedObjects managedobjects.Service
 }
@@ -106,7 +116,7 @@ type FindOptions struct {
 	pagination.PaginationOptions
 }
 
-// List managed objects
+// Find managed objects
 func (s *Service) Find(ctx context.Context, opt FindOptions) op.Result[jsonmodels.ManagedObject] {
 	return core.ExecuteCollection(ctx, s.findB(opt), managedobjects.ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
@@ -117,4 +127,72 @@ func (s *Service) findB(opt FindOptions) *core.TryRequest {
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(managedobjects.ApiManagedObjects)
 	return core.NewTryRequest(s.Client, req, managedobjects.ResultProperty)
+}
+
+// CreateDevice creates a new device with the given name.
+// It automatically includes the c8y_IsDevice fragment.
+// For more control, use jsonmodels.NewDevice() or jsonmodels.NewDeviceWithType() and pass to Create().
+func (s *Service) CreateDevice(ctx context.Context, name string) op.Result[jsonmodels.ManagedObject] {
+	return s.managedObjects.Create(ctx, jsonmodels.NewDevice(name))
+}
+
+// Create creates a new managed object
+func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.ManagedObject] {
+	return s.managedObjects.Create(ctx, body)
+}
+
+// Get retrieves a device by ID
+func (s *Service) Get(ctx context.Context, ID string, opt managedobjects.GetOptions) op.Result[jsonmodels.ManagedObject] {
+	return s.managedObjects.Get(ctx, ID, opt)
+}
+
+// Update updates a device
+func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.ManagedObject] {
+	return s.managedObjects.Update(ctx, ID, body)
+}
+
+// DeleteOptions options for deleting a managed object
+type DeleteOptions = managedobjects.DeleteOptions
+
+// Delete deletes a device by ID
+func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.Result[jsonmodels.ManagedObject] {
+	return s.managedObjects.Delete(ctx, ID, opt)
+}
+
+// GetOrCreateByName searches by name and optionally type, creating if not found
+func (s *Service) GetOrCreateByName(ctx context.Context, name, objType string, body map[string]any) op.Result[jsonmodels.ManagedObject] {
+	return s.managedObjects.GetOrCreateByName(ctx, name, objType, body)
+}
+
+// GetOrCreateByFragment searches for objects with a specific fragment property
+func (s *Service) GetOrCreateByFragment(ctx context.Context, fragment string, body map[string]any) op.Result[jsonmodels.ManagedObject] {
+	return s.managedObjects.GetOrCreateByFragment(ctx, fragment, body)
+}
+
+// GetOrCreateWith provides a generic query-based lookup
+// Example queries:
+//   - "name eq 'device01' and type eq 'c8y_Device'"
+//   - "has(c8y_IsDevice) and c8y_Serial eq '12345'"
+//   - "fragmentType eq 'c8y_CustomFragment'"
+func (s *Service) GetOrCreateWith(ctx context.Context, body map[string]any, query string) op.Result[jsonmodels.ManagedObject] {
+	return s.managedObjects.GetOrCreateWith(ctx, body, query)
+}
+
+// GetOrCreateByExternalIDOptions options for GetOrCreateByExternalID
+type GetOrCreateByExternalIDOptions = managedobjects.GetOrCreateByExternalIDOptions
+
+// GetOrCreateByExternalID looks up a managed object by external identity,
+// creating both the managed object and identity if not found.
+func (s *Service) GetOrCreateByExternalID(ctx context.Context, opts GetOrCreateByExternalIDOptions) op.Result[jsonmodels.ManagedObject] {
+	return s.managedObjects.GetOrCreateByExternalID(ctx, opts)
+}
+
+// ListSupportedMeasurements gets supported measurement types for a device
+func (s *Service) ListSupportedMeasurements(ctx context.Context, ID string) op.Result[jsonmodels.SupportedMeasurements] {
+	return s.managedObjects.ListSupportedMeasurements(ctx, ID)
+}
+
+// ListSupportedSeries gets supported series for a device
+func (s *Service) ListSupportedSeries(ctx context.Context, ID string) op.Result[jsonmodels.SupportedSeries] {
+	return s.managedObjects.ListSupportedSeries(ctx, ID)
 }
