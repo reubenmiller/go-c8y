@@ -18,10 +18,13 @@ import (
 var ApiTenants = "/tenant/tenants"
 var ApiTenant = "/tenant/tenants/{id}"
 var ApiTenantCurrent = "/tenant/currentTenant"
+var ApiTenantApplications = "/tenant/tenants/{tenantID}/applications"
 
 const ParamId = "id"
+const ParamTenantId = "tenantID"
 
 const ResultProperty = "tenants"
+const ApplicationReferencesResultProperty = "references"
 
 func NewService(s *core.Service) *Service {
 	return &Service{
@@ -149,4 +152,42 @@ func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiTenant)
 	return core.NewTryRequest(s.Client, req)
+}
+
+// ListApplicationReferencesOptions options for listing application references
+type ListApplicationReferencesOptions struct {
+	// Pagination options
+	pagination.PaginationOptions
+}
+
+// ApplicationReferenceIterator provides iteration over application references
+type ApplicationReferenceIterator = pagination.Iterator[jsonmodels.ApplicationReference]
+
+// ListApplicationReferences retrieves all applications subscribed or owned by a specific tenant
+// Note: Can only be called from the management tenant
+func (s *Service) ListApplicationReferences(ctx context.Context, tenantID string, opt ListApplicationReferencesOptions) op.Result[jsonmodels.ApplicationReference] {
+	return core.ExecuteCollection(ctx, s.listApplicationReferencesB(tenantID, opt), ApplicationReferencesResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplicationReference)
+}
+
+// ListAllApplicationReferences returns an iterator for all application references
+func (s *Service) ListAllApplicationReferences(ctx context.Context, tenantID string, opts ListApplicationReferencesOptions) *ApplicationReferenceIterator {
+	return pagination.Paginate(
+		ctx,
+		opts.PaginationOptions,
+		func(pageOpts pagination.PaginationOptions) op.Result[jsonmodels.ApplicationReference] {
+			o := opts
+			o.PaginationOptions = pageOpts
+			return s.ListApplicationReferences(ctx, tenantID, o)
+		},
+		jsonmodels.NewApplicationReference,
+	)
+}
+
+func (s *Service) listApplicationReferencesB(tenantID string, opt ListApplicationReferencesOptions) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodGet).
+		SetPathParam(ParamTenantId, tenantID).
+		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetURL(ApiTenantApplications)
+	return core.NewTryRequest(s.Client, req, ApplicationReferencesResultProperty)
 }
