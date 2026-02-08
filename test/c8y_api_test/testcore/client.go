@@ -2,9 +2,12 @@ package testcore
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
@@ -88,4 +91,60 @@ func CreateEvent(t *testing.T, client *c8y_api.Client, mo *jsonmodels.ManagedObj
 		Text:   "Test event",
 		Time:   time.Now(),
 	})
+}
+
+// NewDummyFile creates a temporary test file with the given name and contents.
+// The file will be created in the current directory and it's the caller's
+// responsibility to clean it up.
+func NewDummyFile(t *testing.T, name string, contents string) (createFilePath string) {
+	if name == "" {
+		name = "test-dummy-dummy"
+	}
+	fullPath := filepath.Join(t.TempDir(), name)
+	f, err := os.Create(fullPath)
+	if err != nil {
+		panic(errors.Wrap(err, "Error creating dummy file"))
+	}
+
+	defer f.Close()
+
+	f.WriteString(contents)
+
+	if err := f.Sync(); err != nil {
+		panic(errors.Wrap(err, "Failed to fill file with dummy information"))
+	}
+
+	createFilePath = f.Name()
+	return
+}
+
+// NewDummyFileWithSize creates a temporary test file with the given name and size.
+// The file will be created in the current directory and it's the caller's
+// responsibility to clean it up.
+func NewDummyFileWithSize(name string, size int64) (filepath string) {
+	if name == "" {
+		name = "test-dummy-dummy"
+	}
+
+	if size < 0 {
+		size = 10_000_000
+	}
+
+	f, err := os.Create(name)
+	if err != nil {
+		panic(errors.Wrap(err, "Error creating dummy file"))
+	}
+
+	defer f.Close()
+
+	if err := f.Truncate(size); err != nil {
+		panic(errors.Wrap(err, "Failed to fill file with dummy information"))
+	}
+
+	if err := f.Sync(); err != nil {
+		panic(errors.Wrap(err, "Failed to sync file with dummy information"))
+	}
+
+	filepath = f.Name()
+	return
 }
