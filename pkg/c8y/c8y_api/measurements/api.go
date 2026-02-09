@@ -11,6 +11,7 @@ import (
 	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/internal/context"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/realtime"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"github.com/reubenmiller/go-c8y/pkg/jsonUtilities"
 	"resty.dev/v3"
@@ -380,4 +381,66 @@ func (s *Service) listSeriesB(opt ListSeriesOptions) *core.TryRequest {
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiMeasurementsSeries)
 	return core.NewTryRequest(s.Client, req)
+}
+
+// MeasurementStream provides an iterator for realtime measurement subscriptions
+type MeasurementStream = realtime.Stream[realtime.StreamData[jsonmodels.Measurement]]
+
+// SubscribeStream subscribes to realtime measurements and returns a typed stream iterator.
+// The subscription automatically unsubscribes when the context is cancelled or times out.
+//
+// IMPORTANT: Always call stream.Close() when done, typically via defer.
+// This ensures proper cleanup of the realtime subscription.
+//
+// Recommended pattern:
+//
+//	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+//	defer cancel()
+//
+//	streamResult := client.Measurements.SubscribeStream(ctx, deviceID)
+//	if streamResult.Err != nil {
+//	    return streamResult.Err
+//	}
+//	stream := streamResult.Data
+//	defer stream.Close() // Required for cleanup
+//
+//	// Using range with Items() for error handling
+//	for item, err := range stream.Items() {
+//	    if err != nil {
+//	        return err
+//	    }
+//	    log.Printf("Measurement %s: %s", item.Action, item.Data.Type())
+//	    if item.Data.Type() == "targetType" {
+//	        break
+//	    }
+//	}
+//
+//	// Or using range with Seq() (simpler, errors stop iteration)
+//	for item := range stream.Seq() {
+//	    log.Printf("Measurement %s: %s", item.Action, item.Data.Type())
+//	}
+//	if err := stream.Err(); err != nil {
+//	    return err
+//	}
+func (s *Service) SubscribeStream(ctx context.Context, ID string) op.Result[*MeasurementStream] {
+	err := s.RealtimeClient.Connect()
+	if err != nil {
+		return op.Failed[*MeasurementStream](err, false)
+	}
+
+	messages := make(chan *realtime.Message, 10)
+	pattern := realtime.Measurements(ID)
+	errorChan := s.RealtimeClient.Subscribe(ctx, pattern, messages)
+	stream := realtime.NewStream(ctx, messages, errorChan, func(msg *realtime.Message) realtime.StreamData[jsonmodels.Measurement] {
+		return realtime.StreamData[jsonmodels.Measurement]{
+			Action:  msg.Payload.RealtimeAction,
+			Channel: msg.Channel,
+			Data:    jsonmodels.NewMeasurement(msg.Payload.Data.Bytes()),
+		}
+	}, func() {
+		// Cleanup: unsubscribe from the realtime channel
+		s.RealtimeClient.Unsubscribe(pattern)
+	})
+
+	return op.OK(stream)
 }

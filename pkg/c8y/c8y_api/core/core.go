@@ -7,12 +7,14 @@ import (
 
 	"github.com/google/go-querystring/query"
 	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/internal/context"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/realtime"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"resty.dev/v3"
 )
 
 type Service struct {
-	Client *resty.Client
+	Client         *resty.Client
+	RealtimeClient *realtime.Client
 }
 
 type TryRequest struct {

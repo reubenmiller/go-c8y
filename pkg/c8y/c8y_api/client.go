@@ -30,6 +30,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/microservices"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/notification2"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/operations"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/realtime"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/remoteaccess"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/repository"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/retentionrules"
@@ -71,6 +72,8 @@ type Service struct {
 type Client struct {
 	clientMu sync.Mutex    // clientMu protects the client during calls that modify the CheckRedirect func.
 	Client   *resty.Client // HTTP client used to communicate with the API.
+
+	RealtimeClient *realtime.Client
 
 	// Show sensitive information
 	showSensitive bool
@@ -176,6 +179,21 @@ type ClientOptions struct {
 	Agent string
 }
 
+func (c *Client) Realtime() *realtime.Client {
+	c.clientMu.Lock()
+	defer c.clientMu.Unlock()
+	if c.common.RealtimeClient == nil {
+		c.common.RealtimeClient = realtime.NewClient(nil, realtime.ClientOptions{
+			Host:     c.BaseURL.String(),
+			Tenant:   c.Auth.Tenant,
+			Username: c.Auth.Username,
+			Password: c.Auth.Password,
+			Token:    c.Auth.Token,
+		})
+	}
+	return c.common.RealtimeClient
+}
+
 func NewClientFromEnvironment(opt ClientOptions) *Client {
 	opt.BaseURL = authentication.HostFromEnvironment()
 	opt.Auth = authentication.FromEnvironment()
@@ -273,6 +291,13 @@ func NewClient(opts ClientOptions) *Client {
 		UseKeyRing:    opts.UseKeyRing,
 	}
 	c.common.Client = rclient
+	c.common.RealtimeClient = realtime.NewClient(nil, realtime.ClientOptions{
+		Host:     targetBaseURL.String(),
+		Tenant:   c.Auth.Tenant,
+		Username: c.Auth.Username,
+		Password: c.Auth.Password,
+		Token:    c.Auth.Token,
+	})
 	c.AuditRecords = (*auditrecords.Service)(&c.common)
 	c.TrustedCertificates = trustedcertificates.NewService(&c.common)
 	c.Binaries = (*binaries.Service)(&c.common)

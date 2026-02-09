@@ -11,6 +11,7 @@ import (
 	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/internal/context"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/realtime"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"github.com/reubenmiller/go-c8y/pkg/jsonUtilities"
 	"resty.dev/v3"
@@ -352,4 +353,66 @@ func (s *Service) deleteListB(opt DeleteListOptions) *core.TryRequest {
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiOperations)
 	return core.NewTryRequest(s.Client, req)
+}
+
+// OperationStream provides an iterator for realtime operation subscriptions
+type OperationStream = realtime.Stream[realtime.StreamData[jsonmodels.Operation]]
+
+// SubscribeStream subscribes to realtime operations and returns a typed stream iterator.
+// The subscription automatically unsubscribes when the context is cancelled or times out.
+//
+// IMPORTANT: Always call stream.Close() when done, typically via defer.
+// This ensures proper cleanup of the realtime subscription.
+//
+// Recommended pattern:
+//
+//	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+//	defer cancel()
+//
+//	streamResult := client.Operations.SubscribeStream(ctx, deviceID)
+//	if streamResult.Err != nil {
+//	    return streamResult.Err
+//	}
+//	stream := streamResult.Data
+//	defer stream.Close() // Required for cleanup
+//
+//	// Using range with Items() for error handling
+//	for item, err := range stream.Items() {
+//	    if err != nil {
+//	        return err
+//	    }
+//	    log.Printf("Operation %s: %s - %s", item.Action, item.Data.ID(), item.Data.Status())
+//	    if item.Data.Status() == "SUCCESSFUL" {
+//	        break
+//	    }
+//	}
+//
+//	// Or using range with Seq() (simpler, errors stop iteration)
+//	for item := range stream.Seq() {
+//	    log.Printf("Operation %s: %s - %s", item.Action, item.Data.ID(), item.Data.Status())
+//	}
+//	if err := stream.Err(); err != nil {
+//	    return err
+//	}
+func (s *Service) SubscribeStream(ctx context.Context, ID string) op.Result[*OperationStream] {
+	err := s.RealtimeClient.Connect()
+	if err != nil {
+		return op.Failed[*OperationStream](err, false)
+	}
+
+	messages := make(chan *realtime.Message, 10)
+	pattern := realtime.Operations(ID)
+	errorChan := s.RealtimeClient.Subscribe(ctx, pattern, messages)
+	stream := realtime.NewStream(ctx, messages, errorChan, func(msg *realtime.Message) realtime.StreamData[jsonmodels.Operation] {
+		return realtime.StreamData[jsonmodels.Operation]{
+			Action:  msg.Payload.RealtimeAction,
+			Channel: msg.Channel,
+			Data:    jsonmodels.NewOperation(msg.Payload.Data.Bytes()),
+		}
+	}, func() {
+		// Cleanup: unsubscribe from the realtime channel
+		s.RealtimeClient.Unsubscribe(pattern)
+	})
+
+	return op.OK(stream)
 }

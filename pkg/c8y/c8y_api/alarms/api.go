@@ -11,6 +11,7 @@ import (
 	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/internal/context"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/realtime"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 	"github.com/reubenmiller/go-c8y/pkg/jsonUtilities"
 	"resty.dev/v3"
@@ -539,4 +540,76 @@ func (s *Service) deleteListB(opt DeleteListOptions) *core.TryRequest {
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiAlarms)
 	return core.NewTryRequest(s.Client, req)
+}
+
+// Subscribe subscribes to realtime alarms and sends raw messages to the provided channel.
+// The subscription automatically unsubscribes when the context is cancelled or times out.
+func (s *Service) Subscribe(ctx context.Context, ID string, out chan<- *realtime.Message) op.Result[chan error] {
+	err := s.RealtimeClient.Connect()
+	if err != nil {
+		return op.Failed[chan error](err, false)
+	}
+	return op.OK(s.RealtimeClient.Subscribe(ctx, realtime.Alarms(ID), out))
+}
+
+// AlarmStream provides an iterator for realtime alarm subscriptions
+type AlarmStream = realtime.Stream[realtime.StreamData[jsonmodels.Alarm]]
+
+// SubscribeStream subscribes to realtime alarms and returns a typed stream iterator.
+// The subscription automatically unsubscribes when the context is cancelled or times out.
+//
+// IMPORTANT: Always call stream.Close() when done, typically via defer.
+// This ensures proper cleanup of the realtime subscription.
+//
+// Recommended pattern:
+//
+//	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+//	defer cancel()
+//
+//	streamResult := client.Alarms.SubscribeStream(ctx, deviceID)
+//	if streamResult.Err != nil {
+//	    return streamResult.Err
+//	}
+//	stream := streamResult.Data
+//	defer stream.Close() // Required for cleanup
+//
+//	// Using range with Items() for error handling
+//	for item, err := range stream.Items() {
+//	    if err != nil {
+//	        return err
+//	    }
+//	    log.Printf("Alarm %s: %s (severity: %s)", item.Action, item.Data.Type(), item.Data.Severity())
+//	    if item.Data.Severity() == "CRITICAL" {
+//	        break
+//	    }
+//	}
+//
+//	// Or using range with Seq() (simpler, errors stop iteration)
+//	for item := range stream.Seq() {
+//	    log.Printf("Alarm %s: %s", item.Action, item.Data.Type())
+//	}
+//	if err := stream.Err(); err != nil {
+//	    return err
+//	}
+func (s *Service) SubscribeStream(ctx context.Context, ID string) op.Result[*AlarmStream] {
+	err := s.RealtimeClient.Connect()
+	if err != nil {
+		return op.Failed[*AlarmStream](err, false)
+	}
+
+	messages := make(chan *realtime.Message, 10)
+	pattern := realtime.Alarms(ID)
+	errorChan := s.RealtimeClient.Subscribe(ctx, pattern, messages)
+	stream := realtime.NewStream(ctx, messages, errorChan, func(msg *realtime.Message) realtime.StreamData[jsonmodels.Alarm] {
+		return realtime.StreamData[jsonmodels.Alarm]{
+			Action:  msg.Payload.RealtimeAction,
+			Channel: msg.Channel,
+			Data:    jsonmodels.NewAlarm(msg.Payload.Data.Bytes()),
+		}
+	}, func() {
+		// Cleanup: unsubscribe from the realtime channel
+		s.RealtimeClient.Unsubscribe(pattern)
+	})
+
+	return op.OK(stream)
 }
