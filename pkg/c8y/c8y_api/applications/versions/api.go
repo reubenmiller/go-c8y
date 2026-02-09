@@ -1,7 +1,9 @@
 package versions
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -25,7 +27,7 @@ var (
 var ParamId = "id"
 var ParamVersion = "version"
 
-const ResultProperty = "versions"
+const ResultProperty = "applicationVersions"
 
 // Service for managing application versions
 type Service struct {
@@ -45,10 +47,10 @@ type UploadFileOptions = core.UploadFileOptions
 
 // CreateOptions contains options for creating application versions
 type CreateOptions struct {
-	Version string
-	Tags    []string
+	Version string   `json:"version,omitempty"`
+	Tags    []string `json:"tags"`
 
-	File UploadFileOptions
+	File UploadFileOptions `json:"-"`
 }
 
 type VersionIterator = pagination.Iterator[jsonmodels.ApplicationVersion]
@@ -83,12 +85,12 @@ func (s *Service) ListAll(ctx context.Context, applicationID string, opts ListOp
 	)
 }
 
-// GetByVersion retrieves a specific version of an application by version string
-func (s *Service) GetByVersion(ctx context.Context, applicationID string, version string) op.Result[jsonmodels.ApplicationVersion] {
-	return core.Execute(ctx, s.getByVersionB(applicationID, version), jsonmodels.NewApplicationVersion)
+// ListByVersion retrieves a specific version of an application by version string
+func (s *Service) ListByVersion(ctx context.Context, applicationID string, version string) op.Result[jsonmodels.ApplicationVersion] {
+	return core.ExecuteCollection(ctx, s.listByVersionB(applicationID, version), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplicationVersion)
 }
 
-func (s *Service) getByVersionB(applicationID string, version string) *core.TryRequest {
+func (s *Service) listByVersionB(applicationID string, version string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -99,12 +101,12 @@ func (s *Service) getByVersionB(applicationID string, version string) *core.TryR
 	return core.NewTryRequest(s.Client, req)
 }
 
-// GetByTag retrieves a specific version of an application by tag
-func (s *Service) GetByTag(ctx context.Context, applicationID string, tag string) op.Result[jsonmodels.ApplicationVersion] {
-	return core.Execute(ctx, s.getByTagB(applicationID, tag), jsonmodels.NewApplicationVersion)
+// ListByTag retrieves a specific version of an application by tag
+func (s *Service) ListByTag(ctx context.Context, applicationID string, tag string) op.Result[jsonmodels.ApplicationVersion] {
+	return core.ExecuteCollection(ctx, s.listByTagB(applicationID, tag), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplicationVersion)
 }
 
-func (s *Service) getByTagB(applicationID string, tag string) *core.TryRequest {
+func (s *Service) listByTagB(applicationID string, tag string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -126,25 +128,15 @@ func (s *Service) createB(applicationID string, opts CreateOptions) *core.TryReq
 		filename = "application.zip"
 	}
 
+	applicationVersion, _ := json.Marshal(opts)
+
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamId, applicationID).
+		SetMultipartField("applicationBinary", filename, types.MimeTypeApplicationOctetStream, opts.File.Reader).
+		SetMultipartField("applicationVersion", "", types.MimeTypeApplicationJSON, bytes.NewReader(applicationVersion)).
 		SetURL(ApiVersions)
-
-	// Add multipart fields
-	req.SetMultipartField("applicationBinary", filename, types.MimeTypeApplicationOctetStream, opts.File.Reader)
-
-	// Add version as multipart field
-	if opts.Version != "" {
-		req.SetMultipartField("version", "", types.MimeTypeTextPlain, strings.NewReader(opts.Version))
-	}
-
-	// Add tags as multipart field if present
-	if len(opts.Tags) > 0 {
-		tagsJSON := `["` + strings.Join(opts.Tags, `","`) + `"]`
-		req.SetMultipartField("tags", "", types.MimeTypeApplicationJSON, strings.NewReader(tagsJSON))
-	}
 
 	return core.NewTryRequest(s.Client, req)
 }
