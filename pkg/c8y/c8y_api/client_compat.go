@@ -53,6 +53,8 @@ type RequestOptions struct {
 	// IgnoreAccept if true, removes the Accept header
 	IgnoreAccept bool
 
+	DryRun *bool
+
 	// Host overrides the base URL host for this request
 	// Useful for cross-tenant operations or custom aliases
 	Host string
@@ -168,8 +170,12 @@ func (r *RequestResult) Header(key string) string {
 //	    Query:  ListOptions{PageSize: 100, Type: "c8y_Device"},
 //	})
 func (c *Client) SendRequest(ctx context.Context, options RequestOptions) *RequestResult {
+	ctxRequest := ctx
+	if options.DryRun != nil {
+		ctxRequest = WithDryRun(ctxRequest, *options.DryRun)
+	}
 	req := c.Client.R().
-		SetContext(ctx).
+		SetContext(ctxRequest).
 		SetMethod(options.Method)
 
 	// Handle path and query
