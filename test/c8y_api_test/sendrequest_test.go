@@ -309,3 +309,37 @@ func TestSendRequest_FormData(t *testing.T) {
 	assert.NotNil(t, result)
 	assert.Equal(t, 201, result.StatusCode())
 }
+
+func TestSendRequest_DryRun(t *testing.T) {
+	client := testcore.CreateTestClient(t)
+
+	// Enable dry run using the RequestOptions.DryRun field (v1 compatibility)
+	dryRun := true
+	result := client.SendRequest(context.TODO(), c8y_api.RequestOptions{
+		Method: "GET",
+		Path:   "/inventory/managedObjects/12345",
+		DryRun: &dryRun,
+	})
+
+	// Verify no error occurred
+	assert.NoError(t, result.Error)
+
+	// Dry run should return mock data
+	assert.NotNil(t, result)
+
+	// Mock responses typically return 200 OK status
+	assert.Equal(t, 200, result.StatusCode())
+
+	// Verify dry run headers are set
+	assert.Equal(t, "true", result.Header("X-Dry-Run"), "X-Dry-Run header should be set to true")
+	assert.Equal(t, "true", result.Header("X-Mock-Response"), "X-Mock-Response header should be set to true")
+	assert.Equal(t, "application/json", result.Header("Content-Type"), "Content-Type should be application/json")
+
+	// Response should have a body (mock data)
+	body := result.Body()
+	assert.NotEmpty(t, body)
+
+	// Verify we can access JSON from the mock response
+	jsonResult := result.JSON("id")
+	assert.True(t, jsonResult.Exists(), "Mock response should contain data")
+}
