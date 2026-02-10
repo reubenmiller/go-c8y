@@ -343,3 +343,96 @@ func TestSendRequest_DryRun(t *testing.T) {
 	jsonResult := result.JSON("id")
 	assert.True(t, jsonResult.Exists(), "Mock response should contain data")
 }
+
+func TestSendRequest_PathAndQueryEncoding(t *testing.T) {
+	client := testcore.CreateTestClient(t)
+
+	// Use dry run to test path and query encoding without making actual requests
+	dryRun := true
+
+	// Test that query parameters from path and Query field are properly merged
+	// and that special characters are handled correctly
+	result := client.SendRequest(context.TODO(), c8y_api.RequestOptions{
+		Method: "GET",
+		Path:   "/inventory/managedObjects?pageSize=5",
+		Query:  "type=c8y_Device&withChildren=false",
+		DryRun: &dryRun,
+	})
+
+	require.NoError(t, result.Error, "Request should succeed")
+	require.NotNil(t, result.Response, "Response should not be nil")
+	assert.Equal(t, 200, result.StatusCode(), "Should return 200 OK in dry run")
+
+	// Verify query parameters were properly merged and encoded
+	queryParams := result.Response.Request.QueryParams
+	assert.NotEmpty(t, queryParams)
+
+	// Both inline path query params and additional Query params should be present
+	encodedQueryParamsParts := strings.Split(queryParams.Encode(), "&")
+	assert.Contains(t, encodedQueryParamsParts, "pageSize=5", "Query param from path should be present")
+	assert.Contains(t, encodedQueryParamsParts, "type=c8y_Device", "Query param from Query field should be present")
+	assert.Contains(t, encodedQueryParamsParts, "withChildren=false", "Additional query param should be present")
+}
+
+func Test_ParseRequestWithSpaces(t *testing.T) {
+	client := testcore.CreateTestClient(t)
+	dryRun := true
+	result := client.SendRequest(context.TODO(), c8y_api.RequestOptions{
+		Host:   "https://c8y.example/base/",
+		Method: "GET",
+		Path:   "/path/with space?query=test eq%20'me'",
+		Query:  "pageSize=100&another=%20again ",
+		DryRun: &dryRun,
+	})
+
+	// path
+	escapedPath := result.Response.Request.RawRequest.URL.EscapedPath()
+	assert.Equal(t, "/base/path/with%20space", escapedPath)
+
+	// query parameters
+	queryParams := result.Response.Request.QueryParams
+	encodedQueryParams := queryParams.Encode()
+	encodedQueryParamsParts := strings.Split(encodedQueryParams, "&")
+	assert.Contains(t, encodedQueryParamsParts, "query=test+eq+%27me%27")
+	assert.Contains(t, encodedQueryParamsParts, "another=+again+")
+}
+
+func TestSendRequest_MultipleBodyReads(t *testing.T) {
+	client := testcore.CreateTestClient(t)
+
+	// Use dry run to avoid authentication issues
+	dryRun := true
+	result := client.SendRequest(context.TODO(), c8y_api.RequestOptions{
+		Method: "GET",
+		Path:   "/inventory/managedObjects/12345",
+		DryRun: &dryRun,
+	})
+
+	require.NoError(t, result.Error)
+	assert.Equal(t, 200, result.StatusCode())
+
+	// Read body multiple times to verify caching works
+	body1 := result.Body()
+	body2 := result.Body()
+	str1 := result.String()
+	str2 := result.String()
+
+	// All reads should return the same data
+	assert.NotEmpty(t, body1)
+	assert.Equal(t, body1, body2, "Multiple Body() calls should return same data")
+	assert.Equal(t, string(body1), str1, "String() should match Body()")
+	assert.Equal(t, str1, str2, "Multiple String() calls should return same data")
+
+	// JSON parsing should also work multiple times
+	json1 := result.JSON("id")
+	json2 := result.JSON("id")
+	assert.True(t, json1.Exists())
+	assert.True(t, json2.Exists())
+	assert.Equal(t, json1.String(), json2.String(), "Multiple JSON() calls should return same data")
+
+	// Unmarshal should work after all the above reads
+	var response map[string]interface{}
+	err := result.Unmarshal(&response)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, response)
+}
