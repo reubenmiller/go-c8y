@@ -38,6 +38,7 @@ func main() {
 		dir          = flag.String("dir", "", "Directory to search for software packages (required)")
 		patterns     patternsFlag
 		softwareType = flag.String("type", "", "Software type (e.g., 'firmware', 'application')")
+		namePrefix   = flag.String("name-prefix", "", "Prefix to be added to the software package when uploading it")
 		concurrency  = flag.Int("concurrency", 5, "Number of concurrent uploads")
 		dryRun       = flag.Bool("dry-run", false, "Preview what would be uploaded without actually uploading")
 		verbose      = flag.Bool("verbose", false, "Enable detailed logging")
@@ -118,7 +119,7 @@ func main() {
 	// Parse software information from filenames
 	var softwareInfos []*SoftwareInfo
 	for _, file := range files {
-		info, err := ParseSoftwareFromFilename(file, *softwareType)
+		info, err := ParseSoftwareFromFilename(file, *softwareType, *namePrefix)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: skipping %s: %v\n", file, err)
 			continue

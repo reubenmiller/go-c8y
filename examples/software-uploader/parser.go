@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/url"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -324,7 +325,7 @@ var defaultRegistry = NewParserRegistry()
 //   - "tedge-flows_1.6.2~584+gd629c53_arm64.deb" -> name: "tedge-flows", version: "1.6.2~584+gd629c53", arch: "arm64"
 //   - "tedge-flows-1.6.2~584+gd629c53-1.aarch64.rpm" -> name: "tedge-flows", version: "1.6.2~584+gd629c53", arch: "aarch64"
 //   - "myapp-1.2.3.tar.gz" -> name: "myapp", version: "1.2.3"
-func ParseSoftwareFromFilename(filePath string, defaultType string) (*SoftwareInfo, error) {
+func ParseSoftwareFromFilename(filePath string, defaultType string, namePrefix string) (*SoftwareInfo, error) {
 	filename := filepath.Base(filePath)
 
 	// Get the appropriate parser
@@ -344,6 +345,16 @@ func ParseSoftwareFromFilename(filePath string, defaultType string) (*SoftwareIn
 	// If no software type determined, try to detect it
 	if info.SoftwareType == "" {
 		info.SoftwareType = detectSoftwareType(filename)
+	}
+
+	// Decode name if it is url encoded
+	if unescapedName, err := url.QueryUnescape(info.Name); err == nil {
+		info.Name = unescapedName
+	}
+
+	// Add a prefix to the name if provided
+	if namePrefix != "" {
+		info.Name = namePrefix + info.Name
 	}
 
 	return info, nil
