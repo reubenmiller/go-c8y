@@ -66,6 +66,10 @@ type RequestOptions struct {
 	// PrepareRequest allows modifying the resty request before sending
 	// This gives access to the full resty API for advanced customization
 	PrepareRequest func(*resty.Request)
+
+	OnResponse func(response *resty.Response) error
+
+	DoNotParseResponse bool
 }
 
 // RequestResult wraps resty.Response with convenience methods
@@ -269,6 +273,10 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) *Reque
 		fullURL = strings.TrimSuffix(fullURL, "/") + options.Path
 	}
 
+	if options.DoNotParseResponse {
+		req.SetDoNotParseResponse(true)
+	}
+
 	// Prepare request hook
 	if options.PrepareRequest != nil {
 		options.PrepareRequest(req)
@@ -289,8 +297,22 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) *Reque
 		Error:    err,
 	}
 
+	// Call OnResponse callback IMMEDIATELY after receiving response, before any other processing
+	// This must happen before we check DoNotParseResponse or errors
+	// to allow the user to wrap the raw response body
+	if options.OnResponse != nil && resp != nil && err == nil {
+		if onResponseErr := options.OnResponse(result.Response); onResponseErr != nil {
+			result.Error = onResponseErr
+			return result
+		}
+	}
+
+	if err != nil || options.DoNotParseResponse {
+		return result
+	}
+
 	// Cache the body immediately so it can be read multiple times
-	if resp != nil && resp.Body != nil && err == nil {
+	if resp != nil && resp.Body != nil {
 		body, readErr := io.ReadAll(resp.Body)
 		if readErr == nil {
 			result.cachedBody = body

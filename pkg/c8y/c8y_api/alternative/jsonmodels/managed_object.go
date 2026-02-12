@@ -62,6 +62,10 @@ func (m ManagedObject) Owner() string {
 	return m.Get("owner").String()
 }
 
+func (m ManagedObject) Self() string {
+	return m.Get("self").String()
+}
+
 func (m ManagedObject) CreationTime() time.Time {
 	return m.Get("creationTime").Time()
 }

@@ -34,6 +34,13 @@ func (s *UploadFileOptions) GetReader() any {
 	return s.Reader
 }
 
+func (s *UploadFileOptions) Close() error {
+	if reader, ok := s.Reader.(*os.File); ok {
+		return reader.Close()
+	}
+	return nil
+}
+
 func selectFirstNonEmptyValue(contentType ...string) string {
 	for _, v := range contentType {
 		if v != "" {
@@ -41,6 +48,23 @@ func selectFirstNonEmptyValue(contentType ...string) string {
 		}
 	}
 	return ""
+}
+
+func NewUploadFileOptions(filePath string, contentType ...string) (*UploadFileOptions, error) {
+	opt := &UploadFileOptions{
+		Name: filepath.Base(filePath),
+	}
+	if len(contentType) > 0 {
+		opt.ContentType = contentType[0]
+	} else {
+		opt.ContentType = mime.TypeByExtension(filepath.Ext(filePath))
+	}
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	opt.Reader = file
+	return opt, nil
 }
 
 func NewMultiPartFileFields(opt UploadFileOptions) []*resty.MultipartField {

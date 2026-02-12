@@ -3,6 +3,7 @@ package c8y_api_test
 import (
 	"context"
 	"io"
+	"mime"
 	"net/url"
 	"strings"
 	"testing"
@@ -14,7 +15,37 @@ import (
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/vbauerster/mpb/v8"
+	"github.com/vbauerster/mpb/v8/decor"
+	"resty.dev/v3"
 )
+
+// completingReader wraps a reader and completes the progress bar when EOF is reached
+type completingReader struct {
+	io.Reader
+	bar    *mpb.Bar
+	closer io.Closer
+}
+
+func (r *completingReader) Read(p []byte) (n int, err error) {
+	n, err = r.Reader.Read(p)
+	if err == io.EOF {
+		// Explicitly complete the bar when EOF is reached
+		// SetTotal with current count and complete=true
+		current := r.bar.Current()
+		r.bar.SetTotal(current, true)
+		// Also abort to ensure it completes immediately
+		r.bar.Abort(true)
+	}
+	return n, err
+}
+
+func (r *completingReader) Close() error {
+	if r.closer != nil {
+		return r.closer.Close()
+	}
+	return nil
+}
 
 func TestSendRequest_SimpleGET(t *testing.T) {
 	client := testcore.CreateTestClient(t)
@@ -435,4 +466,186 @@ func TestSendRequest_MultipleBodyReads(t *testing.T) {
 	err := result.Unmarshal(&response)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, response)
+}
+
+// countingReader is a simple io.Reader that counts bytes read
+type countingReader struct {
+	io.Reader
+	count int64
+}
+
+func (r *countingReader) Read(p []byte) (n int, err error) {
+	n, err = r.Reader.Read(p)
+	r.count += int64(n)
+	return n, err
+}
+
+func (r *countingReader) Close() error {
+	if closer, ok := r.Reader.(io.Closer); ok {
+		return closer.Close()
+	}
+	return nil
+}
+
+func TestSendRequest_CustomBodyWrapper_Simple(t *testing.T) {
+	client := testcore.CreateTestClient(t)
+
+	var counter *countingReader
+	var wrapperCalled bool
+
+	dryRun := false // Test with real response
+	options := c8y_api.RequestOptions{
+		Method: "GET",
+		Path:   "/inventory/managedObjects",
+		Accept: types.MimeTypeApplicationJSON,
+		DryRun: &dryRun,
+		OnResponse: func(response *resty.Response) error {
+			wrapperCalled = true
+			t.Logf("OnResponse called, ContentLength: %d", response.RawResponse.ContentLength)
+
+			// Wrap the response body with a counting reader
+			// Use response.Body (Resty's body) for consistency
+			counter = &countingReader{
+				Reader: response.Body,
+			}
+			response.Body = counter
+			response.RawResponse.Body = counter
+
+			return nil
+		},
+		DoNotParseResponse: true,
+	}
+
+	resp := client.SendRequest(context.Background(), options)
+
+	// Even if authentication fails, OnResponse should still be called
+	// and we should be able to read the error response body
+	if resp.StatusCode() == 401 {
+		t.Logf("Got 401, but OnResponse should still work")
+
+		// Read the error body using response.Body (Resty's body)
+		contents, err := io.ReadAll(resp.Response.Body)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, contents)
+		t.Logf("Read %d bytes from error response, counter tracked %d bytes", len(contents), counter.count)
+
+		resp.Response.Body.Close()
+
+		// Verify the wrapper worked even for error responses
+		assert.True(t, wrapperCalled, "OnResponse callback should have been called")
+		assert.NotNil(t, counter, "Counter should have been created")
+		assert.Equal(t, int64(len(contents)), counter.count, "Counter should track all bytes read")
+
+		return
+	}
+
+	assert.NoError(t, resp.Error)
+
+	// Read the body
+	contents, err := io.ReadAll(resp.Response.Body)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, contents)
+
+	t.Logf("Read %d bytes, counter tracked %d bytes", len(contents), counter.count)
+
+	// Close the body
+	resp.Response.Body.Close()
+
+	// Verify the mechanism worked
+	assert.True(t, wrapperCalled, "OnResponse callback should have been called")
+	assert.NotNil(t, counter, "Counter should have been created")
+	assert.Equal(t, int64(len(contents)), counter.count, "Counter should track all bytes read")
+}
+
+func TestSendRequest_CustomBodyWriter(t *testing.T) {
+	client := testcore.CreateTestClient(t)
+
+	progressOut := new(strings.Builder)
+
+	progress := mpb.New(
+		mpb.WithOutput(progressOut),
+		mpb.WithWidth(180),
+		mpb.WithRefreshRate(100*time.Millisecond), // Explicit refresh rate for testing
+	)
+
+	var bodyContents []byte
+	var bar *mpb.Bar
+	var wrapperCalled bool
+
+	dryRun := false // Test with real response to ensure it works in production
+	options := c8y_api.RequestOptions{
+		Method: "GET",
+		Path:   "/inventory/managedObjects",
+		Accept: types.MimeTypeApplicationJSON,
+		DryRun: &dryRun,
+		// OnResponse is called BEFORE the body is read, allowing us to wrap it
+		OnResponse: func(response *resty.Response) error {
+			wrapperCalled = true
+
+			basename := "download"
+			_, params, err := mime.ParseMediaType(response.Header().Get("Content-Disposition"))
+			if err == nil {
+				if filename, ok := params["filename"]; ok {
+					basename = filename
+				}
+			}
+
+			// Note: ContentLength is set to -1 if the response is chunked/compressed
+			// For unknown sizes, set total to 0 and let it auto-complete on EOF
+			barTotal := int64(0)
+			if response.RawResponse.ContentLength > 0 {
+				barTotal = response.RawResponse.ContentLength
+			}
+
+			bar = progress.AddBar(barTotal,
+				mpb.PrependDecorators(
+					decor.Name("elapsed", decor.WC{W: len("elapsed") + 1, C: decor.DindentRight}),
+					decor.Elapsed(decor.ET_STYLE_MMSS, decor.WC{W: 8, C: decor.DindentRight}),
+					decor.Name(basename, decor.WC{W: len(basename) + 1, C: decor.DindentRight}),
+				),
+				mpb.AppendDecorators(
+					decor.Percentage(decor.WC{W: 6, C: decor.DindentRight}),
+					decor.CountersKibiByte("% .2f / % .2f"),
+				),
+			)
+
+			// Wrap the response body with the progress bar proxy reader
+			// Use response.Body (Resty's body) which is the correct body to wrap
+			wrappedBody := &completingReader{
+				Reader: bar.ProxyReader(response.Body),
+				bar:    bar,
+				closer: response.Body,
+			}
+
+			response.Body = wrappedBody
+
+			return nil
+		},
+		DoNotParseResponse: true,
+	}
+
+	resp := client.SendRequest(context.Background(), options)
+
+	// Read the body (it's now wrapped with the progress bar)
+	// Use response.Body (Resty's body field) which we wrapped in OnResponse
+	contents, err := io.ReadAll(resp.Response.Body)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, contents)
+	bodyContents = contents
+
+	// Close the body
+	resp.Response.Body.Close()
+
+	// Wait for progress bars to complete
+	progress.Wait()
+
+	// Verify the mechanism worked
+	assert.True(t, wrapperCalled, "OnResponse callback should have been called")
+	assert.NotNil(t, bar, "Progress bar should have been created")
+	assert.NotEmpty(t, bodyContents, "Body should have been read")
+	assert.True(t, bar.Completed(), "Progress bar should be completed")
+
+	// Verify the bar tracked the bytes
+	bytesRead := bar.Current()
+	assert.Equal(t, int64(len(bodyContents)), bytesRead, "Progress bar should track all bytes read")
 }

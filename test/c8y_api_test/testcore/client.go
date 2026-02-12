@@ -2,8 +2,10 @@ package testcore
 
 import (
 	"context"
+	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"testing"
 	"time"
 
@@ -66,6 +68,7 @@ func CreateManagedObject(t *testing.T, client *c8y_api.Client) op.Result[jsonmod
 			client.ManagedObjects.Delete(context.TODO(), mo.Data.ID(), managedobjects.DeleteOptions{})
 		})
 	}
+	require.NoError(t, mo.Err)
 	return mo
 }
 
@@ -165,4 +168,15 @@ func NewDummyFileWithSize(name string, size int64) (filepath string) {
 
 	filepath = f.Name()
 	return
+}
+
+func MustReadAll(t *testing.T, r io.Reader) []byte {
+	out, err := io.ReadAll(r)
+	require.NoError(t, err)
+	return out
+}
+
+func DecodeAnsi(v []byte) []byte {
+	ansi_escape := regexp.MustCompile("\x1B(?:[@-Z\\-_]|[[0-?]*[ -/]*[@-~])")
+	return ansi_escape.ReplaceAll(v, []byte{})
 }

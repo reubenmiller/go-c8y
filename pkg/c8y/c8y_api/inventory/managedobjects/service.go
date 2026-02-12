@@ -20,6 +20,8 @@ func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Man
 
 // CreateWithBinaryOptions options for creating a managed object with an associated binary file
 type CreateWithBinaryOptions struct {
+	Parent string
+
 	// Body is the custom managed object body structure
 	Body map[string]any
 
@@ -74,14 +76,21 @@ func (s *Service) CreateWithBinary(ctx context.Context, opt CreateWithBinaryOpti
 		}
 
 		// Step 2: Create the managed object
-		createResult := s.Create(execCtx, opt.Body)
+		// either by attaching it as a child addition or an independent managed object
+		var createResult op.Result[jsonmodels.ManagedObject]
+		if opt.Parent != "" {
+			createResult = s.ChildAdditions.Create(execCtx, opt.Parent, opt.Body)
+		} else {
+			createResult = s.Create(execCtx, opt.Body)
+		}
+
 		if createResult.IsError() {
 			return createResult
 		}
 
 		// Step 3: Link binary as child addition if requested and binary was uploaded
 		if binaryID != "" && opt.AddChildAddition {
-			additionResult := s.ChildAdditions.Create(execCtx, createResult.Data.ID(), binaryID)
+			additionResult := s.ChildAdditions.Assign(execCtx, createResult.Data.ID(), binaryID)
 			if additionResult.IsError() {
 				if opt.FailOnChildAdditionError {
 					// Cleanup: Attempt to delete all created resources

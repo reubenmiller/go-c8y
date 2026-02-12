@@ -22,7 +22,3 @@ func TestMain(m *testing.M) {
 func createTestClient() *c8y.Client {
 	return TestEnvironment.NewClient()
 }
-
-func createRandomTestDevice(prefix ...string) (*c8y.ManagedObject, error) {
-	return TestEnvironment.NewRandomTestDevice(prefix...)
-}

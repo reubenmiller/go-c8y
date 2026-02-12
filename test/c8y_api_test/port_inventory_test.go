@@ -3,11 +3,13 @@ package c8y_api_test
 import (
 	"context"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/devices"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects/childadditions"
@@ -155,10 +157,85 @@ func TestInventoryService_GetChildAdditions(t *testing.T) {
 	assert.Equal(t, child01.Data.ID(), children[0].ID())
 }
 
-// TODO: Binary operations need to be implemented in v2 API
-// The following tests are commented out as binaries are not yet ported:
-// - TestInventoryService_CreateUpdateDeleteBinary
-// - TestInventoryService_CustomReader
-// - TestInventoryService_CreateManagedObjectWithBinary
-// - TestInventoryService_CreateBinaryWithProgressBar
-// - TestInventoryService_CreateChildAdditionWithBinary
+// Binary operations have been migrated to port_binaries_test.go
+
+func TestInventoryService_CreateManagedObjectWithBinary(t *testing.T) {
+	client := testcore.CreateTestClient(t)
+	client.Client.SetDebug(true)
+
+	testfile1 := testcore.NewDummyFile(t, "testfile1.txt", "test contents 1")
+
+	// Create child addition and a binary
+	binary1 := client.ManagedObjects.CreateWithBinary(context.Background(), managedobjects.CreateWithBinaryOptions{
+		Body: map[string]any{
+			"name": "MyConfigurationFile",
+		},
+		SetURLField:              true,
+		URLFieldPath:             "url",
+		AddChildAddition:         true,
+		FailOnChildAdditionError: true,
+		File: core.UploadFileOptions{
+			FilePath: testfile1,
+		},
+	})
+	assert.NoError(t, binary1.Err)
+	t.Cleanup(func() {
+		client.ManagedObjects.Delete(context.Background(), binary1.Data.ID(), managedobjects.DeleteOptions{
+			ForceCascade: true,
+		})
+	})
+
+	binaryURL := binary1.Data.Get("url").String()
+	binaryID := binaryURL[strings.LastIndex(binaryURL, "/")+1:]
+
+	binary := client.ManagedObjects.Get(context.Background(), binaryID, managedobjects.GetOptions{})
+	assert.NoError(t, binary.Err)
+
+	testingutils.Equals(t, "text/plain; charset=utf-8", binary.Data.Type())
+	testingutils.Equals(t, "testfile1.txt", binary.Data.Name())
+
+	testingutils.Equals(t, strings.ReplaceAll(binary.Data.Self(), "managedObjects", "binaries"), binary1.Data.Get("url").String())
+}
+
+func TestInventoryService_CreateChildAdditionWithBinary(t *testing.T) {
+	client := testcore.CreateTestClient(t)
+	parent := testcore.CreateManagedObject(t, client)
+	client.Client.SetDebug(true)
+
+	testfile1 := testcore.NewDummyFile(t, "testfile1.txt", "test contents 1")
+
+	// Create parent
+
+	// Create child addition and a binary
+	child := client.ManagedObjects.CreateWithBinary(context.Background(), managedobjects.CreateWithBinaryOptions{
+		Parent: parent.Data.ID(),
+		Body: map[string]any{
+			"name": "customChild",
+		},
+		SetURLField:              true,
+		URLFieldPath:             "childUrl",
+		AddChildAddition:         true,
+		FailOnChildAdditionError: true,
+		File: core.UploadFileOptions{
+			FilePath: testfile1,
+		},
+	})
+	assert.NoError(t, child.Err)
+	t.Cleanup(func() {
+		client.ManagedObjects.Delete(context.Background(), parent.Data.ID(), managedobjects.DeleteOptions{
+			ForceCascade: true,
+		})
+	})
+
+	childURL := child.Data.Get("childUrl").String()
+	assert.NotEmpty(t, child.Data.ID(), "child id id should be set")
+	assert.NotEmpty(t, childURL, "Child url should not be an empty string")
+
+	binaryID := childURL[strings.LastIndex(childURL, "/")+1:]
+	binary := client.ManagedObjects.Get(context.Background(), binaryID, managedobjects.GetOptions{})
+	assert.NoError(t, binary.Err)
+
+	testingutils.Equals(t, "text/plain; charset=utf-8", binary.Data.Type())
+	testingutils.Equals(t, "testfile1.txt", binary.Data.Name())
+	testingutils.Equals(t, strings.ReplaceAll(binary.Data.Self(), "managedObjects", "binaries"), childURL)
+}
