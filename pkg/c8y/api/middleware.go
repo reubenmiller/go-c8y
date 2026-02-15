@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"log/slog"
@@ -248,6 +249,44 @@ func (t *DryRunTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	// Not a dry run, proceed with the actual request
 	return t.Transport.RoundTrip(req)
+}
+
+// BaseTransport returns the underlying transport.
+func (t *DryRunTransport) BaseTransport() http.RoundTripper {
+	return t.Transport
+}
+
+// TLSClientConfig returns the TLS configuration from the underlying transport if available.
+func (t *DryRunTransport) TLSClientConfig() *tls.Config {
+	if t.Transport == nil {
+		return nil
+	}
+
+	switch transport := t.Transport.(type) {
+	case *http.Transport:
+		return transport.TLSClientConfig
+	case interface{ TLSClientConfig() *tls.Config }:
+		return transport.TLSClientConfig()
+	}
+
+	return nil
+}
+
+// SetTLSClientConfig sets the TLS configuration on the underlying transport if possible.
+func (t *DryRunTransport) SetTLSClientConfig(config *tls.Config) error {
+	if t.Transport == nil {
+		return fmt.Errorf("no underlying transport")
+	}
+
+	switch transport := t.Transport.(type) {
+	case *http.Transport:
+		transport.TLSClientConfig = config
+		return nil
+	case interface{ SetTLSClientConfig(*tls.Config) error }:
+		return transport.SetTLSClientConfig(config)
+	}
+
+	return fmt.Errorf("underlying transport does not support TLS configuration")
 }
 
 // hasResourceID checks if the URL path appears to reference a specific resource ID

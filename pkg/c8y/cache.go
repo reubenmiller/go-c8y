@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/sha256"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -53,41 +54,179 @@ func isCacheableResponse(res *http.Response) bool {
 // ClientOption represents an argument to NewClient
 type ClientOption = func(http.RoundTripper) http.RoundTripper
 
+// NewCachedTransport creates an http.RoundTripper that caches HTTP responses to disk.
+// This is a convenience function for using with clients like Resty that need a direct RoundTripper.
+//
+// Cached responses include the following headers to indicate cache status:
+//   - X-Cache: "HIT" (from cache) or "MISS" (fresh response)
+//   - X-From-Cache: "true" (only present on cached responses)
+//   - Age: number of seconds since the response was cached
+//
+// When using the API client methods, cache headers are available in Result.Meta:
+//
+//	result := client.Alarms.List(ctx, options)
+//	if result.Meta["x-cache"] == "HIT" {
+//		fmt.Printf("Response from cache (age: %s seconds)\n", result.Meta["age"])
+//	}
+//
+// When using Resty directly:
+//
+//	client := resty.New()
+//	transport := c8y.NewCachedTransport(nil, 5*time.Minute, cacheDir, nil, c8y.CacheOptions{})
+//	client.SetTransport(transport)
+//
+//	resp, err := client.R().Get("/some/endpoint")
+//	if resp.Header().Get("X-Cache") == "HIT" {
+//		fmt.Printf("Response from cache (age: %s seconds)\n", resp.Header().Get("Age"))
+//	}
+//
+// To set TLS config on the cached transport:
+//
+//	transport := c8y.NewCachedTransport(nil, 5*time.Minute, cacheDir, nil, c8y.CacheOptions{})
+//	// Option 1: Use SetTLSClientConfig (propagates to underlying transport)
+//	if cached, ok := transport.(*c8y.CachedRoundTripper); ok {
+//		cached.SetTLSClientConfig(tlsConfig)
+//	}
+//	// Option 2: Access base transport directly
+//	if cached, ok := transport.(*c8y.CachedRoundTripper); ok {
+//		if httpTransport, ok := cached.BaseTransport().(*http.Transport); ok {
+//			httpTransport.TLSClientConfig = tlsConfig
+//		}
+//	}
+//
+// To chain multiple transports, pass one as the baseTransport to the next:
+//
+//	// Chain: Default → Logging → Caching → Resty
+//	base := http.DefaultTransport
+//	logged := NewLoggingTransport(base)
+//	cached := c8y.NewCachedTransport(logged, 5*time.Minute, cacheDir, nil, c8y.CacheOptions{})
+//	client.SetTransport(cached)
+//
+// Or using ClientOption pattern:
+//
+//	transport := CacheResponse(...)(LoggingTransport(...)(http.DefaultTransport))
+//
+// If baseTransport is nil, http.DefaultTransport is used.
+func NewCachedTransport(baseTransport http.RoundTripper, ttl time.Duration, dir string, isCacheable Cacheable, options CacheOptions) http.RoundTripper {
+	if baseTransport == nil {
+		baseTransport = http.DefaultTransport
+	}
+	if isCacheable == nil {
+		isCacheable = isCacheableRequest
+	}
+	return CacheResponse(ttl, dir, isCacheable, options)(baseTransport)
+}
+
+// NewCachedTransportWithTLS creates a cached transport with custom TLS configuration.
+// This is a convenience function that creates a properly configured http.Transport with your TLS settings,
+// then wraps it with caching.
+//
+// Example:
+//
+//	tlsConfig := &tls.Config{InsecureSkipVerify: true}
+//	transport := c8y.NewCachedTransportWithTLS(tlsConfig, 5*time.Minute, cacheDir, nil, c8y.CacheOptions{})
+//	client.SetTransport(transport)
+func NewCachedTransportWithTLS(tlsConfig *tls.Config, ttl time.Duration, dir string, isCacheable Cacheable, options CacheOptions) http.RoundTripper {
+	// Clone the default transport and set TLS config
+	baseTransport := http.DefaultTransport.(*http.Transport).Clone()
+	baseTransport.TLSClientConfig = tlsConfig
+
+	if isCacheable == nil {
+		isCacheable = isCacheableRequest
+	}
+	return CacheResponse(ttl, dir, isCacheable, options)(baseTransport)
+}
+
 // CacheResponse produces a RoundTripper that caches HTTP responses to disk for a specified amount of time
 func CacheResponse(ttl time.Duration, dir string, isCacheable Cacheable, options CacheOptions) ClientOption {
-	fs := fileStorage{
-		dir: dir,
-		ttl: ttl,
-		mu:  &sync.RWMutex{},
-	}
-
 	return func(tr http.RoundTripper) http.RoundTripper {
-		return &funcTripper{roundTrip: func(req *http.Request) (*http.Response, error) {
-
-			if !isCacheable(req) {
-				return tr.RoundTrip(req)
-			}
-
-			key, keyErr := cacheKey(req, options)
-			// Ignore read from cache in write only mode
-			if keyErr == nil && options.Mode != StoreModeWrite {
-				if res, err := fs.read(key); err == nil {
-					res.Request = req
-					return res, nil
-				}
-			}
-
-			res, err := tr.RoundTrip(req)
-			if err == nil && keyErr == nil && isCacheableResponse(res) {
-				_ = fs.store(key, res)
-			}
-			return res, err
-		}}
+		return &CachedRoundTripper{
+			base: tr,
+			storage: fileStorage{
+				dir: dir,
+				ttl: ttl,
+				mu:  &sync.RWMutex{},
+			},
+			isCacheable: isCacheable,
+			options:     options,
+		}
 	}
 }
 
-type funcTripper struct {
-	roundTrip func(*http.Request) (*http.Response, error)
+// CachedRoundTripper implements http.RoundTripper with response caching.
+type CachedRoundTripper struct {
+	base        http.RoundTripper
+	storage     fileStorage
+	isCacheable Cacheable
+	options     CacheOptions
+}
+
+// RoundTrip implements http.RoundTripper.
+func (c *CachedRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	if !c.isCacheable(req) {
+		return c.base.RoundTrip(req)
+	}
+
+	key, keyErr := cacheKey(req, c.options)
+	// Ignore read from cache in write only mode
+	if keyErr == nil && c.options.Mode != StoreModeWrite {
+		if res, err := c.storage.read(key); err == nil {
+			res.Request = req
+			// Add cache indicators
+			res.Header.Set("X-Cache", "HIT")
+			res.Header.Set("X-From-Cache", "true")
+			return res, nil
+		}
+	}
+
+	res, err := c.base.RoundTrip(req)
+	if err == nil && keyErr == nil && isCacheableResponse(res) {
+		_ = c.storage.store(key, res)
+		// Indicate this is a fresh response that was cached
+		res.Header.Set("X-Cache", "MISS")
+	}
+	return res, err
+}
+
+// BaseTransport returns the underlying transport, allowing direct configuration.
+// Useful when you need to configure settings not exposed by the wrapper.
+//
+// Example:
+//
+//	if cached, ok := transport.(*c8y.CachedRoundTripper); ok {
+//		if httpTransport, ok := cached.BaseTransport().(*http.Transport); ok {
+//			httpTransport.TLSClientConfig = tlsConfig
+//		}
+//	}
+func (c *CachedRoundTripper) BaseTransport() http.RoundTripper {
+	return c.base
+}
+
+// TLSClientConfig() *tls.Config
+//     SetTLSClientConfig(*tls.Config) error
+
+func (c *CachedRoundTripper) TLSClientConfig() *tls.Config {
+	if rt, ok := c.BaseTransport().(*http.Transport); ok {
+		return rt.TLSClientConfig
+	}
+	return nil
+}
+
+// SetTLSClientConfig sets the TLS config on the underlying transport if possible.
+func (c *CachedRoundTripper) SetTLSClientConfig(tlsConfig *tls.Config) error {
+	if c.base == nil {
+		return errors.New("no base transport")
+	}
+
+	switch t := c.base.(type) {
+	case *http.Transport:
+		t.TLSClientConfig = tlsConfig
+		return nil
+	case interface{ SetTLSClientConfig(*tls.Config) error }:
+		return t.SetTLSClientConfig(tlsConfig)
+	}
+
+	return errors.New("base transport does not support TLS configuration")
 }
 
 func copyStream(r io.ReadCloser) (io.ReadCloser, io.ReadCloser) {
@@ -225,6 +364,8 @@ func (fs *fileStorage) read(key string) (*http.Response, error) {
 	if res.Header.Get("Last-Modified") == "" {
 		res.Header.Set("Last-Modified", stat.ModTime().UTC().Format(TimeFormat))
 	}
+	// Set Age header to indicate how old the cached response is (in seconds)
+	res.Header.Set("Age", fmt.Sprintf("%d", int(age.Seconds())))
 	return res, err
 }
 

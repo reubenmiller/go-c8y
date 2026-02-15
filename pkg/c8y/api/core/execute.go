@@ -99,6 +99,17 @@ func Execute[T any](ctx context.Context, req *TryRequest, fromBytes func([]byte)
 		result = op.OK(fromBytes(resp.Bytes())).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
 	}
 
+	// Add cache headers to metadata for visibility
+	if xCache := resp.Header().Get("X-Cache"); xCache != "" {
+		result.Meta["x-cache"] = xCache
+	}
+	if fromCache := resp.Header().Get("X-From-Cache"); fromCache != "" {
+		result.Meta["x-from-cache"] = fromCache
+	}
+	if age := resp.Header().Get("Age"); age != "" {
+		result.Meta["age"] = age
+	}
+
 	// Merge extra metadata
 	if len(extraMeta) > 0 && extraMeta[0] != nil {
 		if result.Meta == nil {
@@ -211,6 +222,17 @@ func ExecuteCollection[T any](ctx context.Context, req *TryRequest, arrayPath, m
 	result.RequestID = resp.Header().Get("X-Request-ID")
 	result.Duration = resp.Duration()
 	result.Request = httpReq
+
+	// Add cache headers to metadata
+	if xCache := resp.Header().Get("X-Cache"); xCache != "" {
+		result.Meta["x-cache"] = xCache
+	}
+	if fromCache := resp.Header().Get("X-From-Cache"); fromCache != "" {
+		result.Meta["x-from-cache"] = fromCache
+	}
+	if age := resp.Header().Get("Age"); age != "" {
+		result.Meta["age"] = age
+	}
 
 	return result
 }

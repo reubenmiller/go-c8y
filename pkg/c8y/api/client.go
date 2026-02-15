@@ -179,6 +179,8 @@ type ClientOptions struct {
 	InsecureSkipVerify bool
 
 	Agent string
+
+	Transport http.RoundTripper
 }
 
 func (c *Client) Realtime() *realtime.Client {
@@ -225,6 +227,27 @@ func SetCertificateChainHeaderIfRequired(client *resty.Client, auth authenticati
 	return client
 }
 
+// setTLSConfig attempts to set TLS configuration on a transport.
+// It tries multiple approaches to handle different transport implementations.
+func setTLSConfig(transport http.RoundTripper, insecureSkipVerify bool) error {
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: insecureSkipVerify,
+	}
+
+	switch t := transport.(type) {
+	case *http.Transport:
+		t.TLSClientConfig = tlsConfig
+		return nil
+	case interface{ SetTLSClientConfig(*tls.Config) error }:
+		return t.SetTLSClientConfig(tlsConfig)
+	case interface{ BaseTransport() http.RoundTripper }:
+		// Transport wrapper that exposes its base transport
+		return setTLSConfig(t.BaseTransport(), insecureSkipVerify)
+	}
+
+	return fmt.Errorf("transport does not support TLS configuration")
+}
+
 // NewClient returns a new Cumulocity API client. If a nil httpClient is
 // provided, http.DefaultClient will be used. To use API methods which require
 // authentication, provide an http.Client that will perform the authentication
@@ -249,16 +272,28 @@ func NewClient(opts ClientOptions) *Client {
 		rclient.SetBaseURL(targetBaseURL.String())
 	}
 
-	// Configure TLS
-	tlsConfig := rclient.TLSClientConfig()
-	tlsConfig.InsecureSkipVerify = opts.InsecureSkipVerify
+	// Configure base transport with TLS settings
+	var baseTransport http.RoundTripper
+	if opts.Transport != nil {
+		// User provided a custom transport, use it as the base
+		baseTransport = opts.Transport
 
-	// Wrap the default transport with DryRunTransport to support context-based dry run
-	defaultTransport := http.DefaultTransport.(*http.Transport).Clone()
-	defaultTransport.TLSClientConfig = tlsConfig
+		// Try to set TLS config on the base transport if it supports it
+		if err := setTLSConfig(baseTransport, opts.InsecureSkipVerify); err != nil {
+			slog.Debug("Could not set TLS config on custom transport", "err", err)
+		}
+	} else {
+		// No custom transport, create a default one with TLS config
+		defaultTransport := http.DefaultTransport.(*http.Transport).Clone()
+		defaultTransport.TLSClientConfig = &tls.Config{
+			InsecureSkipVerify: opts.InsecureSkipVerify,
+		}
+		baseTransport = defaultTransport
+	}
 
+	// Wrap the base transport with DryRunTransport to support context-based dry run
 	rclient.SetTransport(&DryRunTransport{
-		Transport: defaultTransport,
+		Transport: baseTransport,
 	})
 
 	if opts.UseKeyRing {

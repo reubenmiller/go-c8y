@@ -5,18 +5,22 @@ import (
 )
 
 // Cumulocity alarm Severity types
+type AlarmSeverity string
+
 const (
-	AlarmSeverityCritical = "CRITICAL"
-	AlarmSeverityMajor    = "MAJOR"
-	AlarmSeverityMinor    = "MINOR"
-	AlarmSeverityWarning  = "WARNING"
+	AlarmSeverityCritical AlarmSeverity = "CRITICAL"
+	AlarmSeverityMajor    AlarmSeverity = "MAJOR"
+	AlarmSeverityMinor    AlarmSeverity = "MINOR"
+	AlarmSeverityWarning  AlarmSeverity = "WARNING"
 )
 
 // Cumulocity alarm status states
+type AlarmStatus string
+
 const (
-	AlarmStatusActive       = "ACTIVE"
-	AlarmStatusAcknowledged = "ACKNOWLEDGED"
-	AlarmStatusCleared      = "CLEARED"
+	AlarmStatusActive       AlarmStatus = "ACTIVE"
+	AlarmStatusAcknowledged AlarmStatus = "ACKNOWLEDGED"
+	AlarmStatusCleared      AlarmStatus = "CLEARED"
 )
 
 // Alarm representation

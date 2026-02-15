@@ -8,6 +8,7 @@ import (
 	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/realtime"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
@@ -67,10 +68,10 @@ type ListOptions struct {
 	Type []string `url:"type,omitempty"`
 
 	// The status of the alarm to search for. Should not be used when resolved parameter is provided
-	Status []string `url:"status,omitempty"`
+	Status []model.AlarmStatus `url:"status,omitempty"`
 
 	// The severity of the alarm to search for
-	Severity []string `url:"severity,omitempty"`
+	Severity []model.AlarmSeverity `url:"severity,omitempty"`
 
 	// When set to true only alarms with status CLEARED will be fetched, whereas false will fetch all
 	// alarms with status ACTIVE or ACKNOWLEDGED. Takes precedence over the status parameter
