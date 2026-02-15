@@ -6,6 +6,34 @@ import (
 	"os"
 )
 
+// Application Bootstrap User Environment variables
+const (
+	EnvironmentBootstrapTenant   = "C8Y_BOOTSTRAP_TENANT"
+	EnvironmentBootstrapUsername = "C8Y_BOOTSTRAP_USER"
+	EnvironmentBootstrapPassword = "C8Y_BOOTSTRAP_PASSWORD"
+)
+
+// Application Environment variables
+const (
+	EnvironmentApplicationName = "APPLICATION_NAME"
+	EnvironmentBaseURL         = "C8Y_BASEURL"
+	EnvironmentTenant          = "C8Y_TENANT"
+	EnvironmentUsername        = "C8Y_USER"
+	EnvironmentPassword        = "C8Y_PASSWORD"
+)
+
+const EnvironmentMicroserviceIsolation = "C8Y_MICROSERVICE_ISOLATION"
+
+// GetBootstrapUserFromEnvironment returns the tenant, username and password set in environment variables (used by the microservice)
+func GetBootstrapUserFromEnvironment() (tenant, username, password string) {
+	return os.Getenv(EnvironmentBootstrapTenant), os.Getenv(EnvironmentBootstrapUsername), os.Getenv(EnvironmentBootstrapPassword)
+}
+
+// GetServiceUserFromEnvironment returns the service user information (tenant, username and password) from environment variables.
+func GetServiceUserFromEnvironment() (tenant, username, password string) {
+	return os.Getenv(EnvironmentTenant), os.Getenv(EnvironmentUsername), os.Getenv(EnvironmentPassword)
+}
+
 // Manifest file name
 var ManifestFile = "cumulocity.json"
 

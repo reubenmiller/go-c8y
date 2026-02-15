@@ -355,6 +355,25 @@ func Single[T any](item T) iter.Seq2[T, error] {
 	}
 }
 
+// Values converts an iter.Seq[T] to iter.Seq2[T, error].
+// This is a convenience wrapper for working with standard library iterators
+// (like slices.Values) in pipeline operations that expect error-capable sequences.
+// All items are yielded with nil errors.
+//
+// Example:
+//
+//	items := pipeline.Values(slices.Values([]int{1, 2, 3, 4, 5}))
+//	err := pipeline.ForEach(ctx, items, opts, processFn)
+func Values[T any](seq iter.Seq[T]) iter.Seq2[T, error] {
+	return func(yield func(T, error) bool) {
+		for item := range seq {
+			if !yield(item, nil) {
+				return
+			}
+		}
+	}
+}
+
 // Filter returns a new sequence containing only items that satisfy the predicate.
 // Items for which predicate returns false are skipped.
 //

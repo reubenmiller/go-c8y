@@ -1,5 +1,12 @@
 package model
 
+// ServiceUser has the service user credentials for a given application subscription
+type ServiceUser struct {
+	Username string `json:"name"`
+	Password string `json:"password"`
+	Tenant   string `json:"tenant"`
+}
+
 // Binary ManagedObject representation
 type Microservice struct {
 	ID                string            `json:"id,omitempty"`

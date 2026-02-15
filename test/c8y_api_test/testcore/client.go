@@ -11,7 +11,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
-	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
@@ -19,12 +18,9 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
-	"github.com/reubenmiller/go-c8y/pkg/c8ytestutils"
 	"github.com/stretchr/testify/require"
 	"resty.dev/v3"
 )
-
-var TestEnvironment *c8ytestutils.SetupConfiguration
 
 func CreateTestClient(t *testing.T) *c8y_api.Client {
 	t.Setenv("C8Y_TOKEN", "")
@@ -47,10 +43,6 @@ func CreateTestClientNoAuth(t *testing.T) *c8y_api.Client {
 
 func CreateTestClientWithToken(t *testing.T) *c8y_api.Client {
 	return c8y_api.NewClientFromEnvironment(c8y_api.ClientOptions{})
-}
-
-func CreateRandomTestDevice(prefix ...string) (*c8y.ManagedObject, error) {
-	return TestEnvironment.NewRandomTestDevice(prefix...)
 }
 
 func NewService() *core.Service {

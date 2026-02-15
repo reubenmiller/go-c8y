@@ -2,7 +2,9 @@ package c8y_api
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
@@ -76,3 +78,15 @@ var (
 	// Something went wrong on Cumulocity's end.
 	ErrServer503 = Error{Code: 503}
 )
+
+// NewBasicAuthString returns a Basic Authorization key used for rest requests
+func NewBasicAuthString(tenant, username, password string) string {
+	var auth string
+	if tenant == "" {
+		auth = fmt.Sprintf("%s:%s", username, password)
+	} else {
+		auth = fmt.Sprintf("%s/%s:%s", tenant, username, password)
+	}
+
+	return "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
+}

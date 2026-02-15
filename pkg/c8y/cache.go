@@ -50,6 +50,9 @@ func isCacheableResponse(res *http.Response) bool {
 	return res.StatusCode < 300
 }
 
+// ClientOption represents an argument to NewClient
+type ClientOption = func(http.RoundTripper) http.RoundTripper
+
 // CacheResponse produces a RoundTripper that caches HTTP responses to disk for a specified amount of time
 func CacheResponse(ttl time.Duration, dir string, isCacheable Cacheable, options CacheOptions) ClientOption {
 	fs := fileStorage{
@@ -81,6 +84,10 @@ func CacheResponse(ttl time.Duration, dir string, isCacheable Cacheable, options
 			return res, err
 		}}
 	}
+}
+
+type funcTripper struct {
+	roundTrip func(*http.Request) (*http.Response, error)
 }
 
 func copyStream(r io.ReadCloser) (io.ReadCloser, io.ReadCloser) {

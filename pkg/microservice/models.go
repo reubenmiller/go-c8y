@@ -1,14 +1,16 @@
 package microservice
 
-import "github.com/reubenmiller/go-c8y/pkg/c8y"
+import (
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
+)
 
 // AgentManagedObject is the agent representation of the microservice which is stored in Inventory
 type AgentManagedObject struct {
 	// Fragments
-	c8y.AgentFragment
-	c8y.DeviceFragment
+	model.AgentFragment
+	model.DeviceFragment
 
-	c8y.ManagedObject
+	model.ManagedObject
 
 	AgentSupportedOperations AgentSupportedOperations `json:"c8y_SupportedOperations,omitempty"`
 	AgentConfiguration       *AgentConfiguration      `json:"c8y_Configuration,omitempty"`

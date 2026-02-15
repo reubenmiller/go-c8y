@@ -11,6 +11,12 @@ import (
 	cron "gopkg.in/robfig/cron.v2"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/devices"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/realtime"
 )
 
 // Options contains the additional microservice options
@@ -46,17 +52,17 @@ func NewDefaultMicroservice(opts Options) *Microservice {
 	}
 
 	// Create a Cumulocity client
-	client := c8y.NewClientUsingBootstrapUserFromEnvironment(opts.HTTPClient, config.GetHost(), false)
+	client := c8y_api.NewClientFromEnvironment(c8y_api.ClientOptions{})
 	client.UseTenantInUsername = true
 	ms.Client = client
 
 	// Get current application
-	currentApplication, _, err := client.Application.GetCurrentApplication(context.Background())
+	currentApplication := client.Microservices.CurrentMicroservice.Get(context.Background())
 
-	if err != nil {
-		slog.Error("Failed to get current application information", "err", err)
+	if currentApplication.Err != nil {
+		slog.Error("Failed to get current application information", "err", currentApplication.Err)
 	} else {
-		ms.Application = currentApplication
+		ms.Application = &currentApplication.Data
 	}
 
 	// Test the Cumulocity Client
@@ -84,9 +90,9 @@ func NewMicroservice(httpClient *http.Client, host string, skipRealtimeClient bo
 
 // Microservice contains information and
 type Microservice struct {
-	Application         *c8y.Application
+	Application         *jsonmodels.Microservice
 	Config              *Configuration
-	Client              *c8y.Client
+	Client              *c8y_api.Client
 	AgentID             string
 	MicroserviceHost    string
 	Scheduler           *Scheduler
@@ -100,29 +106,29 @@ type Microservice struct {
 func NewRealtimeClientCache(host string) *RealtimeClientCache {
 	return &RealtimeClientCache{
 		host:    host,
-		clients: map[string]*c8y.RealtimeClient{},
+		clients: map[string]*realtime.Client{},
 	}
 }
 
 // RealtimeClientCache is a cache to store the different realtime clients used in the microservice
 type RealtimeClientCache struct {
 	host    string
-	clients map[string]*c8y.RealtimeClient
+	clients map[string]*realtime.Client
 }
 
 // NewRealtimeClient creates a new realtime client for the given tenant service user
-func (m *Microservice) NewRealtimeClient(user c8y.ServiceUser) (*c8y.RealtimeClient, error) {
+func (m *Microservice) NewRealtimeClient(user model.ServiceUser) (*realtime.Client, error) {
 	return m.RealtimeClientCache.LoadOrNewClient(user)
 }
 
 // SetClient adds the given realtime client in the cache stored under the service user's tenant
-func (s *RealtimeClientCache) SetClient(user c8y.ServiceUser, client *c8y.RealtimeClient) {
+func (s *RealtimeClientCache) SetClient(user model.ServiceUser, client *realtime.Client) {
 	s.clients[user.Tenant] = client
 }
 
 // LoadOrNewClient returns a Realtime client for the given service user.
 // If a realtime client already exists for the given service user then it will be returned rather than creating a new client
-func (s *RealtimeClientCache) LoadOrNewClient(user c8y.ServiceUser) (*c8y.RealtimeClient, error) {
+func (s *RealtimeClientCache) LoadOrNewClient(user model.ServiceUser) (*realtime.Client, error) {
 	if client, err := s.GetClient(user); err == nil {
 		return client, nil
 	}
@@ -135,7 +141,7 @@ func (s *RealtimeClientCache) LoadOrNewClient(user c8y.ServiceUser) (*c8y.Realti
 }
 
 // GetClient returns a realtime client if it already exists in the cache. If no realtime client already exists for the service user, then an error is returned
-func (s *RealtimeClientCache) GetClient(user c8y.ServiceUser) (*c8y.RealtimeClient, error) {
+func (s *RealtimeClientCache) GetClient(user model.ServiceUser) (*realtime.Client, error) {
 	slog.Info("Get realtime client for tenant", "tenant", user.Tenant)
 	slog.Info("Total realtime clients in cache", "total", len(s.clients))
 	if v, ok := s.clients[user.Tenant]; ok {
@@ -190,17 +196,17 @@ func (m *Microservice) TestClientConnection() error {
 		slog.Info("Service user", "user", user.Username, "tenant", user.Tenant, "password", "******************")
 	}
 
-	_, _, err := m.Client.Inventory.GetDevices(
+	result := m.Client.Devices.List(
 		m.WithServiceUser(),
-		&c8y.PaginationOptions{
-			PageSize: 5,
+		devices.ListOptions{
+			PaginationOptions: pagination.NewPaginationOptions(1),
 		},
 	)
 
-	if err != nil {
-		slog.Error("Could not get a list of devices", "err", err)
+	if result.Err != nil {
+		slog.Error("Could not get a list of devices", "err", result.Err)
 	}
-	return err
+	return result.Err
 }
 
 /* Getters, Setters */
@@ -241,16 +247,16 @@ func (m *Microservice) WithServiceUserCache(skipUpdateServiceUsers bool, tenant 
 }
 
 // WithBootstrapUserCredentials returns the application credentials
-func (m *Microservice) WithBootstrapUserCredentials() c8y.ServiceUser {
-	return c8y.ServiceUser{
-		Tenant:   m.Client.TenantName,
-		Username: m.Client.Username,
-		Password: m.Client.Password,
+func (m *Microservice) WithBootstrapUserCredentials() model.ServiceUser {
+	return model.ServiceUser{
+		Tenant:   m.Client.Auth.Tenant,
+		Username: m.Client.Auth.Username,
+		Password: m.Client.Auth.Password,
 	}
 }
 
 // WithServiceUserCredentials returns the service user credentials associated with the tenant. If no tenant is given, then the first service user will be returned
-func (m *Microservice) WithServiceUserCredentials(tenant ...string) c8y.ServiceUser {
+func (m *Microservice) WithServiceUserCredentials(tenant ...string) model.ServiceUser {
 	if len(tenant) > 1 {
 		panic(fmt.Errorf("Only accepts 1 tenant"))
 	}
@@ -265,5 +271,5 @@ func (m *Microservice) WithServiceUserCredentials(tenant ...string) c8y.ServiceU
 		}
 	}
 
-	return c8y.ServiceUser{}
+	return model.ServiceUser{}
 }

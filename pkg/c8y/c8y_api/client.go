@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -421,6 +423,59 @@ func (c *Client) loginDeviceCertificate(ctx context.Context) (string, error) {
 		return "", tok.Err
 	}
 	return tok.Data.AccessToken(), nil
+}
+
+// HideSensitive checks if sensitive information should be hidden in the logs
+func (c *Client) HideSensitive() bool {
+	return !c.showSensitive
+}
+
+func (c *Client) HideSensitiveInformationIfActive(message string) string {
+	// Default to hiding the information
+	hideSensitive := c.HideSensitive()
+	if v, err := strconv.ParseBool(os.Getenv(EnvVarLoggerHideSensitive)); err == nil {
+		hideSensitive = v
+	}
+	if !hideSensitive {
+		return message
+	}
+
+	if os.Getenv("USERNAME") != "" {
+		message = strings.ReplaceAll(message, os.Getenv("USERNAME"), "******")
+	}
+	if c.Auth.Tenant != "" {
+		message = strings.ReplaceAll(message, c.Auth.Tenant, "{tenant}")
+	}
+	if c.Auth.Username != "" {
+		message = strings.ReplaceAll(message, c.Auth.Username, "{username}")
+	}
+	if c.Auth.Password != "" {
+		message = strings.ReplaceAll(message, c.Auth.Password, "{password}")
+	}
+	if c.Auth.Token != "" {
+		message = strings.ReplaceAll(message, c.Auth.Token, "{token}")
+	}
+
+	if c.BaseURL != nil {
+		message = strings.ReplaceAll(message, strings.TrimRight(c.BaseURL.Host, "/"), "{host}")
+	}
+	if c.Domain != "" {
+		message = strings.ReplaceAll(message, c.Domain, "{domain}")
+	}
+
+	basicAuthMatcher := regexp.MustCompile(`(Basic\s+)[A-Za-z0-9=]+`)
+	message = basicAuthMatcher.ReplaceAllString(message, "$1 {base64 tenant/username:password}")
+
+	// bearerAuthMatcher := regexp.MustCompile(`(Bearer\s+)\S+`)
+	// message = bearerAuthMatcher.ReplaceAllString(message, "$1 {token}")
+
+	oauthMatcher := regexp.MustCompile(`(authorization=)[^\s]+`)
+	message = oauthMatcher.ReplaceAllString(message, "$1{OAuth2Token}")
+
+	xsrfTokenMatcher := regexp.MustCompile(`(?i)((X-)?Xsrf-Token:)\s*[^\s]+`)
+	message = xsrfTokenMatcher.ReplaceAllString(message, "$1 {xsrfToken}")
+
+	return message
 }
 
 func TokenRenewalRetry(c *Client) func(res *resty.Response, err error) bool {

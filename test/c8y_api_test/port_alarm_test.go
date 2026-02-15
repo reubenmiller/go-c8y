@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
-	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alarms"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
@@ -56,7 +55,7 @@ func TestAlarmService_UpdateAlarm(t *testing.T) {
 	updatedAlarm1 := client.Alarms.Update(
 		context.Background(),
 		alarm.Data.ID(),
-		c8y.AlarmUpdateProperties{
+		model.AlarmUpdateProperties{
 			Severity: "CRITICAL",
 		})
 
@@ -68,7 +67,7 @@ func TestAlarmService_UpdateAlarm(t *testing.T) {
 	updatedAlarm1 = client.Alarms.Update(
 		context.Background(),
 		alarm.Data.ID(),
-		c8y.AlarmUpdateProperties{
+		model.AlarmUpdateProperties{
 			Text: "Updated Alarm Text 1",
 		})
 
@@ -80,7 +79,7 @@ func TestAlarmService_UpdateAlarm(t *testing.T) {
 	updatedAlarm1 = client.Alarms.Update(
 		context.Background(),
 		alarm.Data.ID(),
-		c8y.AlarmUpdateProperties{
+		model.AlarmUpdateProperties{
 			Status: "ACKNOWLEDGED",
 		})
 
@@ -92,7 +91,7 @@ func TestAlarmService_UpdateAlarm(t *testing.T) {
 	updatedAlarm1 = client.Alarms.Update(
 		context.Background(),
 		alarm.Data.ID(),
-		c8y.AlarmUpdateProperties{
+		model.AlarmUpdateProperties{
 			Status:   "CLEARED",
 			Text:     "Alarm is cleared",
 			Severity: "MINOR",

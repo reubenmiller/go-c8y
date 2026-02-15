@@ -50,6 +50,16 @@ func NewDeviceWithType(name, deviceType string) ManagedObject {
 	return ManagedObject{jsondoc.Facade{JSONDoc: jsondoc.New(b)}}
 }
 
+func NewAgent(name string) ManagedObject {
+	data := map[string]any{
+		"name":                       name,
+		"c8y_IsDevice":               map[string]any{},
+		"com_cumulocity_model_Agent": map[string]any{},
+	}
+	b, _ := json.Marshal(data)
+	return ManagedObject{jsondoc.Facade{JSONDoc: jsondoc.New(b)}}
+}
+
 func (m ManagedObject) ID() string {
 	return m.Get("id").String()
 }

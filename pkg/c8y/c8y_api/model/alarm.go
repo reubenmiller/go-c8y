@@ -40,3 +40,10 @@ type AlarmCollection struct {
 
 	Alarms []Alarm `json:"alarms"`
 }
+
+// AlarmUpdateProperties properties which can be updated on an existing alarm
+type AlarmUpdateProperties struct {
+	Text     string `json:"text,omitempty"`
+	Status   string `json:"status,omitempty"`
+	Severity string `json:"severity,omitempty"`
+}

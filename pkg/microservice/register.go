@@ -1,6 +1,7 @@
 package microservice
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -9,60 +10,39 @@ import (
 	"github.com/araddon/dateparse"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/operations"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 )
 
 // GetAgent returns the agent representation of the microservice
-func (m *Microservice) GetAgent() *c8y.ManagedObject {
-	var agent *c8y.ManagedObject
-	extID, _, err := m.Client.Identity.GetExternalID(m.WithServiceUser(), m.Config.GetIdentityType(), m.Config.GetApplicationName())
-
-	if err != nil {
-		slog.Warn("No external identity exists", "type", m.Config.GetIdentityType(), "id", m.Config.GetApplicationName(), "err", err)
-	} else {
-		slog.Info("Retrieving managed object by id found in external id")
-		mo, _, err := m.Client.Inventory.GetManagedObject(m.WithServiceUser(), extID.ManagedObject.ID, nil)
-
-		if err != nil {
-			slog.Error("Failed to return managed object by the ID given in the External Identity definition. %s", "id", extID.ManagedObject.ID, "err", err)
-		}
-		agent = mo
-	}
-
-	return agent
+func (m *Microservice) GetAgent() op.Result[jsonmodels.ManagedObject] {
+	return m.Client.ManagedObjects.Get(
+		m.WithServiceUser(),
+		m.Client.ManagedObjects.ByExternalID(m.Config.GetIdentityType(), m.Config.GetApplicationName()),
+		managedobjects.GetOptions{},
+	)
 }
 
 // CreateMicroserviceRepresentation Create a microservice representation in the Cumulocity platform, so that the microservice can store its configuration in the managed object
-func (m *Microservice) CreateMicroserviceRepresentation() (*c8y.ManagedObject, error) {
-	mo := m.GetAgent()
-
-	if mo != nil {
-		slog.Info("Found agent by its identity", "id", mo.ID)
-		slog.Info("Updating agent meta information (info and supported operations)", "id", mo.ID)
-
-		agentMo := &AgentManagedObject{
-			AgentSupportedOperations: m.SupportedOperations,
-		}
-		// Only set information if revision is set
-		if m.AgentInformation.Revision != "" {
-			agentMo.AgentInformation = &m.AgentInformation
-		}
-		updatedMo, _, err := m.Client.Inventory.Update(m.WithServiceUser(), mo.ID, agentMo)
-
-		if err != nil {
-			slog.Error("Failed to update agent managed object with meta information", "err", err)
-			return mo, nil
-		}
-		slog.Info("Updated agent meta information successfully", "id", mo.ID)
-		return updatedMo, nil
+func (m *Microservice) CreateMicroserviceRepresentation() op.Result[jsonmodels.ManagedObject] {
+	mo := m.Client.ManagedObjects.GetOrCreateByExternalID(m.WithServiceUser(), managedobjects.GetOrCreateByExternalIDOptions{
+		ExternalIDType: m.Config.GetIdentityType(),
+		ExternalID:     m.Config.GetApplicationName(),
+		Body: map[string]any{
+			"c8y_IsDevice":            map[string]any{},
+			"c8y_SupportedOperations": m.SupportedOperations,
+		},
+	})
+	if mo.Err != nil {
+		return mo
 	}
 
-	slog.Info("Could not find agent so it will be created")
-
 	// Create Managed Object (with agent fragment)
-
-	identityType := m.Config.GetIdentityType()
-	externalID := m.Config.GetApplicationName()
 	configuration := m.Config.GetConfigurationString()
 
 	// Set default agent information
@@ -75,44 +55,32 @@ func (m *Microservice) CreateMicroserviceRepresentation() (*c8y.ManagedObject, e
 		AgentConfiguration: &AgentConfiguration{
 			Config: configuration,
 		},
-		ManagedObject: c8y.ManagedObject{
+		ManagedObject: model.ManagedObject{
 			Name: m.Config.GetApplicationName(),
 			Type: m.Config.GetIdentityType(),
 		},
 		AgentInformation:         &agentInfo,
 		AgentSupportedOperations: m.SupportedOperations,
-		DeviceFragment:           c8y.DeviceFragment{},
+		DeviceFragment:           model.DeviceFragment{},
 	}
 
-	mo, _, err := m.Client.Inventory.Create(m.WithServiceUser(), agentMo)
-
-	if err != nil {
-		slog.Error("Could not create device managed object", "err", err)
-		return nil, fmt.Errorf("Error creating the device managed object")
-	}
-	slog.Info("Created managed object", "id", mo.ID)
-
-	// Create External ID reference to the new managed object
-	if _, _, err := m.Client.Identity.Create(m.WithServiceUser(), mo.ID, identityType, externalID); err != nil {
-		return mo, fmt.Errorf("Error creating external id for managed object, however the managed object was created. %s", err)
-	}
-
-	return mo, nil
+	return m.Client.ManagedObjects.Update(context.Background(), mo.Data.ID(), agentMo)
 }
 
 // GetConfiguration returns the Agent configuration as text. This needs to be parsed separately by the calling function.
 func (m *Microservice) GetConfiguration() (string, error) {
 	mo := m.GetAgent()
 
-	if mo == nil {
-		return "", fmt.Errorf("Could not retrieve managed object")
+	if mo.Err != nil {
+		return "", mo.Err
 	}
 
-	if mo.C8yConfiguration == nil {
-		return "", fmt.Errorf("No configuration found on managed object id=%s", mo.ID)
+	node := mo.Data.Get("c8y_Configuration.configuration")
+	if !node.Exists() {
+		return "", fmt.Errorf("No configuration found on managed object id=%s", mo.Data.ID())
 	}
 
-	return mo.C8yConfiguration.Configuration, nil
+	return node.String(), nil
 }
 
 // SaveConfiguration save the agent configuration to it's managed object
@@ -132,8 +100,8 @@ func (m *Microservice) SaveConfiguration(rawConfiguration string) error {
 	configuration["config"] = strings.Join(lines, "\n")
 	body["c8y_Configuration"] = configuration
 
-	if _, _, err := m.Client.Inventory.Update(m.WithServiceUser(), m.AgentID, body); err != nil {
-		return fmt.Errorf("Error updating the configuration in the managed object. %s", err)
+	if result := m.Client.ManagedObjects.Update(m.WithServiceUser(), m.AgentID, body); result.Err != nil {
+		return fmt.Errorf("Error updating the configuration in the managed object. %s", result.Err)
 	}
 
 	return nil
@@ -146,25 +114,26 @@ func (m *Microservice) DeleteMicroserviceAgent() error {
 	}
 	slog.Info("Deleting microservice's agent managed object", "id", m.AgentID)
 
-	_, err := m.Client.Inventory.Delete(
+	result := m.Client.ManagedObjects.Delete(
 		m.WithServiceUser(),
 		m.AgentID,
+		managedobjects.DeleteOptions{},
 	)
-	if err != nil {
-		slog.Error("Could not delete microservice's agent managed object", "err", err)
+	if result.Err != nil {
+		slog.Error("Could not delete microservice's agent managed object", "err", result.Err)
 	}
-	return err
+	return result.Err
 }
 
 // RegisterMicroserviceAgent registers an agent representation of the microservice
 func (m *Microservice) RegisterMicroserviceAgent() error {
 	slog.Info("Registering microservice agent")
 
-	mo, err := m.CreateMicroserviceRepresentation()
+	mo := m.CreateMicroserviceRepresentation()
 
-	if err == nil {
-		slog.Info("Start Polling for Operations on device", "id", mo.ID)
-		m.AgentID = mo.ID
+	if mo.Err == nil {
+		slog.Info("Start Polling for Operations on device", "id", mo.Data.ID())
+		m.AgentID = mo.Data.ID()
 
 		// Get existing configuration
 		m.CheckForNewConfiguration()
@@ -182,7 +151,7 @@ func (m *Microservice) RegisterMicroserviceAgent() error {
 		m.StartOperationPolling()
 		// m.SubscribeToOperations(nil)
 	}
-	return err
+	return mo.Err
 }
 
 var (
@@ -195,18 +164,14 @@ var (
 )
 
 // GetOperations returns a list of operations in the given status i.e. PENDING, EXECUTING, SUCCESS, FAILED
-func (m *Microservice) GetOperations(status string) (*c8y.OperationCollection, *c8y.Response, error) {
-	opt := &c8y.OperationCollectionOptions{
+func (m *Microservice) GetOperations(status types.OperationStatus) op.Result[jsonmodels.Operation] {
+	return m.Client.Operations.List(m.WithServiceUser(), operations.ListOptions{
 		Status:  status,
 		AgentID: m.AgentID,
-		PaginationOptions: c8y.PaginationOptions{
-			PageSize:       5,
-			WithTotalPages: false,
+		PaginationOptions: pagination.PaginationOptions{
+			PageSize: 5,
 		},
-	}
-
-	data, resp, err := m.Client.Operation.GetOperations(m.WithServiceUser(), opt)
-	return data, resp, err
+	})
 }
 
 // UpdateApplicationConfiguration updates the application configuration based on a new config which is parsed from a string. Values should be in the form of "<key>=<value>" separated by a \n char
@@ -236,32 +201,32 @@ func (m *Microservice) UpdateApplicationConfiguration(configAsString string) {
 
 func (m *Microservice) onUpdateConfigurationOperation(operationID string, newConfiguration string) {
 
-	m.Client.Operation.Update(
+	m.Client.Operations.Update(
 		m.WithServiceUser(),
 		operationID,
-		&c8y.OperationUpdateOptions{
-			Status: c8y.OperationStatusPending,
+		model.Operation{
+			Status: types.OperationStatusPending,
 		},
 	)
 
 	// Save configuration
 	if updateErr := m.SaveConfiguration(newConfiguration); updateErr != nil {
 		// Failed Operation
-		m.Client.Operation.Update(
+		m.Client.Operations.Update(
 			m.WithServiceUser(),
 			operationID,
-			&c8y.OperationUpdateOptions{
-				Status: c8y.OperationStatusFailed,
+			model.Operation{
+				Status: types.OperationStatusFailed,
 			},
 		)
 	} else {
 		// Successful Operation
 		m.UpdateApplicationConfiguration(newConfiguration)
-		m.Client.Operation.Update(
+		m.Client.Operations.Update(
 			m.WithServiceUser(),
 			operationID,
-			&c8y.OperationUpdateOptions{
-				Status: c8y.OperationStatusSuccessful,
+			model.Operation{
+				Status: types.OperationStatusSuccessful,
 			},
 		)
 
@@ -275,20 +240,20 @@ func (m *Microservice) onUpdateConfigurationOperation(operationID string, newCon
 // CheckForNewConfiguration checks for any pending operations with new configuration
 func (m *Microservice) CheckForNewConfiguration() {
 	slog.Info("Checking pending operations")
-	data, _, err := m.GetOperations(c8y.OperationStatusPending)
+	result := m.GetOperations(types.OperationStatusPending)
 
-	if err != nil {
-		slog.Error("Failed to get operations", "err", err)
+	if result.Err != nil {
+		slog.Error("Failed to get operations", "err", result.Err)
 		return
 	}
 
-	for _, op := range data.Items {
+	for item, _ := range op.Iter2(result) {
 
 		//
 		// Update Configuration Operation
 		//
-		if c8yConfig := op.Get("c8y_Configuration.config"); c8yConfig.Exists() {
-			m.onUpdateConfigurationOperation(op.Get("id").String(), c8yConfig.String())
+		if c8yConfig := item.Get("c8y_Configuration.config"); c8yConfig.Exists() {
+			m.onUpdateConfigurationOperation(item.ID(), c8yConfig.String())
 			configurationChangeCount.Inc()
 		}
 	}

@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+
+	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/microservices"
 )
 
 // ContextService api
@@ -20,14 +22,14 @@ func (s *ContextService) ClientUser() context.Context {
 
 // BootstrapUserFromEnvironment returns a context with the Microservice Bootstrap user (set via environment variables)
 func (s *ContextService) BootstrapUserFromEnvironment() context.Context {
-	tenant, username, password := GetBootstrapUserFromEnvironment()
+	tenant, username, password := microservices.GetBootstrapUserFromEnvironment()
 	auth := NewBasicAuthString(tenant, username, password)
 	return context.WithValue(context.Background(), GetContextAuthTokenKey(), auth)
 }
 
 // ServiceUserFromEnvironment returns a context with the Service User authorization (set via environment variables)
 func (s *ContextService) ServiceUserFromEnvironment() context.Context {
-	tenant, username, password := GetServiceUserFromEnvironment()
+	tenant, username, password := microservices.GetServiceUserFromEnvironment()
 	auth := NewBasicAuthString(tenant, username, password)
 	return context.WithValue(context.Background(), GetContextAuthTokenKey(), auth)
 }
@@ -136,21 +138,4 @@ func (s *ContextService) ServiceUserFromRequest(req *http.Request) context.Conte
 	}
 
 	return s.ServiceUserContext(tenant, false)
-}
-
-// CommonOptions create common options for a single request
-func (s *ContextService) CommonOptions(opts CommonOptions) context.Context {
-	return context.WithValue(context.Background(), GetContextCommonOptionsKey(), opts)
-}
-
-// Create a context where dry run is disabled
-func WithDisabledDryRunContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, GetContextCommonOptionsKey(), CommonOptions{
-		DryRun: false,
-	})
-}
-
-// Create a context with common options
-func WithCommonOptionsContext(ctx context.Context, opts CommonOptions) context.Context {
-	return context.WithValue(ctx, GetContextCommonOptionsKey(), opts)
 }

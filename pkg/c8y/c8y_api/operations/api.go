@@ -68,7 +68,7 @@ type ListOptions struct {
 	Revert bool `url:"revert,omitempty"`
 
 	// Status of the operation
-	Status string `url:"status,omitempty"`
+	Status types.OperationStatus `url:"status,omitempty"`
 
 	pagination.PaginationOptions
 }

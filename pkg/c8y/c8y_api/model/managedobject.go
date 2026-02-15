@@ -6,6 +6,16 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
 )
 
+// DeviceFragment marks a managed object which are device representations
+type DeviceFragment struct {
+	DeviceFragment map[string]any `json:"c8y_IsDevice"`
+}
+
+// AgentFragment is the special agent fragment used to identify managed objects which are representations of an Agent.
+type AgentFragment struct {
+	AgentFragment map[string]any `json:"com_cumulocity_model_Agent"`
+}
+
 // ManagedObject is the general Inventory Managed Object data structure
 type ManagedObject struct {
 	ID           string    `json:"id,omitempty"`
