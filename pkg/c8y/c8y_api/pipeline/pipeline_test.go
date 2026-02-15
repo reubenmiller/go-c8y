@@ -15,7 +15,7 @@ import (
 )
 
 func TestForEachSerial(t *testing.T) {
-	items := slices.Values([]int{1, 2, 3, 4, 5})
+	items := Values(slices.Values([]int{1, 2, 3, 4, 5}))
 
 	var mu sync.Mutex
 	var processed []int
@@ -31,7 +31,7 @@ func TestForEachSerial(t *testing.T) {
 }
 
 func TestForEachConcurrent(t *testing.T) {
-	items := slices.Values([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
+	items := Values(slices.Values([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}))
 
 	var count atomic.Int64
 	err := ForEach(context.Background(), items, Options{Workers: 3}, func(_ context.Context, _ int) error {
@@ -46,7 +46,7 @@ func TestForEachConcurrent(t *testing.T) {
 
 func TestForEachContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
-	items := slices.Values([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
+	items := Values(slices.Values([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}))
 
 	var count atomic.Int64
 	err := ForEach(ctx, items, Options{Workers: 1}, func(_ context.Context, item int) error {
@@ -62,7 +62,7 @@ func TestForEachContextCancellation(t *testing.T) {
 }
 
 func TestForEachMaxErrors(t *testing.T) {
-	items := slices.Values([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
+	items := Values(slices.Values([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}))
 	errBoom := errors.New("boom")
 
 	err := ForEach(context.Background(), items, Options{
@@ -82,7 +82,7 @@ func TestForEachMaxErrors(t *testing.T) {
 func TestForEachErrorThreshold(t *testing.T) {
 	// Items: 10 total. Fail every other one.
 	// After 2 items: 1 fail / 2 completed = 0.5 > 0.3 threshold → abort.
-	items := slices.Values([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
+	items := Values(slices.Values([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}))
 
 	err := ForEach(context.Background(), items, Options{
 		Workers:        1,
@@ -101,7 +101,7 @@ func TestForEachErrorThreshold(t *testing.T) {
 }
 
 func TestForEachDelay(t *testing.T) {
-	items := slices.Values([]int{1, 2, 3})
+	items := Values(slices.Values([]int{1, 2, 3}))
 	start := time.Now()
 
 	err := ForEach(context.Background(), items, Options{
@@ -118,7 +118,7 @@ func TestForEachDelay(t *testing.T) {
 }
 
 func TestForEachProgress(t *testing.T) {
-	items := slices.Values([]int{1, 2, 3, 4, 5})
+	items := Values(slices.Values([]int{1, 2, 3, 4, 5}))
 
 	var mu sync.Mutex
 	var progressCalls []Stats
@@ -143,7 +143,7 @@ func TestForEachProgress(t *testing.T) {
 }
 
 func TestForEachProgressWithErrors(t *testing.T) {
-	items := slices.Values([]int{1, 2, 3, 4, 5})
+	items := Values(slices.Values([]int{1, 2, 3, 4, 5}))
 
 	var mu sync.Mutex
 	var lastStats Stats
@@ -161,13 +161,18 @@ func TestForEachProgressWithErrors(t *testing.T) {
 		return nil
 	})
 
-	require.NoError(t, err, "should not abort when no error limits are set")
+	// Should complete (not abort) but return PipelineError indicating some items failed
+	require.Error(t, err, "should return error when items fail")
+	var abortErr *AbortError
+	assert.False(t, errors.As(err, &abortErr), "should not abort when no error limits are set")
+	var pipelineErr *PipelineError
+	assert.True(t, errors.As(err, &pipelineErr), "should return PipelineError")
 	assert.Equal(t, 5, lastStats.Completed)
 	assert.Equal(t, 2, lastStats.Failed)
 }
 
 func TestForEachEmptyInput(t *testing.T) {
-	items := slices.Values([]int{})
+	items := Values(slices.Values([]int{}))
 
 	err := ForEach(context.Background(), items, Options{Workers: 3}, func(_ context.Context, _ int) error {
 		t.Fatal("should not be called")
@@ -178,7 +183,7 @@ func TestForEachEmptyInput(t *testing.T) {
 }
 
 func TestCollectSerial(t *testing.T) {
-	items := slices.Values([]int{1, 2, 3, 4, 5})
+	items := Values(slices.Values([]int{1, 2, 3, 4, 5}))
 
 	results, err := Collect(context.Background(), items, Options{}, func(_ context.Context, item int) (int, error) {
 		return item * 2, nil
@@ -189,7 +194,7 @@ func TestCollectSerial(t *testing.T) {
 }
 
 func TestCollectConcurrent(t *testing.T) {
-	items := slices.Values([]int{1, 2, 3, 4, 5})
+	items := Values(slices.Values([]int{1, 2, 3, 4, 5}))
 
 	results, err := Collect(context.Background(), items, Options{Workers: 3}, func(_ context.Context, item int) (string, error) {
 		return itoa(item), nil
@@ -203,7 +208,7 @@ func TestCollectConcurrent(t *testing.T) {
 }
 
 func TestCollectSkipsErrors(t *testing.T) {
-	items := slices.Values([]int{1, 2, 3, 4, 5})
+	items := Values(slices.Values([]int{1, 2, 3, 4, 5}))
 
 	results, err := Collect(context.Background(), items, Options{Workers: 1}, func(_ context.Context, item int) (int, error) {
 		if item%2 == 0 {
@@ -212,12 +217,17 @@ func TestCollectSkipsErrors(t *testing.T) {
 		return item, nil
 	})
 
-	require.NoError(t, err, "should not abort without error limits")
+	// Should complete (not abort) but return PipelineError indicating some items failed
+	require.Error(t, err, "should return error when items fail")
+	var abortErr *AbortError
+	assert.False(t, errors.As(err, &abortErr), "should not abort without error limits")
+	var pipelineErr *PipelineError
+	assert.True(t, errors.As(err, &pipelineErr), "should return PipelineError")
 	assert.Equal(t, []int{1, 3, 5}, results, "should only collect successful results")
 }
 
 func TestCollectMaxErrors(t *testing.T) {
-	items := slices.Values([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
+	items := Values(slices.Values([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}))
 
 	results, err := Collect(context.Background(), items, Options{
 		Workers:   1,
@@ -237,7 +247,7 @@ func TestCollectMaxErrors(t *testing.T) {
 }
 
 func TestCollectEmptyInput(t *testing.T) {
-	items := slices.Values([]string{})
+	items := Values(slices.Values([]string{}))
 
 	results, err := Collect(context.Background(), items, Options{}, func(_ context.Context, _ string) (int, error) {
 		t.Fatal("should not be called")
@@ -250,7 +260,7 @@ func TestCollectEmptyInput(t *testing.T) {
 
 func TestForEachConcurrentWorkersActuallyParallel(t *testing.T) {
 	// Verify that with multiple workers, items are processed in parallel
-	items := slices.Values([]int{1, 2, 3, 4, 5, 6})
+	items := Values(slices.Values([]int{1, 2, 3, 4, 5, 6}))
 	var maxConcurrent atomic.Int64
 	var current atomic.Int64
 
@@ -300,7 +310,7 @@ func TestAbortErrorMessage(t *testing.T) {
 func TestForEachWithStrings(t *testing.T) {
 	// Simulate the go-c8y-cli pattern: process device names
 	names := []string{"MQTT Device 01", "MQTT Device 02", "MQTT Device 03"}
-	items := slices.Values(names)
+	items := Values(slices.Values(names))
 
 	var mu sync.Mutex
 	var updated []string
@@ -317,9 +327,9 @@ func TestForEachWithStrings(t *testing.T) {
 
 func TestExpandBasic(t *testing.T) {
 	// Expand each number into a sequence of its multiples
-	items := slices.Values([]int{1, 2, 3})
-	expanded := Expand(items, func(n int) iter.Seq[int] {
-		return slices.Values([]int{n * 10, n * 100})
+	items := Values(slices.Values([]int{1, 2, 3}))
+	expanded := Expand(items, func(n int) iter.Seq2[int, error] {
+		return Values(slices.Values([]int{n * 10, n * 100}))
 	})
 
 	var result []int
@@ -331,10 +341,10 @@ func TestExpandBasic(t *testing.T) {
 }
 
 func TestExpandEmpty(t *testing.T) {
-	items := slices.Values([]int{})
-	expanded := Expand(items, func(n int) iter.Seq[string] {
+	items := Values(slices.Values([]int{}))
+	expanded := Expand(items, func(n int) iter.Seq2[string, error] {
 		t.Fatal("should not be called")
-		return slices.Values([]string{})
+		return Values(slices.Values([]string{}))
 	})
 
 	var count int
@@ -346,12 +356,12 @@ func TestExpandEmpty(t *testing.T) {
 
 func TestExpandSomeEmpty(t *testing.T) {
 	// Some items expand to empty sequences
-	items := slices.Values([]int{1, 2, 3})
-	expanded := Expand(items, func(n int) iter.Seq[int] {
+	items := Values(slices.Values([]int{1, 2, 3}))
+	expanded := Expand(items, func(n int) iter.Seq2[int, error] {
 		if n == 2 {
-			return slices.Values([]int{}) // device with no operations
+			return Values(slices.Values([]int{})) // device with no operations
 		}
-		return slices.Values([]int{n})
+		return Values(slices.Values([]int{n}))
 	})
 
 	var result []int
@@ -364,9 +374,9 @@ func TestExpandSomeEmpty(t *testing.T) {
 
 func TestExpandEarlyBreak(t *testing.T) {
 	// Consumer stops early — Expand should stop too
-	items := slices.Values([]int{1, 2, 3, 4, 5})
-	expanded := Expand(items, func(n int) iter.Seq[int] {
-		return slices.Values([]int{n * 10, n * 100})
+	items := Values(slices.Values([]int{1, 2, 3, 4, 5}))
+	expanded := Expand(items, func(n int) iter.Seq2[int, error] {
+		return Values(slices.Values([]int{n * 10, n * 100}))
 	})
 
 	var result []int
@@ -382,10 +392,10 @@ func TestExpandEarlyBreak(t *testing.T) {
 
 func TestExpandTypeChange(t *testing.T) {
 	// Expand changes types: string → int (simulates device → operations)
-	devices := slices.Values([]string{"device-A", "device-B"})
-	ops := Expand(devices, func(name string) iter.Seq[int] {
+	devices := Values(slices.Values([]string{"device-A", "device-B"}))
+	ops := Expand(devices, func(name string) iter.Seq2[int, error] {
 		// Each "device" has len(name) "operations"
-		return slices.Values([]int{len(name)})
+		return Values(slices.Values([]int{len(name)}))
 	})
 
 	var result []int
@@ -398,11 +408,11 @@ func TestExpandTypeChange(t *testing.T) {
 
 func TestExpandWithForEach(t *testing.T) {
 	// The real pattern: Expand → ForEach
-	devices := slices.Values([]string{"dev1", "dev2"})
+	devices := Values(slices.Values([]string{"dev1", "dev2"}))
 
 	// Each device "has" 2 operations (simulated)
-	allOps := Expand(devices, func(device string) iter.Seq[string] {
-		return slices.Values([]string{device + "-op1", device + "-op2"})
+	allOps := Expand(devices, func(device string) iter.Seq2[string, error] {
+		return Values(slices.Values([]string{device + "-op1", device + "-op2"}))
 	})
 
 	var mu sync.Mutex
@@ -422,14 +432,14 @@ func TestExpandWithForEach(t *testing.T) {
 
 func TestExpandChained(t *testing.T) {
 	// Chain multiple Expand calls: tenants → devices → operations
-	tenants := slices.Values([]string{"t1", "t2"})
+	tenants := Values(slices.Values([]string{"t1", "t2"}))
 
-	devices := Expand(tenants, func(tenant string) iter.Seq[string] {
-		return slices.Values([]string{tenant + "-devA", tenant + "-devB"})
+	devices := Expand(tenants, func(tenant string) iter.Seq2[string, error] {
+		return Values(slices.Values([]string{tenant + "-devA", tenant + "-devB"}))
 	})
 
-	ops := Expand(devices, func(device string) iter.Seq[string] {
-		return slices.Values([]string{device + "-op1"})
+	ops := Expand(devices, func(device string) iter.Seq2[string, error] {
+		return Values(slices.Values([]string{device + "-op1"}))
 	})
 
 	var result []string
@@ -443,7 +453,7 @@ func TestExpandChained(t *testing.T) {
 // --- Batch tests ---
 
 func TestBatchExactDivisor(t *testing.T) {
-	items := slices.Values([]int{1, 2, 3, 4, 5, 6})
+	items := Values(slices.Values([]int{1, 2, 3, 4, 5, 6}))
 	var batches [][]int
 	for b := range Batch(items, 3) {
 		batches = append(batches, b)
@@ -452,7 +462,7 @@ func TestBatchExactDivisor(t *testing.T) {
 }
 
 func TestBatchRemainder(t *testing.T) {
-	items := slices.Values([]int{1, 2, 3, 4, 5})
+	items := Values(slices.Values([]int{1, 2, 3, 4, 5}))
 	var batches [][]int
 	for b := range Batch(items, 3) {
 		batches = append(batches, b)
@@ -461,7 +471,7 @@ func TestBatchRemainder(t *testing.T) {
 }
 
 func TestBatchSizeOne(t *testing.T) {
-	items := slices.Values([]string{"a", "b", "c"})
+	items := Values(slices.Values([]string{"a", "b", "c"}))
 	var batches [][]string
 	for b := range Batch(items, 1) {
 		batches = append(batches, b)
@@ -470,7 +480,7 @@ func TestBatchSizeOne(t *testing.T) {
 }
 
 func TestBatchEmpty(t *testing.T) {
-	items := slices.Values([]int{})
+	items := Values(slices.Values([]int{}))
 	var batches [][]int
 	for b := range Batch(items, 5) {
 		batches = append(batches, b)
@@ -479,7 +489,7 @@ func TestBatchEmpty(t *testing.T) {
 }
 
 func TestBatchSizeLargerThanInput(t *testing.T) {
-	items := slices.Values([]int{1, 2})
+	items := Values(slices.Values([]int{1, 2}))
 	var batches [][]int
 	for b := range Batch(items, 100) {
 		batches = append(batches, b)
@@ -489,7 +499,7 @@ func TestBatchSizeLargerThanInput(t *testing.T) {
 
 func TestBatchZeroSize(t *testing.T) {
 	// Zero or negative size should default to 1
-	items := slices.Values([]int{1, 2, 3})
+	items := Values(slices.Values([]int{1, 2, 3}))
 	var batches [][]int
 	for b := range Batch(items, 0) {
 		batches = append(batches, b)
@@ -498,7 +508,7 @@ func TestBatchZeroSize(t *testing.T) {
 }
 
 func TestBatchEarlyBreak(t *testing.T) {
-	items := slices.Values([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
+	items := Values(slices.Values([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}))
 	var batches [][]int
 	for b := range Batch(items, 3) {
 		batches = append(batches, b)
@@ -511,7 +521,7 @@ func TestBatchEarlyBreak(t *testing.T) {
 
 func TestBatchWithForEach(t *testing.T) {
 	// Real pattern: Batch → ForEach processes each batch
-	items := slices.Values([]int{1, 2, 3, 4, 5})
+	items := Values(slices.Values([]int{1, 2, 3, 4, 5}))
 	batched := Batch(items, 2)
 
 	var mu sync.Mutex
@@ -534,7 +544,7 @@ func TestBatchWithForEach(t *testing.T) {
 }
 
 func TestBatchWithCollect(t *testing.T) {
-	items := slices.Values([]int{10, 20, 30, 40})
+	items := Values(slices.Values([]int{10, 20, 30, 40}))
 	batched := Batch(items, 2)
 
 	results, err := Collect(context.Background(), batched, Options{},
@@ -554,7 +564,7 @@ func TestBatchWithCollect(t *testing.T) {
 // --- Throttle tests ---
 
 func TestThrottleBasic(t *testing.T) {
-	items := slices.Values([]int{1, 2, 3})
+	items := Values(slices.Values([]int{1, 2, 3}))
 
 	start := time.Now()
 	var result []int
@@ -569,7 +579,7 @@ func TestThrottleBasic(t *testing.T) {
 }
 
 func TestThrottleFirstItemImmediate(t *testing.T) {
-	items := slices.Values([]int{42})
+	items := Values(slices.Values([]int{42}))
 
 	start := time.Now()
 	var result []int
@@ -583,7 +593,7 @@ func TestThrottleFirstItemImmediate(t *testing.T) {
 }
 
 func TestThrottleEmpty(t *testing.T) {
-	items := slices.Values([]int{})
+	items := Values(slices.Values([]int{}))
 	var result []int
 	for v := range Throttle(items, time.Second) {
 		result = append(result, v)
@@ -593,7 +603,7 @@ func TestThrottleEmpty(t *testing.T) {
 
 func TestThrottleZeroInterval(t *testing.T) {
 	// Zero interval means no throttling — should be fast
-	items := slices.Values([]int{1, 2, 3, 4, 5})
+	items := Values(slices.Values([]int{1, 2, 3, 4, 5}))
 
 	start := time.Now()
 	var result []int
@@ -607,7 +617,7 @@ func TestThrottleZeroInterval(t *testing.T) {
 }
 
 func TestThrottleEarlyBreak(t *testing.T) {
-	items := slices.Values([]int{1, 2, 3, 4, 5})
+	items := Values(slices.Values([]int{1, 2, 3, 4, 5}))
 
 	var result []int
 	for v := range Throttle(items, 20*time.Millisecond) {
@@ -621,7 +631,7 @@ func TestThrottleEarlyBreak(t *testing.T) {
 
 func TestThrottleWithForEach(t *testing.T) {
 	// Real pattern: Throttle → ForEach
-	items := slices.Values([]int{1, 2, 3})
+	items := Values(slices.Values([]int{1, 2, 3}))
 	throttled := Throttle(items, 30*time.Millisecond)
 
 	start := time.Now()
@@ -644,7 +654,7 @@ func TestThrottleWithForEach(t *testing.T) {
 
 func TestThrottleAndBatchComposed(t *testing.T) {
 	// Compose Throttle + Batch: throttle items, then batch them
-	items := slices.Values([]int{1, 2, 3, 4, 5, 6})
+	items := Values(slices.Values([]int{1, 2, 3, 4, 5, 6}))
 	throttled := Throttle(items, 10*time.Millisecond)
 	batched := Batch(throttled, 2)
 
