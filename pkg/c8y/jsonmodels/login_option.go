@@ -34,3 +34,23 @@ func (o LoginOption) Self() string {
 func (o LoginOption) VisibleOnLoginPage() bool {
 	return o.Get("visibleOnLoginPage").Bool()
 }
+
+// UserManagementSource returns the user management source
+func (o LoginOption) UserManagementSource() string {
+	return o.Get("userManagementSource").String()
+}
+
+// TFAStrategy returns the two-factor authentication strategy
+func (o LoginOption) TFAStrategy() string {
+	return o.Get("tfaStrategy").String()
+}
+
+// InitRequest returns the init request URL
+func (o LoginOption) InitRequest() string {
+	return o.Get("initRequest").String()
+}
+
+// GrantType returns the OAuth2 grant type
+func (o LoginOption) GrantType() string {
+	return o.Get("grantType").String()
+}
