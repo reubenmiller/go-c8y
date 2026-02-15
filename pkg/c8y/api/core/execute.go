@@ -5,9 +5,9 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/jsondoc"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/op"
-	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/api/internal/context"
+	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/api/contexthelpers"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/jsondoc"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
 	"resty.dev/v3"
 )
 

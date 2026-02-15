@@ -6,11 +6,11 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/jsonmodels"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/pkg/password"
 	"resty.dev/v3"
 )

@@ -11,11 +11,12 @@ import (
 	cron "gopkg.in/robfig/cron.v2"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/devices"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/realtime"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/jsonmodels"
 )
 
 // Options contains the additional microservice options

@@ -3,9 +3,9 @@ package certificaterevocationlist
 import (
 	"context"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
 	"resty.dev/v3"
 )
 

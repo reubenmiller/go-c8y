@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
+	contexthelpers "github.com/reubenmiller/go-c8y/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
-	contexthelpers "github.com/reubenmiller/go-c8y/pkg/c8y/api/internal/context"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
 	"github.com/stretchr/testify/assert"
 	"resty.dev/v3"

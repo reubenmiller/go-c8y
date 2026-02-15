@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/jsonmodels"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/op"
+	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/identity"
-	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/api/internal/context"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
 )
 
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.ManagedObject] {

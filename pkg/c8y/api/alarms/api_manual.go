@@ -3,10 +3,10 @@ package alarms
 import (
 	"context"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/op"
+	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
-	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/api/internal/context"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
 	"github.com/tidwall/gjson"
 	"resty.dev/v3"
 )

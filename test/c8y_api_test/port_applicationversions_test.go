@@ -7,9 +7,9 @@ import (
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/op"
 	appversions "github.com/reubenmiller/go-c8y/pkg/c8y/api/applications/versions"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/ui/plugins"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

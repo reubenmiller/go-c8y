@@ -5,15 +5,15 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/jsonmodels"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/op"
+	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/events/eventbinaries"
-	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/api/internal/context"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/realtime"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/pkg/jsonUtilities"
 	"resty.dev/v3"
 )

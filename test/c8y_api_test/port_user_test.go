@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/usergroups"
@@ -16,6 +15,7 @@ import (
 	userrolesusers "github.com/reubenmiller/go-c8y/pkg/c8y/api/userroles/users"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/users"
 	usersgroups "github.com/reubenmiller/go-c8y/pkg/c8y/api/users/groups"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

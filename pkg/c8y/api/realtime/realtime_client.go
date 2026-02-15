@@ -22,7 +22,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/obeattie/ohmyglob"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/jsondoc"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/jsondoc"
 	"github.com/reubenmiller/go-c8y/pkg/wsurl"
 	"golang.org/x/net/publicsuffix"
 	tomb "gopkg.in/tomb.v2"

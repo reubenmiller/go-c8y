@@ -6,16 +6,16 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/jsonmodels"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/binaries"
+	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
-	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/api/internal/context"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/repository/firmware/firmwareitems"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
 	"resty.dev/v3"
 )
 

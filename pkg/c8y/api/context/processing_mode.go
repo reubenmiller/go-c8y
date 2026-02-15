@@ -3,7 +3,7 @@ package context
 import (
 	"context"
 
-	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/api/internal/context"
+	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
 )
 

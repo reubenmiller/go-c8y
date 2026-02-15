@@ -9,13 +9,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/jsonmodels"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/op"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/devices"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/operations"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pipeline"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
 )
 
 func main() {

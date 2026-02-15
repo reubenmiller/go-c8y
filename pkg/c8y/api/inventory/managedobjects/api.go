@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/jsonmodels"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/op"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/binaries"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/identity"
@@ -17,6 +15,8 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/realtime"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/source"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
 	"resty.dev/v3"
 )
 
