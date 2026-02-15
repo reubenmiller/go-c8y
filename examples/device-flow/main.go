@@ -18,7 +18,6 @@ func main() {
 	client := api.NewClient(api.ClientOptions{
 		BaseURL: authentication.HostFromEnvironment(),
 	})
-	client.Client.SetDebug(true)
 
 	loginOption, found, err := client.HasExternalAuthProvider(context.Background())
 	if err != nil {

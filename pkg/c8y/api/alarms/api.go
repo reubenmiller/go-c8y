@@ -350,6 +350,7 @@ func (s *Service) createB(body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetContentType(types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiAlarms)
 	return core.NewTryRequest(s.Client, req)
@@ -359,7 +360,7 @@ func (s *Service) createBWithJSON(bodyJSON []byte) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
+		SetContentType(types.MimeTypeApplicationJSON).
 		SetBody(bodyJSON).
 		SetURL(ApiAlarms)
 	return core.NewTryRequest(s.Client, req)

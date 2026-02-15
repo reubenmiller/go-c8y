@@ -1,8 +1,10 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -418,6 +420,227 @@ func (c *Client) SetToken(v string) {
 			}
 		}
 	}
+}
+
+// SetDebug enables or disables custom debug mode with sensitive header redaction.
+// This is the safe debug mode that automatically redacts Authorization, Cookie, and other
+// sensitive headers before logging.
+//
+// For debugging authorization issues where you need to see unredacted headers, use
+// SetDebugWithAuth instead (but only in local/dev environments).
+//
+// Example:
+//
+//	client.SetDebug(true)  // Enable debug with redacted sensitive headers
+//	client.SetDebug(false) // Disable debug mode
+func (c *Client) SetDebug(enable bool) {
+	c.clientMu.Lock()
+	defer c.clientMu.Unlock()
+
+	if enable {
+		c.showSensitive = false
+		c.Client.AddResponseMiddleware(debugLogMiddleware(true))
+	} else {
+		c.showSensitive = false
+	}
+}
+
+// SetDebugWithAuth enables debug mode and shows full Authorization headers (unredacted).
+// This is useful for local debugging of authentication issues but should NOT be used in production
+// as it will expose credentials in logs.
+//
+// Uses custom middleware to log raw HTTP request/response without header sanitization.
+//
+// Example:
+//
+//	client.SetDebugWithAuth(true)  // Shows full auth headers
+//	client.SetDebugWithAuth(false) // Disable debug mode
+func (c *Client) SetDebugWithAuth(enable bool) {
+	c.clientMu.Lock()
+	defer c.clientMu.Unlock()
+
+	if enable {
+		c.showSensitive = true
+		c.Client.AddResponseMiddleware(debugLogMiddleware(false))
+		slog.Warn("⚠️  Debug mode enabled with UNREDACTED auth headers - credentials will be visible in logs!")
+	} else {
+		c.showSensitive = false
+	}
+}
+
+// debugLogMiddleware returns a response middleware that logs request and response details.
+// When sanitize is true, sensitive headers (Authorization, Cookie, etc.) are redacted.
+func debugLogMiddleware(sanitize bool) func(*resty.Client, *resty.Response) error {
+	return func(client *resty.Client, resp *resty.Response) error {
+		req := resp.Request.RawRequest
+
+		fmt.Fprintf(os.Stderr, "\n==============================================================================\n")
+		fmt.Fprintf(os.Stderr, "~~~ REQUEST ~~~\n")
+		fmt.Fprintf(os.Stderr, "%s  %s  %s\n", req.Method, req.URL.RequestURI(), req.Proto)
+		fmt.Fprintf(os.Stderr, "HOST   : %s\n", req.URL.Host)
+
+		// Sanitize headers if requested
+		reqHeaders := req.Header
+		if sanitize {
+			reqHeaders = sanitizeHeaders(req.Header)
+		}
+		fmt.Fprintf(os.Stderr, "HEADERS:\n%s\n", composeHeaders(reqHeaders))
+
+		// Log request body if available
+		if resp.Request.Body != nil {
+			contentType := req.Header.Get("Content-Type")
+			if isTextContent(contentType) {
+				bodyStr := ""
+				// Get the actual body bytes
+				var bodyBytes []byte
+				switch v := resp.Request.Body.(type) {
+				case []byte:
+					bodyBytes = v
+				case string:
+					bodyBytes = []byte(v)
+				default:
+					// For other types (structs, maps, etc.), marshal them
+					if b, err := json.Marshal(v); err == nil {
+						bodyBytes = b
+					} else {
+						bodyStr = fmt.Sprintf("%v", v)
+					}
+				}
+
+				// Pretty-print JSON if we have bytes and content type is JSON
+				if len(bodyBytes) > 0 && (strings.Contains(contentType, "application/json") || strings.Contains(contentType, "+json")) {
+					var prettyJSON bytes.Buffer
+					if err := json.Indent(&prettyJSON, bodyBytes, "", "   "); err == nil {
+						bodyStr = prettyJSON.String()
+					} else {
+						bodyStr = string(bodyBytes)
+					}
+				} else if len(bodyBytes) > 0 {
+					bodyStr = string(bodyBytes)
+				}
+				fmt.Fprintf(os.Stderr, "BODY   :\n%v\n", bodyStr)
+			} else {
+				fmt.Fprintf(os.Stderr, "BODY   :\n***** BINARY CONTENT (Content-Type: %s) *****\n", contentType)
+			}
+		} else {
+			fmt.Fprintf(os.Stderr, "BODY   :\n***** NO CONTENT *****\n")
+		}
+
+		fmt.Fprintf(os.Stderr, "------------------------------------------------------------------------------\n")
+		fmt.Fprintf(os.Stderr, "~~~ RESPONSE ~~~\n")
+		fmt.Fprintf(os.Stderr, "STATUS       : %s\n", resp.Status())
+		fmt.Fprintf(os.Stderr, "PROTO        : %s\n", resp.Proto())
+		fmt.Fprintf(os.Stderr, "RECEIVED AT  : %v\n", resp.ReceivedAt().Format(time.RFC3339Nano))
+		fmt.Fprintf(os.Stderr, "DURATION     : %v\n", resp.Duration())
+
+		// Sanitize response headers if requested
+		respHeaders := resp.Header()
+		if sanitize {
+			respHeaders = sanitizeHeaders(resp.Header())
+		}
+		fmt.Fprintf(os.Stderr, "HEADERS      :\n%s\n", composeHeaders(respHeaders))
+
+		if len(resp.Bytes()) > 0 {
+			contentType := resp.Header().Get("Content-Type")
+			if isTextContent(contentType) {
+				bodyStr := ""
+				// Pretty-print JSON if the content type is JSON (including vendor types like +json)
+				if strings.Contains(contentType, "application/json") || strings.Contains(contentType, "+json") {
+					var prettyJSON bytes.Buffer
+					if err := json.Indent(&prettyJSON, resp.Bytes(), "", "   "); err == nil {
+						bodyStr = prettyJSON.String()
+					} else {
+						bodyStr = resp.String()
+					}
+				} else {
+					bodyStr = resp.String()
+				}
+				fmt.Fprintf(os.Stderr, "BODY         :\n%v\n", bodyStr)
+			} else {
+				fmt.Fprintf(os.Stderr, "BODY         :\n***** BINARY CONTENT (Content-Type: %s, Size: %d bytes) *****\n", contentType, len(resp.Bytes()))
+			}
+		} else {
+			fmt.Fprintf(os.Stderr, "BODY         :\n***** NO CONTENT *****\n")
+		}
+		fmt.Fprintf(os.Stderr, "==============================================================================\n")
+		return nil
+	}
+}
+
+// isTextContent checks if a content type is text-based (safe to log)
+func isTextContent(contentType string) bool {
+	contentType = strings.ToLower(contentType)
+	textTypes := []string{
+		"text/",
+		"application/json",
+		"+json", // Vendor-specific JSON types like application/vnd.*+json
+		"application/xml",
+		"+xml",
+		"application/x-www-form-urlencoded",
+		"multipart/form-data",
+	}
+	for _, textType := range textTypes {
+		if strings.Contains(contentType, textType) {
+			return true
+		}
+	}
+	return false
+}
+
+// composeHeaders formats HTTP headers in Resty's debug output style
+func composeHeaders(headers http.Header) string {
+	if len(headers) == 0 {
+		return ""
+	}
+	var result strings.Builder
+	for key, values := range headers {
+		for _, value := range values {
+			result.WriteString("   ")
+			result.WriteString(key)
+			result.WriteString(": ")
+			result.WriteString(value)
+			result.WriteString("\n")
+		}
+	}
+	// Remove trailing newline
+	s := result.String()
+	if len(s) > 0 {
+		s = s[:len(s)-1]
+	}
+	return s
+}
+
+// sanitizeHeaders returns a clone of headers with sensitive values redacted.
+// Sensitive headers include Authorization, Cookie, Set-Cookie, and X-Auth-Token.
+func sanitizeHeaders(headers http.Header) http.Header {
+	if len(headers) == 0 {
+		return headers
+	}
+
+	sensitiveHeaders := []string{
+		"Authorization",
+		"Cookie",
+		"Set-Cookie",
+		"X-Auth-Token",
+		"X-Api-Key",
+		"Proxy-Authorization",
+	}
+
+	// Clone headers
+	sanitized := make(http.Header, len(headers))
+	for key, values := range headers {
+		sanitized[key] = make([]string, len(values))
+		copy(sanitized[key], values)
+	}
+
+	// Redact sensitive headers
+	for _, key := range sensitiveHeaders {
+		if _, exists := sanitized[key]; exists {
+			sanitized[key] = []string{"********************"}
+		}
+	}
+
+	return sanitized
 }
 
 func (c *Client) Login(ctx context.Context) (token string, err error) {
