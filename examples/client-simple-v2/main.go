@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/destel/rill"
-	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alarms"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
@@ -28,7 +27,7 @@ type CustomField struct {
 }
 
 type ExampleMO struct {
-	c8y.ManagedObject
+	model.ManagedObject
 
 	CustomField *CustomField `json:"my_CustomField,omitempty"`
 }

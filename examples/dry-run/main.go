@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
 )

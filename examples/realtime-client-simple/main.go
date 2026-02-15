@@ -1,43 +1,37 @@
 package main
 
 import (
+	"context"
+	"log"
 	"log/slog"
 	"os"
 	"os/signal"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
 )
 
 func main() {
 	// Create the client from the following environment variables
 	// C8Y_HOST, C8Y_TENANT, C8Y_USER, C8Y_PASSWORD
-	client := c8y.NewClientFromEnvironment(nil, false)
+	client := api.NewClient(api.ClientOptions{
+		BaseURL: authentication.HostFromEnvironment(),
+		Auth:    authentication.FromEnvironment(),
+	})
 
-	// Create realtime connection
-	err := client.Realtime.Connect()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
 
-	if err != nil {
-		slog.Error("Could not connect to /cep/realtime", "err", err)
-		os.Exit(1)
+	result := client.Measurements.SubscribeStream(ctx, "*")
+	if result.Err != nil {
+		log.Fatalf("Failed to setup subscription. %s", result.Err)
 	}
 
-	// Subscribe to all measurements
-	ch := make(chan *c8y.Message)
-	client.Realtime.Subscribe(c8y.RealtimeMeasurements(), ch)
-
-	// Enable ctrl-c stop signal
-	signalCh := make(chan os.Signal, 1)
-	signal.Notify(signalCh, os.Interrupt)
-
-	for {
-		select {
-		case msg := <-ch:
-			slog.Info("Received measurement", "payload", msg.Payload.Data)
-
-		case <-signalCh:
-			// Enable ctrl-c to stop
-			slog.Info("Stopping realtime client")
-			return
+	for msg, err := range result.Data.Items() {
+		if err != nil {
+			slog.Error("received error", "err", err)
+			break
 		}
+		slog.Info("Received measurement", "payload", msg.Data.Bytes())
 	}
 }

@@ -1,13 +1,16 @@
 package main
 
 import (
+	"context"
 	"flag"
+	"log"
 	"log/slog"
 	"os"
 	"os/signal"
 	"time"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
 )
 
 func main() {
@@ -18,7 +21,10 @@ func main() {
 	//
 	// Create the client from the following environment variables
 	// C8Y_HOST, C8Y_TENANT, C8Y_USER, C8Y_PASSWORD
-	client := c8y.NewClientFromEnvironment(nil, false)
+	client := api.NewClient(api.ClientOptions{
+		BaseURL: authentication.HostFromEnvironment(),
+		Auth:    authentication.FromEnvironment(),
+	})
 
 	// Get arguments
 	var deviceID string
@@ -29,45 +35,22 @@ func main() {
 		panic("-device parameter must not be empty!")
 	}
 
-	// Create realtime connection
-	err := client.Realtime.Connect()
-
-	if err != nil {
-		slog.Error("Could not connect to /cep/realtime", "err", err)
-		os.Exit(1)
-	}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
 
 	// Subscribe to all measurements
-	subscriptionPattern := c8y.RealtimeMeasurements(deviceID)
-	ch := make(chan *c8y.Message)
-	<-client.Realtime.Subscribe(subscriptionPattern, ch)
-
-	// Enable ctrl-c stop signal
-	signalCh := make(chan os.Signal, 1)
-	signal.Notify(signalCh, os.Interrupt)
+	result := client.Measurements.SubscribeStream(ctx, deviceID)
+	if result.Err != nil {
+		log.Fatalf("Failed to setup subscription. %s", result.Err)
+	}
 
 	<-time.After(1 * time.Second)
 
-	// TODO: Debug unsubscribe option, it results in empty messages being written to the channel
-	<-client.Realtime.UnsubscribeAll()
-	// <-client.Realtime.Unsubscribe(subscriptionPattern)
-
-	// ch2 := make(chan *c8y.Message)
-	<-client.Realtime.Subscribe(subscriptionPattern, ch)
-
-	for {
-		select {
-		case msg := <-ch:
-			if msg != nil {
-				slog.Info("Received measurement", "payload", msg.Payload.Data)
-			} else {
-				slog.Info("Received empty message")
-			}
-
-		case <-signalCh:
-			// Enable ctrl-c to stop
-			slog.Info("Stopping realtime client")
-			return
+	for msg, err := range result.Data.Items() {
+		if err != nil {
+			slog.Error("received error", "err", err)
+			break
 		}
+		slog.Info("Received measurement", "payload", msg.Data.Bytes())
 	}
 }

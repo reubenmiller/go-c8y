@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
 	"github.com/schollz/progressbar/v3"
 	"golang.org/x/term"
 )

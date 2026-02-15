@@ -101,7 +101,7 @@ func TestParseSoftwareFromFilename(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			info, err := ParseSoftwareFromFilename(tt.filepath, "")
+			info, err := ParseSoftwareFromFilename(tt.filepath, "", "")
 			assert.NoError(t, err)
 			assert.Equal(t, tt.wantName, info.Name, "name mismatch")
 			assert.Equal(t, tt.wantVersion, info.Version, "version mismatch")
@@ -301,7 +301,7 @@ func TestParseSoftwareFromFilename_WithAutoDetect(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			info, err := ParseSoftwareFromFilename(tt.filepath, tt.defaultType)
+			info, err := ParseSoftwareFromFilename(tt.filepath, tt.defaultType, "")
 			assert.NoError(t, err)
 			assert.Equal(t, tt.wantType, info.SoftwareType)
 		})
