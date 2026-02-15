@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/authentication"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
 )
 
 func main() {
 	// Create a client
-	client := c8y_api.NewClient(c8y_api.ClientOptions{
+	client := api.NewClient(api.ClientOptions{
 		BaseURL: "https://example.c8y.io",
 		Auth: authentication.AuthOptions{
 			Tenant:   "t12345",
@@ -32,7 +31,7 @@ func main() {
 
 	// Example 2: Dry run request (returns mock response)
 	fmt.Println("\n=== Dry Run Request (Mock Response) ===")
-	dryRunCtx := c8y_api.WithDryRun(context.Background(), true)
+	dryRunCtx := api.WithDryRun(context.Background(), true)
 	result = client.ManagedObjects.Get(dryRunCtx, "12345", managedobjects.GetOptions{})
 	if result.Err != nil {
 		log.Printf("Dry run request error: %v\n", result.Err)
@@ -56,6 +55,6 @@ func main() {
 
 	// Example 4: Check if dry run is enabled
 	fmt.Println("\n=== Check Dry Run Status ===")
-	fmt.Printf("Normal context dry run: %v\n", c8y_api.IsDryRun(context.Background()))
-	fmt.Printf("Dry run context dry run: %v\n", c8y_api.IsDryRun(dryRunCtx))
+	fmt.Printf("Normal context dry run: %v\n", api.IsDryRun(context.Background()))
+	fmt.Printf("Dry run context dry run: %v\n", api.IsDryRun(dryRunCtx))
 }

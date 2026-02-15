@@ -1,12 +1,12 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
 	"strings"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,7 +16,7 @@ func Test_DeferredExecution_Get(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
 	// Prepare the operation without executing
-	ctx := c8y_api.WithDeferredExecution(context.Background(), true)
+	ctx := api.WithDeferredExecution(context.Background(), true)
 	prepared := client.ManagedObjects.Get(ctx, "12345", managedobjects.GetOptions{})
 
 	// Should not have executed yet
@@ -26,7 +26,7 @@ func Test_DeferredExecution_Get(t *testing.T) {
 	assert.Contains(t, prepared.Request.URL.Path, "/inventory/managedObjects/12345")
 
 	// Now execute it (use dry run for testing to avoid real HTTP calls)
-	execCtx := c8y_api.WithDryRun(context.Background(), true)
+	execCtx := api.WithDryRun(context.Background(), true)
 	result := prepared.Execute(execCtx)
 
 	// Should have executed
@@ -39,7 +39,7 @@ func Test_DeferredExecution_Delete(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
 	// Prepare a DELETE operation
-	ctx := c8y_api.WithDeferredExecution(context.Background(), true)
+	ctx := api.WithDeferredExecution(context.Background(), true)
 	prepared := client.ManagedObjects.Delete(ctx, "device-to-delete", managedobjects.DeleteOptions{})
 
 	// Should be deferred
@@ -52,7 +52,7 @@ func Test_DeferredExecution_Delete(t *testing.T) {
 
 	// User can decide whether to execute or cancel
 	// For this test, we'll execute it (use dry run for testing)
-	execCtx := c8y_api.WithDryRun(context.Background(), true)
+	execCtx := api.WithDryRun(context.Background(), true)
 	result := prepared.Execute(execCtx)
 
 	assert.False(t, result.IsDeferred())
@@ -63,7 +63,7 @@ func Test_DeferredExecution_Create(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
 	// Prepare a POST operation
-	ctx := c8y_api.WithDeferredExecution(context.Background(), true)
+	ctx := api.WithDeferredExecution(context.Background(), true)
 	data := map[string]any{
 		"name": "Test Device",
 		"type": "c8y_TestDevice",
@@ -79,7 +79,7 @@ func Test_DeferredExecution_Create(t *testing.T) {
 	assert.Contains(t, prepared.Request.URL.Path, "/inventory/managedObjects")
 
 	// Execute (use dry run for testing)
-	execCtx := c8y_api.WithDryRun(context.Background(), true)
+	execCtx := api.WithDryRun(context.Background(), true)
 	result := prepared.Execute(execCtx)
 	assert.False(t, result.IsDeferred())
 	assert.NoError(t, result.Err)
@@ -89,7 +89,7 @@ func Test_DeferredExecution_List(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
 	// Prepare a LIST operation
-	ctx := c8y_api.WithDeferredExecution(context.Background(), true)
+	ctx := api.WithDeferredExecution(context.Background(), true)
 	prepared := client.ManagedObjects.List(ctx, managedobjects.ListOptions{
 		Query: "name eq 'test*'",
 	})
@@ -104,7 +104,7 @@ func Test_DeferredExecution_List(t *testing.T) {
 	assert.Contains(t, prepared.Request.URL.RawQuery, "query=")
 
 	// Execute (use dry run for testing)
-	execCtx := c8y_api.WithDryRun(context.Background(), true)
+	execCtx := api.WithDryRun(context.Background(), true)
 	result := prepared.Execute(execCtx)
 	assert.False(t, result.IsDeferred())
 	assert.NoError(t, result.Err)
@@ -114,7 +114,7 @@ func Test_DeferredExecution_Cancel(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
 	// Prepare a DELETE operation
-	ctx := c8y_api.WithDeferredExecution(context.Background(), true)
+	ctx := api.WithDeferredExecution(context.Background(), true)
 	prepared := client.ManagedObjects.Delete(ctx, "device-id", managedobjects.DeleteOptions{})
 
 	// Inspect and decide to cancel
@@ -149,7 +149,7 @@ func Test_DeferredExecution_ParameterResolution(t *testing.T) {
 
 	// This tests that deferred execution still resolves parameters
 	// (e.g., device name -> ID lookup via source.Resolver)
-	ctx := c8y_api.WithDeferredExecution(context.Background(), true)
+	ctx := api.WithDeferredExecution(context.Background(), true)
 
 	// In a real scenario, this might resolve "device-name" to an ID
 	prepared := client.ManagedObjects.Delete(ctx, "device-name-or-id", managedobjects.DeleteOptions{})
@@ -166,13 +166,13 @@ func Test_DeferredExecution_ContextCheck(t *testing.T) {
 	ctx := context.Background()
 
 	// Default should be false
-	assert.False(t, c8y_api.IsDeferredExecution(ctx))
+	assert.False(t, api.IsDeferredExecution(ctx))
 
 	// Enable deferred execution
-	ctx = c8y_api.WithDeferredExecution(ctx, true)
-	assert.True(t, c8y_api.IsDeferredExecution(ctx))
+	ctx = api.WithDeferredExecution(ctx, true)
+	assert.True(t, api.IsDeferredExecution(ctx))
 
 	// Disable it
-	ctx = c8y_api.WithDeferredExecution(ctx, false)
-	assert.False(t, c8y_api.IsDeferredExecution(ctx))
+	ctx = api.WithDeferredExecution(ctx, false)
+	assert.False(t, api.IsDeferredExecution(ctx))
 }

@@ -624,7 +624,7 @@ result := client.Operations.Get(ctx, id,
 Automated generation of services and repositories from templates:
 
 ```bash
-go generate ./pkg/c8y/c8y_api/...
+go generate ./pkg/c8y/api/...
 ```
 
 **Status:** Not implemented. All services manually implemented.

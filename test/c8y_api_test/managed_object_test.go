@@ -1,4 +1,4 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
@@ -6,11 +6,11 @@ import (
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsondoc"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/jsondoc"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 )
@@ -127,7 +127,7 @@ func Test_ManagedObjectCRUD(t *testing.T) {
 	// Verify deleted
 	getAfterDelete := client.ManagedObjects.Get(ctx, id, managedobjects.GetOptions{})
 	assert.Error(t, getAfterDelete.Err)
-	assert.True(t, c8y_api.ErrHasStatus(getAfterDelete.Err, 404))
+	assert.True(t, api.ErrHasStatus(getAfterDelete.Err, 404))
 }
 
 func Test_ManagedObjectDeleteWithPrompt(t *testing.T) {
@@ -138,11 +138,11 @@ func Test_ManagedObjectDeleteWithPrompt(t *testing.T) {
 	assert.NoError(t, mo.Err)
 
 	ctx := context.Background()
-	deferredCtx := c8y_api.WithDeferredExecution(ctx, true)
+	deferredCtx := api.WithDeferredExecution(ctx, true)
 	req := client.ManagedObjects.Delete(deferredCtx, mo.Data.ID(), managedobjects.DeleteOptions{})
 
 	if req.Request != nil {
-		if c8y_api.IsDeferredExecution(req.Request.Context()) {
+		if api.IsDeferredExecution(req.Request.Context()) {
 			fmt.Printf("Confirm deletion of %#v", req.Meta)
 		}
 	}
@@ -159,14 +159,14 @@ func Test_ManagedObjectGetByName(t *testing.T) {
 	assert.NoError(t, mo.Err)
 
 	ctx := context.Background()
-	deferredCtx := c8y_api.WithDeferredExecution(ctx, true)
+	deferredCtx := api.WithDeferredExecution(ctx, true)
 	name := mo.Data.Name()
 	namePattern := name[0:len(name)-4] + "*"
 	source := client.ManagedObjects.ByName(namePattern)
 	req := client.ManagedObjects.Delete(deferredCtx, source, managedobjects.DeleteOptions{})
 
 	if req.Request != nil {
-		if c8y_api.IsDeferredExecution(req.Request.Context()) {
+		if api.IsDeferredExecution(req.Request.Context()) {
 			fmt.Printf("Confirm deletion of %#v", req.Meta["name"])
 		}
 	}
@@ -184,7 +184,7 @@ func Test_ManagedObject_GetOrCreateByNameExists_Deferred(t *testing.T) {
 	assert.NoError(t, mo.Err)
 
 	// It should retrieve the existing managed object instead of creating it
-	deferredCtx := c8y_api.WithDeferredExecution(context.Background(), true)
+	deferredCtx := api.WithDeferredExecution(context.Background(), true)
 	name := mo.Data.Name()
 	namePattern := name[0:len(name)-4] + "*"
 	req := client.ManagedObjects.GetOrCreateByName(deferredCtx, namePattern, "", map[string]any{
@@ -205,7 +205,7 @@ func Test_ManagedObject_GetOrCreateByNameNotExists_Deferred(t *testing.T) {
 	client.Client.SetDebug(true)
 
 	// It should create a new managed object as an existing one matching the same name does not exist
-	deferredCtx := c8y_api.WithDeferredExecution(context.Background(), true)
+	deferredCtx := api.WithDeferredExecution(context.Background(), true)
 	name := testingutils.RandomString(16)
 	req := client.ManagedObjects.GetOrCreateByName(deferredCtx, name, "", map[string]any{
 		"foo": "bar",

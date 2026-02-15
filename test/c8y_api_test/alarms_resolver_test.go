@@ -1,17 +1,17 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alarms"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alarms"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 )
 
 func Test_Alarms_DeviceResolver_ByName(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	opts := alarms.ListOptions{
 		Source: client.Alarms.DeviceResolver.ByName("device01"),
@@ -27,7 +27,7 @@ func Test_Alarms_DeviceResolver_ByName(t *testing.T) {
 
 func Test_Alarms_DeviceResolver_ByExternalID(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	opts := alarms.ListOptions{
 		Source: client.Alarms.DeviceResolver.ByExternalID("c8y_Serial", "ABC123"),
@@ -43,7 +43,7 @@ func Test_Alarms_DeviceResolver_ByExternalID(t *testing.T) {
 
 func Test_Alarms_DeviceResolver_DirectID(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	opts := alarms.ListOptions{
 		Source: "12345",
@@ -59,7 +59,7 @@ func Test_Alarms_DeviceResolver_DirectID(t *testing.T) {
 
 func Test_Alarms_DeviceResolver_StringBased(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	opts := alarms.ListOptions{
 		Source: "name:device01",
@@ -75,7 +75,7 @@ func Test_Alarms_DeviceResolver_StringBased(t *testing.T) {
 
 func Test_Alarms_DeviceResolver_ByQuery(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	opts := alarms.ListOptions{
 		Source: client.Alarms.DeviceResolver.ByQuery("type eq 'c8y_Device'"),
@@ -91,7 +91,7 @@ func Test_Alarms_DeviceResolver_ByQuery(t *testing.T) {
 
 func Test_Alarms_Count_WithDeviceResolver(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	opts := alarms.ListOptions{
 		Source: client.Alarms.DeviceResolver.ByName("device01"),
@@ -107,7 +107,7 @@ func Test_Alarms_Count_WithDeviceResolver(t *testing.T) {
 
 func Test_Alarms_Count_WithStringBasedResolver(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	opts := alarms.ListOptions{
 		Source: "name:device01",
@@ -123,7 +123,7 @@ func Test_Alarms_Count_WithStringBasedResolver(t *testing.T) {
 
 func Test_Alarms_UpdateList_WithDeviceResolver(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	opts := alarms.BulkUpdateOptions{
 		Source: client.Alarms.DeviceResolver.ByName("device01"),
@@ -140,7 +140,7 @@ func Test_Alarms_UpdateList_WithDeviceResolver(t *testing.T) {
 
 func Test_Alarms_DeleteList_WithDeviceResolver(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	opts := alarms.DeleteListOptions{
 		Source: "name:device01",
@@ -156,8 +156,8 @@ func Test_Alarms_DeleteList_WithDeviceResolver(t *testing.T) {
 
 func Test_Alarms_Create_WithResolver_Metadata(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
-	deferredCtx := c8y_api.WithDeferredExecution(ctx, true)
+	ctx := api.WithMockResponses(context.Background(), true)
+	deferredCtx := api.WithDeferredExecution(ctx, true)
 
 	opts := alarms.CreateOptions{
 		Source:   client.Alarms.DeviceResolver.ByName("device01"),
@@ -196,8 +196,8 @@ func Test_Alarms_Create_WithResolver_Metadata(t *testing.T) {
 
 func Test_Alarms_Create_WithStringResolver_Metadata(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
-	deferredCtx := c8y_api.WithDeferredExecution(ctx, true)
+	ctx := api.WithMockResponses(context.Background(), true)
+	deferredCtx := api.WithDeferredExecution(ctx, true)
 
 	opts := alarms.CreateOptions{
 		Source:   "name:device01",

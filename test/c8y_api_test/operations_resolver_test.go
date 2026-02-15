@@ -1,17 +1,17 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/operations"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/operations"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 )
 
 func Test_Operations_DeviceResolver_ByName(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	opts := operations.ListOptions{
 		DeviceID: client.Operations.DeviceResolver.ByName("device01"),
@@ -27,7 +27,7 @@ func Test_Operations_DeviceResolver_ByName(t *testing.T) {
 
 func Test_Operations_DeviceResolver_AgentID(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	opts := operations.ListOptions{
 		AgentID: client.Operations.DeviceResolver.ByExternalID("c8y_Serial", "ABC123"),
@@ -43,7 +43,7 @@ func Test_Operations_DeviceResolver_AgentID(t *testing.T) {
 
 func Test_Operations_DeviceResolver_StringBased(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	opts := operations.ListOptions{
 		DeviceID: "name:device01",

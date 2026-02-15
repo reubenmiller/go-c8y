@@ -10,8 +10,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/websocket"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/tenants/currenttenant"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/tenants/currenttenant"
 	"github.com/reubenmiller/go-c8y/pkg/proxy"
 )
 
@@ -38,14 +37,14 @@ func parseListenerAddress(v string) (network string, addr string, err error) {
 }
 
 type RemoteAccessClient struct {
-	client   *c8y_api.Client
+	client   *api.Client
 	ctx      RemoteAccessOptions
 	listener net.Listener
 }
 
 // Create new Remote Access client to allow local clients
 // to connect to a device via the Cloud Remote Access feature
-func NewRemoteAccessClient(client *c8y_api.Client, opt RemoteAccessOptions) *RemoteAccessClient {
+func NewRemoteAccessClient(client *api.Client, opt RemoteAccessOptions) *RemoteAccessClient {
 	return &RemoteAccessClient{
 		client:   client,
 		ctx:      opt,
@@ -76,7 +75,7 @@ func (c *RemoteAccessClient) createRemoteAccessConnection() (*websocket.Conn, st
 		if currentTenant.Err != nil {
 			tenantID = currentTenant.Data.ID()
 		}
-		requestHeader.Add("Authorization", c8y_api.NewBasicAuthString(tenantID, c.client.Auth.Username, c.client.Auth.Password))
+		requestHeader.Add("Authorization", api.NewBasicAuthString(tenantID, c.client.Auth.Username, c.client.Auth.Password))
 	}
 	slog.Info("Connecting to Cumulocity IoT", "url", remoteURL, "headers", c.client.HideSensitiveInformationIfActive(fmt.Sprintf("%v", requestHeader)))
 

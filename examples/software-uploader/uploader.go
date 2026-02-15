@@ -10,15 +10,15 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/repository/software/softwareversions"
+	"github.com/awslabs/amazon-ecr-credential-helper/ecr-login/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/op"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/repository/software/softwareversions"
 )
 
 // UploadConfig contains configuration for the upload process
 type UploadConfig struct {
-	Client       *c8y_api.Client
+	Client       *api.Client
 	Concurrency  int
 	SoftwareType string
 	DryRun       bool
@@ -53,7 +53,7 @@ type ProgressCallback func(completed, total int, currentFile string)
 // Groups by name and architecture to create separate software items per architecture
 func EnsureSoftwarePackages(
 	ctx context.Context,
-	client *c8y_api.Client,
+	client *api.Client,
 	groups map[string][]*SoftwareInfo,
 	dryRun bool,
 ) (map[string]string, []error) {

@@ -1,4 +1,4 @@
-package c8y_api_test
+package api_test
 
 import (
 	"bytes"
@@ -10,10 +10,10 @@ import (
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsondoc"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/trustedcertificates"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/trustedcertificates/certificaterevocationlist"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/jsondoc"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/trustedcertificates"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/trustedcertificates/certificaterevocationlist"
 	"github.com/reubenmiller/go-c8y/pkg/certutil"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"

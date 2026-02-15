@@ -9,20 +9,19 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/authentication"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/devices"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/operations"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pipeline"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/op"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/devices"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/operations"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pipeline"
 )
 
 func main() {
 	// Create the client from the following environment variables
 	// C8Y_HOST, C8Y_TENANT, C8Y_USER, C8Y_PASSWORD
-	client := c8y_api.NewClient(c8y_api.ClientOptions{
+	client := api.NewClient(api.ClientOptions{
 		BaseURL: authentication.HostFromEnvironment(),
 		Auth:    authentication.FromEnvironment(),
 	})
@@ -32,8 +31,8 @@ func main() {
 	}
 
 	// Add API call statistics middleware
-	stats := c8y_api.NewStatsMap()
-	client.Client.AddResponseMiddleware(c8y_api.MiddlewareCountByMethodAndPath(stats))
+	stats := api.NewStatsMap()
+	client.Client.AddResponseMiddleware(api.MiddlewareCountByMethodAndPath(stats))
 
 	ctx := context.Background()
 
@@ -107,7 +106,7 @@ func main() {
 		},
 	},
 		func(ctx context.Context, op jsonmodels.Operation) error {
-			result := client.Operations.Update(c8y_api.WithDryRun(ctx, false), op.ID(), map[string]any{
+			result := client.Operations.Update(api.WithDryRun(ctx, false), op.ID(), map[string]any{
 				"status":        "FAILED",
 				"failureReason": "Cancelled stale operation",
 			})

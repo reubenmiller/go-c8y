@@ -1,15 +1,15 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/repository/firmware/firmwareitems"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/repository/firmware/firmwarepatches"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/repository/firmware/firmwareversions"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/repository/firmware/firmwareitems"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/repository/firmware/firmwarepatches"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/repository/firmware/firmwareversions"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -247,7 +247,7 @@ func Test_FirmwarePatchDeferredExecution(t *testing.T) {
 
 	t.Run("Get deferred by version, dependency and firmware ID", func(t *testing.T) {
 		deferredResult := client.Repository.Firmware.Patches.Get(
-			c8y_api.WithDeferredExecution(context.Background(), true),
+			api.WithDeferredExecution(context.Background(), true),
 			firmwarepatches.NewRef().ByVersionAndDependency(patchVersion, baseVersion, firmwareID),
 			firmwarepatches.GetOptions{},
 		)

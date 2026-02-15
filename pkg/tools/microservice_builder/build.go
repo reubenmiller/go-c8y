@@ -15,7 +15,7 @@ import (
 
 	_ "embed"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/microservices"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/microservices"
 )
 
 //go:embed build-dind.sh

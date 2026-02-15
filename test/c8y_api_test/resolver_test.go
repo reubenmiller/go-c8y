@@ -1,12 +1,12 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/source"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/source"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 )
@@ -77,7 +77,7 @@ func Test_Resolver_WithDeferredExecution(t *testing.T) {
 	// while the main Get/Delete operations are deferred.
 	// For now, just verify that deferred execution is possible with resolver syntax.
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithDeferredExecution(context.Background(), true)
+	ctx := api.WithDeferredExecution(context.Background(), true)
 
 	// Create a Get request with plain ID - this should still defer
 	plainIDResult := client.ManagedObjects.Get(ctx, "12345", managedobjects.GetOptions{})
@@ -89,7 +89,7 @@ func Test_Resolver_DeleteWithName(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
 	// Create a Delete with deferred execution using a plain ID
-	ctx := c8y_api.WithDeferredExecution(context.Background(), true)
+	ctx := api.WithDeferredExecution(context.Background(), true)
 	prepared := client.ManagedObjects.Delete(ctx, "deleteMe123", managedobjects.DeleteOptions{})
 
 	// Should be deferred

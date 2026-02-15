@@ -1,16 +1,16 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 )
 
 func Test_Microservices_ByName(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	// Test ByName returns a string reference
 	ref := client.Microservices.ByName("my-microservice")
@@ -38,7 +38,7 @@ func Test_Microservices_ByName(t *testing.T) {
 
 func Test_Microservices_ByContextPath(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	// Test ByContextPath returns a string reference
 	ref := client.Microservices.ByContextPath("/my-microservice")
@@ -76,7 +76,7 @@ func Test_Microservices_ByID(t *testing.T) {
 
 func Test_Microservices_ResolveID_NotFound(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	// Test with non-existent name
 	ref := client.Microservices.ByName("nonexistent-microservice")
@@ -90,7 +90,7 @@ func Test_Microservices_ResolveID_NotFound(t *testing.T) {
 
 func Test_Microservices_Get_WithResolver(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	// Test Get with name resolver
 	result := client.Microservices.Get(ctx, client.Microservices.ByName("my-microservice"))
@@ -112,7 +112,7 @@ func Test_Microservices_Get_WithResolver(t *testing.T) {
 
 func Test_Microservices_Get_WithContextPathResolver(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	// Test Get with contextPath resolver
 	result := client.Microservices.Get(ctx, client.Microservices.ByContextPath("/my-microservice"))

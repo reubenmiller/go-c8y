@@ -36,8 +36,8 @@ By default, sensitive headers are redacted. If you need to see the actual header
 ```go
 // Enable dry run with visible sensitive headers (for debugging only)
 ctx := context.Background()
-ctx = c8y_api.WithDryRun(ctx, true)
-ctx = c8y_api.WithRedactHeaders(ctx, false) // Disable redaction
+ctx = api.WithDryRun(ctx, true)
+ctx = api.WithRedactHeaders(ctx, false) // Disable redaction
 
 result := client.ManagedObjects.Get(ctx, "12345", managedobjects.GetOptions{})
 // The log output will now show actual Authorization headers
@@ -54,7 +54,7 @@ result := client.ManagedObjects.Get(ctx, "12345", managedobjects.GetOptions{})
 ### Basic Request Inspection
 
 ```go
-ctx := c8y_api.WithDryRun(context.Background(), true)
+ctx := api.WithDryRun(context.Background(), true)
 result := client.ManagedObjects.Get(ctx, "12345", managedobjects.GetOptions{})
 
 if result.Request != nil {

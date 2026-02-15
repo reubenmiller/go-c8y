@@ -1,4 +1,4 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/events/eventbinaries"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/events/eventbinaries"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 )

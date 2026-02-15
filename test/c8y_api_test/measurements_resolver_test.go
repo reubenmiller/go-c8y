@@ -1,17 +1,17 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/measurements"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/measurements"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 )
 
 func Test_Measurements_DeviceResolver_ByName(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	// Test using device name resolver
 	opts := measurements.ListOptions{
@@ -28,7 +28,7 @@ func Test_Measurements_DeviceResolver_ByName(t *testing.T) {
 
 func Test_Measurements_DeviceResolver_ByExternalID(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	// Test using external ID resolver
 	opts := measurements.ListOptions{
@@ -45,7 +45,7 @@ func Test_Measurements_DeviceResolver_ByExternalID(t *testing.T) {
 
 func Test_Measurements_DeviceResolver_DirectID(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	// Test with direct ID (no resolution needed)
 	opts := measurements.ListOptions{
@@ -62,7 +62,7 @@ func Test_Measurements_DeviceResolver_DirectID(t *testing.T) {
 
 func Test_Measurements_DeviceResolver_StringBased(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	// Test using string-based resolver (like user might pass from CLI)
 	opts := measurements.ListOptions{
@@ -79,7 +79,7 @@ func Test_Measurements_DeviceResolver_StringBased(t *testing.T) {
 
 func Test_Measurements_DeviceResolver_ByQuery(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	// Test using query resolver
 	opts := measurements.ListOptions{

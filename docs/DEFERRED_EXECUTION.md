@@ -24,7 +24,7 @@ A common pattern in go-c8y-cli is prompting users before destructive operations:
 
 ```go
 // 1. Prepare the operation (resolves parameters, builds request)
-ctx := c8y_api.WithDeferredExecution(context.Background(), true)
+ctx := api.WithDeferredExecution(context.Background(), true)
 prepared := client.ManagedObjects.Delete(ctx, "device-name")
 
 // 2. Inspect the prepared request
@@ -59,10 +59,10 @@ fmt.Println("Device deleted successfully")
 
 ```go
 // Enable deferred execution
-ctx = c8y_api.WithDeferredExecution(ctx, true)
+ctx = api.WithDeferredExecution(ctx, true)
 
 // Check if deferred execution is enabled
-if c8y_api.IsDeferredExecution(ctx) {
+if api.IsDeferredExecution(ctx) {
     // ...
 }
 ```
@@ -85,7 +85,7 @@ Deferred execution still resolves parameters through the `source.Resolver` inter
 
 ```go
 // Device name will be resolved to ID during preparation
-ctx := c8y_api.WithDeferredExecution(context.Background(), true)
+ctx := api.WithDeferredExecution(context.Background(), true)
 prepared := client.ManagedObjects.Delete(ctx, "my-device-name")
 
 // The request URL contains the resolved ID
@@ -119,13 +119,13 @@ import (
     "os"
     "strings"
 
-    "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-    "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
+    "github.com/reubenmiller/go-c8y/pkg/c8y/api"
+    "github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
 )
 
-func deleteWithConfirmation(client *c8y_api.Client, deviceID string) error {
+func deleteWithConfirmation(client *api.Client, deviceID string) error {
     // Prepare the delete operation
-    ctx := c8y_api.WithDeferredExecution(context.Background(), true)
+    ctx := api.WithDeferredExecution(context.Background(), true)
     prepared := client.ManagedObjects.Delete(ctx, deviceID, managedobjects.DeleteOptions{})
 
     // Check if preparation succeeded

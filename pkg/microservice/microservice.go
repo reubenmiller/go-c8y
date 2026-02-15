@@ -11,12 +11,11 @@ import (
 	cron "gopkg.in/robfig/cron.v2"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/devices"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/realtime"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/devices"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/realtime"
 )
 
 // Options contains the additional microservice options
@@ -52,7 +51,7 @@ func NewDefaultMicroservice(opts Options) *Microservice {
 	}
 
 	// Create a Cumulocity client
-	client := c8y_api.NewClientFromEnvironment(c8y_api.ClientOptions{})
+	client := api.NewClientFromEnvironment(api.ClientOptions{})
 	client.UseTenantInUsername = true
 	ms.Client = client
 
@@ -92,7 +91,7 @@ func NewMicroservice(httpClient *http.Client, host string, skipRealtimeClient bo
 type Microservice struct {
 	Application         *jsonmodels.Microservice
 	Config              *Configuration
-	Client              *c8y_api.Client
+	Client              *api.Client
 	AgentID             string
 	MicroserviceHost    string
 	Scheduler           *Scheduler

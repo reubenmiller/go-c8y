@@ -1,4 +1,4 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
@@ -7,15 +7,15 @@ import (
 	"time"
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/usergroups"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/userroles"
-	userrolesgroups "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/userroles/usergroups"
-	userrolesusers "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/userroles/users"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/users"
-	usersgroups "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/users/groups"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/op"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/usergroups"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/userroles"
+	userrolesgroups "github.com/reubenmiller/go-c8y/pkg/c8y/api/userroles/usergroups"
+	userrolesusers "github.com/reubenmiller/go-c8y/pkg/c8y/api/userroles/users"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/users"
+	usersgroups "github.com/reubenmiller/go-c8y/pkg/c8y/api/users/groups"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

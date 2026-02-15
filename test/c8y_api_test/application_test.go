@@ -1,4 +1,4 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"

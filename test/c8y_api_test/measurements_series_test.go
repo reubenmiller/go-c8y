@@ -1,18 +1,18 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/measurements"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/measurements"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 )
 
 func Test_Measurements_ListSeries_WithResolver(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	opts := measurements.ListSeriesOptions{
 		Source:    client.Measurements.DeviceResolver.ByName("device01"),
@@ -42,7 +42,7 @@ func Test_Measurements_ListSeries_WithResolver(t *testing.T) {
 
 func Test_Measurements_ListSeries_ToTabular(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	opts := measurements.ListSeriesOptions{
 		Source:    "12345",

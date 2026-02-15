@@ -1,19 +1,19 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
 	"testing"
 	"time"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/measurements"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/measurements"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 )
 
 func Test_Measurements_Create_WithResolver_Metadata(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
-	deferredCtx := c8y_api.WithDeferredExecution(ctx, true)
+	ctx := api.WithMockResponses(context.Background(), true)
+	deferredCtx := api.WithDeferredExecution(ctx, true)
 
 	opts := measurements.CreateOptions{
 		Source: client.Measurements.DeviceResolver.ByName("device01"),
@@ -56,8 +56,8 @@ func Test_Measurements_Create_WithResolver_Metadata(t *testing.T) {
 
 func Test_Measurements_Create_WithStringResolver_Metadata(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
-	deferredCtx := c8y_api.WithDeferredExecution(ctx, true)
+	ctx := api.WithMockResponses(context.Background(), true)
+	deferredCtx := api.WithDeferredExecution(ctx, true)
 
 	opts := measurements.CreateOptions{
 		Source: "query:type eq 'c8y_Device'",
@@ -88,7 +88,7 @@ func Test_Measurements_Create_WithStringResolver_Metadata(t *testing.T) {
 
 func Test_Measurements_Create_WithMultipleFragments(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	type MultiMeasurement struct {
 		Temperature map[string]any `json:"c8y_Temperature"`

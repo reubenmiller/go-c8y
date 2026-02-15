@@ -1,14 +1,14 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/repository/software/softwareitems"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/repository/software/softwareitems"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 )
@@ -101,7 +101,7 @@ func Test_SoftwareResolver(t *testing.T) {
 
 	// Get By name with deferred execution
 	deferredGet := client.Repository.Software.Get(
-		c8y_api.WithDeferredExecution(context.Background(), true),
+		api.WithDeferredExecution(context.Background(), true),
 		softwareitems.NewRef().ByName(softwareName),
 		softwareitems.GetOptions{},
 	)
@@ -337,7 +337,7 @@ func Test_SoftwareDeferredExecution(t *testing.T) {
 
 	t.Run("Get deferred", func(t *testing.T) {
 		deferredResult := client.Repository.Software.Get(
-			c8y_api.WithDeferredExecution(context.Background(), true),
+			api.WithDeferredExecution(context.Background(), true),
 			softwareitems.NewRef().ByName(softwareName, softwareType),
 			softwareitems.GetOptions{},
 		)
@@ -354,7 +354,7 @@ func Test_SoftwareDeferredExecution(t *testing.T) {
 
 	t.Run("Update deferred", func(t *testing.T) {
 		deferredResult := client.Repository.Software.Update(
-			c8y_api.WithDeferredExecution(context.Background(), true),
+			api.WithDeferredExecution(context.Background(), true),
 			softwareitems.NewRef().ByName(softwareName),
 			model.Software{
 				Description: "Deferred update",
@@ -367,7 +367,7 @@ func Test_SoftwareDeferredExecution(t *testing.T) {
 
 	t.Run("Delete deferred", func(t *testing.T) {
 		deferredResult := client.Repository.Software.Delete(
-			c8y_api.WithDeferredExecution(context.Background(), true),
+			api.WithDeferredExecution(context.Background(), true),
 			softwareitems.NewRef().ByName(softwareName, softwareType),
 			softwareitems.DeleteOptions{},
 		)

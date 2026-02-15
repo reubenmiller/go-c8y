@@ -21,13 +21,13 @@ package main
 import (
     "context"
     "fmt"
-    "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-    "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/operations"
+    "github.com/reubenmiller/go-c8y/pkg/c8y/api"
+    "github.com/reubenmiller/go-c8y/pkg/c8y/api/operations"
 )
 
 func main() {
     // Create client
-    client := c8y_api.NewClient(baseURL, username, password)
+    client := api.NewClient(baseURL, username, password)
     ctx := context.Background()
     
     // List operations with smart device resolution

@@ -11,25 +11,25 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/authentication"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/op"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
 	"github.com/stretchr/testify/require"
 	"resty.dev/v3"
 )
 
-func CreateTestClient(t *testing.T) *c8y_api.Client {
+func CreateTestClient(t *testing.T) *api.Client {
 	t.Setenv("C8Y_TOKEN", "")
-	client := c8y_api.NewClientFromEnvironment(c8y_api.ClientOptions{})
+	client := api.NewClientFromEnvironment(api.ClientOptions{})
 	client.Client.SetRetryCount(1)
 	return client
 }
 
-func CreateTestClientNoAuth(t *testing.T) *c8y_api.Client {
+func CreateTestClientNoAuth(t *testing.T) *api.Client {
 	envvars := make([]string, 0)
 	envvars = append(envvars, authentication.EnvironmentToken...)
 	envvars = append(envvars, authentication.EnvironmentUsername...)
@@ -38,11 +38,11 @@ func CreateTestClientNoAuth(t *testing.T) *c8y_api.Client {
 		t.Setenv(name, "")
 	}
 
-	return c8y_api.NewClientFromEnvironment(c8y_api.ClientOptions{})
+	return api.NewClientFromEnvironment(api.ClientOptions{})
 }
 
-func CreateTestClientWithToken(t *testing.T) *c8y_api.Client {
-	return c8y_api.NewClientFromEnvironment(c8y_api.ClientOptions{})
+func CreateTestClientWithToken(t *testing.T) *api.Client {
+	return api.NewClientFromEnvironment(api.ClientOptions{})
 }
 
 func NewService() *core.Service {
@@ -51,7 +51,7 @@ func NewService() *core.Service {
 	}
 }
 
-func CreateManagedObject(t *testing.T, client *c8y_api.Client) op.Result[jsonmodels.ManagedObject] {
+func CreateManagedObject(t *testing.T, client *api.Client) op.Result[jsonmodels.ManagedObject] {
 	mo := client.ManagedObjects.Create(context.TODO(), map[string]any{
 		"name": "ci_" + testingutils.RandomString(16),
 	})
@@ -66,7 +66,7 @@ func CreateManagedObject(t *testing.T, client *c8y_api.Client) op.Result[jsonmod
 
 // CreateDevice creates a new test device in Cumulocity IoT and registers a cleanup function
 // to delete the device after the test completes.
-func CreateDevice(t *testing.T, client *c8y_api.Client) op.Result[jsonmodels.ManagedObject] {
+func CreateDevice(t *testing.T, client *api.Client) op.Result[jsonmodels.ManagedObject] {
 	mo := client.Devices.Create(context.TODO(), jsonmodels.NewDevice("ci_"+testingutils.RandomString(16)))
 	if !mo.IsError() {
 		t.Cleanup(func() {
@@ -81,7 +81,7 @@ func CreateDevice(t *testing.T, client *c8y_api.Client) op.Result[jsonmodels.Man
 
 // CreateDeviceAgent creates a new test agent in Cumulocity IoT and registers a cleanup function
 // to delete the agent after the test completes.
-func CreateDeviceAgent(t *testing.T, client *c8y_api.Client) op.Result[jsonmodels.ManagedObject] {
+func CreateDeviceAgent(t *testing.T, client *api.Client) op.Result[jsonmodels.ManagedObject] {
 	mo := client.ManagedObjects.Create(context.TODO(), map[string]any{
 		"name":                       "ci_" + testingutils.RandomString(16),
 		"com_cumulocity_model_Agent": map[string]any{},
@@ -97,7 +97,7 @@ func CreateDeviceAgent(t *testing.T, client *c8y_api.Client) op.Result[jsonmodel
 	return mo
 }
 
-func CreateEvent(t *testing.T, client *c8y_api.Client, mo *jsonmodels.ManagedObject) op.Result[jsonmodels.Event] {
+func CreateEvent(t *testing.T, client *api.Client, mo *jsonmodels.ManagedObject) op.Result[jsonmodels.Event] {
 	return client.Events.Create(context.TODO(), model.Event{
 		Source: model.NewSource(mo.ID()),
 		Type:   "ci_" + testingutils.RandomString(10),

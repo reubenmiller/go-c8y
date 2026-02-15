@@ -1,4 +1,4 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/ui/plugins/versions"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/ui/plugins/versions"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

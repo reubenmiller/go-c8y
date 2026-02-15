@@ -1,17 +1,17 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/events"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/events"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 )
 
 func Test_Events_DeviceResolver_ByName(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	opts := events.ListOptions{
 		Source: client.Events.DeviceResolver.ByName("device01"),
@@ -27,7 +27,7 @@ func Test_Events_DeviceResolver_ByName(t *testing.T) {
 
 func Test_Events_DeviceResolver_ByExternalID(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	opts := events.ListOptions{
 		Source: client.Events.DeviceResolver.ByExternalID("c8y_Serial", "ABC123"),
@@ -43,7 +43,7 @@ func Test_Events_DeviceResolver_ByExternalID(t *testing.T) {
 
 func Test_Events_DeviceResolver_StringBased(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	opts := events.ListOptions{
 		Source: "name:device01",
@@ -59,7 +59,7 @@ func Test_Events_DeviceResolver_StringBased(t *testing.T) {
 
 func Test_Events_DeviceResolver_ByQuery(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	opts := events.ListOptions{
 		Source: client.Events.DeviceResolver.ByQuery("type eq 'c8y_Device'"),

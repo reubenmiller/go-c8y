@@ -1,7 +1,7 @@
 package microservice
 
 import (
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
 )
 
 // AgentManagedObject is the agent representation of the microservice which is stored in Inventory

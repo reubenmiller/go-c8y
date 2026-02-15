@@ -1,4 +1,4 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
@@ -7,8 +7,8 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/microservices"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/microservices"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/tools/microservice_builder"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"

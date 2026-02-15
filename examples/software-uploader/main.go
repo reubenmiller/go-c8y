@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
 	"github.com/schollz/progressbar/v3"
 	"golang.org/x/term"
 )
@@ -88,9 +87,9 @@ func main() {
 	// Initialize Cumulocity client
 	ctx := context.Background()
 
-	var client *c8y_api.Client
+	var client *api.Client
 	if !*dryRun {
-		client = c8y_api.NewClientFromEnvironment(c8y_api.ClientOptions{})
+		client = api.NewClientFromEnvironment(api.ClientOptions{})
 
 		// Enable HTTP debug logging on the underlying resty client if debug mode is enabled
 		if *debug {

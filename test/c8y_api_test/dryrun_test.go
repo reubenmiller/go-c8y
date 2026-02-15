@@ -1,4 +1,4 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
@@ -6,11 +6,11 @@ import (
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alarms"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/events"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/operations"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alarms"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/events"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/operations"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 )
@@ -19,7 +19,7 @@ func Test_DryRun_ManagedObject_Get(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
 	// Enable dry run
-	ctx := c8y_api.WithDryRun(context.Background(), true)
+	ctx := api.WithDryRun(context.Background(), true)
 
 	// Get a managed object (will return mock response)
 	result := client.ManagedObjects.Get(ctx, "12345", managedobjects.GetOptions{})
@@ -41,7 +41,7 @@ func Test_DryRun_ManagedObject_List(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
 	// Enable dry run
-	ctx := c8y_api.WithDryRun(context.Background(), true)
+	ctx := api.WithDryRun(context.Background(), true)
 
 	// List managed objects (will return mock collection)
 	result := client.ManagedObjects.List(ctx, managedobjects.ListOptions{})
@@ -64,7 +64,7 @@ func Test_DryRun_ManagedObject_Create(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
 	// Enable dry run
-	ctx := c8y_api.WithDryRun(context.Background(), true)
+	ctx := api.WithDryRun(context.Background(), true)
 
 	// Create a managed object (will return mock response)
 	result := client.ManagedObjects.Create(ctx, map[string]any{
@@ -87,7 +87,7 @@ func Test_DryRun_ManagedObject_Delete(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
 	// Enable dry run
-	ctx := c8y_api.WithDryRun(context.Background(), true)
+	ctx := api.WithDryRun(context.Background(), true)
 
 	// Delete a managed object (will return mock response)
 	result := client.ManagedObjects.Delete(ctx, "12345", managedobjects.DeleteOptions{})
@@ -103,7 +103,7 @@ func Test_DryRun_Alarm_Get(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
 	// Enable dry run
-	ctx := c8y_api.WithDryRun(context.Background(), true)
+	ctx := api.WithDryRun(context.Background(), true)
 
 	// Get an alarm (will return mock response)
 	result := client.Alarms.Get(ctx, "54321")
@@ -121,7 +121,7 @@ func Test_DryRun_Alarm_List(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
 	// Enable dry run
-	ctx := c8y_api.WithDryRun(context.Background(), true)
+	ctx := api.WithDryRun(context.Background(), true)
 
 	// List alarms (will return mock collection)
 	result := client.Alarms.List(ctx, alarms.ListOptions{})
@@ -137,7 +137,7 @@ func Test_DryRun_Event_Get(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
 	// Enable dry run
-	ctx := c8y_api.WithDryRun(context.Background(), true)
+	ctx := api.WithDryRun(context.Background(), true)
 
 	// Get an event (will return mock response)
 	result := client.Events.Get(ctx, "98765")
@@ -154,7 +154,7 @@ func Test_DryRun_Event_List(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
 	// Enable dry run
-	ctx := c8y_api.WithDryRun(context.Background(), true)
+	ctx := api.WithDryRun(context.Background(), true)
 
 	// List events (will return mock collection)
 	result := client.Events.List(ctx, events.ListOptions{})
@@ -170,7 +170,7 @@ func Test_DryRun_Operation_Get(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
 	// Enable dry run
-	ctx := c8y_api.WithDryRun(context.Background(), true)
+	ctx := api.WithDryRun(context.Background(), true)
 
 	// Get an operation (will return mock response)
 	result := client.Operations.Get(ctx, "11111")
@@ -187,7 +187,7 @@ func Test_DryRun_Operation_List(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
 	// Enable dry run
-	ctx := c8y_api.WithDryRun(context.Background(), true)
+	ctx := api.WithDryRun(context.Background(), true)
 
 	// List operations (will return mock collection)
 	result := client.Operations.List(ctx, operations.ListOptions{})
@@ -207,7 +207,7 @@ func Test_DryRun_Disabled_RealRequest(t *testing.T) {
 	ctx := context.Background()
 
 	// Verify dry run is disabled
-	assert.False(t, c8y_api.IsDryRun(ctx))
+	assert.False(t, api.IsDryRun(ctx))
 
 	// This would make a real request (but will likely fail without proper setup)
 	// We just verify that dry run is not enabled
@@ -221,12 +221,12 @@ func Test_DryRun_Disabled_RealRequest(t *testing.T) {
 func Test_DryRun_ContextCheck(t *testing.T) {
 	// Test the helper functions
 	normalCtx := context.Background()
-	dryRunCtx := c8y_api.WithDryRun(context.Background(), true)
+	dryRunCtx := api.WithDryRun(context.Background(), true)
 
-	assert.False(t, c8y_api.IsDryRun(normalCtx))
-	assert.True(t, c8y_api.IsDryRun(dryRunCtx))
+	assert.False(t, api.IsDryRun(normalCtx))
+	assert.True(t, api.IsDryRun(dryRunCtx))
 
 	// Test disabling dry run
-	disabledCtx := c8y_api.WithDryRun(context.Background(), false)
-	assert.False(t, c8y_api.IsDryRun(disabledCtx))
+	disabledCtx := api.WithDryRun(context.Background(), false)
+	assert.False(t, api.IsDryRun(disabledCtx))
 }

@@ -1,4 +1,4 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
@@ -8,11 +8,11 @@ import (
 	"time"
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/events"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/events/eventbinaries"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/op"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/events"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/events/eventbinaries"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 )

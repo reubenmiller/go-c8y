@@ -1,4 +1,4 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
@@ -11,13 +11,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/measurements"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/operations"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/realtime"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/measurements"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/operations"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/realtime"
 )
 
-func OperationSenderFactory(client *c8y_api.Client, deviceID string, t *testing.T) func() {
+func OperationSenderFactory(client *api.Client, deviceID string, t *testing.T) func() {
 	return func() {
 		result := client.Operations.Create(
 			context.Background(),

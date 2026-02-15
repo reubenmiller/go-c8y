@@ -1,12 +1,12 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
 	"testing"
 
-	c8yapi "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/trustedcertificates"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/trustedcertificates/certificateauthority"
+	c8yapi "github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/trustedcertificates"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/trustedcertificates/certificateauthority"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

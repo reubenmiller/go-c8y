@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/microservices"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/microservices"
 )
 
 // ContextService api

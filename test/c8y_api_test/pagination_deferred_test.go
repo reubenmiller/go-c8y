@@ -1,19 +1,19 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 )
 
 func Test_Pagination_WithDeferredExecution(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithDeferredExecution(context.Background(), true)
-	ctx = c8y_api.WithMockResponses(ctx, true) // Use mocks to avoid real API calls
+	ctx := api.WithDeferredExecution(context.Background(), true)
+	ctx = api.WithMockResponses(ctx, true) // Use mocks to avoid real API calls
 
 	// Create iterator - this is lazy, no API calls yet
 	it := client.ManagedObjects.ListAll(ctx, managedobjects.ListOptions{
@@ -48,7 +48,7 @@ func Test_Pagination_WithDeferredExecution(t *testing.T) {
 
 func Test_Pagination_WithMockResponses_Metadata(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	// Create iterator - lazy, no API calls yet
 	it := client.ManagedObjects.ListAll(ctx, managedobjects.ListOptions{
@@ -105,8 +105,8 @@ func Test_Pagination_WithMockResponses_Metadata(t *testing.T) {
 
 func Test_Pagination_Preview_WithDeferredExecution(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithDeferredExecution(context.Background(), true)
-	ctx = c8y_api.WithMockResponses(ctx, true)
+	ctx := api.WithDeferredExecution(context.Background(), true)
+	ctx = api.WithMockResponses(ctx, true)
 
 	// Create iterator
 	it := client.ManagedObjects.ListAll(ctx, managedobjects.ListOptions{
@@ -132,8 +132,8 @@ func Test_Pagination_Preview_WithDeferredExecution(t *testing.T) {
 
 func Test_Pagination_WithDryRun(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithDryRun(context.Background(), true)
-	ctx = c8y_api.WithMockResponses(ctx, true)
+	ctx := api.WithDryRun(context.Background(), true)
+	ctx = api.WithMockResponses(ctx, true)
 
 	// Dry run with mock responses (legacy behavior)
 	it := client.ManagedObjects.ListAll(ctx, managedobjects.ListOptions{
@@ -161,7 +161,7 @@ func Test_Pagination_WithDryRun(t *testing.T) {
 func Test_Pagination_WithMockResponsesOnly(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	// Only mock responses, no dry run logging
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	// Use mock responses without logging
 	it := client.ManagedObjects.ListAll(ctx, managedobjects.ListOptions{
@@ -206,7 +206,7 @@ func Test_ContextOptions_Combinations(t *testing.T) {
 		{
 			name: "DryRun only - logs + mock (backward compat)",
 			setupCtx: func(ctx context.Context) context.Context {
-				return c8y_api.WithDryRun(ctx, true)
+				return api.WithDryRun(ctx, true)
 			},
 			expectedCount:  2, // Mock data
 			expectsLogging: true,
@@ -214,7 +214,7 @@ func Test_ContextOptions_Combinations(t *testing.T) {
 		{
 			name: "MockResponses only - mock without logging",
 			setupCtx: func(ctx context.Context) context.Context {
-				return c8y_api.WithMockResponses(ctx, true)
+				return api.WithMockResponses(ctx, true)
 			},
 			expectedCount:  2, // Mock data
 			expectsLogging: false,
@@ -222,8 +222,8 @@ func Test_ContextOptions_Combinations(t *testing.T) {
 		{
 			name: "Both flags - logs + mock",
 			setupCtx: func(ctx context.Context) context.Context {
-				ctx = c8y_api.WithDryRun(ctx, true)
-				return c8y_api.WithMockResponses(ctx, true)
+				ctx = api.WithDryRun(ctx, true)
+				return api.WithMockResponses(ctx, true)
 			},
 			expectedCount:  2, // Mock data
 			expectsLogging: true,
@@ -231,7 +231,7 @@ func Test_ContextOptions_Combinations(t *testing.T) {
 		{
 			name: "Deferred execution - no execution at all",
 			setupCtx: func(ctx context.Context) context.Context {
-				return c8y_api.WithDeferredExecution(ctx, true)
+				return api.WithDeferredExecution(ctx, true)
 			},
 			expectedCount:  0, // Nothing executed
 			expectsLogging: false,

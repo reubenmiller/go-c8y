@@ -1,19 +1,19 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
 	"testing"
 	"time"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/events"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/events"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 )
 
 func Test_Events_Create_WithResolver_Metadata(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
-	deferredCtx := c8y_api.WithDeferredExecution(ctx, true)
+	ctx := api.WithMockResponses(context.Background(), true)
+	deferredCtx := api.WithDeferredExecution(ctx, true)
 
 	opts := events.CreateOptions{
 		Source: client.Events.DeviceResolver.ByName("device01"),
@@ -52,8 +52,8 @@ func Test_Events_Create_WithResolver_Metadata(t *testing.T) {
 
 func Test_Events_Create_WithStringResolver_Metadata(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
-	deferredCtx := c8y_api.WithDeferredExecution(ctx, true)
+	ctx := api.WithMockResponses(context.Background(), true)
+	deferredCtx := api.WithDeferredExecution(ctx, true)
 
 	opts := events.CreateOptions{
 		Source: "name:device01",
@@ -80,7 +80,7 @@ func Test_Events_Create_WithStringResolver_Metadata(t *testing.T) {
 
 func Test_Events_Create_WithAdditionalProperties(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	type CustomEvent struct {
 		Position map[string]interface{} `json:"c8y_Position"`

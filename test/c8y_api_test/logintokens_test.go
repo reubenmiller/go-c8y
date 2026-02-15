@@ -1,13 +1,13 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/authentication"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/tenants/logintokens"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/tenants/logintokens"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 )
@@ -39,6 +39,6 @@ func Test_LoginTokensCreate_PermissionDenied(t *testing.T) {
 		GrantType: "PASSWORD",
 	})
 	assert.Error(t, tok.Err)
-	assert.True(t, c8y_api.ErrHasStatus(tok.Err, 401))
+	assert.True(t, api.ErrHasStatus(tok.Err, 401))
 	assert.Equal(t, 0, tok.Data.Length())
 }

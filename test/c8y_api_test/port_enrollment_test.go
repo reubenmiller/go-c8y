@@ -1,4 +1,4 @@
-package c8y_api_test
+package api_test
 
 import (
 	"bytes"
@@ -8,15 +8,15 @@ import (
 	"time"
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/authentication"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/devices/enrollment"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/identity"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/trustedcertificates/certificateauthority"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/users"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/devices/enrollment"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/identity"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/trustedcertificates/certificateauthority"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/users"
 	"github.com/reubenmiller/go-c8y/pkg/certutil"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
@@ -140,7 +140,7 @@ func Test_Enrollment_Register(t *testing.T) {
 
 	// Create client which uses the device certificate
 	// It should automatically request a token to use for API calls
-	deviceClient := c8y_api.NewClient(c8y_api.ClientOptions{
+	deviceClient := api.NewClient(api.ClientOptions{
 		BaseURL: client.Client.BaseURL(),
 		Auth: authentication.AuthOptions{
 			CertificateKey: string(keyPem),
@@ -170,7 +170,7 @@ func Test_Enrollment_Register(t *testing.T) {
 	assert.Greater(t, len(secondCertPEM), 0, "certificate should not be empty")
 
 	// Open another client using the newly issued certificate
-	deviceClient2 := c8y_api.NewClient(c8y_api.ClientOptions{
+	deviceClient2 := api.NewClient(api.ClientOptions{
 		BaseURL: client.Client.BaseURL(),
 		Auth: authentication.AuthOptions{
 			CertificateKey: string(keyPem),

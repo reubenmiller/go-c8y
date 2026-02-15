@@ -1,13 +1,13 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/applications"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/op"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/applications"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

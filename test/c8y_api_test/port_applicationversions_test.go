@@ -1,4 +1,4 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
@@ -6,10 +6,10 @@ import (
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
-	appversions "github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/applications/versions"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/ui/plugins"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/op"
+	appversions "github.com/reubenmiller/go-c8y/pkg/c8y/api/applications/versions"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/ui/plugins"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,7 +18,7 @@ import (
 var uiExamplePluginURL = "https://github.com/SoftwareAG/cumulocity-remote-access-cloud-http-proxy/releases/download/v2.5.0/cloud-http-proxy-ui.zip"
 
 // createTestPlugin creates a test UI plugin with a version for testing
-func createTestPlugin(t *testing.T, client *c8y_api.Client, version string, tags []string) string {
+func createTestPlugin(t *testing.T, client *api.Client, version string, tags []string) string {
 	ctx := context.Background()
 	appName := testingutils.RandomString(12)
 

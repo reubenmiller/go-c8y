@@ -31,7 +31,7 @@ Client
 The `Client` is the entry point to the SDK, providing access to all service operations:
 
 ```go
-client := c8y_api.NewClient(baseURL, username, password)
+client := api.NewClient(baseURL, username, password)
 
 // Service access
 result := client.Operations.List(ctx, operations.ListOptions{
@@ -203,7 +203,7 @@ Execute operations without sending HTTP requests, useful for testing and debuggi
 
 ```go
 // Enable dry run
-ctx := c8y_api.WithDryRun(context.Background(), true)
+ctx := api.WithDryRun(context.Background(), true)
 
 // Operation is prepared but not executed
 result := client.Operations.Delete(ctx, "12345")
@@ -224,7 +224,7 @@ Prepare operations (including parameter resolution) without sending, then execut
 
 ```go
 // Prepare operation with full parameter resolution
-ctx := c8y_api.WithDeferredExecution(context.Background(), true)
+ctx := api.WithDeferredExecution(context.Background(), true)
 prepared := client.ManagedObjects.Delete(ctx, "name:my-device")
 
 // Inspect the prepared request (device name already resolved to ID)
@@ -248,7 +248,7 @@ Control whether sensitive headers are visible in logs (for debugging):
 
 ```go
 // Disable header redaction for debugging (⚠️ use carefully)
-ctx := c8y_api.WithRedactHeaders(context.Background(), false)
+ctx := api.WithRedactHeaders(context.Background(), false)
 
 // Now Authorization headers will be visible in logs
 result := client.ManagedObjects.Get(ctx, "12345", managedobjects.GetOptions{})
@@ -518,7 +518,7 @@ var (
 )
 
 // Check error status
-if c8y_api.ErrHasStatus(result.Err, 404) {
+if api.ErrHasStatus(result.Err, 404) {
     // Handle not found
 }
 ```
@@ -549,10 +549,10 @@ The v2 client supports multiple authentication methods:
 
 ```go
 // Basic authentication
-client := c8y_api.NewClient(baseURL, username, password)
+client := api.NewClient(baseURL, username, password)
 
 // Bearer token
-client := c8y_api.NewClientFromToken(baseURL, token)
+client := api.NewClientFromToken(baseURL, token)
 
 // OAuth2 / PKCE (for SSO)
 // TODO: Document OAuth2 setup
@@ -617,7 +617,7 @@ client.Auth = authentication.AuthOptions{
 ```go
 func TestOperationCreation(t *testing.T) {
     client := setupTestClient()
-    ctx := c8y_api.WithDryRun(context.Background(), true)
+    ctx := api.WithDryRun(context.Background(), true)
     
     result := client.Operations.Create(ctx, operations.CreateOptions{
         DeviceID:    "test-device",

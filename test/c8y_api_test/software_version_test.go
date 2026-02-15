@@ -1,13 +1,13 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/repository/software/softwareitems"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/repository/software/softwareversions"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/repository/software/softwareitems"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/repository/software/softwareversions"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -52,7 +52,7 @@ func Test_SoftwareVersion(t *testing.T) {
 
 	// Get by version name (lookup)
 	getByVersionDeferred := client.Repository.Software.Versions.Get(
-		c8y_api.WithDeferredExecution(context.Background(), true),
+		api.WithDeferredExecution(context.Background(), true),
 		softwareversions.NewRef().ByVersionAndName(version, softwareName),
 		softwareversions.GetOptions{
 			WithParents: true,
@@ -361,7 +361,7 @@ func Test_SoftwareVersionDeferredExecution(t *testing.T) {
 
 	t.Run("Get deferred by version and name", func(t *testing.T) {
 		deferredResult := client.Repository.Software.Versions.Get(
-			c8y_api.WithDeferredExecution(context.Background(), true),
+			api.WithDeferredExecution(context.Background(), true),
 			softwareversions.NewRef().ByVersionAndName(version, softwareName, softwareType),
 			softwareversions.GetOptions{},
 		)
@@ -387,7 +387,7 @@ func Test_SoftwareVersionDeferredExecution(t *testing.T) {
 		softwareID := softwareResult.Data.ID()
 
 		deferredResult := client.Repository.Software.Versions.Get(
-			c8y_api.WithDeferredExecution(context.Background(), true),
+			api.WithDeferredExecution(context.Background(), true),
 			softwareversions.NewRef().ByVersion(version, softwareID),
 			softwareversions.GetOptions{},
 		)
@@ -399,7 +399,7 @@ func Test_SoftwareVersionDeferredExecution(t *testing.T) {
 
 	t.Run("Update deferred", func(t *testing.T) {
 		deferredResult := client.Repository.Software.Versions.Update(
-			c8y_api.WithDeferredExecution(context.Background(), true),
+			api.WithDeferredExecution(context.Background(), true),
 			softwareversions.NewRef().ByVersionAndName(version, softwareName),
 			map[string]any{"description": "Deferred update"},
 		)
@@ -410,7 +410,7 @@ func Test_SoftwareVersionDeferredExecution(t *testing.T) {
 
 	t.Run("Delete deferred", func(t *testing.T) {
 		deferredResult := client.Repository.Software.Versions.Delete(
-			c8y_api.WithDeferredExecution(context.Background(), true),
+			api.WithDeferredExecution(context.Background(), true),
 			softwareversions.NewRef().ByVersionAndName(version, softwareName, softwareType),
 			softwareversions.DeleteOptions{},
 		)

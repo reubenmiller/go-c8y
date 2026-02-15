@@ -1,13 +1,13 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
 	"testing"
 	"time"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alarms"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alarms"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 )
@@ -24,7 +24,7 @@ func Test_AlarmCreateWithOptions_Simple(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	client.Client.SetDebug(true)
 
-	ctx := c8y_api.WithMockResponses(context.Background(), true)
+	ctx := api.WithMockResponses(context.Background(), true)
 
 	// Simple alarm creation with just required fields
 	result := client.Alarms.Create(
@@ -47,7 +47,7 @@ func Test_AlarmCreateWithOptions_WithResolver(t *testing.T) {
 	mo := testcore.CreateManagedObject(t, client)
 	assert.NoError(t, mo.Err)
 
-	deferredCtx := c8y_api.WithDeferredExecution(context.Background(), true)
+	deferredCtx := api.WithDeferredExecution(context.Background(), true)
 	// Using string-based resolver
 	req := client.Alarms.Create(
 		deferredCtx,
@@ -94,7 +94,7 @@ func Test_AlarmCreateWithOptions_WithCustomStruct(t *testing.T) {
 		C8yCustom    map[string]interface{} `json:"c8y_CustomFragment"`
 	}
 
-	ctx := c8y_api.WithMockResponses(context.Background(), false)
+	ctx := api.WithMockResponses(context.Background(), false)
 
 	now := time.Now()
 	result := client.Alarms.Create(
@@ -128,7 +128,7 @@ func Test_AlarmCreateWithOptions_WithInlineMap(t *testing.T) {
 	mo := testcore.CreateManagedObject(t, client)
 	assert.NoError(t, mo.Err)
 
-	ctx := c8y_api.WithMockResponses(context.Background(), false)
+	ctx := api.WithMockResponses(context.Background(), false)
 
 	// Using inline map for additional properties
 	result := client.Alarms.Create(

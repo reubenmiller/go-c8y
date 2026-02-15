@@ -1,4 +1,4 @@
-package c8y_api_test
+package api_test
 
 import (
 	"bytes"
@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/binaries"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/binaries"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 )
@@ -36,10 +36,10 @@ func Test_CreateBinary(t *testing.T) {
 	resp := client.Binaries.Get(context.Background(), "0")
 	assert.Error(t, resp.Err)
 
-	sdkError := resp.Err.(*c8y_api.Error)
+	sdkError := resp.Err.(*api.Error)
 	assert.Equal(t, sdkError.Code, 404)
 
-	assert.ErrorAs(t, c8y_api.ErrAPINotFound, resp.Err)
+	assert.ErrorAs(t, api.ErrAPINotFound, resp.Err)
 
 	// Get but don't read the response
 	binaryFile := client.Binaries.Get(context.Background(), binary.Data.ID())

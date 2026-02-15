@@ -1,13 +1,13 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsondoc"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/users"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/jsondoc"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/users"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 )

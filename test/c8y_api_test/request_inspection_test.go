@@ -1,4 +1,4 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,7 +17,7 @@ func Test_RequestInspection_DryRun(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
 	// Enable dry run to get mock response
-	ctx := c8y_api.WithDryRun(context.Background(), true)
+	ctx := api.WithDryRun(context.Background(), true)
 
 	// Make a request
 	result := client.ManagedObjects.Get(ctx, "12345", managedobjects.GetOptions{})
@@ -41,7 +41,7 @@ func Test_RequestInspection_DryRun_POST(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
 	// Enable dry run
-	ctx := c8y_api.WithDryRun(context.Background(), true)
+	ctx := api.WithDryRun(context.Background(), true)
 
 	// Create a managed object
 	result := client.ManagedObjects.Create(ctx, map[string]any{
@@ -71,7 +71,7 @@ func Test_RequestInspection_DryRun_FormattingExample(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
 	// Enable dry run
-	ctx := c8y_api.WithDryRun(context.Background(), true)
+	ctx := api.WithDryRun(context.Background(), true)
 
 	// Make a request
 	result := client.ManagedObjects.Get(ctx, "12345", managedobjects.GetOptions{})
@@ -115,7 +115,7 @@ func Test_RequestInspection_SensitiveHeadersRedacted(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
 	// Enable dry run
-	ctx := c8y_api.WithDryRun(context.Background(), true)
+	ctx := api.WithDryRun(context.Background(), true)
 
 	// Make a request - authorization headers will be added by the client
 	result := client.ManagedObjects.Get(ctx, "12345", managedobjects.GetOptions{})
@@ -139,8 +139,8 @@ func Test_RequestInspection_RedactionOptOut(t *testing.T) {
 
 	// Enable dry run AND disable header redaction (for debugging)
 	ctx := context.Background()
-	ctx = c8y_api.WithDryRun(ctx, true)
-	ctx = c8y_api.WithRedactHeaders(ctx, false)
+	ctx = api.WithDryRun(ctx, true)
+	ctx = api.WithRedactHeaders(ctx, false)
 
 	// Make a request
 	result := client.ManagedObjects.Get(ctx, "12345", managedobjects.GetOptions{})
@@ -152,8 +152,8 @@ func Test_RequestInspection_RedactionOptOut(t *testing.T) {
 	require.NotNil(t, result.Request)
 
 	// Verify context values are set correctly
-	assert.True(t, c8y_api.IsDryRun(ctx), "Dry run should be enabled")
-	assert.False(t, c8y_api.ShouldRedactHeaders(ctx), "Header redaction should be disabled")
+	assert.True(t, api.IsDryRun(ctx), "Dry run should be enabled")
+	assert.False(t, api.ShouldRedactHeaders(ctx), "Header redaction should be disabled")
 
 	// The actual headers would be visible in logs (not redacted)
 	// but we can't directly test log output here

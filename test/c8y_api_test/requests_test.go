@@ -1,13 +1,13 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
 	"errors"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 )
@@ -31,10 +31,10 @@ func Test_ErrorHandlingCreateEvent(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, 0, evt.Data.Length())
 
-	assert.True(t, c8y_api.ErrHasStatus(err, 422))
-	assert.True(t, errors.Is(err, c8y_api.Error{Code: 422}))
-	assert.True(t, errors.Is(err, c8y_api.ErrUnprocessableEntity))
-	sdkError := err.(*c8y_api.Error)
+	assert.True(t, api.ErrHasStatus(err, 422))
+	assert.True(t, errors.Is(err, api.Error{Code: 422}))
+	assert.True(t, errors.Is(err, api.ErrUnprocessableEntity))
+	sdkError := err.(*api.Error)
 	assert.NotEmpty(t, sdkError.MessageRaw)
 
 }
@@ -94,7 +94,7 @@ func Test_SimpleDefaultRequest(t *testing.T) {
 // 	out := make(map[string]any)
 // 	err = json.Unmarshal([]byte(resp.String()), &out)
 
-// 	// err = c8y_api.UnmarshalJSON(resp, &out)
+// 	// err = api.UnmarshalJSON(resp, &out)
 // 	assert.NoError(t, err)
 // 	assert.Contains(t, out, "id")
 // 	assert.Equal(t, out["name"].(string), "custom")

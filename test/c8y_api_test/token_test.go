@@ -1,13 +1,13 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/authentication"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/devices"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/devices"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 )
@@ -31,7 +31,7 @@ func Test_DeviceCertificates(t *testing.T) {
 
 	result := client.Devices.List(context.Background(), devices.ListOptions{})
 	assert.Error(t, result.Err)
-	assert.ErrorIs(t, result.Err, c8y_api.ErrUnauthorized)
+	assert.ErrorIs(t, result.Err, api.ErrUnauthorized)
 
 	_, err := client.Login(context.Background())
 	assert.NoError(t, err)

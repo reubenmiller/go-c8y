@@ -10,13 +10,13 @@ import (
 	"github.com/araddon/dateparse"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/jsonmodels"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/alternative/op"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/model"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/operations"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/pagination"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/jsonmodels"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alternative/op"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/operations"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
 )
 
 // GetAgent returns the agent representation of the microservice

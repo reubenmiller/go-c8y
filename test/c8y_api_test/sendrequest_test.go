@@ -1,4 +1,4 @@
-package c8y_api_test
+package api_test
 
 import (
 	"context"
@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/inventory/managedobjects"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/c8y_api/types"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -50,7 +50,7 @@ func (r *completingReader) Close() error {
 func TestSendRequest_SimpleGET(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
-	result := client.SendRequest(context.TODO(), c8y_api.RequestOptions{
+	result := client.SendRequest(context.TODO(), api.RequestOptions{
 		Method: "GET",
 		Path:   "/inventory/managedObjects",
 	})
@@ -64,7 +64,7 @@ func TestSendRequest_SimpleGET(t *testing.T) {
 func TestSendRequest_QueryString(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
-	result := client.SendRequest(context.TODO(), c8y_api.RequestOptions{
+	result := client.SendRequest(context.TODO(), api.RequestOptions{
 		Method: "GET",
 		Path:   "/inventory/managedObjects",
 		Query:  "pageSize=5&type=c8y_Device",
@@ -89,7 +89,7 @@ func TestSendRequest_QueryStruct(t *testing.T) {
 		Type     string `url:"type"`
 	}
 
-	result := client.SendRequest(context.TODO(), c8y_api.RequestOptions{
+	result := client.SendRequest(context.TODO(), api.RequestOptions{
 		Method: "GET",
 		Path:   "/inventory/managedObjects",
 		Query: ListOptions{
@@ -112,7 +112,7 @@ func TestSendRequest_QueryURLValues(t *testing.T) {
 	query.Add("pageSize", "10")
 	query.Add("type", "c8y_Device")
 
-	result := client.SendRequest(context.TODO(), c8y_api.RequestOptions{
+	result := client.SendRequest(context.TODO(), api.RequestOptions{
 		Method: "GET",
 		Path:   "/inventory/managedObjects",
 		Query:  query,
@@ -129,7 +129,7 @@ func TestSendRequest_InlineQueryParams(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
 	// Query params in path should be parsed and added
-	result := client.SendRequest(context.TODO(), c8y_api.RequestOptions{
+	result := client.SendRequest(context.TODO(), api.RequestOptions{
 		Method: "GET",
 		Path:   "/inventory/managedObjects?pageSize=10",
 		Query:  "type=c8y_Device", // Additional query
@@ -150,7 +150,7 @@ func TestSendRequest_POST(t *testing.T) {
 		client.ManagedObjects.Delete(context.Background(), mo.Data.ID(), managedobjects.DeleteOptions{})
 	})
 
-	result := client.SendRequest(context.TODO(), c8y_api.RequestOptions{
+	result := client.SendRequest(context.TODO(), api.RequestOptions{
 		Method: "POST",
 		Path:   "/event/events",
 		Body: map[string]any{
@@ -174,7 +174,7 @@ func TestSendRequest_POST(t *testing.T) {
 func TestSendRequest_CustomHeaders(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
-	result := client.SendRequest(context.TODO(), c8y_api.RequestOptions{
+	result := client.SendRequest(context.TODO(), api.RequestOptions{
 		Method: "GET",
 		Path:   "/inventory/managedObjects",
 		Headers: map[string]string{
@@ -195,7 +195,7 @@ func TestSendRequest_ProcessingMode(t *testing.T) {
 		client.ManagedObjects.Delete(context.Background(), mo.Data.ID(), managedobjects.DeleteOptions{})
 	})
 
-	result := client.SendRequest(context.TODO(), c8y_api.RequestOptions{
+	result := client.SendRequest(context.TODO(), api.RequestOptions{
 		Method:         "POST",
 		Path:           "/event/events",
 		ProcessingMode: types.ProcessingModeQuiescent,
@@ -215,7 +215,7 @@ func TestSendRequest_ProcessingMode(t *testing.T) {
 func TestSendRequest_IgnoreAccept(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
-	result := client.SendRequest(context.TODO(), c8y_api.RequestOptions{
+	result := client.SendRequest(context.TODO(), api.RequestOptions{
 		Method:       "GET",
 		Path:         "/inventory/managedObjects",
 		IgnoreAccept: true,
@@ -229,7 +229,7 @@ func TestSendRequest_IgnoreAccept(t *testing.T) {
 func TestSendRequest_CustomAccept(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
-	result := client.SendRequest(context.TODO(), c8y_api.RequestOptions{
+	result := client.SendRequest(context.TODO(), api.RequestOptions{
 		Method: "GET",
 		Path:   "/inventory/managedObjects",
 		Accept: "application/vnd.com.nsn.cumulocity.managedObjectCollection+json",
@@ -245,7 +245,7 @@ func TestRequestResult_JSON(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	// client.Client.SetDebug(true)
 
-	result := client.SendRequest(context.TODO(), c8y_api.RequestOptions{
+	result := client.SendRequest(context.TODO(), api.RequestOptions{
 		Method: "GET",
 		Path:   "/inventory/managedObjects",
 		Query:  "pageSize=1",
@@ -268,7 +268,7 @@ func TestRequestResult_JSON(t *testing.T) {
 func TestRequestResult_Unmarshal(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
-	result := client.SendRequest(context.TODO(), c8y_api.RequestOptions{
+	result := client.SendRequest(context.TODO(), api.RequestOptions{
 		Method: "GET",
 		Path:   "/tenant/currentTenant",
 	})
@@ -284,7 +284,7 @@ func TestRequestResult_Unmarshal(t *testing.T) {
 func TestRequestResult_String(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
-	result := client.SendRequest(context.TODO(), c8y_api.RequestOptions{
+	result := client.SendRequest(context.TODO(), api.RequestOptions{
 		Method: "GET",
 		Path:   "/inventory/managedObjects",
 		Query:  "pageSize=1",
@@ -300,7 +300,7 @@ func TestRequestResult_String(t *testing.T) {
 func TestSendRequest_InvalidPath(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
-	result := client.SendRequest(context.TODO(), c8y_api.RequestOptions{
+	result := client.SendRequest(context.TODO(), api.RequestOptions{
 		Method: "GET",
 		Path:   "://invalid-url",
 	})
@@ -317,7 +317,7 @@ func TestSendRequest_FormData(t *testing.T) {
 	fileContent := "test file content"
 	reader := strings.NewReader(fileContent)
 
-	result := client.SendRequest(context.TODO(), c8y_api.RequestOptions{
+	result := client.SendRequest(context.TODO(), api.RequestOptions{
 		Method: "POST",
 		Path:   "/inventory/binaries",
 		FormData: map[string]io.Reader{
@@ -346,7 +346,7 @@ func TestSendRequest_DryRun(t *testing.T) {
 
 	// Enable dry run using the RequestOptions.DryRun field (v1 compatibility)
 	dryRun := true
-	result := client.SendRequest(context.TODO(), c8y_api.RequestOptions{
+	result := client.SendRequest(context.TODO(), api.RequestOptions{
 		Method: "GET",
 		Path:   "/inventory/managedObjects/12345",
 		DryRun: &dryRun,
@@ -383,7 +383,7 @@ func TestSendRequest_PathAndQueryEncoding(t *testing.T) {
 
 	// Test that query parameters from path and Query field are properly merged
 	// and that special characters are handled correctly
-	result := client.SendRequest(context.TODO(), c8y_api.RequestOptions{
+	result := client.SendRequest(context.TODO(), api.RequestOptions{
 		Method: "GET",
 		Path:   "/inventory/managedObjects?pageSize=5",
 		Query:  "type=c8y_Device&withChildren=false",
@@ -408,7 +408,7 @@ func TestSendRequest_PathAndQueryEncoding(t *testing.T) {
 func Test_ParseRequestWithSpaces(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	dryRun := true
-	result := client.SendRequest(context.TODO(), c8y_api.RequestOptions{
+	result := client.SendRequest(context.TODO(), api.RequestOptions{
 		Host:   "https://c8y.example/base/",
 		Method: "GET",
 		Path:   "/path/with space?query=test eq%20'me'",
@@ -433,7 +433,7 @@ func TestSendRequest_MultipleBodyReads(t *testing.T) {
 
 	// Use dry run to avoid authentication issues
 	dryRun := true
-	result := client.SendRequest(context.TODO(), c8y_api.RequestOptions{
+	result := client.SendRequest(context.TODO(), api.RequestOptions{
 		Method: "GET",
 		Path:   "/inventory/managedObjects/12345",
 		DryRun: &dryRun,
@@ -494,7 +494,7 @@ func TestSendRequest_CustomBodyWrapper_Simple(t *testing.T) {
 	var wrapperCalled bool
 
 	dryRun := false // Test with real response
-	options := c8y_api.RequestOptions{
+	options := api.RequestOptions{
 		Method: "GET",
 		Path:   "/inventory/managedObjects",
 		Accept: types.MimeTypeApplicationJSON,
@@ -573,7 +573,7 @@ func TestSendRequest_CustomBodyWriter(t *testing.T) {
 	var wrapperCalled bool
 
 	dryRun := false // Test with real response to ensure it works in production
-	options := c8y_api.RequestOptions{
+	options := api.RequestOptions{
 		Method: "GET",
 		Path:   "/inventory/managedObjects",
 		Accept: types.MimeTypeApplicationJSON,
