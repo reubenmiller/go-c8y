@@ -31,7 +31,7 @@ func NewCachedClient(httpClient *http.Client, cacheDir string, cacheTTL time.Dur
 		isCacheable = isCacheableRequest
 	}
 	return &http.Client{
-		Transport: CacheResponse(cacheTTL, cacheDir, isCacheable, opts)(httpClient.Transport),
+		Transport: NewCachedTransport(httpClient.Transport, cacheTTL, cacheDir, isCacheable, opts),
 	}
 }
 
@@ -50,9 +50,6 @@ func isCacheableRequest(req *http.Request) bool {
 func isCacheableResponse(res *http.Response) bool {
 	return res.StatusCode < 300
 }
-
-// ClientOption represents an argument to NewClient
-type ClientOption = func(http.RoundTripper) http.RoundTripper
 
 // NewCachedTransport creates an http.RoundTripper that caches HTTP responses to disk.
 // This is a convenience function for using with clients like Resty that need a direct RoundTripper.
@@ -102,10 +99,6 @@ type ClientOption = func(http.RoundTripper) http.RoundTripper
 //	cached := c8y.NewCachedTransport(logged, 5*time.Minute, cacheDir, nil, c8y.CacheOptions{})
 //	client.SetTransport(cached)
 //
-// Or using ClientOption pattern:
-//
-//	transport := CacheResponse(...)(LoggingTransport(...)(http.DefaultTransport))
-//
 // If baseTransport is nil, http.DefaultTransport is used.
 func NewCachedTransport(baseTransport http.RoundTripper, ttl time.Duration, dir string, isCacheable Cacheable, options CacheOptions) http.RoundTripper {
 	if baseTransport == nil {
@@ -114,42 +107,15 @@ func NewCachedTransport(baseTransport http.RoundTripper, ttl time.Duration, dir 
 	if isCacheable == nil {
 		isCacheable = isCacheableRequest
 	}
-	return CacheResponse(ttl, dir, isCacheable, options)(baseTransport)
-}
-
-// NewCachedTransportWithTLS creates a cached transport with custom TLS configuration.
-// This is a convenience function that creates a properly configured http.Transport with your TLS settings,
-// then wraps it with caching.
-//
-// Example:
-//
-//	tlsConfig := &tls.Config{InsecureSkipVerify: true}
-//	transport := c8y.NewCachedTransportWithTLS(tlsConfig, 5*time.Minute, cacheDir, nil, c8y.CacheOptions{})
-//	client.SetTransport(transport)
-func NewCachedTransportWithTLS(tlsConfig *tls.Config, ttl time.Duration, dir string, isCacheable Cacheable, options CacheOptions) http.RoundTripper {
-	// Clone the default transport and set TLS config
-	baseTransport := http.DefaultTransport.(*http.Transport).Clone()
-	baseTransport.TLSClientConfig = tlsConfig
-
-	if isCacheable == nil {
-		isCacheable = isCacheableRequest
-	}
-	return CacheResponse(ttl, dir, isCacheable, options)(baseTransport)
-}
-
-// CacheResponse produces a RoundTripper that caches HTTP responses to disk for a specified amount of time
-func CacheResponse(ttl time.Duration, dir string, isCacheable Cacheable, options CacheOptions) ClientOption {
-	return func(tr http.RoundTripper) http.RoundTripper {
-		return &CachedRoundTripper{
-			base: tr,
-			storage: fileStorage{
-				dir: dir,
-				ttl: ttl,
-				mu:  &sync.RWMutex{},
-			},
-			isCacheable: isCacheable,
-			options:     options,
-		}
+	return &CachedRoundTripper{
+		base: baseTransport,
+		storage: fileStorage{
+			dir: dir,
+			ttl: ttl,
+			mu:  &sync.RWMutex{},
+		},
+		isCacheable: isCacheable,
+		options:     options,
 	}
 }
 
