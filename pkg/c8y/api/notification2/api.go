@@ -13,6 +13,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/jsondoc"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/notification2"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
@@ -352,4 +353,39 @@ func (s *Service) NormalizedConsumer(v string) string {
 		}
 	}
 	return string(result)
+}
+
+type MessageStream = notification2.Stream[notification2.StreamData[jsondoc.JSONDoc]]
+
+func (s *Service) SubscribeStream(ctx context.Context, opt ClientOptions) op.Result[*MessageStream] {
+	client, err := s.CreateClient(ctx, opt)
+	if err != nil {
+		return op.Failed[*MessageStream](err, false)
+	}
+
+	if err := client.Connect(); err != nil {
+		return op.Failed[*MessageStream](err, false)
+	}
+
+	messages := make(chan *notification2.Message, 10)
+
+	ch := make(chan notification2.Message)
+	client.Register("*", ch)
+
+	// errorChan := client.sub.Subscribe(ctx, pattern, messages)
+	stream := notification2.NewStream(ctx, client, messages, func(msg *notification2.Message) notification2.StreamData[jsondoc.JSONDoc] {
+		return notification2.StreamData[jsondoc.JSONDoc]{
+			Action:      msg.Action,
+			Identifier:  msg.Identifier,
+			Description: msg.Description,
+			Data:        jsondoc.New(msg.Payload),
+		}
+	}, func() {
+		// Cleanup: unsubscribe from the realtime channel
+		if err := client.Unsubscribe(); err != nil {
+			slog.Warn("Failed to unsubscribe", "err", err)
+		}
+	})
+
+	return op.OK(stream)
 }

@@ -1,6 +1,6 @@
 package notification2
 
-import "bytes"
+import "strings"
 
 const (
 	SourceWildcard = "*"
@@ -45,8 +45,8 @@ func (h *Hub) Run() {
 			}
 		case message := <-h.broadcast:
 			for client := range h.clients {
-				matchesPattern := client.Pattern == "" || client.Pattern == SourceWildcard || bytes.Contains(message.Description, []byte(client.Pattern))
-				matchesAction := client.Action == "" || client.Action != "" && (client.Action == ActionWildcard || bytes.Contains(message.Action, []byte(client.Action)))
+				matchesPattern := client.Pattern == "" || client.Pattern == SourceWildcard || strings.Contains(message.Description, client.Pattern)
+				matchesAction := client.Action == "" || client.Action != "" && (client.Action == ActionWildcard || strings.Contains(message.Action, client.Action))
 
 				if matchesPattern && matchesAction {
 					client.Out <- message

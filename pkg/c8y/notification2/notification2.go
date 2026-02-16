@@ -95,9 +95,9 @@ type ClientSubscription struct {
 
 // Message is the type delivered to subscribers.
 type Message struct {
-	Identifier  []byte `json:"identifier"`
-	Description []byte `json:"description"`
-	Action      []byte `json:"action"`
+	Identifier  string `json:"identifier"`
+	Description string `json:"description"`
+	Action      string `json:"action"`
 	Payload     []byte `json:"data,omitempty"`
 }
 
@@ -326,14 +326,11 @@ func parseMessage(raw []byte) *Message {
 		}
 		if inHeader {
 			if i == 0 {
-				message.Identifier = make([]byte, len(line))
-				copy(message.Identifier, line)
+				message.Identifier = string(line)
 			} else if i == 1 {
-				message.Description = make([]byte, len(line))
-				copy(message.Description, line)
+				message.Description = string(line)
 			} else if i == 2 {
-				message.Action = make([]byte, len(line))
-				copy(message.Action, line)
+				message.Action = string(line)
 			}
 			// Ignore unknown header indexes
 		} else {
@@ -399,9 +396,9 @@ func (c *Notification2Client) Register(pattern string, out chan<- Message) {
 	}
 }
 
-func (c *Notification2Client) SendMessageAck(messageIdentifier []byte) error {
+func (c *Notification2Client) SendMessageAck(messageIdentifier string) error {
 	slog.Debug("Sending message ack", "identifier", messageIdentifier)
-	c.send <- messageIdentifier
+	c.send <- []byte(messageIdentifier)
 	return nil
 }
 
