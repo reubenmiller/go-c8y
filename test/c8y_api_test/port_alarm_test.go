@@ -155,7 +155,7 @@ func TestAlarmService_GetAlarmCollection(t *testing.T) {
 		context.Background(),
 		alarms.ListOptions{
 			Source:   testDevice.Data.ID(),
-			Severity: []string{"MAJOR"},
+			Severity: []model.AlarmSeverity{model.AlarmSeverity("MAJOR")},
 			DateTo:   time.Now(),
 		},
 	)
@@ -250,7 +250,7 @@ func TestAlarmService_BulkUpdateAlarms(t *testing.T) {
 		context.Background(),
 		alarms.ListOptions{
 			Source:   testDevice.Data.ID(),
-			Status:   []string{"CLEARED"},
+			Status:   []model.AlarmStatus{model.AlarmStatus("CLEARED")},
 			DateFrom: time.Now().Add(-60 * time.Second),
 			DateTo:   time.Now(),
 		},
