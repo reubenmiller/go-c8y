@@ -21,7 +21,6 @@ require (
 	go.mozilla.org/pkcs7 v0.9.0
 	golang.org/x/net v0.43.0
 	gopkg.in/robfig/cron.v2 v2.0.0-20150107220207-be2e0b0deed5
-	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 	resty.dev/v3 v3.0.0-beta.6
 )
 

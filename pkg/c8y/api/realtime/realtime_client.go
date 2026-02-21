@@ -25,7 +25,6 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/jsondoc"
 	"github.com/reubenmiller/go-c8y/pkg/wsurl"
 	"golang.org/x/net/publicsuffix"
-	tomb "gopkg.in/tomb.v2"
 )
 
 // Package-level logger with identifying attributes.
@@ -72,7 +71,9 @@ type Client struct {
 	url           *url.URL
 	c8yURL        *url.URL
 	clientID      string
-	tomb          *tomb.Tomb
+	ctx           context.Context
+	cancel        context.CancelFunc
+	workerDone    chan struct{}
 	messages      chan *Message
 	connected     bool
 	dialer        *websocket.Dialer
@@ -343,8 +344,20 @@ func (c *Client) Close() error {
 	if err := c.disconnect(); err != nil {
 		c.log().Info("Failed to disconnect. %s", "err", err)
 	}
-	c.log().Info("Killing go routine")
-	c.tomb.Killf("Close")
+
+	c.mtx.Lock()
+	if c.cancel != nil {
+		c.log().Info("Stopping worker")
+		c.cancel()
+		c.cancel = nil
+	}
+	c.mtx.Unlock()
+
+	// Wait for worker to finish if it was started
+	if c.workerDone != nil {
+		<-c.workerDone
+	}
+
 	return nil
 }
 
@@ -386,10 +399,15 @@ func (c *Client) reconnect() error {
 	connected := false
 
 	c.mtx.Lock()
-	if c.tomb != nil {
-		c.tomb.Kill(errors.New("websocket died"))
+	if c.cancel != nil {
+		c.cancel()
 	}
-	c.tomb = nil
+	// Wait for worker to finish
+	if c.workerDone != nil {
+		<-c.workerDone
+		c.workerDone = nil
+	}
+	c.cancel = nil
 	c.connected = false
 	c.mtx.Unlock()
 
@@ -442,15 +460,18 @@ func (c *Client) connect() chan error {
 
 	c.ws = ws
 
-	if c.tomb == nil {
-		c.tomb = &tomb.Tomb{}
-		c.tomb.Go(c.worker)
+	if c.cancel == nil {
+		c.ctx, c.cancel = context.WithCancel(context.Background())
+		c.workerDone = make(chan struct{})
+		go c.worker()
 	}
 
 	return c.handshake()
 }
 
-func (c *Client) worker() error {
+func (c *Client) worker() {
+	defer close(c.workerDone)
+
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 	done := make(chan struct{})
@@ -579,8 +600,8 @@ func (c *Client) worker() error {
 	for {
 		defer c.ws.Close()
 		select {
-		case <-c.tomb.Dying():
-			return nil
+		case <-c.ctx.Done():
+			return
 
 		case <-interrupt:
 			c.log().Info("interrupt")
@@ -589,10 +610,10 @@ func (c *Client) worker() error {
 			// waiting (with timeout) for the server to close the connection.
 			if err := c.Disconnect(); err != nil {
 				c.log().Info("Failed to send disconnect to server", "err", err)
-				return err
+				return
 			}
 
-			return fmt.Errorf("stopping websocket")
+			return
 		}
 	}
 }

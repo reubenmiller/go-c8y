@@ -3,6 +3,7 @@ package notification2
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"crypto/tls"
 	"fmt"
 	"log/slog"
@@ -16,7 +17,6 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/reubenmiller/go-c8y/pkg/wsurl"
 	"github.com/tidwall/gjson"
-	tomb "gopkg.in/tomb.v2"
 )
 
 const (
@@ -67,7 +67,9 @@ type Notification2Client struct {
 	mtx               sync.RWMutex
 	host              string
 	url               *url.URL
-	tomb              *tomb.Tomb
+	ctx               context.Context
+	cancel            context.CancelFunc
+	workerDone        chan struct{}
 	messages          chan *Message
 	connected         bool
 	dialer            *websocket.Dialer
@@ -203,12 +205,17 @@ func (c *Notification2Client) Close() error {
 		slog.Warn("Failed to disconnect", "err", err)
 	}
 	c.mtx.Lock()
-	defer c.mtx.Unlock()
-	if c.tomb != nil {
+	if c.cancel != nil {
 		slog.Debug("Stopping worker")
-		c.tomb.Killf("Close")
-		c.tomb = nil
+		c.cancel()
+		c.mtx.Unlock()
+		<-c.workerDone
+		c.mtx.Lock()
+		c.cancel = nil
+		c.ctx = nil
+		c.workerDone = nil
 	}
+	c.mtx.Unlock()
 	return nil
 }
 
@@ -299,9 +306,10 @@ func (c *Notification2Client) connect() error {
 	defer c.mtx.Unlock()
 
 	c.ws = ws
-	if c.tomb == nil {
-		c.tomb = &tomb.Tomb{}
-		c.tomb.Go(c.worker)
+	if c.ctx == nil {
+		c.ctx, c.cancel = context.WithCancel(context.Background())
+		c.workerDone = make(chan struct{})
+		go c.worker()
 	}
 	c.connected = true
 
@@ -402,7 +410,8 @@ func (c *Notification2Client) SendMessageAck(messageIdentifier string) error {
 	return nil
 }
 
-func (c *Notification2Client) worker() error {
+func (c *Notification2Client) worker() {
+	defer close(c.workerDone)
 	done := make(chan struct{})
 
 	c.ws.SetReadDeadline(time.Now().Add(c.ConnectionOptions.GetPongDuration()))
@@ -454,9 +463,8 @@ func (c *Notification2Client) worker() error {
 	}()
 
 	defer c.ws.Close()
-	<-c.tomb.Dying()
+	<-c.ctx.Done()
 	slog.Info("Worker is shutting down")
-	return nil
 }
 
 // Unsubscribe unsubscribe to a given pattern

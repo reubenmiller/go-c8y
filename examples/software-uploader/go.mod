@@ -33,7 +33,6 @@ require (
 	go.mozilla.org/pkcs7 v0.9.0 // indirect
 	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/sys v0.35.0 // indirect
-	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	resty.dev/v3 v3.0.0-beta.6 // indirect
 	rsc.io/qr v0.2.0 // indirect
