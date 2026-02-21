@@ -2,6 +2,7 @@ package testcore
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -9,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
@@ -116,7 +116,7 @@ func NewDummyFile(t *testing.T, name string, contents string) (createFilePath st
 	fullPath := filepath.Join(t.TempDir(), name)
 	f, err := os.Create(fullPath)
 	if err != nil {
-		panic(errors.Wrap(err, "Error creating dummy file"))
+		panic(fmt.Errorf("Error creating dummy file. %w", err))
 	}
 
 	defer f.Close()
@@ -124,7 +124,7 @@ func NewDummyFile(t *testing.T, name string, contents string) (createFilePath st
 	f.WriteString(contents)
 
 	if err := f.Sync(); err != nil {
-		panic(errors.Wrap(err, "Failed to fill file with dummy information"))
+		panic(fmt.Errorf("Failed to fill file with dummy information. %w", err))
 	}
 
 	createFilePath = f.Name()
@@ -145,17 +145,17 @@ func NewDummyFileWithSize(name string, size int64) (filepath string) {
 
 	f, err := os.Create(name)
 	if err != nil {
-		panic(errors.Wrap(err, "Error creating dummy file"))
+		panic(fmt.Errorf("Error creating dummy file. %w", err))
 	}
 
 	defer f.Close()
 
 	if err := f.Truncate(size); err != nil {
-		panic(errors.Wrap(err, "Failed to fill file with dummy information"))
+		panic(fmt.Errorf("Failed to fill file with dummy information. %w", err))
 	}
 
 	if err := f.Sync(); err != nil {
-		panic(errors.Wrap(err, "Failed to sync file with dummy information"))
+		panic(fmt.Errorf("Failed to sync file with dummy information. %w", err))
 	}
 
 	filepath = f.Name()

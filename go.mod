@@ -10,7 +10,6 @@ require (
 	github.com/labstack/echo/v4 v4.13.4
 	github.com/mdp/qrterminal/v3 v3.2.1
 	github.com/obeattie/ohmyglob v0.0.0-20150811221449-290764208a0d
-	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.22.0
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
