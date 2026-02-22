@@ -377,7 +377,7 @@ func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jso
 //   - "name:MySoftware" - lookup by name
 //   - "name:MySoftware:application" - lookup by name and softwareType
 //   - "query:name eq 'MySoftware'" - custom query
-func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.Result[jsonmodels.Software] {
+func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.Result[core.NoContent] {
 	// Resolve ID (supports "name:MySoftware", "name:MySoftware:application", etc.)
 	// If deferred execution is enabled, we still need to resolve the ID first
 	// But do it in a normal context so the resolution actually completes
@@ -390,11 +390,11 @@ func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.R
 	meta["identifier"] = ID
 	id, err := s.Resolver.ResolveID(resolutionCtx, ID, meta)
 	if err != nil {
-		return op.Failed[jsonmodels.Software](err, false)
+		return op.Failed[core.NoContent](err, false)
 	}
 	meta["id"] = id
 
-	return core.Execute(ctx, s.deleteB(id, opt), jsonmodels.NewSoftware, meta)
+	return core.ExecuteNoContent(ctx, s.deleteB(id, opt), meta)
 }
 
 // GetOrCreateByName searches by name and optional software type, creating if not found

@@ -109,8 +109,8 @@ func (s *Service) updateB(ID string, body any) *core.TryRequest {
 }
 
 // Delete a retention rule
-func (s *Service) Delete(ctx context.Context, ID string) op.Result[jsonmodels.RetentionRule] {
-	return core.Execute(ctx, s.deleteB(ID), jsonmodels.NewRetentionRule)
+func (s *Service) Delete(ctx context.Context, ID string) op.Result[core.NoContent] {
+	return core.ExecuteNoContent(ctx, s.deleteB(ID))
 }
 
 func (s *Service) deleteB(ID string) *core.TryRequest {

@@ -368,7 +368,7 @@ type DeleteListOptions struct {
 // when the deleted event has a lot of associated data. After sending the
 // request, the platform starts deleting the associated data in an asynchronous way.
 // Finally, the requested event is deleted after all associated data has been deleted.
-func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Result[jsonmodels.Event] {
+func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Result[core.NoContent] {
 	// Resolve Source if it contains a resolver scheme
 	if opt.Source != "" && s.DeviceResolver != nil {
 		resolutionCtx := ctx
@@ -378,12 +378,12 @@ func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Resu
 
 		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, opt.Source, nil)
 		if err != nil {
-			return op.Failed[jsonmodels.Event](err, true)
+			return op.Failed[core.NoContent](err, true)
 		}
 		opt.Source = resolvedID
 	}
 
-	return core.Execute(ctx, s.deleteListB(opt), jsonmodels.NewEvent)
+	return core.ExecuteNoContent(ctx, s.deleteListB(opt))
 }
 
 func (s *Service) deleteListB(opt DeleteListOptions) *core.TryRequest {

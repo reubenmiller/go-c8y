@@ -181,8 +181,8 @@ func (s *Service) createB(body any) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req)
 }
 
-func (s *Service) Delete(ctx context.Context, id string) op.Result[jsonmodels.Notification2Subscription] {
-	return core.Execute(ctx, s.deleteB(id), jsonmodels.NewNotification2Subscription)
+func (s *Service) Delete(ctx context.Context, id string) op.Result[core.NoContent] {
+	return core.ExecuteNoContent(ctx, s.deleteB(id))
 }
 
 func (s *Service) deleteB(id string) *core.TryRequest {
@@ -193,8 +193,8 @@ func (s *Service) deleteB(id string) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req)
 }
 
-func (s *Service) DeleteBySource(ctx context.Context, opt DeleteBySourceOptions) op.Result[jsonmodels.Notification2Subscription] {
-	return core.Execute(ctx, s.deleteBySourceB(opt), jsonmodels.NewNotification2Subscription)
+func (s *Service) DeleteBySource(ctx context.Context, opt DeleteBySourceOptions) op.Result[core.NoContent] {
+	return core.ExecuteNoContent(ctx, s.deleteBySourceB(opt))
 }
 
 func (s *Service) deleteBySourceB(opt DeleteBySourceOptions) *core.TryRequest {

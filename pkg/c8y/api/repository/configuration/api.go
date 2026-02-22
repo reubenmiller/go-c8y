@@ -414,7 +414,7 @@ func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jso
 }
 
 // Delete a configuration
-func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.Result[jsonmodels.Configuration] {
+func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.Result[core.NoContent] {
 	resolutionCtx := ctx
 	if ctxhelpers.IsDeferredExecution(ctx) {
 		resolutionCtx = context.Background()
@@ -424,11 +424,11 @@ func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.R
 	meta["identifier"] = ID
 	id, err := s.Resolver.ResolveID(resolutionCtx, ID, meta)
 	if err != nil {
-		return op.Failed[jsonmodels.Configuration](err, false)
+		return op.Failed[core.NoContent](err, false)
 	}
 	meta["id"] = id
 
-	return core.Execute(ctx, s.deleteB(id, opt), jsonmodels.NewConfiguration, meta).IgnoreNotFound()
+	return core.ExecuteNoContent(ctx, s.deleteB(id, opt), meta).IgnoreNotFound()
 }
 
 // GetOrCreate searches by name and optional configuration type, creating if not found

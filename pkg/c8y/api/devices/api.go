@@ -155,7 +155,7 @@ func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jso
 type DeleteOptions = managedobjects.DeleteOptions
 
 // Delete deletes a device by ID
-func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.Result[jsonmodels.ManagedObject] {
+func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.Result[core.NoContent] {
 	return s.managedObjects.Delete(ctx, ID, opt)
 }
 

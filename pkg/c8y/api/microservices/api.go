@@ -326,7 +326,7 @@ type DeleteOptions = applications.DeleteOptions
 // Examples:
 //   - Delete(ctx, "12345", opts) - direct ID
 //   - Delete(ctx, "name:my-microservice", opts) - lookup by name
-func (s *Service) Delete(ctx context.Context, id string, opt DeleteOptions) op.Result[jsonmodels.Microservice] {
+func (s *Service) Delete(ctx context.Context, id string, opt DeleteOptions) op.Result[core.NoContent] {
 	// Resolve ID (supports "name:serviceName", "contextPath:/path", etc.)
 	resolutionCtx := ctx
 	if ctxhelpers.IsDeferredExecution(ctx) {
@@ -336,10 +336,10 @@ func (s *Service) Delete(ctx context.Context, id string, opt DeleteOptions) op.R
 	meta := make(map[string]any)
 	resolvedID, err := s.ResolveID(resolutionCtx, id, meta)
 	if err != nil {
-		return op.Failed[jsonmodels.Microservice](err, false)
+		return op.Failed[core.NoContent](err, false)
 	}
 
-	return core.Execute(ctx, s.deleteB(resolvedID, opt), jsonmodels.NewMicroservice, meta)
+	return core.ExecuteNoContent(ctx, s.deleteB(resolvedID, opt), meta)
 }
 
 func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
@@ -378,7 +378,7 @@ func (s *Service) subscribeB(tenantID string, selfURL string) *core.TryRequest {
 // Examples:
 //   - Unsubscribe(ctx, tenantID, "12345") - direct ID
 //   - Unsubscribe(ctx, tenantID, "name:my-microservice") - lookup by name
-func (s *Service) Unsubscribe(ctx context.Context, tenantID string, id string) op.Result[jsonmodels.Microservice] {
+func (s *Service) Unsubscribe(ctx context.Context, tenantID string, id string) op.Result[core.NoContent] {
 	// Resolve ID (supports "name:serviceName", "contextPath:/path", etc.)
 	resolutionCtx := ctx
 	if ctxhelpers.IsDeferredExecution(ctx) {
@@ -388,10 +388,10 @@ func (s *Service) Unsubscribe(ctx context.Context, tenantID string, id string) o
 	meta := make(map[string]any)
 	resolvedID, err := s.ResolveID(resolutionCtx, id, meta)
 	if err != nil {
-		return op.Failed[jsonmodels.Microservice](err, false)
+		return op.Failed[core.NoContent](err, false)
 	}
 
-	return core.Execute(ctx, s.unsubscribeB(tenantID, resolvedID), jsonmodels.NewMicroservice, meta)
+	return core.ExecuteNoContent(ctx, s.unsubscribeB(tenantID, resolvedID), meta)
 }
 
 func (s *Service) unsubscribeB(tenantID string, ID string) *core.TryRequest {

@@ -315,7 +315,7 @@ type DeleteListOptions struct {
 }
 
 // Delete a list of operations
-func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Result[jsonmodels.Operation] {
+func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Result[core.NoContent] {
 	// Resolve DeviceID if it contains a resolver scheme
 	if opt.DeviceID != "" && s.DeviceResolver != nil {
 		resolutionCtx := ctx
@@ -325,7 +325,7 @@ func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Resu
 
 		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, opt.DeviceID, nil)
 		if err != nil {
-			return op.Failed[jsonmodels.Operation](err, true)
+			return op.Failed[core.NoContent](err, true)
 		}
 		opt.DeviceID = resolvedID
 	}
@@ -339,12 +339,12 @@ func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Resu
 
 		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, opt.AgentID, nil)
 		if err != nil {
-			return op.Failed[jsonmodels.Operation](err, true)
+			return op.Failed[core.NoContent](err, true)
 		}
 		opt.AgentID = resolvedID
 	}
 
-	return core.Execute(ctx, s.deleteListB(opt), jsonmodels.NewOperation)
+	return core.ExecuteNoContent(ctx, s.deleteListB(opt))
 }
 
 func (s *Service) deleteListB(opt DeleteListOptions) *core.TryRequest {

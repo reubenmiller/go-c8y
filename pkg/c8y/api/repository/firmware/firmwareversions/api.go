@@ -403,7 +403,7 @@ func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jso
 //   - "12345" - direct ID
 //   - "version:1.0.0:firmware:12345" - lookup by version and firmware ID
 //   - "version:1.0.0:name:MyFirmware" - lookup by version and firmware name
-func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.Result[jsonmodels.FirmwareVersion] {
+func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.Result[core.NoContent] {
 	// Resolve ID (supports "version:1.0.0:firmware:12345", "version:1.0.0:name:MyFirmware", etc.)
 	// If deferred execution is enabled, we still need to resolve the ID first
 	// But do it in a normal context so the resolution actually completes
@@ -416,11 +416,11 @@ func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.R
 	meta["identifier"] = ID
 	id, err := s.Resolver.ResolveID(resolutionCtx, ID, meta)
 	if err != nil {
-		return op.Failed[jsonmodels.FirmwareVersion](err, false)
+		return op.Failed[core.NoContent](err, false)
 	}
 	meta["id"] = id
 
-	return core.Execute(ctx, s.deleteB(id, opt), jsonmodels.NewFirmwareVersion, meta).IgnoreNotFound()
+	return core.ExecuteNoContent(ctx, s.deleteB(id, opt), meta).IgnoreNotFound()
 }
 
 type UploadFileOptions = core.UploadFileOptions

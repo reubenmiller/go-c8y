@@ -424,7 +424,7 @@ func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jso
 //   - "version:1.0.0:software:12345" - lookup by version and software ID
 //   - "version:1.0.0:name:MySoftware" - lookup by version and software name
 //   - "version:1.0.0:name:MySoftware:application" - lookup by version, software name and type
-func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.Result[jsonmodels.SoftwareVersion] {
+func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.Result[core.NoContent] {
 	// Resolve ID (supports "version:1.0.0:software:12345", "version:1.0.0:name:MySoftware", etc.)
 	// If deferred execution is enabled, we still need to resolve the ID first
 	// But do it in a normal context so the resolution actually completes
@@ -437,11 +437,11 @@ func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.R
 	meta["identifier"] = ID
 	id, err := s.Resolver.ResolveID(resolutionCtx, ID, meta)
 	if err != nil {
-		return op.Failed[jsonmodels.SoftwareVersion](err, false)
+		return op.Failed[core.NoContent](err, false)
 	}
 	meta["id"] = id
 
-	return core.Execute(ctx, s.deleteB(id, opt), jsonmodels.NewSoftwareVersion, meta).IgnoreNotFound()
+	return core.ExecuteNoContent(ctx, s.deleteB(id, opt), meta).IgnoreNotFound()
 }
 
 type UploadFileOptions = core.UploadFileOptions

@@ -125,7 +125,7 @@ type DeleteListOptions struct {
 }
 
 // DeleteList removes a collection of measurements
-func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Result[jsonmodels.Measurement] {
+func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Result[core.NoContent] {
 	// Resolve Source if it contains a resolver scheme
 	if opt.Source != "" && s.DeviceResolver != nil {
 		resolutionCtx := ctx
@@ -135,12 +135,12 @@ func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Resu
 
 		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, opt.Source, nil)
 		if err != nil {
-			return op.Failed[jsonmodels.Measurement](err, true)
+			return op.Failed[core.NoContent](err, true)
 		}
 		opt.Source = resolvedID
 	}
 
-	return core.Execute(ctx, s.deleteListB(opt), jsonmodels.NewMeasurement)
+	return core.ExecuteNoContent(ctx, s.deleteListB(opt))
 }
 
 func (s *Service) deleteListB(opt DeleteListOptions) *core.TryRequest {
