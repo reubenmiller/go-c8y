@@ -406,6 +406,11 @@ func Test_AssignRoleToUser(t *testing.T) {
 	})
 	require.NoError(t, groupsResult.Err)
 	assert.Equal(t, 200, groupsResult.HTTPStatus)
+	assert.GreaterOrEqual(t, groupsResult.Data.Length(), 1)
+	for item := range op.Iter(groupsResult) {
+		val := item.ID()
+		require.NotEmpty(t, val)
+	}
 
 	// Unassign role from user
 	unassignResult := client.UserRoles.Users.UnassignRole(ctx, userrolesusers.UnassignRoleOptions{
