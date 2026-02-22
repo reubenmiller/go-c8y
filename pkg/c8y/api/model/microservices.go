@@ -69,3 +69,18 @@ type MicroserviceSetting struct {
 		Type string `json:"type,omitempty"`
 	} `json:"valueSchema,omitempty"`
 }
+
+func NewMicroservice(name string) *Microservice {
+	return &Microservice{
+		Name: name,
+		Key:  name + "-microservice-key",
+		Type: string(ApplicationTypeMicroservice),
+	}
+}
+
+type ApplicationType string
+
+var (
+	ApplicationTypeMicroservice ApplicationType = "MICROSERVICE"
+	ApplicationTypeHosted       ApplicationType = "HOSTED"
+)

@@ -1,7 +1,6 @@
 package microservice
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -22,7 +21,7 @@ import (
 // GetAgent returns the agent representation of the microservice
 func (m *Microservice) GetAgent() op.Result[jsonmodels.ManagedObject] {
 	return m.Client.ManagedObjects.Get(
-		m.WithServiceUser(),
+		m.ServiceUserContext(),
 		m.Client.ManagedObjects.ByExternalID(m.Config.GetIdentityType(), m.Config.GetApplicationName()),
 		managedobjects.GetOptions{},
 	)
@@ -30,12 +29,13 @@ func (m *Microservice) GetAgent() op.Result[jsonmodels.ManagedObject] {
 
 // CreateMicroserviceRepresentation Create a microservice representation in the Cumulocity platform, so that the microservice can store its configuration in the managed object
 func (m *Microservice) CreateMicroserviceRepresentation() op.Result[jsonmodels.ManagedObject] {
-	mo := m.Client.ManagedObjects.GetOrCreateByExternalID(m.WithServiceUser(), managedobjects.GetOrCreateByExternalIDOptions{
+	mo := m.Client.ManagedObjects.GetOrCreateByExternalID(m.ServiceUserContext(), managedobjects.GetOrCreateByExternalIDOptions{
 		ExternalIDType: m.Config.GetIdentityType(),
 		ExternalID:     m.Config.GetApplicationName(),
 		Body: map[string]any{
-			"c8y_IsDevice":            map[string]any{},
-			"c8y_SupportedOperations": m.SupportedOperations,
+			"c8y_IsDevice":               map[string]any{},
+			"c8y_SupportedOperations":    m.SupportedOperations,
+			"com_cumulocity_model_Agent": map[string]any{},
 		},
 	})
 	if mo.Err != nil {
@@ -61,10 +61,15 @@ func (m *Microservice) CreateMicroserviceRepresentation() op.Result[jsonmodels.M
 		},
 		AgentInformation:         &agentInfo,
 		AgentSupportedOperations: m.SupportedOperations,
-		DeviceFragment:           model.DeviceFragment{},
+		DeviceFragment: model.DeviceFragment{
+			DeviceFragment: map[string]any{},
+		},
+		AgentFragment: model.AgentFragment{
+			AgentFragment: map[string]any{},
+		},
 	}
 
-	return m.Client.ManagedObjects.Update(context.Background(), mo.Data.ID(), agentMo)
+	return m.Client.ManagedObjects.Update(m.ServiceUserContext(), mo.Data.ID(), agentMo)
 }
 
 // GetConfiguration returns the Agent configuration as text. This needs to be parsed separately by the calling function.
@@ -75,7 +80,7 @@ func (m *Microservice) GetConfiguration() (string, error) {
 		return "", mo.Err
 	}
 
-	node := mo.Data.Get("c8y_Configuration.configuration")
+	node := mo.Data.Get("c8y_Configuration.config")
 	if !node.Exists() {
 		return "", fmt.Errorf("No configuration found on managed object id=%s", mo.Data.ID())
 	}
@@ -85,8 +90,8 @@ func (m *Microservice) GetConfiguration() (string, error) {
 
 // SaveConfiguration save the agent configuration to it's managed object
 func (m *Microservice) SaveConfiguration(rawConfiguration string) error {
-	body := make(map[string]interface{})
-	configuration := make(map[string]interface{})
+	body := make(map[string]any)
+	configuration := make(map[string]any)
 	timestamp := time.Now().Format(time.UnixDate)
 	lines := strings.Split(rawConfiguration, "\n")
 
@@ -100,7 +105,7 @@ func (m *Microservice) SaveConfiguration(rawConfiguration string) error {
 	configuration["config"] = strings.Join(lines, "\n")
 	body["c8y_Configuration"] = configuration
 
-	if result := m.Client.ManagedObjects.Update(m.WithServiceUser(), m.AgentID, body); result.Err != nil {
+	if result := m.Client.ManagedObjects.Update(m.ServiceUserContext(), m.AgentID, body); result.Err != nil {
 		return fmt.Errorf("Error updating the configuration in the managed object. %s", result.Err)
 	}
 
@@ -115,7 +120,7 @@ func (m *Microservice) DeleteMicroserviceAgent() error {
 	slog.Info("Deleting microservice's agent managed object", "id", m.AgentID)
 
 	result := m.Client.ManagedObjects.Delete(
-		m.WithServiceUser(),
+		m.ServiceUserContext(),
 		m.AgentID,
 		managedobjects.DeleteOptions{},
 	)
@@ -165,7 +170,7 @@ var (
 
 // GetOperations returns a list of operations in the given status i.e. PENDING, EXECUTING, SUCCESS, FAILED
 func (m *Microservice) GetOperations(status types.OperationStatus) op.Result[jsonmodels.Operation] {
-	return m.Client.Operations.List(m.WithServiceUser(), operations.ListOptions{
+	return m.Client.Operations.List(m.ServiceUserContext(), operations.ListOptions{
 		Status:  status,
 		AgentID: m.AgentID,
 		PaginationOptions: pagination.PaginationOptions{
@@ -202,7 +207,7 @@ func (m *Microservice) UpdateApplicationConfiguration(configAsString string) {
 func (m *Microservice) onUpdateConfigurationOperation(operationID string, newConfiguration string) {
 
 	m.Client.Operations.Update(
-		m.WithServiceUser(),
+		m.ServiceUserContext(),
 		operationID,
 		model.Operation{
 			Status: types.OperationStatusPending,
@@ -213,7 +218,7 @@ func (m *Microservice) onUpdateConfigurationOperation(operationID string, newCon
 	if updateErr := m.SaveConfiguration(newConfiguration); updateErr != nil {
 		// Failed Operation
 		m.Client.Operations.Update(
-			m.WithServiceUser(),
+			m.ServiceUserContext(),
 			operationID,
 			model.Operation{
 				Status: types.OperationStatusFailed,
@@ -223,7 +228,7 @@ func (m *Microservice) onUpdateConfigurationOperation(operationID string, newCon
 		// Successful Operation
 		m.UpdateApplicationConfiguration(newConfiguration)
 		m.Client.Operations.Update(
-			m.WithServiceUser(),
+			m.ServiceUserContext(),
 			operationID,
 			model.Operation{
 				Status: types.OperationStatusSuccessful,

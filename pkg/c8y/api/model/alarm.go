@@ -14,6 +14,10 @@ const (
 	AlarmSeverityWarning  AlarmSeverity = "WARNING"
 )
 
+func NewAlarmSeverity(v ...AlarmSeverity) []AlarmSeverity {
+	return v
+}
+
 // Cumulocity alarm status states
 type AlarmStatus string
 

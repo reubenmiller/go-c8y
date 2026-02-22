@@ -44,13 +44,12 @@ func (ops AgentSupportedOperations) AddOperations(operations []string) {
 
 // Exists returns true if the given operation already exists
 func (ops AgentSupportedOperations) Exists(op string) bool {
-	// Create a map of all unique elements.
 	for _, name := range ops {
 		if name == op {
 			return true
 		}
 	}
-	return true
+	return false
 }
 
 // ToStringArray returns the operations as an array of strings removing any duplicates

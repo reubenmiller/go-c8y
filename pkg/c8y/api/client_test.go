@@ -19,9 +19,7 @@ func Example_newClient() {
 	client := NewClientFromEnvironment(ClientOptions{})
 
 	alarmCollection := client.Alarms.List(context.Background(), alarms.ListOptions{
-		Severity: []string{
-			model.AlarmSeverityMajor,
-		},
+		Severity: model.NewAlarmSeverity(model.AlarmSeverityMajor),
 		PaginationOptions: pagination.PaginationOptions{
 			PageSize: 100,
 		},

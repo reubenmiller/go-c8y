@@ -29,6 +29,13 @@ func GetBootstrapUserFromEnvironment() (tenant, username, password string) {
 	return os.Getenv(EnvironmentBootstrapTenant), os.Getenv(EnvironmentBootstrapUsername), os.Getenv(EnvironmentBootstrapPassword)
 }
 
+// GetBootstrapBaseURLFromEnvironment returns the Cumulocity base URL from the
+// C8Y_BASEURL environment variable, which is the standard variable injected by
+// the Cumulocity platform into every microservice container.
+func GetBootstrapBaseURLFromEnvironment() string {
+	return os.Getenv(EnvironmentBaseURL)
+}
+
 // GetServiceUserFromEnvironment returns the service user information (tenant, username and password) from environment variables.
 func GetServiceUserFromEnvironment() (tenant, username, password string) {
 	return os.Getenv(EnvironmentTenant), os.Getenv(EnvironmentUsername), os.Getenv(EnvironmentPassword)
