@@ -169,6 +169,7 @@ func (s *Service) listByNameB(opt ListByNameOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamName, opt.Name).
+		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiApplicationByName)
 	return core.NewTryRequest(s.Client, req, ResultProperty)
 }
@@ -190,6 +191,7 @@ func (s *Service) listByTenantB(opt ListByTenantOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamTenantID, opt.TenantID).
+		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiApplicationByTenantID)
 	return core.NewTryRequest(s.Client, req, ResultProperty)
 }
@@ -211,7 +213,8 @@ func (s *Service) listByOwnerB(opt ListByOwnerOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamTenantID, opt.TenantID).
-		SetURL(ApiApplicationByTenantID)
+		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetURL(ApiApplicationByOwner)
 	return core.NewTryRequest(s.Client, req, ResultProperty)
 }
 
@@ -232,6 +235,7 @@ func (s *Service) listByUserB(opt ListByUserOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamUsername, opt.Username).
+		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiApplicationByUser)
 	return core.NewTryRequest(s.Client, req, ResultProperty)
 }
