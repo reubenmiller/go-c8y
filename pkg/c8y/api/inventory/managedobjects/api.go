@@ -142,6 +142,7 @@ type ListOptions struct {
 func (s *Service) listB(opt ListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiManagedObjects)
 	return core.NewTryRequest(s.Client, req, ResultProperty)
@@ -157,9 +158,10 @@ type GetOptions struct {
 
 // Create a managed object
 func (s *Service) createB(body any) *core.TryRequest {
-	req := s.Service.Client.R().
+	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetBody(body).
+		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObjects)
 	return core.NewTryRequest(s.Client, req, "")
@@ -182,6 +184,7 @@ func (s *Service) updateB(ID string, body any) *core.TryRequest {
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamId, ID).
 		SetBody(body).
+		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObject)
 	return core.NewTryRequest(s.Client, req)

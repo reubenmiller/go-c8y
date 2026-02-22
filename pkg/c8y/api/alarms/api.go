@@ -141,6 +141,7 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *AlarmIterator 
 func (s *Service) listB(opt any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiAlarms)
 	return core.NewTryRequest(s.Client, req, ResultProperty)
@@ -198,6 +199,7 @@ func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Alarm
 func (s *Service) getB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamId, ID).
 		SetURL(ApiAlarm)
 	return core.NewTryRequest(s.Client, req)

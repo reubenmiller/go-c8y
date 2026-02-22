@@ -147,6 +147,7 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *EventIterator 
 func (s *Service) listB(opt any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiEvents)
 	return core.NewTryRequest(s.Client, req, ResultProperty)
@@ -160,6 +161,7 @@ func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Event
 func (s *Service) getB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamId, ID).
 		SetURL(ApiEvent)
 	return core.NewTryRequest(s.Client, req)
@@ -292,6 +294,7 @@ func (s *Service) createWithOptions(ctx context.Context, opts CreateOptions) op.
 func (s *Service) createB(body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
+		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiEvents)

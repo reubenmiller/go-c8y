@@ -104,6 +104,7 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *MeasurementIte
 func (s *Service) listB(opt any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiMeasurements)
 	return core.NewTryRequest(s.Client, req, ResultProperty)
@@ -378,6 +379,7 @@ func (s *Service) ListSeries(ctx context.Context, opt ListSeriesOptions) op.Resu
 func (s *Service) listSeriesB(opt ListSeriesOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiMeasurementsSeries)
 	return core.NewTryRequest(s.Client, req)

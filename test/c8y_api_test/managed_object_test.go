@@ -31,8 +31,8 @@ func Test_ManagedObjectCreation(t *testing.T) {
 	assert.Equal(t, mo.ID, result.Data.ID())
 
 	// Delete object
-	result = client.ManagedObjects.Delete(context.Background(), result.Data.ID(), managedobjects.DeleteOptions{})
-	assert.NoError(t, result.Err)
+	result2 := client.ManagedObjects.Delete(context.Background(), result.Data.ID(), managedobjects.DeleteOptions{})
+	assert.NoError(t, result2.Err)
 }
 
 func Test_ManagedObjectList(t *testing.T) {

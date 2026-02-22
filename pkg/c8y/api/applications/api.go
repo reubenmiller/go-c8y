@@ -147,6 +147,7 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *ApplicationIte
 func (s *Service) listB(opt ListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiApplications)
 	return core.NewTryRequest(s.Client, req, ResultProperty)
@@ -168,6 +169,7 @@ func (s *Service) ListByName(ctx context.Context, opt ListByNameOptions) op.Resu
 func (s *Service) listByNameB(opt ListByNameOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamName, opt.Name).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiApplicationByName)
@@ -190,6 +192,7 @@ func (s *Service) ListByTenant(ctx context.Context, opt ListByTenantOptions) op.
 func (s *Service) listByTenantB(opt ListByTenantOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamTenantID, opt.TenantID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiApplicationByTenantID)
@@ -212,6 +215,7 @@ func (s *Service) ListByOwner(ctx context.Context, opt ListByOwnerOptions) op.Re
 func (s *Service) listByOwnerB(opt ListByOwnerOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamTenantID, opt.TenantID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiApplicationByOwner)
@@ -234,6 +238,7 @@ func (s *Service) ListByUser(ctx context.Context, opt ListByUserOptions) op.Resu
 func (s *Service) listByUserB(opt ListByUserOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamUsername, opt.Username).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiApplicationByUser)
@@ -268,6 +273,7 @@ func (s *Service) Get(ctx context.Context, id string) op.Result[jsonmodels.Appli
 func (s *Service) getB(id string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamId, id).
 		SetURL(ApiApplication)
 	return core.NewTryRequest(s.Client, req)
@@ -282,6 +288,7 @@ func (s *Service) createB(body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetBody(body).
+		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiApplications)
 	return core.NewTryRequest(s.Client, req)

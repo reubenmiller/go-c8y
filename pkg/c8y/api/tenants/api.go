@@ -97,9 +97,10 @@ func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Ten
 }
 
 func (s *Service) createB(body any) *core.TryRequest {
-	req := s.Service.Client.R().
+	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetBody(body).
+		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiTenants)
 	return core.NewTryRequest(s.Client, req, "")
