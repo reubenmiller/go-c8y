@@ -18,10 +18,10 @@ var ParamId = "id"
 var ParamManagedObjectID = "managedObjectID"
 
 // Service provides api to managed Cloud Remote Access configurations
-type Service core.Service
+type Service struct{ core.Service }
 
 func NewService(common *core.Service) *Service {
-	return (*Service)(common)
+	return &Service{Service: *common}
 }
 
 type ListOptions struct {

@@ -22,10 +22,10 @@ const ParamChild = "child"
 const ResultProperty = "statisticsFiles"
 
 // Service
-type Service core.Service
+type Service struct{ core.Service }
 
 func NewService(common *core.Service) *Service {
-	return (*Service)(common)
+	return &Service{Service: *common}
 }
 
 // ListOptions

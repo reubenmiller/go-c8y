@@ -15,10 +15,10 @@ var ApiEventBinary = "/event/events/{id}/binaries"
 var ParamId = "id"
 
 // Service provides api to get/set/delete audit entries in Cumulocity
-type Service core.Service
+type Service struct{ core.Service }
 
 func NewService(common *core.Service) *Service {
-	return (*Service)(common)
+	return &Service{Service: *common}
 }
 
 // Get an event binary

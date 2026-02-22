@@ -76,8 +76,8 @@ func Test_Software(t *testing.T) {
 	assert.Equal(t, software3.Data.Name(), software.Data.Name())
 
 	// delete
-	result = client.Repository.Software.Delete(context.Background(), software.Data.ID(), softwareitems.DeleteOptions{})
-	assert.NoError(t, result.Err)
+	result2 := client.Repository.Software.Delete(context.Background(), software.Data.ID(), softwareitems.DeleteOptions{})
+	assert.NoError(t, result2.Err)
 }
 
 func Test_SoftwareResolver(t *testing.T) {

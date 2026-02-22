@@ -20,7 +20,11 @@ var ParamId = "id"
 const ResultProperty = "auditRecords"
 
 // Service provides api to get/set/delete audit entries in Cumulocity
-type Service core.Service
+type Service struct{ core.Service }
+
+func NewService(common *core.Service) *Service {
+	return &Service{Service: *common}
+}
 
 // ListOptions to use when search for audit entries
 type ListOptions struct {

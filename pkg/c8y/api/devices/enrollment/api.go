@@ -30,10 +30,10 @@ var ApiEnroll = ".well-known/est/simpleenroll"
 var ApiReEnroll = ".well-known/est/simplereenroll"
 
 // Service provides device enrollment functionality to enroll new devices and receive device certificates
-type Service core.Service
+type Service struct{ core.Service }
 
 func NewService(s *core.Service) *Service {
-	return (*Service)(s)
+	return &Service{Service: *s}
 }
 
 // EnrollOptions options for enrolling a device

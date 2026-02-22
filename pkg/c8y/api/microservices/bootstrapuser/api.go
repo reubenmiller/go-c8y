@@ -17,10 +17,10 @@ var ParamId = "id"
 
 // Service to manage binaries
 // Managed objects can perform operations to store, retrieve and delete binaries. One binary can store only one file. Together with the binary, a managed object is created which acts as a metadata information for the binary.
-type Service core.Service
+type Service struct{ core.Service }
 
 func NewService(common *core.Service) *Service {
-	return (*Service)(common)
+	return &Service{Service: *common}
 }
 
 // Get an microservice bootstrap user

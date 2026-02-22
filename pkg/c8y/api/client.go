@@ -337,9 +337,9 @@ func NewClient(opts ClientOptions) *Client {
 		Password: c.Auth.Password,
 		Token:    c.Auth.Token,
 	})
-	c.AuditRecords = (*auditrecords.Service)(&c.common)
+	c.AuditRecords = auditrecords.NewService(&c.common)
 	c.TrustedCertificates = trustedcertificates.NewService(&c.common)
-	c.Binaries = (*binaries.Service)(&c.common)
+	c.Binaries = binaries.NewService(&c.common)
 	c.Identity = identity.NewService(&c.common)
 	c.ManagedObjects = managedobjects.NewService(&c.common)
 

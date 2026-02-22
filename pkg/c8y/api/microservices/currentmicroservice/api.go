@@ -16,10 +16,10 @@ var (
 )
 
 // Service
-type Service core.Service
+type Service struct{ core.Service }
 
 func NewService(common *core.Service) *Service {
-	return (*Service)(common)
+	return &Service{Service: *common}
 }
 
 // Get the current microservice

@@ -26,10 +26,10 @@ var ParamId = "id"
 const ResultProperty = "newDeviceRequests"
 
 // Service provides api to get/set/delete device requests in Cumulocity
-type Service core.Service
+type Service struct{ core.Service }
 
 func NewService(common *core.Service) *Service {
-	return (*Service)(common)
+	return &Service{Service: *common}
 }
 
 // ListOptions to list the device requests
