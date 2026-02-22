@@ -166,6 +166,6 @@ func Test_ApplicationVersions_CRUD_Extension(t *testing.T) {
 	assert.Equal(t, 200, activateResult.HTTPStatus)
 
 	// Delete by version (the non-active version)
-	_, err := client.ApplicationVersions.DeleteByVersion(ctx, pluginID, "2.5.1")
-	require.NoError(t, err)
+	result := client.ApplicationVersions.DeleteByVersion(ctx, pluginID, "2.5.1")
+	require.NoError(t, result.Err)
 }
