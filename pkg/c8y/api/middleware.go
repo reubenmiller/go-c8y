@@ -420,6 +420,32 @@ func SetAuth(c *resty.Client, auth authentication.AuthOptions) {
 	}
 }
 
+// TokenSourceMiddleware returns a resty.RequestMiddleware that injects a bearer token
+// from the TokenSource returned by getSource before every outgoing request.
+//
+// Requests carrying a WithSkipTokenSource context value are left untouched so that
+// internal credential-fetch calls (e.g. username/password login) do not
+// recursively trigger token renewal.
+func TokenSourceMiddleware(getSource func() authentication.TokenSource) resty.RequestMiddleware {
+	return func(_ *resty.Client, req *resty.Request) error {
+		src := getSource()
+		if src == nil {
+			return nil
+		}
+		if ctxhelpers.IsSkipTokenSource(req.Context()) {
+			return nil
+		}
+		tok, err := src.Token()
+		if err != nil {
+			return fmt.Errorf("token source: %w", err)
+		}
+		if tok != nil && tok.AccessToken != "" {
+			req.SetAuthToken(tok.AccessToken)
+		}
+		return nil
+	}
+}
+
 // redactSensitiveHeaders creates a copy of headers with sensitive values redacted
 func redactSensitiveHeaders(headers http.Header) http.Header {
 	// List of headers that should be redacted for security

@@ -23,6 +23,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/auditrecords"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/binaries"
+	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/devices"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/events"
@@ -94,6 +95,10 @@ type Client struct {
 	UserAgent string
 
 	Auth authentication.AuthOptions
+
+	// tokenSource is the active bearer-token provider. It is set automatically
+	// from Auth credentials in NewClient, or can be supplied via AuthOptions.TokenSource.
+	tokenSource authentication.TokenSource
 
 	UseKeyRing bool
 
@@ -370,16 +375,41 @@ func NewClient(opts ClientOptions) *Client {
 	c.LoginTokens = logintokens.NewService(&c.common)
 
 	c.AddMiddleware()
-	c.SetAuth(opts.Auth)
-	if _, err := c.Login(context.Background()); err != nil {
-		slog.Debug("Failed to get a token", "err", err)
+
+	// Determine the token source.
+	// Priority: explicit TokenSource > credential-backed automatic source > static token.
+	if opts.Auth.TokenSource != nil {
+		c.tokenSource = opts.Auth.TokenSource
+	} else if opts.Auth.Username != "" || (opts.Auth.Certificate != "" && opts.Auth.CertificateKey != "") {
+		c.tokenSource = c.newInternalTokenSource()
 	}
+
+	// Bootstrap: prime the token source / set initial auth.
+	// Using a token source: fetch once to populate the cache and set Auth.Token.
+	// No token source (static token): set auth directly as before.
+	if c.tokenSource != nil {
+		if tok, err := c.tokenSource.Token(); err == nil && tok != nil {
+			c.SetToken(tok.AccessToken)
+			c.SetAuth(c.Auth)
+		} else if err != nil {
+			slog.Debug("Failed to get initial token from token source", "err", err)
+			c.SetAuth(opts.Auth)
+		}
+	} else {
+		c.SetAuth(opts.Auth)
+	}
+
 	return c
 }
 
 // SetBaseURL changes the base url used by the REST client
 func (c *Client) AddMiddleware() error {
-
+	// TokenSourceMiddleware injects per-request auth from the active token source.
+	// It runs before the global resty auth and overrides it, so callers always get
+	// a fresh (non-expired) token without touching global client state.
+	c.Client.AddRequestMiddleware(TokenSourceMiddleware(func() authentication.TokenSource {
+		return c.tokenSource
+	}))
 	c.Client.AddRetryConditions(TokenRenewalRetry(c))
 	return nil
 }
@@ -683,6 +713,53 @@ func (c *Client) loginDeviceCertificate(ctx context.Context) (string, error) {
 	return tok.Data.AccessToken(), nil
 }
 
+// fetchToken requests a fresh bearer token using the configured credentials.
+// It does NOT update Client.Auth or the global resty auth state — the caller is
+// responsible for that. ctx should carry WithSkipTokenSource so the login
+// request does not re-trigger the TokenSource middleware and cause recursion.
+func (c *Client) fetchToken(ctx context.Context) (*authentication.Token, error) {
+	var raw string
+	var err error
+	if len(c.Auth.Certificate) > 0 && len(c.Auth.CertificateKey) > 0 {
+		raw, err = c.loginDeviceCertificate(ctx)
+	} else if len(c.Auth.Username) > 0 && len(c.Auth.Password) > 0 {
+		raw, err = c.loginInternalSSO(ctx)
+	} else {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	// Default expiry — C8Y tokens are typically 1 hour; use 55 min as a buffer.
+	expiry := time.Now().Add(55 * time.Minute)
+	if claims, parseErr := authentication.ParseToken(raw); parseErr == nil && claims.ExpiresAt != nil {
+		expiry = claims.ExpiresAt.Time
+	}
+	return &authentication.Token{
+		AccessToken: raw,
+		Expiry:      expiry,
+	}, nil
+}
+
+// newInternalTokenSource creates a CachedTokenSource backed by this client's
+// username/password or device-certificate credentials. The token is refreshed
+// automatically when it expires; on a 401, TokenRenewalRetry invalidates the
+// cache so the next Token() call fetches a brand-new one.
+func (c *Client) newInternalTokenSource() *authentication.CachedTokenSource {
+	return authentication.NewCachedTokenSource(
+		authentication.TokenSourceFunc(func() (*authentication.Token, error) {
+			// Mark the inner login request so TokenSourceMiddleware skips it,
+			// preventing an infinite recursion loop.
+			ctx := ctxhelpers.WithSkipTokenSource(context.Background())
+			tok, err := c.fetchToken(ctx)
+			if err != nil || tok == nil {
+				return nil, err
+			}
+			return tok, nil
+		}),
+	)
+}
+
 // HideSensitive checks if sensitive information should be hidden in the logs
 func (c *Client) HideSensitive() bool {
 	return !c.showSensitive
@@ -757,14 +834,29 @@ func TokenRenewalRetry(c *Client) func(res *resty.Response, err error) bool {
 			}
 
 			if res.Request.AuthToken != "" && core.ErrTokenRevoked(res.Error()) {
+				if c.tokenSource != nil {
+					// Force-refresh: if the source supports explicit invalidation (e.g.
+					// CachedTokenSource), clear the cache so the next Token() call fetches
+					// a brand-new token rather than returning the revoked one.
+					if inv, ok := c.tokenSource.(interface{ Invalidate() }); ok {
+						inv.Invalidate()
+					}
+					slog.Warn("Token revoked, refreshing via token source")
+					tok, tokErr := c.tokenSource.Token()
+					if tokErr != nil || tok == nil {
+						return false
+					}
+					res.Request.SetAuthToken(tok.AccessToken)
+					res.Request.Attempt = 0
+					return true
+				}
+				// Fallback for static-token-only clients (no token source configured)
 				slog.Warn("Token is not longer valid", "err", res.Error())
 				loginTok, loginErr := c.Login(res.Request.Context())
 				if loginErr != nil {
 					return false
 				}
 				res.Request.SetAuthToken(loginTok)
-				// res.Request.SetRetryWaitTime(100 * time.Millisecond)
-				// res.Request.RetryMaxWaitTime = 100 * time.Millisecond
 				res.Request.Attempt = 0
 				return true
 			}

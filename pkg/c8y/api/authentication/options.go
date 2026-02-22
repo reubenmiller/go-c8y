@@ -20,6 +20,14 @@ type AuthOptions struct {
 
 	// Auth preference (to control which credentials are used when more than 1 value is provided)
 	AuthType []AuthType
+
+	// TokenSource is an optional bearer-token provider.
+	// When set it takes precedence over the static Token field and enables
+	// automatic token renewal. Provide this for external OAuth2 providers
+	// (e.g. client credentials, authorization code, or device flow with refresh).
+	// For username/password and device-certificate authentication the client
+	// creates an internal TokenSource automatically — you do not need to set this.
+	TokenSource TokenSource
 }
 
 func (a *AuthOptions) GetAuthTypes() []AuthType {
