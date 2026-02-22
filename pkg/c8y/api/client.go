@@ -391,8 +391,14 @@ func NewClient(opts ClientOptions) *Client {
 		if tok, err := c.tokenSource.Token(); err == nil && tok != nil {
 			c.SetToken(tok.AccessToken)
 			c.SetAuth(c.Auth)
-		} else if err != nil {
-			slog.Debug("Failed to get initial token from token source", "err", err)
+		} else {
+			// Either an error (e.g. bad credentials) or nil token (e.g. username
+			// present but password empty — no credentials to exchange). In both
+			// cases fall back to whatever static auth was supplied (e.g. a raw
+			// bearer token).
+			if err != nil {
+				slog.Debug("Failed to get initial token from token source", "err", err)
+			}
 			c.SetAuth(opts.Auth)
 		}
 	} else {
