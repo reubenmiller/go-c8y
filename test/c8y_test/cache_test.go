@@ -10,9 +10,13 @@ import (
 	"time"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func createCachedClient(keys []string) *c8y.Client {
+func createCachedClient(keys []string) *api.Client {
 	isCacheableRequest := func(req *http.Request) bool {
 		if strings.EqualFold(req.Method, "GET") || strings.EqualFold(req.Method, "HEAD") {
 			return true
@@ -26,34 +30,33 @@ func createCachedClient(keys []string) *c8y.Client {
 	}
 
 	cacheDir := filepath.Join(os.TempDir(), "go-c8y-cache")
-	httpClient := c8y.NewCachedClient(c8y.NewHTTPClient(
-		c8y.WithInsecureSkipVerify(false),
-	), cacheDir, 100*time.Second, isCacheableRequest, c8y.CacheOptions{
+	transport := c8y.NewCachedTransport(nil, 100*time.Second, cacheDir, isCacheableRequest, c8y.CacheOptions{
 		BodyKeys: keys,
 	})
-	client := c8y.NewClientFromEnvironment(httpClient, false)
-	return client
+	return api.NewClientFromEnvironment(api.ClientOptions{
+		Transport: transport,
+	})
 }
 
 func Test_CachedClientWithMissingBodyKeys(t *testing.T) {
 
 	parameters := []struct {
 		Keys  []string
-		Body1 map[string]interface{}
-		Body2 map[string]interface{}
+		Body1 map[string]any
+		Body2 map[string]any
 	}{
 		{
 			[]string{"name", "complex.arrays.#"},
 
-			map[string]interface{}{
+			map[string]any{
 				"name": "test_device_100",
-				"complex": map[string]interface{}{
+				"complex": map[string]any{
 					"arrays": []string{"item1", "item2"},
 				},
 			},
-			map[string]interface{}{
+			map[string]any{
 				"name": "test_device_100",
-				"complex": map[string]interface{}{
+				"complex": map[string]any{
 					"arrays": []string{"item3", "item4", "item5"},
 				},
 			},
@@ -61,27 +64,27 @@ func Test_CachedClientWithMissingBodyKeys(t *testing.T) {
 		{
 			[]string{"name", "complex.arrays"},
 
-			map[string]interface{}{
+			map[string]any{
 				"name": "test_device_100",
-				"complex": map[string]interface{}{
+				"complex": map[string]any{
 					"arrays": []string{"item1", "item2"},
 				},
 			},
-			map[string]interface{}{
+			map[string]any{
 				"name": "test_device_100",
-				"complex": map[string]interface{}{
+				"complex": map[string]any{
 					"arrays": []string{"item1", "item2", "item3"},
 				},
 			},
 		},
 		{
 			[]string{"name", "index"},
-			map[string]interface{}{
+			map[string]any{
 				"name":  "test_device_100",
 				"other": false,
 				"index": 101,
 			},
-			map[string]interface{}{
+			map[string]any{
 				"name":  "test_device_100",
 				"other": true,
 				"index": 102,
@@ -89,12 +92,12 @@ func Test_CachedClientWithMissingBodyKeys(t *testing.T) {
 		},
 		{
 			[]string{"name", "index"},
-			map[string]interface{}{
+			map[string]any{
 				"name":  "test_device_100",
 				"other": false,
 				"index": 101,
 			},
-			map[string]interface{}{
+			map[string]any{
 				"name":  "test_device_100",
 				"other": true,
 			},
@@ -104,21 +107,19 @@ func Test_CachedClientWithMissingBodyKeys(t *testing.T) {
 	for _, params := range parameters {
 		client := createCachedClient(params.Keys)
 
-		_, resp1, err := client.Inventory.Create(context.Background(), params.Body1)
-		if err != nil {
-			t.Error(err)
-		}
-		defer client.Inventory.Delete(context.Background(), resp1.JSON("id").String())
+		result1 := client.ManagedObjects.Create(context.Background(), params.Body1)
+		require.NoError(t, result1.Err)
+		t.Cleanup(func() {
+			client.ManagedObjects.Delete(context.Background(), result1.Data.ID(), managedobjects.DeleteOptions{})
+		})
 
-		_, resp2, err := client.Inventory.Create(context.Background(), params.Body2)
-		if err != nil {
-			t.Error(err)
-		}
-		defer client.Inventory.Delete(context.Background(), resp2.JSON("id").String())
+		result2 := client.ManagedObjects.Create(context.Background(), params.Body2)
+		require.NoError(t, result2.Err)
+		t.Cleanup(func() {
+			client.ManagedObjects.Delete(context.Background(), result2.Data.ID(), managedobjects.DeleteOptions{})
+		})
 
-		if resp2.JSON("id").String() == resp1.JSON("id").String() {
-			t.Errorf("Expected customDate to match. wanted: %s, got: %s", resp1.JSON(), resp2.JSON())
-		}
+		assert.NotEqual(t, result1.Data.ID(), result2.Data.ID(), "Expected IDs to differ. body1: %s, body2: %s", result1.Data.JSONDoc, result2.Data.JSONDoc)
 	}
 }
 
@@ -126,21 +127,21 @@ func Test_CachedClientWithSelectKeys(t *testing.T) {
 
 	parameters := []struct {
 		Keys  []string
-		Body1 map[string]interface{}
-		Body2 map[string]interface{}
+		Body1 map[string]any
+		Body2 map[string]any
 	}{
 		{
 			[]string{"name", "complex.arrays.#"},
 
-			map[string]interface{}{
+			map[string]any{
 				"name": "test_device_100",
-				"complex": map[string]interface{}{
+				"complex": map[string]any{
 					"arrays": []string{"item1", "item2"},
 				},
 			},
-			map[string]interface{}{
+			map[string]any{
 				"name": "test_device_100",
-				"complex": map[string]interface{}{
+				"complex": map[string]any{
 					"arrays": []string{"item3", "item4"},
 				},
 			},
@@ -148,27 +149,27 @@ func Test_CachedClientWithSelectKeys(t *testing.T) {
 		{
 			[]string{"name", "complex.arrays"},
 
-			map[string]interface{}{
+			map[string]any{
 				"name": "test_device_100",
-				"complex": map[string]interface{}{
+				"complex": map[string]any{
 					"arrays": []string{"item1", "item2"},
 				},
 			},
-			map[string]interface{}{
+			map[string]any{
 				"name": "test_device_100",
-				"complex": map[string]interface{}{
+				"complex": map[string]any{
 					"arrays": []string{"item1", "item2"},
 				},
 			},
 		},
 		{
 			[]string{"name", "index"},
-			map[string]interface{}{
+			map[string]any{
 				"name":  "test_device_100",
 				"other": false,
 				"index": 101,
 			},
-			map[string]interface{}{
+			map[string]any{
 				"name":  "test_device_100",
 				"other": true,
 				"index": 101,
@@ -179,20 +180,18 @@ func Test_CachedClientWithSelectKeys(t *testing.T) {
 	for _, params := range parameters {
 		client := createCachedClient(params.Keys)
 
-		_, resp1, err := client.Inventory.Create(context.Background(), params.Body1)
-		if err != nil {
-			t.Error(err)
-		}
-		defer client.Inventory.Delete(context.Background(), resp1.JSON("id").String())
+		result1 := client.ManagedObjects.Create(context.Background(), params.Body1)
+		require.NoError(t, result1.Err)
+		t.Cleanup(func() {
+			client.ManagedObjects.Delete(context.Background(), result1.Data.ID(), managedobjects.DeleteOptions{})
+		})
 
-		_, resp2, err := client.Inventory.Create(context.Background(), params.Body2)
-		if err != nil {
-			t.Error(err)
-		}
-		defer client.Inventory.Delete(context.Background(), resp2.JSON("id").String())
+		result2 := client.ManagedObjects.Create(context.Background(), params.Body2)
+		require.NoError(t, result2.Err)
+		t.Cleanup(func() {
+			client.ManagedObjects.Delete(context.Background(), result2.Data.ID(), managedobjects.DeleteOptions{})
+		})
 
-		if resp2.JSON("id").String() != resp1.JSON("id").String() {
-			t.Errorf("Expected customDate to match. wanted: %s, got: %s", resp1.JSON(), resp2.JSON())
-		}
+		assert.Equal(t, result1.Data.ID(), result2.Data.ID(), "Expected IDs to match. body1: %s, body2: %s", result1.Data.JSONDoc, result2.Data.JSONDoc)
 	}
 }
