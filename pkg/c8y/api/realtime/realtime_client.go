@@ -21,8 +21,8 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/obeattie/ohmyglob"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/jsondoc"
+	"github.com/reubenmiller/go-c8y/pkg/matcher"
 	"github.com/reubenmiller/go-c8y/pkg/wsurl"
 	"golang.org/x/net/publicsuffix"
 )
@@ -115,7 +115,7 @@ type RealtimeData struct {
 }
 
 type subscription struct {
-	glob       ohmyglob.Glob
+	glob       *matcher.Glob
 	out        chan<- *Message
 	isWildcard bool
 	disabled   bool
@@ -710,7 +710,7 @@ func Operations(id ...string) string {
 func (c *Client) Subscribe(ctx context.Context, pattern string, out chan<- *Message) chan error {
 	c.log().Info("Subscribing to pattern", "value", pattern)
 
-	glob, err := ohmyglob.Compile(pattern, nil)
+	glob, err := matcher.Compile(pattern)
 	if err != nil {
 		errCh := make(chan error, 1)
 		errCh <- fmt.Errorf("invalid pattern: %s", err)
