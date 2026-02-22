@@ -194,7 +194,7 @@ type ListByUserOptions struct {
 
 // List groups that contain a given user in the tenant
 func (s *Service) ListByUser(ctx context.Context, opt ListByUserOptions) op.Result[jsonmodels.UserGroup] {
-	return core.ExecuteCollection(ctx, s.listByUserB(opt), "references.#.group", "group", jsonmodels.NewUserGroup)
+	return core.ExecuteCollection(ctx, s.listByUserB(opt), "references.#.group", types.ResponseFieldStatistics, jsonmodels.NewUserGroup)
 }
 
 func (s *Service) listByUserB(opt ListByUserOptions) *core.TryRequest {

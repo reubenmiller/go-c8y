@@ -55,6 +55,7 @@ func (s *Service) ListAll(ctx context.Context, parentID string, opts ListOptions
 func (s *Service) listB(parentID string, opt ListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamId, parentID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiManagedObjectChildDevices)
@@ -85,6 +86,7 @@ func (s *Service) createB(parentID string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(ParamId, parentID).
+		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiManagedObjectChildDevices)

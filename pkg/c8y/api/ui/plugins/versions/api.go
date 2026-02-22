@@ -163,8 +163,8 @@ func (s *Service) updateB(pluginID string, version string, tags []string) *core.
 }
 
 // Delete removes a specific version of a plugin
-func (s *Service) Delete(ctx context.Context, pluginID string, version string) (*resty.Response, error) {
-	return core.ExecuteResponseOnly(ctx, s.deleteB(pluginID, version))
+func (s *Service) Delete(ctx context.Context, pluginID string, version string) op.Result[core.NoContent] {
+	return core.ExecuteNoContent(ctx, s.deleteB(pluginID, version))
 }
 
 func (s *Service) deleteB(pluginID string, version string) *core.TryRequest {

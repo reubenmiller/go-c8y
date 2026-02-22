@@ -181,11 +181,12 @@ func (s *Service) listB(opt ListOptions) *core.TryRequest {
 			PageSize:    opt.PageSize,
 		},
 	}
-	req := s.managedObjects.Client.R().
+	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(core.QueryParameters(listOpts)).
 		SetURL(managedobjects.ApiManagedObjects)
-	return core.NewTryRequest(s.managedObjects.Client, req, managedobjects.ResultProperty)
+	return core.NewTryRequest(s.Client, req, managedobjects.ResultProperty)
 }
 
 // ConfigurationIterator provides iteration over configuration items
@@ -549,46 +550,47 @@ func (s *Service) UpsertByName(ctx context.Context, opt CreateOptions) op.Result
 // Builder methods
 
 func (s *Service) createB(body any) *core.TryRequest {
-	req := s.managedObjects.Client.R().
+	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetBody(body).
 		SetContentType(types.MimeTypeManagedObject).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObjects)
-	return core.NewTryRequest(s.managedObjects.Client, req, "")
+	return core.NewTryRequest(s.Client, req, "")
 }
 
 func (s *Service) getB(ID string, opt GetOptions) *core.TryRequest {
 	getOpts := managedobjects.GetOptions{
 		WithParents: opt.WithParents,
 	}
-	req := s.managedObjects.Client.R().
+	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam("id", ID).
 		SetQueryParamsFromValues(core.QueryParameters(getOpts)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObject)
-	return core.NewTryRequest(s.managedObjects.Client, req, "")
+	return core.NewTryRequest(s.Client, req, "")
 }
 
 func (s *Service) updateB(ID string, body any) *core.TryRequest {
-	req := s.managedObjects.Client.R().
+	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam("id", ID).
 		SetBody(body).
+		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObject)
-	return core.NewTryRequest(s.managedObjects.Client, req, "")
+	return core.NewTryRequest(s.Client, req, "")
 }
 
 func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
 	deleteOpts := managedobjects.DeleteOptions{
 		ForceCascade: opt.ForceCascade,
 	}
-	req := s.managedObjects.Client.R().
+	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam("id", ID).
 		SetQueryParamsFromValues(core.QueryParameters(deleteOpts)).
 		SetURL(ApiManagedObject)
-	return core.NewTryRequest(s.managedObjects.Client, req, "")
+	return core.NewTryRequest(s.Client, req, "")
 }

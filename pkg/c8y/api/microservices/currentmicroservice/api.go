@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
 	"resty.dev/v3"
@@ -30,6 +31,7 @@ func (s *Service) Get(ctx context.Context) op.Result[jsonmodels.Microservice] {
 func (s *Service) getB() *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiApplication)
 	return core.NewTryRequest(s.Client, req)
 }
@@ -42,6 +44,7 @@ func (s *Service) ListUsers(ctx context.Context) op.Result[jsonmodels.Microservi
 func (s *Service) listUsersB() *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiApplicationSubscriptions)
 	return core.NewTryRequest(s.Client, req)
 }
@@ -54,6 +57,7 @@ func (s *Service) ListSettings(ctx context.Context) op.Result[jsonmodels.Microse
 func (s *Service) listSettingsB() *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiApplicationSettings)
 	return core.NewTryRequest(s.Client, req)
 }

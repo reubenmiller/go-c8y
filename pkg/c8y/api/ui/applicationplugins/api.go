@@ -197,11 +197,11 @@ func (s *Service) Replace(ctx context.Context, applicationID string, pluginRefs 
 
 // Delete removes a plugin reference from an application
 // This fetches the application, removes the plugin, and updates it
-func (s *Service) Delete(ctx context.Context, applicationID string, pluginID string) (*resty.Response, error) {
+func (s *Service) Delete(ctx context.Context, applicationID string, pluginID string) op.Result[core.NoContent] {
 	// Get current application state
 	appResult := s.getApplication(ctx, applicationID)
 	if appResult.Err != nil {
-		return nil, appResult.Err
+		return op.Failed[core.NoContent](appResult.Err, false)
 	}
 
 	// Get current plugins and filter out the one to delete
@@ -225,9 +225,8 @@ func (s *Service) Delete(ctx context.Context, applicationID string, pluginID str
 
 	updateResult := s.updateApplication(ctx, applicationID, body)
 	if updateResult.Err != nil {
-		return nil, updateResult.Err
+		return op.Failed[core.NoContent](updateResult.Err, false)
 	}
 
-	// Return a success response (updateResult doesn't have Response field, so create one)
-	return &resty.Response{}, nil
+	return op.OK(core.NoContent{})
 }

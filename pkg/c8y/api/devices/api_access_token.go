@@ -24,11 +24,11 @@ import (
 //     if the immediate issuer of the client's certificate is not uploaded as a trusted certificate on the platform.
 //     If the immediate issuer is already uploaded and trusted, the header can be omitted)
 func (s *Service) CreateAccessToken(ctx context.Context) op.Result[jsonmodels.DeviceAccessToken] {
-	return core.Execute(ctx, s.CreateAccessTokenB(), jsonmodels.NewDeviceAccessToken)
+	return core.Execute(ctx, s.createAccessTokenB(), jsonmodels.NewDeviceAccessToken)
 }
 
-func (s *Service) CreateAccessTokenB() *core.TryRequest {
-	req := s.Service.Client.R().
+func (s *Service) createAccessTokenB() *core.TryRequest {
+	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(mtlsEndpoint(s.Client.BaseURL(), ApiDeviceControlAccessToken))

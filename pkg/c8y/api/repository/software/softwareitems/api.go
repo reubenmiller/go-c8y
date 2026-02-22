@@ -92,11 +92,12 @@ func (s *Service) listB(opt ListOptions) *core.TryRequest {
 		},
 	}
 	// Build the request directly
-	req := s.managedObjects.Client.R().
+	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(core.QueryParameters(listOpts)).
 		SetURL(managedobjects.ApiManagedObjects)
-	return core.NewTryRequest(s.managedObjects.Client, req, managedobjects.ResultProperty)
+	return core.NewTryRequest(s.Client, req, managedobjects.ResultProperty)
 }
 
 // SoftwareIterator provides iteration over software items
@@ -564,9 +565,10 @@ func (s *Service) upsertWithQuery(ctx context.Context, query string, body any) o
 // Builder methods for backwards compatibility and flexibility
 
 func (s *Service) createB(body any) *core.TryRequest {
-	req := s.Service.Client.R().
+	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetBody(body).
+		SetContentType(types.MimeTypeManagedObject).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObjects)
 	return core.NewTryRequest(s.Client, req)
@@ -587,6 +589,7 @@ func (s *Service) updateB(ID string, body any) *core.TryRequest {
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamId, ID).
 		SetBody(body).
+		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObject)
 	return core.NewTryRequest(s.Client, req)

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
 	"resty.dev/v3"
@@ -31,6 +32,7 @@ func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Boots
 func (s *Service) getB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamId, ID).
 		SetURL(ApiApplicationBootstrapUser)
 	return core.NewTryRequest(s.Client, req)

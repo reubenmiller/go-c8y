@@ -86,6 +86,7 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *TenantIterator
 func (s *Service) listB(opt ListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiTenants)
 	return core.NewTryRequest(s.Client, req, ResultProperty)
@@ -130,6 +131,7 @@ func (s *Service) updateB(ID string, body any) *core.TryRequest {
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamId, ID).
 		SetBody(body).
+		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiTenant)
 	return core.NewTryRequest(s.Client, req)
@@ -187,6 +189,7 @@ func (s *Service) ListAllApplicationReferences(ctx context.Context, tenantID str
 func (s *Service) listApplicationReferencesB(tenantID string, opt ListApplicationReferencesOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamTenantId, tenantID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiTenantApplications)

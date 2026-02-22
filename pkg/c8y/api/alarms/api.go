@@ -377,6 +377,7 @@ func (s *Service) updateB(ID string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamId, ID).
+		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiAlarm)
@@ -461,6 +462,7 @@ func (s *Service) updateListB(opt BulkUpdateOptions, body any) *core.TryRequest 
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiAlarms)

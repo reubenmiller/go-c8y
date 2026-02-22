@@ -232,8 +232,9 @@ func (s *Service) RegisterResolver(scheme string, resolver source.Resolver) {
 
 func (s *Service) listB(opt ListOptions) *core.TryRequest {
 	// Build request directly since applications B methods are now private
-	req := s.Service.Client.R().
+	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(core.QueryParameters(opt.options())).
 		SetURL(applications.ApiApplications)
 	return core.NewTryRequest(s.Client, req, applications.ResultProperty)
@@ -266,7 +267,7 @@ func (s *Service) Get(ctx context.Context, id string) op.Result[jsonmodels.Micro
 
 func (s *Service) getB(ID string) *core.TryRequest {
 	// Rebuild request since applications B methods are now private
-	req := s.Service.Client.R().
+	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam("id", ID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -281,9 +282,10 @@ func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Mic
 
 func (s *Service) createB(body any) *core.TryRequest {
 	// Rebuild request since applications B methods are now private
-	req := s.Service.Client.R().
+	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetBody(body).
+		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(applications.ApiApplications)
 	return core.NewTryRequest(s.Client, req, "")
@@ -311,10 +313,11 @@ func (s *Service) Update(ctx context.Context, id string, body any) op.Result[jso
 
 func (s *Service) updateB(ID string, body any) *core.TryRequest {
 	// Rebuild request since applications B methods are now private
-	req := s.Service.Client.R().
+	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam("id", ID).
 		SetBody(body).
+		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(applications.ApiApplication)
 	return core.NewTryRequest(s.Client, req, "")
@@ -344,7 +347,7 @@ func (s *Service) Delete(ctx context.Context, id string, opt DeleteOptions) op.R
 
 func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
 	// Rebuild request since applications B methods are now private
-	req := s.Service.Client.R().
+	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam("id", ID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
@@ -365,10 +368,11 @@ func (s *Service) Subscribe(ctx context.Context, tenantID string, selfURL string
 
 func (s *Service) subscribeB(tenantID string, selfURL string) *core.TryRequest {
 	// Rebuild request since applications B methods are now private
-	req := s.Service.Client.R().
+	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam("tenantId", tenantID).
 		SetBody(map[string]any{"application": map[string]any{"self": selfURL}}).
+		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL("/tenant/tenants/{tenantId}/applications")
 	return core.NewTryRequest(s.Client, req, "")
@@ -396,7 +400,7 @@ func (s *Service) Unsubscribe(ctx context.Context, tenantID string, id string) o
 
 func (s *Service) unsubscribeB(tenantID string, ID string) *core.TryRequest {
 	// Rebuild request since applications B methods are now private
-	req := s.Service.Client.R().
+	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam("tenantId", tenantID).
 		SetPathParam("id", ID).
@@ -428,7 +432,7 @@ func (s *Service) Upload(ctx context.Context, id string, opt UploadFileOptions) 
 
 func (s *Service) uploadB(ID string, opt UploadFileOptions) *core.TryRequest {
 	// Rebuild request since applications B methods are now private
-	req := s.Service.Client.R().
+	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam("id", ID).
 		SetFileReader("file", opt.Name, opt.Reader).

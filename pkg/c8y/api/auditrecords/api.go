@@ -78,6 +78,7 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *AuditRecordIte
 func (s *Service) listB(opt any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiAuditRecords)
 	return core.NewTryRequest(s.Client, req, ResultProperty)
@@ -105,6 +106,7 @@ func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Aud
 func (s *Service) createB(body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
+		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiAuditRecords)

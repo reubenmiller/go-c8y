@@ -71,6 +71,7 @@ func (s *Service) createB(id string, opts IdentityOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(ParamId, id).
+		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(opts.withDefaults()).
 		SetURL(ApiIdentities)

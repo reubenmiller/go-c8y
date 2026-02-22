@@ -65,6 +65,7 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *TenantOptionIt
 func (s *Service) listB(opt ListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiTenantOptions)
 	return core.NewTryRequest(s.Client, req, ResultProperty)
@@ -76,7 +77,7 @@ func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Ten
 }
 
 func (s *Service) createB(body any) *core.TryRequest {
-	req := s.Service.Client.R().
+	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
@@ -123,6 +124,7 @@ func (s *Service) updateB(opt UpdateOption) *core.TryRequest {
 		SetPathParam(ParamCategory, opt.Category).
 		SetPathParam(ParamKey, opt.Key).
 		SetBody(opt.Body).
+		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiTenantOption)
 	return core.NewTryRequest(s.Client, req)
@@ -153,6 +155,7 @@ func (s *Service) updateEditableFlagB(opt UpdateEditableFlagOption) *core.TryReq
 		SetPathParam(ParamCategory, opt.Category).
 		SetPathParam(ParamKey, opt.Key).
 		SetBody(body).
+		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiTenantOptionEditable)
 	return core.NewTryRequest(s.Client, req)
@@ -199,6 +202,7 @@ func (s *Service) ListByCategory(ctx context.Context, opt ListByCategoryOptions)
 func (s *Service) listByCategoryB(opt ListByCategoryOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamCategory, opt.Category).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiTenantOptionByCategory)
@@ -225,6 +229,7 @@ func (s *Service) updateByCategoryOptionB(opt UpdateByCategoryOption) *core.TryR
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamCategory, opt.Category).
 		SetBody(opt.Body).
+		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiTenantOptionByCategory)
 	return core.NewTryRequest(s.Client, req)

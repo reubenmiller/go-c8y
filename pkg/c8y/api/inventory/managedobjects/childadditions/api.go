@@ -55,6 +55,7 @@ func (s *Service) ListAll(ctx context.Context, parentID string, opts ListOptions
 func (s *Service) listB(parentID string, opt ListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamId, parentID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiManagedObjectChildAdditions)

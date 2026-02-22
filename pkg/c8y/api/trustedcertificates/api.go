@@ -84,6 +84,7 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *TrustedCertifi
 func (s *Service) listB(opt ListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamTenant, opt.TenantID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiTrustedCertificates)
@@ -105,10 +106,11 @@ func (s *Service) Create(ctx context.Context, opt CreateOptions, body any) op.Re
 }
 
 func (s *Service) createB(opt CreateOptions, body any) *core.TryRequest {
-	req := s.Service.Client.R().
+	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(ParamTenant, opt.TenantID).
 		SetBody(body).
+		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiTrustedCertificates)
 	return core.NewTryRequest(s.Client, req)
@@ -120,10 +122,11 @@ func (s *Service) CreateMultiple(ctx context.Context, opt CreateOptions, body an
 }
 
 func (s *Service) createMultipleB(opt CreateOptions, body any) *core.TryRequest {
-	req := s.Service.Client.R().
+	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(ParamTenant, opt.TenantID).
 		SetBody(body).
+		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiTrustedCertificates)
 	return core.NewTryRequest(s.Client, req)
@@ -167,6 +170,7 @@ func (s *Service) updateB(opt UpdateOptions, body any) *core.TryRequest {
 		SetPathParam(ParamTenant, opt.TenantID).
 		SetPathParam(ParamFingerprint, opt.Fingerprint).
 		SetBody(body).
+		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiTrustedCertificate)
 	return core.NewTryRequest(s.Client, req)

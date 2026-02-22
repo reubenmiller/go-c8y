@@ -144,11 +144,12 @@ func (s *Service) listB(opt ListOptions) *core.TryRequest {
 			PageSize:    opt.PageSize,
 		},
 	}
-	req := s.managedObjects.Client.R().
+	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(core.QueryParameters(listOpts)).
 		SetURL(managedobjects.ApiManagedObjects)
-	return core.NewTryRequest(s.managedObjects.Client, req, managedobjects.ResultProperty)
+	return core.NewTryRequest(s.Client, req, managedobjects.ResultProperty)
 }
 
 // FirmwareVersionIterator provides iteration over firmware versions
@@ -766,14 +767,14 @@ func (s *Service) deleteBinaryFromURL(ctx context.Context, url string) {
 
 func (s *Service) createB(firmwareID string, body any) *core.TryRequest {
 	// Build request directly since childAdditions.createB is now private
-	req := s.managedObjects.Client.R().
+	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam("id", firmwareID).
 		SetBody(body).
 		SetContentType(types.MimeTypeManagedObject).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL("/inventory/managedObjects/{id}/childAdditions")
-	return core.NewTryRequest(s.managedObjects.Client, req, "")
+	return core.NewTryRequest(s.Client, req, "")
 }
 
 func (s *Service) getB(ID string, opt GetOptions) *core.TryRequest {
@@ -781,24 +782,25 @@ func (s *Service) getB(ID string, opt GetOptions) *core.TryRequest {
 	getOpts := managedobjects.GetOptions{
 		WithParents: opt.WithParents,
 	}
-	req := s.managedObjects.Client.R().
+	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam("id", ID).
 		SetQueryParamsFromValues(core.QueryParameters(getOpts)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(managedobjects.ApiManagedObject)
-	return core.NewTryRequest(s.managedObjects.Client, req, "")
+	return core.NewTryRequest(s.Client, req, "")
 }
 
 func (s *Service) updateB(ID string, body any) *core.TryRequest {
 	// Build request directly since managedObjects.updateB is now private
-	req := s.managedObjects.Client.R().
+	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam("id", ID).
 		SetBody(body).
+		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(managedobjects.ApiManagedObject)
-	return core.NewTryRequest(s.managedObjects.Client, req, "")
+	return core.NewTryRequest(s.Client, req, "")
 }
 
 func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
@@ -806,10 +808,10 @@ func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
 	deleteOpts := managedobjects.DeleteOptions{
 		ForceCascade: opt.ForceCascade,
 	}
-	req := s.managedObjects.Client.R().
+	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam("id", ID).
 		SetQueryParamsFromValues(core.QueryParameters(deleteOpts)).
 		SetURL(managedobjects.ApiManagedObject)
-	return core.NewTryRequest(s.managedObjects.Client, req, "")
+	return core.NewTryRequest(s.Client, req, "")
 }

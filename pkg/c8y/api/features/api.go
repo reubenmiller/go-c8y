@@ -37,6 +37,7 @@ func (s *Service) List(ctx context.Context) op.Result[jsonmodels.Feature] {
 func (s *Service) listB() *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiFeatures)
 	return core.NewTryRequest(s.Client, req)
 }
@@ -49,6 +50,7 @@ func (s *Service) Get(ctx context.Context, key string) op.Result[jsonmodels.Feat
 func (s *Service) getB(key string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamKey, key).
 		SetURL(ApiFeature)
 	return core.NewTryRequest(s.Client, req)
@@ -62,6 +64,7 @@ func (s *Service) Update(ctx context.Context, key string, body any) op.Result[js
 func (s *Service) updateB(key string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
+		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamKey, key).
 		SetBody(body).

@@ -27,12 +27,12 @@ func (s *Service) Count(ctx context.Context, opt ListOptions) op.Result[int64] {
 		opt.Source = resolvedID
 	}
 
-	return core.Execute(ctx, s.CountB(opt), func(b []byte) int64 {
+	return core.Execute(ctx, s.countB(opt), func(b []byte) int64 {
 		return gjson.ParseBytes(b).Int()
 	})
 }
 
-func (s *Service) CountB(opt ListOptions) *core.TryRequest {
+func (s *Service) countB(opt ListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).

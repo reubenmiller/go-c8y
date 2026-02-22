@@ -66,6 +66,7 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *LoginOptionIte
 func (s *Service) listB(opt any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiLoginOptions)
 	return core.NewTryRequest(s.Client, req, ResultProperty)
@@ -79,6 +80,7 @@ func (s *Service) ListNoAuth(ctx context.Context, opt ListOptions) op.Result[jso
 func (s *Service) listNoAuthB(opt any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		Funcs(core.NoAuthorization()).
 		SetURL(ApiLoginOptions)
@@ -93,6 +95,7 @@ func (s *Service) Get(ctx context.Context, typeOrID string) op.Result[jsonmodels
 func (s *Service) getB(typeOrID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamId, typeOrID).
 		SetURL(ApiLoginOption)
 	return core.NewTryRequest(s.Client, req)
@@ -106,6 +109,7 @@ func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Log
 func (s *Service) createB(body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
+		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiLoginOptions)
@@ -120,6 +124,7 @@ func (s *Service) Update(ctx context.Context, typeOrID string, body any) op.Resu
 func (s *Service) updateB(typeOrID string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
+		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamId, typeOrID).
 		SetBody(body).
@@ -162,6 +167,7 @@ func (s *Service) UpdateAccess(ctx context.Context, opt UpdateAccessOptions, bod
 func (s *Service) updateAccessB(opt UpdateAccessOptions, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
+		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamId, opt.TypeOrId).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
