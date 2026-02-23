@@ -233,6 +233,11 @@ type BrowserFlowOptions struct {
 	// pre-registered as an allowed redirect URI in your SSO provider.  Use a
 	// fixed port that matches your provider's configuration.
 	ListenAddr string
+
+	// SuccessPage is the full HTML body returned to the browser after a
+	// successful authentication.  When empty the built-in Cumulocity-branded
+	// page (browser_success.html) is used.
+	SuccessPage string
 }
 
 // AuthorizeWithBrowserFlow performs the OAuth2 Authorization Code flow
@@ -286,8 +291,12 @@ func (c *Client) AuthorizeWithBrowserFlow(ctx context.Context, initRequest strin
 			http.Error(w, "missing code parameter", http.StatusBadRequest)
 			return
 		}
+		successHTML := opts.SuccessPage
+		if successHTML == "" {
+			successHTML = browserSuccessPage
+		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		fmt.Fprint(w, browserSuccessPage)
+		fmt.Fprint(w, successHTML)
 		codeCh <- code
 		go func() { _ = srv.Shutdown(context.Background()) }()
 	})
