@@ -24,7 +24,7 @@ import (
 var ErrSSOInvalidConfiguration = errors.New("invalid sso configuration")
 
 // GetLoginOptions returns the login options available for the tenant
-func getAuthorizationRequest(ctx context.Context, client *http.Client, oauthUrl string) (*api.AuthorizationRequest, error) {
+func getAuthorizationRequest(ctx context.Context, client *http.Client, oauthUrl string, redirectURL string) (*api.AuthorizationRequest, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", oauthUrl, nil)
 	if err != nil {
 		return nil, err
@@ -61,7 +61,9 @@ func getAuthorizationRequest(ctx context.Context, client *http.Client, oauthUrl 
 					// remove the redirect_uri if found.
 					params := u.Query()
 					// TODO: Check if the redirect uri is needed here
-					// params.Set("redirect_uri", redirectURI)
+					if redirectURL != "" {
+						params.Set("redirect_uri", redirectURL)
+					}
 					u.RawQuery = params.Encode()
 
 					return getAuthorizationEndpointFromURL(u), nil
@@ -71,10 +73,6 @@ func getAuthorizationRequest(ctx context.Context, client *http.Client, oauthUrl 
 	}
 
 	return &api.AuthorizationRequest{}, fmt.Errorf("not found")
-}
-
-type redirectRequest struct {
-	RedirectTo string `json:"redirectTo,omitempty"`
 }
 
 func getAuthorizationEndpointFromURL(u *url.URL) *api.AuthorizationRequest {
@@ -121,20 +119,9 @@ func (c *Client) HasExternalAuthProvider(ctx context.Context) (loginOption *json
 
 // AuthorizeWithDeviceFlow authorize the client using the OAuth2 Device Authorization Flow (the Auth provider must support it)
 func (c *Client) AuthorizeWithDeviceFlow(ctx context.Context, initRequest string, auth_endpoints oauth2_api.AuthEndpoints, displayFunc device.DeviceCodeFunc) (*api.AccessToken, error) {
-	// Create a new client which uses the given certificate
-	// Use similar setting as the main client for consistency
-	// tr := c.Client.Transport()
-	// skipVerify := false
-	// if httpTr, ok := tr.(*http.Transport); ok && httpTr.TLSClientConfig != nil {
-	// 	skipVerify = httpTr.TLSClientConfig.InsecureSkipVerify
-	// }
 
 	httpClient := c.Client.Clone(context.Background()).Client()
-
-	// httpClient := NewHTTPClient(
-	// 	WithInsecureSkipVerify(skipVerify),
-	// )
-	endpoint, err := getAuthorizationRequest(ctx, httpClient, initRequest)
+	endpoint, err := getAuthorizationRequest(ctx, httpClient, initRequest, "")
 	if err != nil {
 		return nil, err
 	}
