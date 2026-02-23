@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	_ "embed"
 	"errors"
 	"fmt"
 	"io"
@@ -216,6 +217,9 @@ func DefaultBrowserOpen(url string) error {
 	return exec.Command(cmd, args...).Start()
 }
 
+//go:embed browser_success.html
+var browserSuccessPage string
+
 // BrowserFlowOptions controls the behaviour of AuthorizeWithBrowserFlow.
 type BrowserFlowOptions struct {
 	// OpenBrowser is called with the IdP authorization URL.  Defaults to
@@ -282,7 +286,8 @@ func (c *Client) AuthorizeWithBrowserFlow(ctx context.Context, initRequest strin
 			http.Error(w, "missing code parameter", http.StatusBadRequest)
 			return
 		}
-		fmt.Fprintln(w, "<html><body><h2>Authentication successful - you may close this tab.</h2></body></html>")
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		fmt.Fprint(w, browserSuccessPage)
 		codeCh <- code
 		go func() { _ = srv.Shutdown(context.Background()) }()
 	})

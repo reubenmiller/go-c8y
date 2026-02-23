@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Authenticated – Cumulocity IoT</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0d1117;
+    color: #e8f0fe;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Subtle animated star-field background */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(1px 1px at  10%  20%, rgba(255,255,255,.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at  30%  65%, rgba(255,255,255,.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at  55%  10%, rgba(255,255,255,.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at  75%  45%, rgba(255,255,255,.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at  88%  80%, rgba(255,255,255,.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at  20%  88%, rgba(255,255,255,.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at  65%  72%, rgba(255,255,255,.3) 0%, transparent 100%);
+    animation: twinkle 6s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+  @keyframes twinkle {
+    from { opacity: .6; }
+    to   { opacity: 1; }
+  }
+
+  .card {
+    position: relative;
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 20px;
+    padding: 56px 64px 48px;
+    max-width: 480px;
+    width: 90%;
+    text-align: center;
+    backdrop-filter: blur(16px);
+    animation: rise .6s cubic-bezier(.22,1,.36,1) both;
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(32px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Official wordmark – fill overridden to white for dark background */
+  .logo-wrap {
+    margin-bottom: 36px;
+    animation: fade-in .8s .1s both;
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  .logo-wrap svg { width: 220px; height: auto; fill: #ffffff; }
+
+  /* Animated check ring */
+  .check-ring {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 28px;
+  }
+  .check-ring circle {
+    fill: none;
+    stroke: #ffd200;
+    stroke-width: 4;
+    stroke-dasharray: 220;
+    stroke-dashoffset: 220;
+    stroke-linecap: round;
+    animation: draw-ring .7s .3s cubic-bezier(.65,0,.35,1) forwards;
+    transform-origin: center;
+    transform: rotate(-90deg);
+  }
+  .check-ring polyline {
+    fill: none;
+    stroke: #ffd200;
+    stroke-width: 5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 60;
+    stroke-dashoffset: 60;
+    animation: draw-check .4s .95s ease forwards;
+  }
+  @keyframes draw-ring {
+    to { stroke-dashoffset: 0; }
+  }
+  @keyframes draw-check {
+    to { stroke-dashoffset: 0; }
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 10px;
+    animation: fade-in .5s .8s both;
+  }
+  p {
+    font-size: .95rem;
+    color: rgba(255,255,255,.55);
+    line-height: 1.6;
+    animation: fade-in .5s 1s both;
+  }
+  .pill {
+    display: inline-block;
+    margin-top: 28px;
+    background: rgba(255,210,0,.1);
+    border: 1px solid rgba(255,210,0,.35);
+    color: #ffd200;
+    font-size: .8rem;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: 6px 18px;
+    border-radius: 99px;
+    animation: fade-in .5s 1.2s both;
+  }
+
+
+</style>
+</head>
+<body>
+<div class="card">
+
+  <!-- Official Cumulocity wordmark (CC-BY-SA-4.0, Cumulocity GmbH / Carlos Ceia)
+       Source: https://commons.wikimedia.org/wiki/File:C8y-logo-yb-cmyk.svg
+       Fill overridden to white for dark-background display. -->
+  <div class="logo-wrap">
+    <svg viewBox="0 0 873 189" xmlns="http://www.w3.org/2000/svg">
+      <g clip-path="url(#a)">
+        <path d="M414.671 169.084V94.444H396.384V186.728H455.309V169.084H414.671Z"/>
+        <path d="M508.37 92.794C481.587 92.794 460.77 113.739 460.77 140.396C460.77 167.18 481.714 187.997 508.37 187.997C534.645 187.997 555.97 166.672 555.97 140.396C555.97 114.246 534.645 92.794 508.37 92.794ZM537.437 140.523C537.437 157.278 524.744 170.48 508.37 170.48C491.995 170.48 479.175 157.405 479.175 140.523C479.175 123.767 491.995 110.565 508.37 110.565C524.744 110.692 537.437 123.767 537.437 140.523Z"/>
+        <path d="M48.55 110.692C59.471 110.692 68.615 115.897 74.33 125.417L75.219 126.94L90.966 117.801L90.077 116.278C81.568 101.553 66.075 92.921 48.55 92.921C21.755 92.921 0.928 113.866 0.928 140.523C0.928 167.307 21.882 188.124 48.55 188.124C66.075 188.124 81.568 179.366 90.077 164.768L90.966 163.245L75.219 154.105L74.33 155.628C68.615 165.149 59.344 170.353 48.55 170.353C32.168 170.353 19.342 157.278 19.342 140.396C19.215 123.767 32.041 110.692 48.55 110.692Z"/>
+        <path d="M160.432 150.424C160.432 162.864 153.447 170.48 141.764 170.48C129.953 170.48 122.969 162.991 122.969 150.424V94.444H104.682V150.17C104.682 172.892 119.667 188.252 141.891 188.252C163.987 188.252 178.973 172.892 178.973 150.17V94.444H160.686V150.424H160.432Z"/>
+        <path d="M361.08 150.424C361.08 162.864 354.095 170.48 342.412 170.48C330.602 170.48 323.617 162.991 323.617 150.424V94.444H305.33V150.17C305.33 172.892 320.315 188.252 342.539 188.252C364.636 188.252 379.621 172.892 379.621 150.17V94.444H361.334V150.424H361.08Z"/>
+        <path d="M616.717 110.692C627.638 110.692 636.782 115.897 642.497 125.417L643.386 126.94L659.133 117.801L658.244 116.278C649.735 101.553 634.242 92.921 616.717 92.921C589.922 92.921 569.095 113.866 569.095 140.523C569.095 167.307 590.049 188.124 616.717 188.124C634.242 188.124 649.735 179.366 658.244 164.768L659.133 163.245L643.386 154.105L642.497 155.628C636.782 165.149 627.512 170.353 616.717 170.353C600.335 170.353 587.509 157.278 587.509 140.396C587.382 123.767 600.335 110.692 616.717 110.692Z"/>
+        <path d="M693.168 94.444H674.881V186.728H693.168V94.444Z"/>
+        <path d="M709.041 112.089H734.821V186.728H753.108V112.089H778.887V94.444H709.041V112.089Z"/>
+        <path d="M850.892 94.444L828.033 129.479L805.429 94.444H783.84L818.89 148.012V186.728H837.304V148.139L872.481 94.444H850.892Z"/>
+        <path d="M241.834 142.173L211.99 94.444H195.735V186.728H214.022V130.495L235.992 165.53H247.93L269.772 130.622V186.728H288.059V94.444H271.804L241.834 142.173Z"/>
+        <path d="M405.488 63.288C422.659 63.288 436.776 49.297 436.776 32C436.776 14.83 422.786 0.712 405.488 0.712C388.191 0.712 374.2 14.702 374.2 32C374.2 49.17 388.191 63.288 405.488 63.288Z"/>
+        <path d="M475.245 1.791H454.376V62.209H475.245V1.791Z"/>
+        <path d="M524.133 63.29C541.304 63.29 555.421 49.298 555.421 32C555.421 14.829 541.431 0.71 524.133 0.71C506.836 0.71 492.845 14.701 492.845 32C492.972 49.171 506.836 63.29 524.133 63.29Z"/>
+        <path d="M604.31 63.29C621.48 63.29 635.598 49.298 635.598 32C635.598 14.829 621.607 0.71 604.31 0.71C587.139 0.71 573.021 14.701 573.021 32C573.149 49.171 587.139 63.29 604.31 63.29Z"/>
+        <path d="M684.486 63.29C701.656 63.29 715.774 49.298 715.774 32C715.774 14.829 701.783 0.71 684.486 0.71C667.188 0.71 653.198 14.701 653.198 32C653.325 49.171 667.315 63.29 684.486 63.29Z"/>
+        <path d="M764.662 63.29C781.832 63.29 795.95 49.298 795.95 32C795.95 14.829 781.959 0.71 764.662 0.71C747.492 0.71 733.374 14.701 733.374 32C733.374 49.171 747.364 63.29 764.662 63.29Z"/>
+        <path d="M834.419 1.791H813.55V62.209H834.419V1.791Z"/>
+        <path d="M872.888 1.791H852.019V62.209H872.888V1.791Z"/>
+      </g>
+      <defs>
+        <clipPath id="a"><rect width="873" height="188" transform="translate(0 0.5)"/></clipPath>
+      </defs>
+    </svg>
+  </div>
+
+  <!-- Animated success ring + check -->
+  <svg class="check-ring" viewBox="0 0 80 80">
+    <circle cx="40" cy="40" r="34"/>
+    <polyline points="24,40 34,51 56,28"/>
+  </svg>
+
+  <h1>Authentication successful</h1>
+  <p>You are now signed in via SSO.<br>You may close this tab and return to your terminal.</p>
+  <span class="pill">&#x2714;&nbsp; Session active</span>
+</div>
+</body>
+</html>
