@@ -33,3 +33,31 @@ func (t Tenant) Self() string {
 func (t Tenant) CreationTime() time.Time {
 	return t.Get("creationTime").Time()
 }
+
+type CurrentTenant struct {
+	jsondoc.Facade
+}
+
+func NewCurrentTenant(b []byte) CurrentTenant {
+	return CurrentTenant{jsondoc.Facade{JSONDoc: jsondoc.New(b)}}
+}
+
+func (t CurrentTenant) ID() string {
+	return t.Get("id").String()
+}
+
+func (t CurrentTenant) Name() string {
+	return t.Get("name").String()
+}
+
+func (t CurrentTenant) DomainName() string {
+	return t.Get("domainName").String()
+}
+
+func (t CurrentTenant) Self() string {
+	return t.Get("self").String()
+}
+
+func (t CurrentTenant) CreationTime() time.Time {
+	return t.Get("creationTime").Time()
+}
