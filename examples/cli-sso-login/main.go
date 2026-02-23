@@ -151,7 +151,7 @@ func fetchIdPAuthURL(ctx context.Context, initRequestURL, redirectURI, requestOr
 			if err := json.Unmarshal(b, &data); err == nil {
 				slog.Info("Auth URL.", "redirectTo", data["redirectTo"])
 
-				// TODO: replace the redirect_uri query parameter with the redirectUri value
+				// Correct the redirect_uri to the local uri
 				u, err := url.Parse(data["redirectTo"])
 				if err == nil {
 					params := u.Query()

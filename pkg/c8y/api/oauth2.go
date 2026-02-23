@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 
@@ -16,6 +18,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/oauth/api"
 	oauth2_api "github.com/reubenmiller/go-c8y/pkg/oauth/api"
 	"github.com/reubenmiller/go-c8y/pkg/oauth/device"
+	"github.com/tidwall/gjson"
 )
 
 var ErrSSOInvalidConfiguration = errors.New("invalid sso configuration")
@@ -47,31 +50,55 @@ func getAuthorizationRequest(ctx context.Context, client *http.Client, oauthUrl 
 		if err != nil {
 			return nil, fmt.Errorf("failed to get redirect location: %w", err)
 		}
+		return getAuthorizationEndpointFromURL(location), nil
+	} else if resp.StatusCode == 200 {
+		// Read redirectTo from the response body
+		if b, err := io.ReadAll(resp.Body); err == nil {
+			if value := gjson.GetBytes(b, "redirectTo"); value.Exists() {
+				u, err := url.Parse(value.String())
+				if err == nil {
 
-		endpoint := &api.AuthorizationRequest{
-			URL: location,
-		}
+					// remove the redirect_uri if found.
+					params := u.Query()
+					// TODO: Check if the redirect uri is needed here
+					// params.Set("redirect_uri", redirectURI)
+					u.RawQuery = params.Encode()
 
-		for k, v := range location.Query() {
-			switch k {
-			case "client_id":
-				if len(v) > 0 {
-					endpoint.ClientID = v[0]
+					return getAuthorizationEndpointFromURL(u), nil
 				}
-			case "audience":
-				if len(v) > 0 {
-					endpoint.Audience = v[0]
-				}
-			case "scope":
-				endpoint.Scopes = v
 			}
-
 		}
-
-		return endpoint, nil
 	}
 
 	return &api.AuthorizationRequest{}, fmt.Errorf("not found")
+}
+
+type redirectRequest struct {
+	RedirectTo string `json:"redirectTo,omitempty"`
+}
+
+func getAuthorizationEndpointFromURL(u *url.URL) *api.AuthorizationRequest {
+	endpoint := &api.AuthorizationRequest{
+		URL: u,
+	}
+
+	for k, v := range u.Query() {
+		switch k {
+		case "client_id":
+			if len(v) > 0 {
+				endpoint.ClientID = v[0]
+			}
+		case "audience":
+			if len(v) > 0 {
+				endpoint.Audience = v[0]
+			}
+		case "scope":
+			endpoint.Scopes = v
+		}
+
+	}
+
+	return endpoint
 }
 
 // HasExternalAuthProvider checks if there is an external OAUTH2 provider is configured in the tenant
