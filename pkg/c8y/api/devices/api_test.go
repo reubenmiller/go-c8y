@@ -19,7 +19,7 @@ func TestCreateTokenB(t *testing.T) {
 	t.Skip("Create a temp cert key pair")
 	s := newTestService()
 	s.Client.SetCertificateFromFile("todo.crt", "todo.key")
-	req := s.CreateAccessTokenB()
+	req := s.createAccessTokenB()
 
 	certChain := req.Request.Header.Get(types.HeaderSSLCertificateChain)
 	assert.NotEmpty(t, certChain)
