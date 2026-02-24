@@ -18,7 +18,10 @@ import (
 )
 
 var ApiMeasurements = "/measurement/measurements"
+var ApiMeasurement = "/measurement/measurements/{id}"
 var ApiMeasurementsSeries = "/measurement/measurements/series"
+
+const ParamId = "id"
 
 const ResultProperty = "measurements"
 
@@ -149,6 +152,19 @@ func (s *Service) deleteListB(opt DeleteListOptions) *core.TryRequest {
 		SetMethod(resty.MethodDelete).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiMeasurements)
+	return core.NewTryRequest(s.Client, req)
+}
+
+// Delete removes a single measurement by ID
+func (s *Service) Delete(ctx context.Context, ID string) op.Result[core.NoContent] {
+	return core.ExecuteNoContent(ctx, s.deleteB(ID))
+}
+
+func (s *Service) deleteB(ID string) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodDelete).
+		SetPathParam(ParamId, ID).
+		SetURL(ApiMeasurement)
 	return core.NewTryRequest(s.Client, req)
 }
 
