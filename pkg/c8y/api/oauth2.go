@@ -336,23 +336,11 @@ func (c *Client) AuthorizeWithBrowserFlow(ctx context.Context, initRequest strin
 		}
 		tokenClient := NewClient(ClientOptions{BaseURL: c.Client.BaseURL()})
 		tokenClient.Client.SetDebug(true)
-		var tok op.Result[jsonmodels.OAIToken]
-		attempts := 1
-		for {
-			tok = tokenClient.LoginTokens.Create(ctx, logintokens.CreateTokenOptions{
-				GrantType:     logintokens.GrantTypeAuthorizationCode,
-				Code:          code,
-				RequestOrigin: callbackURL,
-			})
-			if tok.Err == nil {
-				break
-			}
-			slog.Warn("Failed to exchange code for a token", "err", tok.Err, "attempt", attempts)
-			if attempts > 2 {
-				break
-			}
-			attempts++
-		}
+		tok := tokenClient.LoginTokens.Create(ctx, logintokens.CreateTokenOptions{
+			GrantType:     logintokens.GrantTypeAuthorizationCode,
+			Code:          code,
+			RequestOrigin: callbackURL,
+		})
 
 		if tok.Err != nil {
 			return nil, fmt.Errorf("browser flow: token exchange: %w", tok.Err)

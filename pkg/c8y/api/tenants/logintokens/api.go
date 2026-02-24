@@ -3,6 +3,7 @@ package logintokens
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
@@ -71,7 +72,10 @@ func (s *Service) createB(opt CreateTokenOptions) *core.TryRequest {
 		Funcs(core.NoAuthorization()).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiOAuthToken).
-		SetRetryCount(0).
+		SetRetryCount(1).
+		SetRetryDelayStrategy(func(r *resty.Response, err error) (time.Duration, error) {
+			return 100 * time.Millisecond, nil
+		}).
 		SetAllowNonIdempotentRetry(true).
 		AddRetryConditions(func(r *resty.Response, err error) bool {
 			// FIXME: retry as sometimes the server's first response to the authorization provider
