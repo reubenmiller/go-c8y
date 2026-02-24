@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/features/tenantoverrides"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/jsonmodels"
@@ -19,6 +20,7 @@ var ParamKey = "key"
 func NewService(s *core.Service) *Service {
 	return &Service{
 		Service: *s,
+		Tenants: tenantoverrides.NewService(s),
 	}
 }
 
@@ -27,6 +29,7 @@ type FeatureCollect []model.Feature
 // Service provides api to managed features in Cumulocity
 type Service struct {
 	core.Service
+	Tenants *tenantoverrides.Service
 }
 
 // Retrieve all the features for the current tenant
@@ -86,7 +89,7 @@ func (s *Service) Disable(ctx context.Context, key string) op.Result[jsonmodels.
 	}), jsonmodels.NewFeature)
 }
 
-// Delete a feature override
+// Delete removes the feature override for the current tenant.
 func (s *Service) Delete(ctx context.Context, key string) op.Result[core.NoContent] {
 	return core.ExecuteNoContent(ctx, s.deleteB(key))
 }
