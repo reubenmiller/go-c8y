@@ -319,9 +319,6 @@ func MiddlewareAddUserAgent(application string, userAgent string) resty.RequestM
 func MiddlewareAddHost(domain string) resty.RequestMiddleware {
 	return func(c *resty.Client, r *resty.Request) error {
 		if domain != "" && r.RawRequest != nil && domain != r.RawRequest.URL.Host {
-			// setting the Host header actually does nothing however
-			// it makes the setting visible when logging
-			r.Header.Set("Host", domain)
 			r.RawRequest.Host = domain
 		}
 		return nil
