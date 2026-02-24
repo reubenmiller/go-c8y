@@ -102,7 +102,7 @@ func ParallelCollect[T any](steps ...Step[T]) func(context.Context, T) ([]T, []e
 func If[T any](predicate func(T) bool, thenStep, elseStep Step[T]) Step[T]
 
 // Retry with exponential backoff
-func WithRetry[T any](step Step[T], config RetryConfig) Step[T]
+func Retry[T any](step Step[T], config RetryConfig) Step[T]
 
 // Map/transform step output
 func Map[T, U any](step Step[T], transform func(T) U) func(context.Context, T) (U, error)
@@ -112,7 +112,7 @@ func Map[T, U any](step Step[T], transform func(T) U) func(context.Context, T) (
 ```go
 onboardDevice := op.Pipe(
     validateDeviceData,
-    op.WithRetry(createDevice, retryConfig),
+    op.Retry(createDevice, retryConfig),
     op.Parallel(
         assignToGroup,
         configureMonitoring,
@@ -134,11 +134,12 @@ Client-side implementation with idempotent create semantics:
 
 ```go
 // GetOrCreateR executes get-or-create pattern with Result
+// finder must return (Result[T], bool) — true if the resource was found
 func GetOrCreateR[T any](
     ctx context.Context,
-    finder func(context.Context) op.Result[T],
-    creator func(context.Context) op.Result[T],
-) op.Result[T]
+    finder func(context.Context) (Result[T], bool),
+    creator func(context.Context) Result[T],
+) Result[T]
 
 // GetOrCreateWithFind uses a find operation for non-unique criteria
 func GetOrCreateWithFind[T any](
@@ -291,17 +292,17 @@ type RetryConfig struct {
     MaxInterval     time.Duration
     Multiplier      float64
     Jitter          bool
-    ShouldRetry     func(error) bool
+    RetryableCheck  func(error) bool
 }
 
 // Wrap any step with retry logic
-func WithRetry[T any](step Step[T], config RetryConfig) Step[T]
+func Retry[T any](step Step[T], config RetryConfig) Step[T]
 ```
 
 **Example:**
 ```go
 // Retry device creation with custom config
-createWithRetry := op.WithRetry(createDevice, op.RetryConfig{
+createWithRetry := op.Retry(createDevice, op.RetryConfig{
     MaxAttempts:     5,
     InitialInterval: 200 * time.Millisecond,
     MaxInterval:     10 * time.Second,
@@ -327,23 +328,19 @@ type Operation struct {
 }
 
 func NewOperation(b []byte) Operation {
-    return Operation{Facade: jsondoc.NewFacade(b)}
+    return Operation{Facade: jsondoc.Facade{JSONDoc: jsondoc.New(b)}}
 }
 
-// Strongly-typed accessors
+// Strongly-typed accessors — Get() returns gjson.Result, call .String()/.Int() etc.
 func (o Operation) ID() string {
-    return o.GetString("id")
+    return o.Get("id").String()
 }
 
 func (o Operation) Status() string {
-    return o.GetString("status")
+    return o.Get("status").String()
 }
 
 // Raw JSON access
-func (o Operation) Get(path string) any {
-    return o.Facade.Get(path)
-}
-
 func (o Operation) Bytes() []byte {
     return o.Facade.Bytes()
 }
@@ -355,8 +352,8 @@ func (o Operation) Bytes() []byte {
 operation := result.Data
 fmt.Println(operation.ID())
 
-// Custom field access
-customValue := operation.Get("c8y_CustomFragment.value")
+// Custom field access — Get() returns gjson.Result
+customValue := operation.Get("c8y_CustomFragment.value").String()
 
 // Unmarshal to custom struct
 type CustomOp struct {
@@ -376,19 +373,12 @@ json.Unmarshal(operation.Bytes(), &custom)
 Categorized errors with rich context:
 
 ```go
-// Standard error values
-var (
-    ErrBadRequest          = Error{Code: 400}
-    ErrUnauthorized        = Error{Code: 401}
-    ErrForbidden           = Error{Code: 403}
-    ErrNotFound            = Error{Code: 404}
-    ErrConflict            = Error{Code: 409}
-    ErrTooManyRequests     = Error{Code: 429}
-    ErrInternalServer      = Error{Code: 500}
-)
-
-// Check error status
+// core.Error carries the HTTP status code and message from the Cumulocity API.
+// Use ErrHasStatus to check for specific HTTP status codes:
 func ErrHasStatus(err error, code ...int) bool
+
+// IsNotFound is a convenience helper for 404:
+func IsNotFound(err error) bool
 ```
 
 **Result error information:**
