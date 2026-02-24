@@ -52,7 +52,7 @@ func coupleAPIErrors(r *resty.Response, err error) (*resty.Response, error) {
 		return nil, NewError(err)
 	}
 
-	if r.IsSuccess() {
+	if r.IsStatusSuccess() {
 		return r, nil
 	}
 
@@ -115,7 +115,7 @@ func NewError(err any) *Error {
 	case *Error:
 		return e
 	case *resty.Response:
-		apiError, ok := e.Error().(*APIError)
+		apiError, ok := e.ResultError().(*APIError)
 
 		if !ok {
 			// If Build error manually if the APIError wasn't serialized
@@ -128,8 +128,8 @@ func NewError(err any) *Error {
 				Duration:   e.Duration(),
 				ReceivedAt: e.ReceivedAt(),
 			}
-			if e.Err != nil {
-				wrappedErr.Message = e.Err.Error()
+			if e.CascadeError != nil {
+				wrappedErr.Message = e.CascadeError.Error()
 			}
 			return wrappedErr
 		}

@@ -266,7 +266,7 @@ func NewClient(opts ClientOptions) *Client {
 		SetRetryCount(3).
 		SetRetryWaitTime(2 * time.Second).
 		SetRetryMaxWaitTime(30 * time.Second).
-		SetError(core.APIError{}).
+		SetResultError(core.APIError{}).
 		SetCircuitBreaker(circuitBreaker)
 
 	// Set any certificate before any other Transports are set as these will
@@ -826,7 +826,7 @@ func TokenRenewalRetry(c *Client) func(res *resty.Response, err error) bool {
 			return true
 		}
 
-		if !res.IsError() {
+		if !res.IsStatusFailure() {
 			return false
 		}
 
@@ -835,11 +835,11 @@ func TokenRenewalRetry(c *Client) func(res *resty.Response, err error) bool {
 		// Handle 401 with token renewal
 		if statusCode == 401 {
 			if res.Request.Attempt > 1 {
-				slog.Warn("More than 1 401 detected, giving up", "err", res.Error())
+				slog.Warn("More than 1 401 detected, giving up", "err", res.ResultError())
 				return false
 			}
 
-			if res.Request.AuthToken != "" && core.ErrTokenRevoked(res.Error()) {
+			if res.Request.AuthToken != "" && core.ErrTokenRevoked(res.ResultError()) {
 				if c.tokenSource != nil {
 					// Force-refresh: if the source supports explicit invalidation (e.g.
 					// CachedTokenSource), clear the cache so the next Token() call fetches
@@ -857,7 +857,7 @@ func TokenRenewalRetry(c *Client) func(res *resty.Response, err error) bool {
 					return true
 				}
 				// Fallback for static-token-only clients (no token source configured)
-				slog.Warn("Token is not longer valid", "err", res.Error())
+				slog.Warn("Token is not longer valid", "err", res.ResultError())
 				loginTok, loginErr := c.Login(res.Request.Context())
 				if loginErr != nil {
 					return false

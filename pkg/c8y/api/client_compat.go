@@ -82,7 +82,7 @@ type RequestResult struct {
 
 // IsError returns true if the request failed
 func (r *RequestResult) IsError() bool {
-	return r.Error != nil || (r.Response != nil && r.Response.IsError())
+	return r.Error != nil || (r.Response != nil && r.Response.IsStatusFailure())
 }
 
 // StatusCode returns the HTTP status code

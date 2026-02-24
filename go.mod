@@ -19,7 +19,7 @@ require (
 	go.mozilla.org/pkcs7 v0.9.0
 	golang.org/x/net v0.43.0
 	gopkg.in/robfig/cron.v2 v2.0.0-20150107220207-be2e0b0deed5
-	resty.dev/v3 v3.0.0-beta.6
+	resty.dev/v3 v3.0.0-beta.6.0.20260128173335-37296c9841e6
 )
 
 require (
