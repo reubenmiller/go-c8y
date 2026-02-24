@@ -53,7 +53,9 @@ func main() {
 	//    browser, waits for the code, exchanges it, and updates the client.
 	// -----------------------------------------------------------------------
 	fmt.Fprintln(os.Stderr, "🌐 Opening browser for SSO login …")
-	if _, err := client.AuthorizeWithBrowserFlow(ctx, loginOption.InitRequest(), api.BrowserFlowOptions{}); err != nil {
+	if _, err := client.AuthorizeWithBrowserFlow(ctx, loginOption.InitRequest(), api.BrowserFlowOptions{
+		ListenAddr: "localhost:5001",
+	}); err != nil {
 		slog.Error("SSO browser flow failed", "err", err)
 		os.Exit(1)
 	}

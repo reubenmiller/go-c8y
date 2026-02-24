@@ -69,6 +69,10 @@ func getAuthorizationRequest(ctx context.Context, client *http.Client, oauthUrl 
 					if redirectURL != "" {
 						params.Set("redirect_uri", redirectURL)
 					}
+
+					// TODO: allow users to pass this value
+					// params.Set("originUri", redirectURL)
+
 					u.RawQuery = params.Encode()
 
 					return getAuthorizationEndpointFromURL(u), nil
@@ -234,6 +238,8 @@ type BrowserFlowOptions struct {
 	// fixed port that matches your provider's configuration.
 	ListenAddr string
 
+	OriginURL string
+
 	// SuccessPage is the full HTML body returned to the browser after a
 	// successful authentication.  When empty the built-in Cumulocity-branded
 	// page (browser_success.html) is used.
@@ -268,8 +274,7 @@ func (c *Client) AuthorizeWithBrowserFlow(ctx context.Context, initRequest strin
 	if err != nil {
 		return nil, fmt.Errorf("browser flow: start callback listener: %w", err)
 	}
-	port := ln.Addr().(*net.TCPAddr).Port
-	callbackURL := fmt.Sprintf("http://127.0.0.1:%d/callback", port)
+	callbackURL := fmt.Sprintf("http://%s/callback", listenAddr)
 
 	codeCh := make(chan string, 1)
 	mux := http.NewServeMux()
@@ -330,15 +335,25 @@ func (c *Client) AuthorizeWithBrowserFlow(ctx context.Context, initRequest strin
 			return nil, fmt.Errorf("browser flow: SSO callback returned an error")
 		}
 		tokenClient := NewClient(ClientOptions{BaseURL: c.Client.BaseURL()})
-		tokenClient.Client.SetCookie(&http.Cookie{
-			Name:  "REQUEST_ORIGIN",
-			Value: callbackURL,
-		})
+		tokenClient.Client.SetDebug(true)
+		var tok op.Result[jsonmodels.OAIToken]
+		attempts := 1
+		for {
+			tok = tokenClient.LoginTokens.Create(ctx, logintokens.CreateTokenOptions{
+				GrantType:     logintokens.GrantTypeAuthorizationCode,
+				Code:          code,
+				RequestOrigin: callbackURL,
+			})
+			if tok.Err == nil {
+				break
+			}
+			slog.Warn("Failed to exchange code for a token", "err", tok.Err, "attempt", attempts)
+			if attempts > 2 {
+				break
+			}
+			attempts++
+		}
 
-		tok := tokenClient.LoginTokens.Create(ctx, logintokens.CreateTokenOptions{
-			GrantType: logintokens.GrantTypeAuthorizationCode,
-			Code:      code,
-		})
 		if tok.Err != nil {
 			return nil, fmt.Errorf("browser flow: token exchange: %w", tok.Err)
 		}

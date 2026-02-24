@@ -2,6 +2,7 @@ package logintokens
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
@@ -46,6 +47,10 @@ type CreateTokenOptions struct {
 
 	// Used in case of OAI-Secure authentication
 	Username string `url:"username,omitempty"`
+
+	// Value to be used in the REQUEST_ORIGIN cookie to indicate the request origin
+	// Typically used during OAuth2
+	RequestOrigin string `url:"-"`
 }
 
 // Obtain an OAI-Secure access token
@@ -65,7 +70,23 @@ func (s *Service) createB(opt CreateTokenOptions) *core.TryRequest {
 		SetFormDataFromValues(core.QueryParameters(opt)).
 		Funcs(core.NoAuthorization()).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiOAuthToken)
+		SetURL(ApiOAuthToken).
+		SetRetryCount(0).
+		SetAllowNonIdempotentRetry(true).
+		AddRetryConditions(func(r *resty.Response, err error) bool {
+			// FIXME: retry as sometimes the server's first response to the authorization provider
+			// can fail, but subsequent requests are ok
+			shouldRetry := r != nil && r.StatusCode() == 400
+			return shouldRetry
+		})
+
+	if opt.RequestOrigin != "" {
+		req.SetCookie(&http.Cookie{
+			Name:  "REQUEST_ORIGIN",
+			Value: opt.RequestOrigin,
+		})
+	}
+
 	// The response might not have the Content-Type set
 	req.ForceResponseContentType = types.MimeTypeApplicationJSON
 	return core.NewTryRequest(s.Client, req)
