@@ -23,6 +23,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/auditrecords"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/binaries"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/bulkoperations"
 	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/devices"
@@ -111,8 +112,9 @@ type Client struct {
 
 	// Services used for talking to different parts of the Cumulocity API.
 	// Context              *ContextService
-	Alarms       *alarms.Service
-	AuditRecords *auditrecords.Service
+	Alarms         *alarms.Service
+	AuditRecords   *auditrecords.Service
+	BulkOperations *bulkoperations.Service
 
 	Measurements *measurements.Service
 	Binaries     *binaries.Service
@@ -352,6 +354,7 @@ func NewClient(opts ClientOptions) *Client {
 	c.Alarms = alarms.NewService(&c.common, c.ManagedObjects)
 	c.Measurements = measurements.NewService(&c.common, c.ManagedObjects)
 	c.Operations = operations.NewService(&c.common, c.ManagedObjects)
+	c.BulkOperations = bulkoperations.NewService(&c.common)
 	c.Events = events.NewService(&c.common, c.ManagedObjects)
 
 	c.Devices = devices.NewService(&c.common)
