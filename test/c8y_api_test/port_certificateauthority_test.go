@@ -7,6 +7,7 @@ import (
 	c8yapi "github.com/reubenmiller/go-c8y/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/trustedcertificates"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/trustedcertificates/certificateauthority"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -82,14 +83,15 @@ func Test_CertificateAuthority_DryRun(t *testing.T) {
 func Test_CertificateAuthority_Delete_DryRun(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
-	// The Get step executes for real (GET requests are not skipped by dry-run).
-	// Without a live CA the Get returns 404, so Delete propagates that error.
-	// This test documents the expected behaviour: Delete fails fast when no CA exists.
+	// DryRun intercepts both GET and DELETE. Get returns a mock empty response
+	// which produces a synthetic 404. Delete should treat it as a no-op success
+	// and indicate via Status/Meta that nothing was done.
 	ctx := c8yapi.WithDryRun(context.Background(), true)
 
 	result := client.TrustedCertificates.CertificateAuthority.Delete(ctx, certificateauthority.DeleteOptions{
 		TenantID: client.Auth.Tenant,
 	})
-	// Expected: Get returns 404 (no CA in the test environment)
-	require.Error(t, result.Err, "Delete should propagate Get failure when no CA is present")
+	require.NoError(t, result.Err, "Delete should succeed (no-op) when no CA is present")
+	assert.Equal(t, op.StatusSkipped, result.Status, "Status should indicate no action was taken")
+	assert.Contains(t, result.Meta["message"], "no certificate authority found")
 }

@@ -113,10 +113,18 @@ type DeleteOptions struct {
 // Delete removes the tenant's CA certificate from the trusted certificates repository.
 // It first fetches the CA certificate to obtain its fingerprint, then deletes it via
 // the trusted-certificates API.
+// If no CA certificate exists the call is a no-op and returns successfully.
 func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.NoContent] {
 	// Step 1: get the CA certificate so we can extract the fingerprint
 	cert := s.Get(ctx, GetOptions{TenantID: opt.TenantID})
 	if cert.IsError() {
+		// No CA present — intent is already fulfilled, but surface the fact as metadata
+		if cert.HTTPStatus == 404 {
+			return op.Result[core.NoContent]{
+				Status: op.StatusSkipped,
+				Meta:   map[string]any{"message": "no certificate authority found; nothing to delete"},
+			}
+		}
 		return op.Result[core.NoContent]{
 			Err:        cert.Err,
 			Status:     cert.Status,
