@@ -24,6 +24,8 @@ var ApiManagedObjects = "/inventory/managedObjects"
 var ApiManagedObject = "/inventory/managedObjects/{id}"
 var ApiManagedObjectSupportedMeasurements = "/inventory/managedObjects/{id}/supportedMeasurements"
 var ApiManagedObjectSupportedSeries = "/inventory/managedObjects/{id}/supportedSeries"
+var ApiManagedObjectAvailability = "/inventory/managedObjects/{id}/availability"
+var ApiManagedObjectUser = "/inventory/managedObjects/{id}/user"
 
 const ParamId = "id"
 
@@ -214,6 +216,50 @@ func (s *Service) listSupportedSeriesB(ID string) *core.TryRequest {
 		SetPathParam(ParamId, ID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObjectSupportedSeries)
+	return core.NewTryRequest(s.Client, req)
+}
+
+// GetAvailability retrieves the date when a managed object last sent a message to Cumulocity.
+func (s *Service) GetAvailability(ctx context.Context, ID string) op.Result[jsonmodels.ManagedObjectAvailability] {
+	return core.Execute(ctx, s.getAvailabilityB(ID), jsonmodels.NewManagedObjectAvailability)
+}
+
+func (s *Service) getAvailabilityB(ID string) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodGet).
+		SetPathParam(ParamId, ID).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetURL(ApiManagedObjectAvailability)
+	return core.NewTryRequest(s.Client, req)
+}
+
+// GetUser retrieves the device owner's username and enabled state for a managed object.
+func (s *Service) GetUser(ctx context.Context, ID string) op.Result[jsonmodels.ManagedObjectUser] {
+	return core.Execute(ctx, s.getUserB(ID), jsonmodels.NewManagedObjectUser)
+}
+
+func (s *Service) getUserB(ID string) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodGet).
+		SetPathParam(ParamId, ID).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetURL(ApiManagedObjectUser)
+	return core.NewTryRequest(s.Client, req)
+}
+
+// UpdateUser updates the device owner's enabled state for a managed object.
+func (s *Service) UpdateUser(ctx context.Context, ID string, body any) op.Result[jsonmodels.ManagedObjectUser] {
+	return core.Execute(ctx, s.updateUserB(ID, body), jsonmodels.NewManagedObjectUser)
+}
+
+func (s *Service) updateUserB(ID string, body any) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodPut).
+		SetPathParam(ParamId, ID).
+		SetBody(body).
+		SetHeader("Content-Type", "application/vnd.com.nsn.cumulocity.managedobjectuser+json").
+		SetHeader("Accept", "application/vnd.com.nsn.cumulocity.managedobjectuser+json").
+		SetURL(ApiManagedObjectUser)
 	return core.NewTryRequest(s.Client, req)
 }
 
