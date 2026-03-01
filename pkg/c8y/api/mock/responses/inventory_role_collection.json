@@ -1,0 +1,22 @@
+{
+  "roles": [
+    {
+      "id": 1,
+      "name": "Mock Inventory Role 1",
+      "description": "First mock inventory role",
+      "self": "https://mock.c8y.io/user/inventoryroles/1"
+    },
+    {
+      "id": 2,
+      "name": "Mock Inventory Role 2",
+      "description": "Second mock inventory role",
+      "self": "https://mock.c8y.io/user/inventoryroles/2"
+    }
+  ],
+  "statistics": {
+    "currentPage": 1,
+    "pageSize": 5,
+    "totalPages": 1,
+    "totalElements": 2
+  }
+}

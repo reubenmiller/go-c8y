@@ -432,6 +432,13 @@ func TokenSourceMiddleware(getSource func() authentication.TokenSource) resty.Re
 		if ctxhelpers.IsSkipTokenSource(req.Context()) {
 			return nil
 		}
+		// Skip token acquisition for dry-run requests: the DryRunTransport intercepts
+		// the request at the HTTP layer and never sends it to the real server, so
+		// acquiring (and potentially refreshing) a token is unnecessary and would
+		// break tests that run without live credentials.
+		if ctxhelpers.IsDryRun(req.Context()) {
+			return nil
+		}
 		tok, err := src.Token()
 		if err != nil {
 			return fmt.Errorf("token source: %w", err)

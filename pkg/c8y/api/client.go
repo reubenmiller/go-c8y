@@ -49,6 +49,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/ui/plugins/versions"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/usergroups"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/userroles"
+	inventoryroles "github.com/reubenmiller/go-c8y/pkg/c8y/api/userroles/inventory"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/users"
 	"github.com/reubenmiller/go-c8y/pkg/certutil"
 	"github.com/zalando/go-keyring"
@@ -143,6 +144,7 @@ type Client struct {
 	Users                *users.Service
 	UserGroups           *usergroups.Service
 	UserRoles            *userroles.Service
+	InventoryRoles       *inventoryroles.Service
 	Features             *features.Service
 }
 
@@ -372,6 +374,7 @@ func NewClient(opts ClientOptions) *Client {
 	c.Users = users.NewService(&c.common)
 	c.UserGroups = usergroups.NewService(&c.common)
 	c.UserRoles = userroles.NewService(&c.common)
+	c.InventoryRoles = inventoryroles.NewService(&c.common)
 	c.Tenants = tenants.NewService(&c.common)
 	c.Features = features.NewService(&c.common)
 	c.LoginOptions = loginoptions.NewService(&c.common)

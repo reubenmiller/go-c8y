@@ -25,6 +25,8 @@ const (
 	MeasurementSeriesCollection ResponseType = "measurement_series_collection"
 	Application                 ResponseType = "application"
 	ApplicationCollection       ResponseType = "application_collection"
+	InventoryRole               ResponseType = "inventory_role"
+	InventoryRoleCollection     ResponseType = "inventory_role_collection"
 )
 
 // GetResponse returns the mock response for the given type
@@ -73,6 +75,11 @@ func DetectResponseType(urlPath string, isCollection bool) ResponseType {
 			return ApplicationCollection
 		}
 		return Application
+	case strings.Contains(path, "/user/inventoryroles"):
+		if isCollection {
+			return InventoryRoleCollection
+		}
+		return InventoryRole
 	}
 
 	// Default to managed object

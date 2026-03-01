@@ -1,0 +1,6 @@
+{
+  "id": 1,
+  "name": "Mock Inventory Role",
+  "description": "A mock inventory role for testing",
+  "self": "https://mock.c8y.io/user/inventoryroles/1"
+}
