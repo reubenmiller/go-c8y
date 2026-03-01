@@ -19,6 +19,8 @@ import (
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/devices"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/tenants/currenttenant"
 )
 
@@ -71,8 +73,19 @@ func main() {
 	}
 
 	fmt.Fprintf(os.Stderr, "✅ Authenticated via SSO Authorization Code flow\n")
-	fmt.Fprintf(os.Stderr, "   Tenant: %s\n", result.Data.Name())
-	fmt.Fprintf(os.Stderr, "   Domain: %s\n", result.Data.DomainName())
+	fmt.Fprintf(os.Stderr, "   Tenant:  %s\n", result.Data.Name())
+	fmt.Fprintf(os.Stderr, "   Domain:  %s\n", result.Data.DomainName())
+
+	devicesResult := client.Devices.List(context.Background(), devices.ListOptions{
+		PaginationOptions: pagination.PaginationOptions{
+			WithTotalElements: true,
+		},
+	})
+	if devicesResult.Err != nil {
+		slog.Error("API call failed", "err", devicesResult.Err)
+		os.Exit(1)
+	}
+	fmt.Fprintf(os.Stderr, "   Devices: %#v\n", devicesResult.Meta["totalElements"])
 }
 
 //
