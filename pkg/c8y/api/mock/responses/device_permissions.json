@@ -1,0 +1,19 @@
+{
+  "users": [
+    {
+      "id": "jdoe",
+      "userName": "jdoe",
+      "devicePermissions": {
+        "12345": ["MANAGED_OBJECT:*:ADMIN"]
+      }
+    }
+  ],
+  "groups": [
+    {
+      "id": 7,
+      "devicePermissions": {
+        "12345": ["READ"]
+      }
+    }
+  ]
+}

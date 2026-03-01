@@ -1,0 +1,13 @@
+{
+  "id": 1,
+  "self": "https://mock.c8y.io/user/t123/users/testuser/roles/inventory/1",
+  "managedObject": "12345",
+  "roles": [
+    {
+      "id": 1,
+      "name": "Mock Inventory Role",
+      "description": "A mock inventory role",
+      "self": "https://mock.c8y.io/user/inventoryroles/1"
+    }
+  ]
+}

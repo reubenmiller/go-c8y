@@ -27,6 +27,9 @@ const (
 	ApplicationCollection       ResponseType = "application_collection"
 	InventoryRole               ResponseType = "inventory_role"
 	InventoryRoleCollection     ResponseType = "inventory_role_collection"
+	DevicePermissions           ResponseType = "device_permissions"
+	InventoryRoleAssignment     ResponseType = "inventory_role_assignment"
+	InventoryRoleAssignments    ResponseType = "inventory_role_assignment_collection"
 )
 
 // GetResponse returns the mock response for the given type
@@ -80,6 +83,13 @@ func DetectResponseType(urlPath string, isCollection bool) ResponseType {
 			return InventoryRoleCollection
 		}
 		return InventoryRole
+	case strings.Contains(path, "/roles/inventory"):
+		if isCollection {
+			return InventoryRoleAssignments
+		}
+		return InventoryRoleAssignment
+	case strings.Contains(path, "/devicePermissions"):
+		return DevicePermissions
 	}
 
 	// Default to managed object
