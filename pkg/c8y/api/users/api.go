@@ -18,6 +18,8 @@ var (
 	ApiUser               = "/user/{tenantID}/users/{id}"
 	ApiUserGroupsWithUser = "/user/{tenantID}/users/{id}/groups"
 	ApiUserByName         = "/user/{tenantID}/userByName/{username}"
+	ApiLogout             = "/user/logout"
+	ApiLogoutAllUsers     = "/user/logout/{tenantID}/allUsers"
 )
 
 var ParamId = "id"
@@ -211,4 +213,31 @@ func (s *Service) listGroupsWithUserB(opt ListGroupsOptions) *core.TryRequest {
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiUserGroupsWithUser)
 	return core.NewTryRequest(s.Client, req, ResultProperty)
+}
+
+// Logout terminates the current user's session and invalidates platform access tokens.
+// Requires an active cookie-based or OAI-Secure session.
+func (s *Service) Logout(ctx context.Context) op.Result[core.NoContent] {
+	return core.ExecuteNoContent(ctx, s.logoutB())
+}
+
+func (s *Service) logoutB() *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodPost).
+		SetURL(ApiLogout)
+	return core.NewTryRequest(s.Client, req)
+}
+
+// LogoutAllUsers terminates all token-based sessions for every user in the given tenant.
+// Requires ROLE_USER_MANAGEMENT_ADMIN and must be the current tenant.
+func (s *Service) LogoutAllUsers(ctx context.Context, tenantID string) op.Result[core.NoContent] {
+	return core.ExecuteNoContent(ctx, s.logoutAllUsersB(tenantID))
+}
+
+func (s *Service) logoutAllUsersB(tenantID string) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodPost).
+		SetPathParam(ParamTenantId, tenantID).
+		SetURL(ApiLogoutAllUsers)
+	return core.NewTryRequest(s.Client, req)
 }
