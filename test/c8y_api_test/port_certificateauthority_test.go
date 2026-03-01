@@ -17,11 +17,10 @@ func Test_CertificateAuthority_Get(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
-	// Delete (setup)
+	// Delete (setup) - use the new composed Delete method
 	// Ignore error as certificate may not exist
-	client.TrustedCertificates.Delete(ctx, trustedcertificates.DeleteOptions{
-		TenantID:    client.Auth.Tenant,
-		Fingerprint: "",
+	client.TrustedCertificates.CertificateAuthority.Delete(ctx, certificateauthority.DeleteOptions{
+		TenantID: client.Auth.Tenant,
 	})
 
 	// Create
@@ -64,9 +63,8 @@ func Test_CertificateAuthority_Get(t *testing.T) {
 	assert.Equal(t, createResult.Data.Fingerprint(), updateResult.Data.Fingerprint())
 
 	// Delete
-	deleteResult := client.TrustedCertificates.Delete(ctx, trustedcertificates.DeleteOptions{
-		TenantID:    client.Auth.Tenant,
-		Fingerprint: createResult.Data.Fingerprint(),
+	deleteResult := client.TrustedCertificates.CertificateAuthority.Delete(ctx, certificateauthority.DeleteOptions{
+		TenantID: client.Auth.Tenant,
 	})
 	require.NoError(t, deleteResult.Err)
 	assert.Equal(t, 204, deleteResult.HTTPStatus)
@@ -79,4 +77,19 @@ func Test_CertificateAuthority_DryRun(t *testing.T) {
 	createResult := client.TrustedCertificates.CertificateAuthority.Create(ctx, certificateauthority.CreateOptions{})
 	require.NoError(t, createResult.Err)
 	assert.Empty(t, createResult.Data.Fingerprint(), "fingerprint should be empty in dry run mode")
+}
+
+func Test_CertificateAuthority_Delete_DryRun(t *testing.T) {
+	client := testcore.CreateTestClient(t)
+
+	// The Get step executes for real (GET requests are not skipped by dry-run).
+	// Without a live CA the Get returns 404, so Delete propagates that error.
+	// This test documents the expected behaviour: Delete fails fast when no CA exists.
+	ctx := c8yapi.WithDryRun(context.Background(), true)
+
+	result := client.TrustedCertificates.CertificateAuthority.Delete(ctx, certificateauthority.DeleteOptions{
+		TenantID: client.Auth.Tenant,
+	})
+	// Expected: Get returns 404 (no CA in the test environment)
+	require.Error(t, result.Err, "Delete should propagate Get failure when no CA is present")
 }

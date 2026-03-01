@@ -14,8 +14,10 @@ import (
 var ApiCertificateAuthority = "/certificate-authority"
 var ApiCertificateAuthorityRenew = "/certificate-authority/renew"
 var ApiTrustedCertificates = "/tenant/tenants/{tenantID}/trusted-certificates"
+var ApiTrustedCertificate = "/tenant/tenants/{tenantID}/trusted-certificates/{fingerprint}"
 
 const ParamTenant = "tenantID"
+const ParamFingerprint = "fingerprint"
 
 const ResultProperty = "certificates"
 
@@ -101,6 +103,41 @@ func (s *Service) GetOrCreate(ctx context.Context, opt GetOptions) op.Result[jso
 		return result
 	}
 	return s.Get(ctx, opt)
+}
+
+// DeleteOptions options to delete the tenant CA certificate
+type DeleteOptions struct {
+	TenantID string
+}
+
+// Delete removes the tenant's CA certificate from the trusted certificates repository.
+// It first fetches the CA certificate to obtain its fingerprint, then deletes it via
+// the trusted-certificates API.
+func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.NoContent] {
+	// Step 1: get the CA certificate so we can extract the fingerprint
+	cert := s.Get(ctx, GetOptions{TenantID: opt.TenantID})
+	if cert.IsError() {
+		return op.Result[core.NoContent]{
+			Err:        cert.Err,
+			Status:     cert.Status,
+			HTTPStatus: cert.HTTPStatus,
+			Attempts:   cert.Attempts,
+			Duration:   cert.Duration,
+			RequestID:  cert.RequestID,
+			Meta:       cert.Meta,
+		}
+	}
+	// Step 2: delete by fingerprint
+	return core.ExecuteNoContent(ctx, s.deleteB(opt, cert.Data.Fingerprint()))
+}
+
+func (s *Service) deleteB(opt DeleteOptions, fingerprint string) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodDelete).
+		SetPathParam(ParamTenant, opt.TenantID).
+		SetPathParam(ParamFingerprint, fingerprint).
+		SetURL(ApiTrustedCertificate)
+	return core.NewTryRequest(s.Client, req)
 }
 
 type RenewOptions struct{}
