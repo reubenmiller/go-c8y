@@ -1,0 +1,18 @@
+{
+  "statistics": [
+    {
+      "count": 42,
+      "deviceId": "12345",
+      "deviceParents": ["99999"],
+      "deviceType": "c8y_Linux"
+    },
+    {
+      "count": 7,
+      "deviceId": "67890",
+      "deviceParents": [],
+      "deviceType": "c8y_MQTT"
+    }
+  ],
+  "self": "https://mock.c8y.io/tenant/statistics/device/t123/monthly/2024-01-01",
+  "next": "https://mock.c8y.io/tenant/statistics/device/t123/monthly/2024-01-01?pageSize=5&currentPage=2"
+}

@@ -41,6 +41,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/repository"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/retentionrules"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/tenants"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/tenants/devicestatistics"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/tenants/logintokens"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/trustedcertificates"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
@@ -147,6 +148,7 @@ type Client struct {
 	UserRoles            *userroles.Service
 	InventoryRoles       *inventoryroles.Service
 	DevicePermissions    *devicepermissions.Service
+	DeviceStatistics     *devicestatistics.Service
 	Features             *features.Service
 }
 
@@ -378,6 +380,7 @@ func NewClient(opts ClientOptions) *Client {
 	c.UserRoles = userroles.NewService(&c.common)
 	c.InventoryRoles = inventoryroles.NewService(&c.common)
 	c.DevicePermissions = devicepermissions.NewService(&c.common)
+	c.DeviceStatistics = devicestatistics.NewService(&c.common)
 	c.Tenants = tenants.NewService(&c.common)
 	c.Features = features.NewService(&c.common)
 	c.LoginOptions = loginoptions.NewService(&c.common)
