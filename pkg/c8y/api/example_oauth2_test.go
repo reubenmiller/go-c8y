@@ -8,13 +8,17 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
 	api "github.com/reubenmiller/go-c8y/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alarms"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/devices"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/jsondoc"
+	"github.com/reubenmiller/go-c8y/pkg/oauth/clientcredentials"
 )
 
 // clientCredentialsSource fetches tokens from a standard OAuth2 token endpoint
@@ -186,4 +190,41 @@ func ExampleNewClient_withOAuth2Adapter() {
 	// Stub so the example appears in the docs. The real code is shown above
 	// in the function comment.
 	_ = api.NewClient(api.ClientOptions{BaseURL: "https://tenant.cumulocity.com"})
+}
+
+// ExampleNewClient_withClientCredentials shows the minimal setup for the
+// OAuth 2.0 client_credentials grant using the dedicated
+// [clientcredentials.Config]. This is a simpler alternative to writing a
+// custom [authentication.TokenSource] struct.
+func ExampleNewClient_withClientCredentials() {
+	cfg := &clientcredentials.Config{
+		TokenURL:     "https://example.auth0.com/oauth/token",
+		ClientID:     os.Getenv("SSO_CLIENT_ID"),
+		ClientSecret: os.Getenv("SSO_CLIENT_SECRET"),
+
+		// Scopes: []string{"cumulocity"},
+		ExtraParams: url.Values{
+			"audience": {"cumulocity"},
+		},
+	}
+
+	client := api.NewClient(api.ClientOptions{
+		BaseURL: "https://example.cumulocity.com",
+		Auth: authentication.AuthOptions{
+			// CachedTokenSource only calls cfg.Token() when the cached
+			// token is expired, avoiding a round-trip on every request.
+			TokenSource: authentication.NewCachedTokenSource(cfg),
+		},
+	})
+	result := client.Devices.List(context.Background(), devices.ListOptions{
+		PaginationOptions: pagination.PaginationOptions{
+			WithTotalElements: true,
+		},
+	})
+	fmt.Printf("Token: %s\n", client.Auth.Token)
+
+	if result.Err != nil {
+		panic(result.Err)
+	}
+	fmt.Printf("Total: %d\n", result.Meta["totalElements"])
 }
