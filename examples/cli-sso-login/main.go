@@ -27,27 +27,12 @@ import (
 func main() {
 	ctx := context.Background()
 
-	baseURL := authentication.HostFromEnvironment()
-	if baseURL == "" {
-		fmt.Fprintln(os.Stderr, "error: C8Y_BASEURL is not set")
-		os.Exit(1)
-	}
-
 	// -----------------------------------------------------------------------
 	// 1. Discover SSO login option.
 	// -----------------------------------------------------------------------
-	client := api.NewClient(api.ClientOptions{BaseURL: baseURL})
-
-	loginOption, found, err := client.HasExternalAuthProvider(ctx)
-	if err != nil {
-		slog.Error("Failed to retrieve Cumulocity login options", "err", err)
-		os.Exit(1)
-	}
-	if !found {
-		slog.Error("No external OAuth2 SSO provider is configured on this Cumulocity tenant")
-		os.Exit(1)
-	}
-	slog.Info("Found SSO login option", "initRequest", loginOption.InitRequest())
+	client := api.NewClient(api.ClientOptions{
+		BaseURL: authentication.HostFromEnvironment(),
+	})
 
 	// -----------------------------------------------------------------------
 	// 2. Run the Authorization Code flow in the browser.
@@ -55,7 +40,7 @@ func main() {
 	//    browser, waits for the code, exchanges it, and updates the client.
 	// -----------------------------------------------------------------------
 	fmt.Fprintln(os.Stderr, "🌐 Opening browser for SSO login …")
-	if _, err := client.AuthorizeWithBrowserFlow(ctx, loginOption.InitRequest(), api.BrowserFlowOptions{
+	if _, err := client.AuthorizeWithBrowserFlow(ctx, "", api.BrowserFlowOptions{
 		ListenAddr: "localhost:5001",
 	}); err != nil {
 		slog.Error("SSO browser flow failed", "err", err)

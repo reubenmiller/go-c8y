@@ -13,6 +13,8 @@ import (
 	"resty.dev/v3"
 )
 
+var ErrNoAuth2Provider = errors.New("no external oauth2 provider configured")
+
 const (
 	ErrorUnsupported = iota
 	// ErrorFromString is the Code identifying Errors created by string types

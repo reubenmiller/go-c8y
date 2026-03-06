@@ -19,19 +19,9 @@ func main() {
 		BaseURL: authentication.HostFromEnvironment(),
 	})
 
-	loginOption, found, err := client.HasExternalAuthProvider(context.Background())
-	if err != nil {
-		slog.Error("Could not get Cumulocity login options", "err", err)
-		os.Exit(1)
-	}
-	if !found {
-		slog.Error("Cumulocity instance does not have an external OAUTH2 provider configured")
-		os.Exit(1)
-	}
-
 	// Request token using device flow
 	fmt.Fprintf(os.Stderr, "🏄 Signing in using OAuth2 device flow\n\n")
-	_, err = client.AuthorizeWithDeviceFlow(context.Background(), loginOption.InitRequest(), oauth2_api.AuthEndpoints{}, nil)
+	_, err := client.AuthorizeWithDeviceFlow(context.Background(), "", oauth2_api.AuthEndpoints{}, nil)
 	if err != nil {
 		slog.Error("Failed to get access token", "err", err)
 		os.Exit(1)

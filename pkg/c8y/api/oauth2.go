@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/loginoptions"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/tenants/logintokens"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/jsonmodels"
@@ -128,6 +129,18 @@ func (c *Client) HasExternalAuthProvider(ctx context.Context) (loginOption *json
 
 // AuthorizeWithDeviceFlow authorize the client using the OAuth2 Device Authorization Flow (the Auth provider must support it)
 func (c *Client) AuthorizeWithDeviceFlow(ctx context.Context, initRequest string, auth_endpoints oauth2_api.AuthEndpoints, displayFunc device.DeviceCodeFunc) (*api.AccessToken, error) {
+	if initRequest == "" {
+		loginOption, found, err := c.HasExternalAuthProvider(context.Background())
+		if err != nil {
+			// error getting details
+			return nil, err
+		}
+		if !found {
+			// no external auth provider
+			return nil, core.ErrNoAuth2Provider
+		}
+		initRequest = loginOption.InitRequest()
+	}
 
 	httpClient := c.Client.Clone(context.Background()).Client()
 	endpoint, err := getAuthorizationRequest(ctx, httpClient, initRequest, "")
@@ -261,6 +274,19 @@ type BrowserFlowOptions struct {
 //
 // The method blocks until the code is received or ctx is cancelled.
 func (c *Client) AuthorizeWithBrowserFlow(ctx context.Context, initRequest string, opts BrowserFlowOptions) (*api.AccessToken, error) {
+	if initRequest == "" {
+		loginOption, found, err := c.HasExternalAuthProvider(context.Background())
+		if err != nil {
+			// error getting details
+			return nil, err
+		}
+		if !found {
+			// no external auth provider
+			return nil, core.ErrNoAuth2Provider
+		}
+		initRequest = loginOption.InitRequest()
+	}
+
 	if opts.OpenBrowser == nil {
 		opts.OpenBrowser = DefaultBrowserOpen
 	}
