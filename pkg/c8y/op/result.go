@@ -25,7 +25,20 @@ const (
 	StatusFailed    Status = "Failed"    // Operation failed
 )
 
-// Result wraps operation results with comprehensive metadata
+// Result wraps operation results with comprehensive metadata.
+//
+// Unlike the standard Go `value, err := f()` idiom, Result carries additional
+// context that is useful for observability and advanced control flow: HTTP status
+// code, operation duration, retry/idempotency flags, arbitrary metadata, the
+// originating HTTP request (for dry-run inspection), and deferred execution
+// support.
+//
+// For callers who only need the data and error, [Result.Unwrap] provides the
+// standard two-value form:
+//
+//	alarm, err := client.Alarms.Get(ctx, id).Unwrap()
+//
+// See docs/API_DESIGN.md §"Result Type" for the full design rationale.
 type Result[T any] struct {
 	Data       T      // The actual result data
 	Status     Status // Operation outcome
@@ -299,7 +312,13 @@ func (r Result[T]) IsRetryable() bool {
 	return r.HTTPStatus >= 500 || r.HTTPStatus == 429
 }
 
-// Unwrap returns data and error (compatible with standard error handling)
+// Unwrap returns the data and error in the standard Go two-value form,
+// allowing Result to be used with the familiar idiom:
+//
+//	value, err := client.Alarms.Get(ctx, id).Unwrap()
+//
+// Use this when you only need data and error and don't require the additional
+// metadata (HTTPStatus, Duration, Meta, etc.) carried by Result.
 func (r Result[T]) Unwrap() (T, error) {
 	return r.Data, r.Err
 }
