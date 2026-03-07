@@ -14,7 +14,7 @@ import (
 
 func Test_ErrorHandlingGet(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 	mo := client.ManagedObjects.Get(context.Background(), "0", managedobjects.GetOptions{})
 	assert.Error(t, mo.Err)
 	assert.Equal(t, 0, mo.Data.Length())
@@ -22,7 +22,7 @@ func Test_ErrorHandlingGet(t *testing.T) {
 
 func Test_ErrorHandlingCreateEvent(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	evt := client.Events.Create(context.Background(), model.Event{
 		Source: model.NewSource("0"),
@@ -41,7 +41,7 @@ func Test_ErrorHandlingCreateEvent(t *testing.T) {
 
 func Test_SimpleDefaultRequest(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	body := map[string]any{
 		"name": "custom",
@@ -57,7 +57,7 @@ func Test_SimpleDefaultRequest(t *testing.T) {
 
 // func Test_CreateRequestWithCustomHeaders(t *testing.T) {
 // 	client := testcore.CreateTestClient(t)
-// 	client.Client.SetDebug(true)
+// 	client.SetDebug(true)
 
 // 	body := map[string]any{
 // 		"name": "custom",
@@ -78,7 +78,7 @@ func Test_SimpleDefaultRequest(t *testing.T) {
 
 // func Test_CreateRequestDecodeHelper(t *testing.T) {
 // 	client := testcore.CreateTestClient(t)
-// 	client.Client.SetDebug(true)
+// 	client.SetDebug(true)
 
 // 	body := map[string]any{
 // 		"name": "custom",

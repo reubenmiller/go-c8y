@@ -243,7 +243,7 @@ func TestSendRequest_CustomAccept(t *testing.T) {
 
 func TestRequestResult_JSON(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	// client.Client.SetDebug(true)
+	// client.SetDebug(true)
 
 	result := client.SendRequest(context.TODO(), api.RequestOptions{
 		Method: "GET",

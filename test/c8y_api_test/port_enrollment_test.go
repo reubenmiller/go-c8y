@@ -95,7 +95,7 @@ func Test_Enrollment_Register(t *testing.T) {
 		})
 	})
 
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	csvContents := bytes.NewBufferString("")
 	csvErr := model.BulkRegistrationCertificateAuthorityWriter(
@@ -141,7 +141,7 @@ func Test_Enrollment_Register(t *testing.T) {
 	// Create client which uses the device certificate
 	// It should automatically request a token to use for API calls
 	deviceClient := api.NewClient(api.ClientOptions{
-		BaseURL: client.Client.BaseURL(),
+		BaseURL: client.HTTPClient.BaseURL(),
 		Auth: authentication.AuthOptions{
 			CertificateKey: string(keyPem),
 			Certificate:    string(certutil.MarshalCertificateToPEM(enrollResult.Data.Raw)),
@@ -171,7 +171,7 @@ func Test_Enrollment_Register(t *testing.T) {
 
 	// Open another client using the newly issued certificate
 	deviceClient2 := api.NewClient(api.ClientOptions{
-		BaseURL: client.Client.BaseURL(),
+		BaseURL: client.HTTPClient.BaseURL(),
 		Auth: authentication.AuthOptions{
 			CertificateKey: string(keyPem),
 			Certificate:    string(secondCertPEM),

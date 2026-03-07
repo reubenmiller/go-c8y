@@ -14,7 +14,7 @@ import (
 
 func Test_Token401s(t *testing.T) {
 	client := testcore.CreateTestClientWithToken(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 	collection := client.ManagedObjects.List(context.Background(), managedobjects.ListOptions{})
 	assert.NoError(t, collection.Err)
 	assert.Greater(t, collection.Data.Length(), 0)
@@ -23,7 +23,7 @@ func Test_Token401s(t *testing.T) {
 func Test_DeviceCertificates(t *testing.T) {
 	t.Skip("TODO: generate test device certificate to be used for testing")
 	client := testcore.CreateTestClientNoAuth(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 	client.SetAuth(authentication.AuthOptions{
 		CertificateKey: testcore.ProjectFile("testdevice01.key"),
 		Certificate:    testcore.ProjectFile("testdevice01.crt"),

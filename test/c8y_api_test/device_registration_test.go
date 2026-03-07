@@ -16,7 +16,7 @@ import (
 
 func Test_BulkRegistration(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	registrations := []model.BulkRegistrationRecord{
 		{

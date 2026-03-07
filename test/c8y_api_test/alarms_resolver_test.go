@@ -93,7 +93,7 @@ func Test_Alarms_Count_WithDeviceResolver(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := api.WithMockResponses(context.Background(), true)
 
-	opts := alarms.ListOptions{
+	opts := alarms.CountOptions{
 		Source: client.Alarms.DeviceResolver.ByName("device01"),
 	}
 
@@ -109,7 +109,7 @@ func Test_Alarms_Count_WithStringBasedResolver(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := api.WithMockResponses(context.Background(), true)
 
-	opts := alarms.ListOptions{
+	opts := alarms.CountOptions{
 		Source: "name:device01",
 	}
 

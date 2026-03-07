@@ -106,7 +106,7 @@ EXAMPLES:
 				Auth:    auth,
 			})
 			if verboseFlag {
-				sharedClient.HTTPClient.SetDebug(true)
+				sharedClient.SetDebug(true)
 			}
 		})
 		return nil

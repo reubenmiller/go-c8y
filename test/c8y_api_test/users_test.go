@@ -14,7 +14,7 @@ import (
 
 func Test_Users(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 	collection := client.Users.List(context.Background(), users.ListOptions{})
 	assert.NoError(t, collection.Err)
 	assert.Greater(t, collection.Data.Length(), 0)

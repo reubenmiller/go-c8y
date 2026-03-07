@@ -298,7 +298,7 @@ func Test_DeleteMeasurements(t *testing.T) {
 func Test_CreateMeasurements(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	device := testcore.CreateDevice(t, client).Data
 	valueFragmentType := "nx_common"

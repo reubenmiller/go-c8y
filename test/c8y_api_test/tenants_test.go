@@ -15,7 +15,7 @@ import (
 
 func Test_TenantsList(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 	item := client.Tenants.List(context.Background(), tenants.ListOptions{})
 	assert.NoError(t, item.Err)
 	assert.NotEmpty(t, item.Meta["self"])
@@ -23,7 +23,7 @@ func Test_TenantsList(t *testing.T) {
 
 func Test_GetCurrent(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	// Get Current
 	currentTenant := client.Tenants.Current.Get(context.Background(), currenttenant.GetOptions{})

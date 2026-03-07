@@ -11,7 +11,7 @@ import (
 
 func Test_RetentionRules(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 	rules := client.RetentionRules.List(context.Background(), retentionrules.ListOptions{})
 	assert.NoError(t, rules.Err)
 	assert.Greater(t, rules.Data.Length(), 0)

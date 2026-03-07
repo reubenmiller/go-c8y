@@ -356,12 +356,7 @@ func (s *Service) Get(ctx context.Context, ID string, opt GetOptions) op.Result[
 	// Resolve ID (supports "version:1.0.0:firmware:12345", "version:1.0.0:name:MyFirmware", etc.)
 	// If deferred execution is enabled, we still need to resolve the ID first
 	// But do it in a normal context so the resolution actually completes
-	resolutionCtx := ctx
-	if ctxhelpers.IsDeferredExecution(ctx) {
-		// Use background context for resolution so it doesn't inherit the deferred flag
-		// This allows lookups (like List) to actually execute
-		resolutionCtx = context.Background()
-	}
+	resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 	meta := make(map[string]any)
 	meta["identifier"] = ID
@@ -383,10 +378,7 @@ func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jso
 	// Resolve ID (supports "version:1.0.0:firmware:12345", "version:1.0.0:name:MyFirmware", etc.)
 	// If deferred execution is enabled, we still need to resolve the ID first
 	// But do it in a normal context so the resolution actually completes
-	resolutionCtx := ctx
-	if ctxhelpers.IsDeferredExecution(ctx) {
-		resolutionCtx = context.Background()
-	}
+	resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 	meta := make(map[string]any)
 	meta["identifier"] = ID
@@ -408,10 +400,7 @@ func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.R
 	// Resolve ID (supports "version:1.0.0:firmware:12345", "version:1.0.0:name:MyFirmware", etc.)
 	// If deferred execution is enabled, we still need to resolve the ID first
 	// But do it in a normal context so the resolution actually completes
-	resolutionCtx := ctx
-	if ctxhelpers.IsDeferredExecution(ctx) {
-		resolutionCtx = context.Background()
-	}
+	resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 	meta := make(map[string]any)
 	meta["identifier"] = ID

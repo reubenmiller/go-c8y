@@ -65,7 +65,7 @@ func Test_MicroserviceGetByContext(t *testing.T) {
 
 func Test_MicroserviceUpload(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	tmpDir := t.TempDir()
 

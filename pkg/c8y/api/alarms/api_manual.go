@@ -15,10 +15,7 @@ import (
 func (s *Service) Count(ctx context.Context, opt CountOptions) op.Result[int64] {
 	// Resolve Source if it contains a resolver scheme
 	if opt.Source != "" && s.DeviceResolver != nil {
-		resolutionCtx := ctx
-		if ctxhelpers.IsDeferredExecution(ctx) {
-			resolutionCtx = context.Background()
-		}
+		resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, opt.Source, nil)
 		if err != nil {

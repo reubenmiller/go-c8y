@@ -10,7 +10,7 @@ import (
 
 func Test_CurrentUser(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	// get
 	currentUser := client.Users.CurrentUser.Get(context.Background())

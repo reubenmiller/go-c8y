@@ -17,7 +17,7 @@ import (
 
 func Test_ManagedObjectCreation(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	result := client.ManagedObjects.Create(context.Background(), map[string]any{
 		"name": testingutils.RandomString(16),
@@ -37,7 +37,7 @@ func Test_ManagedObjectCreation(t *testing.T) {
 
 func Test_ManagedObjectList(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	// client.Client.SetDebug(true)
+	// client.SetDebug(true)
 
 	result := client.ManagedObjects.List(context.Background(), managedobjects.ListOptions{})
 	assert.NoError(t, result.Err)
@@ -132,7 +132,7 @@ func Test_ManagedObjectCRUD(t *testing.T) {
 
 func Test_ManagedObjectDeleteWithPrompt(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	mo := testcore.CreateManagedObject(t, client)
 	assert.NoError(t, mo.Err)
@@ -153,7 +153,7 @@ func Test_ManagedObjectDeleteWithPrompt(t *testing.T) {
 
 func Test_ManagedObjectGetByName(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	mo := testcore.CreateManagedObject(t, client)
 	assert.NoError(t, mo.Err)
@@ -177,7 +177,7 @@ func Test_ManagedObjectGetByName(t *testing.T) {
 
 func Test_ManagedObject_GetOrCreateByNameExists_Deferred(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	// Create a managed object
 	mo := testcore.CreateManagedObject(t, client)
@@ -202,7 +202,7 @@ func Test_ManagedObject_GetOrCreateByNameExists_Deferred(t *testing.T) {
 
 func Test_ManagedObject_GetOrCreateByNameNotExists_Deferred(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	// It should create a new managed object as an existing one matching the same name does not exist
 	deferredCtx := api.WithDeferredExecution(context.Background(), true)

@@ -20,3 +20,21 @@ func IsDeferredExecution(ctx context.Context) bool {
 	}
 	return false
 }
+
+// ResolutionContext returns a context suitable for resolving device/resource IDs.
+//
+// Device resolution must happen eagerly even in deferred-execution mode (the
+// lookup HTTP call must actually fire so we have the resolved ID to embed in the
+// deferred request). ResolutionContext strips the deferred-execution flag and
+// preserves any mock-response overrides so tests continue to work correctly.
+//
+// Usage:
+//
+//	resolutionCtx := ctxhelpers.ResolutionContext(ctx)
+//	resolvedID, err := resolver.ResolveID(resolutionCtx, source, meta)
+func ResolutionContext(ctx context.Context) context.Context {
+	if !IsDeferredExecution(ctx) {
+		return ctx
+	}
+	return WithMockResponses(context.Background(), IsMockResponses(ctx))
+}

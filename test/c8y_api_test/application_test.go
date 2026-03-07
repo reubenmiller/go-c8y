@@ -10,7 +10,7 @@ import (
 
 func Test_ApplicationGetWithResolver(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 	// Test that the Get method accepts a direct ID string
 	// In a real environment, this could also use: client.Applications.ByName("cockpit", "")
 	item := client.Applications.Get(context.Background(), client.Applications.ByName("cockpit", "HOSTED"))

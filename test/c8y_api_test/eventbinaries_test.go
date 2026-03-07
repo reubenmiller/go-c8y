@@ -13,7 +13,7 @@ import (
 
 func Test_CreateEventBinary(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	tempDir := t.TempDir()
 	tempFile := filepath.Join(tempDir, "myfile.txt")

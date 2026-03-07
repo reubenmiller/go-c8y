@@ -160,10 +160,7 @@ type GetOptions struct {
 
 // Get retrieves a firmware patch
 func (s *Service) Get(ctx context.Context, ID string, opt GetOptions) op.Result[jsonmodels.FirmwarePatch] {
-	resolutionCtx := ctx
-	if ctxhelpers.IsDeferredExecution(ctx) {
-		resolutionCtx = context.Background()
-	}
+	resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 	meta := make(map[string]any)
 	meta["identifier"] = ID
@@ -178,10 +175,7 @@ func (s *Service) Get(ctx context.Context, ID string, opt GetOptions) op.Result[
 
 // Update updates a firmware patch
 func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.FirmwarePatch] {
-	resolutionCtx := ctx
-	if ctxhelpers.IsDeferredExecution(ctx) {
-		resolutionCtx = context.Background()
-	}
+	resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 	meta := make(map[string]any)
 	meta["identifier"] = ID
@@ -200,10 +194,7 @@ type DeleteOptions struct {
 
 // Delete deletes a firmware patch
 func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.Result[core.NoContent] {
-	resolutionCtx := ctx
-	if ctxhelpers.IsDeferredExecution(ctx) {
-		resolutionCtx = context.Background()
-	}
+	resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 	meta := make(map[string]any)
 	meta["identifier"] = ID

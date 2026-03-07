@@ -85,10 +85,7 @@ type OperationIterator = pagination.Iterator[jsonmodels.Operation]
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Operation] {
 	// Resolve DeviceID if it contains a resolver scheme
 	if opt.DeviceID != "" && s.DeviceResolver != nil {
-		resolutionCtx := ctx
-		if ctxhelpers.IsDeferredExecution(ctx) {
-			resolutionCtx = context.Background()
-		}
+		resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, opt.DeviceID, nil)
 		if err != nil {
@@ -99,10 +96,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 
 	// Resolve AgentID if it contains a resolver scheme
 	if opt.AgentID != "" && s.DeviceResolver != nil {
-		resolutionCtx := ctx
-		if ctxhelpers.IsDeferredExecution(ctx) {
-			resolutionCtx = context.Background()
-		}
+		resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, opt.AgentID, nil)
 		if err != nil {
@@ -200,11 +194,7 @@ func (s *Service) createWithOptions(ctx context.Context, opts CreateOptions) op.
 	meta := make(map[string]any)
 
 	if deviceID != "" && s.DeviceResolver != nil {
-		resolutionCtx := ctx
-		if ctxhelpers.IsDeferredExecution(ctx) {
-			// Create a new context that preserves mock responses but not deferred execution
-			resolutionCtx = ctxhelpers.WithMockResponses(context.Background(), ctxhelpers.IsMockResponses(ctx))
-		}
+		resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, deviceID, meta)
 		if err != nil {
@@ -322,10 +312,7 @@ type DeleteListOptions struct {
 func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Result[core.NoContent] {
 	// Resolve DeviceID if it contains a resolver scheme
 	if opt.DeviceID != "" && s.DeviceResolver != nil {
-		resolutionCtx := ctx
-		if ctxhelpers.IsDeferredExecution(ctx) {
-			resolutionCtx = context.Background()
-		}
+		resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, opt.DeviceID, nil)
 		if err != nil {
@@ -336,10 +323,7 @@ func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Resu
 
 	// Resolve AgentID if it contains a resolver scheme
 	if opt.AgentID != "" && s.DeviceResolver != nil {
-		resolutionCtx := ctx
-		if ctxhelpers.IsDeferredExecution(ctx) {
-			resolutionCtx = context.Background()
-		}
+		resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, opt.AgentID, nil)
 		if err != nil {

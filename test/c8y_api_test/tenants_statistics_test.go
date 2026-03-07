@@ -12,7 +12,7 @@ import (
 
 func Test_TenantsStatisticsList(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 	usage := client.Tenants.UsageStatistics.List(context.Background(), usagestatistics.ListOptions{})
 	assert.NoError(t, usage.Err)
 	assert.Greater(t, usage.Data.Length(), 0)
@@ -20,7 +20,7 @@ func Test_TenantsStatisticsList(t *testing.T) {
 
 func Test_TenantsStatisticsListSummary(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 	usage := client.Tenants.UsageStatistics.ListSummary(context.Background(), usagestatistics.ListSummaryOptions{
 		DateFrom: time.Now().AddDate(-1, 0, 0),
 	})
@@ -29,7 +29,7 @@ func Test_TenantsStatisticsListSummary(t *testing.T) {
 }
 func Test_TenantsStatisticsListSummaryAllTenants(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 	usage := client.Tenants.UsageStatistics.ListSummaryAllTenants(context.Background(), usagestatistics.ListSummaryAllTenantsOptions{
 		DateFrom: time.Now().AddDate(-1, 0, 0),
 	})

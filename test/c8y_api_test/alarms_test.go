@@ -14,15 +14,15 @@ import (
 
 func Test_AlarmCount(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
-	count := client.Alarms.Count(context.Background(), alarms.ListOptions{})
+	client.SetDebug(true)
+	count := client.Alarms.Count(context.Background(), alarms.CountOptions{})
 	assert.NoError(t, count.Err)
 	assert.Greater(t, count.Data, int64(0))
 }
 
 func Test_AlarmCreateWithOptions_Simple(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	ctx := api.WithMockResponses(context.Background(), true)
 
@@ -42,7 +42,7 @@ func Test_AlarmCreateWithOptions_Simple(t *testing.T) {
 
 func Test_AlarmCreateWithOptions_WithResolver(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	mo := testcore.CreateManagedObject(t, client)
 	assert.NoError(t, mo.Err)
@@ -82,7 +82,7 @@ func Test_AlarmCreateWithOptions_WithResolver(t *testing.T) {
 
 func Test_AlarmCreateWithOptions_WithCustomStruct(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	mo := testcore.CreateManagedObject(t, client)
 	assert.NoError(t, mo.Err)
@@ -123,7 +123,7 @@ func Test_AlarmCreateWithOptions_WithCustomStruct(t *testing.T) {
 
 func Test_AlarmCreateWithOptions_WithInlineMap(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	mo := testcore.CreateManagedObject(t, client)
 	assert.NoError(t, mo.Err)
@@ -158,7 +158,7 @@ func Test_AlarmCreateWithOptions_WithInlineMap(t *testing.T) {
 
 func Test_AlarmCreateByName(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	mo := testcore.CreateManagedObject(t, client)
 	assert.NoError(t, mo.Err)

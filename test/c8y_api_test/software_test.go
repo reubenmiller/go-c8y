@@ -15,7 +15,7 @@ import (
 
 func Test_Software(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	// Get Or Create software item (new item)
 	softwareName := "software" + testingutils.RandomString(16)
@@ -82,7 +82,7 @@ func Test_Software(t *testing.T) {
 
 func Test_SoftwareResolver(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	// Get Or Create software item (new item)
 	softwareName := "software" + testingutils.RandomString(16)

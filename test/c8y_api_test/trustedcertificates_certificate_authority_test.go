@@ -12,7 +12,7 @@ import (
 
 func Test_TrustedCertificatesCertificateAuthority(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	// get
 	cert := client.TrustedCertificates.CertificateAuthority.Get(context.Background(), certificateauthority.GetOptions{

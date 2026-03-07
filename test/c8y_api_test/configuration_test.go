@@ -15,7 +15,7 @@ import (
 
 func Test_Configuration_Create(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 	ctx := context.Background()
 
 	name := "config-" + testingutils.RandomString(16)

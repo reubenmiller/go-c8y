@@ -21,7 +21,7 @@ import (
 
 func Test_TrustedCertificateListWithCACertificateOnly(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 	certs := client.TrustedCertificates.List(context.Background(), trustedcertificates.ListOptions{
 		TenantID:             client.Auth.Tenant,
 		CertificateAuthority: true,
@@ -38,7 +38,7 @@ func Test_TrustedCertificateListWithCACertificateOnly(t *testing.T) {
 
 func Test_TrustedCertifcates(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	keyFile := path.Join(t.TempDir(), "key.pem")
 	_, _, err := certutil.LoadOrGenerateKeyFile(keyFile)

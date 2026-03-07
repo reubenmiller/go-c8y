@@ -368,10 +368,7 @@ func (r *Resolver) resolveByQuery(ctx context.Context, query string) (string, er
 
 // Get retrieves a firmware
 func (s *Service) Get(ctx context.Context, ID string, opt GetOptions) op.Result[jsonmodels.Firmware] {
-	resolutionCtx := ctx
-	if ctxhelpers.IsDeferredExecution(ctx) {
-		resolutionCtx = context.Background()
-	}
+	resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 	meta := make(map[string]any)
 	meta["identifier"] = ID
@@ -386,10 +383,7 @@ func (s *Service) Get(ctx context.Context, ID string, opt GetOptions) op.Result[
 
 // Update a firmware
 func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.Firmware] {
-	resolutionCtx := ctx
-	if ctxhelpers.IsDeferredExecution(ctx) {
-		resolutionCtx = context.Background()
-	}
+	resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 	meta := make(map[string]any)
 	meta["identifier"] = ID
@@ -404,10 +398,7 @@ func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jso
 
 // Delete a firmware
 func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.Result[core.NoContent] {
-	resolutionCtx := ctx
-	if ctxhelpers.IsDeferredExecution(ctx) {
-		resolutionCtx = context.Background()
-	}
+	resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 	meta := make(map[string]any)
 	meta["identifier"] = ID

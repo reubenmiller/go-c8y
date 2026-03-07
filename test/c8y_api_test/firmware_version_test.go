@@ -15,7 +15,7 @@ import (
 
 func Test_FirmwareVersion(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	firmwareName := "firmware" + testingutils.RandomString(16)
 	version := "1.0.1"

@@ -249,12 +249,7 @@ func (s *Service) Get(ctx context.Context, id string) op.Result[jsonmodels.Micro
 	// Resolve ID (supports "name:serviceName", "contextPath:/path", etc.)
 	// If deferred execution is enabled, we still need to resolve the ID first
 	// But do it in a normal context so the resolution actually completes
-	resolutionCtx := ctx
-	if ctxhelpers.IsDeferredExecution(ctx) {
-		// Use background context for resolution so it doesn't inherit the deferred flag
-		// This allows lookups (like ListAll) to actually execute
-		resolutionCtx = context.Background()
-	}
+	resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 	meta := make(map[string]any)
 	resolvedID, err := s.ResolveID(resolutionCtx, id, meta)
@@ -297,10 +292,7 @@ func (s *Service) createB(body any) *core.TryRequest {
 //   - Update(ctx, "name:my-microservice", body) - lookup by name
 func (s *Service) Update(ctx context.Context, id string, body any) op.Result[jsonmodels.Microservice] {
 	// Resolve ID (supports "name:serviceName", "contextPath:/path", etc.)
-	resolutionCtx := ctx
-	if ctxhelpers.IsDeferredExecution(ctx) {
-		resolutionCtx = context.Background()
-	}
+	resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 	meta := make(map[string]any)
 	resolvedID, err := s.ResolveID(resolutionCtx, id, meta)
@@ -331,10 +323,7 @@ type DeleteOptions = applications.DeleteOptions
 //   - Delete(ctx, "name:my-microservice", opts) - lookup by name
 func (s *Service) Delete(ctx context.Context, id string, opt DeleteOptions) op.Result[core.NoContent] {
 	// Resolve ID (supports "name:serviceName", "contextPath:/path", etc.)
-	resolutionCtx := ctx
-	if ctxhelpers.IsDeferredExecution(ctx) {
-		resolutionCtx = context.Background()
-	}
+	resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 	meta := make(map[string]any)
 	resolvedID, err := s.ResolveID(resolutionCtx, id, meta)
@@ -384,10 +373,7 @@ func (s *Service) subscribeB(tenantID string, selfURL string) *core.TryRequest {
 //   - Unsubscribe(ctx, tenantID, "name:my-microservice") - lookup by name
 func (s *Service) Unsubscribe(ctx context.Context, tenantID string, id string) op.Result[core.NoContent] {
 	// Resolve ID (supports "name:serviceName", "contextPath:/path", etc.)
-	resolutionCtx := ctx
-	if ctxhelpers.IsDeferredExecution(ctx) {
-		resolutionCtx = context.Background()
-	}
+	resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 	meta := make(map[string]any)
 	resolvedID, err := s.ResolveID(resolutionCtx, id, meta)
@@ -416,10 +402,7 @@ type UploadFileOptions = applications.UploadFileOptions
 //   - Upload(ctx, "name:my-microservice", opts) - lookup by name
 func (s *Service) Upload(ctx context.Context, id string, opt UploadFileOptions) op.Result[jsonmodels.MicroserviceBinary] {
 	// Resolve ID (supports "name:serviceName", "contextPath:/path", etc.)
-	resolutionCtx := ctx
-	if ctxhelpers.IsDeferredExecution(ctx) {
-		resolutionCtx = context.Background()
-	}
+	resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 	meta := make(map[string]any)
 	resolvedID, err := s.ResolveID(resolutionCtx, id, meta)

@@ -28,7 +28,7 @@ func main() {
 	})
 
 	if enabledDebug, err := strconv.ParseBool(os.Getenv("DEBUG")); err == nil {
-		client.HTTPClient.SetDebug(enabledDebug)
+		client.SetDebug(enabledDebug)
 	}
 
 	// Add API call statistics middleware

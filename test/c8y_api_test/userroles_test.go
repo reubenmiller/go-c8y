@@ -13,7 +13,7 @@ import (
 
 func Test_UserRoles(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 	collection := client.UserRoles.List(context.Background(), userroles.ListOptions{})
 	assert.NoError(t, collection.Err)
 	assert.NotNil(t, collection)

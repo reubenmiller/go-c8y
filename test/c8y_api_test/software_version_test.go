@@ -15,7 +15,7 @@ import (
 
 func Test_SoftwareVersion(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	// Get Or Create software version (new item)
 	softwareName := "software" + testingutils.RandomString(16)

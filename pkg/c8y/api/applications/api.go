@@ -254,12 +254,7 @@ func (s *Service) Get(ctx context.Context, id string) op.Result[jsonmodels.Appli
 	// Resolve ID (supports "name:appName", "name:appName:HOSTED", etc.)
 	// If deferred execution is enabled, we still need to resolve the ID first
 	// But do it in a normal context so the resolution actually completes
-	resolutionCtx := ctx
-	if ctxhelpers.IsDeferredExecution(ctx) {
-		// Use background context for resolution so it doesn't inherit the deferred flag
-		// This allows lookups (like ListAll) to actually execute
-		resolutionCtx = context.Background()
-	}
+	resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 	meta := make(map[string]any)
 	resolvedID, err := s.ResolveID(resolutionCtx, id, meta)
@@ -300,10 +295,7 @@ func (s *Service) createB(body any) *core.TryRequest {
 //   - Update(ctx, "name:cockpit", body) - lookup by name
 func (s *Service) Update(ctx context.Context, id string, body any) op.Result[jsonmodels.Application] {
 	// Resolve ID (supports "name:appName", etc.)
-	resolutionCtx := ctx
-	if ctxhelpers.IsDeferredExecution(ctx) {
-		resolutionCtx = context.Background()
-	}
+	resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 	meta := make(map[string]any)
 	resolvedID, err := s.ResolveID(resolutionCtx, id, meta)
@@ -336,10 +328,7 @@ type DeleteOptions struct {
 //   - Delete(ctx, "name:cockpit", opts) - lookup by name
 func (s *Service) Delete(ctx context.Context, id string, opt DeleteOptions) op.Result[core.NoContent] {
 	// Resolve ID (supports "name:appName", etc.)
-	resolutionCtx := ctx
-	if ctxhelpers.IsDeferredExecution(ctx) {
-		resolutionCtx = context.Background()
-	}
+	resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 	meta := make(map[string]any)
 	resolvedID, err := s.ResolveID(resolutionCtx, id, meta)
@@ -373,10 +362,7 @@ type CopyOptions struct {
 //   - Copy(ctx, "name:cockpit", opts) - lookup by name
 func (s *Service) Copy(ctx context.Context, id string, opt CopyOptions) op.Result[jsonmodels.Application] {
 	// Resolve ID (supports "name:appName", etc.)
-	resolutionCtx := ctx
-	if ctxhelpers.IsDeferredExecution(ctx) {
-		resolutionCtx = context.Background()
-	}
+	resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 	meta := make(map[string]any)
 	resolvedID, err := s.ResolveID(resolutionCtx, id, meta)
@@ -417,10 +403,7 @@ func (s *Service) subscribeB(tenantID string, selfURL string) *core.TryRequest {
 //   - Unsubscribe(ctx, "tenant01", "name:cockpit") - lookup by name
 func (s *Service) Unsubscribe(ctx context.Context, tenantID string, id string) op.Result[core.NoContent] {
 	// Resolve ID (supports "name:appName", etc.)
-	resolutionCtx := ctx
-	if ctxhelpers.IsDeferredExecution(ctx) {
-		resolutionCtx = context.Background()
-	}
+	resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 	meta := make(map[string]any)
 	resolvedID, err := s.ResolveID(resolutionCtx, id, meta)
@@ -448,10 +431,7 @@ type UploadFileOptions = core.UploadFileOptions
 //   - Upload(ctx, "name:myapp", opts) - lookup by name
 func (s *Service) Upload(ctx context.Context, id string, opt UploadFileOptions) op.Result[jsonmodels.Application] {
 	// Resolve ID (supports "name:appName", etc.)
-	resolutionCtx := ctx
-	if ctxhelpers.IsDeferredExecution(ctx) {
-		resolutionCtx = context.Background()
-	}
+	resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 	meta := make(map[string]any)
 	resolvedID, err := s.ResolveID(resolutionCtx, id, meta)

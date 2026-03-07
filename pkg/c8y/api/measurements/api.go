@@ -75,10 +75,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 	// Resolve Source if it contains a resolver scheme
 	if opt.Source != "" && s.DeviceResolver != nil {
 		// Use resolution context that bypasses deferred execution
-		resolutionCtx := ctx
-		if ctxhelpers.IsDeferredExecution(ctx) {
-			resolutionCtx = context.Background()
-		}
+		resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, opt.Source, nil)
 		if err != nil {
@@ -132,10 +129,7 @@ type DeleteListOptions struct {
 func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Result[core.NoContent] {
 	// Resolve Source if it contains a resolver scheme
 	if opt.Source != "" && s.DeviceResolver != nil {
-		resolutionCtx := ctx
-		if ctxhelpers.IsDeferredExecution(ctx) {
-			resolutionCtx = context.Background()
-		}
+		resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, opt.Source, nil)
 		if err != nil {
@@ -223,11 +217,7 @@ func (s *Service) createWithOptions(ctx context.Context, opts CreateOptions) op.
 	meta := make(map[string]any)
 
 	if sourceID != "" && s.DeviceResolver != nil {
-		resolutionCtx := ctx
-		if ctxhelpers.IsDeferredExecution(ctx) {
-			// Create a new context that preserves mock responses but not deferred execution
-			resolutionCtx = ctxhelpers.WithMockResponses(context.Background(), ctxhelpers.IsMockResponses(ctx))
-		}
+		resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, sourceID, meta)
 		if err != nil {
@@ -360,10 +350,7 @@ func (s *Service) ListSeries(ctx context.Context, opt ListSeriesOptions) op.Resu
 
 	// Resolve Source if it contains a resolver scheme
 	if opt.Source != "" && s.DeviceResolver != nil {
-		resolutionCtx := ctx
-		if ctxhelpers.IsDeferredExecution(ctx) {
-			resolutionCtx = context.Background()
-		}
+		resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 		meta := make(map[string]any)
 		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, opt.Source, meta)

@@ -14,7 +14,7 @@ import (
 
 func Test_SystemOptions(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	// list
 	collection := client.Tenants.SystemOptions.List(context.Background(), systemoptions.ListOptions{})

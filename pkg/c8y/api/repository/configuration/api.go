@@ -380,10 +380,7 @@ func (r *Resolver) resolveByQuery(ctx context.Context, query string) (string, er
 
 // Get retrieves a configuration
 func (s *Service) Get(ctx context.Context, ID string, opt GetOptions) op.Result[jsonmodels.Configuration] {
-	resolutionCtx := ctx
-	if ctxhelpers.IsDeferredExecution(ctx) {
-		resolutionCtx = context.Background()
-	}
+	resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 	meta := make(map[string]any)
 	meta["identifier"] = ID
@@ -398,10 +395,7 @@ func (s *Service) Get(ctx context.Context, ID string, opt GetOptions) op.Result[
 
 // Update a configuration
 func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.Configuration] {
-	resolutionCtx := ctx
-	if ctxhelpers.IsDeferredExecution(ctx) {
-		resolutionCtx = context.Background()
-	}
+	resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 	meta := make(map[string]any)
 	meta["identifier"] = ID
@@ -416,10 +410,7 @@ func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jso
 
 // Delete a configuration
 func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.Result[core.NoContent] {
-	resolutionCtx := ctx
-	if ctxhelpers.IsDeferredExecution(ctx) {
-		resolutionCtx = context.Background()
-	}
+	resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 	meta := make(map[string]any)
 	meta["identifier"] = ID

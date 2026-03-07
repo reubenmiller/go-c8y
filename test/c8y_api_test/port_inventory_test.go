@@ -115,7 +115,7 @@ func TestInventoryService_DeleteManagedObject(t *testing.T) {
 func TestInventoryService_GetChildAdditions(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	device := testcore.CreateDevice(t, client)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	// Create child additions
 	child01 := client.ManagedObjects.ChildAdditions.Create(
@@ -161,7 +161,7 @@ func TestInventoryService_GetChildAdditions(t *testing.T) {
 
 func TestInventoryService_CreateManagedObjectWithBinary(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	testfile1 := testcore.NewDummyFile(t, "testfile1.txt", "test contents 1")
 
@@ -200,7 +200,7 @@ func TestInventoryService_CreateManagedObjectWithBinary(t *testing.T) {
 func TestInventoryService_CreateChildAdditionWithBinary(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	parent := testcore.CreateManagedObject(t, client)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	testfile1 := testcore.NewDummyFile(t, "testfile1.txt", "test contents 1")
 

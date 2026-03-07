@@ -13,7 +13,7 @@ import (
 
 func Test_TenantOptions(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	// list
 	collection := client.Tenants.Options.List(context.Background(), tenantoptions.ListOptions{})

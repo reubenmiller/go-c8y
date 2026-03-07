@@ -215,7 +215,7 @@ func TestAlarmService_BulkUpdateAlarms(t *testing.T) {
 	alarm2 := alarmFactory("alarm2")
 	alarm3 := alarmFactory("alarm3")
 
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 	// Update list of alarms
 	updatedList := client.Alarms.UpdateList(
 		context.Background(),

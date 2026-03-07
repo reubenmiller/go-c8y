@@ -13,7 +13,7 @@ import (
 
 func Test_RemoteAccess(t *testing.T) {
 	client := testcore.CreateTestClient(t)
-	client.Client.SetDebug(true)
+	client.SetDebug(true)
 
 	ctx := context.Background()
 
