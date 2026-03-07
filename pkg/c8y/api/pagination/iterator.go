@@ -19,6 +19,20 @@ type JSONDocument interface {
 // The iterator is fully lazy - no API calls are made until Items() is called.
 // Call Preview() to fetch metadata (totalCount, totalPages) before iteration,
 // which allows inspection and confirmation workflows.
+//
+// Error handling: Items() returns iter.Seq2[T, error]. Always check the error
+// value in the loop — errors mid-iteration (e.g. a failed page fetch) will be
+// yielded as the second value and must be handled explicitly:
+//
+//	for item, err := range iter.Items() {
+//		if err != nil {
+//			// handle or break
+//		}
+//		// use item
+//	}
+//
+// Use Seq() only when integrating with libraries that require iter.Seq[T] and
+// you are willing to silently discard mid-iteration errors.
 type Iterator[T any] struct {
 	items       iter.Seq2[T, error]
 	err         error
@@ -28,6 +42,12 @@ type Iterator[T any] struct {
 	previewFunc func() error // Closure to perform preview call
 }
 
+// Items returns an iterator that yields each item together with any error
+// encountered while fetching that page. Always check the error value:
+//
+//	for item, err := range it.Items() {
+//		if err != nil { ... }
+//	}
 func (it *Iterator[T]) Items() iter.Seq2[T, error] {
 	return it.items
 }

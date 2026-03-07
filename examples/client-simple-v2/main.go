@@ -90,7 +90,11 @@ func main() {
 
 	// iterate over the alarms (paging is done automatically)
 	count := 0
-	for alarm := range alarmCollection.Items() {
+	for alarm, err := range alarmCollection.Items() {
+		if err != nil {
+			slog.Error("Error iterating alarms", "err", err)
+			break
+		}
 		slog.Info("alarm", "id", alarm.ID(), "type", alarm.Type())
 		count += 1
 		if count > 2002 {
