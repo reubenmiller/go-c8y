@@ -20,6 +20,20 @@ _site
 .scannerwork
 *.zip
 
+# example binaries (go build output, named after the directory)
+examples/cached-client/cached-client
+examples/cli-demo/cli-demo
+examples/cli-login-preference/cli-login-preference
+examples/client-simple-v2/client-simple-v2
+examples/device-enrollment/device-enrollment
+examples/dry-run/dry-run
+examples/issue2-realtime/issue2-realtime
+examples/measurement-series/measurement-series
+examples/notification2-client-cli/notification2-client-cli
+examples/pipeline/pipeline
+examples/realtime-client-simple/realtime-client-simple
+examples/software-uploader/software-uploader
+
 # example files
 device.crt
 device.key
