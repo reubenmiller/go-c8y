@@ -1,6 +1,6 @@
 module github.com/reubenmiller/go-c8y/examples/software-uploader
 
-go 1.25
+go 1.25.0
 
 replace github.com/reubenmiller/go-c8y => ../..
 
@@ -16,9 +16,9 @@ require (
 	github.com/danieljoos/wincred v1.2.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
-	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
+	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/mdp/qrterminal/v3 v3.2.1 // indirect
@@ -32,7 +32,7 @@ require (
 	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/zalando/go-keyring v0.2.6 // indirect
 	go.mozilla.org/pkcs7 v0.9.0 // indirect
-	golang.org/x/net v0.43.0 // indirect
+	golang.org/x/net v0.51.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

@@ -25,7 +25,7 @@ import (
 func CreateTestClient(t *testing.T) *api.Client {
 	t.Setenv("C8Y_TOKEN", "")
 	client := api.NewClientFromEnvironment(api.ClientOptions{})
-	client.Client.SetRetryCount(1)
+	client.HTTPClient.SetRetryCount(1)
 	return client
 }
 

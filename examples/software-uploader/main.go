@@ -94,7 +94,7 @@ func main() {
 
 		// Enable HTTP debug logging on the underlying resty client if debug mode is enabled
 		if *debug {
-			client.Client.SetDebug(true)
+			client.HTTPClient.SetDebug(true)
 		}
 	}
 

@@ -41,7 +41,7 @@ func main() {
 	})
 
 	if enabledDebug, err := strconv.ParseBool(os.Getenv("DEBUG")); err == nil {
-		client.Client.SetDebug(enabledDebug)
+		client.HTTPClient.SetDebug(enabledDebug)
 	}
 
 	// Get list of measurements (without pagination)
@@ -103,7 +103,7 @@ func main() {
 	}
 
 	// Complex task using concurrency and a sequence of actions
-	client.Client.SetDebug(true)
+	client.HTTPClient.SetDebug(true)
 
 	// Step 1: Select managed objects
 	moIter := client.ManagedObjects.ListAll(context.Background(), managedobjects.ListOptions{

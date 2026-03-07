@@ -426,17 +426,15 @@ func runAlarmsCount(f *countAlarmsFlags) error {
 	ctx := requestContext()
 	client := clientFactory()
 
-	// The count endpoint accepts the same query parameters as the list endpoint,
-	// so we reuse ListOptions to avoid duplicating field definitions.
-	opts := alarms.ListOptions{
+	opts := alarms.CountOptions{
 		Source:   f.device,
 		Resolved: f.resolved,
 	}
 	for _, s := range f.status {
-		opts.Status = append(opts.Status, model.AlarmStatus(s))
+		opts.Status = append(opts.Status, string(s))
 	}
 	for _, s := range f.severity {
-		opts.Severity = append(opts.Severity, model.AlarmSeverity(s))
+		opts.Severity = append(opts.Severity, string(s))
 	}
 	if f.dateFrom != "" {
 		t, err := parseRelativeTime(f.dateFrom)

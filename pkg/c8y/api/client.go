@@ -91,8 +91,8 @@ type Service struct {
 
 // A Client manages communication with the Cumulocity API.
 type Client struct {
-	clientMu sync.Mutex    // clientMu protects the client during calls that modify the CheckRedirect func.
-	Client   *resty.Client // HTTP client used to communicate with the API.
+	clientMu   sync.Mutex    // clientMu protects the client during calls that modify the CheckRedirect func.
+	HTTPClient *resty.Client // HTTP client used to communicate with the API.
 
 	RealtimeClient *realtime.Client
 
@@ -348,7 +348,7 @@ func NewClient(opts ClientOptions) *Client {
 	// rclient.AddRequestMiddleware(MiddlewareAuthorization(opts.Auth))
 
 	c := &Client{
-		Client:              rclient,
+		HTTPClient:          rclient,
 		BaseURL:             targetBaseURL,
 		UserAgent:           userAgent,
 		UseTenantInUsername: true,
@@ -440,14 +440,14 @@ func (c *Client) AddMiddleware() error {
 	// TokenSourceMiddleware injects per-request auth from the active token source.
 	// It runs before the global resty auth and overrides it, so callers always get
 	// a fresh (non-expired) token without touching global client state.
-	c.Client.AddRequestMiddleware(TokenSourceMiddleware(func() authentication.TokenSource {
+	c.HTTPClient.AddRequestMiddleware(TokenSourceMiddleware(func() authentication.TokenSource {
 		return c.tokenSource
 	}))
-	c.Client.AddRetryConditions(TokenRenewalRetry(c))
+	c.HTTPClient.AddRetryConditions(TokenRenewalRetry(c))
 
 	// Register a single debug middleware that reads the runtime debugEnabled flag.
 	// This avoids the problem of middleware accumulating each time SetDebug is called.
-	c.Client.AddResponseMiddleware(func(rc *resty.Client, resp *resty.Response) error {
+	c.HTTPClient.AddResponseMiddleware(func(rc *resty.Client, resp *resty.Response) error {
 		if !c.debugEnabled {
 			return nil
 		}
@@ -475,7 +475,7 @@ func (c *Client) SetAuth(opt authentication.AuthOptions) {
 }
 
 func (c *Client) updateClientAuth() {
-	SetAuth(c.Client, c.Auth)
+	SetAuth(c.HTTPClient, c.Auth)
 }
 
 func (c *Client) SetToken(v string) {

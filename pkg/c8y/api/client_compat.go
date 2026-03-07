@@ -178,7 +178,7 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) *Reque
 	if options.DryRun != nil {
 		ctxRequest = WithDryRun(ctxRequest, *options.DryRun)
 	}
-	req := c.Client.R().
+	req := c.HTTPClient.R().
 		SetContext(ctxRequest).
 		SetMethod(options.Method)
 

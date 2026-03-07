@@ -28,12 +28,12 @@ func main() {
 	})
 
 	if enabledDebug, err := strconv.ParseBool(os.Getenv("DEBUG")); err == nil {
-		client.Client.SetDebug(enabledDebug)
+		client.HTTPClient.SetDebug(enabledDebug)
 	}
 
 	// Add API call statistics middleware
 	stats := api.NewStatsMap()
-	client.Client.AddResponseMiddleware(api.MiddlewareCountByMethodAndPath(stats))
+	client.HTTPClient.AddResponseMiddleware(api.MiddlewareCountByMethodAndPath(stats))
 
 	ctx := context.Background()
 

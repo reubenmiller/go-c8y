@@ -145,7 +145,7 @@ func (c *Client) AuthorizeWithDeviceFlow(ctx context.Context, initRequest string
 		initRequest = loginOption.InitRequest()
 	}
 
-	httpClient := c.Client.Clone(context.Background()).Client()
+	httpClient := c.HTTPClient.Clone(context.Background()).Client()
 	endpoint, err := getAuthorizationRequest(ctx, httpClient, initRequest, "")
 	if err != nil {
 		return nil, err
@@ -451,7 +451,7 @@ func (c *Client) AuthorizeWithBrowserFlow(ctx context.Context, initRequest strin
 
 	// Fetch IdP authorization URL; callbackURL is embedded in the request so
 	// Cumulocity knows where to redirect the browser after the SSO exchange.
-	httpClient := c.Client.Clone(context.Background()).Client()
+	httpClient := c.HTTPClient.Clone(context.Background()).Client()
 	authReq, err := getAuthorizationRequest(ctx, httpClient, initRequest, callbackURL)
 	if err != nil {
 		return nil, fmt.Errorf("browser flow: get authorization URL: %w", err)
@@ -481,7 +481,7 @@ func (c *Client) AuthorizeWithBrowserFlow(ctx context.Context, initRequest strin
 		if code == "" {
 			return nil, fmt.Errorf("browser flow: SSO callback returned an error")
 		}
-		tokenClient := NewClient(ClientOptions{BaseURL: c.Client.BaseURL()})
+		tokenClient := NewClient(ClientOptions{BaseURL: c.HTTPClient.BaseURL()})
 		tokenClient.SetDebug(c.debugEnabled)
 		tok := tokenClient.LoginTokens.Create(ctx, logintokens.CreateTokenOptions{
 			GrantType:     logintokens.GrantTypeAuthorizationCode,

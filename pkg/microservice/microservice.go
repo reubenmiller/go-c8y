@@ -139,7 +139,7 @@ func NewBootstrapClient(opts api.ClientOptions) *api.Client {
 	}
 	client := api.NewClient(opts)
 	client.UseTenantInUsername = true
-	client.Client.AddRequestMiddleware(middlewareServiceUserAuth())
+	client.HTTPClient.AddRequestMiddleware(middlewareServiceUserAuth())
 	return client
 }
 
