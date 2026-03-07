@@ -15,8 +15,8 @@ func Test_Measurements_ListSeries_WithResolver(t *testing.T) {
 	ctx := api.WithMockResponses(context.Background(), true)
 
 	opts := measurements.ListSeriesOptions{
-		Source:    client.Measurements.DeviceResolver.ByName("device01"),
-		Variables: []string{"c8y_Temperature.T", "c8y_Humidity.H"},
+		Source: client.Measurements.DeviceResolver.ByName("device01"),
+		Series: []string{"c8y_Temperature.T", "c8y_Humidity.H"},
 	}
 
 	result := client.Measurements.ListSeries(ctx, opts)
@@ -28,7 +28,7 @@ func Test_Measurements_ListSeries_WithResolver(t *testing.T) {
 	series := result.Data.GetSeriesNames()
 	assert.GreaterOrEqual(t, len(series), 2)
 	for _, item := range result.Data.ToTabular() {
-		assert.NotZero(t, item.Timestamp)
+		assert.NotZero(t, item.Time)
 		assert.Len(t, item.Values, 2)
 		assert.Greater(t, item.Values[0].GetMax(), float64(0))
 		assert.Greater(t, item.Values[0].GetMin(), float64(0))
@@ -45,8 +45,8 @@ func Test_Measurements_ListSeries_ToTabular(t *testing.T) {
 	ctx := api.WithMockResponses(context.Background(), true)
 
 	opts := measurements.ListSeriesOptions{
-		Source:    "12345",
-		Variables: []string{"c8y_Temperature.T"},
+		Source: "12345",
+		Series: []string{"c8y_Temperature.T"},
 	}
 
 	result := client.Measurements.ListSeries(ctx, opts)

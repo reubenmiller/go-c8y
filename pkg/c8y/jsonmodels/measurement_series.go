@@ -40,6 +40,10 @@ type Series struct {
 	Unit string `json:"unit"`
 }
 
+func (s *Series) GetSeries() string {
+	return s.Type + "." + s.Name
+}
+
 // SeriesValue represents aggregated values at a specific timestamp
 // Uses pointers to distinguish between zero values and unset fields
 type SeriesValue struct {
@@ -146,8 +150,11 @@ func (s SeriesValue) HasStdDevSamp() bool {
 // SeriesRow represents a row in the tabular format
 // Each row contains a timestamp and aggregated values for all series at that timestamp
 type SeriesRow struct {
-	Timestamp time.Time
-	Values    []SeriesValue // Values for each series (order matches series array)
+	Time       time.Time
+	DeviceID   string        // ID of the source device
+	DeviceName string        // Name of the source device (if resolved)
+	Series     []Series      // Series metadata (order matches Values)
+	Values     []SeriesValue // Values for each series (order matches Series)
 }
 
 // GetSeries returns all series from the response
@@ -179,6 +186,7 @@ func (m MeasurementSeries) ToTabular() []SeriesRow {
 		return []SeriesRow{}
 	}
 
+	series := m.GetSeries()
 	rows := make([]SeriesRow, 0)
 
 	// Iterate over each timestamp in the values map
@@ -201,8 +209,11 @@ func (m MeasurementSeries) ToTabular() []SeriesRow {
 		}
 
 		rows = append(rows, SeriesRow{
-			Timestamp: timestamp,
-			Values:    values,
+			Time:       timestamp,
+			DeviceID:   m.DeviceID,
+			DeviceName: m.DeviceName,
+			Series:     series,
+			Values:     values,
 		})
 
 		return true // Continue iteration
@@ -211,7 +222,7 @@ func (m MeasurementSeries) ToTabular() []SeriesRow {
 	// Sort rows by timestamp
 	for i := 0; i < len(rows); i++ {
 		for j := i + 1; j < len(rows); j++ {
-			if rows[i].Timestamp.After(rows[j].Timestamp) {
+			if rows[i].Time.After(rows[j].Time) {
 				rows[i], rows[j] = rows[j], rows[i]
 			}
 		}
@@ -273,4 +284,189 @@ func (m MeasurementSeries) GetValuesForSeriesByName(seriesName string) map[time.
 	}
 
 	return make(map[time.Time]SeriesValue)
+}
+
+// FlatRow represents a single timestamp row where each element of Values corresponds
+// to a column returned by ToFlatRows. A nil pointer means that stat was not present
+// for that series at that timestamp.
+type FlatRow struct {
+	Time       time.Time
+	DeviceID   string // ID of the source device
+	DeviceName string // Name of the source device (if resolved)
+	Values     []*float64
+}
+
+// ToFlatRows returns a column header slice and a flat row slice suitable for CSV or
+// tabular export. Columns are named "<type>.<name>.<stat>" (e.g.
+// "c8y_Temperature.T.avg"). Only stats that appear in the data produce columns —
+// stats that were never requested will not appear. Count is widened to float64.
+// Source device context is available on each row via DeviceID and DeviceName.
+//
+// Example:
+//
+//	columns, rows := m.ToFlatRows()
+//	fmt.Println("time,source.id,source.name," + strings.Join(columns, ","))
+//	for _, row := range rows {
+//	    vals := make([]string, len(row.Values))
+//	    for i, v := range row.Values {
+//	        if v != nil { vals[i] = strconv.FormatFloat(*v, 'f', -1, 64) }
+//	    }
+//	    fmt.Printf("%s,%s,%s,%s\n", row.Time.Format(time.RFC3339), row.DeviceID, row.DeviceName, strings.Join(vals, ","))
+//	}
+func (m MeasurementSeries) ToFlatRows() (columns []string, rows []FlatRow) {
+	tabular := m.ToTabular()
+	if len(tabular) == 0 {
+		return nil, nil
+	}
+
+	series := m.GetSeries()
+
+	// Determine which stats are present by scanning all data so that columns
+	// only appear when they carry actual data.
+	type statPresence struct {
+		min, max, avg, count, sum, stdDevPop, stdDevSamp bool
+	}
+	presence := make([]statPresence, len(series))
+	for _, row := range tabular {
+		for i, v := range row.Values {
+			if i >= len(series) {
+				break
+			}
+			p := &presence[i]
+			p.min = p.min || v.Min != nil
+			p.max = p.max || v.Max != nil
+			p.avg = p.avg || v.Avg != nil
+			p.count = p.count || v.Count != nil
+			p.sum = p.sum || v.Sum != nil
+			p.stdDevPop = p.stdDevPop || v.StdDevPop != nil
+			p.stdDevSamp = p.stdDevSamp || v.StdDevSamp != nil
+		}
+	}
+
+	// Build an ordered column definition list. Within each series the stat order
+	// is: min, max, avg, count, sum, stdDevPop, stdDevSamp.
+	type colDef struct {
+		seriesIdx int
+		stat      string
+	}
+	var defs []colDef
+	for i, s := range series {
+		p := presence[i]
+		name := s.GetSeries()
+		add := func(stat string, present bool) {
+			if present {
+				columns = append(columns, name+"."+stat)
+				defs = append(defs, colDef{i, stat})
+			}
+		}
+		add("min", p.min)
+		add("max", p.max)
+		add("avg", p.avg)
+		add("count", p.count)
+		add("sum", p.sum)
+		add("stdDevPop", p.stdDevPop)
+		add("stdDevSamp", p.stdDevSamp)
+	}
+
+	// Build flat rows.
+	rows = make([]FlatRow, len(tabular))
+	for ri, row := range tabular {
+		flat := FlatRow{
+			Time:       row.Time,
+			DeviceID:   row.DeviceID,
+			DeviceName: row.DeviceName,
+			Values:     make([]*float64, len(defs)),
+		}
+		for ci, col := range defs {
+			if col.seriesIdx >= len(row.Values) {
+				continue
+			}
+			v := row.Values[col.seriesIdx]
+			switch col.stat {
+			case "min":
+				flat.Values[ci] = v.Min
+			case "max":
+				flat.Values[ci] = v.Max
+			case "avg":
+				flat.Values[ci] = v.Avg
+			case "count":
+				if v.Count != nil {
+					f := float64(*v.Count)
+					flat.Values[ci] = &f
+				}
+			case "sum":
+				flat.Values[ci] = v.Sum
+			case "stdDevPop":
+				flat.Values[ci] = v.StdDevPop
+			case "stdDevSamp":
+				flat.Values[ci] = v.StdDevSamp
+			}
+		}
+		rows[ri] = flat
+	}
+
+	return columns, rows
+}
+
+// ToJSONRows returns one map per timestamp, suitable for JSON Lines encoding.
+// Each map contains "timestamp" (time.Time) plus one key per stat that is
+// present, named "<type>.<name>.<stat>" (e.g. "c8y_Temperature.T.avg").
+// Stats with a nil value at a given timestamp are omitted from that map, so
+// each line only carries the data that actually exists.
+//
+// Example:
+//
+//	enc := json.NewEncoder(os.Stdout)
+//	for _, obj := range m.ToJSONRows() {
+//	    enc.Encode(obj)
+//	}
+func (m MeasurementSeries) ToJSONRows() []map[string]any {
+	tabular := m.ToTabular()
+	if len(tabular) == 0 {
+		return nil
+	}
+
+	result := make([]map[string]any, len(tabular))
+	for ri, row := range tabular {
+		obj := map[string]any{
+			"time": row.Time,
+			"source": map[string]string{
+				"id": row.DeviceID,
+				// "name": row.DeviceName,
+			},
+		}
+		if row.DeviceName != "" {
+			obj["source"].(map[string]string)["name"] = row.DeviceName
+		}
+		for i, v := range row.Values {
+			if i >= len(row.Series) {
+				break
+			}
+			prefix := row.Series[i].GetSeries()
+			if v.Min != nil {
+				obj[prefix+".min"] = *v.Min
+			}
+			if v.Max != nil {
+				obj[prefix+".max"] = *v.Max
+			}
+			if v.Avg != nil {
+				obj[prefix+".avg"] = *v.Avg
+			}
+			if v.Count != nil {
+				obj[prefix+".count"] = *v.Count
+			}
+			if v.Sum != nil {
+				obj[prefix+".sum"] = *v.Sum
+			}
+			if v.StdDevPop != nil {
+				obj[prefix+".stdDevPop"] = *v.StdDevPop
+			}
+			if v.StdDevSamp != nil {
+				obj[prefix+".stdDevSamp"] = *v.StdDevSamp
+			}
+		}
+		result[ri] = obj
+	}
+
+	return result
 }

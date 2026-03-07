@@ -341,7 +341,7 @@ type ListSeriesOptions struct {
 
 	AggregationType string `url:"aggregationType,omitempty"`
 
-	Variables []string `url:"series,omitempty"`
+	Series []string `url:"series,omitempty"`
 
 	Revert bool `url:"revert,omitempty"`
 }

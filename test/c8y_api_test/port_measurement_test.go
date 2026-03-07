@@ -39,10 +39,10 @@ func Test_GetMeasurementSeries(t *testing.T) {
 
 	// Get measurement series
 	result := client.Measurements.ListSeries(ctx, measurements.ListSeriesOptions{
-		Source:    device.ID(),
-		Variables: []string{"c8y_Temperature.A", "c8y_Temperature.B"},
-		DateFrom:  time.Now().Add(-2 * 24 * time.Hour),
-		DateTo:    time.Now(),
+		Source:   device.ID(),
+		Series:   []string{"c8y_Temperature.A", "c8y_Temperature.B"},
+		DateFrom: time.Now().Add(-2 * 24 * time.Hour),
+		DateTo:   time.Now(),
 	})
 
 	require.NoError(t, result.Err)
