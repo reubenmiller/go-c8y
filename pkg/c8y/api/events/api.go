@@ -77,8 +77,9 @@ type ListOptions struct {
 	Revert bool `url:"revert,omitempty"`
 
 	// The managed object ID to which the event is associated.
-	// Supports resolver strings: direct ID, "name:deviceName", "ext:type:id", "query:..."
-	Source string `url:"source,omitempty"`
+	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
+	// or cast a string variable with managedobjects.DeviceRef(id).
+	Source managedobjects.DeviceRef `url:"source,omitempty"`
 
 	// The type of event to search for
 	Type string `url:"type,omitempty"`
@@ -121,7 +122,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 		if err != nil {
 			return op.Failed[jsonmodels.Event](err, true)
 		}
-		opt.Source = resolvedID
+		opt.Source = managedobjects.DeviceRef(resolvedID)
 	}
 
 	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewEvent)
@@ -166,9 +167,10 @@ func (s *Service) getB(ID string) *core.TryRequest {
 
 // CreateOptions for creating an event with resolver support
 type CreateOptions struct {
-	// Source device identifier (supports resolver strings)
-	// Examples: "12345", "name:deviceName", "ext:c8y_Serial:ABC", "query:..."
-	Source string
+	// Source device identifier.
+	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
+	// or cast a string variable with managedobjects.DeviceRef(id).
+	Source managedobjects.DeviceRef
 
 	// Type of the event
 	Type string
@@ -214,13 +216,13 @@ func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Eve
 // createWithOptions handles the CreateOptions case with resolver support and property merging
 func (s *Service) createWithOptions(ctx context.Context, opts CreateOptions) op.Result[jsonmodels.Event] {
 	// Resolve the source device and capture metadata
-	sourceID := opts.Source
+	sourceID := string(opts.Source)
 	meta := make(map[string]any)
 
 	if sourceID != "" && s.DeviceResolver != nil {
 		resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
-		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, sourceID, meta)
+		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, managedobjects.DeviceRef(sourceID), meta)
 		if err != nil {
 			return op.Failed[jsonmodels.Event](err, true)
 		}
@@ -351,8 +353,10 @@ type DeleteListOptions struct {
 	// when provided together with fragmentType.
 	FragmentType string `url:"fragmentType,omitempty"`
 
-	// The managed object ID to which the event is associated
-	Source string `url:"source,omitempty"`
+	// The managed object ID to which the event is associated.
+	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
+	// or cast a string variable with managedobjects.DeviceRef(id).
+	Source managedobjects.DeviceRef `url:"source,omitempty"`
 
 	// The type of event to search for
 	Type string `url:"type,omitempty"`
@@ -374,7 +378,7 @@ func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Resu
 		if err != nil {
 			return op.Failed[core.NoContent](err, true)
 		}
-		opt.Source = resolvedID
+		opt.Source = managedobjects.DeviceRef(resolvedID)
 	}
 
 	return core.ExecuteNoContent(ctx, s.deleteListB(opt))

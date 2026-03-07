@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/measurements"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
@@ -39,7 +40,7 @@ func Test_GetMeasurementSeries(t *testing.T) {
 
 	// Get measurement series
 	result := client.Measurements.ListSeries(ctx, measurements.ListSeriesOptions{
-		Source:   device.ID(),
+		Source:   managedobjects.DeviceRef(device.ID()),
 		Series:   []string{"c8y_Temperature.A", "c8y_Temperature.B"},
 		DateFrom: time.Now().Add(-2 * 24 * time.Hour),
 		DateTo:   time.Now(),
@@ -77,7 +78,7 @@ func Test_GetMeasurements(t *testing.T) {
 	// Get measurements list
 	result := client.Measurements.List(ctx, measurements.ListOptions{
 		DateFrom: time.Now().Add(-1 * 24 * time.Hour),
-		Source:   device.ID(),
+		Source:   managedobjects.DeviceRef(device.ID()),
 	})
 
 	require.NoError(t, result.Err)
@@ -267,7 +268,7 @@ func Test_DeleteMeasurements(t *testing.T) {
 
 	// Verify measurements exist
 	listResult := client.Measurements.List(ctx, measurements.ListOptions{
-		Source:            device.ID(),
+		Source:            managedobjects.DeviceRef(device.ID()),
 		ValueFragmentType: valueFragmentType,
 	})
 	require.NoError(t, listResult.Err)
@@ -276,7 +277,7 @@ func Test_DeleteMeasurements(t *testing.T) {
 
 	// Delete the measurements
 	deleteResult := client.Measurements.DeleteList(ctx, measurements.DeleteListOptions{
-		Source:       device.ID(),
+		Source:       managedobjects.DeviceRef(device.ID()),
 		FragmentType: valueFragmentType,
 	})
 	require.NoError(t, deleteResult.Err)
@@ -287,7 +288,7 @@ func Test_DeleteMeasurements(t *testing.T) {
 
 	// Verify measurements have been deleted
 	listResultAfter := client.Measurements.List(ctx, measurements.ListOptions{
-		Source:            device.ID(),
+		Source:            managedobjects.DeviceRef(device.ID()),
 		ValueFragmentType: valueFragmentType,
 	})
 	require.NoError(t, listResultAfter.Err)

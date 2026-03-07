@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/measurements"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/operations"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/realtime"
@@ -22,7 +23,7 @@ func OperationSenderFactory(client *api.Client, deviceID string, t *testing.T) f
 		result := client.Operations.Create(
 			context.Background(),
 			operations.CreateOptions{
-				DeviceID:    deviceID,
+				DeviceID:    managedobjects.DeviceRef(deviceID),
 				Description: "Test operation",
 				AdditionalProperties: map[string]any{
 					"test_operation": map[string]any{
@@ -110,7 +111,7 @@ func TestRealtimeSubscriptions_SubscribeToMeasurements(t *testing.T) {
 		result := client.Measurements.Create(
 			context.Background(),
 			measurements.CreateOptions{
-				Source: device.Data.ID(),
+				Source: managedobjects.DeviceRef(device.Data.ID()),
 				Type:   "testMeasurement1",
 				Time:   time.Now(),
 				AdditionalProperties: map[string]any{

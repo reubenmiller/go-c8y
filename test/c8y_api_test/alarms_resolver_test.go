@@ -6,6 +6,7 @@ import (
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alarms"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 )
 
@@ -46,7 +47,7 @@ func Test_Alarms_DeviceResolver_DirectID(t *testing.T) {
 	ctx := api.WithMockResponses(context.Background(), true)
 
 	opts := alarms.ListOptions{
-		Source: "12345",
+		Source: managedobjects.ByID("12345"),
 	}
 
 	result := client.Alarms.List(ctx, opts)
@@ -62,7 +63,7 @@ func Test_Alarms_DeviceResolver_StringBased(t *testing.T) {
 	ctx := api.WithMockResponses(context.Background(), true)
 
 	opts := alarms.ListOptions{
-		Source: "name:device01",
+		Source: managedobjects.ByName("device01"),
 	}
 
 	result := client.Alarms.List(ctx, opts)
@@ -110,7 +111,7 @@ func Test_Alarms_Count_WithStringBasedResolver(t *testing.T) {
 	ctx := api.WithMockResponses(context.Background(), true)
 
 	opts := alarms.CountOptions{
-		Source: "name:device01",
+		Source: managedobjects.ByName("device01"),
 	}
 
 	result := client.Alarms.Count(ctx, opts)
@@ -143,7 +144,7 @@ func Test_Alarms_DeleteList_WithDeviceResolver(t *testing.T) {
 	ctx := api.WithMockResponses(context.Background(), true)
 
 	opts := alarms.DeleteListOptions{
-		Source: "name:device01",
+		Source: managedobjects.ByName("device01"),
 	}
 
 	result := client.Alarms.DeleteList(ctx, opts)
@@ -200,7 +201,7 @@ func Test_Alarms_Create_WithStringResolver_Metadata(t *testing.T) {
 	deferredCtx := api.WithDeferredExecution(ctx, true)
 
 	opts := alarms.CreateOptions{
-		Source:   "name:device01",
+		Source:   managedobjects.ByName("device01"),
 		Type:     "c8y_TestAlarm",
 		Text:     "Test alarm",
 		Severity: "CRITICAL",

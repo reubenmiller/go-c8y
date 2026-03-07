@@ -50,7 +50,7 @@ func main() {
 		measurements.ListOptions{
 			DateFrom: time.Now().Add(-20 * 24 * time.Hour),
 			DateTo:   time.Now(),
-			Source:   client.ManagedObjects.ByExternalID("c8y_Serial", "rpi4-d83add90fe56"), // resolve by external id
+			Source:   managedobjects.ByExternalID("c8y_Serial", "rpi4-d83add90fe56"), // resolve by external id
 			PaginationOptions: pagination.PaginationOptions{
 				PageSize:          1,
 				WithTotalElements: true,
@@ -118,7 +118,7 @@ func main() {
 	createdAlarms := rill.Map(devices, 5, func(device jsonmodels.ManagedObject) (jsonmodels.Alarm, error) {
 		slog.Info("Current device", "id", device.ID(), "creationTime", device.CreationTime())
 		alarm := client.Alarms.Create(context.Background(), alarms.CreateOptions{
-			Source:   device.ID(),
+			Source:   managedobjects.DeviceRef(device.ID()),
 			Type:     "ci_rill_test",
 			Text:     "Test create alarm",
 			Severity: "MAJOR",

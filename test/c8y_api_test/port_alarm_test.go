@@ -8,6 +8,7 @@ import (
 
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alarms"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
@@ -154,7 +155,7 @@ func TestAlarmService_GetAlarmCollection(t *testing.T) {
 	alarmCollection := client.Alarms.List(
 		context.Background(),
 		alarms.ListOptions{
-			Source:   testDevice.Data.ID(),
+			Source:   managedobjects.DeviceRef(testDevice.Data.ID()),
 			Severity: []model.AlarmSeverity{model.AlarmSeverity("MAJOR")},
 			DateTo:   time.Now(),
 		},
@@ -177,7 +178,7 @@ func TestAlarmService_GetAlarmCollection(t *testing.T) {
 	alarmCollection = client.Alarms.List(
 		context.Background(),
 		alarms.ListOptions{
-			Source: testDevice.Data.ID(),
+			Source: managedobjects.DeviceRef(testDevice.Data.ID()),
 			Type:   []string{"alarm2"},
 		},
 	)
@@ -220,7 +221,7 @@ func TestAlarmService_BulkUpdateAlarms(t *testing.T) {
 	updatedList := client.Alarms.UpdateList(
 		context.Background(),
 		alarms.BulkUpdateOptions{
-			Source: testDevice.Data.ID(),
+			Source: managedobjects.DeviceRef(testDevice.Data.ID()),
 			Status: []string{"ACTIVE"},
 		},
 		model.Alarm{
@@ -249,7 +250,7 @@ func TestAlarmService_BulkUpdateAlarms(t *testing.T) {
 	alarmCollection := client.Alarms.List(
 		context.Background(),
 		alarms.ListOptions{
-			Source:   testDevice.Data.ID(),
+			Source:   managedobjects.DeviceRef(testDevice.Data.ID()),
 			Status:   []model.AlarmStatus{model.AlarmStatus("CLEARED")},
 			DateFrom: time.Now().Add(-60 * time.Second),
 			DateTo:   time.Now(),
@@ -297,7 +298,7 @@ func TestAlarmService_RemoveAlarmCollection(t *testing.T) {
 	alarmCollection := client.Alarms.List(
 		context.Background(),
 		alarms.ListOptions{
-			Source: testDevice.Data.ID(),
+			Source: managedobjects.DeviceRef(testDevice.Data.ID()),
 		},
 	)
 
@@ -308,7 +309,7 @@ func TestAlarmService_RemoveAlarmCollection(t *testing.T) {
 	deleteList := client.Alarms.DeleteList(
 		context.Background(),
 		alarms.DeleteListOptions{
-			Source: testDevice.Data.ID(),
+			Source: managedobjects.DeviceRef(testDevice.Data.ID()),
 		},
 	)
 
@@ -322,7 +323,7 @@ func TestAlarmService_RemoveAlarmCollection(t *testing.T) {
 	alarmCollection = client.Alarms.List(
 		context.Background(),
 		alarms.ListOptions{
-			Source: testDevice.Data.ID(),
+			Source: managedobjects.DeviceRef(testDevice.Data.ID()),
 		},
 	)
 

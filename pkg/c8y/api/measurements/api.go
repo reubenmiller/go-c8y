@@ -42,8 +42,9 @@ func NewService(common *core.Service, moService *managedobjects.Service) *Servic
 // ListOptions
 type ListOptions struct {
 	// Source device to filter measurements by.
-	// Supports resolver strings: direct ID, "name:deviceName", "ext:type:id", "query:..."
-	Source string `url:"source,omitempty"`
+	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
+	// or cast a string variable with managedobjects.DeviceRef(id).
+	Source managedobjects.DeviceRef `url:"source,omitempty"`
 
 	// DateFrom Timestamp `url:"dateFrom,omitempty"`
 	DateFrom time.Time `url:"dateFrom,omitempty,omitzero"`
@@ -81,7 +82,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 		if err != nil {
 			return op.Failed[jsonmodels.Measurement](err, true)
 		}
-		opt.Source = resolvedID
+		opt.Source = managedobjects.DeviceRef(resolvedID)
 	}
 
 	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewMeasurement)
@@ -112,8 +113,10 @@ func (s *Service) listB(opt any) *core.TryRequest {
 
 // DeleteListOptions to control which measurements are to be deleted
 type DeleteListOptions struct {
-	// Source device to filter measurements by
-	Source string `url:"source,omitempty"`
+	// Source device to filter measurements by.
+	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
+	// or cast a string variable with managedobjects.DeviceRef(id).
+	Source managedobjects.DeviceRef `url:"source,omitempty"`
 
 	// DateFrom Timestamp `url:"dateFrom,omitempty"`
 	DateFrom time.Time `url:"dateFrom,omitempty,omitzero"`
@@ -135,7 +138,7 @@ func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Resu
 		if err != nil {
 			return op.Failed[core.NoContent](err, true)
 		}
-		opt.Source = resolvedID
+		opt.Source = managedobjects.DeviceRef(resolvedID)
 	}
 
 	return core.ExecuteNoContent(ctx, s.deleteListB(opt))
@@ -164,9 +167,10 @@ func (s *Service) deleteB(ID string) *core.TryRequest {
 
 // CreateOptions for creating a measurement with resolver support
 type CreateOptions struct {
-	// Source device identifier (supports resolver strings)
-	// Examples: "12345", "name:deviceName", "ext:c8y_Serial:ABC", "query:..."
-	Source string
+	// Source device identifier.
+	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
+	// or cast a string variable with managedobjects.DeviceRef(id).
+	Source managedobjects.DeviceRef
 
 	// Type of the measurement
 	Type string
@@ -213,13 +217,13 @@ func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Mea
 // createWithOptions handles the CreateOptions case with resolver support and property merging
 func (s *Service) createWithOptions(ctx context.Context, opts CreateOptions) op.Result[jsonmodels.Measurement] {
 	// Resolve the source device and capture metadata
-	sourceID := opts.Source
+	sourceID := string(opts.Source)
 	meta := make(map[string]any)
 
 	if sourceID != "" && s.DeviceResolver != nil {
 		resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
-		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, sourceID, meta)
+		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, managedobjects.DeviceRef(sourceID), meta)
 		if err != nil {
 			return op.Failed[jsonmodels.Measurement](err, true)
 		}
@@ -318,8 +322,9 @@ func (s *Service) createListB(body any) *core.TryRequest {
 // ListSeriesOptions todo
 type ListSeriesOptions struct {
 	// Source device to filter measurements by.
-	// Supports resolver strings: direct ID, "name:deviceName", "ext:type:id", "query:..."
-	Source string `url:"source,omitempty"`
+	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
+	// or cast a string variable with managedobjects.DeviceRef(id).
+	Source managedobjects.DeviceRef `url:"source,omitempty"`
 
 	DateFrom time.Time `url:"dateFrom,omitzero"`
 
@@ -357,7 +362,7 @@ func (s *Service) ListSeries(ctx context.Context, opt ListSeriesOptions) op.Resu
 		if err != nil {
 			return op.Failed[jsonmodels.MeasurementSeries](err, true)
 		}
-		opt.Source = resolvedID
+		opt.Source = managedobjects.DeviceRef(resolvedID)
 		deviceID = resolvedID
 
 		// Extract device name from metadata if available
@@ -366,7 +371,7 @@ func (s *Service) ListSeries(ctx context.Context, opt ListSeriesOptions) op.Resu
 		}
 	} else {
 		// Direct ID provided
-		deviceID = opt.Source
+		deviceID = string(opt.Source)
 	}
 
 	// Execute request and add device info to result

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/measurements"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
@@ -45,7 +46,7 @@ func Test_Measurements_ListSeries_ToTabular(t *testing.T) {
 	ctx := api.WithMockResponses(context.Background(), true)
 
 	opts := measurements.ListSeriesOptions{
-		Source: "12345",
+		Source: managedobjects.ByID("12345"),
 		Series: []string{"c8y_Temperature.T"},
 	}
 

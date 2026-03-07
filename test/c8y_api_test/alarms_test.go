@@ -7,6 +7,7 @@ import (
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alarms"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
@@ -30,7 +31,7 @@ func Test_AlarmCreateWithOptions_Simple(t *testing.T) {
 	result := client.Alarms.Create(
 		ctx,
 		alarms.CreateOptions{
-			Source:   "12345", // Direct ID (no resolution needed)
+			Source:   managedobjects.ByID("12345"), // Direct ID (no resolution needed)
 			Type:     "c8y_TestAlarm",
 			Text:     "Test alarm",
 			Severity: "MAJOR",
@@ -100,7 +101,7 @@ func Test_AlarmCreateWithOptions_WithCustomStruct(t *testing.T) {
 	result := client.Alarms.Create(
 		ctx,
 		alarms.CreateOptions{
-			Source:   mo.Data.ID(),
+			Source:   managedobjects.DeviceRef(mo.Data.ID()),
 			Type:     "c8y_CustomAlarm",
 			Text:     "Test with custom properties",
 			Severity: "MINOR",
@@ -134,7 +135,7 @@ func Test_AlarmCreateWithOptions_WithInlineMap(t *testing.T) {
 	result := client.Alarms.Create(
 		ctx,
 		alarms.CreateOptions{
-			Source:   mo.Data.ID(),
+			Source:   managedobjects.DeviceRef(mo.Data.ID()),
 			Type:     "c8y_MapAlarm",
 			Text:     "Test with inline map",
 			Severity: "WARNING",

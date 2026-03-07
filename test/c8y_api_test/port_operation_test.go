@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/operations"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
@@ -36,7 +37,7 @@ func Test_CreateOperation(t *testing.T) {
 
 	// Get operations list
 	listResult := client.Operations.List(ctx, operations.ListOptions{
-		DeviceID: device.ID(),
+		DeviceID: managedobjects.DeviceRef(device.ID()),
 	})
 
 	require.NoError(t, listResult.Err)
@@ -121,7 +122,7 @@ func Test_DeleteOperations(t *testing.T) {
 
 	// Check if operations were created
 	listResult := client.Operations.List(ctx, operations.ListOptions{
-		DeviceID: device.ID(),
+		DeviceID: managedobjects.DeviceRef(device.ID()),
 		Status:   "PENDING",
 	})
 
@@ -134,7 +135,7 @@ func Test_DeleteOperations(t *testing.T) {
 
 	// Remove the operations using the same query
 	deleteResult := client.Operations.DeleteList(ctx, operations.DeleteListOptions{
-		DeviceID: device.ID(),
+		DeviceID: managedobjects.DeviceRef(device.ID()),
 		Status:   "PENDING",
 	})
 	require.NoError(t, deleteResult.Err)
@@ -142,7 +143,7 @@ func Test_DeleteOperations(t *testing.T) {
 
 	// Check count of operations after the delete action
 	listResultAfter := client.Operations.List(ctx, operations.ListOptions{
-		DeviceID: device.ID(),
+		DeviceID: managedobjects.DeviceRef(device.ID()),
 		Status:   "PENDING",
 	})
 

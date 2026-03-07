@@ -6,6 +6,7 @@ import (
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/events"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 )
 
@@ -46,7 +47,7 @@ func Test_Events_DeviceResolver_StringBased(t *testing.T) {
 	ctx := api.WithMockResponses(context.Background(), true)
 
 	opts := events.ListOptions{
-		Source: "name:device01",
+		Source: managedobjects.ByName("device01"),
 	}
 
 	result := client.Events.List(ctx, opts)

@@ -7,6 +7,35 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/source"
 )
 
+// DeviceRef is a typed reference to a device or managed object. Construct it
+// using the package-level helpers ByID, ByName, ByExternalID, or ByQuery, or
+// cast a variable string with DeviceRef(id) when needed.
+//
+// Example:
+//
+//	Source: managedobjects.ByName("myDevice")
+//	Source: managedobjects.ByExternalID("c8y_Serial", "ABC123")
+//	Source: managedobjects.DeviceRef(someDynamicStringVar) // explicit cast
+type DeviceRef string
+
+// ByID creates a direct-ID device reference. No resolution is performed;
+// the provided id is used as-is in the API call.
+func ByID(id string) DeviceRef { return DeviceRef(id) }
+
+// ByName creates a device reference resolved by managed-object name.
+// Supports wildcard patterns using "*".
+func ByName(name string) DeviceRef { return DeviceRef("name:" + name) }
+
+// ByExternalID creates a device reference resolved by external ID.
+// externalType is e.g. "c8y_Serial"; externalID is the value.
+func ByExternalID(externalType, externalID string) DeviceRef {
+	return DeviceRef("ext:" + externalType + ":" + externalID)
+}
+
+// ByQuery creates a device reference resolved by an inventory query.
+// The query must return exactly one result.
+func ByQuery(query string) DeviceRef { return DeviceRef("query:" + query) }
+
 // DeviceResolver provides device/managed object resolution capabilities for other services.
 // This allows measurements, operations, events, and alarms to resolve device references
 // using the same patterns as the managed objects service.
@@ -28,7 +57,7 @@ func NewDeviceResolver(moService *Service) *DeviceResolver {
 	}
 }
 
-// ResolveID resolves a device ID string that may contain a resolver scheme.
+// ResolveID resolves a DeviceRef that may contain a resolver scheme.
 // Supports all managed object resolver patterns:
 //   - "12345" -> "12345" (direct ID)
 //   - "name:deviceName" -> "<id>" (lookup by name)
@@ -36,49 +65,45 @@ func NewDeviceResolver(moService *Service) *DeviceResolver {
 //   - "query:type eq 'c8y_Device'" -> "<id>" (lookup by inventory query)
 //
 // If meta is not nil, it will be populated with metadata about the resolution.
-func (r *DeviceResolver) ResolveID(ctx context.Context, id string, meta map[string]any) (string, error) {
+func (r *DeviceResolver) ResolveID(ctx context.Context, id DeviceRef, meta map[string]any) (string, error) {
 	if r.moService == nil {
 		return "", fmt.Errorf("managed objects service not configured")
 	}
-	return r.moService.ResolveID(ctx, id, meta)
+	return r.moService.ResolveID(ctx, string(id), meta)
 }
 
 // ByID returns a direct ID reference (no lookup needed).
-// Returns: "12345"
-func (r *DeviceResolver) ByID(id string) string {
+func (r *DeviceResolver) ByID(id string) DeviceRef {
 	if r.moService == nil {
-		return id
+		return DeviceRef(id)
 	}
-	return r.moService.ByID(id)
+	return DeviceRef(r.moService.ByID(id))
 }
 
-// ByName creates a name-based lookup reference string.
+// ByName creates a name-based lookup reference.
 // Supports wildcard patterns using "*".
-// Returns: "name:deviceName"
-func (r *DeviceResolver) ByName(name string) string {
+func (r *DeviceResolver) ByName(name string) DeviceRef {
 	if r.moService == nil {
-		return fmt.Sprintf("name:%s", name)
+		return DeviceRef(fmt.Sprintf("name:%s", name))
 	}
-	return r.moService.ByName(name)
+	return DeviceRef(r.moService.ByName(name))
 }
 
-// ByExternalID creates an external ID-based lookup reference string.
-// Returns: "ext:type:externalID"
-func (r *DeviceResolver) ByExternalID(externalType, externalID string) string {
+// ByExternalID creates an external ID-based lookup reference.
+func (r *DeviceResolver) ByExternalID(externalType, externalID string) DeviceRef {
 	if r.moService == nil {
-		return fmt.Sprintf("ext:%s:%s", externalType, externalID)
+		return DeviceRef(fmt.Sprintf("ext:%s:%s", externalType, externalID))
 	}
-	return r.moService.ByExternalID(externalType, externalID)
+	return DeviceRef(r.moService.ByExternalID(externalType, externalID))
 }
 
-// ByQuery creates a query-based lookup reference string.
+// ByQuery creates a query-based lookup reference.
 // The query should return exactly one result.
-// Returns: "query:..."
-func (r *DeviceResolver) ByQuery(query string) string {
+func (r *DeviceResolver) ByQuery(query string) DeviceRef {
 	if r.moService == nil {
-		return fmt.Sprintf("query:%s", query)
+		return DeviceRef(fmt.Sprintf("query:%s", query))
 	}
-	return r.moService.ByQuery(query)
+	return DeviceRef(r.moService.ByQuery(query))
 }
 
 // RegisterResolver allows registering custom ID resolvers

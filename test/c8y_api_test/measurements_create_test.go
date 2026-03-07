@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/measurements"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 )
@@ -60,7 +61,7 @@ func Test_Measurements_Create_WithStringResolver_Metadata(t *testing.T) {
 	deferredCtx := api.WithDeferredExecution(ctx, true)
 
 	opts := measurements.CreateOptions{
-		Source: "query:type eq 'c8y_Device'",
+		Source: managedobjects.ByQuery("type eq 'c8y_Device'"),
 		Type:   "c8y_Humidity",
 		Time:   time.Now(),
 		AdditionalProperties: map[string]any{
@@ -97,7 +98,7 @@ func Test_Measurements_Create_WithMultipleFragments(t *testing.T) {
 	}
 
 	opts := measurements.CreateOptions{
-		Source: "12345",
+		Source: managedobjects.ByID("12345"),
 		Type:   "c8y_EnvironmentalMeasurement",
 		Time:   time.Now(),
 		AdditionalProperties: MultiMeasurement{

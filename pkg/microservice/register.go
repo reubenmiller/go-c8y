@@ -172,7 +172,7 @@ var (
 func (m *Microservice) GetOperations(status types.OperationStatus) op.Result[jsonmodels.Operation] {
 	return m.Client.Operations.List(m.ServiceUserContext(), operations.ListOptions{
 		Status:  status,
-		AgentID: m.AgentID,
+		AgentID: managedobjects.DeviceRef(m.AgentID),
 		PaginationOptions: pagination.PaginationOptions{
 			PageSize: 5,
 		},

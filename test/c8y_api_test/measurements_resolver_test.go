@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/measurements"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 )
@@ -49,7 +50,7 @@ func Test_Measurements_DeviceResolver_DirectID(t *testing.T) {
 
 	// Test with direct ID (no resolution needed)
 	opts := measurements.ListOptions{
-		Source: "12345",
+		Source: managedobjects.ByID("12345"),
 	}
 
 	result := client.Measurements.List(ctx, opts)
@@ -66,7 +67,7 @@ func Test_Measurements_DeviceResolver_StringBased(t *testing.T) {
 
 	// Test using string-based resolver (like user might pass from CLI)
 	opts := measurements.ListOptions{
-		Source: "name:device01",
+		Source: managedobjects.ByName("device01"),
 	}
 
 	result := client.Measurements.List(ctx, opts)

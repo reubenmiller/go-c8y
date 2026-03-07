@@ -10,6 +10,7 @@ import (
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/events"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/events/eventbinaries"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
@@ -62,7 +63,7 @@ func TestPortEventService_GetEvents(t *testing.T) {
 
 	// List events
 	result := client.Events.List(ctx, events.ListOptions{
-		Source: device.ID(),
+		Source: managedobjects.DeviceRef(device.ID()),
 	})
 	eventList, err := op.ToSliceR(result)
 	assert.NoError(t, err)
@@ -70,7 +71,7 @@ func TestPortEventService_GetEvents(t *testing.T) {
 
 	// Verify pagination
 	result2 := client.Events.List(ctx, events.ListOptions{
-		Source: device.ID(),
+		Source: managedobjects.DeviceRef(device.ID()),
 		PaginationOptions: pagination.PaginationOptions{
 			PageSize: 2,
 		},
@@ -159,7 +160,7 @@ func TestPortEventService_DeleteEvents(t *testing.T) {
 
 	// Verify 4 events exist
 	result := client.Events.List(ctx, events.ListOptions{
-		Source: device.ID(),
+		Source: managedobjects.DeviceRef(device.ID()),
 	})
 	allEvents, err := op.ToSliceR(result)
 	assert.NoError(t, err)
@@ -168,7 +169,7 @@ func TestPortEventService_DeleteEvents(t *testing.T) {
 	// Delete events of type1
 	deleteResult := client.Events.DeleteList(ctx, events.DeleteListOptions{
 		Type:   eventType1,
-		Source: device.ID(),
+		Source: managedobjects.DeviceRef(device.ID()),
 	})
 	assert.NoError(t, deleteResult.Err)
 
@@ -178,7 +179,7 @@ func TestPortEventService_DeleteEvents(t *testing.T) {
 
 	// Verify only type2 event remains
 	result2 := client.Events.List(ctx, events.ListOptions{
-		Source: device.ID(),
+		Source: managedobjects.DeviceRef(device.ID()),
 	})
 	remainingEvents, err := op.ToSliceR(result2)
 	assert.NoError(t, err)

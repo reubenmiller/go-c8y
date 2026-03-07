@@ -60,9 +60,10 @@ type ListOptions struct {
 	// End date or date and time of the alarm occurrence
 	DateTo time.Time `url:"dateTo,omitempty,omitzero"`
 
-	// Source device to filter measurements by.
-	// Supports resolver strings: direct ID, "name:deviceName", "ext:type:id", "query:..."
-	Source string `url:"source,omitempty"`
+	// Source device to filter alarms by.
+	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
+	// or cast a string variable with managedobjects.DeviceRef(id).
+	Source managedobjects.DeviceRef `url:"source,omitempty"`
 
 	// The types of alarm to search for
 	Type []string `url:"type,omitempty"`
@@ -115,7 +116,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 		if err != nil {
 			return op.Failed[jsonmodels.Alarm](err, true)
 		}
-		opt.Source = resolvedID
+		opt.Source = managedobjects.DeviceRef(resolvedID)
 	}
 
 	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewAlarm)
@@ -159,8 +160,10 @@ type CountOptions struct {
 	// The severity of the alarm to search for
 	Severity []string `url:"severity,omitempty"`
 
-	// Source device to filter measurements by
-	Source string `url:"source,omitempty"`
+	// Source device to filter alarms by.
+	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
+	// or cast a string variable with managedobjects.DeviceRef(id).
+	Source managedobjects.DeviceRef `url:"source,omitempty"`
 
 	// The status of the alarm to search for. Should not be used when resolved parameter is provided
 	Status []string `url:"status,omitempty"`
@@ -185,9 +188,10 @@ func (s *Service) getB(ID string) *core.TryRequest {
 
 // CreateOptions for creating an alarm with resolver support
 type CreateOptions struct {
-	// Source device identifier (supports resolver strings)
-	// Examples: "12345", "name:deviceName", "ext:c8y_Serial:ABC", "query:..."
-	Source string
+	// Source device identifier.
+	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
+	// or cast a string variable with managedobjects.DeviceRef(id).
+	Source managedobjects.DeviceRef
 
 	// Type of the alarm
 	Type string
@@ -239,13 +243,13 @@ func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Ala
 // createWithOptions handles the CreateOptions case with resolver support and property merging
 func (s *Service) createWithOptions(ctx context.Context, opts CreateOptions) op.Result[jsonmodels.Alarm] {
 	// Resolve the source device and capture metadata
-	sourceID := opts.Source
+	sourceID := string(opts.Source)
 	meta := make(map[string]any)
 
 	if sourceID != "" && s.DeviceResolver != nil {
 		resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
-		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, sourceID, meta)
+		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, managedobjects.DeviceRef(sourceID), meta)
 		if err != nil {
 			return op.Failed[jsonmodels.Alarm](err, true)
 		}
@@ -378,8 +382,10 @@ type BulkUpdateOptions struct {
 	// The severity of the alarm to search for
 	Severity []string `url:"severity,omitempty"`
 
-	// Source device to filter measurements by
-	Source string `url:"source,omitempty"`
+	// Source device to filter alarms by.
+	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
+	// or cast a string variable with managedobjects.DeviceRef(id).
+	Source managedobjects.DeviceRef `url:"source,omitempty"`
 
 	// TODO: Check if this is supported or not
 	// The types of alarm to search for
@@ -422,7 +428,7 @@ func (s *Service) UpdateList(ctx context.Context, opt BulkUpdateOptions, body an
 		if err != nil {
 			return op.Failed[jsonmodels.Alarm](err, true)
 		}
-		opt.Source = resolvedID
+		opt.Source = managedobjects.DeviceRef(resolvedID)
 	}
 
 	return core.Execute(ctx, s.updateListB(opt, body), jsonmodels.NewAlarm)
@@ -460,8 +466,10 @@ type DeleteListOptions struct {
 	// The severity of the alarm to search for
 	Severity []string `url:"severity,omitempty"`
 
-	// Source device to filter measurements by
-	Source string `url:"source,omitempty"`
+	// Source device to filter alarms by.
+	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
+	// or cast a string variable with managedobjects.DeviceRef(id).
+	Source managedobjects.DeviceRef `url:"source,omitempty"`
 
 	// TODO: Check if this is supported or not
 	// The types of alarm to search for
@@ -501,7 +509,7 @@ func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Resu
 		if err != nil {
 			return op.Failed[core.NoContent](err, true)
 		}
-		opt.Source = resolvedID
+		opt.Source = managedobjects.DeviceRef(resolvedID)
 	}
 
 	return core.ExecuteNoContent(ctx, s.deleteListB(opt))

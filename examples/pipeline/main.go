@@ -12,6 +12,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/devices"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/operations"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pipeline"
@@ -59,12 +60,12 @@ func main() {
 	// Step 3: Expand each device into its pending operations (flat, no nesting)
 	pendingOps := pipeline.Expand(allDevices, func(device jsonmodels.ManagedObject) iter.Seq2[jsonmodels.Operation, error] {
 		pending := client.Operations.ListAll(ctx, operations.ListOptions{
-			DeviceID: device.ID(),
+			DeviceID: managedobjects.DeviceRef(device.ID()),
 			Status:   "PENDING",
 		}).Items()
 
 		executing := client.Operations.ListAll(ctx, operations.ListOptions{
-			DeviceID: device.ID(),
+			DeviceID: managedobjects.DeviceRef(device.ID()),
 			Status:   "EXECUTING",
 		}).Items()
 		return pipeline.Concat(pending, executing)

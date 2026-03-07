@@ -7,6 +7,7 @@ import (
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/events"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 )
 
@@ -56,7 +57,7 @@ func Test_Events_Create_WithStringResolver_Metadata(t *testing.T) {
 	deferredCtx := api.WithDeferredExecution(ctx, true)
 
 	opts := events.CreateOptions{
-		Source: "name:device01",
+		Source: managedobjects.ByName("device01"),
 		Type:   "c8y_TestEvent",
 		Text:   "Test event",
 		Time:   time.Now(),
@@ -87,7 +88,7 @@ func Test_Events_Create_WithAdditionalProperties(t *testing.T) {
 	}
 
 	opts := events.CreateOptions{
-		Source: "12345",
+		Source: managedobjects.ByID("12345"),
 		Type:   "c8y_LocationUpdate",
 		Text:   "Location updated",
 		Time:   time.Now(),

@@ -42,8 +42,9 @@ func NewService(common *core.Service, moService *managedobjects.Service) *Servic
 type ListOptions struct {
 	// An agent ID that may be part of the operation. If this parameter is set,
 	// the operation response objects contain the deviceExternalIDs object.
-	// Supports resolver strings: direct ID, "name:deviceName", "ext:type:id", "query:..."
-	AgentID string `url:"agentId,omitempty"`
+	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
+	// or cast a string variable with managedobjects.DeviceRef(id).
+	AgentID managedobjects.DeviceRef `url:"agentId,omitempty"`
 
 	// The bulk operation ID that this operation belongs to
 	BulkOperationID string `url:"bulkOperationId,omitempty"`
@@ -55,8 +56,9 @@ type ListOptions struct {
 	DateTo time.Time `url:"dateTo,omitempty,omitzero"`
 
 	// The ID of the device the operation is performed for.
-	// Supports resolver strings: direct ID, "name:deviceName", "ext:type:id", "query:..."
-	DeviceID string `url:"deviceId,omitempty"`
+	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
+	// or cast a string variable with managedobjects.DeviceRef(id).
+	DeviceID managedobjects.DeviceRef `url:"deviceId,omitempty"`
 
 	// The type of fragment that must be part of the operation
 	FragmentType string `url:"fragmentType,omitempty"`
@@ -91,7 +93,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 		if err != nil {
 			return op.Failed[jsonmodels.Operation](err, true)
 		}
-		opt.DeviceID = resolvedID
+		opt.DeviceID = managedobjects.DeviceRef(resolvedID)
 	}
 
 	// Resolve AgentID if it contains a resolver scheme
@@ -102,7 +104,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 		if err != nil {
 			return op.Failed[jsonmodels.Operation](err, true)
 		}
-		opt.AgentID = resolvedID
+		opt.AgentID = managedobjects.DeviceRef(resolvedID)
 	}
 
 	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewOperation)
@@ -147,9 +149,10 @@ func (s *Service) getB(ID string) *core.TryRequest {
 
 // CreateOptions for creating an operation with resolver support
 type CreateOptions struct {
-	// DeviceID is the target device identifier (supports resolver strings)
-	// Examples: "12345", "name:deviceName", "ext:c8y_Serial:ABC", "query:..."
-	DeviceID string
+	// DeviceID is the target device identifier.
+	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
+	// or cast a string variable with managedobjects.DeviceRef(id).
+	DeviceID managedobjects.DeviceRef
 
 	// Description of the operation
 	Description string
@@ -190,13 +193,13 @@ func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Ope
 // createWithOptions handles the CreateOptions case with resolver support and property merging
 func (s *Service) createWithOptions(ctx context.Context, opts CreateOptions) op.Result[jsonmodels.Operation] {
 	// Resolve the device and capture metadata
-	deviceID := opts.DeviceID
+	deviceID := string(opts.DeviceID)
 	meta := make(map[string]any)
 
 	if deviceID != "" && s.DeviceResolver != nil {
 		resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
-		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, deviceID, meta)
+		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, managedobjects.DeviceRef(deviceID), meta)
 		if err != nil {
 			return op.Failed[jsonmodels.Operation](err, true)
 		}
@@ -292,8 +295,10 @@ func (s *Service) updateB(ID string, body any) *core.TryRequest {
 
 // Delete a list of operations
 type DeleteListOptions struct {
-	// An agent ID that may be part of the operation
-	AgentID string `url:"agentId,omitempty"`
+	// An agent ID that may be part of the operation.
+	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
+	// or cast a string variable with managedobjects.DeviceRef(id).
+	AgentID managedobjects.DeviceRef `url:"agentId,omitempty"`
 
 	// Start date or date and time of the operation.
 	DateFrom time.Time `url:"dateFrom,omitempty,omitzero"`
@@ -301,8 +306,10 @@ type DeleteListOptions struct {
 	// End date or date and time of the operation
 	DateTo time.Time `url:"dateTo,omitempty,omitzero"`
 
-	// The ID of the device the operation is performed for
-	DeviceID string `url:"deviceId,omitempty"`
+	// The ID of the device the operation is performed for.
+	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
+	// or cast a string variable with managedobjects.DeviceRef(id).
+	DeviceID managedobjects.DeviceRef `url:"deviceId,omitempty"`
 
 	// Status of the operation
 	Status string `url:"status,omitempty"`
@@ -318,7 +325,7 @@ func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Resu
 		if err != nil {
 			return op.Failed[core.NoContent](err, true)
 		}
-		opt.DeviceID = resolvedID
+		opt.DeviceID = managedobjects.DeviceRef(resolvedID)
 	}
 
 	// Resolve AgentID if it contains a resolver scheme
@@ -329,7 +336,7 @@ func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Resu
 		if err != nil {
 			return op.Failed[core.NoContent](err, true)
 		}
-		opt.AgentID = resolvedID
+		opt.AgentID = managedobjects.DeviceRef(resolvedID)
 	}
 
 	return core.ExecuteNoContent(ctx, s.deleteListB(opt))

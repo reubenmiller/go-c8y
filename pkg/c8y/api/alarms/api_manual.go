@@ -5,6 +5,7 @@ import (
 
 	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
 	"github.com/tidwall/gjson"
@@ -21,7 +22,7 @@ func (s *Service) Count(ctx context.Context, opt CountOptions) op.Result[int64] 
 		if err != nil {
 			return op.Failed[int64](err, true)
 		}
-		opt.Source = resolvedID
+		opt.Source = managedobjects.DeviceRef(resolvedID)
 	}
 
 	return core.Execute(ctx, s.countB(opt), func(b []byte) int64 {

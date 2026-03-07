@@ -38,6 +38,7 @@ import (
 	"time"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alarms"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
@@ -173,7 +174,7 @@ func runAlarmsList(f *listAlarmsFlags) error {
 	// Build typed SDK options from the CLI flag values.
 	// This is the bridge: raw CLI strings become SDK-typed values here.
 	opts := alarms.ListOptions{
-		Source:   f.device,
+		Source:   managedobjects.DeviceRef(f.device),
 		Type:     f.alarmType,
 		Resolved: f.resolved,
 		PaginationOptions: pagination.PaginationOptions{
@@ -344,7 +345,7 @@ func runAlarmsCreate(f *createAlarmsFlags) error {
 	client := clientFactory()
 
 	opts := alarms.CreateOptions{
-		Source:   f.device,
+		Source:   managedobjects.DeviceRef(f.device),
 		Type:     f.alarmType,
 		Text:     f.text,
 		Severity: f.severity,
@@ -427,7 +428,7 @@ func runAlarmsCount(f *countAlarmsFlags) error {
 	client := clientFactory()
 
 	opts := alarms.CountOptions{
-		Source:   f.device,
+		Source:   managedobjects.DeviceRef(f.device),
 		Resolved: f.resolved,
 	}
 	for _, s := range f.status {
