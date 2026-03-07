@@ -61,3 +61,22 @@ func TestUserService_List(t *testing.T) {
 	assert.NoError(t, user.Err)
 	assert.Equal(t, userName, user.Data.UserName())
 }
+
+func Test_GetUserTFA(t *testing.T) {
+	client := testcore.CreateTestClient(t)
+	ctx := context.Background()
+
+	// Use the currently authenticated user — always exists and accessible
+	result := client.Users.GetTFA(ctx, users.GetTFAOptions{
+		ID:     client.Auth.Username,
+		Tenant: client.Auth.Tenant,
+	})
+
+	assert.NoError(t, result.Err)
+	assert.Equal(t, 200, result.HTTPStatus)
+	// Strategy is only set when TFA is active; just verify the field is a known value when present
+	strategy := result.Data.Strategy()
+	if strategy != "" {
+		assert.Contains(t, []string{"SMS", "TOTP"}, strategy)
+	}
+}

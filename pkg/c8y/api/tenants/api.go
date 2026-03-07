@@ -19,6 +19,7 @@ var ApiTenants = "/tenant/tenants"
 var ApiTenant = "/tenant/tenants/{id}"
 var ApiTenantCurrent = "/tenant/currentTenant"
 var ApiTenantApplications = "/tenant/tenants/{tenantID}/applications"
+var ApiTenantTFA = "/tenant/tenants/{tenantID}/tfa"
 
 const ParamId = "id"
 const ParamTenantId = "tenantID"
@@ -194,4 +195,37 @@ func (s *Service) listApplicationReferencesB(tenantID string, opt ListApplicatio
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiTenantApplications)
 	return core.NewTryRequest(s.Client, req, ApplicationReferencesResultProperty)
+}
+
+// GetTFA retrieves the two-factor authentication settings of a specific tenant.
+// Pass an empty tenantID to use the current context tenant.
+func (s *Service) GetTFA(ctx context.Context, tenantID string) op.Result[jsonmodels.TenantTFA] {
+	return core.Execute(ctx, s.getTFAB(tenantID), jsonmodels.NewTenantTFA)
+}
+
+func (s *Service) getTFAB(tenantID string) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodGet).
+		SetPathParam(ParamTenantId, tenantID).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetURL(ApiTenantTFA)
+	return core.NewTryRequest(s.Client, req)
+}
+
+// UpdateTFA updates the two-factor authentication settings of a specific tenant.
+// Pass an empty tenantID to use the current context tenant.
+// The body should contain a "strategy" field with a value of "SMS" or "TOTP".
+func (s *Service) UpdateTFA(ctx context.Context, tenantID string, body any) op.Result[core.NoContent] {
+	return core.ExecuteNoContent(ctx, s.updateTFAB(tenantID, body))
+}
+
+func (s *Service) updateTFAB(tenantID string, body any) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodPut).
+		SetPathParam(ParamTenantId, tenantID).
+		SetBody(body).
+		SetContentType(types.MimeTypeApplicationJSON).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetURL(ApiTenantTFA)
+	return core.NewTryRequest(s.Client, req)
 }

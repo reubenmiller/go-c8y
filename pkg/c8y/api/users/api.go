@@ -17,6 +17,7 @@ import (
 var (
 	ApiUsers              = "/user/{tenantID}/users"
 	ApiUser               = "/user/{tenantID}/users/{id}"
+	ApiUserTFA            = "/user/{tenantID}/users/{id}/tfa"
 	ApiUserGroupsWithUser = "/user/{tenantID}/users/{id}/groups"
 	ApiUserByName         = "/user/{tenantID}/userByName/{username}"
 	ApiLogout             = "/user/logout"
@@ -337,4 +338,22 @@ func (s *Service) resetPasswordB(opt ResetPasswordOptions) *core.TryRequest {
 		SetBody(opt).
 		SetURL(ApiPasswordReset)
 	return core.NewTryRequest(s.Client, req).WithNoAuth()
+}
+
+type GetTFAOptions Target
+
+// GetTFA retrieves the two-factor authentication settings for a specific user.
+// Leave Tenant empty to use the current context tenant.
+func (s *Service) GetTFA(ctx context.Context, opt GetTFAOptions) op.Result[jsonmodels.UserTFA] {
+	return core.Execute(ctx, s.getTFAB(opt), jsonmodels.NewUserTFA)
+}
+
+func (s *Service) getTFAB(opt GetTFAOptions) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetPathParam(ParamTenantId, opt.Tenant).
+		SetPathParam(ParamId, opt.ID).
+		SetURL(ApiUserTFA)
+	return core.NewTryRequest(s.Client, req)
 }
