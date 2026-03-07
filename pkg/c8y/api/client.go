@@ -786,7 +786,7 @@ func (c *Client) LoginWithOptions(ctx context.Context, opts LoginOptions) (token
 	var tfaCode string
 
 	switch {
-	case strings.Contains(errorMessage, "totp setup required"):
+	case apiErr.StatusCode() == 401 && strings.Contains(errorMessage, "totp setup required"):
 		// First-time enrollment: generate secret → show QR → verify → activate.
 		secretResult := c.Users.CurrentUser.TOTP.GenerateSecret(ctx)
 		if secretResult.Err != nil {
@@ -818,7 +818,7 @@ func (c *Client) LoginWithOptions(ctx context.Context, opts LoginOptions) (token
 			return "", fmt.Errorf("totp: activate: %w", r.Err)
 		}
 
-	case strings.Contains(errorMessage, "totp"):
+	case apiErr.StatusCode() == 401 && strings.Contains(errorMessage, "totp"):
 		// Ongoing login challenge: user already enrolled, just needs to supply code.
 		tfaCode, err = opts.TOTPCode(ctx, totp.TOTPChallenge{
 			IsSetup: false,
