@@ -2,6 +2,7 @@ package users
 
 import (
 	"context"
+	"strings"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
@@ -20,11 +21,66 @@ var (
 	ApiUserByName         = "/user/{tenantID}/userByName/{username}"
 	ApiLogout             = "/user/logout"
 	ApiLogoutAllUsers     = "/user/logout/{tenantID}/allUsers"
+	ApiPasswordReset      = "/user/passwordReset"
 )
 
 var ParamId = "id"
 var ParamUsername = "username"
 var ParamTenantId = "tenantID"
+
+// PasswordStrength represents the Cumulocity password-strength classification
+// returned by the server and accepted by the password-reset API.
+type PasswordStrength string
+
+const (
+	PasswordStrengthRed    PasswordStrength = "RED"
+	PasswordStrengthYellow PasswordStrength = "YELLOW"
+	PasswordStrengthGreen  PasswordStrength = "GREEN"
+)
+
+const (
+	passwordLower  = "abcdefghijklmnopqrstuvwxyz"
+	passwordUpper  = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	passwordDigits = "0123456789"
+)
+
+// CalculatePasswordStrength returns the Cumulocity password-strength level for
+// the given password. The classification mirrors the algorithm used by the
+// official @c8y/client TypeScript library:
+//
+//   - GREEN  — all four character classes (lower, upper, digit, symbol) present
+//     and length ≥ 8
+//   - YELLOW — two or three character classes present and length ≥ 8
+//   - RED    — fewer than two character classes OR length < 8
+func CalculatePasswordStrength(password string) PasswordStrength {
+	if len(password) < 8 {
+		return PasswordStrengthRed
+	}
+	var classes int
+	if strings.ContainsAny(password, passwordLower) {
+		classes++
+	}
+	if strings.ContainsAny(password, passwordUpper) {
+		classes++
+	}
+	if strings.ContainsAny(password, passwordDigits) {
+		classes++
+	}
+	for _, c := range password {
+		if !strings.ContainsRune(passwordLower+passwordUpper+passwordDigits, c) {
+			classes++
+			break
+		}
+	}
+	switch {
+	case classes >= 4:
+		return PasswordStrengthGreen
+	case classes >= 2:
+		return PasswordStrengthYellow
+	default:
+		return PasswordStrengthRed
+	}
+}
 
 const ResultProperty = "users"
 
@@ -240,4 +296,45 @@ func (s *Service) logoutAllUsersB(tenantID string) *core.TryRequest {
 		SetPathParam(ParamTenantId, tenantID).
 		SetURL(ApiLogoutAllUsers)
 	return core.NewTryRequest(s.Client, req)
+}
+
+// ResetPasswordOptions contains the data needed for a token-based forced
+// password reset triggered during login (when the server returns a 401 with a
+// non-empty "passwordresettoken" response header).
+type ResetPasswordOptions struct {
+	// Tenant is the tenant ID the user belongs to.
+	// When empty the server infers it from the request domain.
+	Tenant string `url:"tenantId,omitempty" json:"-"`
+
+	// Token is the one-time reset token from the 401 "passwordresettoken" header.
+	Token string `json:"token"`
+
+	// Email is the user's email / login name (the value typed in the login form).
+	Email string `json:"email"`
+
+	// NewPassword is the replacement password chosen by the user.
+	NewPassword string `json:"newPassword"`
+
+	// PasswordStrength indicates the complexity of NewPassword. Use CalculatePasswordStrength
+	// to derive this value; the server still requires it even though it is
+	// deprecated in the upstream TypeScript client library.
+	PasswordStrength PasswordStrength `json:"passwordStrength"`
+}
+
+// ResetPassword performs a token-based forced password reset.
+// This is called during login when the server returns a 401 with a
+// "passwordresettoken" response header, signalling that the user must change
+// their password before they can proceed.
+func (s *Service) ResetPassword(ctx context.Context, opt ResetPasswordOptions) op.Result[core.NoContent] {
+	return core.ExecuteNoContent(ctx, s.resetPasswordB(opt))
+}
+
+func (s *Service) resetPasswordB(opt ResetPasswordOptions) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodPut).
+		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
+		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetBody(opt).
+		SetURL(ApiPasswordReset)
+	return core.NewTryRequest(s.Client, req).WithNoAuth()
 }

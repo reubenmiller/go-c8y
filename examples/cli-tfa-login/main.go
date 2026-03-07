@@ -1,12 +1,14 @@
 // Package main demonstrates a full Cumulocity username/password login that
-// transparently handles both TOTP enrollment (first-time setup) and ongoing
-// TOTP login challenges.
+// transparently handles TOTP enrollment, TOTP login challenges, SMS TFA
+// challenges, and forced password changes.
 //
-// The TOTP flow is driven by callbacks supplied via api.LoginOptions, keeping
+// The login flows are driven by callbacks supplied via api.LoginOptions, keeping
 // the library free of terminal-UI dependencies:
 //
-//   - TOTPCode – called whenever a code must be entered (setup or challenge)
-//   - QRCode   – called with the otpauth:// URL during first-time enrollment
+//   - TOTPCode      – called whenever a TOTP code must be entered
+//   - QRCode        – called with the otpauth:// URL during first-time enrollment
+//   - SMSCode       – called when the server sends an SMS PIN challenge
+//   - PasswordChange – called when the server forces a password reset on login
 //
 // After a successful login the example verifies the token with a lightweight
 // API call and lists the first page of devices.
@@ -33,6 +35,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/devices"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/tenants/currenttenant"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/users"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/users/currentuser/totp"
 	"golang.org/x/term"
 )
@@ -52,13 +55,15 @@ func main() {
 		Auth:    authentication.FromEnvironment(),
 	})
 
+	client.SetDebugWithAuth(true)
+
 	// -----------------------------------------------------------------------
-	// 2. Login with full TOTP handling via callbacks.
+	// 2. Login with full TFA/password-change handling via callbacks.
 	// -----------------------------------------------------------------------
 	_, err := client.LoginWithOptions(ctx, api.LoginOptions{
 		// QRCode is called once during first-time TOTP enrollment so the user
 		// can scan the secret into their authenticator app.
-		QRCode: func(otpauthURL string) {
+		QRCode: func(otpauthURL string, secret string) {
 			fmt.Fprintf(os.Stderr, "\n📱 Scan the QR code below with your authenticator app:\n\n")
 			qrterminal.GenerateWithConfig(otpauthURL, qrterminal.Config{
 				Level:      qrterminal.M,
@@ -66,12 +71,19 @@ func main() {
 				HalfBlocks: true,
 				QuietZone:  1,
 			})
-			fmt.Fprintf(os.Stderr, "\nManual entry URL: %s\n\n", otpauthURL)
+			fmt.Fprintf(os.Stderr, "\n secret: %s\n\n", secret)
+			fmt.Fprintf(os.Stderr, "\nManual entry URL: %s\n", otpauthURL)
 		},
 
 		// TOTPCode is called whenever a TOTP code is needed.
 		// challenge.IsSetup is true during enrollment, false for a login challenge.
 		TOTPCode: promptTOTPCode,
+
+		// SMSCode is called when the server sends an SMS PIN to the user's phone.
+		SMSCode: promptSMSCode,
+
+		// PasswordChange is called when the server forces a password reset.
+		PasswordChange: promptNewPassword,
 	})
 	if err != nil {
 		slog.Error("Login failed", "err", err)
@@ -136,4 +148,108 @@ func promptTOTPCode(_ context.Context, challenge totp.TOTPChallenge) (string, er
 		return "", fmt.Errorf("reading TOTP code: %w", err)
 	}
 	return "", fmt.Errorf("no TOTP code provided")
+}
+
+// promptSMSCode is an SMSCode callback that prompts the user for the PIN sent
+// to their registered phone number.
+func promptSMSCode(_ context.Context, _ api.SMSChallenge) (string, error) {
+	fmt.Fprint(os.Stderr, "SMS verification code: ")
+
+	if term.IsTerminal(int(os.Stdin.Fd())) {
+		raw, err := term.ReadPassword(int(os.Stdin.Fd()))
+		fmt.Fprintln(os.Stderr)
+		if err != nil {
+			return "", fmt.Errorf("reading SMS code: %w", err)
+		}
+		return strings.TrimSpace(string(raw)), nil
+	}
+
+	scanner := bufio.NewScanner(os.Stdin)
+	if scanner.Scan() {
+		return strings.TrimSpace(scanner.Text()), nil
+	}
+	if err := scanner.Err(); err != nil {
+		return "", fmt.Errorf("reading SMS code: %w", err)
+	}
+	return "", fmt.Errorf("no SMS code provided")
+}
+
+// promptNewPassword is a PasswordChange callback that prompts the user for
+// their email and a new password when the server forces a password change.
+func promptNewPassword(_ context.Context, challenge api.PasswordChangeChallenge) (string, string, error) {
+	// Prompt for the email address. The username is provided as a hint but may
+	// not be the user's actual email.
+	var email string
+	if term.IsTerminal(int(os.Stdin.Fd())) {
+		if challenge.Email != "" {
+			fmt.Fprintf(os.Stderr, "Email address [%s]: ", challenge.Email)
+		} else {
+			fmt.Fprint(os.Stderr, "Email address: ")
+		}
+		scanner := bufio.NewScanner(os.Stdin)
+		if scanner.Scan() {
+			email = strings.TrimSpace(scanner.Text())
+		}
+		if email == "" {
+			email = challenge.Email
+		}
+	} else {
+		scanner := bufio.NewScanner(os.Stdin)
+		if scanner.Scan() {
+			email = strings.TrimSpace(scanner.Text())
+		}
+		if err := scanner.Err(); err != nil {
+			return "", "", fmt.Errorf("reading email: %w", err)
+		}
+	}
+	if email == "" {
+		return "", "", fmt.Errorf("no email provided")
+	}
+
+	for {
+		fmt.Fprint(os.Stderr, "Your password has expired. Enter a new password: ")
+
+		var pw string
+		if term.IsTerminal(int(os.Stdin.Fd())) {
+			raw, err := term.ReadPassword(int(os.Stdin.Fd()))
+			fmt.Fprintln(os.Stderr)
+			if err != nil {
+				return "", "", fmt.Errorf("reading new password: %w", err)
+			}
+			pw = strings.TrimSpace(string(raw))
+		} else {
+			scanner := bufio.NewScanner(os.Stdin)
+			if !scanner.Scan() {
+				if err := scanner.Err(); err != nil {
+					return "", "", fmt.Errorf("reading new password: %w", err)
+				}
+				return "", "", fmt.Errorf("no new password provided")
+			}
+			pw = strings.TrimSpace(scanner.Text())
+		}
+
+		strength := users.CalculatePasswordStrength(pw)
+		if strength == users.PasswordStrengthRed {
+			fmt.Fprintf(os.Stderr, "Password is too weak (must be at least 8 characters with uppercase, lowercase, digits and symbols). Please try again.\n")
+			continue
+		}
+		if strength == users.PasswordStrengthYellow {
+			fmt.Fprintf(os.Stderr, "Warning: password strength is moderate. Consider using a stronger password (add more character types).\n")
+		}
+
+		if term.IsTerminal(int(os.Stdin.Fd())) {
+			fmt.Fprint(os.Stderr, "Confirm new password: ")
+			confirm, err := term.ReadPassword(int(os.Stdin.Fd()))
+			fmt.Fprintln(os.Stderr)
+			if err != nil {
+				return "", "", fmt.Errorf("reading password confirmation: %w", err)
+			}
+			if pw != strings.TrimSpace(string(confirm)) {
+				fmt.Fprintf(os.Stderr, "Passwords do not match. Please try again.\n")
+				continue
+			}
+		}
+
+		return email, pw, nil
+	}
 }

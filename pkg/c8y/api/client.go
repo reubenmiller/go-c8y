@@ -738,6 +738,29 @@ func (c *Client) Login(ctx context.Context) (token string, err error) {
 	return
 }
 
+// SMSChallenge is passed to the LoginOptions.SMSCode callback when Cumulocity
+// signals that an SMS PIN has been sent to the user (a 401 whose error message
+// matches "pin.*generated").
+type SMSChallenge struct {
+	// Message is the lower-cased error message from the 401 response.
+	Message string
+}
+
+// PasswordChangeChallenge is passed to the LoginOptions.PasswordChange callback
+// when Cumulocity forces the user to set a new password at login time (a 401
+// with a non-empty "passwordresettoken" response header).
+type PasswordChangeChallenge struct {
+	// Token is the one-time reset token from the "passwordresettoken" header.
+	// It must be forwarded as-is when calling the password-reset API.
+	Token string
+	// Email is the pre-populated value from c.Auth.Username. It is provided as
+	// a hint only — the username is not always the user's email address, so the
+	// callback should confirm or prompt for the actual email before using it.
+	Email string
+	// Message is the lower-cased error message from the 401 response.
+	Message string
+}
+
 // LoginOptions configures optional behaviour for LoginWithOptions.
 type LoginOptions struct {
 	// TOTPCode is called whenever the login flow needs a TOTP code: either
@@ -745,14 +768,29 @@ type LoginOptions struct {
 	// If nil, the flow will return an error when a code is required.
 	TOTPCode totp.TOTPCodeFunc
 
-	// QRCode is called with the otpauth:// URL when a new TOTP secret is
-	// generated, so the caller can render a QR code in the terminal or UI.
+	// QRCode is called with the otpauth:// URL and the raw TOTP secret when a
+	// new TOTP secret is generated, so the caller can render a QR code in the
+	// terminal or UI, or display the secret for manual entry.
 	// If nil, the URL is silently skipped.
-	QRCode func(otpauthURL string)
+	QRCode func(otpauthURL string, secret string)
+
+	// SMSCode is called when the server issues an SMS PIN challenge (a 401
+	// whose message matches "pin.*generated"). The function should prompt the
+	// user for the PIN received via SMS and return it.
+	// If nil, an SMS challenge surfaces as an error.
+	SMSCode func(ctx context.Context, challenge SMSChallenge) (string, error)
+
+	// PasswordChange is called when the server forces a password change at
+	// login time (a 401 with a non-empty "passwordresettoken" response header).
+	// The function should prompt the user for their email and new password and
+	// return both. challenge.Email is pre-populated with the login username as a
+	// hint, but it may not be the user's actual email address.
+	// If nil, a forced-password-change challenge surfaces as an error.
+	PasswordChange func(ctx context.Context, challenge PasswordChangeChallenge) (email string, newPassword string, err error)
 }
 
 // LoginWithOptions performs a username/password login and transparently
-// handles the full TOTP flow:
+// handles the full TOTP flow, SMS TFA challenges, and forced password changes:
 //
 //  1. Attempts a normal OAI-Secure token request.
 //  2. If the server requires TOTP setup:
@@ -764,7 +802,13 @@ type LoginOptions struct {
 //  3. If the server issues a TOTP challenge (already enrolled):
 //     a. Calls opts.TOTPCode to get the current TOTP code.
 //     b. Retries the login with tfa_code set.
-//  4. On success, stores the token and updates the client auth state.
+//  4. If the server returns a 401 with a "passwordresettoken" header:
+//     a. Calls opts.PasswordChange to get a new password from the user.
+//     b. Calls the password-reset API, then re-logs in with the new password.
+//  5. If the server returns a 401 with an SMS pin message:
+//     a. Calls opts.SMSCode to get the PIN from the user.
+//     b. Retries the login with tfa_code set to the SMS PIN.
+//  6. On success, stores the token and updates the client auth state.
 func (c *Client) LoginWithOptions(ctx context.Context, opts LoginOptions) (token string, err error) {
 	token, err = c.loginInternalSSO(ctx)
 	if err == nil {
@@ -772,7 +816,7 @@ func (c *Client) LoginWithOptions(ctx context.Context, opts LoginOptions) (token
 		return
 	}
 
-	if opts.TOTPCode == nil {
+	if opts.TOTPCode == nil && opts.SMSCode == nil && opts.PasswordChange == nil {
 		// No handler — surface the error as-is.
 		return
 	}
@@ -794,13 +838,14 @@ func (c *Client) LoginWithOptions(ctx context.Context, opts LoginOptions) (token
 		}
 
 		if opts.QRCode != nil {
+			rawSecret := secretResult.Data.RawSecret()
 			otpauthURL := fmt.Sprintf(
 				"otpauth://totp/%s?secret=%s&issuer=%s",
 				c.Auth.Username,
-				secretResult.Data.RawSecret(),
+				rawSecret,
 				c.BaseURL.Host,
 			)
-			opts.QRCode(otpauthURL)
+			opts.QRCode(otpauthURL, rawSecret)
 		}
 
 		tfaCode, err = opts.TOTPCode(ctx, totp.TOTPChallenge{
@@ -827,6 +872,55 @@ func (c *Client) LoginWithOptions(ctx context.Context, opts LoginOptions) (token
 		if err != nil {
 			return "", fmt.Errorf("totp: code input: %w", err)
 		}
+
+	case apiErr.StatusCode() == 401 &&
+		apiErr.Response != nil &&
+		apiErr.Response.Header.Get("passwordresettoken") != "":
+		// The server is forcing a password change before allowing login.
+		if opts.PasswordChange == nil {
+			return
+		}
+		resetToken := apiErr.Response.Header.Get("passwordresettoken")
+		var email, newPassword string
+		email, newPassword, err = opts.PasswordChange(ctx, PasswordChangeChallenge{
+			Token:   resetToken,
+			Email:   c.Auth.Username,
+			Message: errorMessage,
+		})
+		if err != nil {
+			return "", fmt.Errorf("password change: %w", err)
+		}
+		if r := c.Users.ResetPassword(ctx, users.ResetPasswordOptions{
+			Tenant:           c.Auth.Tenant,
+			Token:            resetToken,
+			Email:            email,
+			NewPassword:      newPassword,
+			PasswordStrength: users.CalculatePasswordStrength(newPassword),
+		}); r.Err != nil {
+			return "", fmt.Errorf("password change: reset: %w", r.Err)
+		}
+		c.Auth.Password = newPassword
+		// Re-run the full login flow so that any additional challenges
+		// (TOTP, SMS TFA) that follow the password change are handled too.
+		token, err = c.LoginWithOptions(ctx, opts)
+		if err != nil {
+			return "", fmt.Errorf("password change: re-login: %w", err)
+		}
+		return
+
+	case apiErr.StatusCode() == 401 &&
+		strings.Contains(errorMessage, "pin") &&
+		strings.Contains(errorMessage, "generated"):
+		// The server has sent an SMS PIN to the user's registered phone.
+		if opts.SMSCode == nil {
+			return
+		}
+		var smsCode string
+		smsCode, err = opts.SMSCode(ctx, SMSChallenge{Message: errorMessage})
+		if err != nil {
+			return "", fmt.Errorf("sms: code input: %w", err)
+		}
+		tfaCode = smsCode
 
 	default:
 		// Unrelated 401 — surface as-is.
