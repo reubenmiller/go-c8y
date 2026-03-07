@@ -65,6 +65,12 @@ import (
 
 var ErrNotFound = errors.New("item: not found")
 
+// ErrNoLoginMethodAvailable is returned by LoginWithOptions when a Preference
+// list is given but no method in the list could be used (all were either missing
+// the required credentials or skipped because the tenant has no external OAuth2
+// provider configured).
+var ErrNoLoginMethodAvailable = errors.New("login: no method available (all preferences exhausted)")
+
 type AuthFunc func(r *http.Request) (string, error)
 
 // DefaultRequestOptions default request options which are added to each outgoing request
@@ -767,6 +773,32 @@ type PasswordChangeChallenge struct {
 
 // LoginOptions configures optional behaviour for LoginWithOptions.
 type LoginOptions struct {
+	// Method enforces a specific login flow. LoginWithOptions fails immediately
+	// if the method requires credentials that are not set, or if the tenant has
+	// no external OAuth2 provider (for SSO-based methods).
+	// Mutually exclusive with Preference — set one or neither.
+	Method authentication.LoginMethod
+
+	// Preference is an ordered list of login flows to try. Each method is
+	// evaluated for local availability (credentials present, etc.); the first
+	// that is satisfied is attempted. SSO-based methods (device flow, browser
+	// flow) are silently skipped when the tenant has no external provider.
+	// When both Method and Preference are unset, the default behaviour is
+	// preserved: OAUTH2_INTERNAL is attempted with full TFA callback support.
+	Preference []authentication.LoginMethod
+
+	// BrowserFlow configures the SSO Authorization Code flow. Used when
+	// LoginMethodOAuth2BrowserFlow is selected via Method or Preference.
+	// When nil, sane defaults are applied (listen on 127.0.0.1:5001, open
+	// the system browser).
+	BrowserFlow *BrowserFlowOptions
+
+	// DeviceFlow configures the SSO Device Authorization flow. Used when
+	// LoginMethodOAuth2DeviceFlow is selected via Method or Preference.
+	// When nil, OAuth2 endpoints are auto-discovered and the code is printed
+	// to stderr.
+	DeviceFlow *DeviceFlowOptions
+
 	// TOTPSecret is a base32-encoded TOTP secret used to generate codes
 	// automatically via RFC 6238 (HMAC-SHA1, 30-second window). When set,
 	// TOTPCode is ignored for code generation and the code is computed from
@@ -802,10 +834,149 @@ type LoginOptions struct {
 	// hint, but it may not be the user's actual email address.
 	// If nil, a forced-password-change challenge surfaces as an error.
 	PasswordChange func(ctx context.Context, challenge PasswordChangeChallenge) (email string, newPassword string, err error)
+
+	// OnSuccess is called after a successful login with the method that was
+	// actually used. Useful when Preference is set and the caller wants to
+	// know which method in the list won. When neither Method nor Preference
+	// is set the reported method is LoginMethodOAuth2Internal.
+	// If nil, the callback is skipped.
+	OnSuccess func(method authentication.LoginMethod)
 }
 
-// LoginWithOptions performs a username/password login and transparently
-// handles the full TOTP flow, SMS TFA challenges, and forced password changes:
+// LoginWithOptions performs a Cumulocity login using the flow specified by
+// opts.Method or opts.Preference. When neither is set the behaviour is
+// identical to the pre-preference behaviour: OAUTH2_INTERNAL is attempted
+// with full TFA and forced-password-change callback support.
+//
+// Method vs. Preference:
+//
+//   - Method (strict): exactly one flow is attempted; login fails immediately
+//     if the required credentials are absent or the tenant has no external
+//     OAuth2 provider.
+//   - Preference (soft): methods are tried in order; a method is skipped
+//     when its local prerequisites are not met (username/password absent,
+//     certificate files missing), or when the tenant has no external OAuth2
+//     provider for SSO flows. Returns ErrNoLoginMethodAvailable if every
+//     method in the list is skipped.
+//
+// On success the client's auth state is updated so that subsequent API calls
+// use the obtained token or credential type.
+func (c *Client) LoginWithOptions(ctx context.Context, opts LoginOptions) (token string, err error) {
+	// Legacy / default path: no explicit method requested.
+	if opts.Method == "" && len(opts.Preference) == 0 {
+		token, err = c.loginInternalSSOWithTFA(ctx, opts)
+		if err == nil && opts.OnSuccess != nil {
+			opts.OnSuccess(authentication.LoginMethodOAuth2Internal)
+		}
+		return
+	}
+
+	strict := opts.Method != ""
+	methods := opts.Preference
+	if strict {
+		methods = []authentication.LoginMethod{opts.Method}
+	}
+
+	for _, m := range methods {
+		// In preference mode, skip methods whose local prerequisites are absent.
+		if !strict && !c.isLoginMethodAvailable(m) {
+			continue
+		}
+		token, err = c.loginWithMethod(ctx, m, opts)
+		if err == nil {
+			if opts.OnSuccess != nil {
+				opts.OnSuccess(m)
+			}
+			return
+		}
+		// In preference mode, treat "no external provider" as "method
+		// unavailable" and continue to the next preference.
+		if !strict && errors.Is(err, core.ErrNoAuth2Provider) {
+			err = nil
+			continue
+		}
+		// Any other error — surface it (both strict and preference).
+		return
+	}
+
+	// All preferences were exhausted without a successful login.
+	if err == nil {
+		err = ErrNoLoginMethodAvailable
+	}
+	return
+}
+
+// isLoginMethodAvailable reports whether the local configuration is sufficient
+// to attempt method m, without making any network calls.
+func (c *Client) isLoginMethodAvailable(m authentication.LoginMethod) bool {
+	switch m {
+	case authentication.LoginMethodBasic, authentication.LoginMethodOAuth2Internal:
+		return c.Auth.Username != "" && c.Auth.Password != ""
+	case authentication.LoginMethodCertificate:
+		return c.Auth.Certificate != "" && c.Auth.CertificateKey != ""
+	case authentication.LoginMethodOAuth2DeviceFlow, authentication.LoginMethodOAuth2BrowserFlow:
+		// SSO availability requires a network call; assume available and let
+		// AuthorizeWith* return ErrNoAuth2Provider if the tenant lacks a provider.
+		return true
+	default:
+		return false
+	}
+}
+
+// loginWithMethod runs the single login flow identified by m.
+func (c *Client) loginWithMethod(ctx context.Context, m authentication.LoginMethod, opts LoginOptions) (string, error) {
+	switch m {
+	case authentication.LoginMethodBasic:
+		if c.Auth.Username == "" || c.Auth.Password == "" {
+			return "", fmt.Errorf("basic auth: username and password are required")
+		}
+		// Basic auth requires no token exchange; just pin the auth type so
+		// the middleware always sends an Authorization: Basic header.
+		c.Auth.AuthType = []authentication.AuthType{authentication.AuthTypeBasic}
+		c.SetAuth(c.Auth)
+		return "", nil
+
+	case authentication.LoginMethodOAuth2Internal:
+		return c.loginInternalSSOWithTFA(ctx, opts)
+
+	case authentication.LoginMethodCertificate:
+		tok, err := c.loginDeviceCertificate(ctx)
+		if err != nil {
+			return "", err
+		}
+		c.SetToken(tok)
+		c.SetAuth(c.Auth)
+		return tok, nil
+
+	case authentication.LoginMethodOAuth2DeviceFlow:
+		d := DeviceFlowOptions{}
+		if opts.DeviceFlow != nil {
+			d = *opts.DeviceFlow
+		}
+		accessToken, err := c.AuthorizeWithDeviceFlow(ctx, "", d.AuthEndpoints, d.DisplayFunc)
+		if err != nil {
+			return "", err
+		}
+		return accessToken.Token, nil
+
+	case authentication.LoginMethodOAuth2BrowserFlow:
+		bOpts := BrowserFlowOptions{}
+		if opts.BrowserFlow != nil {
+			bOpts = *opts.BrowserFlow
+		}
+		accessToken, err := c.AuthorizeWithBrowserFlow(ctx, "", bOpts)
+		if err != nil {
+			return "", err
+		}
+		return accessToken.Token, nil
+
+	default:
+		return "", fmt.Errorf("login: unknown method %q", m)
+	}
+}
+
+// loginInternalSSOWithTFA performs an OAUTH2_INTERNAL login with full
+// TOTP flow, SMS TFA challenges, and forced password-change handling:
 //
 //  1. Attempts a normal OAI-Secure token request.
 //  2. If the server requires TOTP setup:
@@ -824,7 +995,7 @@ type LoginOptions struct {
 //     a. Calls opts.SMSCode to get the PIN from the user.
 //     b. Retries the login with tfa_code set to the SMS PIN.
 //  6. On success, stores the token and updates the client auth state.
-func (c *Client) LoginWithOptions(ctx context.Context, opts LoginOptions) (token string, err error) {
+func (c *Client) loginInternalSSOWithTFA(ctx context.Context, opts LoginOptions) (token string, err error) {
 	token, err = c.loginInternalSSO(ctx)
 	if err == nil {
 		c.seedTokenSource(token)

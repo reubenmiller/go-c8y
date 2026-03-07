@@ -165,7 +165,7 @@ func (c *Client) AuthorizeWithDeviceFlow(ctx context.Context, initRequest string
 		if err := api.GetOpenIDConfiguration(ctx, httpClient, endpoint.URL, auth_endpoints.OpenIDConfigurationURL, openIDConfig); err != nil {
 			return nil, fmt.Errorf("%w. %w", ErrSSOInvalidConfiguration, err)
 		} else {
-			slog.Info("Found OpenID Connect configuration", "url", auth_endpoints.OpenIDConfigurationURL, "config", openIDConfig)
+			slog.Debug("Found OpenID Connect configuration", "url", auth_endpoints.OpenIDConfigurationURL, "config", openIDConfig)
 			if auth_endpoints.TokenURL == "" {
 				auth_endpoints.TokenURL = openIDConfig.TokenEndpoint
 			}
@@ -176,7 +176,7 @@ func (c *Client) AuthorizeWithDeviceFlow(ctx context.Context, initRequest string
 
 		// Add default scope if none are defined, as microsoft generally requires at least one scope
 		if len(scopes) == 0 && len(openIDConfig.ScopesSupported) > 0 {
-			slog.Info("Adding default scope", "value", openIDConfig.ScopesSupported[0])
+			slog.Debug("Adding default scope", "value", openIDConfig.ScopesSupported[0])
 			scopes = append(scopes, openIDConfig.ScopesSupported[0])
 		}
 	}
@@ -184,7 +184,7 @@ func (c *Client) AuthorizeWithDeviceFlow(ctx context.Context, initRequest string
 	deviceCodeURL := api.GetEndpointUrl(endpoint.URL, auth_endpoints.DeviceAuthorizationURL)
 	requestCodeOptions := append([]api.AuthRequestEditorFn{}, auth_endpoints.AuthRequestOptions...)
 	requestCodeOptions = append(requestCodeOptions, api.WithAudience(endpoint.Audience))
-	slog.Info("Requesting device code", "url", deviceCodeURL, "client_id", endpoint.ClientID, "scopes", scopes)
+	slog.Debug("Requesting device code", "url", deviceCodeURL, "client_id", endpoint.ClientID, "scopes", scopes)
 	code, err := device.RequestCode(httpClient, deviceCodeURL, endpoint.ClientID, scopes, requestCodeOptions...)
 	if err != nil {
 		return nil, err
@@ -207,7 +207,7 @@ func (c *Client) AuthorizeWithDeviceFlow(ctx context.Context, initRequest string
 	}
 
 	// Update client auth
-	slog.Info("Using token from device flow")
+	slog.Debug("Using token from device flow")
 	c.SetAuth(authentication.AuthOptions{
 		Token: accessToken.Token,
 	})
@@ -243,13 +243,19 @@ type BrowserFlowOptions struct {
 	// DefaultBrowserOpen when nil.
 	OpenBrowser BrowserOpenFunc
 
-	// ListenAddr sets the local TCP listen address for the callback server,
-	// e.g. "127.0.0.1:5001".  Defaults to "127.0.0.1:5001".
+	// CallbackURL is the full redirect URI that the SSO provider will redirect
+	// the browser to after a successful authentication. It must exactly match
+	// a URI pre-registered in your SSO provider configuration.
 	//
-	// NOTE: The full callback URL (http://localhost:<port>/callback) must be
-	// pre-registered as an allowed redirect URI in your SSO provider.  Use a
-	// fixed port that matches your provider's configuration.
-	ListenAddr string
+	// Accepted forms (all equivalent in terms of where the local server listens
+	// and which path it registers the handler on):
+	//
+	//   http://127.0.0.1:5001/callback  – explicit scheme, host, port, path
+	//   127.0.0.1:5001/callback         – scheme inferred as http
+	//   127.0.0.1:5001                  – path defaults to /callback
+	//
+	// Defaults to "http://127.0.0.1:5001/callback" when empty.
+	CallbackURL string
 
 	OriginURL string
 
@@ -257,6 +263,71 @@ type BrowserFlowOptions struct {
 	// successful authentication.  When empty the built-in Cumulocity-branded
 	// page (browser_success.html) is used.
 	SuccessPage string
+}
+
+// parseBrowserCallbackURL normalises the CallbackURL field into the three
+// pieces needed by AuthorizeWithBrowserFlow:
+//
+//   - listenAddr  – "host:port" string passed to net.Listen
+//   - path        – URL path to register the HTTP handler on (e.g. "/callback")
+//   - callbackURL – the canonical, fully-qualified redirect URI sent to
+//     the SSO provider (always http://host:port/path)
+//
+// Input forms handled:
+//
+//	http://127.0.0.1:5001/callback  -> ("127.0.0.1:5001", "/callback", "http://127.0.0.1:5001/callback")
+//	127.0.0.1:5001/mypath           -> ("127.0.0.1:5001", "/mypath",   "http://127.0.0.1:5001/mypath")
+//	127.0.0.1:5001                  -> ("127.0.0.1:5001", "/callback", "http://127.0.0.1:5001/callback")
+//	"" (empty)                      -> ("127.0.0.1:5001", "/callback", "http://127.0.0.1:5001/callback")
+func parseBrowserCallbackURL(raw string) (listenAddr, path, callbackURL string, err error) {
+	const defaultAddr = "127.0.0.1:5001"
+	const defaultPath = "/callback"
+
+	if raw == "" {
+		return defaultAddr, defaultPath,
+			"http://" + defaultAddr + defaultPath, nil
+	}
+
+	// Ensure there is a scheme so url.Parse interprets host and path correctly.
+	// Without a scheme, url.Parse treats "host:port/path" as scheme=host,
+	// opaque="port/path" which is not what we want.
+	toParse := raw
+	if !strings.Contains(raw, "://") {
+		toParse = "http://" + raw
+	}
+
+	u, parseErr := url.Parse(toParse)
+	if parseErr != nil {
+		err = fmt.Errorf("browser flow: invalid CallbackURL %q: %w", raw, parseErr)
+		return
+	}
+	if u.Host == "" {
+		err = fmt.Errorf("browser flow: CallbackURL %q has no host:port", raw)
+		return
+	}
+
+	listenAddr = u.Host
+	path = u.Path
+	if path == "" {
+		path = defaultPath
+	}
+	callbackURL = "http://" + listenAddr + path
+	return
+}
+
+// DeviceFlowOptions configures the OAuth2 Device Authorization flow used by
+// LoginWithOptions when LoginMethodOAuth2DeviceFlow is selected.
+type DeviceFlowOptions struct {
+	// AuthEndpoints overrides the auto-discovered OAuth2 endpoint URLs (token
+	// URL, device-authorization URL, OpenID configuration URL, etc.).
+	// Leave zero-valued to have the client discover them automatically from the
+	// tenant's OpenID Connect configuration endpoint.
+	AuthEndpoints oauth2_api.AuthEndpoints
+
+	// DisplayFunc is called with the device authorization code so the user can
+	// visit the verification URL and enter the code.
+	// Defaults to device.DeviceCodeOnConsole(os.Stderr) when nil.
+	DisplayFunc device.DeviceCodeFunc
 }
 
 // AuthorizeWithBrowserFlow performs the OAuth2 Authorization Code flow
@@ -290,9 +361,10 @@ func (c *Client) AuthorizeWithBrowserFlow(ctx context.Context, initRequest strin
 	if opts.OpenBrowser == nil {
 		opts.OpenBrowser = DefaultBrowserOpen
 	}
-	listenAddr := opts.ListenAddr
-	if listenAddr == "" {
-		listenAddr = "127.0.0.1:5001"
+
+	listenAddr, callbackPath, callbackURL, err := parseBrowserCallbackURL(opts.CallbackURL)
+	if err != nil {
+		return nil, err
 	}
 
 	// Start local callback server.
@@ -300,13 +372,12 @@ func (c *Client) AuthorizeWithBrowserFlow(ctx context.Context, initRequest strin
 	if err != nil {
 		return nil, fmt.Errorf("browser flow: start callback listener: %w", err)
 	}
-	callbackURL := fmt.Sprintf("http://%s/callback", listenAddr)
 
 	codeCh := make(chan string, 1)
 	mux := http.NewServeMux()
 	srv := &http.Server{Handler: mux}
 
-	mux.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc(callbackPath, func(w http.ResponseWriter, r *http.Request) {
 		errParam := r.URL.Query().Get("error")
 		if errParam != "" {
 			msg := r.URL.Query().Get("error_description")
@@ -347,7 +418,7 @@ func (c *Client) AuthorizeWithBrowserFlow(ctx context.Context, initRequest strin
 		return nil, fmt.Errorf("browser flow: get authorization URL: %w", err)
 	}
 	idpAuthURL := authReq.URL.String()
-	slog.Info("Browser flow: opening IdP authorization URL", "url", idpAuthURL)
+	slog.Debug("Browser flow: opening IdP authorization URL", "url", idpAuthURL)
 
 	if err := opts.OpenBrowser(idpAuthURL); err != nil {
 		slog.Warn("Browser flow: could not open browser", "err", err)
@@ -361,7 +432,7 @@ func (c *Client) AuthorizeWithBrowserFlow(ctx context.Context, initRequest strin
 			return nil, fmt.Errorf("browser flow: SSO callback returned an error")
 		}
 		tokenClient := NewClient(ClientOptions{BaseURL: c.Client.BaseURL()})
-		tokenClient.Client.SetDebug(true)
+		tokenClient.SetDebug(c.debugEnabled)
 		tok := tokenClient.LoginTokens.Create(ctx, logintokens.CreateTokenOptions{
 			GrantType:     logintokens.GrantTypeAuthorizationCode,
 			Code:          code,
@@ -376,7 +447,6 @@ func (c *Client) AuthorizeWithBrowserFlow(ctx context.Context, initRequest strin
 			return nil, fmt.Errorf("browser flow: token exchange returned empty access token")
 		}
 		c.SetAuth(authentication.AuthOptions{Token: accessToken})
-		slog.Info("Browser flow: token obtained")
 		return &api.AccessToken{Token: accessToken}, nil
 	case <-ctx.Done():
 		return nil, ctx.Err()
