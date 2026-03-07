@@ -1,6 +1,6 @@
 module github.com/reubenmiller/example
 
-go 1.25
+go 1.25.0
 
 require (
 	github.com/alecthomas/kong v1.12.1
@@ -9,11 +9,12 @@ require (
 )
 
 require (
+	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
-	golang.org/x/net v0.43.0 // indirect
+	golang.org/x/net v0.51.0 // indirect
 )
 
 replace github.com/reubenmiller/go-c8y => ../../
