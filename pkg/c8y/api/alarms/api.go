@@ -170,25 +170,6 @@ type CountOptions struct {
 
 	// The types of alarm to search for
 	Type []string `url:"type,omitempty"`
-
-	// When set to true, alarms for related source assets, devices and additions will
-	// also be included in the response. When this parameter is provided a source
-	// must be specified.
-	WithSourceChildren bool `url:"withSourceChildren,omitempty"`
-
-	// When set to true, alarms for related source assets will also be included in
-	// the response. When this parameter is provided a source must be specified.
-	WithSourceAssets bool `url:"withSourceAssets,omitempty"`
-
-	// When set to true, alarms for related source devices will also be included in
-	// the response. When this parameter is provided a source must be specified.
-	WithSourceDevices bool `url:"withSourceDevices,omitempty"`
-
-	// When set to true, alarms for related source additions will also be included in
-	// the response. When this parameter is provided a source must be specified.
-	WithSourceAdditions bool `url:"withSourceAdditions,omitempty"`
-
-	pagination.PaginationOptions
 }
 
 // Get an alarm

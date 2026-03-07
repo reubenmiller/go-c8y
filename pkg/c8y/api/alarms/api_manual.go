@@ -12,7 +12,7 @@ import (
 )
 
 // Count the total number of active alarms on your tenant
-func (s *Service) Count(ctx context.Context, opt ListOptions) op.Result[int64] {
+func (s *Service) Count(ctx context.Context, opt CountOptions) op.Result[int64] {
 	// Resolve Source if it contains a resolver scheme
 	if opt.Source != "" && s.DeviceResolver != nil {
 		resolutionCtx := ctx
@@ -32,7 +32,7 @@ func (s *Service) Count(ctx context.Context, opt ListOptions) op.Result[int64] {
 	})
 }
 
-func (s *Service) countB(opt ListOptions) *core.TryRequest {
+func (s *Service) countB(opt CountOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
