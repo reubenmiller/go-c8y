@@ -2,7 +2,10 @@ package api
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/sha256"
 	_ "embed"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -263,6 +266,32 @@ type BrowserFlowOptions struct {
 	// successful authentication.  When empty the built-in Cumulocity-branded
 	// page (browser_success.html) is used.
 	SuccessPage string
+
+	// PKCE enables the Proof Key for Code Exchange extension (RFC 7636) using
+	// the S256 code challenge method. When true, a code_verifier is generated
+	// per-login and its SHA-256 challenge is appended to the IdP authorization
+	// URL. The verifier is then included in the token exchange request.
+	//
+	// Note: PKCE support depends on both the external IdP and Cumulocity's token
+	// endpoint. As of the current Cumulocity release this is not yet supported,
+	// so enabling it will cause the token exchange to fail. This option is
+	// provided for forward compatibility — enable it once your deployment
+	// supports PKCE. Defaults to false.
+	PKCE bool
+}
+
+// generatePKCEPair returns a PKCE code_verifier and its S256 code_challenge
+// as defined by RFC 7636. The verifier is 43 base64url characters (32 random
+// bytes); the challenge is BASE64URL(SHA256(verifier)).
+func generatePKCEPair() (verifier, challenge string, err error) {
+	b := make([]byte, 32)
+	if _, err = rand.Read(b); err != nil {
+		return
+	}
+	verifier = base64.RawURLEncoding.EncodeToString(b)
+	sum := sha256.Sum256([]byte(verifier))
+	challenge = base64.RawURLEncoding.EncodeToString(sum[:])
+	return
 }
 
 // parseBrowserCallbackURL normalises the CallbackURL field into the three
@@ -367,6 +396,16 @@ func (c *Client) AuthorizeWithBrowserFlow(ctx context.Context, initRequest strin
 		return nil, err
 	}
 
+	var pkceVerifier string
+	if opts.PKCE {
+		var pkceChallenge string
+		pkceVerifier, pkceChallenge, err = generatePKCEPair()
+		if err != nil {
+			return nil, fmt.Errorf("browser flow: generate PKCE pair: %w", err)
+		}
+		_ = pkceChallenge // S256 challenge is re-derived from pkceVerifier below
+	}
+
 	// Start local callback server.
 	ln, err := net.Listen("tcp", listenAddr)
 	if err != nil {
@@ -417,6 +456,17 @@ func (c *Client) AuthorizeWithBrowserFlow(ctx context.Context, initRequest strin
 	if err != nil {
 		return nil, fmt.Errorf("browser flow: get authorization URL: %w", err)
 	}
+
+	if opts.PKCE && pkceVerifier != "" {
+		// Inject PKCE challenge into the IdP authorization URL.
+		sum := sha256.Sum256([]byte(pkceVerifier))
+		pkceChallenge := base64.RawURLEncoding.EncodeToString(sum[:])
+		q := authReq.URL.Query()
+		q.Set("code_challenge", pkceChallenge)
+		q.Set("code_challenge_method", "S256")
+		authReq.URL.RawQuery = q.Encode()
+	}
+
 	idpAuthURL := authReq.URL.String()
 	slog.Debug("Browser flow: opening IdP authorization URL", "url", idpAuthURL)
 
@@ -437,6 +487,7 @@ func (c *Client) AuthorizeWithBrowserFlow(ctx context.Context, initRequest strin
 			GrantType:     logintokens.GrantTypeAuthorizationCode,
 			Code:          code,
 			RequestOrigin: callbackURL,
+			CodeVerifier:  pkceVerifier, // empty when PKCE is disabled
 		})
 
 		if tok.Err != nil {

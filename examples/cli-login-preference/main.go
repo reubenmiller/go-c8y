@@ -29,6 +29,12 @@
 //	                  Default: "127.0.0.1:5001" --> http://127.0.0.1:5001/callback.
 //	                  Must match the redirect URI registered in the SSO provider.
 //
+//	-browser-pkce     Enable PKCE (Proof Key for Code Exchange, RFC 7636) for the
+//	                  OAUTH2_BROWSER_FLOW. Appends code_challenge / code_challenge_method=S256
+//	                  to the IdP authorization URL and sends code_verifier in the
+//	                  token exchange. Requires support from both the external IdP
+//	                  and Cumulocity's token endpoint (may not be supported yet).
+//
 //	-host            Cumulocity base URL, e.g. https://mytenant.cumulocity.com.
 //	                  Overrides $C8Y_BASEURL / $C8Y_URL / $C8Y_HOST.
 //
@@ -137,6 +143,7 @@ func main() {
 		methodFlag      string
 		preferFlags     stringSliceFlag
 		browserAddrFlag = "http://127.0.0.1:5001/callback"
+		browserPKCEFlag bool
 		totpSecretFlag  string
 	)
 
@@ -166,6 +173,9 @@ func main() {
 			"  127.0.0.1:5001/login            (scheme inferred as http)\n"+
 			"  127.0.0.1:5001                  (path defaults to /callback)\n"+
 			"Must match the redirect URI registered in your SSO provider.")
+	flag.BoolVar(&browserPKCEFlag, "browser-pkce", false,
+		"Enable PKCE (RFC 7636) for OAUTH2_BROWSER_FLOW.\n"+
+			"Requires support from both the external IdP and Cumulocity's token endpoint.")
 	flag.StringVar(&totpSecretFlag, "totp-secret", "",
 		"Base32 TOTP secret for automatic code generation (automation only).\n"+
 			"Falls back to $C8Y_TOTP_SECRET (unless -no-env is set).")
@@ -331,6 +341,7 @@ func main() {
 		//   127.0.0.1:5001                  (path defaults to /callback)
 		BrowserFlow: &api.BrowserFlowOptions{
 			CallbackURL: browserAddrFlag,
+			PKCE:        browserPKCEFlag,
 		},
 
 		// DeviceFlow is used when OAUTH2_DEVICE_FLOW is selected.
@@ -556,6 +567,10 @@ AUTHENTICATION FLAGS
                        127.0.0.1:5001/login            (scheme inferred)
                        127.0.0.1:5001                  (path defaults to /callback)
                      Default: 127.0.0.1:5001
+
+  -browser-pkce      Enable PKCE (RFC 7636) for OAUTH2_BROWSER_FLOW.
+                     Requires support from both the external IdP and
+                     Cumulocity's token endpoint (may not be supported yet).
 
   -totp-secret       Base32 TOTP secret for automatic code generation.
                      Falls back to $C8Y_TOTP_SECRET unless -no-env is set.

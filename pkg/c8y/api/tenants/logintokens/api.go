@@ -52,6 +52,11 @@ type CreateTokenOptions struct {
 	// Value to be used in the REQUEST_ORIGIN cookie to indicate the request origin
 	// Typically used during OAuth2
 	RequestOrigin string `url:"-"`
+
+	// CodeVerifier is the PKCE code verifier (RFC 7636). Set when the
+	// authorization request was made with a code_challenge; the server uses
+	// this to verify the exchange. Leave empty when PKCE is not in use.
+	CodeVerifier string `url:"code_verifier,omitempty"`
 }
 
 // Obtain an OAI-Secure access token
