@@ -3,7 +3,11 @@ package api
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha1"
 	"crypto/tls"
+	"encoding/base32"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -763,9 +767,20 @@ type PasswordChangeChallenge struct {
 
 // LoginOptions configures optional behaviour for LoginWithOptions.
 type LoginOptions struct {
+	// TOTPSecret is a base32-encoded TOTP secret used to generate codes
+	// automatically via RFC 6238 (HMAC-SHA1, 30-second window). When set,
+	// TOTPCode is ignored for code generation and the code is computed from
+	// this secret instead.
+	//
+	// WARNING: this is intended for machine/automation scenarios only.
+	// Storing a TOTP secret alongside credentials eliminates the second-factor
+	// security benefit and is NOT recommended for interactive users.
+	TOTPSecret string
+
 	// TOTPCode is called whenever the login flow needs a TOTP code: either
 	// during a first-time enrollment verification or a normal login challenge.
-	// If nil, the flow will return an error when a code is required.
+	// Ignored when TOTPSecret is set. If nil and TOTPSecret is not set, the
+	// flow will return an error when a code is required.
 	TOTPCode totp.TOTPCodeFunc
 
 	// QRCode is called with the otpauth:// URL and the raw TOTP secret when a
@@ -816,7 +831,7 @@ func (c *Client) LoginWithOptions(ctx context.Context, opts LoginOptions) (token
 		return
 	}
 
-	if opts.TOTPCode == nil && opts.SMSCode == nil && opts.PasswordChange == nil {
+	if opts.TOTPSecret == "" && opts.TOTPCode == nil && opts.SMSCode == nil && opts.PasswordChange == nil {
 		// No handler — surface the error as-is.
 		return
 	}
@@ -848,7 +863,7 @@ func (c *Client) LoginWithOptions(ctx context.Context, opts LoginOptions) (token
 			opts.QRCode(otpauthURL, rawSecret)
 		}
 
-		tfaCode, err = opts.TOTPCode(ctx, totp.TOTPChallenge{
+		tfaCode, err = c.totpCodeFrom(ctx, opts, totp.TOTPChallenge{
 			IsSetup: true,
 			Message: errorMessage,
 		})
@@ -865,7 +880,7 @@ func (c *Client) LoginWithOptions(ctx context.Context, opts LoginOptions) (token
 
 	case apiErr.StatusCode() == 401 && strings.Contains(errorMessage, "totp"):
 		// Ongoing login challenge: user already enrolled, just needs to supply code.
-		tfaCode, err = opts.TOTPCode(ctx, totp.TOTPChallenge{
+		tfaCode, err = c.totpCodeFrom(ctx, opts, totp.TOTPChallenge{
 			IsSetup: false,
 			Message: errorMessage,
 		})
@@ -941,6 +956,44 @@ func (c *Client) LoginWithOptions(ctx context.Context, opts LoginOptions) (token
 	token = tok.Data.AccessToken()
 	c.seedTokenSource(token)
 	return
+}
+
+// totpCodeFrom resolves a TOTP code for the given challenge using opts.
+// If opts.TOTPSecret is set the code is computed automatically via RFC 6238;
+// otherwise opts.TOTPCode is invoked interactively.
+func (c *Client) totpCodeFrom(ctx context.Context, opts LoginOptions, challenge totp.TOTPChallenge) (string, error) {
+	if secret := strings.TrimSpace(opts.TOTPSecret); secret != "" {
+		return computeTOTPCode(secret)
+	}
+	if opts.TOTPCode == nil {
+		return "", fmt.Errorf("totp: no code source configured (set TOTPSecret or TOTPCode)")
+	}
+	return opts.TOTPCode(ctx, challenge)
+}
+
+// computeTOTPCode generates a 6-digit TOTP code from a base32-encoded secret
+// using RFC 6238 (HMAC-SHA1, 30-second window). It accepts secrets with or
+// without standard padding and is case-insensitive.
+func computeTOTPCode(secret string) (string, error) {
+	secret = strings.ToUpper(strings.ReplaceAll(secret, " ", ""))
+	if pad := len(secret) % 8; pad != 0 {
+		secret += strings.Repeat("=", 8-pad)
+	}
+	key, err := base32.StdEncoding.DecodeString(secret)
+	if err != nil {
+		return "", fmt.Errorf("totp: invalid base32 secret: %w", err)
+	}
+	var counter [8]byte
+	binary.BigEndian.PutUint64(counter[:], uint64(time.Now().Unix())/30)
+	mac := hmac.New(sha1.New, key)
+	mac.Write(counter[:])
+	h := mac.Sum(nil)
+	offset := h[len(h)-1] & 0x0f
+	code := (uint32(h[offset])&0x7f)<<24 |
+		uint32(h[offset+1])<<16 |
+		uint32(h[offset+2])<<8 |
+		uint32(h[offset+3])
+	return fmt.Sprintf("%06d", code%1_000_000), nil
 }
 
 func (c *Client) loginInternalSSO(ctx context.Context) (string, error) {

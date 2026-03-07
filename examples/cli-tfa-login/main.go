@@ -15,10 +15,13 @@
 //
 // Required environment variables:
 //
-//	C8Y_BASEURL  – e.g. https://mytenant.cumulocity.com
-//	C8Y_USER     – Cumulocity username
-//	C8Y_PASSWORD – Cumulocity password
-//	C8Y_TENANT   – (optional) tenant ID (e.g. t12345)
+//	C8Y_BASEURL     – e.g. https://mytenant.cumulocity.com
+//	C8Y_USER        – Cumulocity username
+//	C8Y_PASSWORD    – Cumulocity password
+//	C8Y_TENANT      – (optional) tenant ID (e.g. t12345)
+//	C8Y_TOTP_SECRET – (optional) base32 TOTP secret passed to LoginOptions.TOTPSecret
+//	                  for automatic code generation. Intended for machine/automation
+//	                  scenarios only; NOT recommended for interactive users.
 package main
 
 import (
@@ -55,12 +58,16 @@ func main() {
 		Auth:    authentication.FromEnvironment(),
 	})
 
-	client.SetDebugWithAuth(true)
-
 	// -----------------------------------------------------------------------
 	// 2. Login with full TFA/password-change handling via callbacks.
 	// -----------------------------------------------------------------------
 	_, err := client.LoginWithOptions(ctx, api.LoginOptions{
+		// TOTPSecret enables automatic TOTP code generation for machine/automation
+		// scenarios. When set, interactive TOTP prompts are skipped entirely.
+		// WARNING: storing the secret alongside credentials removes the second-factor
+		// security benefit; use only where truly unattended operation is required.
+		TOTPSecret: os.Getenv("C8Y_TOTP_SECRET"),
+
 		// QRCode is called once during first-time TOTP enrollment so the user
 		// can scan the secret into their authenticator app.
 		QRCode: func(otpauthURL string, secret string) {
