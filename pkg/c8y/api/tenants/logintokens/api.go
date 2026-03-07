@@ -69,7 +69,6 @@ func (s *Service) createB(opt CreateTokenOptions) *core.TryRequest {
 		SetMethod(resty.MethodPost).
 		SetQueryParams(params).
 		SetFormDataFromValues(core.QueryParameters(opt)).
-		Funcs(core.NoAuthorization()).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiOAuthToken).
 		SetRetryCount(1).
@@ -93,7 +92,7 @@ func (s *Service) createB(opt CreateTokenOptions) *core.TryRequest {
 
 	// The response might not have the Content-Type set
 	req.ForceResponseContentType = types.MimeTypeApplicationJSON
-	return core.NewTryRequest(s.Client, req)
+	return core.NewTryRequest(s.Client, req).WithNoAuth()
 }
 
 var (
@@ -123,5 +122,5 @@ func (s *Service) createCookiesB(opt CreateTokenOptions) *core.TryRequest {
 		SetFormDataFromValues(core.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiOAuth)
-	return core.NewTryRequest(s.Client, req)
+	return core.NewTryRequest(s.Client, req).WithNoAuth()
 }

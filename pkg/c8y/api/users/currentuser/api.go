@@ -5,6 +5,7 @@ import (
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/users/currentuser/totp"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
 	"resty.dev/v3"
@@ -16,12 +17,16 @@ var ApiCurrentUserPassword = "/user/currentUser/password"
 func NewService(s *core.Service) *Service {
 	return &Service{
 		Service: *s,
+		TOTP:    totp.NewService(s),
 	}
 }
 
 // Service provides api to manage the current user
 type Service struct {
 	core.Service
+
+	// TOTP provides operations for managing TOTP two-factor authentication.
+	TOTP *totp.Service
 }
 
 // Get the current user

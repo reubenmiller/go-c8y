@@ -52,6 +52,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/userroles"
 	inventoryroles "github.com/reubenmiller/go-c8y/pkg/c8y/api/userroles/inventory"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/users"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/users/currentuser/totp"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/users/devicepermissions"
 	"github.com/reubenmiller/go-c8y/pkg/certutil"
 	"github.com/zalando/go-keyring"
@@ -86,6 +87,9 @@ type Client struct {
 
 	// Show sensitive information
 	showSensitive bool
+
+	// debugEnabled controls whether the debug response middleware produces output.
+	debugEnabled bool
 
 	// Base URL for API requests. Defaults to the public Cumulocity API, but can be
 	// set to a domain endpoint to use with Cumulocity. BaseURL should
@@ -429,6 +433,15 @@ func (c *Client) AddMiddleware() error {
 		return c.tokenSource
 	}))
 	c.Client.AddRetryConditions(TokenRenewalRetry(c))
+
+	// Register a single debug middleware that reads the runtime debugEnabled flag.
+	// This avoids the problem of middleware accumulating each time SetDebug is called.
+	c.Client.AddResponseMiddleware(func(rc *resty.Client, resp *resty.Response) error {
+		if !c.debugEnabled {
+			return nil
+		}
+		return debugLogMiddleware(!c.showSensitive)(rc, resp)
+	})
 	return nil
 }
 func (c *Client) SetBaseURL(v string) error {
@@ -485,12 +498,8 @@ func (c *Client) SetDebug(enable bool) {
 	c.clientMu.Lock()
 	defer c.clientMu.Unlock()
 
-	if enable {
-		c.showSensitive = false
-		c.Client.AddResponseMiddleware(debugLogMiddleware(true))
-	} else {
-		c.showSensitive = false
-	}
+	c.debugEnabled = enable
+	c.showSensitive = false
 }
 
 // SetDebugWithAuth enables debug mode and shows full Authorization headers (unredacted).
@@ -507,12 +516,10 @@ func (c *Client) SetDebugWithAuth(enable bool) {
 	c.clientMu.Lock()
 	defer c.clientMu.Unlock()
 
+	c.debugEnabled = enable
+	c.showSensitive = enable
 	if enable {
-		c.showSensitive = true
-		c.Client.AddResponseMiddleware(debugLogMiddleware(false))
 		slog.Warn("⚠️  Debug mode enabled with UNREDACTED auth headers - credentials will be visible in logs!")
-	} else {
-		c.showSensitive = false
 	}
 }
 
@@ -535,8 +542,8 @@ func debugLogMiddleware(sanitize bool) func(*resty.Client, *resty.Response) erro
 		fmt.Fprintf(os.Stderr, "HEADERS:\n%s\n", composeHeaders(reqHeaders))
 
 		// Log request body if available
+		contentType := req.Header.Get("Content-Type")
 		if resp.Request.Body != nil {
-			contentType := req.Header.Get("Content-Type")
 			if isTextContent(contentType) {
 				bodyStr := ""
 				// Get the actual body bytes
@@ -570,6 +577,9 @@ func debugLogMiddleware(sanitize bool) func(*resty.Client, *resty.Response) erro
 			} else {
 				fmt.Fprintf(os.Stderr, "BODY   :\n***** BINARY CONTENT (Content-Type: %s) *****\n", contentType)
 			}
+		} else if len(resp.Request.FormData) > 0 {
+			// resty stores form-encoded fields in FormData, not Body
+			fmt.Fprintf(os.Stderr, "BODY   :\n%s\n", resp.Request.FormData.Encode())
 		} else {
 			fmt.Fprintf(os.Stderr, "BODY   :\n***** NO CONTENT *****\n")
 		}
@@ -588,24 +598,41 @@ func debugLogMiddleware(sanitize bool) func(*resty.Client, *resty.Response) erro
 		}
 		fmt.Fprintf(os.Stderr, "HEADERS      :\n%s\n", composeHeaders(respHeaders))
 
-		if len(resp.Bytes()) > 0 {
+		respBytes := resp.Bytes()
+		// If resty auto-unmarshaled the body into Result/ResultError, bodyBytes is
+		// consumed. Fall back to marshaling the parsed struct so the debug output
+		// is still useful.
+		if len(respBytes) == 0 && resp.IsRead {
+			var data any
+			if resp.IsStatusFailure() {
+				data = resp.ResultError()
+			} else {
+				data = resp.Result()
+			}
+			if data != nil {
+				if b, err := json.MarshalIndent(data, "", "   "); err == nil {
+					respBytes = b
+				}
+			}
+		}
+		if len(respBytes) > 0 {
 			contentType := resp.Header().Get("Content-Type")
-			if isTextContent(contentType) {
+			if isTextContent(contentType) || json.Valid(respBytes) {
 				bodyStr := ""
 				// Pretty-print JSON if the content type is JSON (including vendor types like +json)
-				if strings.Contains(contentType, "application/json") || strings.Contains(contentType, "+json") {
+				if strings.Contains(contentType, "application/json") || strings.Contains(contentType, "+json") || json.Valid(respBytes) {
 					var prettyJSON bytes.Buffer
-					if err := json.Indent(&prettyJSON, resp.Bytes(), "", "   "); err == nil {
+					if err := json.Indent(&prettyJSON, respBytes, "", "   "); err == nil {
 						bodyStr = prettyJSON.String()
 					} else {
-						bodyStr = resp.String()
+						bodyStr = string(respBytes)
 					}
 				} else {
-					bodyStr = resp.String()
+					bodyStr = string(respBytes)
 				}
 				fmt.Fprintf(os.Stderr, "BODY         :\n%v\n", bodyStr)
 			} else {
-				fmt.Fprintf(os.Stderr, "BODY         :\n***** BINARY CONTENT (Content-Type: %s, Size: %d bytes) *****\n", contentType, len(resp.Bytes()))
+				fmt.Fprintf(os.Stderr, "BODY         :\n***** BINARY CONTENT (Content-Type: %s, Size: %d bytes) *****\n", contentType, len(respBytes))
 			}
 		} else {
 			fmt.Fprintf(os.Stderr, "BODY         :\n***** NO CONTENT *****\n")
@@ -711,6 +738,117 @@ func (c *Client) Login(ctx context.Context) (token string, err error) {
 	return
 }
 
+// LoginOptions configures optional behaviour for LoginWithOptions.
+type LoginOptions struct {
+	// TOTPCode is called whenever the login flow needs a TOTP code: either
+	// during a first-time enrollment verification or a normal login challenge.
+	// If nil, the flow will return an error when a code is required.
+	TOTPCode totp.TOTPCodeFunc
+
+	// QRCode is called with the otpauth:// URL when a new TOTP secret is
+	// generated, so the caller can render a QR code in the terminal or UI.
+	// If nil, the URL is silently skipped.
+	QRCode func(otpauthURL string)
+}
+
+// LoginWithOptions performs a username/password login and transparently
+// handles the full TOTP flow:
+//
+//  1. Attempts a normal OAI-Secure token request.
+//  2. If the server requires TOTP setup:
+//     a. Calls GenerateSecret to obtain the TOTP secret.
+//     b. Invokes opts.QRCode (if set) with the otpauth:// enrolment URL.
+//     c. Calls opts.TOTPCode to get a verification code from the user.
+//     d. Verifies the code, then activates TOTP.
+//     e. Retries the login with the same code as tfa_code.
+//  3. If the server issues a TOTP challenge (already enrolled):
+//     a. Calls opts.TOTPCode to get the current TOTP code.
+//     b. Retries the login with tfa_code set.
+//  4. On success, stores the token and updates the client auth state.
+func (c *Client) LoginWithOptions(ctx context.Context, opts LoginOptions) (token string, err error) {
+	token, err = c.loginInternalSSO(ctx)
+	if err == nil {
+		c.seedTokenSource(token)
+		return
+	}
+
+	if opts.TOTPCode == nil {
+		// No handler — surface the error as-is.
+		return
+	}
+
+	var apiErr *core.Error
+	if !errors.As(err, &apiErr) {
+		return
+	}
+
+	errorMessage := strings.ToLower(apiErr.Error())
+	var tfaCode string
+
+	switch {
+	case strings.Contains(errorMessage, "totp setup required"):
+		// First-time enrollment: generate secret → show QR → verify → activate.
+		secretResult := c.Users.CurrentUser.TOTP.GenerateSecret(ctx)
+		if secretResult.Err != nil {
+			return "", fmt.Errorf("totp: generate secret: %w", secretResult.Err)
+		}
+
+		if opts.QRCode != nil {
+			otpauthURL := fmt.Sprintf(
+				"otpauth://totp/%s?secret=%s&issuer=%s",
+				c.Auth.Username,
+				secretResult.Data.RawSecret(),
+				c.BaseURL.Host,
+			)
+			opts.QRCode(otpauthURL)
+		}
+
+		tfaCode, err = opts.TOTPCode(ctx, totp.TOTPChallenge{
+			IsSetup: true,
+			Message: errorMessage,
+		})
+		if err != nil {
+			return "", fmt.Errorf("totp: code input: %w", err)
+		}
+
+		if r := c.Users.CurrentUser.TOTP.VerifyCode(ctx, tfaCode); r.Err != nil {
+			return "", fmt.Errorf("totp: verify code: %w", r.Err)
+		}
+		if r := c.Users.CurrentUser.TOTP.SetActivity(ctx, true); r.Err != nil {
+			return "", fmt.Errorf("totp: activate: %w", r.Err)
+		}
+
+	case strings.Contains(errorMessage, "totp"):
+		// Ongoing login challenge: user already enrolled, just needs to supply code.
+		tfaCode, err = opts.TOTPCode(ctx, totp.TOTPChallenge{
+			IsSetup: false,
+			Message: errorMessage,
+		})
+		if err != nil {
+			return "", fmt.Errorf("totp: code input: %w", err)
+		}
+
+	default:
+		// Unrelated 401 — surface as-is.
+		return
+	}
+
+	// Retry login with the TOTP code supplied.
+	tok := c.LoginTokens.Create(ctx, logintokens.CreateTokenOptions{
+		Tenant:    c.Auth.Tenant,
+		Username:  c.Auth.Username,
+		Password:  c.Auth.Password,
+		TFACode:   tfaCode,
+		GrantType: logintokens.GrantTypePassword,
+	})
+	if tok.IsError() {
+		return "", tok.Err
+	}
+	token = tok.Data.AccessToken()
+	c.seedTokenSource(token)
+	return
+}
+
 func (c *Client) loginInternalSSO(ctx context.Context) (string, error) {
 	tok := c.LoginTokens.Create(ctx, logintokens.CreateTokenOptions{
 		Username:  c.Auth.Username,
@@ -757,6 +895,22 @@ func (c *Client) fetchToken(ctx context.Context) (*authentication.Token, error) 
 		AccessToken: raw,
 		Expiry:      expiry,
 	}, nil
+}
+
+// seedTokenSource pre-populates the CachedTokenSource cache with a token that
+// was just acquired externally (e.g. via a TOTP-gated login), so the next API
+// call can use it directly instead of triggering an unnecessary token fetch.
+// It also stores the token in Auth and updates the resty client auth state.
+func (c *Client) seedTokenSource(raw string) {
+	if cached, ok := c.tokenSource.(*authentication.CachedTokenSource); ok {
+		expiry := time.Now().Add(55 * time.Minute)
+		if claims, parseErr := authentication.ParseToken(raw); parseErr == nil && claims.ExpiresAt != nil {
+			expiry = claims.ExpiresAt.Time
+		}
+		cached.Seed(&authentication.Token{AccessToken: raw, Expiry: expiry})
+	}
+	c.SetToken(raw)
+	c.SetAuth(c.Auth)
 }
 
 // newInternalTokenSource creates a CachedTokenSource backed by this client's

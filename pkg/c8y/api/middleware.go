@@ -157,6 +157,17 @@ type DryRunTransport struct {
 // RoundTrip implements http.RoundTripper
 func (t *DryRunTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	ctx := req.Context()
+
+	// Strip the Authorization header for requests that should be unauthenticated
+	// (AuthTypeNone). This runs at the transport layer so it takes effect after
+	// all resty middleware and addCredentials have had a chance to set it.
+	// We modify req.Header in-place (rather than cloning) so that the debug
+	// middleware, which reads resp.Request.RawRequest.Header, sees the accurate
+	// outgoing headers.
+	if ctxhelpers.IsNoAuth(ctx) {
+		req.Header.Del("Authorization")
+	}
+
 	isDryRun := ctxhelpers.IsDryRun(ctx)
 	isMockResponses := ctxhelpers.IsMockResponses(ctx)
 

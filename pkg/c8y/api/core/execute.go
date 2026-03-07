@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
 	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/jsondoc"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
@@ -13,6 +14,20 @@ import (
 
 // Execute a request and return the typed response
 func ExecuteResponseOnly(ctx context.Context, req *TryRequest) (*resty.Response, error) {
+	switch req.authType {
+	case authentication.AuthTypeBasic:
+		// Skip the token-source middleware and clear any bearer token that resty
+		// copied from the client (c.authToken → r.AuthToken) so that addCredentials
+		// only applies basic auth.
+		ctx = ctxhelpers.WithSkipTokenSource(ctx)
+		req.Request.SetAuthToken("")
+	case authentication.AuthTypeNone:
+		// Skip token source, clear bearer, and signal the transport to strip the
+		// Authorization header entirely (prevents resty's own credentials from leaking).
+		ctx = ctxhelpers.WithSkipTokenSource(ctx)
+		req.Request.SetAuthToken("")
+		ctx = ctxhelpers.WithNoAuth(ctx)
+	}
 	resp, err := coupleAPIErrors(req.Request.
 		SetContext(ctx).
 		Send())

@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/google/go-querystring/query"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
 	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/realtime"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
@@ -21,6 +22,9 @@ type TryRequest struct {
 	Request  *resty.Request
 	Client   *resty.Client
 	Property string
+	// authType overrides the per-request authentication strategy.
+	// Zero value (AuthTypeUnset) means "use client default" (token source runs normally).
+	authType authentication.AuthType
 }
 
 func NewTryRequest(client *resty.Client, req *resty.Request, prop ...string) *TryRequest {
@@ -57,12 +61,40 @@ func (r *TryRequest) ApplyProcessingModeFromContext(ctx context.Context) *TryReq
 	return r
 }
 
-func (r *TryRequest) SetBasicAuth(username, password string) *TryRequest {
-	r.Request.
-		SetAuthToken("").
-		SetAuthScheme("Basic").
-		SetBasicAuth(username, password)
+// WithAuthType forces a specific authentication strategy for this request,
+// overriding the client's default token-source behaviour.
+//
+//   - AuthTypeUnset (default): token source runs normally.
+//   - AuthTypeBasic: skip token source; use basic auth (client's credentials or
+//     those set by SetBasicAuth). Bearer token is suppressed.
+//   - AuthTypeBearer: equivalent to the default — token source runs normally.
+//   - AuthTypeNone: no Authorization header is sent (public endpoints).
+func (r *TryRequest) WithAuthType(t authentication.AuthType) *TryRequest {
+	r.authType = t
 	return r
+}
+
+// SkipTokenSource is sugar for WithAuthType(AuthTypeBasic). Use it when the
+// resty client's configured basic-auth credentials should be applied directly
+// without acquiring a bearer token first.
+func (r *TryRequest) SkipTokenSource() *TryRequest {
+	return r.WithAuthType(authentication.AuthTypeBasic)
+}
+
+// WithNoAuth is sugar for WithAuthType(AuthTypeNone). Use it for public
+// endpoints that must be reached without any Authorization header.
+func (r *TryRequest) WithNoAuth() *TryRequest {
+	return r.WithAuthType(authentication.AuthTypeNone)
+}
+
+// SetBasicAuth sets explicit basic-auth credentials for this request and marks
+// it as AuthTypeBasic so that the token source is bypassed and no bearer token
+// overrides the credentials.
+func (r *TryRequest) SetBasicAuth(username, password string) *TryRequest {
+	// Request-level credentials take precedence over client-level credentials
+	// inside resty's addCredentials step.
+	r.Request.SetBasicAuth(username, password)
+	return r.WithAuthType(authentication.AuthTypeBasic)
 }
 
 func (r *TryRequest) SetToken(token string) *TryRequest {
@@ -153,11 +185,4 @@ func (r *TryRequest) Send() (*Response, error) {
 func QueryParameters(opt any) url.Values {
 	v, _ := query.Values(opt)
 	return v
-}
-
-func NoAuthorization() resty.RequestFunc {
-	return func(r *resty.Request) *resty.Request {
-		r.Header.Del("Authorization")
-		return r
-	}
 }

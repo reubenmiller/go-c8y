@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"reflect"
 	"regexp"
+	"strings"
 	"time"
 
 	"resty.dev/v3"
@@ -45,7 +46,14 @@ type APIError struct {
 }
 
 func (r APIError) Error() string {
-	return r.Message
+	parts := []string{}
+	if r.Message != "" {
+		parts = append(parts, r.Message)
+	}
+	if r.Info != "" {
+		parts = append(parts, r.Info)
+	}
+	return strings.Join(parts, " ")
 }
 
 func coupleAPIErrors(r *resty.Response, err error) (*resty.Response, error) {

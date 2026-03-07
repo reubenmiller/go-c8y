@@ -82,9 +82,8 @@ func (s *Service) listNoAuthB(opt any) *core.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
-		Funcs(core.NoAuthorization()).
 		SetURL(ApiLoginOptions)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return core.NewTryRequest(s.Client, req, ResultProperty).WithNoAuth()
 }
 
 // Get an event
