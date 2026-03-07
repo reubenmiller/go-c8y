@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alarms"
@@ -1280,15 +1281,26 @@ func (c *Client) seedTokenSource(raw string) {
 // username/password or device-certificate credentials. The token is refreshed
 // automatically when it expires; on a 401, TokenRenewalRetry invalidates the
 // cache so the next Token() call fetches a brand-new one.
+//
+// If the token exchange fails (e.g. the tenant has OAUTH2_INTERNAL disabled),
+// the source marks itself unavailable and returns (nil, nil) so that the
+// resty client-level basic-auth credentials take over instead of every request
+// failing with a "token source" error.
 func (c *Client) newInternalTokenSource() *authentication.CachedTokenSource {
+	var oauth2Unavailable atomic.Bool
 	return authentication.NewCachedTokenSource(
 		authentication.TokenSourceFunc(func() (*authentication.Token, error) {
+			if oauth2Unavailable.Load() {
+				return nil, nil
+			}
 			// Mark the inner login request so TokenSourceMiddleware skips it,
 			// preventing an infinite recursion loop.
 			ctx := ctxhelpers.WithSkipTokenSource(context.Background())
 			tok, err := c.fetchToken(ctx)
-			if err != nil || tok == nil {
-				return nil, err
+			if err != nil {
+				slog.Info("OAuth2 internal token exchange failed, falling back to basic auth", "err", err)
+				oauth2Unavailable.Store(true)
+				return nil, nil // Let resty client-level basic auth handle it
 			}
 			return tok, nil
 		}),
