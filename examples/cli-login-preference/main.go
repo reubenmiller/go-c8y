@@ -29,8 +29,23 @@
 //	                  Default: "127.0.0.1:5001" --> http://127.0.0.1:5001/callback.
 //	                  Must match the redirect URI registered in the SSO provider.
 //
+//	-host            Cumulocity base URL, e.g. https://mytenant.cumulocity.com.
+//	                  Overrides $C8Y_BASEURL / $C8Y_URL / $C8Y_HOST.
+//
+//	-user    string   Username. Overrides $C8Y_USER / $C8Y_USERNAME.
+//	                  Prompted interactively when required and not provided.
+//
+//	-password string  Password. Overrides $C8Y_PASSWORD.
+//	                  Prompted interactively when required and not provided.
+//
+//	-tenant  string   Tenant ID (optional). Overrides $C8Y_TENANT.
+//
+//	-no-env           Do not read any values from environment variables.
+//	                  All connection details must be supplied via flags.
+//
 //	-totp-secret      Base32 TOTP secret for unattended code generation during
-//	                  OAUTH2_INTERNAL login. Falls back to $C8Y_TOTP_SECRET.
+//	                  OAUTH2_INTERNAL login. Falls back to $C8Y_TOTP_SECRET
+//	                  (unless -no-env is set).
 //	                  WARNING: storing a TOTP secret alongside credentials
 //	                  removes the second-factor security benefit.
 //
@@ -87,6 +102,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/tenants/currenttenant"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/users/currentuser/totp"
+	"github.com/reubenmiller/go-c8y/pkg/oauth/device"
 	"golang.org/x/term"
 )
 
@@ -113,12 +129,31 @@ func main() {
 
 	// -- Flags ----------------------------------------------------------------
 	var (
+		hostFlag        string
+		userFlag        string
+		passwordFlag    string
+		tenantFlag      string
+		noEnvFlag       bool
 		methodFlag      string
 		preferFlags     stringSliceFlag
 		browserAddrFlag = "http://127.0.0.1:5001/callback"
 		totpSecretFlag  string
 	)
 
+	flag.StringVar(&hostFlag, "host", "",
+		"Cumulocity base URL, e.g. https://mytenant.cumulocity.com.\n"+
+			"Overrides $C8Y_BASEURL / $C8Y_URL / $C8Y_HOST.")
+	flag.StringVar(&userFlag, "user", "",
+		"Username. Overrides $C8Y_USER / $C8Y_USERNAME.\n"+
+			"Prompted interactively when required and not provided.")
+	flag.StringVar(&passwordFlag, "password", "",
+		"Password. Overrides $C8Y_PASSWORD.\n"+
+			"Prompted interactively when required and not provided.")
+	flag.StringVar(&tenantFlag, "tenant", "",
+		"Tenant ID (optional). Overrides $C8Y_TENANT.")
+	flag.BoolVar(&noEnvFlag, "no-env", false,
+		"Do not read any values from environment variables.\n"+
+			"All connection details must be supplied via flags.")
 	flag.StringVar(&methodFlag, "method", "",
 		"Enforce exactly one login method (strict).\n"+
 			"Values: BASIC | OAUTH2_INTERNAL | CERTIFICATE | OAUTH2_DEVICE_FLOW | OAUTH2_BROWSER_FLOW")
@@ -131,12 +166,17 @@ func main() {
 			"  127.0.0.1:5001/login            (scheme inferred as http)\n"+
 			"  127.0.0.1:5001                  (path defaults to /callback)\n"+
 			"Must match the redirect URI registered in your SSO provider.")
-	flag.StringVar(&totpSecretFlag, "totp-secret", os.Getenv("C8Y_TOTP_SECRET"),
+	flag.StringVar(&totpSecretFlag, "totp-secret", "",
 		"Base32 TOTP secret for automatic code generation (automation only).\n"+
-			"Falls back to $C8Y_TOTP_SECRET.")
+			"Falls back to $C8Y_TOTP_SECRET (unless -no-env is set).")
 
 	flag.Usage = printUsage
 	flag.Parse()
+
+	// Apply env-var defaults for values not explicitly provided via flags.
+	if !noEnvFlag && totpSecretFlag == "" {
+		totpSecretFlag = os.Getenv("C8Y_TOTP_SECRET")
+	}
 
 	// -- Validate flags -------------------------------------------------------
 	if methodFlag != "" && len(preferFlags) > 0 {
@@ -169,9 +209,38 @@ func main() {
 	ctx := context.Background()
 
 	// -- Build client ---------------------------------------------------------
+	baseURL := hostFlag
+	var auth authentication.AuthOptions
+	if !noEnvFlag {
+		if baseURL == "" {
+			baseURL = authentication.HostFromEnvironment()
+		}
+		auth = authentication.FromEnvironment()
+	}
+	// Explicit flags always win over environment values.
+	if userFlag != "" {
+		auth.Username = userFlag
+	}
+	if passwordFlag != "" {
+		auth.Password = passwordFlag
+	}
+	if tenantFlag != "" {
+		auth.Tenant = tenantFlag
+	}
+
+	// Prompt for the host now if it's still unknown; it is always required
+	// regardless of login method.
+	if baseURL == "" {
+		fmt.Fprint(os.Stderr, "Host (e.g. https://mytenant.cumulocity.com): ")
+		sc := bufio.NewScanner(os.Stdin)
+		if sc.Scan() {
+			baseURL = strings.TrimSpace(sc.Text())
+		}
+	}
+
 	client := api.NewClient(api.ClientOptions{
-		BaseURL: authentication.HostFromEnvironment(),
-		Auth:    authentication.FromEnvironment(),
+		BaseURL: baseURL,
+		Auth:    auth,
 	})
 
 	// -- Print what we are about to do ----------------------------------------
@@ -206,6 +275,52 @@ func main() {
 		// OnSuccess records which method in the preference list actually won.
 		OnSuccess: func(m authentication.LoginMethod) { usedMethod = m },
 
+		// CredentialPrompt is called lazily by the SDK when a method that needs
+		// credentials is about to run but they are missing. Different methods
+		// require different fields:
+		//   BASIC / OAUTH2_INTERNAL  →  Username, Password
+		//   CERTIFICATE              →  Certificate, CertificateKey (file paths)
+		CredentialPrompt: func(ctx context.Context, method authentication.LoginMethod, auth *authentication.AuthOptions) error {
+			switch method {
+			case authentication.LoginMethodBasic, authentication.LoginMethodOAuth2Internal:
+				if auth.Username == "" || auth.Password == "" {
+					fmt.Fprintf(os.Stderr, "Login Method: %s\n", method)
+				}
+				if auth.Username == "" {
+
+					fmt.Fprint(os.Stderr, "Username: ")
+					sc := bufio.NewScanner(os.Stdin)
+					if sc.Scan() {
+						auth.Username = strings.TrimSpace(sc.Text())
+					}
+				}
+				if auth.Password == "" {
+					fmt.Fprint(os.Stderr, "Password: ")
+					var err error
+					auth.Password, err = readSecret()
+					if err != nil {
+						return fmt.Errorf("reading password: %w", err)
+					}
+				}
+			case authentication.LoginMethodCertificate:
+				if auth.Certificate == "" {
+					fmt.Fprint(os.Stderr, "Certificate file path: ")
+					sc := bufio.NewScanner(os.Stdin)
+					if sc.Scan() {
+						auth.Certificate = strings.TrimSpace(sc.Text())
+					}
+				}
+				if auth.CertificateKey == "" {
+					fmt.Fprint(os.Stderr, "Certificate key file path: ")
+					sc := bufio.NewScanner(os.Stdin)
+					if sc.Scan() {
+						auth.CertificateKey = strings.TrimSpace(sc.Text())
+					}
+				}
+			}
+			return nil
+		},
+
 		// --- SSO flow configuration ------------------------------------------
 
 		// BrowserFlow is used when OAUTH2_BROWSER_FLOW is selected.
@@ -220,7 +335,36 @@ func main() {
 
 		// DeviceFlow is used when OAUTH2_DEVICE_FLOW is selected.
 		// Zero-value causes endpoints to be auto-discovered via OpenID Connect.
-		DeviceFlow: &api.DeviceFlowOptions{},
+		DeviceFlow: &api.DeviceFlowOptions{
+			DisplayFunc: func(code *device.CodeResponse) error {
+				// Use the complete URI (includes the user code) when available —
+				// a single scan is all the user needs.
+				urlToEncode := code.VerificationURIComplete
+				if urlToEncode == "" {
+					urlToEncode = code.VerificationURI
+				}
+				fmt.Fprintf(os.Stderr, "\nScan the QR code to authorise this device:\n\n")
+				qrterminal.GenerateWithConfig(urlToEncode, qrterminal.Config{
+					Level:      qrterminal.M,
+					Writer:     os.Stderr,
+					HalfBlocks: true,
+					QuietZone:  1,
+				})
+				fmt.Fprintf(os.Stderr, "\n  Code: %s\n", code.UserCode)
+				fmt.Fprintf(os.Stderr, "  URL:  %s\n\n", urlToEncode)
+				fmt.Fprint(os.Stderr, "Open in browser? [Y/n]: ")
+				sc := bufio.NewScanner(os.Stdin)
+				if sc.Scan() {
+					if answer := strings.ToLower(strings.TrimSpace(sc.Text())); answer == "" || answer == "y" {
+						if err := api.DefaultBrowserOpen(urlToEncode); err != nil {
+							fmt.Fprintf(os.Stderr, "  (could not open browser: %v)\n", err)
+						}
+					}
+				}
+				fmt.Fprintln(os.Stderr)
+				return nil
+			},
+		},
 
 		// --- OAUTH2_INTERNAL TFA callbacks -----------------------------------
 
@@ -379,6 +523,22 @@ func printUsage() {
 USAGE
   cli-login-preference [flags]
 
+CONNECTION FLAGS
+  -host   string     Cumulocity base URL, e.g. https://mytenant.cumulocity.com.
+                     Overrides $C8Y_BASEURL / $C8Y_URL / $C8Y_HOST.
+                     Prompted interactively when required and not provided.
+
+  -user   string     Username. Overrides $C8Y_USER / $C8Y_USERNAME.
+                     Prompted interactively when required and not provided.
+
+  -password string   Password. Overrides $C8Y_PASSWORD.
+                     Prompted interactively when required and not provided.
+
+  -tenant string     Tenant ID (optional). Overrides $C8Y_TENANT.
+
+  -no-env            Do not read any values from environment variables.
+                     All connection details must be supplied via flags.
+
 AUTHENTICATION FLAGS
   -method  string    Enforce exactly one login method (strict).
                      Fails immediately when required credentials are absent
@@ -398,7 +558,7 @@ AUTHENTICATION FLAGS
                      Default: 127.0.0.1:5001
 
   -totp-secret       Base32 TOTP secret for automatic code generation.
-                     Falls back to $C8Y_TOTP_SECRET (automation only).
+                     Falls back to $C8Y_TOTP_SECRET unless -no-env is set.
 
 ENVIRONMENT VARIABLES
   C8Y_BASEURL        Tenant base URL, e.g. https://mytenant.cumulocity.com
@@ -410,10 +570,10 @@ ENVIRONMENT VARIABLES
 
 EXAMPLES
   # Force Basic auth
-  cli-login-preference -method BASIC
+  cli-login-preference -host https://mytenant.cumulocity.com -method BASIC
 
-  # Force OAI-Secure (username+password -> short-lived token)
-  cli-login-preference -method OAUTH2_INTERNAL
+  # Force OAI-Secure, ignoring all environment variables
+  cli-login-preference -host https://mytenant.cumulocity.com -no-env -method OAUTH2_INTERNAL
 
   # Open system browser for SSO authorization code flow
   cli-login-preference -method OAUTH2_BROWSER_FLOW -browser-addr localhost:8080

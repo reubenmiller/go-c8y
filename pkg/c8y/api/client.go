@@ -835,6 +835,23 @@ type LoginOptions struct {
 	// If nil, a forced-password-change challenge surfaces as an error.
 	PasswordChange func(ctx context.Context, challenge PasswordChangeChallenge) (email string, newPassword string, err error)
 
+	// CredentialPrompt is called when a method that requires credentials is
+	// about to be attempted but those credentials are missing from the client's
+	// auth state. The callback receives the method being attempted and a
+	// pointer to the auth options so it can fill in whatever is missing:
+	//
+	//   BASIC / OAUTH2_INTERNAL  →  auth.Username, auth.Password
+	//   CERTIFICATE              →  auth.Certificate, auth.CertificateKey
+	//
+	// The updated values are applied to the client before the login attempt
+	// proceeds. If the callback returns a non-nil error, the login fails with
+	// that error. If nil and credentials are still missing, the method fails
+	// with its usual credential-absent error.
+	//
+	// In Preference mode, returning a non-nil error from CredentialPrompt
+	// surfaces immediately rather than moving to the next preference.
+	CredentialPrompt func(ctx context.Context, method authentication.LoginMethod, auth *authentication.AuthOptions) error
+
 	// OnSuccess is called after a successful login with the method that was
 	// actually used. Useful when Preference is set and the caller wants to
 	// know which method in the list won. When neither Method nor Preference
@@ -879,8 +896,16 @@ func (c *Client) LoginWithOptions(ctx context.Context, opts LoginOptions) (token
 
 	for _, m := range methods {
 		// In preference mode, skip methods whose local prerequisites are absent.
+		// Exception: if a CredentialPrompt is registered, don't skip credential-
+		// based methods just because credentials are currently absent —
+		// loginWithMethod will call the prompt to fill them in.
 		if !strict && !c.isLoginMethodAvailable(m) {
-			continue
+			isCredentialMethod := m == authentication.LoginMethodBasic ||
+				m == authentication.LoginMethodOAuth2Internal ||
+				m == authentication.LoginMethodCertificate
+			if opts.CredentialPrompt == nil || !isCredentialMethod {
+				continue
+			}
 		}
 		token, err = c.loginWithMethod(ctx, m, opts)
 		if err == nil {
@@ -925,6 +950,26 @@ func (c *Client) isLoginMethodAvailable(m authentication.LoginMethod) bool {
 
 // loginWithMethod runs the single login flow identified by m.
 func (c *Client) loginWithMethod(ctx context.Context, m authentication.LoginMethod, opts LoginOptions) (string, error) {
+	// If the method needs credentials and some are missing, give the caller a
+	// chance to fill them in interactively before we check.
+	if opts.CredentialPrompt != nil {
+		needsPrompt := false
+		switch m {
+		case authentication.LoginMethodBasic, authentication.LoginMethodOAuth2Internal:
+			needsPrompt = c.Auth.Username == "" || c.Auth.Password == ""
+		case authentication.LoginMethodCertificate:
+			needsPrompt = c.Auth.Certificate == "" || c.Auth.CertificateKey == ""
+		}
+		if needsPrompt {
+			auth := c.Auth
+			if err := opts.CredentialPrompt(ctx, m, &auth); err != nil {
+				return "", err
+			}
+			c.Auth = auth
+			c.SetAuth(auth)
+		}
+	}
+
 	switch m {
 	case authentication.LoginMethodBasic:
 		if c.Auth.Username == "" || c.Auth.Password == "" {
