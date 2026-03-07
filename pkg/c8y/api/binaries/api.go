@@ -33,10 +33,10 @@ type ListOptions struct {
 	ChildAdditionID string `url:"childAdditionId,omitempty"`
 
 	// Search for a specific child asset and list all the groups to which it belongs
-	ChildAssetId string `url:"childAssetId,omitempty"`
+	ChildAssetID string `url:"childAssetId,omitempty"`
 
 	// Search for a specific child device and list all the groups to which it belongs
-	ChildDeviceId string `url:"childDeviceId,omitempty"`
+	ChildDeviceID string `url:"childDeviceId,omitempty"`
 
 	// The managed object IDs to search for
 	Ids []string `url:"ids,omitempty"`
