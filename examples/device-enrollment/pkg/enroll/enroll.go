@@ -10,7 +10,8 @@ import (
 	"time"
 
 	"github.com/reubenmiller/example/pkg/cli"
-	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/devices/enrollment"
 	"github.com/reubenmiller/go-c8y/pkg/certutil"
 )
 
@@ -36,7 +37,10 @@ func (r *EnrollCmd) Run(ctx *cli.Context) error {
 		return fmt.Errorf("🚫 device id (external id) is not set")
 	}
 
-	client := c8y.NewClient(nil, ctx.Host, "", "", "", true)
+	client := api.NewClient(api.ClientOptions{
+		BaseURL:            ctx.Host,
+		InsecureSkipVerify: true,
+	})
 
 	if r.Overwrite {
 		slog.Info("Removing any existing private key, or certificate")
@@ -69,7 +73,7 @@ func (r *EnrollCmd) Run(ctx *cli.Context) error {
 		fmt.Fprintf(os.Stderr, "\n📣 Starting device enrollment: externalID=%s\n", deviceID)
 
 		// Create CSR
-		csr, err := client.DeviceEnrollment.CreateCertificateSigningRequest(deviceID, key)
+		csr, err := client.Devices.Enrollment.CreateCertificateSigningRequest(deviceID, key)
 		if err != nil {
 			panic(fmt.Errorf("failed to create certificate signing request. %w", err))
 		}
@@ -77,7 +81,7 @@ func (r *EnrollCmd) Run(ctx *cli.Context) error {
 		clientCtx := context.Background()
 
 		// Enroll device
-		result := <-client.DeviceEnrollment.PollEnroll(clientCtx, c8y.DeviceEnrollmentOption{
+		result := <-client.Devices.Enrollment.PollEnroll(clientCtx, enrollment.DeviceEnrollmentOption{
 			ExternalID:      deviceID,
 			OneTimePassword: r.OneTimePassword, // Generate random one-time password if empty
 
@@ -91,7 +95,7 @@ func (r *EnrollCmd) Run(ctx *cli.Context) error {
 			Timeout: r.Timeout,
 
 			// Print enrollment information
-			Banner: &c8y.DeviceEnrollmentBannerOptions{
+			Banner: &enrollment.DeviceEnrollmentBannerOptions{
 				Enable:     true,
 				ShowQRCode: true,
 				ShowURL:    true,
@@ -103,12 +107,8 @@ func (r *EnrollCmd) Run(ctx *cli.Context) error {
 			OnProgressBefore: func() {
 				fmt.Fprintf(os.Stderr, "\rTrying to download certificate: ")
 			},
-			OnProgressError: func(r *c8y.Response, err error) {
-				if r != nil {
-					fmt.Fprintf(os.Stderr, "WAITING (last statusCode=%s, time=%s)", r.Status(), time.Now().Format(time.RFC3339))
-				} else {
-					fmt.Fprintf(os.Stderr, "WAITING (last statusCode=%s, time=%s)", "0", time.Now().Format(time.RFC3339))
-				}
+			OnProgressError: func(err error) {
+				fmt.Fprintf(os.Stderr, "WAITING (err=%s, time=%s)", err, time.Now().Format(time.RFC3339))
 			},
 		})
 		if result.Err != nil {
