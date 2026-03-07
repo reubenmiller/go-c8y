@@ -1298,7 +1298,7 @@ func (c *Client) newInternalTokenSource() *authentication.CachedTokenSource {
 			ctx := ctxhelpers.WithSkipTokenSource(context.Background())
 			tok, err := c.fetchToken(ctx)
 			if err != nil {
-				slog.Info("OAuth2 internal token exchange failed, falling back to basic auth", "err", err)
+				slog.Debug("OAuth2 internal token exchange failed, falling back to basic auth", "err", err)
 				oauth2Unavailable.Store(true)
 				return nil, nil // Let resty client-level basic auth handle it
 			}
