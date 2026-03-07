@@ -211,7 +211,7 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *FirmwareIterat
 type GetOptions struct {
 	WithParents       bool `url:"withParents,omitempty"`
 	WithChildren      bool `url:"withChildren,omitempty"`
-	withChildrenCount bool `url:"withChildrenCount,omitempty"`
+	WithChildrenCount bool `url:"withChildrenCount,omitempty"`
 	SkipChildrenNames bool `url:"skipChildrenNames,omitempty"`
 }
 

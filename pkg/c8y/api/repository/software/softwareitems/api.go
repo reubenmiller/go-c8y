@@ -121,7 +121,7 @@ type GetOptions struct {
 	// Query options
 	WithParents       bool `url:"withParents,omitempty"`
 	WithChildren      bool `url:"withChildren,omitempty"`
-	withChildrenCount bool `url:"withChildrenCount,omitempty"`
+	WithChildrenCount bool `url:"withChildrenCount,omitempty"`
 	SkipChildrenNames bool `url:"skipChildrenNames,omitempty"`
 }
 

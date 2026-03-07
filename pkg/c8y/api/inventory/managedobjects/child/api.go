@@ -6,7 +6,7 @@ type ListOptions struct {
 	Query             string `url:"query,omitempty"`
 	WithParents       bool   `url:"withParents,omitempty"`
 	WithChildren      bool   `url:"withChildren,omitempty"`
-	withChildrenCount bool   `url:"withChildrenCount,omitempty"`
+	WithChildrenCount bool   `url:"withChildrenCount,omitempty"`
 
 	// Pagination options
 	pagination.PaginationOptions
