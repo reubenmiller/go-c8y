@@ -24,7 +24,7 @@ var (
 	ApiVersionByName = "/application/applications/{id}/versions"
 )
 
-var ParamId = "id"
+var ParamID = "id"
 var ParamVersion = "version"
 
 const ResultProperty = "applicationVersions"
@@ -65,7 +65,7 @@ func (s *Service) listB(applicationID string, opt ListOptions) *core.TryRequest 
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
-		SetPathParam(ParamId, applicationID).
+		SetPathParam(ParamID, applicationID).
 		SetURL(ApiVersions)
 
 	return core.NewTryRequest(s.Client, req, ResultProperty)
@@ -94,7 +94,7 @@ func (s *Service) listByVersionB(applicationID string, version string) *core.Try
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamId, applicationID).
+		SetPathParam(ParamID, applicationID).
 		SetQueryParam("version", version).
 		SetURL(ApiVersionByName)
 
@@ -110,7 +110,7 @@ func (s *Service) listByTagB(applicationID string, tag string) *core.TryRequest 
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamId, applicationID).
+		SetPathParam(ParamID, applicationID).
 		SetQueryParam("tag", tag).
 		SetURL(ApiVersionByName)
 
@@ -133,7 +133,7 @@ func (s *Service) createB(applicationID string, opts CreateOptions) *core.TryReq
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamId, applicationID).
+		SetPathParam(ParamID, applicationID).
 		SetMultipartField("applicationBinary", filename, types.MimeTypeApplicationOctetStream, opts.File.Reader).
 		SetMultipartField("applicationVersion", "", types.MimeTypeApplicationJSON, bytes.NewReader(applicationVersion)).
 		SetURL(ApiVersions)
@@ -229,7 +229,7 @@ func (s *Service) updateB(applicationID string, version string, tags []string) *
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeApplicationJSON).
-		SetPathParam(ParamId, applicationID).
+		SetPathParam(ParamID, applicationID).
 		SetPathParam(ParamVersion, version).
 		SetBody(body).
 		SetURL(ApiVersionByID)
@@ -245,7 +245,7 @@ func (s *Service) DeleteByVersion(ctx context.Context, applicationID string, ver
 func (s *Service) deleteByVersionB(applicationID string, version string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamId, applicationID).
+		SetPathParam(ParamID, applicationID).
 		SetQueryParam("version", version).
 		SetURL(ApiVersionByName)
 
@@ -260,7 +260,7 @@ func (s *Service) DeleteByTag(ctx context.Context, applicationID string, tag str
 func (s *Service) deleteByTagB(applicationID string, tag string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamId, applicationID).
+		SetPathParam(ParamID, applicationID).
 		SetQueryParam("tag", tag).
 		SetURL(ApiVersionByName)
 

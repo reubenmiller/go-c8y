@@ -14,7 +14,7 @@ import (
 var ApiConfigurations = "/service/remoteaccess/devices/{managedObjectID}/configurations"
 var ApiConfiguration = "/service/remoteaccess/devices/{managedObjectID}/configurations/{id}"
 
-var ParamId = "id"
+var ParamID = "id"
 var ParamManagedObjectID = "managedObjectID"
 
 // Service provides api to managed Cloud Remote Access configurations
@@ -73,7 +73,7 @@ func (s *Service) getB(opt GetOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamManagedObjectID, opt.ManagedObjectID).
-		SetPathParam(ParamId, opt.ConfigurationID).
+		SetPathParam(ParamID, opt.ConfigurationID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiConfiguration)
 	return core.NewTryRequest(s.Client, req)
@@ -115,7 +115,7 @@ func (s *Service) updateB(opt UpdateOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamManagedObjectID, opt.ManagedObjectID).
-		SetPathParam(ParamId, opt.ConfigurationID).
+		SetPathParam(ParamID, opt.ConfigurationID).
 		SetBody(opt.Body).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -137,7 +137,7 @@ func (s *Service) deleteB(opt DeleteOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamManagedObjectID, opt.ManagedObjectID).
-		SetPathParam(ParamId, opt.ConfigurationID).
+		SetPathParam(ParamID, opt.ConfigurationID).
 		SetURL(ApiConfiguration)
 	return core.NewTryRequest(s.Client, req)
 }

@@ -19,7 +19,7 @@ import (
 var ApiManagedObjects = "/inventory/managedObjects"
 var ApiManagedObject = "/inventory/managedObjects/{id}"
 
-const ParamId = "id"
+const ParamID = "id"
 
 const ResultProperty = "managedObjects"
 
@@ -566,7 +566,7 @@ func (s *Service) createB(body any) *core.TryRequest {
 func (s *Service) getB(ID string, opt GetOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObject)
@@ -576,7 +576,7 @@ func (s *Service) getB(ID string, opt GetOptions) *core.TryRequest {
 func (s *Service) updateB(ID string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetBody(body).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -587,7 +587,7 @@ func (s *Service) updateB(ID string, body any) *core.TryRequest {
 func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetQueryParam("forceCascade", fmt.Sprintf("%v", !opt.SkipCascade)).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiManagedObject)

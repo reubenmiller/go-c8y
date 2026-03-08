@@ -14,7 +14,7 @@ import (
 var ApiRetentionRules = "/retention/retentions"
 var ApiRetentionRule = "/retention/retentions/{id}"
 
-var ParamId = "id"
+var ParamID = "id"
 
 const ResultProperty = "retentionRules"
 
@@ -74,7 +74,7 @@ func (s *Service) getB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetURL(ApiRetentionRule)
 	return core.NewTryRequest(s.Client, req)
 }
@@ -104,7 +104,7 @@ func (s *Service) updateB(ID string, body any) *core.TryRequest {
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetBody(body).
 		SetURL(ApiRetentionRule)
 	return core.NewTryRequest(s.Client, req)
@@ -118,7 +118,7 @@ func (s *Service) Delete(ctx context.Context, ID string) op.Result[core.NoConten
 func (s *Service) deleteB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetURL(ApiRetentionRule)
 	return core.NewTryRequest(s.Client, req)
 }

@@ -19,7 +19,7 @@ import (
 
 var ApiDeviceControlAccessToken = "/devicecontrol/deviceAccessToken"
 
-const ParamId = "id"
+const ParamID = "id"
 
 const ResultProperty = managedobjects.ResultProperty
 

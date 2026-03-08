@@ -20,7 +20,7 @@ import (
 var ApiOperations = "/devicecontrol/operations"
 var ApiOperation = "/devicecontrol/operations/{id}"
 
-var ParamId = "id"
+var ParamID = "id"
 
 const ResultProperty = "operations"
 
@@ -142,7 +142,7 @@ func (s *Service) getB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetURL(ApiOperation)
 	return core.NewTryRequest(s.Client, req)
 }
@@ -285,7 +285,7 @@ func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jso
 func (s *Service) updateB(ID string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).

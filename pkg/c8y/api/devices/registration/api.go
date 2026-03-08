@@ -21,7 +21,7 @@ var ApiBulkDeviceRequests = "/devicecontrol/bulkNewDeviceRequests"
 
 var ApiDeviceCredentials = "/devicecontrol/deviceCredentials"
 
-var ParamId = "id"
+var ParamID = "id"
 
 const ResultProperty = "newDeviceRequests"
 
@@ -59,7 +59,7 @@ func (s *Service) getB(id string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamId, id).
+		SetPathParam(ParamID, id).
 		SetURL(ApiDeviceRequest)
 	return core.NewTryRequest(s.Client, req)
 }
@@ -115,7 +115,7 @@ func (s *Service) Update(ctx context.Context, id string, opt UpdateOptions) op.R
 func (s *Service) updateB(id string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
-		SetPathParam(ParamId, id).
+		SetPathParam(ParamID, id).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeNewDeviceRequest).
 		SetBody(body).
@@ -131,7 +131,7 @@ func (s *Service) Delete(ctx context.Context, id string) op.Result[core.NoConten
 func (s *Service) deleteB(id string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamId, id).
+		SetPathParam(ParamID, id).
 		SetURL(ApiDeviceRequest)
 	return core.NewTryRequest(s.Client, req)
 }

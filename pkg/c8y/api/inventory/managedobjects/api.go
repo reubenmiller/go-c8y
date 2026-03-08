@@ -27,7 +27,7 @@ var ApiManagedObjectSupportedSeries = "/inventory/managedObjects/{id}/supportedS
 var ApiManagedObjectAvailability = "/inventory/managedObjects/{id}/availability"
 var ApiManagedObjectUser = "/inventory/managedObjects/{id}/user"
 
-const ParamId = "id"
+const ParamID = "id"
 
 const ResultProperty = "managedObjects"
 
@@ -173,7 +173,7 @@ func (s *Service) createB(body any) *core.TryRequest {
 func (s *Service) getB(ID string, opt GetOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObject)
@@ -184,7 +184,7 @@ func (s *Service) getB(ID string, opt GetOptions) *core.TryRequest {
 func (s *Service) updateB(ID string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetBody(body).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -200,7 +200,7 @@ func (s *Service) ListSupportedMeasurements(ctx context.Context, ID string) op.R
 func (s *Service) listSupportedMeasurementsB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObjectSupportedMeasurements)
 	return core.NewTryRequest(s.Client, req)
@@ -213,7 +213,7 @@ func (s *Service) ListSupportedSeries(ctx context.Context, ID string) op.Result[
 func (s *Service) listSupportedSeriesB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObjectSupportedSeries)
 	return core.NewTryRequest(s.Client, req)
@@ -227,7 +227,7 @@ func (s *Service) GetAvailability(ctx context.Context, ID string) op.Result[json
 func (s *Service) getAvailabilityB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObjectAvailability)
 	return core.NewTryRequest(s.Client, req)
@@ -241,7 +241,7 @@ func (s *Service) GetUser(ctx context.Context, ID string) op.Result[jsonmodels.M
 func (s *Service) getUserB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObjectUser)
 	return core.NewTryRequest(s.Client, req)
@@ -255,7 +255,7 @@ func (s *Service) UpdateUser(ctx context.Context, ID string, body any) op.Result
 func (s *Service) updateUserB(ID string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetBody(body).
 		SetHeader("Content-Type", "application/vnd.com.nsn.cumulocity.managedobjectuser+json").
 		SetHeader("Accept", "application/vnd.com.nsn.cumulocity.managedobjectuser+json").
@@ -279,7 +279,7 @@ type DeleteOptions struct {
 func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiManagedObject)
 	return core.NewTryRequest(s.Client, req)

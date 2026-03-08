@@ -171,7 +171,7 @@ func TestApiApplicationPath(t *testing.T) {
 
 func TestParamIdConstant(t *testing.T) {
 	// Verify the parameter name constant
-	assert.Equal(t, "id", ParamId)
+	assert.Equal(t, "id", ParamID)
 }
 
 func TestUpdateApplicationBodyStructure(t *testing.T) {

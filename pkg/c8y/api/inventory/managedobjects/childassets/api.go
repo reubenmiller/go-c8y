@@ -16,7 +16,7 @@ import (
 var ApiManagedObjectChildAssets = "/inventory/managedObjects/{id}/childAssets"
 var ApiManagedObjectChildAsset = "/inventory/managedObjects/{id}/childAssets/{child}"
 
-const ParamId = "id"
+const ParamID = "id"
 const ParamChild = "child"
 
 const ResultProperty = "managedObjects"
@@ -56,7 +56,7 @@ func (s *Service) listB(parentID string, opt ListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamId, parentID).
+		SetPathParam(ParamID, parentID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiManagedObjectChildAssets)
 	return core.NewTryRequest(s.Client, req, ResultProperty)
@@ -70,7 +70,7 @@ func (s *Service) Get(ctx context.Context, parentID string, childID string) op.R
 func (s *Service) getB(parentID string, childID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamId, parentID).
+		SetPathParam(ParamID, parentID).
 		SetPathParam(ParamChild, childID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObjectChildAsset)
@@ -85,7 +85,7 @@ func (s *Service) Create(ctx context.Context, parentID string, body any) op.Resu
 func (s *Service) createB(parentID string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
-		SetPathParam(ParamId, parentID).
+		SetPathParam(ParamID, parentID).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
@@ -104,7 +104,7 @@ func (s *Service) assignB(parentID string, child any) *core.TryRequest {
 		SetMethod(resty.MethodPost).
 		SetContentType(contentType).
 		SetBody(body).
-		SetPathParam(ParamId, parentID).
+		SetPathParam(ParamID, parentID).
 		SetURL(ApiManagedObjectChildAssets)
 	return core.NewTryRequest(s.Client, req)
 }
@@ -119,7 +119,7 @@ func (s *Service) unassignB(parentID string, child any) *core.TryRequest {
 		SetMethod(resty.MethodDelete).
 		SetContentType(types.MimeTypeManagedObjectCollection).
 		SetBody(model.ToManagedObjectChildReferences(child)).
-		SetPathParam(ParamId, parentID).
+		SetPathParam(ParamID, parentID).
 		SetURL(ApiManagedObjectChildAssets)
 	return core.NewTryRequest(s.Client, req)
 }

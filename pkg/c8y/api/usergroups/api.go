@@ -18,7 +18,7 @@ var ApiGroup = "/user/{tenantId}/groups/{id}"
 var ApiGroupsWithUser = "/user/{tenantId}/users/{id}/groups"
 var ApiGroupByName = "/user/{tenantId}/groupByName/{groupName}"
 
-var ParamId = "id"
+var ParamID = "id"
 var ParamUsername = "username"
 var ParamGroupName = "groupName"
 
@@ -96,7 +96,7 @@ func (s *Service) getB(target Target) *core.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, target.Tenant).
-		SetPathParam(ParamId, target.ID).
+		SetPathParam(ParamID, target.ID).
 		SetURL(ApiGroup)
 	return core.NewTryRequest(s.Client, req)
 }
@@ -153,7 +153,7 @@ func (s *Service) updateB(opt UpdateOptions, body any) *core.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
-		SetPathParam(ParamId, opt.ID).
+		SetPathParam(ParamID, opt.ID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetBody(body).
 		SetURL(ApiGroup)
@@ -175,7 +175,7 @@ func (s *Service) deleteB(opt DeleteOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
-		SetPathParam(ParamId, opt.ID).
+		SetPathParam(ParamID, opt.ID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiGroup)
 	return core.NewTryRequest(s.Client, req)
@@ -201,7 +201,7 @@ func (s *Service) listByUserB(opt ListByUserOptions) *core.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
-		SetPathParam(ParamId, opt.UserID).
+		SetPathParam(ParamID, opt.UserID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiGroupsWithUser)
 	return core.NewTryRequest(s.Client, req, ResultProperty)

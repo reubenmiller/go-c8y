@@ -25,7 +25,7 @@ var (
 	ApiPasswordReset      = "/user/passwordReset"
 )
 
-var ParamId = "id"
+var ParamID = "id"
 var ParamUsername = "username"
 
 // PasswordStrength represents the Cumulocity password-strength classification
@@ -170,7 +170,7 @@ func (s *Service) getB(opt GetOptions) *core.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
-		SetPathParam(ParamId, opt.ID).
+		SetPathParam(ParamID, opt.ID).
 		SetURL(ApiUser)
 	return core.NewTryRequest(s.Client, req)
 }
@@ -222,7 +222,7 @@ func (s *Service) updateB(opt UpdateOptions, body any) *core.TryRequest {
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamId, opt.ID).
+		SetPathParam(ParamID, opt.ID).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
 		SetBody(body).
 		SetURL(ApiUser)
@@ -239,7 +239,7 @@ func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.
 func (s *Service) deleteB(opt DeleteOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamId, opt.ID).
+		SetPathParam(ParamID, opt.ID).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
 		SetURL(ApiUser)
 	return core.NewTryRequest(s.Client, req)
@@ -265,7 +265,7 @@ func (s *Service) listGroupsWithUserB(opt ListGroupsOptions) *core.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
-		SetPathParam(ParamId, opt.UserID).
+		SetPathParam(ParamID, opt.UserID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiUserGroupsWithUser)
 	return core.NewTryRequest(s.Client, req, ResultProperty)
@@ -352,7 +352,7 @@ func (s *Service) getTFAB(opt GetTFAOptions) *core.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
-		SetPathParam(ParamId, opt.ID).
+		SetPathParam(ParamID, opt.ID).
 		SetURL(ApiUserTFA)
 	return core.NewTryRequest(s.Client, req)
 }

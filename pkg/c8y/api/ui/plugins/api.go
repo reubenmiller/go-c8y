@@ -21,7 +21,7 @@ var (
 	ApiPlugin  = "/application/applications/{id}"
 )
 
-var ParamId = "id"
+var ParamID = "id"
 
 const ResultProperty = "applications"
 const CumulocityUIManifestFile = "cumulocity.json"
@@ -218,7 +218,7 @@ func (s *Service) getB(id string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamId, id).
+		SetPathParam(ParamID, id).
 		SetURL(ApiPlugin)
 	return core.NewTryRequest(s.Client, req)
 }
@@ -248,7 +248,7 @@ func (s *Service) updateB(id string, body *Plugin) *core.TryRequest {
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeApplicationJSON).
-		SetPathParam(ParamId, id).
+		SetPathParam(ParamID, id).
 		SetBody(body).
 		SetURL(ApiPlugin)
 	return core.NewTryRequest(s.Client, req)
@@ -262,7 +262,7 @@ func (s *Service) Delete(ctx context.Context, id string) op.Result[core.NoConten
 func (s *Service) deleteB(id string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamId, id).
+		SetPathParam(ParamID, id).
 		SetURL(ApiPlugin)
 	return core.NewTryRequest(s.Client, req)
 }

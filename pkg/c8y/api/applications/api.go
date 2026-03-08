@@ -34,7 +34,7 @@ var (
 	TypeHosted       = "HOSTED"
 )
 
-var ParamId = "id"
+var ParamID = "id"
 var ParamName = "name"
 var ParamUsername = "username"
 
@@ -268,7 +268,7 @@ func (s *Service) getB(id string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamId, id).
+		SetPathParam(ParamID, id).
 		SetURL(ApiApplication)
 	return core.NewTryRequest(s.Client, req)
 }
@@ -308,7 +308,7 @@ func (s *Service) Update(ctx context.Context, id string, body any) op.Result[jso
 func (s *Service) updateB(ID string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetBody(body).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -341,7 +341,7 @@ func (s *Service) Delete(ctx context.Context, id string, opt DeleteOptions) op.R
 func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiApplication)
 	return core.NewTryRequest(s.Client, req)
@@ -376,7 +376,7 @@ func (s *Service) copyB(ID string, opt CopyOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetURL(ApiApplicationClone)
 	return core.NewTryRequest(s.Client, req)
 }
@@ -417,7 +417,7 @@ func (s *Service) unsubscribeB(tenantID string, ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(core.PathParamTenantID, tenantID).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetURL(ApiTenantApplication)
 	return core.NewTryRequest(s.Client, req)
 }
@@ -444,7 +444,7 @@ func (s *Service) Upload(ctx context.Context, id string, opt UploadFileOptions) 
 func (s *Service) uploadB(ID string, opt UploadFileOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetMultipartFields(core.NewMultiPartFile(opt)...).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiApplicationBinaries)

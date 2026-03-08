@@ -22,7 +22,7 @@ var ApiAlarms = "/alarm/alarms"
 var ApiAlarmsCount = "/alarm/alarms/count"
 var ApiAlarm = "/alarm/alarms/{id}"
 
-var ParamId = "id"
+var ParamID = "id"
 
 const ResultProperty = "alarms"
 
@@ -181,7 +181,7 @@ func (s *Service) getB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetURL(ApiAlarm)
 	return core.NewTryRequest(s.Client, req)
 }
@@ -353,7 +353,7 @@ func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jso
 func (s *Service) updateB(ID string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).

@@ -15,7 +15,7 @@ import (
 var ApiAuditRecords = "/audit/auditRecords"
 var ApiAuditRecord = "/audit/auditRecords/{id}"
 
-var ParamId = "id"
+var ParamID = "id"
 
 const ResultProperty = "auditRecords"
 
@@ -92,7 +92,7 @@ func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Audit
 func (s *Service) getB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiAuditRecord)
 	return core.NewTryRequest(s.Client, req)

@@ -9,7 +9,7 @@ import (
 var ApiIdentities = "/identity/globalIds/{id}/externalIds"
 var ApiIdentity = "/identity/externalIds/{type}/{externalID}"
 
-var ParamId = "id"
+var ParamID = "id"
 var ParamType = "type"
 var ParamExternalID = "externalID"
 
@@ -51,7 +51,7 @@ func (s *Service) listB(id string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamId, id).
+		SetPathParam(ParamID, id).
 		SetURL(ApiIdentities)
 	return core.NewTryRequest(s.Client, req, ResultProperty)
 }
@@ -70,7 +70,7 @@ func (s *Service) getB(opts IdentityOptions) *core.TryRequest {
 func (s *Service) createB(id string, opts IdentityOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
-		SetPathParam(ParamId, id).
+		SetPathParam(ParamID, id).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(opts.withDefaults()).

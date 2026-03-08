@@ -16,7 +16,7 @@ var ApiTenantStatisticsFiles = "/tenant/statistics/files"
 var ApiTenantStatisticsFile = "/tenant/statistics/files/{id}"
 var ApiTenantStatisticsFileLatestByMonth = "/tenant/statistics/files/latest/{month}"
 
-const ParamId = "id"
+const ParamID = "id"
 const ParamChild = "child"
 
 const ResultProperty = "statisticsFiles"
@@ -76,7 +76,7 @@ func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Usage
 func (s *Service) getB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetURL(ApiTenantStatisticsFile)
 	return core.NewTryRequest(s.Client, req)
 }

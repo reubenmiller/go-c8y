@@ -12,7 +12,7 @@ import (
 
 var ApiEventBinary = "/event/events/{id}/binaries"
 
-var ParamId = "id"
+var ParamID = "id"
 
 // Service provides api to get/set/delete audit entries in Cumulocity
 type Service struct{ core.Service }
@@ -29,7 +29,7 @@ func (s *Service) Get(ctx context.Context, eventID string) op.Result[core.Binary
 func (s *Service) getB(eventID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamId, eventID).
+		SetPathParam(ParamID, eventID).
 		SetURL(ApiEventBinary)
 	return core.NewTryRequest(s.Client, req)
 }
@@ -45,7 +45,7 @@ func (s *Service) createB(eventID string, opt UploadFileOptions) *core.TryReques
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetMultipartFields(core.NewMultiPartFileFields(opt)...).
-		SetPathParam(ParamId, eventID).
+		SetPathParam(ParamID, eventID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiEventBinary)
 	return core.NewTryRequest(s.Client, req)
@@ -77,7 +77,7 @@ func (s *Service) Update(ctx context.Context, eventID string, opt UploadFileOpti
 func (s *Service) updateB(eventID string, opt UploadFileOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
-		SetPathParam(ParamId, eventID).
+		SetPathParam(ParamID, eventID).
 		SetBody(opt.GetReader()).
 		SetContentType(types.MimeTypeApplicationOctetStream).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -93,7 +93,7 @@ func (s *Service) Delete(ctx context.Context, eventID string) op.Result[core.NoC
 func (s *Service) deleteB(eventID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamId, eventID).
+		SetPathParam(ParamID, eventID).
 		SetURL(ApiEventBinary)
 	return core.NewTryRequest(s.Client, req)
 }

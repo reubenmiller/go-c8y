@@ -21,7 +21,7 @@ var ApiMeasurements = "/measurement/measurements"
 var ApiMeasurement = "/measurement/measurements/{id}"
 var ApiMeasurementsSeries = "/measurement/measurements/series"
 
-const ParamId = "id"
+const ParamID = "id"
 
 const ResultProperty = "measurements"
 
@@ -160,7 +160,7 @@ func (s *Service) Delete(ctx context.Context, ID string) op.Result[core.NoConten
 func (s *Service) deleteB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetURL(ApiMeasurement)
 	return core.NewTryRequest(s.Client, req)
 }

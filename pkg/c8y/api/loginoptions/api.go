@@ -14,7 +14,7 @@ import (
 var ApiLoginOptions = "/tenant/loginOptions"
 var ApiLoginOption = "/tenant/loginOptions/{id}"
 
-var ParamId = "id"
+var ParamID = "id"
 
 const ResultProperty = "loginOptions"
 
@@ -95,7 +95,7 @@ func (s *Service) getB(typeOrID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamId, typeOrID).
+		SetPathParam(ParamID, typeOrID).
 		SetURL(ApiLoginOption)
 	return core.NewTryRequest(s.Client, req)
 }
@@ -125,7 +125,7 @@ func (s *Service) updateB(typeOrID string, body any) *core.TryRequest {
 		SetMethod(resty.MethodPut).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamId, typeOrID).
+		SetPathParam(ParamID, typeOrID).
 		SetBody(body).
 		SetURL(ApiLoginOption)
 	return core.NewTryRequest(s.Client, req)
@@ -139,7 +139,7 @@ func (s *Service) Delete(ctx context.Context, typeOrID string) op.Result[core.No
 func (s *Service) deleteB(typeOrID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamId, typeOrID).
+		SetPathParam(ParamID, typeOrID).
 		SetURL(ApiLoginOption)
 	return core.NewTryRequest(s.Client, req)
 }
@@ -167,10 +167,10 @@ func (s *Service) updateAccessB(opt UpdateAccessOptions, body any) *core.TryRequ
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamId, opt.TypeOrId).
+		SetPathParam(ParamID, opt.TypeOrId).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamId, opt.TypeOrId).
+		SetPathParam(ParamID, opt.TypeOrId).
 		SetBody(body).
 		SetURL(ApiLoginOption)
 	return core.NewTryRequest(s.Client, req)

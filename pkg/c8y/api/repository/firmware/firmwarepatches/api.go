@@ -21,7 +21,7 @@ import (
 
 const ApiManagedObjects = "/inventory/managedObjects"
 const ApiManagedObject = "/inventory/managedObjects/{id}"
-const ParamId = "id"
+const ParamID = "id"
 const ResultProperty = "managedObjects"
 
 func NewService(s *core.Service) *Service {

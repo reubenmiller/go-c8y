@@ -14,7 +14,7 @@ import (
 var ApiUserGroupUsers = "/user/{tenantId}/groups/{groupId}/users"
 var ApiUserGroupReference = "/user/{tenantId}/groups/{groupId}/users/{userId}"
 
-var ParamId = "id"
+var ParamID = "id"
 var ParamGroupId = "groupId"
 var ParamUserId = "userId"
 

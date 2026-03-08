@@ -15,7 +15,7 @@ var ApiBinaries = "/inventory/binaries"
 var ApiBinary = "/inventory/binaries/{id}"
 var ApiManagedObject = "/inventory/managedObject/{id}"
 
-var ParamId = "id"
+var ParamID = "id"
 
 const ResultProperty = "managedObjects"
 
@@ -95,7 +95,7 @@ func (s *Service) Get(ctx context.Context, ID string) op.Result[core.BinaryRespo
 func (s *Service) getB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetURL(ApiBinary)
 	return core.NewTryRequest(s.Client, req)
 }
@@ -124,7 +124,7 @@ func (s *Service) Update(ctx context.Context, ID string, opt UploadFileOptions) 
 func (s *Service) updateB(eventID string, opt UploadFileOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
-		SetPathParam(ParamId, eventID).
+		SetPathParam(ParamID, eventID).
 		SetBody(opt.GetReader()).
 		SetContentType(types.MimeTypeApplicationOctetStream).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -140,7 +140,7 @@ func (s *Service) Delete(ctx context.Context, ID string) op.Result[core.NoConten
 func (s *Service) deleteB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetURL(ApiBinary)
 	return core.NewTryRequest(s.Client, req)
 }

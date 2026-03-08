@@ -20,7 +20,7 @@ import (
 var ApiManagedObjects = "/inventory/managedObjects"
 var ApiManagedObject = "/inventory/managedObjects/{id}"
 
-const ParamId = "id"
+const ParamID = "id"
 const ResultProperty = "managedObjects"
 const FragmentConfiguration = "c8y_ConfigurationDump"
 

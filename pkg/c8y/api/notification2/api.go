@@ -29,7 +29,7 @@ var ApiSubscription = "/notification2/subscriptions/{id}"
 var ApiToken = "/notification2/token"
 var ApiUnsubscribe = "/notification2/unsubscribe"
 
-var ParamId = "id"
+var ParamID = "id"
 
 const ResultProperty = "subscriptions"
 
@@ -136,7 +136,7 @@ func (s *Service) getB(id string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamId, id).
+		SetPathParam(ParamID, id).
 		SetURL(ApiSubscription)
 	return core.NewTryRequest(s.Client, req)
 }
@@ -188,7 +188,7 @@ func (s *Service) Delete(ctx context.Context, id string) op.Result[core.NoConten
 func (s *Service) deleteB(id string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamId, id).
+		SetPathParam(ParamID, id).
 		SetURL(ApiSubscription)
 	return core.NewTryRequest(s.Client, req)
 }

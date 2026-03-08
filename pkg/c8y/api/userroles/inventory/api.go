@@ -29,8 +29,8 @@ var ApiInventoryRoles = "/user/inventoryroles"
 // ApiInventoryRole is the single-item endpoint for inventory roles.
 var ApiInventoryRole = "/user/inventoryroles/{id}"
 
-// ParamId is the path-parameter name used in ApiInventoryRole.
-var ParamId = "id"
+// ParamID is the path-parameter name used in ApiInventoryRole.
+var ParamID = "id"
 
 // ResultProperty is the JSON key that wraps the array of inventory roles
 // in a collection response.
@@ -96,7 +96,7 @@ func (s *Service) getB(id int64) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamId, strconv.FormatInt(id, 10)).
+		SetPathParam(ParamID, strconv.FormatInt(id, 10)).
 		SetURL(ApiInventoryRole)
 	return core.NewTryRequest(s.Client, req)
 }
@@ -130,7 +130,7 @@ func (s *Service) updateB(id int64, body any) *core.TryRequest {
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamId, strconv.FormatInt(id, 10)).
+		SetPathParam(ParamID, strconv.FormatInt(id, 10)).
 		SetBody(body).
 		SetURL(ApiInventoryRole)
 	return core.NewTryRequest(s.Client, req)
@@ -145,7 +145,7 @@ func (s *Service) Delete(ctx context.Context, id int64) op.Result[core.NoContent
 func (s *Service) deleteB(id int64) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamId, strconv.FormatInt(id, 10)).
+		SetPathParam(ParamID, strconv.FormatInt(id, 10)).
 		SetURL(ApiInventoryRole)
 	return core.NewTryRequest(s.Client, req)
 }

@@ -18,7 +18,7 @@ var (
 	ApiApplication = "/application/applications/{id}"
 )
 
-var ParamId = "id"
+var ParamID = "id"
 
 type Service struct {
 	core.Service
@@ -94,7 +94,7 @@ func (s *Service) getApplicationB(applicationID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamId, applicationID).
+		SetPathParam(ParamID, applicationID).
 		SetURL(ApiApplication)
 	return core.NewTryRequest(s.Client, req)
 }
@@ -109,7 +109,7 @@ func (s *Service) updateApplicationB(applicationID string, body map[string]any) 
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeApplicationJSON).
-		SetPathParam(ParamId, applicationID).
+		SetPathParam(ParamID, applicationID).
 		SetBody(body).
 		SetURL(ApiApplication)
 	return core.NewTryRequest(s.Client, req)

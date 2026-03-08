@@ -21,7 +21,7 @@ var ApiTenantCurrent = "/tenant/currentTenant"
 var ApiTenantApplications = "/tenant/tenants/{tenantId}/applications"
 var ApiTenantTFA = "/tenant/tenants/{tenantId}/tfa"
 
-const ParamId = "id"
+const ParamID = "id"
 
 const ResultProperty = "tenants"
 const ApplicationReferencesResultProperty = "references"
@@ -115,7 +115,7 @@ func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Tenan
 func (s *Service) getB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiTenant)
 	return core.NewTryRequest(s.Client, req)
@@ -129,7 +129,7 @@ func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jso
 func (s *Service) updateB(ID string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -151,7 +151,7 @@ func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.R
 func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiTenant)
 	return core.NewTryRequest(s.Client, req)

@@ -21,7 +21,7 @@ import (
 var ApiEvents = "/event/events"
 var ApiEvent = "/event/events/{id}"
 
-var ParamId = "id"
+var ParamID = "id"
 
 const ResultProperty = "events"
 
@@ -160,7 +160,7 @@ func (s *Service) getB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetURL(ApiEvent)
 	return core.NewTryRequest(s.Client, req)
 }
@@ -314,7 +314,7 @@ func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jso
 func (s *Service) updateB(ID string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
@@ -330,7 +330,7 @@ func (s *Service) Delete(ctx context.Context, ID string) op.Result[core.NoConten
 func (s *Service) deleteB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamId, ID).
+		SetPathParam(ParamID, ID).
 		SetURL(ApiEvent)
 	return core.NewTryRequest(s.Client, req)
 }

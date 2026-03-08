@@ -15,7 +15,7 @@ import (
 var ApiOAuth = "/tenant/oauth"
 var ApiOAuthToken = "/tenant/oauth/token"
 
-var ParamId = "id"
+var ParamID = "id"
 
 const ResultProperty = "events"
 

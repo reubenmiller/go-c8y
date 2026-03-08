@@ -22,7 +22,7 @@ import (
 var ApiManagedObjects = "/inventory/managedObjects"
 var ApiManagedObject = "/inventory/managedObjects/{id}"
 
-const ParamId = "id"
+const ParamID = "id"
 
 const ResultProperty = "managedObjects"
 

@@ -20,7 +20,7 @@ var (
 	ApiVersionByName = "/application/applications/{id}/versions"
 )
 
-var ParamId = "id"
+var ParamID = "id"
 var ParamVersion = "version"
 
 const ResultProperty = "versions"
@@ -76,7 +76,7 @@ func (s *Service) listB(pluginID string, opt ListOptions) *core.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
-		SetPathParam(ParamId, pluginID).
+		SetPathParam(ParamID, pluginID).
 		SetURL(ApiVersions)
 	return core.NewTryRequest(s.Client, req, ResultProperty)
 }
@@ -90,7 +90,7 @@ func (s *Service) getB(pluginID string, version string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamId, pluginID).
+		SetPathParam(ParamID, pluginID).
 		SetQueryParam("version", version).
 		SetURL(ApiVersionByName)
 	return core.NewTryRequest(s.Client, req)
@@ -135,7 +135,7 @@ func (s *Service) createB(pluginID string, opt CreateOptions) *core.TryRequest {
 
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
-		SetPathParam(ParamId, pluginID).
+		SetPathParam(ParamID, pluginID).
 		SetMultipartFields(fields...).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiVersions)
@@ -155,7 +155,7 @@ func (s *Service) updateB(pluginID string, version string, tags []string) *core.
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeApplicationJSON).
-		SetPathParam(ParamId, pluginID).
+		SetPathParam(ParamID, pluginID).
 		SetPathParam(ParamVersion, version).
 		SetBody(body).
 		SetURL(ApiVersionByID)
@@ -170,7 +170,7 @@ func (s *Service) Delete(ctx context.Context, pluginID string, version string) o
 func (s *Service) deleteB(pluginID string, version string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamId, pluginID).
+		SetPathParam(ParamID, pluginID).
 		SetQueryParam("version", version).
 		SetURL(ApiVersionByName)
 	return core.NewTryRequest(s.Client, req)
