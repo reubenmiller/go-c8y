@@ -545,23 +545,128 @@ if result.Err != nil {
 
 ## Authentication
 
-The v2 client supports multiple authentication methods:
+The v2 client supports multiple authentication methods via `ClientOptions`:
 
 ```go
-// Basic authentication
-client := api.NewClient(baseURL, username, password)
+// Username / password (OAI-Secure — exchanges credentials for a short-lived token)
+client := api.NewClient(api.ClientOptions{
+    BaseURL: "https://mytenant.cumulocity.com",
+    Auth: authentication.AuthOptions{
+        Username: "admin",
+        Password: "secret",
+    },
+})
 
-// Bearer token
-client := api.NewClientFromToken(baseURL, token)
+// Bearer token (skip login, use a pre-obtained token directly)
+client := api.NewClient(api.ClientOptions{
+    BaseURL: "https://mytenant.cumulocity.com",
+    Auth: authentication.AuthOptions{
+        Token: "eyJ...",
+    },
+})
 
-// OAuth2 / PKCE (for SSO)
-// TODO: Document OAuth2 setup
+// Client certificate
+client := api.NewClient(api.ClientOptions{
+    BaseURL: "https://mytenant.cumulocity.com",
+    Auth: authentication.AuthOptions{
+        Certificate:    "/path/to/cert.pem",
+        CertificateKey: "/path/to/key.pem",
+    },
+})
 
-// Custom authentication
-client.Auth = authentication.AuthOptions{
-    // Custom auth configuration
-}
+// Populate from environment variables (C8Y_BASEURL, C8Y_USER, C8Y_PASSWORD, C8Y_TOKEN)
+client := api.NewClientFromEnvironment(api.ClientOptions{})
 ```
+
+### LoginWithOptions
+
+After creating a client, call `LoginWithOptions` to complete authentication and obtain a
+session token. The `Method` and `Preference` fields control which flow is used:
+
+```go
+// Strict: exactly one method — fails if prerequisites are absent
+_, err := client.LoginWithOptions(ctx, api.LoginOptions{
+    Method: authentication.LoginMethodOAuth2Internal, // BASIC | OAUTH2_INTERNAL | CERTIFICATE | OAUTH2_DEVICE_FLOW | OAUTH2_BROWSER_FLOW
+})
+
+// Preference: ordered fallback list — unavailable methods are silently skipped
+_, err := client.LoginWithOptions(ctx, api.LoginOptions{
+    Preference: []authentication.LoginMethod{
+        authentication.LoginMethodOAuth2Internal,
+        authentication.LoginMethodOAuth2DeviceFlow,
+    },
+    OnSuccess: func(m authentication.LoginMethod) {
+        fmt.Println("Logged in via:", m)
+    },
+})
+```
+
+### SSO — Browser Flow (Authorization Code)
+
+```go
+_, err := client.LoginWithOptions(ctx, api.LoginOptions{
+    Method: authentication.LoginMethodOAuth2BrowserFlow,
+    BrowserFlow: &api.BrowserFlowOptions{
+        // Must match the redirect URI registered in the SSO provider.
+        // Accepted forms: "127.0.0.1:5001", "127.0.0.1:5001/callback",
+        // or "http://127.0.0.1:5001/callback" (explicit).
+        CallbackURL: "http://127.0.0.1:5001/callback",
+    },
+})
+```
+
+### SSO — Device Flow (RFC 8628)
+
+```go
+_, err := client.LoginWithOptions(ctx, api.LoginOptions{
+    Method: authentication.LoginMethodOAuth2DeviceFlow,
+    DeviceFlow: &api.DeviceFlowOptions{
+        // Zero-value causes OAuth2 endpoints to be auto-discovered.
+        DisplayFunc: func(code *device.CodeResponse) error {
+            fmt.Fprintf(os.Stderr, "Visit %s and enter code: %s\n",
+                code.VerificationURI, code.UserCode)
+            return nil
+        },
+    },
+})
+```
+
+### TFA / MFA Callbacks (OAUTH2_INTERNAL)
+
+```go
+_, err := client.LoginWithOptions(ctx, api.LoginOptions{
+    Method: authentication.LoginMethodOAuth2Internal,
+
+    // Called once during first-time TOTP enrollment — display the QR code.
+    QRCode: func(otpauthURL, secret string) {
+        fmt.Println("Scan:", otpauthURL)
+    },
+
+    // Called interactively when a TOTP code is required.
+    TOTPCode: func(ctx context.Context) (string, error) {
+        fmt.Fprint(os.Stderr, "TOTP code: ")
+        var code string
+        fmt.Scan(&code)
+        return code, nil
+    },
+
+    // Called when the server issues an SMS PIN challenge.
+    SMSCode: func(ctx context.Context, ch api.SMSChallenge) (string, error) {
+        fmt.Fprint(os.Stderr, "SMS PIN: ")
+        var pin string
+        fmt.Scan(&pin)
+        return pin, nil
+    },
+
+    // Called when the server forces a password change at login time.
+    PasswordChange: func(ctx context.Context, ch api.PasswordChangeChallenge) (string, string, error) {
+        return "user@example.com", "newP@ssw0rd", nil
+    },
+})
+```
+
+See [examples/cli-login-preference/main.go](../examples/cli-login-preference/main.go) for a
+complete, runnable demonstration of all login methods and callbacks.
 
 ## Migration from v1
 
@@ -662,7 +767,11 @@ Core features:
 Authentication:
 - [x] Basic authentication
 - [x] Bearer token authentication
-- [ ] OAuth2 / SSO authentication
+- [x] OAuth2 / SSO — browser flow (Authorization Code)
+- [x] OAuth2 / SSO — device flow (RFC 8628)
+- [x] Client certificate authentication
+- [x] TFA callbacks (TOTP, SMS PIN, QR enrollment, forced password change)
+- [x] Ordered login-method preference list with automatic fallback
 - [ ] Extensible token renewal
 
 Services:
