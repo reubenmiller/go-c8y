@@ -70,7 +70,7 @@ func main() {
 		slog.Info("Measurement found", "id", measurement.ID(), "type", measurement.Type())
 	}
 
-	slog.Info("Measurements", "total", measurementsResult.Meta["totalElements"])
+	slog.Info("Measurements", "total", measurementsResult.TotalElements())
 
 	//
 	// Alarms

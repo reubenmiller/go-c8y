@@ -323,6 +323,47 @@ func (r Result[T]) Unwrap() (T, error) {
 	return r.Data, r.Err
 }
 
+// TotalElements returns the total number of matching elements reported by the
+// server for a collection result.
+//
+// This value is only populated when the request included WithTotalElements: true
+// in its PaginationOptions. It returns 0 if the statistic was not requested,
+// the server did not return it, or the result is not a collection.
+func (r Result[T]) TotalElements() int64 {
+	v, _ := r.Meta["totalElements"].(int64)
+	return v
+}
+
+// TotalPages returns the total number of pages for the current page size.
+//
+// This value is only populated when the request included WithTotalPages: true
+// in its PaginationOptions. It returns 0 if the statistic was not requested,
+// the server did not return it, or the result is not a collection.
+func (r Result[T]) TotalPages() int64 {
+	v, _ := r.Meta["totalPages"].(int64)
+	return v
+}
+
+// CurrentPage returns the page number of this result within the full collection.
+// Returns 0 if the result is not a collection.
+func (r Result[T]) CurrentPage() int64 {
+	v, _ := r.Meta["currentPage"].(int64)
+	return v
+}
+
+// PageSize returns the maximum number of items per page for this result.
+// Returns 0 if the result is not a collection.
+func (r Result[T]) PageSize() int64 {
+	v, _ := r.Meta["pageSize"].(int64)
+	return v
+}
+
+// HasNextPage reports whether the server indicated a next page is available.
+func (r Result[T]) HasNextPage() bool {
+	next, _ := r.Meta["next"].(string)
+	return next != ""
+}
+
 // MapResult transforms the data using a mapping function
 func MapResult[T, U any](r Result[T], fn func(T) U) Result[U] {
 	if r.IsError() {

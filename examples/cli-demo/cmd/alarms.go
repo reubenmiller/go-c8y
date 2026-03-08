@@ -544,7 +544,7 @@ func printResultMeta[T any](r op.Result[T]) {
 	if r.HTTPStatus != 0 {
 		fmt.Fprintf(os.Stderr, "HTTP %d  duration: %v\n", r.HTTPStatus, r.Duration)
 	}
-	if total, ok := r.Meta["totalElements"]; ok {
-		fmt.Fprintf(os.Stderr, "Total elements: %v\n", total)
+	if total := r.TotalElements(); total > 0 {
+		fmt.Fprintf(os.Stderr, "Total elements: %d\n", total)
 	}
 }

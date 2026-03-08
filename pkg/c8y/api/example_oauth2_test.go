@@ -226,5 +226,5 @@ func ExampleNewClient_withClientCredentials() {
 	if result.Err != nil {
 		panic(result.Err)
 	}
-	fmt.Printf("Total: %d\n", result.Meta["totalElements"])
+	fmt.Printf("Total: %d\n", result.TotalElements())
 }
