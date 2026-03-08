@@ -85,13 +85,10 @@ func (s *Service) listB(opt ListOptions) *core.TryRequest {
 }
 
 // Get a binary
-// TODO: How to wrap the a binary type response in op.Result? A io.Reader or io.ReadCloser might make the most sense
 func (s *Service) Get(ctx context.Context, ID string) op.Result[core.BinaryResponse] {
 	return core.ExecuteBinary(ctx, s.getB(ID))
 }
 
-// TODO: For binaries the response shouldn't be read by default as this would
-// result in large memory usage, however then the error handling does not work correctly
 func (s *Service) getB(ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
