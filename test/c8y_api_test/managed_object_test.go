@@ -116,7 +116,7 @@ func Test_ManagedObjectCRUD(t *testing.T) {
 		"name": newName,
 	})
 	assert.NoError(t, updateResult.Err)
-	assert.Equal(t, "OK", string(updateResult.Status))
+	assert.Equal(t, "Updated", string(updateResult.Status))
 	assert.Equal(t, id, updateResult.Data.ID())
 	assert.Equal(t, newName, updateResult.Data.Name())
 

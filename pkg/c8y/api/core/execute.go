@@ -109,8 +109,9 @@ func Execute[T any](ctx context.Context, req *TryRequest, fromBytes func([]byte)
 	var result op.Result[T]
 	if resp.StatusCode() == http.StatusCreated {
 		result = op.Created(fromBytes(resp.Bytes())).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
+	} else if resp.StatusCode() == http.StatusOK && (req.Request.Method == http.MethodPut || req.Request.Method == http.MethodPatch) {
+		result = op.Updated(fromBytes(resp.Bytes())).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
 	} else {
-		// TODO: Should it return different status for update, delete etc.?
 		result = op.OK(fromBytes(resp.Bytes())).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
 	}
 
@@ -367,6 +368,8 @@ func ExecuteNoContent(ctx context.Context, req *TryRequest, extraMeta ...map[str
 	if resp.StatusCode() == http.StatusNoContent {
 		return op.NoContent(empty, meta).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
 	}
-	// TODO: Should it return different status for update, delete etc.?
+	if resp.StatusCode() == http.StatusOK && (req.Request.Method == http.MethodPut || req.Request.Method == http.MethodPatch) {
+		return op.Updated(empty, meta).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
+	}
 	return op.OK(empty, meta).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
 }
