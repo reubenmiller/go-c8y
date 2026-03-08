@@ -66,7 +66,7 @@ func NewMapBuilder() *MapBuilder {
 	return &MapBuilder{}
 }
 
-func NewMapBuilderWithInit(body map[string]interface{}) *MapBuilder {
+func NewMapBuilderWithInit(body map[string]any) *MapBuilder {
 	return &MapBuilder{
 		body: body,
 	}
@@ -86,7 +86,7 @@ func NewMapBuilderFromJsonnetSnippet(snippet string) (*MapBuilder, error) {
 
 // NewMapBuilderFromJSON returns a new mapper builder object created from json
 func NewMapBuilderFromJSON(data string) (*MapBuilder, error) {
-	body := make(map[string]interface{})
+	body := make(map[string]any)
 	if err := json.Unmarshal([]byte(data), &body); err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func NewMapBuilderFromJSON(data string) (*MapBuilder, error) {
 
 // MapBuilder creates body builder
 type MapBuilder struct {
-	body map[string]interface{}
+	body map[string]any
 }
 
 // MergeJsonnet merges the existing body data with a given jsonnet snippet.
@@ -119,7 +119,7 @@ func (b *MapBuilder) MergeJsonnet(snippet string, reverse bool) error {
 		return fmt.Errorf("failed to merge json. %w", err)
 	}
 
-	body := make(map[string]interface{})
+	body := make(map[string]any)
 	if err := json.Unmarshal([]byte(mergedJSON), &body); err != nil {
 		return fmt.Errorf("failed to decode json. %w", err)
 	}
@@ -129,17 +129,17 @@ func (b *MapBuilder) MergeJsonnet(snippet string, reverse bool) error {
 }
 
 // SetMap sets a new map to the body. This will remove any existing values in the body
-func (b *MapBuilder) SetMap(body map[string]interface{}) {
+func (b *MapBuilder) SetMap(body map[string]any) {
 	b.body = body
 }
 
-// GetMap returns the body as a map[string]interface{}
-func (b MapBuilder) GetMap() map[string]interface{} {
+// GetMap returns the body as a map[string]any
+func (b MapBuilder) GetMap() map[string]any {
 	return b.body
 }
 
-// GetMap returns the body as a map[string]interface{}
-func (b MapBuilder) Get(key string) interface{} {
+// GetMap returns the body as a map[string]any
+func (b MapBuilder) Get(key string) any {
 	return b.body[key]
 }
 
@@ -158,9 +158,9 @@ func (b MapBuilder) MarshalJSON() ([]byte, error) {
 }
 
 // Set sets a value to a give dot notation path
-func (b *MapBuilder) Set(path string, value interface{}) error {
+func (b *MapBuilder) Set(path string, value any) error {
 	if b.body == nil {
-		b.body = make(map[string]interface{})
+		b.body = make(map[string]any)
 	}
 	keys := strings.Split(path, Separator)
 
@@ -172,9 +172,9 @@ func (b *MapBuilder) Set(path string, value interface{}) error {
 		if key != "" {
 			if i != lastIndex {
 				if _, ok := currentMap[key]; !ok {
-					currentMap[key] = make(map[string]interface{})
+					currentMap[key] = make(map[string]any)
 				}
-				currentMap = currentMap[key].(map[string]interface{})
+				currentMap = currentMap[key].(map[string]any)
 			} else {
 				currentMap[key] = value
 			}

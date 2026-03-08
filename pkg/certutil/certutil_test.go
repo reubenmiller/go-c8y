@@ -291,7 +291,7 @@ func TestPublicKeysFromFile(t *testing.T) {
 	}
 }
 
-func generateTestCertificatePEM(t *testing.T, key interface{}) []byte {
+func generateTestCertificatePEM(t *testing.T, key any) []byte {
 	t.Helper()
 	template := x509.Certificate{
 		SerialNumber: big.NewInt(1),

@@ -148,7 +148,7 @@ func (s *Service) Update(ctx context.Context, pluginID string, version string, t
 }
 
 func (s *Service) updateB(pluginID string, version string, tags []string) *core.TryRequest {
-	body := map[string]interface{}{
+	body := map[string]any{
 		"tags": tags,
 	}
 	req := s.Client.R().

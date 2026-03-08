@@ -34,7 +34,7 @@ type Options struct {
 
 	// OnError is called each time an error occurs (from iterator or user function).
 	// It receives the item that failed and the error.
-	// The item is passed as interface{} - use type assertion to access its fields.
+	// The item is passed as any - use type assertion to access its fields.
 	// This is called from an unspecified goroutine; the callback must be safe
 	// for concurrent use.
 	// Example: OnError: func(item any, err error) {

@@ -33,10 +33,10 @@ type RequestOptions struct {
 	Path string
 
 	// Query parameters - can be a string, struct with url tags, or url.Values
-	Query interface{}
+	Query any
 
 	// Body is the request body - can be any type that resty supports
-	Body interface{}
+	Body any
 
 	// Accept header value (defaults to "application/json")
 	Accept string
@@ -119,7 +119,7 @@ func (r *RequestResult) JSON(path ...string) gjson.Result {
 }
 
 // Unmarshal deserializes the response body into v
-func (r *RequestResult) Unmarshal(v interface{}) error {
+func (r *RequestResult) Unmarshal(v any) error {
 	if r.Response == nil {
 		return fmt.Errorf("no response to unmarshal")
 	}
@@ -155,7 +155,7 @@ func (r *RequestResult) Header(key string) string {
 //	result := client.SendRequest(ctx, api.RequestOptions{
 //	    Method: "POST",
 //	    Path:   "/event/events",
-//	    Body: map[string]interface{}{
+//	    Body: map[string]any{
 //	        "source": map[string]string{"id": "12345"},
 //	        "type":   "testEvent",
 //	        "text":   "Test event",

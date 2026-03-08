@@ -9,7 +9,7 @@ import (
 
 type ProxyReader struct {
 	reader io.Reader
-	value  interface{}
+	value  any
 }
 
 func (r ProxyReader) Read(p []byte) (n int, err error) {

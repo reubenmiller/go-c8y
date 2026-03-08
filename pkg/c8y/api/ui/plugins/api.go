@@ -121,7 +121,7 @@ func NewPlugin(name string) *Plugin {
 }
 
 // GetManifestContents reads the cumulocity.json manifest from a zip file
-func GetManifestContents(zipFilename string, contents interface{}) error {
+func GetManifestContents(zipFilename string, contents any) error {
 	reader, err := zip.OpenReader(zipFilename)
 	if err != nil {
 		return err

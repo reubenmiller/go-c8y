@@ -20,12 +20,12 @@ func MergePatch(base, patch []byte) ([]byte, error) {
 		return base, nil
 	}
 
-	var baseMap map[string]interface{}
+	var baseMap map[string]any
 	if err := json.Unmarshal(base, &baseMap); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal base JSON: %w", err)
 	}
 
-	var patchMap map[string]interface{}
+	var patchMap map[string]any
 	if err := json.Unmarshal(patch, &patchMap); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal patch JSON: %w", err)
 	}
@@ -41,8 +41,8 @@ func MergePatch(base, patch []byte) ([]byte, error) {
 }
 
 // mergeMaps recursively merges two maps following JSON Merge Patch rules
-func mergeMaps(base, patch map[string]interface{}) map[string]interface{} {
-	result := make(map[string]interface{})
+func mergeMaps(base, patch map[string]any) map[string]any {
+	result := make(map[string]any)
 
 	// Copy all base values
 	for k, v := range base {
@@ -58,8 +58,8 @@ func mergeMaps(base, patch map[string]interface{}) map[string]interface{} {
 		}
 
 		// If both are maps, merge recursively
-		if patchMap, ok := patchValue.(map[string]interface{}); ok {
-			if baseMap, ok := result[k].(map[string]interface{}); ok {
+		if patchMap, ok := patchValue.(map[string]any); ok {
+			if baseMap, ok := result[k].(map[string]any); ok {
 				result[k] = mergeMaps(baseMap, patchMap)
 				continue
 			}

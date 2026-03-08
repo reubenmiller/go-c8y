@@ -182,9 +182,9 @@ type CreateOptions struct {
 	Time time.Time
 
 	// AdditionalProperties allows for custom fields to be added to the event
-	// Can be a struct, map[string]interface{}, or any JSON-serializable type
+	// Can be a struct, map[string]any, or any JSON-serializable type
 	// These properties are deep-merged with the base event fields
-	AdditionalProperties interface{}
+	AdditionalProperties any
 }
 
 // Create an event
@@ -196,13 +196,13 @@ type CreateOptions struct {
 //	    Source: "name:myDevice",  // Resolver string
 //	    Type: "c8y_TestEvent",
 //	    Text: "Test event",
-//	    AdditionalProperties: map[string]interface{}{"custom": "value"},
+//	    AdditionalProperties: map[string]any{"custom": "value"},
 //	})
 //
 // Using direct struct/map:
 //
 //	result := client.Events.Create(ctx, model.Event{...})
-//	result := client.Events.Create(ctx, map[string]interface{}{...})
+//	result := client.Events.Create(ctx, map[string]any{...})
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Event] {
 	// Check if body is CreateOptions - if so, handle resolver and merge logic
 	if opts, ok := body.(CreateOptions); ok {
@@ -236,8 +236,8 @@ func (s *Service) createWithOptions(ctx context.Context, opts CreateOptions) op.
 	}
 
 	// Build base event from known fields
-	baseEvent := map[string]interface{}{
-		"source": map[string]interface{}{"id": sourceID},
+	baseEvent := map[string]any{
+		"source": map[string]any{"id": sourceID},
 	}
 	if opts.Type != "" {
 		baseEvent["type"] = opts.Type

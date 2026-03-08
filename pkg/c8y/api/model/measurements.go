@@ -272,7 +272,7 @@ type SimpleMeasurementOptions struct {
 	ValueFragmentType   string
 	ValueFragmentSeries string
 	FragmentType        []string
-	Value               interface{}
+	Value               any
 	Unit                string
 }
 
@@ -297,7 +297,7 @@ type ValueFragmentType struct {
 // This layout deviates from the Cumulocity Measurement model
 type ValueFragmentSeries struct {
 	Name  string
-	Value interface{}
+	Value any
 	Unit  string
 }
 
@@ -343,7 +343,7 @@ var ErrInvalidMeasurementValueType = errors.New("only numbers are supported as m
 func (m ValueFragmentType) MarshalJSON() ([]byte, error) {
 	buffer := bytes.NewBufferString("{")
 
-	setMeasurementValue := func(val interface{}, unit string) string {
+	setMeasurementValue := func(val any, unit string) string {
 		return fmt.Sprintf("{\"value\": %v, \"unit\":\"%s\" }", val, unit)
 	}
 

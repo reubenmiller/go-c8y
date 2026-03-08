@@ -56,7 +56,7 @@ func (r *Response) JSON(path ...string) gjson.Result {
 }
 
 // DecodeJSON returns the json response decoded into the given interface
-func (r *Response) DecodeJSON(v interface{}) error {
+func (r *Response) DecodeJSON(v any) error {
 	if r.body == nil {
 		return fmt.Errorf("JSON object does not exist (i.e. is nil)")
 	}
@@ -107,12 +107,12 @@ func (r *Response) Proto() string {
 }
 
 // Result method returns the response value as an object if it has one
-// func (r *Response) Result() interface{} {
+// func (r *Response) Result() any {
 // 	return r.Request.Result
 // }
 
 // Error method returns the error object if it has one
-// func (r *Response) Error() interface{} {
+// func (r *Response) Error() any {
 // 	return r.Request.Error
 // }
 
@@ -197,7 +197,7 @@ func (r *Response) IsError() bool {
 // }
 
 // DecodeJSONBytes decodes json preserving number formatting (especially large integers and scientific notation floats)
-func DecodeJSONBytes(v []byte, dst interface{}) error {
+func DecodeJSONBytes(v []byte, dst any) error {
 	return DecodeJSONReader(bytes.NewReader(v), dst)
 }
 
@@ -208,7 +208,7 @@ func DecodeJSONBytes(v []byte, dst interface{}) error {
 // i.e. otherwise this conversion will happen (which causes a problem with mongodb!)
 //
 //	9.2233720368547758E+18 --> 9223372036854776000
-func DecodeJSONReader(r io.Reader, dst interface{}) error {
+func DecodeJSONReader(r io.Reader, dst any) error {
 	decoder := json.NewDecoder(r)
 	decoder.UseNumber()
 	return decoder.Decode(&dst)

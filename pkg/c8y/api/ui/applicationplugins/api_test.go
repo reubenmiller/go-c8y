@@ -31,10 +31,10 @@ func TestUpdateApplicationB(t *testing.T) {
 	s := newTestService()
 	applicationID := "12345"
 
-	body := map[string]interface{}{
-		"applicationBuilder": map[string]interface{}{
-			"plugins": []interface{}{
-				map[string]interface{}{"id": "plugin1"},
+	body := map[string]any{
+		"applicationBuilder": map[string]any{
+			"plugins": []any{
+				map[string]any{"id": "plugin1"},
 			},
 		},
 	}
@@ -59,10 +59,10 @@ func TestInstallPluginFlow(t *testing.T) {
 	assert.Equal(t, ApiApplication, getReq.URL().Path)
 
 	// Test that updateApplication would be called with correct structure
-	body := map[string]interface{}{
-		"applicationBuilder": map[string]interface{}{
-			"plugins": []interface{}{
-				map[string]interface{}{"id": "new-plugin-id"},
+	body := map[string]any{
+		"applicationBuilder": map[string]any{
+			"plugins": []any{
+				map[string]any{"id": "new-plugin-id"},
 			},
 		},
 	}
@@ -81,9 +81,9 @@ func TestUpdatePluginReferencesFlow(t *testing.T) {
 	}
 
 	// Create the body structure that Update would use
-	plugins := make([]map[string]interface{}, len(pluginRefs))
+	plugins := make([]map[string]any, len(pluginRefs))
 	for i, ref := range pluginRefs {
-		plugin := map[string]interface{}{}
+		plugin := map[string]any{}
 		if ref.ID != "" {
 			plugin["id"] = ref.ID
 		}
@@ -96,8 +96,8 @@ func TestUpdatePluginReferencesFlow(t *testing.T) {
 		plugins[i] = plugin
 	}
 
-	body := map[string]interface{}{
-		"applicationBuilder": map[string]interface{}{
+	body := map[string]any{
+		"applicationBuilder": map[string]any{
 			"plugins": plugins,
 		},
 	}
@@ -118,11 +118,11 @@ func TestDeletePluginFlow(t *testing.T) {
 	assert.Equal(t, resty.MethodGet, getReq.Request.Method)
 
 	// Test that updateApplication would be called with filtered plugins
-	body := map[string]interface{}{
-		"applicationBuilder": map[string]interface{}{
-			"plugins": []interface{}{
+	body := map[string]any{
+		"applicationBuilder": map[string]any{
+			"plugins": []any{
 				// Plugin to delete would be filtered out
-				map[string]interface{}{"id": "remaining-plugin"},
+				map[string]any{"id": "remaining-plugin"},
 			},
 		},
 	}
@@ -181,34 +181,34 @@ func TestUpdateApplicationBodyStructure(t *testing.T) {
 	// Test various body structures
 	testCases := []struct {
 		name string
-		body map[string]interface{}
+		body map[string]any
 	}{
 		{
 			name: "Single plugin",
-			body: map[string]interface{}{
-				"applicationBuilder": map[string]interface{}{
-					"plugins": []interface{}{
-						map[string]interface{}{"id": "plugin1"},
+			body: map[string]any{
+				"applicationBuilder": map[string]any{
+					"plugins": []any{
+						map[string]any{"id": "plugin1"},
 					},
 				},
 			},
 		},
 		{
 			name: "Multiple plugins",
-			body: map[string]interface{}{
-				"applicationBuilder": map[string]interface{}{
-					"plugins": []interface{}{
-						map[string]interface{}{"id": "plugin1"},
-						map[string]interface{}{"id": "plugin2", "version": "1.0.0"},
+			body: map[string]any{
+				"applicationBuilder": map[string]any{
+					"plugins": []any{
+						map[string]any{"id": "plugin1"},
+						map[string]any{"id": "plugin2", "version": "1.0.0"},
 					},
 				},
 			},
 		},
 		{
 			name: "No plugins",
-			body: map[string]interface{}{
-				"applicationBuilder": map[string]interface{}{
-					"plugins": []interface{}{},
+			body: map[string]any{
+				"applicationBuilder": map[string]any{
+					"plugins": []any{},
 				},
 			},
 		},
@@ -230,7 +230,7 @@ func TestApplicationPluginsUsesCorrectEndpoint(t *testing.T) {
 	applicationID := "app-123"
 
 	getReq := s.getApplicationB(applicationID)
-	updateReq := s.updateApplicationB(applicationID, map[string]interface{}{})
+	updateReq := s.updateApplicationB(applicationID, map[string]any{})
 
 	// Both operations should use the same application endpoint template
 	assert.Equal(t, ApiApplication, getReq.URL().Path, "Get should use application endpoint")

@@ -221,7 +221,7 @@ func (s *Service) Update(ctx context.Context, applicationID string, version stri
 }
 
 func (s *Service) updateB(applicationID string, version string, tags []string) *core.TryRequest {
-	body := map[string]interface{}{
+	body := map[string]any{
 		"tags": tags,
 	}
 

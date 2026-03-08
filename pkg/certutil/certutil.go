@@ -148,7 +148,7 @@ func MarshalPrivateKeyToPEM(privateKey crypto.PrivateKey) ([]byte, error) {
 
 // PrivateKeyFromFile returns the private key in rsa.PrivateKey or ecdsa.PrivateKey format from a given PEM-encoded file.
 // Returns an error if the file could not be read or if the private key could not be parsed.
-func PrivateKeyFromFile(file string) (interface{}, error) {
+func PrivateKeyFromFile(file string) (any, error) {
 	data, err := os.ReadFile(file)
 	if err != nil {
 		return nil, err
@@ -162,7 +162,7 @@ func PrivateKeyFromFile(file string) (interface{}, error) {
 
 // PublicKeysFromFile returns the public keys in rsa.PublicKey or ecdsa.PublicKey format from a given PEM-encoded file.
 // Reads public keys from both public and private key files.
-func PublicKeysFromFile(file string) ([]interface{}, error) {
+func PublicKeysFromFile(file string) ([]any, error) {
 	data, err := os.ReadFile(file)
 	if err != nil {
 		return nil, err
@@ -185,7 +185,7 @@ func verifyKeyData(data []byte) bool {
 
 // ParsePrivateKeyPEM returns a private key parsed from a PEM block in the supplied data.
 // Recognizes PEM blocks for "EC PRIVATE KEY", "RSA PRIVATE KEY", or "PRIVATE KEY"
-func ParsePrivateKeyPEM(keyData []byte) (interface{}, error) {
+func ParsePrivateKeyPEM(keyData []byte) (any, error) {
 	var privateKeyPemBlock *pem.Block
 	for {
 		privateKeyPemBlock, keyData = pem.Decode(keyData)
@@ -221,9 +221,9 @@ func ParsePrivateKeyPEM(keyData []byte) (interface{}, error) {
 
 // ParsePublicKeysPEM is a helper function for reading an array of rsa.PublicKey or ecdsa.PublicKey from a PEM-encoded byte array.
 // Reads public keys from both public and private key files.
-func ParsePublicKeysPEM(keyData []byte) ([]interface{}, error) {
+func ParsePublicKeysPEM(keyData []byte) ([]any, error) {
 	var block *pem.Block
-	keys := []interface{}{}
+	keys := []any{}
 	for {
 		// read the next block
 		block, keyData = pem.Decode(keyData)
@@ -290,7 +290,7 @@ func parseRSAPublicKey(data []byte) (*rsa.PublicKey, error) {
 	var err error
 
 	// Parse the key
-	var parsedKey interface{}
+	var parsedKey any
 	if parsedKey, err = x509.ParsePKIXPublicKey(data); err != nil {
 		if cert, err := x509.ParseCertificate(data); err == nil {
 			parsedKey = cert.PublicKey
@@ -314,7 +314,7 @@ func parseRSAPrivateKey(data []byte) (*rsa.PrivateKey, error) {
 	var err error
 
 	// Parse the key
-	var parsedKey interface{}
+	var parsedKey any
 	if parsedKey, err = x509.ParsePKCS1PrivateKey(data); err != nil {
 		if parsedKey, err = x509.ParsePKCS8PrivateKey(data); err != nil {
 			return nil, err
@@ -336,7 +336,7 @@ func parseECPublicKey(data []byte) (*ecdsa.PublicKey, error) {
 	var err error
 
 	// Parse the key
-	var parsedKey interface{}
+	var parsedKey any
 	if parsedKey, err = x509.ParsePKIXPublicKey(data); err != nil {
 		if cert, err := x509.ParseCertificate(data); err == nil {
 			parsedKey = cert.PublicKey
@@ -360,7 +360,7 @@ func parseECPrivateKey(data []byte) (*ecdsa.PrivateKey, error) {
 	var err error
 
 	// Parse the key
-	var parsedKey interface{}
+	var parsedKey any
 	if parsedKey, err = x509.ParseECPrivateKey(data); err != nil {
 		return nil, err
 	}

@@ -199,7 +199,7 @@ func TestSendRequest_ProcessingMode(t *testing.T) {
 		Method:         "POST",
 		Path:           "/event/events",
 		ProcessingMode: types.ProcessingModeQuiescent,
-		Body: map[string]interface{}{
+		Body: map[string]any{
 			"source": map[string]string{"id": mo.Data.ID()},
 			"time":   time.Now(),
 			"type":   "ci_TestEvent",
@@ -275,7 +275,7 @@ func TestRequestResult_Unmarshal(t *testing.T) {
 
 	require.NoError(t, result.Error)
 
-	var tenant map[string]interface{}
+	var tenant map[string]any
 	err := result.Unmarshal(&tenant)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, tenant)
@@ -462,7 +462,7 @@ func TestSendRequest_MultipleBodyReads(t *testing.T) {
 	assert.Equal(t, json1.String(), json2.String(), "Multiple JSON() calls should return same data")
 
 	// Unmarshal should work after all the above reads
-	var response map[string]interface{}
+	var response map[string]any
 	err := result.Unmarshal(&response)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, response)

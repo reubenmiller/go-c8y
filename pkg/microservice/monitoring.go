@@ -36,7 +36,7 @@ func (m *Microservice) AddHealthEndpointHandlers(e *echo.Echo) {
 // EnvironmentVariablesHandler return the list of environment variables
 func (m *Microservice) EnvironmentVariablesHandler(c echo.Context) error {
 	// System settings
-	systemProperties := map[string]interface{}{}
+	systemProperties := map[string]any{}
 	for _, key := range m.Config.AllKeys() {
 		value := m.Config.GetString(key)
 		if strings.Contains(key, "password") {
@@ -47,7 +47,7 @@ func (m *Microservice) EnvironmentVariablesHandler(c echo.Context) error {
 	}
 
 	// Environment variables
-	environmentVariables := map[string]interface{}{}
+	environmentVariables := map[string]any{}
 	for _, e := range os.Environ() {
 		pair := strings.Split(e, "=")
 		if strings.Contains(strings.ToLower(pair[0]), "password") {
@@ -57,7 +57,7 @@ func (m *Microservice) EnvironmentVariablesHandler(c echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	return c.JSON(http.StatusOK, map[string]any{
 		"systemEnvironment": environmentVariables,
 		"systemProperties":  systemProperties,
 	})

@@ -213,7 +213,7 @@ func (s *Service) createWithOptions(ctx context.Context, opts CreateOptions) op.
 	}
 
 	// Build base operation from known fields
-	baseOperation := map[string]interface{}{
+	baseOperation := map[string]any{
 		"deviceId": deviceID,
 	}
 	if opts.Description != "" {

@@ -92,7 +92,7 @@ func Test_AlarmCreateWithOptions_WithCustomStruct(t *testing.T) {
 	type CustomAlarmData struct {
 		CustomField1 string                 `json:"customField1"`
 		CustomField2 int                    `json:"customField2"`
-		C8yCustom    map[string]interface{} `json:"c8y_CustomFragment"`
+		C8yCustom    map[string]any `json:"c8y_CustomFragment"`
 	}
 
 	ctx := api.WithMockResponses(context.Background(), false)
@@ -109,7 +109,7 @@ func Test_AlarmCreateWithOptions_WithCustomStruct(t *testing.T) {
 			AdditionalProperties: CustomAlarmData{
 				CustomField1: "value1",
 				CustomField2: 42,
-				C8yCustom: map[string]interface{}{
+				C8yCustom: map[string]any{
 					"temperature": 23.5,
 					"humidity":    65,
 				},
@@ -139,14 +139,14 @@ func Test_AlarmCreateWithOptions_WithInlineMap(t *testing.T) {
 			Type:     "c8y_MapAlarm",
 			Text:     "Test with inline map",
 			Severity: "WARNING",
-			AdditionalProperties: map[string]interface{}{
-				"c8y_Measurements": map[string]interface{}{
-					"temperature": map[string]interface{}{
+			AdditionalProperties: map[string]any{
+				"c8y_Measurements": map[string]any{
+					"temperature": map[string]any{
 						"value": 25.3,
 						"unit":  "°C",
 					},
 				},
-				"metadata": map[string]interface{}{
+				"metadata": map[string]any{
 					"createdBy": "test",
 					"version":   "1.0",
 				},

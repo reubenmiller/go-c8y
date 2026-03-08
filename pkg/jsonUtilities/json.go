@@ -53,7 +53,7 @@ var ErrJSONDecode = errors.New("failed to decode JSON")
 var ErrReadFile = errors.New("failed to read file")
 
 // DecodeJSONFile returns the contents of a json file as a map
-func DecodeJSONFile(filename string) (map[string]interface{}, error) {
+func DecodeJSONFile(filename string) (map[string]any, error) {
 	var err error
 
 	jsonFile, err := os.Open(filename)
@@ -64,7 +64,7 @@ func DecodeJSONFile(filename string) (map[string]interface{}, error) {
 
 	defer jsonFile.Close()
 
-	contents := make(map[string]interface{})
+	contents := make(map[string]any)
 
 	b, err := io.ReadAll(jsonFile)
 	if err != nil {

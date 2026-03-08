@@ -224,7 +224,7 @@ func (s *Service) CreateOrUpdate(ctx context.Context, opt CreateOptions) (*model
 	return application, nil
 }
 
-func GetManifestContents(zipFilename string, contents interface{}) error {
+func GetManifestContents(zipFilename string, contents any) error {
 	reader, err := zip.OpenReader(zipFilename)
 	if err != nil {
 		return err

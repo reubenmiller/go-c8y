@@ -179,9 +179,9 @@ type CreateOptions struct {
 	Time time.Time
 
 	// AdditionalProperties allows for custom fields to be added to the measurement
-	// Can be a struct, map[string]interface{}, or any JSON-serializable type
+	// Can be a struct, map[string]any, or any JSON-serializable type
 	// These properties are deep-merged with the base measurement fields
-	AdditionalProperties interface{}
+	AdditionalProperties any
 }
 
 // Create posts a new measurement to the platform
@@ -193,9 +193,9 @@ type CreateOptions struct {
 //	    Source: "name:myDevice",  // Resolver string
 //	    Type: "c8y_Temperature",
 //	    Time: time.Now(),
-//	    AdditionalProperties: map[string]interface{}{
-//	        "c8y_Temperature": map[string]interface{}{
-//	            "T": map[string]interface{}{"value": 23.5, "unit": "°C"},
+//	    AdditionalProperties: map[string]any{
+//	        "c8y_Temperature": map[string]any{
+//	            "T": map[string]any{"value": 23.5, "unit": "°C"},
 //	        },
 //	    },
 //	})
@@ -203,7 +203,7 @@ type CreateOptions struct {
 // Using direct struct/map:
 //
 //	result := client.Measurements.Create(ctx, model.Measurement{...})
-//	result := client.Measurements.Create(ctx, map[string]interface{}{...})
+//	result := client.Measurements.Create(ctx, map[string]any{...})
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Measurement] {
 	// Check if body is CreateOptions - if so, handle resolver and merge logic
 	if opts, ok := body.(CreateOptions); ok {
@@ -237,8 +237,8 @@ func (s *Service) createWithOptions(ctx context.Context, opts CreateOptions) op.
 	}
 
 	// Build base measurement from known fields
-	baseMeasurement := map[string]interface{}{
-		"source": map[string]interface{}{"id": sourceID},
+	baseMeasurement := map[string]any{
+		"source": map[string]any{"id": sourceID},
 	}
 	if opts.Type != "" {
 		baseMeasurement["type"] = opts.Type

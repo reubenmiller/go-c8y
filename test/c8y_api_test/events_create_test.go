@@ -84,7 +84,7 @@ func Test_Events_Create_WithAdditionalProperties(t *testing.T) {
 	ctx := api.WithMockResponses(context.Background(), true)
 
 	type CustomEvent struct {
-		Position map[string]interface{} `json:"c8y_Position"`
+		Position map[string]any `json:"c8y_Position"`
 	}
 
 	opts := events.CreateOptions{
@@ -93,7 +93,7 @@ func Test_Events_Create_WithAdditionalProperties(t *testing.T) {
 		Text:   "Location updated",
 		Time:   time.Now(),
 		AdditionalProperties: CustomEvent{
-			Position: map[string]interface{}{
+			Position: map[string]any{
 				"lat": 51.5074,
 				"lng": -0.1278,
 				"alt": 100.0,

@@ -48,12 +48,12 @@ func (a ApplicationWithPlugins) ID() string {
 	return a.Get("id").String()
 }
 
-func (a ApplicationWithPlugins) Plugins() []map[string]interface{} {
+func (a ApplicationWithPlugins) Plugins() []map[string]any {
 	plugins := a.Get("applicationBuilder.plugins").Array()
-	result := make([]map[string]interface{}, len(plugins))
+	result := make([]map[string]any, len(plugins))
 	for i, p := range plugins {
-		// Convert gjson.Result to map[string]interface{}
-		result[i] = p.Value().(map[string]interface{})
+		// Convert gjson.Result to map[string]any
+		result[i] = p.Value().(map[string]any)
 	}
 	return result
 }
@@ -100,11 +100,11 @@ func (s *Service) getApplicationB(applicationID string) *core.TryRequest {
 }
 
 // updateApplication updates the application with new data
-func (s *Service) updateApplication(ctx context.Context, applicationID string, body map[string]interface{}) op.Result[ApplicationWithPlugins] {
+func (s *Service) updateApplication(ctx context.Context, applicationID string, body map[string]any) op.Result[ApplicationWithPlugins] {
 	return core.Execute(ctx, s.updateApplicationB(applicationID, body), NewApplicationWithPlugins)
 }
 
-func (s *Service) updateApplicationB(applicationID string, body map[string]interface{}) *core.TryRequest {
+func (s *Service) updateApplicationB(applicationID string, body map[string]any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -139,21 +139,21 @@ func (s *Service) Install(ctx context.Context, applicationID string, pluginID st
 	// Get current plugins
 	currentPluginsResult := appResult.Data.Get("applicationBuilder.plugins").Array()
 
-	// Convert to []interface{}
-	currentPlugins := make([]interface{}, len(currentPluginsResult))
+	// Convert to []any
+	currentPlugins := make([]any, len(currentPluginsResult))
 	for i, p := range currentPluginsResult {
 		currentPlugins[i] = p.Value()
 	}
 
 	// Add new plugin reference
-	newPlugin := map[string]interface{}{
+	newPlugin := map[string]any{
 		"id": pluginID,
 	}
 	updatedPlugins := append(currentPlugins, newPlugin)
 
 	// Update application with new plugin list
-	body := map[string]interface{}{
-		"applicationBuilder": map[string]interface{}{
+	body := map[string]any{
+		"applicationBuilder": map[string]any{
 			"plugins": updatedPlugins,
 		},
 	}
@@ -165,9 +165,9 @@ func (s *Service) Install(ctx context.Context, applicationID string, pluginID st
 // This replaces all plugins with the provided list
 func (s *Service) Update(ctx context.Context, applicationID string, pluginRefs []PluginReference) op.Result[ApplicationWithPlugins] {
 	// Convert plugin references to the format expected by the API
-	plugins := make([]map[string]interface{}, len(pluginRefs))
+	plugins := make([]map[string]any, len(pluginRefs))
 	for i, ref := range pluginRefs {
-		plugin := map[string]interface{}{}
+		plugin := map[string]any{}
 		if ref.ID != "" {
 			plugin["id"] = ref.ID
 		}
@@ -180,8 +180,8 @@ func (s *Service) Update(ctx context.Context, applicationID string, pluginRefs [
 		plugins[i] = plugin
 	}
 
-	body := map[string]interface{}{
-		"applicationBuilder": map[string]interface{}{
+	body := map[string]any{
+		"applicationBuilder": map[string]any{
 			"plugins": plugins,
 		},
 	}
@@ -206,7 +206,7 @@ func (s *Service) Delete(ctx context.Context, applicationID string, pluginID str
 
 	// Get current plugins and filter out the one to delete
 	currentPluginsResult := appResult.Data.Get("applicationBuilder.plugins").Array()
-	updatedPlugins := []interface{}{}
+	updatedPlugins := []any{}
 
 	for _, p := range currentPluginsResult {
 		// Get the id from the gjson.Result
@@ -217,8 +217,8 @@ func (s *Service) Delete(ctx context.Context, applicationID string, pluginID str
 	}
 
 	// Update application with filtered plugin list
-	body := map[string]interface{}{
-		"applicationBuilder": map[string]interface{}{
+	body := map[string]any{
+		"applicationBuilder": map[string]any{
 			"plugins": updatedPlugins,
 		},
 	}

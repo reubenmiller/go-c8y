@@ -855,7 +855,7 @@ func (c *Client) logMessage(r *request) {
 
 func (c *Client) logRemainingResponses() {
 	ids := []string{}
-	c.pendingRequests.Range(func(key, value interface{}) bool {
+	c.pendingRequests.Range(func(key, value any) bool {
 		ids = append(ids, key.(string))
 		return true
 	})
