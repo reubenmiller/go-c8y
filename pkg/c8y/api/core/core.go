@@ -16,6 +16,14 @@ import (
 type Service struct {
 	Client         *resty.Client
 	RealtimeClient *realtime.Client
+	// MTLSPort is the port used for the mutual-TLS device-certificate token endpoint.
+	// Defaults to "8443" when empty.
+	MTLSPort string
+	// CertChainHeader is the pre-computed value for the X-SSL-CERT-CHAIN header.
+	// It is non-empty only when a client certificate with an intermediate chain was
+	// supplied via ClientOptions.Auth. Set on the request by any service that
+	// requires mTLS (e.g. the device access-token endpoint).
+	CertChainHeader string
 }
 
 type TryRequest struct {

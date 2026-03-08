@@ -6,6 +6,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha1"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/base32"
 	"encoding/binary"
 	"encoding/json"
@@ -49,7 +50,6 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/tenants/devicestatistics"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/tenants/logintokens"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/trustedcertificates"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/ui/applicationplugins"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/ui/plugins"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/ui/plugins/versions"
@@ -199,8 +199,16 @@ type ClientOptions struct {
 	// Create a realtime client
 	Realtime bool
 
-	// Show sensitive information in the logs
+	// Show sensitive information in the logs (e.g. credentials in Authorization headers).
+	// When true, sensitive headers are NOT redacted in debug output.
+	// Has no effect unless Debug is also true.
 	ShowSensitive bool
+
+	// Debug enables debug logging of all HTTP requests and responses made by this
+	// client, including any calls made during NewClient() itself (e.g. the initial
+	// token fetch via certificate auth). Sensitive headers are redacted unless
+	// ShowSensitive is also set.
+	Debug bool
 
 	// Enable Keyring for saving and retrieving a token
 	UseKeyRing bool
@@ -216,6 +224,11 @@ type ClientOptions struct {
 	// A value of zero means no timeout. Per-request timeouts can still be applied
 	// by passing a context with a deadline: ctx, cancel := context.WithTimeout(ctx, d)
 	Timeout time.Duration
+
+	// MTLSPort is the port used for the mutual-TLS device-certificate token endpoint.
+	// Defaults to "8443" when empty. This is the port on which Cumulocity listens for
+	// mTLS connections (e.g. POST /devicecontrol/deviceAccessToken).
+	MTLSPort string
 }
 
 func (c *Client) Realtime() *realtime.Client {
@@ -239,27 +252,30 @@ func NewClientFromEnvironment(opt ClientOptions) *Client {
 	return NewClient(opt)
 }
 
-func SetCertificateChainHeaderIfRequired(client *resty.Client, auth authentication.AuthOptions) *resty.Client {
+// buildCertChainHeader returns the value for the X-SSL-CERT-CHAIN request header
+// derived from the intermediate certificates in the supplied auth credentials.
+// Returns an empty string when no certificate is configured or when there are no
+// intermediate certificates in the chain (i.e. the leaf cert was issued directly
+// by a root that is already trusted by the platform).
+func buildCertChainHeader(auth authentication.AuthOptions) string {
 	if auth.Certificate == "" || auth.CertificateKey == "" {
-		return client
+		return ""
 	}
-
-	certs := make([]tls.Certificate, 0)
-	if _, err := os.Stat(auth.CertificateKey); err == nil {
-		client.SetCertificateFromFile(auth.Certificate, auth.CertificateKey)
-		if cert, err := tls.LoadX509KeyPair(auth.Certificate, auth.CertificateKey); err == nil {
-			certs = append(certs, cert)
-		}
+	var cert tls.Certificate
+	var err error
+	if _, statErr := os.Stat(auth.CertificateKey); statErr == nil {
+		cert, err = tls.LoadX509KeyPair(auth.Certificate, auth.CertificateKey)
 	} else {
-		client.SetCertificateFromString(auth.Certificate, auth.CertificateKey)
-		if cert, err := tls.X509KeyPair([]byte(auth.Certificate), []byte(auth.CertificateKey)); err == nil {
-			certs = append(certs, cert)
-		}
+		cert, err = tls.X509KeyPair([]byte(auth.Certificate), []byte(auth.CertificateKey))
 	}
-	if headerValue, err := certutil.CertificateChain(certs).Header(); err == nil && len(headerValue) > 0 {
-		client.SetHeader(types.HeaderSSLCertificateChain, string(headerValue))
+	if err != nil {
+		return ""
 	}
-	return client
+	headerValue, err := certutil.CertificateChain([]tls.Certificate{cert}).Header()
+	if err != nil || len(headerValue) == 0 {
+		return ""
+	}
+	return string(headerValue)
 }
 
 // setTLSConfig attempts to set TLS configuration on a transport.
@@ -301,11 +317,6 @@ func NewClient(opts ClientOptions) *Client {
 		rclient.SetTimeout(opts.Timeout)
 	}
 
-	// Set any certificate before any other Transports are set as these will
-	// make the TLS config inaccessible
-	// TODO: Check if there is a better way to do this
-	SetCertificateChainHeaderIfRequired(rclient, opts.Auth)
-
 	targetBaseURL, _ := url.Parse(FormatBaseURL(opts.BaseURL))
 	if targetBaseURL != nil {
 		rclient.SetBaseURL(targetBaseURL.String())
@@ -324,9 +335,29 @@ func NewClient(opts ClientOptions) *Client {
 	} else {
 		// No custom transport, create a default one with TLS config
 		defaultTransport := http.DefaultTransport.(*http.Transport).Clone()
-		defaultTransport.TLSClientConfig = &tls.Config{
+		tlsCfg := &tls.Config{
 			InsecureSkipVerify: opts.InsecureSkipVerify,
 		}
+		// Attach client certificates directly to the transport for mTLS (e.g.
+		// device certificate auth on port 8443). SetCertificateChainHeaderIfRequired
+		// configures resty's own internal TLS state, but the SetTransport call below
+		// replaces the transport entirely and loses those settings. We must therefore
+		// also set the certificates on the transport we are about to install.
+		if opts.Auth.Certificate != "" && opts.Auth.CertificateKey != "" {
+			var cert tls.Certificate
+			var certErr error
+			if _, statErr := os.Stat(opts.Auth.CertificateKey); statErr == nil {
+				cert, certErr = tls.LoadX509KeyPair(opts.Auth.Certificate, opts.Auth.CertificateKey)
+			} else {
+				cert, certErr = tls.X509KeyPair([]byte(opts.Auth.Certificate), []byte(opts.Auth.CertificateKey))
+			}
+			if certErr == nil {
+				tlsCfg.Certificates = []tls.Certificate{cert}
+			} else {
+				slog.Debug("Failed to load client certificate onto transport", "err", certErr)
+			}
+		}
+		defaultTransport.TLSClientConfig = tlsCfg
 		baseTransport = defaultTransport
 	}
 
@@ -363,10 +394,13 @@ func NewClient(opts ClientOptions) *Client {
 		UseTenantInUsername: true,
 		Auth:                opts.Auth,
 
+		debugEnabled:  opts.Debug,
 		showSensitive: opts.ShowSensitive,
 		UseKeyRing:    opts.UseKeyRing,
 	}
 	c.common.Client = rclient
+	c.common.MTLSPort = opts.MTLSPort
+	c.common.CertChainHeader = buildCertChainHeader(opts.Auth)
 	c.common.RealtimeClient = realtime.NewClient(nil, realtime.ClientOptions{
 		Host:     targetBaseURL.String(),
 		Tenant:   c.Auth.Tenant,
@@ -543,6 +577,40 @@ func (c *Client) SetDebugWithAuth(enable bool) {
 	}
 }
 
+// clientTLSCerts returns the client certificates configured on the resty client's
+// transport, if any. These are the certificates presented during mTLS handshakes.
+// Duplicates (same leaf certificate bytes) are removed.
+func clientTLSCerts(client *resty.Client) []tls.Certificate {
+	var tlsCfg *tls.Config
+	switch t := client.Transport().(type) {
+	case *DryRunTransport:
+		tlsCfg = t.TLSClientConfig()
+	case *http.Transport:
+		tlsCfg = t.TLSClientConfig
+	case interface{ TLSClientConfig() *tls.Config }:
+		tlsCfg = t.TLSClientConfig()
+	}
+	if tlsCfg == nil {
+		return nil
+	}
+	// Deduplicate by leaf certificate bytes so the same cert isn't printed twice
+	// (can happen when the cert is registered in multiple places in the TLS config).
+	seen := make(map[string]struct{}, len(tlsCfg.Certificates))
+	unique := make([]tls.Certificate, 0, len(tlsCfg.Certificates))
+	for _, cert := range tlsCfg.Certificates {
+		if len(cert.Certificate) == 0 {
+			continue
+		}
+		key := string(cert.Certificate[0])
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		unique = append(unique, cert)
+	}
+	return unique
+}
+
 // debugLogMiddleware returns a response middleware that logs request and response details.
 // When sanitize is true, sensitive headers (Authorization, Cookie, etc.) are redacted.
 func debugLogMiddleware(sanitize bool) func(*resty.Client, *resty.Response) error {
@@ -553,6 +621,22 @@ func debugLogMiddleware(sanitize bool) func(*resty.Client, *resty.Response) erro
 		fmt.Fprintf(os.Stderr, "~~~ REQUEST ~~~\n")
 		fmt.Fprintf(os.Stderr, "%s  %s  %s\n", req.Method, req.URL.RequestURI(), req.Proto)
 		fmt.Fprintf(os.Stderr, "HOST   : %s\n", req.URL.Host)
+
+		// Show client certificate info for mTLS requests.
+		if certs := clientTLSCerts(client); len(certs) > 0 {
+			fmt.Fprintf(os.Stderr, "CLIENT CERTS:\n")
+			for _, cert := range certs {
+				if len(cert.Certificate) == 0 {
+					continue
+				}
+				if x509Cert, err := x509.ParseCertificate(cert.Certificate[0]); err == nil {
+					fmt.Fprintf(os.Stderr, "   Subject    : %s\n", x509Cert.Subject.String())
+					fmt.Fprintf(os.Stderr, "   Issuer     : %s\n", x509Cert.Issuer.String())
+					fmt.Fprintf(os.Stderr, "   Valid From : %s\n", x509Cert.NotBefore.Format(time.RFC3339))
+					fmt.Fprintf(os.Stderr, "   Expires    : %s\n", x509Cert.NotAfter.Format(time.RFC3339))
+				}
+			}
+		}
 
 		// Sanitize headers if requested
 		reqHeaders := req.Header
@@ -1291,11 +1375,16 @@ func (c *Client) seedTokenSource(raw string) {
 // automatically when it expires; on a 401, TokenRenewalRetry invalidates the
 // cache so the next Token() call fetches a brand-new one.
 //
-// If the token exchange fails (e.g. the tenant has OAUTH2_INTERNAL disabled),
-// the source marks itself unavailable and returns (nil, nil) so that the
-// resty client-level basic-auth credentials take over instead of every request
-// failing with a "token source" error.
+// For username/password: if the token exchange fails (e.g. the tenant has
+// OAUTH2_INTERNAL disabled), the source marks itself unavailable and returns
+// (nil, nil) so that the resty client-level basic-auth credentials take over
+// instead of every request failing with a "token source" error.
+//
+// For certificate auth: there is no basic-auth fallback, so errors are
+// propagated. CachedTokenSource never caches a failed fetch, meaning the
+// source retries on every subsequent request until the mTLS endpoint responds.
 func (c *Client) newInternalTokenSource() *authentication.CachedTokenSource {
+	certAuth := c.Auth.Certificate != "" && c.Auth.CertificateKey != ""
 	var oauth2Unavailable atomic.Bool
 	return authentication.NewCachedTokenSource(
 		authentication.TokenSourceFunc(func() (*authentication.Token, error) {
@@ -1307,6 +1396,12 @@ func (c *Client) newInternalTokenSource() *authentication.CachedTokenSource {
 			ctx := ctxhelpers.WithSkipTokenSource(context.Background())
 			tok, err := c.fetchToken(ctx)
 			if err != nil {
+				if certAuth {
+					// For certificate-only auth there is no basic-auth fallback.
+					// Propagate the error so CachedTokenSource does not cache the
+					// failure and retries on the next request.
+					return nil, err
+				}
 				slog.Debug("OAuth2 internal token exchange failed, falling back to basic auth", "err", err)
 				oauth2Unavailable.Store(true)
 				return nil, nil // Let resty client-level basic auth handle it

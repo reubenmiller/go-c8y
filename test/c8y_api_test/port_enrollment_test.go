@@ -141,7 +141,9 @@ func Test_Enrollment_Register(t *testing.T) {
 	// Create client which uses the device certificate
 	// It should automatically request a token to use for API calls
 	deviceClient := api.NewClient(api.ClientOptions{
-		BaseURL: client.HTTPClient.BaseURL(),
+		BaseURL:       client.HTTPClient.BaseURL(),
+		Debug:         true,
+		ShowSensitive: true,
 		Auth: authentication.AuthOptions{
 			CertificateKey: string(keyPem),
 			Certificate:    string(certutil.MarshalCertificateToPEM(enrollResult.Data.Raw)),

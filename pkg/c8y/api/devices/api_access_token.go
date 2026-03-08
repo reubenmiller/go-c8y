@@ -31,17 +31,24 @@ func (s *Service) createAccessTokenB() *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(mtlsEndpoint(s.Client.BaseURL(), ApiDeviceControlAccessToken))
+		SetURL(mtlsEndpoint(s.MTLSPort, s.Client.BaseURL(), ApiDeviceControlAccessToken))
+	if s.CertChainHeader != "" {
+		req.SetHeader(types.HeaderSSLCertificateChain, s.CertChainHeader)
+	}
 	return core.NewTryRequest(s.Client, req)
 }
 
-// mtlsEndpoint returns the host address for the mtls endpoint that can be used for x509 client based authentication
-func mtlsEndpoint(fullURL string, paths ...string) string {
+// mtlsEndpoint returns the host address for the mtls endpoint that can be used for x509 client based authentication.
+// port selects the mTLS port; it defaults to "8443" when empty.
+func mtlsEndpoint(port, fullURL string, paths ...string) string {
+	if port == "" {
+		port = "8443"
+	}
 	u, err := url.Parse(fullURL)
 	if err != nil {
 		return fullURL
 	}
-	out := fmt.Sprintf("%s://%s:%s", u.Scheme, u.Hostname(), "8443")
+	out := fmt.Sprintf("%s://%s:%s", u.Scheme, u.Hostname(), port)
 	if u.Path != "" {
 		out = out + "/" + u.Path
 	}
