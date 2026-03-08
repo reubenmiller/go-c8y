@@ -43,6 +43,7 @@ func createTestPlugin(t *testing.T, client *api.Client, version string, tags []s
 }
 
 func Test_ApplicationVersions_GetVersions(t *testing.T) {
+	testcore.SkipOffline(t, "downloads binary from external URL")
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
@@ -63,6 +64,7 @@ func Test_ApplicationVersions_GetVersions(t *testing.T) {
 }
 
 func Test_ApplicationVersions_GetVersionByTag(t *testing.T) {
+	testcore.SkipOffline(t, "downloads binary from external URL")
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
@@ -86,6 +88,7 @@ func Test_ApplicationVersions_GetVersionByTag(t *testing.T) {
 }
 
 func Test_ApplicationVersions_GetVersionByName(t *testing.T) {
+	testcore.SkipOffline(t, "downloads binary from external URL")
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
@@ -107,6 +110,7 @@ func Test_ApplicationVersions_GetVersionByName(t *testing.T) {
 }
 
 func Test_ApplicationVersions_CRUD_Extension(t *testing.T) {
+	testcore.SkipOffline(t, "downloads binary from external URL")
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 

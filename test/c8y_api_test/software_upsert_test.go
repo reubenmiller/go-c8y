@@ -45,7 +45,7 @@ func Test_SoftwareUpsertByName_Create(t *testing.T) {
 	// Verify description was updated
 	fetchResult := client.Repository.Software.Get(ctx, id2, softwareitems.GetOptions{})
 	assert.NoError(t, fetchResult.Err)
-	assert.Equal(t, "Updated description", fetchResult.Data.Description)
+	assert.Equal(t, "Updated description", fetchResult.Data.Description())
 
 	// Cleanup
 	_ = client.Repository.Software.Delete(ctx, id1, softwareitems.DeleteOptions{})
@@ -86,7 +86,7 @@ func Test_SoftwareUpsertWith_ArchitectureSupport(t *testing.T) {
 	// Verify description and deviceType
 	fetchResult := client.Repository.Software.Get(ctx, id1, softwareitems.GetOptions{})
 	assert.NoError(t, fetchResult.Err)
-	assert.Equal(t, "Updated ARM64 package", fetchResult.Data.Description)
+	assert.Equal(t, "Updated ARM64 package", fetchResult.Data.Description())
 	assert.Equal(t, arch, fetchResult.Data.Get("deviceType").String())
 
 	// Create another software with different architecture
@@ -150,7 +150,7 @@ func Test_SoftwareUpsertByName_MetadataUpdate(t *testing.T) {
 	// Verify metadata was updated
 	fetchResult := client.Repository.Software.Get(ctx, id, softwareitems.GetOptions{})
 	assert.NoError(t, fetchResult.Err)
-	assert.Equal(t, "Version 2.0", fetchResult.Data.Description)
+	assert.Equal(t, "Version 2.0", fetchResult.Data.Description())
 
 	// Cleanup
 	_ = client.Repository.Software.Delete(ctx, id, softwareitems.DeleteOptions{})

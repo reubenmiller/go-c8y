@@ -38,4 +38,8 @@ examples/software-uploader/software-uploader
 device.crt
 device.key
 *.crt
+
+# Golden files from TEST_MODE=record (may contain live server data)
+testdata/golden/
+!testdata/golden/.gitkeep
 *.key

@@ -42,6 +42,7 @@ func createTempFile(t *testing.T, name string) *os.File {
 }
 
 func Test_UIPlugin_CreateWithVersions(t *testing.T) {
+	testcore.SkipOffline(t, "downloads binaries from external URLs")
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 

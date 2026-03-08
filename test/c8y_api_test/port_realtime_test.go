@@ -40,12 +40,14 @@ func OperationSenderFactory(client *api.Client, deviceID string, t *testing.T) f
 }
 
 func TestRealtimeClient(t *testing.T) {
+	testcore.SkipOffline(t, "requires WebSocket support")
 	client := testcore.CreateTestClient(t)
 	err := client.Realtime().Connect()
 	assert.NoError(t, err)
 }
 
 func TestRealtimeSubscriptions_SubscribeToOperations(t *testing.T) {
+	testcore.SkipOffline(t, "requires WebSocket support")
 	client := testcore.CreateTestClient(t)
 	device := testcore.CreateDeviceAgent(t, client)
 
@@ -95,6 +97,7 @@ func TestRealtimeSubscriptions_SubscribeToOperations(t *testing.T) {
 }
 
 func TestRealtimeSubscriptions_SubscribeToMeasurements(t *testing.T) {
+	testcore.SkipOffline(t, "requires WebSocket support")
 	client := testcore.CreateTestClient(t)
 	device := testcore.CreateDevice(t, client)
 
@@ -155,6 +158,7 @@ func TestRealtimeSubscriptions_Unsubscribe(t *testing.T) {
 	// A subscribe -> unsubscribe -> subscribe should not result in duplicate
 	// items on the channel
 	// https://www.ardanlabs.com/blog/2017/10/the-behavior-of-channels.html
+	testcore.SkipOffline(t, "requires WebSocket support")
 	client := testcore.CreateTestClient(t)
 	device := testcore.CreateDeviceAgent(t, client)
 

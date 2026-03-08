@@ -264,7 +264,7 @@ func Test_DeleteMeasurements(t *testing.T) {
 	assert.NotEmpty(t, createResult2.Data.ID(), "Measurement ID should not be empty")
 
 	// Wait for measurements to be created
-	time.Sleep(2 * time.Second)
+	testcore.SleepIfLive(2 * time.Second)
 
 	// Verify measurements exist
 	listResult := client.Measurements.List(ctx, measurements.ListOptions{
@@ -284,7 +284,7 @@ func Test_DeleteMeasurements(t *testing.T) {
 	assert.Equal(t, 204, deleteResult.HTTPStatus)
 
 	// Wait for deletion to complete
-	time.Sleep(2 * time.Second)
+	testcore.SleepIfLive(2 * time.Second)
 
 	// Verify measurements have been deleted
 	listResultAfter := client.Measurements.List(ctx, measurements.ListOptions{

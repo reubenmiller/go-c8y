@@ -138,12 +138,21 @@ func NewError(err any) *Error {
 			return wrappedErr
 		}
 
+		// e.String() may be empty when response middleware (e.g. AutoParse)
+		// already consumed the body. Fall back to marshalling the parsed error.
+		raw := e.String()
+		if raw == "" {
+			if b, err := json.Marshal(apiError); err == nil {
+				raw = string(b)
+			}
+		}
+
 		return &Error{
 			Code: e.StatusCode(),
 
 			Type:       apiError.ErrorType,
 			Message:    apiError.Error(),
-			MessageRaw: e.String(),
+			MessageRaw: raw,
 			Response:   e.RawResponse,
 			Duration:   e.Duration(),
 			ReceivedAt: e.ReceivedAt(),

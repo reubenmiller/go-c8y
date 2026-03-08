@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
 	"testing"
 	"time"
 
+	"github.com/reubenmiller/go-c8y/internal/pkg/fakeserver"
 	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
@@ -22,14 +24,97 @@ import (
 	"resty.dev/v3"
 )
 
+// TestMode returns the current test mode: "offline" (default), "live", or "record".
+func TestMode() string {
+	if m := os.Getenv("TEST_MODE"); m != "" {
+		return m
+	}
+	return "offline"
+}
+
+// IsOffline returns true when tests should run against the fake server.
+func IsOffline() bool {
+	return TestMode() == "offline"
+}
+
+// SkipOffline skips the test when running in offline mode.
+// Use this for tests that require a live Cumulocity server, network access,
+// pre-existing tenant data, or WebSocket support.
+func SkipOffline(t *testing.T, reason string) {
+	t.Helper()
+	if IsOffline() {
+		t.Skipf("skipping in offline mode: %s", reason)
+	}
+}
+
+// SleepIfLive pauses execution only when running against a real server.
+// The fake server processes requests synchronously, so no wait is needed
+// in offline mode.  Use this wherever tests sleep to let the server catch up.
+func SleepIfLive(d time.Duration) {
+	if !IsOffline() {
+		time.Sleep(d)
+	}
+}
+
+// setupFakeServer creates a FakeServer if running in offline mode and sets the
+// required environment variables so that NewClientFromEnvironment picks up the
+// fake server URL.  Returns the FakeServer (or nil in live mode).
+func setupFakeServer(t *testing.T) *fakeserver.FakeServer {
+	if !IsOffline() {
+		return nil
+	}
+	srv := fakeserver.New(t)
+	t.Setenv("C8Y_BASEURL", srv.URL())
+	t.Setenv("C8Y_TENANT", "t12345")
+	t.Setenv("C8Y_USERNAME", "admin")
+	t.Setenv("C8Y_PASSWORD", "admin-pass")
+	return srv
+}
+
+// setupRecorder returns a RecordingTransport that should be passed as the
+// client's custom transport in record mode.  It registers a cleanup function
+// that saves the golden file when the test finishes.  Returns nil in non-record
+// modes.
+func setupRecorder(t *testing.T) *fakeserver.RecordingTransport {
+	if TestMode() != "record" {
+		return nil
+	}
+	rec := &fakeserver.RecordingTransport{
+		Transport: http.DefaultTransport,
+	}
+	t.Cleanup(func() {
+		if len(rec.Records()) == 0 {
+			return
+		}
+		path := fakeserver.GoldenFilePath(t.Name())
+		if err := rec.SaveGoldenFile(path); err != nil {
+			t.Logf("WARNING: failed to save golden file %s: %v", path, err)
+		}
+	})
+	return rec
+}
+
 func CreateTestClient(t *testing.T) *api.Client {
 	t.Setenv("C8Y_TOKEN", "")
-	client := api.NewClientFromEnvironment(api.ClientOptions{})
+	setupFakeServer(t)
+	opts := api.ClientOptions{}
+	if rec := setupRecorder(t); rec != nil {
+		opts.Transport = rec
+	}
+	client := api.NewClientFromEnvironment(opts)
 	client.HTTPClient.SetRetryCount(1)
 	return client
 }
 
 func CreateTestClientNoAuth(t *testing.T) *api.Client {
+	srv := setupFakeServer(t)
+	if srv != nil {
+		// In offline mode we still need some credentials for the client to work,
+		// but the test explicitly wants "no auth".  Set the URL only.
+		t.Setenv("C8Y_BASEURL", srv.URL())
+	}
+
+	// Clear auth env vars AFTER setupFakeServer (which sets them)
 	envvars := make([]string, 0)
 	envvars = append(envvars, authentication.EnvironmentToken...)
 	envvars = append(envvars, authentication.EnvironmentUsername...)
@@ -38,11 +123,20 @@ func CreateTestClientNoAuth(t *testing.T) *api.Client {
 		t.Setenv(name, "")
 	}
 
-	return api.NewClientFromEnvironment(api.ClientOptions{})
+	opts := api.ClientOptions{}
+	if rec := setupRecorder(t); rec != nil {
+		opts.Transport = rec
+	}
+	return api.NewClientFromEnvironment(opts)
 }
 
 func CreateTestClientWithToken(t *testing.T) *api.Client {
-	return api.NewClientFromEnvironment(api.ClientOptions{})
+	setupFakeServer(t)
+	opts := api.ClientOptions{}
+	if rec := setupRecorder(t); rec != nil {
+		opts.Transport = rec
+	}
+	return api.NewClientFromEnvironment(opts)
 }
 
 func NewService() *core.Service {

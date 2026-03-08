@@ -90,8 +90,8 @@ func Test_AlarmCreateWithOptions_WithCustomStruct(t *testing.T) {
 
 	// Custom alarm type with additional fields
 	type CustomAlarmData struct {
-		CustomField1 string                 `json:"customField1"`
-		CustomField2 int                    `json:"customField2"`
+		CustomField1 string         `json:"customField1"`
+		CustomField2 int            `json:"customField2"`
 		C8yCustom    map[string]any `json:"c8y_CustomFragment"`
 	}
 

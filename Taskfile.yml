@@ -13,6 +13,34 @@ tasks:
       - task: test-microservice
       - task: test-race
 
+  test-offline:
+    desc: Run integration tests against the fake server (no Cumulocity needed)
+    env:
+      TEST_MODE: offline
+    cmds:
+      - go test -v -timeout 5m ./test/c8y_api_test/...
+
+  test-live:
+    desc: Run integration tests against a real Cumulocity server
+    env:
+      TEST_MODE: live
+    cmds:
+      - go test -v -timeout 30m ./test/c8y_api_test/...
+
+  test-record:
+    desc: Run integration tests against a live server and record golden files
+    env:
+      TEST_MODE: record
+    cmds:
+      - go test -v -timeout 30m ./test/c8y_api_test/...
+
+  test-golden:
+    desc: Validate fake server responses against recorded golden files
+    env:
+      TEST_MODE: offline
+    cmds:
+      - go test -v -timeout 5m -run TestFakeServer_MatchesGolden ./test/c8y_api_test/...
+
   test-c8y:
     desc: Test c8y package
     cmds:

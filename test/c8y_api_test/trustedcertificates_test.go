@@ -106,7 +106,7 @@ func Test_TrustedCertifcates(t *testing.T) {
 		Status: model.TrustedCertificateStatusDisabled,
 	})
 	assert.NoError(t, updatedCert.Err)
-	assert.Equal(t, updatedCert.Data.Status(), model.TrustedCertificateStatusDisabled)
+	assert.Equal(t, updatedCert.Data.Status(), string(model.TrustedCertificateStatusDisabled))
 
 	// get
 	getCert := client.TrustedCertificates.Get(context.Background(), trustedcertificates.GetOptions{

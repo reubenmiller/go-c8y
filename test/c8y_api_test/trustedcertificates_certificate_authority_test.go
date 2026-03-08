@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/trustedcertificates/certificateauthority"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 )
@@ -22,11 +22,11 @@ func Test_TrustedCertificatesCertificateAuthority(t *testing.T) {
 	assert.NotEqual(t, 0, cert.Data.Length())
 	assert.Equal(t, cert.Data.TenantCertificateAuthority(), true)
 
-	// create
+	// create (IgnoreConflict masks the 409 error; verify duplicate status instead)
 	cert2 := client.TrustedCertificates.CertificateAuthority.Create(context.Background(), certificateauthority.CreateOptions{})
-	assert.Error(t, cert2.Err)
-	assert.True(t, core.ErrHasStatus(cert2.Err, 409))
-	assert.Equal(t, 0, cert2.Data.Length())
+	assert.NoError(t, cert2.Err)
+	assert.Equal(t, op.StatusDuplicate, cert2.Status)
+	assert.True(t, cert2.Idempotent)
 
 	// get or create
 	cert3 := client.TrustedCertificates.CertificateAuthority.GetOrCreate(context.Background(), certificateauthority.GetOptions{})

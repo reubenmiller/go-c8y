@@ -65,6 +65,7 @@ func Test_Enrollment_PollEnroll(t *testing.T) {
 }
 
 func Test_Enrollment_Register(t *testing.T) {
+	testcore.SkipOffline(t, "requires certificate authority infrastructure")
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 

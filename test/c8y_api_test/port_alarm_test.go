@@ -143,7 +143,7 @@ func TestAlarmService_GetAlarmCollection(t *testing.T) {
 		assert.NoError(t, alarmObj.Err)
 		assert.Equal(t, http.StatusCreated, alarmObj.HTTPStatus)
 		assert.NotEmpty(t, alarmObj.Data)
-		time.Sleep(1000 * time.Millisecond)
+		testcore.SleepIfLive(1000 * time.Millisecond)
 		return alarmObj
 	}
 
@@ -208,7 +208,7 @@ func TestAlarmService_BulkUpdateAlarms(t *testing.T) {
 		assert.NoError(t, alarmObj.Err)
 		assert.Equal(t, http.StatusCreated, alarmObj.HTTPStatus)
 		assert.NotEmpty(t, alarmObj.Data)
-		time.Sleep(1000 * time.Millisecond)
+		testcore.SleepIfLive(1000 * time.Millisecond)
 		return alarmObj
 	}
 
@@ -222,7 +222,7 @@ func TestAlarmService_BulkUpdateAlarms(t *testing.T) {
 		context.Background(),
 		alarms.BulkUpdateOptions{
 			Source: managedobjects.DeviceRef(testDevice.Data.ID()),
-			Status: []string{"ACTIVE"},
+			Status: []model.AlarmStatus{"ACTIVE"},
 		},
 		model.Alarm{
 			Status: "CLEARED",
@@ -240,7 +240,7 @@ func TestAlarmService_BulkUpdateAlarms(t *testing.T) {
 	*/
 	if updatedList.HTTPStatus == http.StatusAccepted {
 		// Wait for Cumulocity to process the request in the background
-		time.Sleep(5 * time.Second)
+		testcore.SleepIfLive(5 * time.Second)
 	}
 
 	assert.NoError(t, updatedList.Err)
@@ -286,7 +286,7 @@ func TestAlarmService_RemoveAlarmCollection(t *testing.T) {
 		assert.NoError(t, alarmObj.Err)
 		assert.Equal(t, http.StatusCreated, alarmObj.HTTPStatus)
 		assert.NotEmpty(t, alarmObj.Data)
-		time.Sleep(1000 * time.Millisecond)
+		testcore.SleepIfLive(1000 * time.Millisecond)
 		return alarmObj
 	}
 
@@ -317,7 +317,7 @@ func TestAlarmService_RemoveAlarmCollection(t *testing.T) {
 	assert.Equal(t, http.StatusNoContent, deleteList.HTTPStatus)
 
 	// Give server some time to delete
-	time.Sleep(1 * time.Second)
+	testcore.SleepIfLive(1 * time.Second)
 
 	// Get alarms after deletion
 	alarmCollection = client.Alarms.List(
