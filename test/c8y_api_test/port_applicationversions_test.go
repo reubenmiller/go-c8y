@@ -78,7 +78,7 @@ func Test_ApplicationVersions_GetVersionByTag(t *testing.T) {
 
 	assert.Equal(t, 200, result.HTTPStatus)
 	require.Len(t, versions, 1)
-	// TODO: Should the a collection of results also allow the user to get the first item but just doing result.Data.Version()?
+
 	assert.Equal(t, "1.0.1", versions[0].Version())
 	assert.Len(t, versions[0].Tags(), 2)
 	assert.Contains(t, versions[0].Tags(), "latest")
