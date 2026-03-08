@@ -211,7 +211,7 @@ func (s *Service) listInventoryRoleAssignmentsB(opt ListInventoryRoleAssignmentO
 //	  "roles": []map[string]any{{"id": 1}},
 //	}
 func (s *Service) AssignInventoryRole(ctx context.Context, opt UserScopedOptions, body any) op.Result[jsonmodels.InventoryRoleAssignment] {
-	return core.Execute(ctx, s.assignInventoryRoleB(opt, body), jsonmodels.NewInventoryRoleAssignment)
+	return core.Execute(ctx, s.assignInventoryRoleB(opt, body), jsonmodels.NewInventoryRoleAssignment).IgnoreConflict()
 }
 
 func (s *Service) assignInventoryRoleB(opt UserScopedOptions, body any) *core.TryRequest {
@@ -267,7 +267,7 @@ func (s *Service) updateInventoryRoleAssignmentB(opt GetInventoryRoleAssignmentO
 
 // DeleteInventoryRoleAssignment removes an inventory-role assignment.
 func (s *Service) DeleteInventoryRoleAssignment(ctx context.Context, opt GetInventoryRoleAssignmentOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteInventoryRoleAssignmentB(opt))
+	return core.ExecuteNoContent(ctx, s.deleteInventoryRoleAssignmentB(opt)).IgnoreNotFound()
 }
 
 func (s *Service) deleteInventoryRoleAssignmentB(opt GetInventoryRoleAssignmentOptions) *core.TryRequest {

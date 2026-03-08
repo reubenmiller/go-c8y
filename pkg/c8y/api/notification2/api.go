@@ -168,7 +168,7 @@ func (s *Service) listB(opt ListOptions) *core.TryRequest {
 }
 
 func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.Notification2Subscription] {
-	return core.Execute(ctx, s.createB(opt), jsonmodels.NewNotification2Subscription)
+	return core.Execute(ctx, s.createB(opt), jsonmodels.NewNotification2Subscription).IgnoreConflict()
 }
 
 func (s *Service) createB(body any) *core.TryRequest {

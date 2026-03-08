@@ -73,7 +73,7 @@ func (s *Service) AssignRole(ctx context.Context, opt AssignRoleOptions, body an
 		// Extract role from reference wrapper
 		doc := jsondoc.New(b)
 		return jsonmodels.NewRole([]byte(doc.Get("role").Raw))
-	})
+	}).IgnoreConflict()
 }
 
 func (s *Service) assignRoleB(opt AssignRoleOptions, body any) *core.TryRequest {
@@ -96,7 +96,7 @@ type UnassignRoleOptions struct {
 
 // Unassign a role from a user group
 func (s *Service) UnassignRole(ctx context.Context, opt UnassignRoleOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.unassignRoleB(opt))
+	return core.ExecuteNoContent(ctx, s.unassignRoleB(opt)).IgnoreNotFound()
 }
 
 func (s *Service) unassignRoleB(opt UnassignRoleOptions) *core.TryRequest {

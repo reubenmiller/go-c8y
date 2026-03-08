@@ -63,7 +63,7 @@ func (s *Service) AssignUser(ctx context.Context, opt AssignUserOptions, user an
 		// Extract user from reference wrapper
 		doc := jsondoc.New(b)
 		return jsonmodels.NewUser([]byte(doc.Get("user").Raw))
-	})
+	}).IgnoreConflict()
 }
 
 func (s *Service) assignUserB(opt AssignUserOptions, user any) *core.TryRequest {
@@ -86,7 +86,7 @@ type UnassignUserOptions struct {
 
 // UnassignUser unassign a user from a user group
 func (s *Service) UnassignUser(ctx context.Context, opt UnassignUserOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.unassignUserB(opt))
+	return core.ExecuteNoContent(ctx, s.unassignUserB(opt)).IgnoreNotFound()
 }
 
 func (s *Service) unassignUserB(opt UnassignUserOptions) *core.TryRequest {

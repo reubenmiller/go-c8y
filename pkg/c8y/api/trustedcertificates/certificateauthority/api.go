@@ -81,9 +81,10 @@ func (s *Service) getB(opt GetOptions) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req, ResultProperty)
 }
 
-// Create certificate authority
+// Create certificate authority.
+// A 409 response (already exists) is treated as a duplicate (StatusDuplicate, Idempotent: true).
 func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.TrustedCertificate] {
-	return core.Execute(ctx, s.createB(opt), jsonmodels.NewTrustedCertificate)
+	return core.Execute(ctx, s.createB(opt), jsonmodels.NewTrustedCertificate).IgnoreConflict()
 }
 
 func (s *Service) createB(opt CreateOptions) *core.TryRequest {

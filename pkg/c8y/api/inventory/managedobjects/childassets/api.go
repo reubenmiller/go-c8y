@@ -94,8 +94,10 @@ func (s *Service) createB(parentID string, body any) *core.TryRequest {
 }
 
 // Assign an existing child asset to a managed object
+// Assign a child asset to a parent managed object.
+// A 409 response (already assigned) is treated as a duplicate (StatusDuplicate, Idempotent: true).
 func (s *Service) Assign(ctx context.Context, parentID string, child any) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.assignB(parentID, child))
+	return core.ExecuteNoContent(ctx, s.assignB(parentID, child)).IgnoreConflict()
 }
 
 func (s *Service) assignB(parentID string, child any) *core.TryRequest {
@@ -110,8 +112,10 @@ func (s *Service) assignB(parentID string, child any) *core.TryRequest {
 }
 
 // Unassign a child asset from a managed object
+// Unassign a child asset from a parent managed object.
+// A 404 response (already unassigned) is treated as skipped (StatusSkipped, Idempotent: true).
 func (s *Service) Unassign(ctx context.Context, parentID string, child any) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.unassignB(parentID, child))
+	return core.ExecuteNoContent(ctx, s.unassignB(parentID, child)).IgnoreNotFound()
 }
 
 func (s *Service) unassignB(parentID string, child any) *core.TryRequest {

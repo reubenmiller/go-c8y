@@ -118,7 +118,7 @@ func (s *Service) DisableForTenant(ctx context.Context, key string, tenantID str
 // DeleteForTenant removes the feature toggle override for a specific tenant.
 // Requires management tenant.
 func (s *Service) DeleteForTenant(ctx context.Context, key string, tenantID string) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteForTenantB(key, tenantID))
+	return core.ExecuteNoContent(ctx, s.deleteForTenantB(key, tenantID)).IgnoreNotFound()
 }
 
 func (s *Service) deleteForTenantB(key string, tenantID string) *core.TryRequest {

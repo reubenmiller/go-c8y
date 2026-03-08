@@ -20,7 +20,7 @@ func (s *Service) Get(ctx context.Context, opts IdentityOptions) op.Result[jsonm
 
 // Create creates a new external identity for a managed object
 func (s *Service) Create(ctx context.Context, id string, opts IdentityOptions) op.Result[jsonmodels.Identity] {
-	return core.Execute(ctx, s.createB(id, opts), jsonmodels.NewIdentity)
+	return core.Execute(ctx, s.createB(id, opts), jsonmodels.NewIdentity).IgnoreConflict()
 }
 
 // Delete removes an external identity

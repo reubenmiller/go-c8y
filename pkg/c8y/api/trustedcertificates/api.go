@@ -99,9 +99,10 @@ type CreateOptions struct {
 	AddToTrustStore *bool `url:"addToTrustStore,omitempty"`
 }
 
-// Create a trusted certificate
+// Create a trusted certificate.
+// A 409 response (certificate already trusted) is treated as a duplicate (StatusDuplicate, Idempotent: true).
 func (s *Service) Create(ctx context.Context, opt CreateOptions, body any) op.Result[jsonmodels.TrustedCertificate] {
-	return core.Execute(ctx, s.createB(opt, body), jsonmodels.NewTrustedCertificate)
+	return core.Execute(ctx, s.createB(opt, body), jsonmodels.NewTrustedCertificate).IgnoreConflict()
 }
 
 func (s *Service) createB(opt CreateOptions, body any) *core.TryRequest {
