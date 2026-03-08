@@ -36,10 +36,7 @@ func Test_CreateBinary(t *testing.T) {
 	resp := client.Binaries.Get(context.Background(), "0")
 	assert.Error(t, resp.Err)
 
-	sdkError := resp.Err.(*api.Error)
-	assert.Equal(t, sdkError.Code, 404)
-
-	assert.ErrorAs(t, api.ErrAPINotFound, resp.Err)
+	assert.True(t, api.IsNotFound(resp.Err))
 
 	// Get but don't read the response
 	binaryFile := client.Binaries.Get(context.Background(), binary.Data.ID())

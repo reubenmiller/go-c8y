@@ -35,6 +35,10 @@ func ErrHasStatus(err error, code ...int) bool {
 	return core.ErrHasStatus(err, code...)
 }
 
+func IsNotFound(err error) bool {
+	return core.IsNotFound(err)
+}
+
 type Error = core.Error
 
 var (
@@ -46,10 +50,6 @@ var (
 
 	// Authentication has failed, or credentials were required but not provided.
 	ErrForbidden = Error{Code: 403}
-
-	// The requested resource doesn't exist
-	// TODO: Resolve with ErrNotFound
-	ErrAPINotFound = Error{Code: 404}
 
 	// The employed HTTP method cannot be used on this resource (for example, using PUT on a read-only resource)
 	ErrMethodNotAllowed = Error{Code: 405}
