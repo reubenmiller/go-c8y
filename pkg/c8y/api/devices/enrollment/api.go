@@ -112,7 +112,6 @@ func (s *Service) GenerateOneTimePassword(opts ...password.PasswordOption) (stri
 
 // executeWithCertParse executes a request and parses the PKCS7/PEM certificate response
 func executeWithCertParse(ctx context.Context, req *core.TryRequest) op.Result[X509Certificate] {
-	// TODO: Add dry run support
 	resp, err := core.ExecuteResponseOnly(ctx, req)
 
 	// Only capture request in dry run mode for inspection
@@ -135,7 +134,12 @@ func executeWithCertParse(ctx context.Context, req *core.TryRequest) op.Result[X
 				}
 			}
 		}
-		return result
+		return result.WithRequest(httpReq)
+	}
+
+	// In dry run mode, skip certificate parsing and return a placeholder result
+	if ctxhelpers.IsDryRun(ctx) {
+		return op.OK(X509Certificate{}).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
 	}
 
 	cert, parseErr := parsePKCS7Response(resp.Bytes(), resp.Header())
