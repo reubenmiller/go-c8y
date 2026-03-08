@@ -395,7 +395,43 @@ if result.Err != nil {
 
 ---
 
-## 8. Service Integration
+## 8. Request Builder (`B`-suffix) Convention
+
+Every public service method builds its HTTP request by delegating to a private counterpart whose name carries a `B` suffix:
+
+```
+List      →  listB
+Get       →  getB
+Create    →  createB
+Update    →  updateB
+Delete    →  deleteB
+DeleteList → deleteListB
+… and so on for domain-specific variants
+```
+
+The `B` method constructs and returns a `*core.TryRequest` — it does **no I/O**.  The public method then passes that request to the appropriate executor:
+
+```go
+// Public method — context, resolution, execution
+func (s *Service) Get(ctx context.Context, id string) op.Result[jsonmodels.Alarm] {
+    return core.Execute(ctx, s.getB(id), jsonmodels.NewAlarm)
+}
+
+// B method — pure request construction, no I/O
+func (s *Service) getB(id string) *core.TryRequest {
+    req := s.Client.R().
+        SetMethod(resty.MethodGet).
+        SetPathParam(ParamId, id).
+        SetURL(ApiAlarm)
+    return core.NewTryRequest(s.Client, req)
+}
+```
+
+This split makes deferred execution, dry-run inspection, and testing straightforward: `core.Execute` can decide whether to actually send the request (live mode), record it (deferred mode), or return a mock response (test mode) without the request-building logic needing to know.
+
+---
+
+## 9. Service Integration
 
 Services provide high-level methods that use these patterns:
 
@@ -419,7 +455,7 @@ func (s *Service) GetOrCreateWith(ctx, body any, query string) op.Result[T]
 
 ---
 
-## 9. API Discovery with go-c8y-cli ✅
+## 10. API Discovery with go-c8y-cli ✅
 
 **Status:** Available tool for development
 
@@ -537,7 +573,7 @@ c8y inventory childAdditions create --id 12345 --childId 67890 --dry
 
 ---
 
-## 10. Best Practices
+## 11. Best Practices
 
 When implementing or using these patterns:
 
@@ -555,7 +591,7 @@ When implementing or using these patterns:
 
 ---
 
-## 11. Future Plans
+## 12. Future Plans
 
 The following features are planned but not yet implemented:
 
