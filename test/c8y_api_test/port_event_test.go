@@ -173,18 +173,14 @@ func TestPortEventService_DeleteEvents(t *testing.T) {
 	})
 	assert.NoError(t, deleteResult.Err)
 
-	// Wait for events to be deleted
-	// TODO: Add dynamic retry
-	time.Sleep(1 * time.Second)
-
-	// Verify only type2 event remains
-	result2 := client.Events.List(ctx, events.ListOptions{
-		Source: managedobjects.DeviceRef(device.ID()),
-	})
-	remainingEvents, err := op.ToSliceR(result2)
-	assert.NoError(t, err)
-	assert.Equal(t, 1, len(remainingEvents))
-	assert.Equal(t, eventType2, remainingEvents[0].Type())
+	// Verify only type2 event remains after deletion
+	assert.Eventually(t, func() bool {
+		result2 := client.Events.List(ctx, events.ListOptions{
+			Source: managedobjects.DeviceRef(device.ID()),
+		})
+		evts, err := op.ToSliceR(result2)
+		return err == nil && len(evts) == 1 && evts[0].Type() == eventType2
+	}, 5*time.Second, 200*time.Millisecond, "Expected exactly 1 event of type %q to remain after deleting %q events", eventType2, eventType1)
 }
 
 func TestPortEventService_CreateBinary(t *testing.T) {
