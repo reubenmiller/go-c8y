@@ -10,6 +10,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/jsondoc"
 	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_Users(t *testing.T) {
@@ -48,18 +49,14 @@ func TestUserService_List(t *testing.T) {
 	assert.Greater(t, collection.Data.Length(), 0, "At least 1 user should be present")
 
 	// get by username
-	// TODO: add a nicer way to get the first item in the array of results
-	userName := ""
-	for user := range jsondoc.DecodeIter[model.User](collection.Data.Iter()) {
-		userName = user.Username
-		break
-	}
+	firstUser, firstUserErr := collection.First()
+	require.NoError(t, firstUserErr)
 
 	user := client.Users.GetByUsername(context.Background(), users.GetByUsernameOptions{
-		Username: userName,
+		Username: firstUser.UserName(),
 	})
 	assert.NoError(t, user.Err)
-	assert.Equal(t, userName, user.Data.UserName())
+	assert.Equal(t, firstUser.UserName(), user.Data.UserName())
 }
 
 func Test_GetUserTFA(t *testing.T) {
