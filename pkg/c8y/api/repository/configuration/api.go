@@ -380,6 +380,9 @@ func (r *Resolver) resolveByQuery(ctx context.Context, query string) (string, er
 
 // Get retrieves a configuration
 func (s *Service) Get(ctx context.Context, ID string, opt GetOptions) op.Result[jsonmodels.Configuration] {
+	// Resolve ID (supports "name:...", "query:...", etc.)
+	// If deferred execution is enabled, we still need to resolve the ID first
+	// But do it in a normal context so the resolution actually completes
 	resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 	meta := make(map[string]any)
@@ -395,6 +398,9 @@ func (s *Service) Get(ctx context.Context, ID string, opt GetOptions) op.Result[
 
 // Update a configuration
 func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.Configuration] {
+	// Resolve ID (supports "name:...", "query:...", etc.)
+	// If deferred execution is enabled, we still need to resolve the ID first
+	// But do it in a normal context so the resolution actually completes
 	resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 	meta := make(map[string]any)
@@ -410,6 +416,9 @@ func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jso
 
 // Delete a configuration
 func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.Result[core.NoContent] {
+	// Resolve ID (supports "name:...", "query:...", etc.)
+	// If deferred execution is enabled, we still need to resolve the ID first
+	// But do it in a normal context so the resolution actually completes
 	resolutionCtx := ctxhelpers.ResolutionContext(ctx)
 
 	meta := make(map[string]any)
