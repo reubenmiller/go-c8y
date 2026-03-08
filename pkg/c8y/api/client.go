@@ -8,20 +8,27 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base32"
+	"encoding/base64"
 	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
+	"mime"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+	"unsafe"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alarms"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/applications"
@@ -488,6 +495,18 @@ func (c *Client) AddMiddleware() error {
 	}))
 	c.HTTPClient.AddRetryConditions(TokenRenewalRetry(c))
 
+	// Register a pre-prepare request middleware to capture multipart field content
+	// for debug logging. It must run before PrepareRequestMiddleware (which starts
+	// the streaming goroutine), so AddRequestMiddleware is used — it inserts before
+	// the last slot, which is always PrepareRequestMiddleware.
+	c.HTTPClient.AddRequestMiddleware(func(rc *resty.Client, req *resty.Request) error {
+		if !c.debugEnabled {
+			return nil
+		}
+		captureMultipartFields(req)
+		return nil
+	})
+
 	// Register a single debug middleware that reads the runtime debugEnabled flag.
 	// This avoids the problem of middleware accumulating each time SetDebug is called.
 	c.HTTPClient.AddResponseMiddleware(func(rc *resty.Client, resp *resty.Response) error {
@@ -577,6 +596,54 @@ func (c *Client) SetDebugWithAuth(enable bool) {
 	}
 }
 
+// formatBinaryBody returns a human-readable representation of a binary body for
+// debug output. It never reads from a stream so it cannot affect the request.
+//
+// Encoding rules:
+//   - application/pkcs10, application/pkcs7*, application/x-pem-file: base64
+//     (these are DER/PEM formats — base64 is the conventional representation)
+//   - everything else: hex dump capped at hexDumpMax bytes
+func formatBinaryBody(contentType string, data []byte) string {
+	const (
+		// Bodies larger than this are not decoded at all — just report the size.
+		decodeMax = 64 * 1024 // 64 KB
+		// Maximum bytes to show in the output.
+		previewMax = 1024
+	)
+	if len(data) > decodeMax {
+		return fmt.Sprintf("***** BINARY CONTENT (%d bytes, too large to display) *****", len(data))
+	}
+
+	// Sniff the actual content rather than trusting the declared Content-Type.
+	// This catches cases like certificate data declared as application/octet-stream,
+	// or CSV files sent without a Content-Type, etc.
+	sniffed := http.DetectContentType(data)
+	if isTextContent(sniffed) {
+		preview := data
+		truncated := ""
+		if len(preview) > previewMax {
+			preview = preview[:previewMax]
+			truncated = fmt.Sprintf("\n... (%d bytes total, showing first %d)", len(data), previewMax)
+		}
+		return fmt.Sprintf("%s%s", preview, truncated)
+	}
+
+	// Genuinely binary: use base64 for certificate types (conventional format),
+	// hex dump for everything else.
+	ct := strings.ToLower(contentType)
+	preview := data
+	truncated := ""
+	if len(preview) > previewMax {
+		preview = preview[:previewMax]
+		truncated = fmt.Sprintf("\n... (%d bytes total, showing first %d)", len(data), previewMax)
+	}
+	if strings.Contains(ct, "pkcs") || strings.Contains(ct, "x-pem-file") {
+		encoded := base64.StdEncoding.EncodeToString(preview)
+		return fmt.Sprintf("(base64, %d bytes)\n%s%s", len(data), encoded, truncated)
+	}
+	return fmt.Sprintf("(hex, %d bytes)\n%s%s", len(data), hex.Dump(preview), truncated)
+}
+
 // clientTLSCerts returns the client certificates configured on the resty client's
 // transport, if any. These are the certificates presented during mTLS handshakes.
 // Duplicates (same leaf certificate bytes) are removed.
@@ -647,7 +714,27 @@ func debugLogMiddleware(sanitize bool) func(*resty.Client, *resty.Response) erro
 
 		// Log request body if available
 		contentType := req.Header.Get("Content-Type")
-		if resp.Request.Body != nil {
+		if strings.Contains(strings.ToLower(contentType), "multipart/form-data") {
+			// resty serialises multipart into a *bytes.Buffer and passes it to
+			// http.NewRequestWithContext, which sets GetBody automatically.
+			// backToBufPool (unlike releaseBuffer) does NOT call Reset(), so the
+			// captured byte slice remains valid after the transport has drained Body.
+			if req.GetBody != nil {
+				if rc, err := req.GetBody(); err == nil {
+					if partInfo, readErr := describeMultipartBody(rc, contentType); readErr == nil {
+						fmt.Fprintf(os.Stderr, "BODY   :\n%s\n", partInfo)
+					} else {
+						size := req.Header.Get("Content-Length")
+						fmt.Fprintf(os.Stderr, "BODY   :\n***** MULTIPART/FORM-DATA (Content-Length: %s, parse error: %v) *****\n", size, readErr)
+					}
+					rc.Close()
+				}
+			} else {
+				// Streaming multipart (io.Pipe) — GetBody is nil. Use pre-captured
+				// content from the request middleware, falling back to metadata only.
+				fmt.Fprintf(os.Stderr, "BODY   :\n%s\n", describeMultipartCaptures(resp.Request))
+			}
+		} else if resp.Request.Body != nil {
 			if isTextContent(contentType) {
 				bodyStr := ""
 				// Get the actual body bytes
@@ -679,7 +766,28 @@ func debugLogMiddleware(sanitize bool) func(*resty.Client, *resty.Response) erro
 				}
 				fmt.Fprintf(os.Stderr, "BODY   :\n%v\n", bodyStr)
 			} else {
-				fmt.Fprintf(os.Stderr, "BODY   :\n***** BINARY CONTENT (Content-Type: %s) *****\n", contentType)
+				// Binary body: extract bytes from resty's stored body. This is safe
+				// because the middleware runs after the request is sent — we are not
+				// consuming a live reader.
+				var binBytes []byte
+				switch v := resp.Request.Body.(type) {
+				case []byte:
+					binBytes = v
+				case string:
+					binBytes = []byte(v)
+				}
+				if binBytes != nil {
+					fmt.Fprintf(os.Stderr, "BODY   :\n%s\n", formatBinaryBody(contentType, binBytes))
+				} else {
+					// io.Reader or other stream — already consumed by the transport,
+					// bytes are no longer available. Show size from Content-Length if set.
+					size := req.Header.Get("Content-Length")
+					if size != "" {
+						fmt.Fprintf(os.Stderr, "BODY   :\n***** BINARY STREAM (Content-Type: %s, Content-Length: %s) *****\n", contentType, size)
+					} else {
+						fmt.Fprintf(os.Stderr, "BODY   :\n***** BINARY STREAM (Content-Type: %s) *****\n", contentType)
+					}
+				}
 			}
 		} else if len(resp.Request.FormData) > 0 {
 			// resty stores form-encoded fields in FormData, not Body
@@ -736,7 +844,7 @@ func debugLogMiddleware(sanitize bool) func(*resty.Client, *resty.Response) erro
 				}
 				fmt.Fprintf(os.Stderr, "BODY         :\n%v\n", bodyStr)
 			} else {
-				fmt.Fprintf(os.Stderr, "BODY         :\n***** BINARY CONTENT (Content-Type: %s, Size: %d bytes) *****\n", contentType, len(respBytes))
+				fmt.Fprintf(os.Stderr, "BODY         :\n%s\n", formatBinaryBody(contentType, respBytes))
 			}
 		} else {
 			fmt.Fprintf(os.Stderr, "BODY         :\n***** NO CONTENT *****\n")
@@ -744,6 +852,222 @@ func debugLogMiddleware(sanitize bool) func(*resty.Client, *resty.Response) erro
 		fmt.Fprintf(os.Stderr, "==============================================================================\n")
 		return nil
 	}
+}
+
+// multipartCaptureKey is used as a context key to store pre-captured multipart
+// field content so the response debug middleware can display meaningful previews.
+type multipartCaptureKey struct{}
+
+type multipartPartCapture struct {
+	Name        string
+	FileName    string // file name or path
+	ContentType string
+	FileSize    int64  // only if explicitly set by the caller
+	Peeked      []byte // up to multipartPreviewBytes
+	TotalRead   int64  // bytes actually read from the Reader during peek
+	Truncated   bool
+	IsField     bool
+	Values      []string
+}
+
+const multipartPreviewBytes = 1024
+
+// captureMultipartFields runs as a request middleware BEFORE PrepareRequestMiddleware.
+// It peeks at each multipartField Reader (up to multipartPreviewBytes), reassembles
+// the reader via io.MultiReader so the original content still flows to the server,
+// and stores the captures in the request context for the response debug middleware.
+func captureMultipartFields(req *resty.Request) {
+	reqVal := reflect.ValueOf(req).Elem()
+	mfField := reqVal.FieldByName("multipartFields")
+	if !mfField.IsValid() || !mfField.CanAddr() || mfField.IsNil() {
+		return
+	}
+	actualSlice := reflect.NewAt(mfField.Type(), unsafe.Pointer(mfField.UnsafeAddr())).Elem()
+	if actualSlice.Len() == 0 {
+		return
+	}
+
+	captures := make([]multipartPartCapture, 0, actualSlice.Len())
+	for i := 0; i < actualSlice.Len(); i++ {
+		elem := actualSlice.Index(i)
+		if elem.IsNil() {
+			continue
+		}
+		mf := elem.Elem() // MultipartField value, addressable via pointer
+
+		name := mf.FieldByName("Name").String()
+		valuesField := mf.FieldByName("Values")
+		if valuesField.IsValid() && valuesField.Len() > 0 {
+			vals := make([]string, valuesField.Len())
+			for j := range vals {
+				vals[j] = valuesField.Index(j).String()
+			}
+			captures = append(captures, multipartPartCapture{Name: name, IsField: true, Values: vals})
+			continue
+		}
+
+		fileName := mf.FieldByName("FileName").String()
+		filePath := mf.FieldByName("FilePath").String()
+		contentType := mf.FieldByName("ContentType").String()
+		fileSize := mf.FieldByName("FileSize").Int()
+		displayName := fileName
+		if displayName == "" {
+			displayName = filePath
+		}
+
+		readerField := mf.FieldByName("Reader")
+		if !readerField.IsValid() || readerField.IsNil() {
+			captures = append(captures, multipartPartCapture{
+				Name: name, FileName: displayName,
+				ContentType: contentType, FileSize: fileSize,
+			})
+			continue
+		}
+
+		origReader := readerField.Interface().(io.Reader)
+		peek := make([]byte, multipartPreviewBytes)
+		n, _ := io.ReadFull(origReader, peek)
+		peek = peek[:n]
+		truncated := n == multipartPreviewBytes
+
+		// Reassemble: peek bytes + rest of original reader, so the full content
+		// still flows to the server unchanged.
+		reassembled := io.MultiReader(bytes.NewReader(peek), origReader)
+		settable := reflect.NewAt(readerField.Type(), unsafe.Pointer(readerField.UnsafeAddr())).Elem()
+		settable.Set(reflect.ValueOf(reassembled))
+
+		captures = append(captures, multipartPartCapture{
+			Name:        name,
+			FileName:    displayName,
+			ContentType: contentType,
+			FileSize:    fileSize,
+			Peeked:      peek,
+			TotalRead:   int64(n),
+			Truncated:   truncated,
+		})
+	}
+
+	if len(captures) > 0 {
+		req.SetContext(context.WithValue(req.Context(), multipartCaptureKey{}, captures))
+	}
+}
+
+// describeMultipartCaptures formats the multipart body for debug output, using
+// the pre-captured content from captureMultipartFields where available.
+func describeMultipartCaptures(restyReq *resty.Request) string {
+	var sb strings.Builder
+
+	size := ""
+	if restyReq.RawRequest != nil {
+		size = restyReq.RawRequest.Header.Get("Content-Length")
+	}
+	if size != "" {
+		fmt.Fprintf(&sb, "***** MULTIPART/FORM-DATA (Content-Length: %s) *****\n", size)
+	} else {
+		fmt.Fprintf(&sb, "***** MULTIPART/FORM-DATA *****\n")
+	}
+
+	// FormData holds plain fields set via SetMultipartFormData.
+	for k, vs := range restyReq.FormData {
+		for _, v := range vs {
+			fmt.Fprintf(&sb, "  [field] %s = %s\n", k, v)
+		}
+	}
+
+	captures, _ := restyReq.Context().Value(multipartCaptureKey{}).([]multipartPartCapture)
+	for _, c := range captures {
+		if c.IsField {
+			for _, v := range c.Values {
+				fmt.Fprintf(&sb, "  [field] %s = %s\n", c.Name, v)
+			}
+			continue
+		}
+		ct := c.ContentType
+		if ct == "" {
+			ct = "application/octet-stream"
+		}
+		if c.FileSize > 0 {
+			fmt.Fprintf(&sb, "  [part] name=%q filename=%q content-type=%s size=%d\n", c.Name, c.FileName, ct, c.FileSize)
+		} else {
+			fmt.Fprintf(&sb, "  [part] name=%q filename=%q content-type=%s\n", c.Name, c.FileName, ct)
+		}
+		if len(c.Peeked) > 0 {
+			// Sniff real content type when the declared one is generic; this catches
+			// CSV/TSV files sent as application/octet-stream.
+			displayCT := ct
+			if ct == "" || ct == "application/octet-stream" {
+				displayCT = http.DetectContentType(c.Peeked)
+			}
+			if isTextContent(displayCT) {
+				fmt.Fprintf(&sb, "%s", c.Peeked)
+				if c.Truncated {
+					fmt.Fprintf(&sb, "\n    ... (truncated at %d bytes)", multipartPreviewBytes)
+				}
+			} else {
+				fmt.Fprintf(&sb, "%s", formatBinaryBody(ct, c.Peeked))
+				if c.Truncated {
+					fmt.Fprintf(&sb, "\n    ... (truncated at %d bytes)", multipartPreviewBytes)
+				}
+			}
+			fmt.Fprintln(&sb)
+		}
+	}
+	return strings.TrimRight(sb.String(), "\n")
+}
+
+// describeMultipartBody reads a multipart body and returns a human-readable
+// summary of its parts. contentType must include the boundary parameter.
+func describeMultipartBody(r io.Reader, contentType string) (string, error) {
+	mediaType, params, err := mime.ParseMediaType(contentType)
+	if err != nil || !strings.HasPrefix(mediaType, "multipart/") {
+		return "", fmt.Errorf("not multipart: %w", err)
+	}
+	boundary, ok := params["boundary"]
+	if !ok {
+		return "", fmt.Errorf("no boundary in Content-Type")
+	}
+
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "***** MULTIPART/FORM-DATA *****\n")
+	mr := multipart.NewReader(r, boundary)
+	const maxPartPreview = 512
+	for {
+		part, err := mr.NextPart()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			break
+		}
+		dispName := part.FormName()
+		fileName := part.FileName()
+		partCT := part.Header.Get("Content-Type")
+		if partCT == "" {
+			partCT = "text/plain"
+		}
+
+		body, readErr := io.ReadAll(io.LimitReader(part, int64(maxPartPreview)+1))
+		truncated := readErr == nil && len(body) > maxPartPreview
+		if truncated {
+			body = body[:maxPartPreview]
+		}
+
+		if fileName != "" {
+			fmt.Fprintf(&sb, "  [part] name=%q filename=%q content-type=%s size=%d", dispName, fileName, partCT, len(body))
+			if truncated {
+				fmt.Fprintf(&sb, "+ (truncated)")
+			}
+			fmt.Fprintln(&sb)
+		} else {
+			value := string(body)
+			if truncated {
+				value += "… (truncated)"
+			}
+			fmt.Fprintf(&sb, "  [field] %s = %s\n", dispName, value)
+		}
+		part.Close()
+	}
+	return strings.TrimRight(sb.String(), "\n"), nil
 }
 
 // isTextContent checks if a content type is text-based (safe to log)
@@ -756,7 +1080,6 @@ func isTextContent(contentType string) bool {
 		"application/xml",
 		"+xml",
 		"application/x-www-form-urlencoded",
-		"multipart/form-data",
 	}
 	for _, textType := range textTypes {
 		if strings.Contains(contentType, textType) {
