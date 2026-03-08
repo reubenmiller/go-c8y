@@ -153,12 +153,23 @@ func (s *Service) listB(opt ListOptions) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req, ResultProperty)
 }
 
-type Target struct {
-	ID     string
-	Tenant string
-}
+// UserRef is a typed reference to a user. Construct it using ByID, ByDeviceUser, or cast a
+// variable string with UserRef(id) when needed.
+type UserRef string
 
-type GetOptions Target
+// ByID creates a direct-ID user reference. No resolution is performed;
+// the provided id is used as-is in the API call.
+func ByID(id string) UserRef { return UserRef(id) }
+
+// ByDeviceUser creates a user reference for the bootstrapped device user account
+// that Cumulocity creates during bulk registration. The convention is that devices
+// registered with ID "abc123" get a user account named "device_abc123".
+func ByDeviceUser(deviceID string) UserRef { return UserRef("device_" + deviceID) }
+
+type GetOptions struct {
+	ID     UserRef `url:"-"`
+	Tenant string  `url:"-"`
+}
 
 // Get a user
 func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.User] {
@@ -170,7 +181,7 @@ func (s *Service) getB(opt GetOptions) *core.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
-		SetPathParam(ParamID, opt.ID).
+		SetPathParam(ParamID, string(opt.ID)).
 		SetURL(ApiUser)
 	return core.NewTryRequest(s.Client, req)
 }
@@ -210,7 +221,10 @@ func (s *Service) createB(body any) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req)
 }
 
-type UpdateOptions Target
+type UpdateOptions struct {
+	ID     UserRef `url:"-"`
+	Tenant string  `url:"-"`
+}
 
 // Update a user
 func (s *Service) Update(ctx context.Context, opt UpdateOptions, body any) op.Result[jsonmodels.User] {
@@ -222,14 +236,17 @@ func (s *Service) updateB(opt UpdateOptions, body any) *core.TryRequest {
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamID, opt.ID).
+		SetPathParam(ParamID, string(opt.ID)).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
 		SetBody(body).
 		SetURL(ApiUser)
 	return core.NewTryRequest(s.Client, req)
 }
 
-type DeleteOptions Target
+type DeleteOptions struct {
+	ID     UserRef `url:"-"`
+	Tenant string  `url:"-"`
+}
 
 // Delete a user
 func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.NoContent] {
@@ -239,7 +256,7 @@ func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.
 func (s *Service) deleteB(opt DeleteOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamID, opt.ID).
+		SetPathParam(ParamID, string(opt.ID)).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
 		SetURL(ApiUser)
 	return core.NewTryRequest(s.Client, req)
@@ -339,7 +356,10 @@ func (s *Service) resetPasswordB(opt ResetPasswordOptions) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req).WithNoAuth()
 }
 
-type GetTFAOptions Target
+type GetTFAOptions struct {
+	ID     UserRef `url:"-"`
+	Tenant string  `url:"-"`
+}
 
 // GetTFA retrieves the two-factor authentication settings for a specific user.
 // Leave Tenant empty to use the current context tenant.
@@ -352,7 +372,7 @@ func (s *Service) getTFAB(opt GetTFAOptions) *core.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
-		SetPathParam(ParamID, opt.ID).
+		SetPathParam(ParamID, string(opt.ID)).
 		SetURL(ApiUserTFA)
 	return core.NewTryRequest(s.Client, req)
 }

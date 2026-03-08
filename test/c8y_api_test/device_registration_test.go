@@ -38,7 +38,7 @@ func Test_BulkRegistration(t *testing.T) {
 	t.Cleanup(func() {
 		for _, device := range registrations {
 			client.Users.Delete(context.Background(), users.DeleteOptions{
-				ID: fmt.Sprintf("device_%s", device.ID),
+				ID: users.ByDeviceUser(device.ID),
 			})
 		}
 	})

@@ -80,23 +80,33 @@ func (s *Service) listB(opt ListOptions) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req, ResultProperty)
 }
 
-type Target struct {
-	Tenant string `url:"-"`
+// GroupRef is a typed reference to a user group. Construct it using ByID or
+// ByName, or cast a variable string with GroupRef(id) when needed.
+type GroupRef string
 
-	ID string `url:"-"`
+// ByID creates a direct-ID group reference. No resolution is performed;
+// the provided id is used as-is in the API call.
+func ByID(id string) GroupRef { return GroupRef(id) }
+
+// ByName creates a group reference resolved by name.
+func ByName(name string) GroupRef { return GroupRef("name:" + name) }
+
+type GetOptions struct {
+	Tenant string   `url:"-"`
+	ID     GroupRef `url:"-"`
 }
 
 // Get a user group
-func (s *Service) Get(ctx context.Context, opt Target) op.Result[jsonmodels.UserGroup] {
+func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.UserGroup] {
 	return core.Execute(ctx, s.getB(opt), jsonmodels.NewUserGroup)
 }
 
-func (s *Service) getB(target Target) *core.TryRequest {
+func (s *Service) getB(target GetOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, target.Tenant).
-		SetPathParam(ParamID, target.ID).
+		SetPathParam(ParamID, string(target.ID)).
 		SetURL(ApiGroup)
 	return core.NewTryRequest(s.Client, req)
 }
@@ -137,7 +147,8 @@ func (s *Service) createB(body any) *core.TryRequest {
 }
 
 type UpdateOptions struct {
-	Target
+	Tenant string   `url:"-"`
+	ID     GroupRef `url:"-"`
 
 	ForceLogout bool `url:"forceLogout,omitzero"`
 }
@@ -153,7 +164,7 @@ func (s *Service) updateB(opt UpdateOptions, body any) *core.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
-		SetPathParam(ParamID, opt.ID).
+		SetPathParam(ParamID, string(opt.ID)).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetBody(body).
 		SetURL(ApiGroup)
@@ -161,7 +172,8 @@ func (s *Service) updateB(opt UpdateOptions, body any) *core.TryRequest {
 }
 
 type DeleteOptions struct {
-	Target
+	Tenant string   `url:"-"`
+	ID     GroupRef `url:"-"`
 
 	ForceLogout bool `url:"forceLogout,omitzero"`
 }
@@ -175,7 +187,7 @@ func (s *Service) deleteB(opt DeleteOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
-		SetPathParam(ParamID, opt.ID).
+		SetPathParam(ParamID, string(opt.ID)).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiGroup)
 	return core.NewTryRequest(s.Client, req)

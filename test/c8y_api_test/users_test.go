@@ -26,7 +26,7 @@ func Test_Users(t *testing.T) {
 			break
 		}
 		user := client.Users.Get(context.Background(), users.GetOptions{
-			ID: userID,
+			ID: users.ByID(userID),
 		})
 		assert.NoError(t, user.Err)
 		assert.Equal(t, userID, user.Data.ID())
@@ -68,7 +68,7 @@ func Test_GetUserTFA(t *testing.T) {
 
 	// Use the currently authenticated user — always exists and accessible
 	result := client.Users.GetTFA(ctx, users.GetTFAOptions{
-		ID:     client.Auth.Username,
+		ID:     users.ByID(client.Auth.Username),
 		Tenant: client.Auth.Tenant,
 	})
 

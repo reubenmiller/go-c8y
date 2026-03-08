@@ -90,7 +90,7 @@ func Test_Enrollment_Register(t *testing.T) {
 			})
 		}
 		client.Users.Delete(ctx, users.DeleteOptions{
-			ID:     "device_" + deviceID,
+			ID:     users.ByDeviceUser(deviceID),
 			Tenant: client.Auth.Tenant,
 		})
 	})

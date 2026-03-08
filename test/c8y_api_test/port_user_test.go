@@ -42,7 +42,7 @@ func Test_GetUser(t *testing.T) {
 	ctx := context.Background()
 
 	result := client.Users.Get(ctx, users.GetOptions{
-		ID:     client.Auth.Username,
+		ID:     users.ByID(client.Auth.Username),
 		Tenant: client.Auth.Tenant,
 	})
 
@@ -94,14 +94,14 @@ func Test_CRUD_User(t *testing.T) {
 
 	t.Cleanup(func() {
 		client.Users.Delete(ctx, users.DeleteOptions{
-			ID:     userID,
+			ID:     users.ByID(userID),
 			Tenant: client.Auth.Tenant,
 		})
 	})
 
 	// Update user
 	updateResult := client.Users.Update(ctx, users.UpdateOptions{
-		ID:     userID,
+		ID:     users.ByID(userID),
 		Tenant: client.Auth.Tenant,
 	}, model.User{
 		FirstName: "Alfred",
@@ -117,7 +117,7 @@ func Test_CRUD_User(t *testing.T) {
 
 	// Delete user
 	deleteResult := client.Users.Delete(ctx, users.DeleteOptions{
-		ID:     userID,
+		ID:     users.ByID(userID),
 		Tenant: client.Auth.Tenant,
 	})
 
@@ -166,8 +166,8 @@ func Test_GetGroupByName(t *testing.T) {
 
 	// Get group by id
 	groupID := result.Data.ID()
-	getResult := client.UserGroups.Get(ctx, usergroups.Target{
-		ID:     groupID,
+	getResult := client.UserGroups.Get(ctx, usergroups.GetOptions{
+		ID:     usergroups.ByID(groupID),
 		Tenant: client.Auth.Tenant,
 	})
 
@@ -198,10 +198,8 @@ func Test_AddUserToGroup(t *testing.T) {
 
 	t.Cleanup(func() {
 		client.UserGroups.Delete(ctx, usergroups.DeleteOptions{
-			Target: usergroups.Target{
-				ID:     groupID,
-				Tenant: client.Auth.Tenant,
-			},
+			ID:     usergroups.ByID(groupID),
+			Tenant: client.Auth.Tenant,
 		})
 	})
 
@@ -301,10 +299,8 @@ func Test_GetUsersByGroup(t *testing.T) {
 	// Update temp group
 	updatedName := name + "-UpdatedName"
 	updateResult := client.UserGroups.Update(ctx, usergroups.UpdateOptions{
-		Target: usergroups.Target{
-			ID:     groupID,
-			Tenant: client.Auth.Tenant,
-		},
+		ID:     usergroups.ByID(groupID),
+		Tenant: client.Auth.Tenant,
 	}, map[string]any{
 		"name": updatedName,
 	})
@@ -314,10 +310,8 @@ func Test_GetUsersByGroup(t *testing.T) {
 
 	// Remove temp group
 	deleteResult := client.UserGroups.Delete(ctx, usergroups.DeleteOptions{
-		Target: usergroups.Target{
-			ID:     groupID,
-			Tenant: client.Auth.Tenant,
-		},
+		ID:     usergroups.ByID(groupID),
+		Tenant: client.Auth.Tenant,
 	})
 	require.NoError(t, deleteResult.Err)
 	assert.Equal(t, 204, deleteResult.HTTPStatus)
