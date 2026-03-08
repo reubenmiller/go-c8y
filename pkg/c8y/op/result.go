@@ -323,6 +323,49 @@ func (r Result[T]) Unwrap() (T, error) {
 	return r.Data, r.Err
 }
 
+// First returns the first decoded item from a collection result.
+// Returns [ErrNotFound] if the collection is empty, or the result's own error
+// if the request itself failed.
+//
+//	first, err := collection.First()
+func (r Result[T]) First() (T, error) {
+	for item, err := range r.Items() {
+		return item, err
+	}
+	return *new(T), ErrNotFound
+}
+
+// Items returns an iterator over the decoded items in a collection result.
+// Each iteration yields an item and any decoding error.
+//
+// This is designed to work directly with [First] and range loops without
+// needing to import additional packages:
+//
+//	first, ok := op.First(collection.Items())
+//	for item, err := range collection.Items() { ... }
+func (r Result[T]) Items() iter.Seq2[T, error] {
+	return func(yield func(T, error) bool) {
+		if r.Err != nil {
+			yield(*new(T), r.Err)
+			return
+		}
+		if iterable, ok := any(r.Data).(types.CollectionIterator); ok {
+			for item := range iterable.IterBytes() {
+				var decoded T
+				if err := json.Unmarshal(item.Bytes(), &decoded); err != nil {
+					if !yield(*new(T), err) {
+						return
+					}
+					continue
+				}
+				if !yield(decoded, nil) {
+					return
+				}
+			}
+		}
+	}
+}
+
 // TotalElements returns the total number of matching elements reported by the
 // server for a collection result.
 //
