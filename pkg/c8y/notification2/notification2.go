@@ -228,14 +228,6 @@ func (c *Notification2Client) disconnect() error {
 		return c.ws.Close()
 	}
 
-	// TODO: Add option to unsubscribe on disconnect (e.g. no offline messages required?)
-	// Note: If you unsubscribe, then notifications will be ignored when the client is offline
-	// if c.ws != nil {
-	// 	if err := c.Unsubscribe(); err != nil {
-	// 		return err
-	// 	}
-	// }
-
 	return nil
 }
 
