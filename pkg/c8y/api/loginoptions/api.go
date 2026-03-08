@@ -158,7 +158,6 @@ type LoginOptionTenantAccess struct {
 }
 
 // Update the tenant's access to the authentication configuration.
-// TODO: This function signature is awkward
 func (s *Service) UpdateAccess(ctx context.Context, opt UpdateAccessOptions, body LoginOptionTenantAccess) op.Result[jsonmodels.LoginOption] {
 	return core.Execute(ctx, s.updateAccessB(opt, body), jsonmodels.NewLoginOption)
 }
