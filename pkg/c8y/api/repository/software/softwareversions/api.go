@@ -338,7 +338,7 @@ func (r *Resolver) resolveByVersionAndSoftwareID(ctx context.Context, version, s
 		return found.ID(), nil
 	}
 
-	return "", fmt.Errorf("version not found: software=%s, version=%s", softwareID, version)
+	return "", core.ErrNotFound("version not found: software=%s, version=%s", softwareID, version)
 }
 
 // resolveByVersionAndSoftwareName resolves by version number and software name (optionally with type)

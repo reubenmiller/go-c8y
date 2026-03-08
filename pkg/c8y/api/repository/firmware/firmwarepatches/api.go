@@ -353,9 +353,9 @@ func (r *Resolver) resolveByVersionAndFirmwareID(ctx context.Context, version, d
 	}
 
 	if dependency != "" {
-		return "", fmt.Errorf("patch not found: firmware=%s, version=%s, dependency=%s", firmwareID, version, dependency)
+		return "", core.ErrNotFound("patch not found: firmware=%s, version=%s, dependency=%s", firmwareID, version, dependency)
 	}
-	return "", fmt.Errorf("patch not found: firmware=%s, version=%s", firmwareID, version)
+	return "", core.ErrNotFound("patch not found: firmware=%s, version=%s", firmwareID, version)
 }
 
 func (r *Resolver) resolveByVersionAndFirmwareName(ctx context.Context, version, dependency, firmwareName string) (string, error) {

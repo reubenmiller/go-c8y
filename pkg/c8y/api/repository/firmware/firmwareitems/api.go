@@ -333,7 +333,7 @@ func (r *Resolver) resolveByName(ctx context.Context, name string) (string, erro
 		return found.ID(), nil
 	}
 
-	return "", fmt.Errorf("firmware not found: name=%s", name)
+	return "", core.ErrNotFound("firmware not found: name=%s", name)
 }
 
 // resolveByQuery resolves by custom query
@@ -363,7 +363,7 @@ func (r *Resolver) resolveByQuery(ctx context.Context, query string) (string, er
 		return found.ID(), nil
 	}
 
-	return "", fmt.Errorf("firmware not found: query=%s", query)
+	return "", core.ErrNotFound("firmware not found: query=%s", query)
 }
 
 // Get retrieves a firmware

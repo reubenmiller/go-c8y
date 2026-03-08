@@ -323,7 +323,7 @@ func (r *Resolver) resolveByVersionAndFirmwareID(ctx context.Context, version, f
 		return found.ID(), nil
 	}
 
-	return "", fmt.Errorf("version not found: firmware=%s, version=%s", firmwareID, version)
+	return "", core.ErrNotFound("version not found: firmware=%s, version=%s", firmwareID, version)
 }
 
 // resolveByVersionAndFirmwareName resolves by version number and firmware name

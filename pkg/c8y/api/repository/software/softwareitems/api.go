@@ -282,9 +282,9 @@ func (r *Resolver) resolveByNameAndType(ctx context.Context, name, softwareType 
 	}
 
 	if softwareType != "" {
-		return "", fmt.Errorf("software not found with name=%s, softwareType=%s", name, softwareType)
+		return "", core.ErrNotFound("software not found with name=%s, softwareType=%s", name, softwareType)
 	}
-	return "", fmt.Errorf("software not found with name=%s", name)
+	return "", core.ErrNotFound("software not found with name=%s", name)
 }
 
 // resolveByQuery resolves using a custom query
@@ -315,7 +315,7 @@ func (r *Resolver) resolveByQuery(ctx context.Context, query string, meta map[st
 		return found.ID(), nil
 	}
 
-	return "", fmt.Errorf("software not found with query: %s", query)
+	return "", core.ErrNotFound("software not found with query: %s", query)
 }
 
 // Get retrieves a software item

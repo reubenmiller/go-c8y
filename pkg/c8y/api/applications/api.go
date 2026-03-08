@@ -81,9 +81,9 @@ func NewService(common *core.Service) *Service {
 		}
 
 		if appType != "" {
-			return "", nil, fmt.Errorf("application not found with name: %s, type: %s", name, appType)
+			return "", nil, core.ErrNotFound("application not found with name: %s, type: %s", name, appType)
 		}
-		return "", nil, fmt.Errorf("application not found with name: %s", name)
+		return "", nil, core.ErrNotFound("application not found with name: %s", name)
 	}
 
 	return service

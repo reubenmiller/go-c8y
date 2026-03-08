@@ -68,7 +68,7 @@ func NewService(common *core.Service) *Service {
 			}
 		}
 
-		return "", nil, fmt.Errorf("microservice not found with name: %s", name)
+		return "", nil, core.ErrNotFound("microservice not found with name: %s", name)
 	}
 
 	// Setup lookup function for contextPath-based resolution
@@ -95,7 +95,7 @@ func NewService(common *core.Service) *Service {
 			}
 		}
 
-		return "", nil, fmt.Errorf("microservice not found with contextPath: %s", contextPath)
+		return "", nil, core.ErrNotFound("microservice not found with contextPath: %s", contextPath)
 	}
 
 	return service

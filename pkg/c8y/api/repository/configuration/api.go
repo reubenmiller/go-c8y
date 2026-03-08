@@ -343,9 +343,9 @@ func (r *Resolver) resolveByNameAndType(ctx context.Context, name, configuration
 	}
 
 	if configurationType != "" {
-		return "", fmt.Errorf("configuration not found: name=%s, configurationType=%s", name, configurationType)
+		return "", core.ErrNotFound("configuration not found: name=%s, configurationType=%s", name, configurationType)
 	}
-	return "", fmt.Errorf("configuration not found: name=%s", name)
+	return "", core.ErrNotFound("configuration not found: name=%s", name)
 }
 
 // resolveByQuery resolves by custom query
@@ -375,7 +375,7 @@ func (r *Resolver) resolveByQuery(ctx context.Context, query string) (string, er
 		return found.ID(), nil
 	}
 
-	return "", fmt.Errorf("configuration not found: query=%s", query)
+	return "", core.ErrNotFound("configuration not found: query=%s", query)
 }
 
 // Get retrieves a configuration

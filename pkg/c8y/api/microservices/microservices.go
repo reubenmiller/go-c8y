@@ -128,8 +128,7 @@ func (s *Service) CreateOrUpdate(ctx context.Context, opt CreateOptions) (*model
 			return nil, result.Err
 		}
 		if !found {
-			// TODO: create well defined error type for when an item is not found
-			return nil, fmt.Errorf("item not found")
+			return nil, core.ErrNotFound("microservice %q not found", applicationName)
 		}
 		if result.Data.Exists("id") {
 			applicationID = result.Data.ID()

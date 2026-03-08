@@ -184,6 +184,13 @@ func (err Error) Is(target error) bool {
 	return false
 }
 
+// ErrNotFound returns a 404 Not Found [Error] with the given message.
+// It is the counterpart to [IsNotFound] and produces the same error type
+// as a real 404 response from the Cumulocity API.
+func ErrNotFound(format string, args ...any) *Error {
+	return &Error{Code: http.StatusNotFound, Message: fmt.Sprintf(format, args...)}
+}
+
 // IsNotFound indicates if err indicates a 404 Not Found error from the Cumulocity API.
 func IsNotFound(err error) bool {
 	return ErrHasStatus(err, http.StatusNotFound)
