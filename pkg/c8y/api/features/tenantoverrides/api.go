@@ -74,7 +74,7 @@ func (s *Service) Disable(ctx context.Context, key string) op.Result[core.NoCont
 
 // Delete removes the feature toggle override for the current tenant.
 func (s *Service) Delete(ctx context.Context, key string) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteB(key))
+	return core.ExecuteNoContent(ctx, s.deleteB(key)).IgnoreNotFound()
 }
 
 func (s *Service) deleteB(key string) *core.TryRequest {

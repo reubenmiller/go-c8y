@@ -87,7 +87,7 @@ func (s *Service) updateB(eventID string, opt UploadFileOptions) *core.TryReques
 
 // Delete an event binary
 func (s *Service) Delete(ctx context.Context, eventID string) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteB(eventID))
+	return core.ExecuteNoContent(ctx, s.deleteB(eventID)).IgnoreNotFound()
 }
 
 func (s *Service) deleteB(eventID string) *core.TryRequest {

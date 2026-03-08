@@ -133,7 +133,7 @@ func (s *Service) updateB(typeOrID string, body any) *core.TryRequest {
 
 // Delete a specific login option in the tenant by a given type or ID
 func (s *Service) Delete(ctx context.Context, typeOrID string) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteB(typeOrID))
+	return core.ExecuteNoContent(ctx, s.deleteB(typeOrID)).IgnoreNotFound()
 }
 
 func (s *Service) deleteB(typeOrID string) *core.TryRequest {

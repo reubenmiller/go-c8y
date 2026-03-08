@@ -91,7 +91,7 @@ func (s *Service) Disable(ctx context.Context, key string) op.Result[jsonmodels.
 
 // Delete removes the feature override for the current tenant.
 func (s *Service) Delete(ctx context.Context, key string) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteB(key))
+	return core.ExecuteNoContent(ctx, s.deleteB(key)).IgnoreNotFound()
 }
 
 func (s *Service) deleteB(key string) *core.TryRequest {

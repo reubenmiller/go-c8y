@@ -139,7 +139,7 @@ func (s *Service) updateB(id int64, body any) *core.TryRequest {
 // Delete removes an inventory role by its numeric ID. A 204 No Content
 // response indicates success.
 func (s *Service) Delete(ctx context.Context, id int64) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteB(id))
+	return core.ExecuteNoContent(ctx, s.deleteB(id)).IgnoreNotFound()
 }
 
 func (s *Service) deleteB(id int64) *core.TryRequest {

@@ -25,5 +25,5 @@ func (s *Service) Create(ctx context.Context, id string, opts IdentityOptions) o
 
 // Delete removes an external identity
 func (s *Service) Delete(ctx context.Context, opts IdentityOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteB(opts))
+	return core.ExecuteNoContent(ctx, s.deleteB(opts)).IgnoreNotFound()
 }

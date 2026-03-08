@@ -185,10 +185,13 @@ func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.R
 	meta := make(map[string]any)
 	resolvedID, err := s.ResolveID(resolutionCtx, ID, meta)
 	if err != nil {
+		if core.IsNotFound(err) {
+			return op.Skipped(core.NoContent{}, "not found")
+		}
 		return op.Failed[core.NoContent](err, false)
 	}
 
-	return core.ExecuteNoContent(ctx, s.deleteB(resolvedID, opt), meta)
+	return core.ExecuteNoContent(ctx, s.deleteB(resolvedID, opt), meta).IgnoreNotFound()
 }
 
 // GetOrCreateByName searches by name and optionally type, creating if not found

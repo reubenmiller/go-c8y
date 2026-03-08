@@ -380,11 +380,14 @@ func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.R
 	meta["identifier"] = ID
 	id, err := s.Resolver.ResolveID(resolutionCtx, ID, meta)
 	if err != nil {
+		if core.IsNotFound(err) {
+			return op.Skipped(core.NoContent{}, "not found")
+		}
 		return op.Failed[core.NoContent](err, false)
 	}
 	meta["id"] = id
 
-	return core.ExecuteNoContent(ctx, s.deleteB(id, opt), meta)
+	return core.ExecuteNoContent(ctx, s.deleteB(id, opt), meta).IgnoreNotFound()
 }
 
 // GetOrCreateByName searches by name and optional software type, creating if not found

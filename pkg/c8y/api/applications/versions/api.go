@@ -239,7 +239,7 @@ func (s *Service) updateB(applicationID string, version string, tags []string) *
 
 // DeleteByVersion removes a specific version of an application by version string
 func (s *Service) DeleteByVersion(ctx context.Context, applicationID string, version string) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteByVersionB(applicationID, version))
+	return core.ExecuteNoContent(ctx, s.deleteByVersionB(applicationID, version)).IgnoreNotFound()
 }
 
 func (s *Service) deleteByVersionB(applicationID string, version string) *core.TryRequest {
@@ -254,7 +254,7 @@ func (s *Service) deleteByVersionB(applicationID string, version string) *core.T
 
 // DeleteByTag removes a specific version of an application by tag
 func (s *Service) DeleteByTag(ctx context.Context, applicationID string, tag string) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteByTagB(applicationID, tag))
+	return core.ExecuteNoContent(ctx, s.deleteByTagB(applicationID, tag)).IgnoreNotFound()
 }
 
 func (s *Service) deleteByTagB(applicationID string, tag string) *core.TryRequest {

@@ -135,7 +135,7 @@ func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.
 		}
 	}
 	// Step 2: delete by fingerprint
-	return core.ExecuteNoContent(ctx, s.deleteB(opt, cert.Data.Fingerprint()))
+	return core.ExecuteNoContent(ctx, s.deleteB(opt, cert.Data.Fingerprint())).IgnoreNotFound()
 }
 
 func (s *Service) deleteB(opt DeleteOptions, fingerprint string) *core.TryRequest {

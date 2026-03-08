@@ -184,7 +184,7 @@ type DeleteOptions struct {
 
 // Delete a trusted certificate
 func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteB(opt))
+	return core.ExecuteNoContent(ctx, s.deleteB(opt)).IgnoreNotFound()
 }
 
 func (s *Service) deleteB(opt DeleteOptions) *core.TryRequest {

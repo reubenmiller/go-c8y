@@ -125,7 +125,7 @@ func (s *Service) updateB(id string, body any) *core.TryRequest {
 
 // Delete removes a device request
 func (s *Service) Delete(ctx context.Context, id string) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteB(id))
+	return core.ExecuteNoContent(ctx, s.deleteB(id)).IgnoreNotFound()
 }
 
 func (s *Service) deleteB(id string) *core.TryRequest {

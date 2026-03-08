@@ -254,6 +254,7 @@ func (r Result[T]) WithMeta(key string, value any) Result[T] {
 // IgnoreNotFound clears any error if the HTTP status is 404 Not Found.
 // This is useful for DELETE operations where a 404 indicates the resource
 // is already absent (desired state achieved).
+// The result will have StatusSkipped and Idempotent: true.
 //
 // Example:
 //
@@ -264,7 +265,30 @@ func (r Result[T]) WithMeta(key string, value any) Result[T] {
 func (r Result[T]) IgnoreNotFound() Result[T] {
 	if r.HTTPStatus == 404 {
 		r.Err = nil
+		r.Status = StatusSkipped
+		r.Idempotent = true
 		r = r.WithMeta("ignoredStatus", 404)
+	}
+	return r
+}
+
+// IgnoreConflict clears any error if the HTTP status is 409 Conflict.
+// This is useful for create/subscribe operations where a 409 indicates the resource
+// already exists (desired state achieved).
+// The result will have StatusDuplicate and Idempotent: true.
+//
+// Example:
+//
+//	subscribeResult := client.Subscribe(ctx, tenantID, selfURL).IgnoreConflict()
+//	if subscribeResult.Err != nil {
+//	    // Only real errors, not 409s
+//	}
+func (r Result[T]) IgnoreConflict() Result[T] {
+	if r.HTTPStatus == 409 {
+		r.Err = nil
+		r.Status = StatusDuplicate
+		r.Idempotent = true
+		r = r.WithMeta("ignoredStatus", 409)
 	}
 	return r
 }

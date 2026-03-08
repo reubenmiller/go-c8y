@@ -137,7 +137,7 @@ func (s *Service) updateB(ID string, body any) *core.TryRequest {
 // Delete removes a bulk operation by its ID. A 204 No Content response
 // indicates success.
 func (s *Service) Delete(ctx context.Context, ID string) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteB(ID))
+	return core.ExecuteNoContent(ctx, s.deleteB(ID)).IgnoreNotFound()
 }
 
 func (s *Service) deleteB(ID string) *core.TryRequest {

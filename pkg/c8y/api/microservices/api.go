@@ -318,8 +318,7 @@ func (s *Service) updateB(ID string, body any) *core.TryRequest {
 type DeleteOptions = applications.DeleteOptions
 
 // Delete a microservice by ID or resolver string.
-// A 404 response (already deleted / not found) is not treated as an error; the result will have
-// StatusSkipped and meta["reason"] = "not found".
+// A 404 response (already deleted) is treated as skipped (StatusSkipped, Idempotent: true).
 // Examples:
 //   - Delete(ctx, "12345", opts) - direct ID
 //   - Delete(ctx, "name:my-microservice", opts) - lookup by name
@@ -330,14 +329,13 @@ func (s *Service) Delete(ctx context.Context, id string, opt DeleteOptions) op.R
 	meta := make(map[string]any)
 	resolvedID, err := s.ResolveID(resolutionCtx, id, meta)
 	if err != nil {
+		if core.IsNotFound(err) {
+			return op.Skipped(core.NoContent{}, "not found")
+		}
 		return op.Failed[core.NoContent](err, false)
 	}
 
-	result := core.ExecuteNoContent(ctx, s.deleteB(resolvedID, opt), meta)
-	if core.ErrHasStatus(result.Err, 404) {
-		return op.Skipped(result.Data, "not found")
-	}
-	return result
+	return core.ExecuteNoContent(ctx, s.deleteB(resolvedID, opt), meta).IgnoreNotFound()
 }
 
 func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
@@ -351,18 +349,13 @@ func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
 }
 
 // Subscribe a microservice to a tenant.
-// A 409 response (already subscribed) is not treated as an error; the result will have
-// StatusDuplicate and meta["reason"] = "already subscribed".
+// A 409 response (already subscribed) is treated as a duplicate (StatusDuplicate, Idempotent: true).
 func (s *Service) Subscribe(ctx context.Context, tenantID string, selfURL string) op.Result[jsonmodels.Microservice] {
-	result := core.Execute(ctx, s.subscribeB(tenantID, selfURL), func(b []byte) jsonmodels.Microservice {
+	return core.Execute(ctx, s.subscribeB(tenantID, selfURL), func(b []byte) jsonmodels.Microservice {
 		// Extract application from MicroserviceReference wrapper
 		doc := jsondoc.New(b)
 		return jsonmodels.NewMicroservice([]byte(doc.Get("application").Raw))
-	})
-	if core.ErrHasStatus(result.Err, 409) {
-		return op.Duplicate(result.Data, map[string]any{"reason": "already subscribed"})
-	}
-	return result
+	}).IgnoreConflict()
 }
 
 func (s *Service) subscribeB(tenantID string, selfURL string) *core.TryRequest {
@@ -378,8 +371,7 @@ func (s *Service) subscribeB(tenantID string, selfURL string) *core.TryRequest {
 }
 
 // Unsubscribe a microservice from a tenant by ID or resolver string.
-// A 404 response (not subscribed) is not treated as an error; the result will have
-// StatusSkipped and meta["reason"] = "not subscribed".
+// A 404 response (not subscribed) is treated as skipped (StatusSkipped, Idempotent: true).
 // Examples:
 //   - Unsubscribe(ctx, tenantID, "12345") - direct ID
 //   - Unsubscribe(ctx, tenantID, "name:my-microservice") - lookup by name
@@ -390,14 +382,13 @@ func (s *Service) Unsubscribe(ctx context.Context, tenantID string, id string) o
 	meta := make(map[string]any)
 	resolvedID, err := s.ResolveID(resolutionCtx, id, meta)
 	if err != nil {
+		if core.IsNotFound(err) {
+			return op.Skipped(core.NoContent{}, "not found")
+		}
 		return op.Failed[core.NoContent](err, false)
 	}
 
-	result := core.ExecuteNoContent(ctx, s.unsubscribeB(tenantID, resolvedID), meta)
-	if core.ErrHasStatus(result.Err, 404) {
-		return op.Skipped(result.Data, "not subscribed")
-	}
-	return result
+	return core.ExecuteNoContent(ctx, s.unsubscribeB(tenantID, resolvedID), meta).IgnoreNotFound()
 }
 
 func (s *Service) unsubscribeB(tenantID string, ID string) *core.TryRequest {

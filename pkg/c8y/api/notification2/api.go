@@ -182,7 +182,7 @@ func (s *Service) createB(body any) *core.TryRequest {
 }
 
 func (s *Service) Delete(ctx context.Context, id string) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteB(id))
+	return core.ExecuteNoContent(ctx, s.deleteB(id)).IgnoreNotFound()
 }
 
 func (s *Service) deleteB(id string) *core.TryRequest {

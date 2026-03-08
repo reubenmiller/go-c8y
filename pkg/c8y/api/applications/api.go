@@ -332,10 +332,13 @@ func (s *Service) Delete(ctx context.Context, id string, opt DeleteOptions) op.R
 	meta := make(map[string]any)
 	resolvedID, err := s.ResolveID(resolutionCtx, id, meta)
 	if err != nil {
+		if core.IsNotFound(err) {
+			return op.Skipped(core.NoContent{}, "not found")
+		}
 		return op.Failed[core.NoContent](err, false)
 	}
 
-	return core.ExecuteNoContent(ctx, s.deleteB(resolvedID, opt), meta)
+	return core.ExecuteNoContent(ctx, s.deleteB(resolvedID, opt), meta).IgnoreNotFound()
 }
 
 func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
@@ -381,9 +384,10 @@ func (s *Service) copyB(ID string, opt CopyOptions) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req)
 }
 
-// Subscribe an application to a tenant
+// Subscribe an application to a tenant.
+// A 409 response (already subscribed) is treated as a duplicate (StatusDuplicate, Idempotent: true).
 func (s *Service) Subscribe(ctx context.Context, tenantID string, selfLink string) op.Result[jsonmodels.Application] {
-	return core.Execute(ctx, s.subscribeB(tenantID, selfLink), jsonmodels.NewApplication, nil)
+	return core.Execute(ctx, s.subscribeB(tenantID, selfLink), jsonmodels.NewApplication, nil).IgnoreConflict()
 }
 
 func (s *Service) subscribeB(tenantID string, selfURL string) *core.TryRequest {
@@ -407,10 +411,13 @@ func (s *Service) Unsubscribe(ctx context.Context, tenantID string, id string) o
 	meta := make(map[string]any)
 	resolvedID, err := s.ResolveID(resolutionCtx, id, meta)
 	if err != nil {
+		if core.IsNotFound(err) {
+			return op.Skipped(core.NoContent{}, "not found")
+		}
 		return op.Failed[core.NoContent](err, false)
 	}
 
-	return core.ExecuteNoContent(ctx, s.unsubscribeB(tenantID, resolvedID), meta)
+	return core.ExecuteNoContent(ctx, s.unsubscribeB(tenantID, resolvedID), meta).IgnoreNotFound()
 }
 
 func (s *Service) unsubscribeB(tenantID string, ID string) *core.TryRequest {
