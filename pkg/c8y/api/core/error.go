@@ -66,12 +66,6 @@ func coupleAPIErrors(r *resty.Response, err error) (*resty.Response, error) {
 		return r, nil
 	}
 
-	// TODO: Check why this logic exists, as it seems wrong to me
-	// if r.IsRead && r.Error() == nil {
-	// 	// no error in the resty Response
-	// 	return r, nil
-	// }
-
 	// Check that response is of the correct content-type before unmarshalling
 	// expectedContentType := r.Request.Header.Get("Accept")
 	responseContentType := r.Header().Get("Content-Type")
