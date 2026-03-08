@@ -211,6 +211,11 @@ type ClientOptions struct {
 	Agent string
 
 	Transport http.RoundTripper
+
+	// Timeout sets a global HTTP-level timeout for all requests made by this client.
+	// A value of zero means no timeout. Per-request timeouts can still be applied
+	// by passing a context with a deadline: ctx, cancel := context.WithTimeout(ctx, d)
+	Timeout time.Duration
 }
 
 func (c *Client) Realtime() *realtime.Client {
@@ -291,6 +296,10 @@ func NewClient(opts ClientOptions) *Client {
 		SetRetryMaxWaitTime(30 * time.Second).
 		SetResultError(core.APIError{}).
 		SetCircuitBreaker(circuitBreaker)
+
+	if opts.Timeout > 0 {
+		rclient.SetTimeout(opts.Timeout)
+	}
 
 	// Set any certificate before any other Transports are set as these will
 	// make the TLS config inaccessible
