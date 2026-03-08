@@ -49,6 +49,9 @@
 //	-no-env           Do not read any values from environment variables.
 //	                  All connection details must be supplied via flags.
 //
+//	-debug            Enable debug mode with full HTTP request/response logging.
+//	                  Sensitive headers (e.g. Authorization) are shown unredacted.
+//
 //	-totp-secret      Base32 TOTP secret for unattended code generation during
 //	                  OAUTH2_INTERNAL login. Falls back to $C8Y_TOTP_SECRET
 //	                  (unless -no-env is set).
@@ -140,6 +143,7 @@ func main() {
 		passwordFlag    string
 		tenantFlag      string
 		noEnvFlag       bool
+		debugFlag       bool
 		methodFlag      string
 		preferFlags     stringSliceFlag
 		browserAddrFlag = "http://127.0.0.1:5001/callback"
@@ -161,6 +165,9 @@ func main() {
 	flag.BoolVar(&noEnvFlag, "no-env", false,
 		"Do not read any values from environment variables.\n"+
 			"All connection details must be supplied via flags.")
+	flag.BoolVar(&debugFlag, "debug", false,
+		"Enable debug mode with full HTTP request/response logging.\n"+
+			"Sensitive headers (e.g. Authorization) are shown unredacted.")
 	flag.StringVar(&methodFlag, "method", "",
 		"Enforce exactly one login method (strict).\n"+
 			"Values: BASIC | OAUTH2_INTERNAL | CERTIFICATE | OAUTH2_DEVICE_FLOW | OAUTH2_BROWSER_FLOW")
@@ -249,8 +256,10 @@ func main() {
 	}
 
 	client := api.NewClient(api.ClientOptions{
-		BaseURL: baseURL,
-		Auth:    auth,
+		BaseURL:       baseURL,
+		Auth:          auth,
+		Debug:         debugFlag,
+		ShowSensitive: debugFlag,
 	})
 
 	// -- Print what we are about to do ----------------------------------------
@@ -549,6 +558,9 @@ CONNECTION FLAGS
 
   -no-env            Do not read any values from environment variables.
                      All connection details must be supplied via flags.
+
+  -debug             Enable debug mode with full HTTP request/response logging.
+                     Sensitive headers (e.g. Authorization) are shown unredacted.
 
 AUTHENTICATION FLAGS
   -method  string    Enforce exactly one login method (strict).
