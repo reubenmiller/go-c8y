@@ -91,7 +91,7 @@ func TestInventoryService_CreateUpdateDeleteBinary(t *testing.T) {
 func TestInventoryService_CreateBinaryWithProgressBar(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
-	testfile1 := testcore.NewDummyFileWithSize("testfile1.txt", 10_000_000)
+	testfile1 := testcore.NewDummyFileWithSize(t, "testfile1.txt", 10_000_000)
 
 	output := bytes.NewBufferString("")
 

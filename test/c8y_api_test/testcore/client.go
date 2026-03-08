@@ -226,9 +226,8 @@ func NewDummyFile(t *testing.T, name string, contents string) (createFilePath st
 }
 
 // NewDummyFileWithSize creates a temporary test file with the given name and size.
-// The file will be created in the current directory and it's the caller's
-// responsibility to clean it up.
-func NewDummyFileWithSize(name string, size int64) (filepath string) {
+// The file will be created in t.TempDir() and automatically cleaned up when the test finishes.
+func NewDummyFileWithSize(t *testing.T, name string, size int64) (createFilePath string) {
 	if name == "" {
 		name = "test-dummy-dummy"
 	}
@@ -237,7 +236,8 @@ func NewDummyFileWithSize(name string, size int64) (filepath string) {
 		size = 10_000_000
 	}
 
-	f, err := os.Create(name)
+	fullPath := filepath.Join(t.TempDir(), name)
+	f, err := os.Create(fullPath)
 	if err != nil {
 		panic(fmt.Errorf("Error creating dummy file. %w", err))
 	}
@@ -252,7 +252,7 @@ func NewDummyFileWithSize(name string, size int64) (filepath string) {
 		panic(fmt.Errorf("Failed to sync file with dummy information. %w", err))
 	}
 
-	filepath = f.Name()
+	createFilePath = f.Name()
 	return
 }
 
