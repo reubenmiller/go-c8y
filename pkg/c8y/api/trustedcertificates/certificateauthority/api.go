@@ -13,10 +13,9 @@ import (
 
 var ApiCertificateAuthority = "/certificate-authority"
 var ApiCertificateAuthorityRenew = "/certificate-authority/renew"
-var ApiTrustedCertificates = "/tenant/tenants/{tenantID}/trusted-certificates"
-var ApiTrustedCertificate = "/tenant/tenants/{tenantID}/trusted-certificates/{fingerprint}"
+var ApiTrustedCertificates = "/tenant/tenants/{tenantId}/trusted-certificates"
+var ApiTrustedCertificate = "/tenant/tenants/{tenantId}/trusted-certificates/{fingerprint}"
 
-const ParamTenant = "tenantID"
 const ParamFingerprint = "fingerprint"
 
 const ResultProperty = "certificates"
@@ -75,7 +74,7 @@ func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.
 func (s *Service) getB(opt GetOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamTenant, opt.TenantID).
+		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetQueryParam("certificateAuthority", "true").
 		SetURL(ApiTrustedCertificates)
@@ -142,7 +141,7 @@ func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.
 func (s *Service) deleteB(opt DeleteOptions, fingerprint string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamTenant, opt.TenantID).
+		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamFingerprint, fingerprint).
 		SetURL(ApiTrustedCertificate)
 	return core.NewTryRequest(s.Client, req)

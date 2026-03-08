@@ -11,10 +11,9 @@ import (
 )
 
 var ApiFeatureByTenant = "/features/{key}/by-tenant"
-var ApiFeatureForTenant = "/features/{key}/by-tenant/{tenantID}"
+var ApiFeatureForTenant = "/features/{key}/by-tenant/{tenantId}"
 
 const ParamKey = "key"
-const ParamTenantID = "tenantID"
 
 // featureToggleValue is the request body for setting a feature toggle override.
 type featureToggleValue struct {
@@ -98,7 +97,7 @@ func (s *Service) setForTenantB(key string, tenantID string, active bool) *core.
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamKey, key).
-		SetPathParam(ParamTenantID, tenantID).
+		SetPathParam(core.PathParamTenantID, tenantID).
 		SetBody(&featureToggleValue{Active: active}).
 		SetURL(ApiFeatureForTenant)
 	return core.NewTryRequest(s.Client, req)
@@ -126,7 +125,7 @@ func (s *Service) deleteForTenantB(key string, tenantID string) *core.TryRequest
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamKey, key).
-		SetPathParam(ParamTenantID, tenantID).
+		SetPathParam(core.PathParamTenantID, tenantID).
 		SetURL(ApiFeatureForTenant)
 	return core.NewTryRequest(s.Client, req)
 }

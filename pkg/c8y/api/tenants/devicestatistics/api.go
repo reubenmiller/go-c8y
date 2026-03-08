@@ -34,8 +34,7 @@ var (
 
 // Path-parameter names.
 const (
-	ParamTenantID = "tenantId"
-	ParamDate     = "date"
+	ParamDate = "date"
 )
 
 // ResultProperty is the JSON key wrapping the device-statistics array in a
@@ -112,7 +111,7 @@ func (s *Service) listMonthlyB(opt ListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamTenantID, opt.TenantID).
+		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamDate, opt.Date).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiDeviceStatisticsMonthly)
@@ -148,7 +147,7 @@ func (s *Service) listDailyB(opt ListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamTenantID, opt.TenantID).
+		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamDate, opt.Date).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiDeviceStatisticsDaily)

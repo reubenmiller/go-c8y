@@ -11,11 +11,10 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiUserGroupUsers = "/user/{tenantID}/groups/{groupId}/users"
-var ApiUserGroupReference = "/user/{tenantID}/groups/{groupId}/users/{userId}"
+var ApiUserGroupUsers = "/user/{tenantId}/groups/{groupId}/users"
+var ApiUserGroupReference = "/user/{tenantId}/groups/{groupId}/users/{userId}"
 
 var ParamId = "id"
-var ParamTenantId = "tenantID"
 var ParamGroupId = "groupId"
 var ParamUserId = "userId"
 
@@ -46,7 +45,7 @@ func (s *Service) listUsersB(opt ListUsersOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamTenantId, opt.Tenant).
+		SetPathParam(core.PathParamTenantID, opt.Tenant).
 		SetPathParam(ParamGroupId, opt.GroupID).
 		SetURL(ApiUserGroupUsers)
 	return core.NewTryRequest(s.Client, req, ResultProperty)
@@ -70,7 +69,7 @@ func (s *Service) AssignUser(ctx context.Context, opt AssignUserOptions, user an
 func (s *Service) assignUserB(opt AssignUserOptions, user any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
-		SetPathParam(ParamTenantId, opt.Tenant).
+		SetPathParam(core.PathParamTenantID, opt.Tenant).
 		SetPathParam(ParamGroupId, opt.GroupID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeUserReference).
@@ -93,7 +92,7 @@ func (s *Service) UnassignUser(ctx context.Context, opt UnassignUserOptions) op.
 func (s *Service) unassignUserB(opt UnassignUserOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamTenantId, opt.Tenant).
+		SetPathParam(core.PathParamTenantID, opt.Tenant).
 		SetPathParam(ParamGroupId, opt.GroupID).
 		SetPathParam(ParamUserId, opt.UserID).
 		SetURL(ApiUserGroupReference)

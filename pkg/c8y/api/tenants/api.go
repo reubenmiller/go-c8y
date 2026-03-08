@@ -18,11 +18,10 @@ import (
 var ApiTenants = "/tenant/tenants"
 var ApiTenant = "/tenant/tenants/{id}"
 var ApiTenantCurrent = "/tenant/currentTenant"
-var ApiTenantApplications = "/tenant/tenants/{tenantID}/applications"
-var ApiTenantTFA = "/tenant/tenants/{tenantID}/tfa"
+var ApiTenantApplications = "/tenant/tenants/{tenantId}/applications"
+var ApiTenantTFA = "/tenant/tenants/{tenantId}/tfa"
 
 const ParamId = "id"
-const ParamTenantId = "tenantID"
 
 const ResultProperty = "tenants"
 const ApplicationReferencesResultProperty = "references"
@@ -191,7 +190,7 @@ func (s *Service) listApplicationReferencesB(tenantID string, opt ListApplicatio
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamTenantId, tenantID).
+		SetPathParam(core.PathParamTenantID, tenantID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiTenantApplications)
 	return core.NewTryRequest(s.Client, req, ApplicationReferencesResultProperty)
@@ -206,7 +205,7 @@ func (s *Service) GetTFA(ctx context.Context, tenantID string) op.Result[jsonmod
 func (s *Service) getTFAB(tenantID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamTenantId, tenantID).
+		SetPathParam(core.PathParamTenantID, tenantID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiTenantTFA)
 	return core.NewTryRequest(s.Client, req)
@@ -222,7 +221,7 @@ func (s *Service) UpdateTFA(ctx context.Context, tenantID string, body any) op.R
 func (s *Service) updateTFAB(tenantID string, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
-		SetPathParam(ParamTenantId, tenantID).
+		SetPathParam(core.PathParamTenantID, tenantID).
 		SetBody(body).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).

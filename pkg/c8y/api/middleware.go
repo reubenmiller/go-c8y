@@ -15,6 +15,7 @@ import (
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
 	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/api/contexthelpers"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/mock"
 	"resty.dev/v3"
 )
@@ -395,17 +396,17 @@ func MiddlewareAuthorization(auth authentication.AuthOptions) resty.RequestMiddl
 func MiddlewareRemoveEmptyTenantID() resty.RequestMiddleware {
 	return func(c *resty.Client, r *resty.Request) error {
 		// Set tenant id based on the context
-		if currentValue, ok := r.PathParams["tenantID"]; ok && currentValue == "" {
+		if currentValue, ok := r.PathParams[core.PathParamTenantID]; ok && currentValue == "" {
 			// remove any empty values in the request so the client setting
 			// takes priority
-			delete(r.PathParams, "tenantID")
+			delete(r.PathParams, core.PathParamTenantID)
 		}
 
 		// Allow overriding using context
 		switch v := r.Context().Value("tenant").(type) {
 		case string:
 			if v != "" {
-				r.SetPathParam("tenantID", v)
+				r.SetPathParam(core.PathParamTenantID, v)
 			}
 		}
 		return nil

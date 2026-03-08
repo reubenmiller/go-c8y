@@ -18,15 +18,14 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiTrustedCertificates = "/tenant/tenants/{tenantID}/trusted-certificates"
-var ApiTrustedCertificate = "/tenant/tenants/{tenantID}/trusted-certificates/{fingerprint}"
+var ApiTrustedCertificates = "/tenant/tenants/{tenantId}/trusted-certificates"
+var ApiTrustedCertificate = "/tenant/tenants/{tenantId}/trusted-certificates/{fingerprint}"
 
 // Proof of possession
-var ApiProofOfPossession = "/tenant/tenants/{tenantID}/trusted-certificates-pop/{fingerprint}/pop"
-var ApiGenerateVerificationCode = "/tenant/tenants/{tenantID}/trusted-certificates-pop/{fingerprint}/verification-code"
-var ApiProofOfPossessionConfirm = "/tenant/tenants/{tenantID}/trusted-certificates-pop/{fingerprint}/confirmed"
+var ApiProofOfPossession = "/tenant/tenants/{tenantId}/trusted-certificates-pop/{fingerprint}/pop"
+var ApiGenerateVerificationCode = "/tenant/tenants/{tenantId}/trusted-certificates-pop/{fingerprint}/verification-code"
+var ApiProofOfPossessionConfirm = "/tenant/tenants/{tenantId}/trusted-certificates-pop/{fingerprint}/confirmed"
 
-const ParamTenant = "tenantID"
 const ParamFingerprint = "fingerprint"
 
 const ResultProperty = "certificates"
@@ -85,7 +84,7 @@ func (s *Service) listB(opt ListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamTenant, opt.TenantID).
+		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiTrustedCertificates)
 	return core.NewTryRequest(s.Client, req, ResultProperty)
@@ -108,7 +107,7 @@ func (s *Service) Create(ctx context.Context, opt CreateOptions, body any) op.Re
 func (s *Service) createB(opt CreateOptions, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
-		SetPathParam(ParamTenant, opt.TenantID).
+		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -124,7 +123,7 @@ func (s *Service) CreateMultiple(ctx context.Context, opt CreateOptions, body an
 func (s *Service) createMultipleB(opt CreateOptions, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
-		SetPathParam(ParamTenant, opt.TenantID).
+		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -146,7 +145,7 @@ func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.
 func (s *Service) getB(opt GetOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamTenant, opt.TenantID).
+		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamFingerprint, opt.Fingerprint).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiTrustedCertificate)
@@ -167,7 +166,7 @@ func (s *Service) Update(ctx context.Context, opt UpdateOptions, body any) op.Re
 func (s *Service) updateB(opt UpdateOptions, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
-		SetPathParam(ParamTenant, opt.TenantID).
+		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamFingerprint, opt.Fingerprint).
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
@@ -191,7 +190,7 @@ func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.
 func (s *Service) deleteB(opt DeleteOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamTenant, opt.TenantID).
+		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamFingerprint, opt.Fingerprint).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiTrustedCertificate)
@@ -269,7 +268,7 @@ func (s *Service) Proof(ctx context.Context, opt ProofOptions) op.Result[jsonmod
 func (s *Service) proofB(opt ProofOptions, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
-		SetPathParam(ParamTenant, opt.TenantID).
+		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamFingerprint, opt.Fingerprint).
 		SetBody(body).
 		SetContentType(types.MimeTypeApplicationJSON).
@@ -292,7 +291,7 @@ func (s *Service) CreateVerificationCode(ctx context.Context, opt CreateVerifica
 func (s *Service) createVerificationCodeB(opt CreateVerificationCodeOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
-		SetPathParam(ParamTenant, opt.TenantID).
+		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamFingerprint, opt.Fingerprint).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiGenerateVerificationCode)
@@ -314,7 +313,7 @@ func (s *Service) Confirm(ctx context.Context, opt ConfirmOptions) op.Result[jso
 func (s *Service) confirmB(opt ConfirmOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
-		SetPathParam(ParamTenant, opt.TenantID).
+		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamFingerprint, opt.Fingerprint).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiProofOfPossessionConfirm)

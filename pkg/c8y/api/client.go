@@ -353,7 +353,7 @@ func NewClient(opts ClientOptions) *Client {
 	rclient.AddRequestMiddleware(MiddlewareAddUserAgent(userAgent, "go-client"))
 	rclient.AddRequestMiddleware(MiddlewareAddHost("domain"))
 	rclient.AddRequestMiddleware(MiddlewareRemoveEmptyTenantID())
-	rclient.SetPathParam("tenantID", opts.Auth.Tenant)
+	rclient.SetPathParam(core.PathParamTenantID, opts.Auth.Tenant)
 	// rclient.AddRequestMiddleware(MiddlewareAuthorization(opts.Auth))
 
 	c := &Client{

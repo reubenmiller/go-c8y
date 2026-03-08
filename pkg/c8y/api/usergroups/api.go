@@ -13,14 +13,13 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiGroups = "/user/{tenantID}/groups"
-var ApiGroup = "/user/{tenantID}/groups/{id}"
-var ApiGroupsWithUser = "/user/{tenantID}/users/{id}/groups"
-var ApiGroupByName = "/user/{tenantID}/groupByName/{groupName}"
+var ApiGroups = "/user/{tenantId}/groups"
+var ApiGroup = "/user/{tenantId}/groups/{id}"
+var ApiGroupsWithUser = "/user/{tenantId}/users/{id}/groups"
+var ApiGroupByName = "/user/{tenantId}/groupByName/{groupName}"
 
 var ParamId = "id"
 var ParamUsername = "username"
-var ParamTenantId = "tenantID"
 var ParamGroupName = "groupName"
 
 const ResultProperty = "groups"
@@ -75,7 +74,7 @@ func (s *Service) listB(opt ListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamTenantId, opt.Tenant).
+		SetPathParam(core.PathParamTenantID, opt.Tenant).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiGroups)
 	return core.NewTryRequest(s.Client, req, ResultProperty)
@@ -96,7 +95,7 @@ func (s *Service) getB(target Target) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamTenantId, target.Tenant).
+		SetPathParam(core.PathParamTenantID, target.Tenant).
 		SetPathParam(ParamId, target.ID).
 		SetURL(ApiGroup)
 	return core.NewTryRequest(s.Client, req)
@@ -116,7 +115,7 @@ func (s *Service) getByNameB(opt GetByNameOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamTenantId, opt.Tenant).
+		SetPathParam(core.PathParamTenantID, opt.Tenant).
 		SetPathParam(ParamGroupName, opt.GroupName).
 		SetURL(ApiGroupByName)
 	return core.NewTryRequest(s.Client, req)
@@ -153,7 +152,7 @@ func (s *Service) updateB(opt UpdateOptions, body any) *core.TryRequest {
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamTenantId, opt.Tenant).
+		SetPathParam(core.PathParamTenantID, opt.Tenant).
 		SetPathParam(ParamId, opt.ID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetBody(body).
@@ -175,7 +174,7 @@ func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.
 func (s *Service) deleteB(opt DeleteOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamTenantId, opt.Tenant).
+		SetPathParam(core.PathParamTenantID, opt.Tenant).
 		SetPathParam(ParamId, opt.ID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiGroup)
@@ -201,7 +200,7 @@ func (s *Service) listByUserB(opt ListByUserOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamTenantId, opt.Tenant).
+		SetPathParam(core.PathParamTenantID, opt.Tenant).
 		SetPathParam(ParamId, opt.UserID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiGroupsWithUser)

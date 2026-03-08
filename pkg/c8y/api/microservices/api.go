@@ -388,7 +388,7 @@ func (s *Service) unsubscribeB(tenantID string, ID string) *core.TryRequest {
 	// Rebuild request since applications B methods are now private
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam("tenantId", tenantID).
+		SetPathParam(core.PathParamTenantID, tenantID).
 		SetPathParam("id", ID).
 		SetURL("/tenant/tenants/{tenantId}/applications/{id}")
 	return core.NewTryRequest(s.Client, req, "")

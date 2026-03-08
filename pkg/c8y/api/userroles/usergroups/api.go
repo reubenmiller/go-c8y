@@ -14,12 +14,11 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiGroupRoles = "/user/{tenantID}/groups/{groupId}/roles"
-var ApiGroupRole = "/user/{tenantID}/groups/{groupId}/roles/{roleId}"
+var ApiGroupRoles = "/user/{tenantId}/groups/{groupId}/roles"
+var ApiGroupRole = "/user/{tenantId}/groups/{groupId}/roles/{roleId}"
 
 var ParamGroupId = "groupId"
 var ParamRoleId = "roleId"
-var ParamTenantId = "tenantID"
 
 const ResultProperty = "references.#.role"
 
@@ -56,7 +55,7 @@ func (s *Service) listRolesB(opt ListRolesOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamTenantId, opt.Tenant).
+		SetPathParam(core.PathParamTenantID, opt.Tenant).
 		SetPathParam(ParamGroupId, opt.UserGroupID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiGroupRoles)
@@ -82,7 +81,7 @@ func (s *Service) assignRoleB(opt AssignRoleOptions, body any) *core.TryRequest 
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamTenantId, opt.TenantID).
+		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamGroupId, opt.GroupID).
 		SetBody(body).
 		SetURL(ApiGroupRoles)
@@ -103,7 +102,7 @@ func (s *Service) UnassignRole(ctx context.Context, opt UnassignRoleOptions) op.
 func (s *Service) unassignRoleB(opt UnassignRoleOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamTenantId, opt.TenantID).
+		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamRoleId, opt.RoleID).
 		SetPathParam(ParamGroupId, opt.GroupID).
 		SetURL(ApiGroupRole)

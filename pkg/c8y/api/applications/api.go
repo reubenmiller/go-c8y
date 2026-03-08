@@ -22,11 +22,11 @@ var (
 	ApiApplicationBinaries   = "/application/applications/{id}/binaries"
 	ApiApplicationClone      = "/application/applications/{id}/clone"
 	ApiApplicationByName     = "/application/applicationsByName/{name}"
-	ApiApplicationByTenantID = "/application/applicationsByTenant/{tenantID}"
-	ApiApplicationByOwner    = "/application/applicationsByTenant/{tenantID}"
+	ApiApplicationByTenantID = "/application/applicationsByTenant/{tenantId}"
+	ApiApplicationByOwner    = "/application/applicationsByTenant/{tenantId}"
 	ApiApplicationByUser     = "/application/applicationsByUser/{username}"
-	ApiTenantApplications    = "/tenant/tenants/{tenantID}/applications"
-	ApiTenantApplication     = "/tenant/tenants/{tenantID}/applications/{id}"
+	ApiTenantApplications    = "/tenant/tenants/{tenantId}/applications"
+	ApiTenantApplication     = "/tenant/tenants/{tenantId}/applications/{id}"
 )
 
 var (
@@ -36,7 +36,6 @@ var (
 
 var ParamId = "id"
 var ParamName = "name"
-var ParamTenantID = "tenantID"
 var ParamUsername = "username"
 
 const ResultProperty = "applications"
@@ -193,7 +192,7 @@ func (s *Service) listByTenantB(opt ListByTenantOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamTenantID, opt.TenantID).
+		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiApplicationByTenantID)
 	return core.NewTryRequest(s.Client, req, ResultProperty)
@@ -216,7 +215,7 @@ func (s *Service) listByOwnerB(opt ListByOwnerOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamTenantID, opt.TenantID).
+		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiApplicationByOwner)
 	return core.NewTryRequest(s.Client, req, ResultProperty)
@@ -390,7 +389,7 @@ func (s *Service) Subscribe(ctx context.Context, tenantID string, selfLink strin
 func (s *Service) subscribeB(tenantID string, selfURL string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
-		SetPathParam(ParamTenantID, tenantID).
+		SetPathParam(core.PathParamTenantID, tenantID).
 		SetBody(model.NewApplicationReference(selfURL)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiTenantApplications)
@@ -417,7 +416,7 @@ func (s *Service) Unsubscribe(ctx context.Context, tenantID string, id string) o
 func (s *Service) unsubscribeB(tenantID string, ID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamTenantID, tenantID).
+		SetPathParam(core.PathParamTenantID, tenantID).
 		SetPathParam(ParamId, ID).
 		SetURL(ApiTenantApplication)
 	return core.NewTryRequest(s.Client, req)

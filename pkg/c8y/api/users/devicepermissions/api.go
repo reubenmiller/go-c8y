@@ -39,15 +39,14 @@ var (
 	// ApiDevicePermissions is the managed-object-scoped device permissions endpoint.
 	// The {id} path parameter is a managed-object ID.
 	ApiDevicePermissions        = "/user/devicePermissions/{id}"
-	ApiInventoryRoleAssignments = "/user/{tenantID}/users/{userId}/roles/inventory"
-	ApiInventoryRoleAssignment  = "/user/{tenantID}/users/{userId}/roles/inventory/{id}"
+	ApiInventoryRoleAssignments = "/user/{tenantId}/users/{userId}/roles/inventory"
+	ApiInventoryRoleAssignment  = "/user/{tenantId}/users/{userId}/roles/inventory/{id}"
 )
 
 // Path-parameter names.
 var (
-	ParamTenantID = "tenantID"
-	ParamUserID   = "userId"
-	ParamID       = "id"
+	ParamUserID = "userId"
+	ParamID     = "id"
 )
 
 // ResultProperty is the JSON key wrapping the inventory-role assignment array
@@ -194,7 +193,7 @@ func (s *Service) listInventoryRoleAssignmentsB(opt ListInventoryRoleAssignmentO
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamTenantID, opt.TenantID).
+		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamUserID, opt.UserID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiInventoryRoleAssignments)
@@ -220,7 +219,7 @@ func (s *Service) assignInventoryRoleB(opt UserScopedOptions, body any) *core.Tr
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamTenantID, opt.TenantID).
+		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamUserID, opt.UserID).
 		SetBody(body).
 		SetURL(ApiInventoryRoleAssignments)
@@ -240,7 +239,7 @@ func (s *Service) getInventoryRoleAssignmentB(opt GetInventoryRoleAssignmentOpti
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamTenantID, opt.TenantID).
+		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamUserID, opt.UserID).
 		SetPathParam(ParamID, strconv.FormatInt(opt.ID, 10)).
 		SetURL(ApiInventoryRoleAssignment)
@@ -258,7 +257,7 @@ func (s *Service) updateInventoryRoleAssignmentB(opt GetInventoryRoleAssignmentO
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamTenantID, opt.TenantID).
+		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamUserID, opt.UserID).
 		SetPathParam(ParamID, strconv.FormatInt(opt.ID, 10)).
 		SetBody(body).
@@ -274,7 +273,7 @@ func (s *Service) DeleteInventoryRoleAssignment(ctx context.Context, opt GetInve
 func (s *Service) deleteInventoryRoleAssignmentB(opt GetInventoryRoleAssignmentOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamTenantID, opt.TenantID).
+		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamUserID, opt.UserID).
 		SetPathParam(ParamID, strconv.FormatInt(opt.ID, 10)).
 		SetURL(ApiInventoryRoleAssignment)

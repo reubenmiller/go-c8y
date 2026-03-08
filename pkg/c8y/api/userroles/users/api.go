@@ -12,12 +12,11 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiUserRoles = "/user/{tenantID}/users/{userId}/roles"
-var ApiUserRole = "/user/{tenantID}/users/{userId}/roles/{roleId}"
+var ApiUserRoles = "/user/{tenantId}/users/{userId}/roles"
+var ApiUserRole = "/user/{tenantId}/users/{userId}/roles/{roleId}"
 
 var ParamUserId = "userId"
 var ParamRoleId = "roleId"
-var ParamTenantId = "tenantID"
 
 // ResultProperty is the JSON path used to extract roles from the role reference collection response.
 // The response format is: { references: [{ role: {...} }] }
@@ -69,7 +68,7 @@ func (s *Service) listB(opt ListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamTenantId, opt.TenantID).
+		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamUserId, opt.UserID).
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiUserRoles)
@@ -95,7 +94,7 @@ func (s *Service) assignRoleB(opt AssignRoleOptions, body any) *core.TryRequest 
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamTenantId, opt.TenantID).
+		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamUserId, opt.UserID).
 		SetBody(body).
 		SetURL(ApiUserRoles)
@@ -116,7 +115,7 @@ func (s *Service) UnassignRole(ctx context.Context, opt UnassignRoleOptions) op.
 func (s *Service) unassignRoleB(opt UnassignRoleOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamTenantId, opt.TenantID).
+		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamUserId, opt.UserID).
 		SetPathParam(ParamRoleId, opt.RoleID).
 		SetURL(ApiUserRole)
