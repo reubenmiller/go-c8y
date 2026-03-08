@@ -32,7 +32,6 @@ func Test_CreateBinary(t *testing.T) {
 	assert.NoError(t, binary.Err)
 	assert.NotEmpty(t, binary.Data.Name())
 
-	// TODO: Add special binary handling which will read the response based on the status code
 	resp := client.Binaries.Get(context.Background(), "0")
 	assert.Error(t, resp.Err)
 
