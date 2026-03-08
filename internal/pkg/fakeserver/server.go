@@ -357,7 +357,7 @@ func (fs *FakeServer) seedDefaults() {
 		{"cockpit", "cockpit-application-key", "HOSTED", "cockpit"},
 		{"devicemanagement", "devicemanagement-application-key", "HOSTED", "devicemanagement"},
 		{"administration", "administration-application-key", "HOSTED", "administration"},
-		{"reporting", "reporting-key", "MICROSERVICE", "reporting"},
+		{"report-agent", "report-agent-key", "MICROSERVICE", "reporting"},
 	} {
 		fs.Applications.Create(marshalJSON(map[string]any{
 			"name":        app.name,

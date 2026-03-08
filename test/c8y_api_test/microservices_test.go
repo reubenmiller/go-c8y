@@ -47,10 +47,10 @@ func Test_MicroserviceGetByName(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	result := client.Microservices.Get(
 		context.Background(),
-		client.Microservices.ByName("reporting"),
+		client.Microservices.ByName("report-agent"),
 	)
 	assert.NoError(t, result.Err)
-	assert.Equal(t, "reporting", result.Data.Name())
+	assert.Equal(t, "report-agent", result.Data.Name())
 }
 
 func Test_MicroserviceGetByContext(t *testing.T) {
