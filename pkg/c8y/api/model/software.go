@@ -18,10 +18,6 @@ type Software struct {
 	*ManagedObject
 }
 
-// TODO identifier class that can help locate the software item
-type SoftwareIdentifier struct {
-}
-
 func NewSoftware(name string, softwareType string) *Software {
 	return &Software{
 		Type:         "c8y_Software",
