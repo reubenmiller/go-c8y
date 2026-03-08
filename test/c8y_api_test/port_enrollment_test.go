@@ -160,7 +160,6 @@ func Test_Enrollment_Register(t *testing.T) {
 	secondCSR, err := client.Devices.Enrollment.CreateCertificateSigningRequest(deviceID, key)
 	require.NoError(t, err)
 
-	// TODO: Use token from RequestAccessToken
 	secondEnrollResult := deviceClient.Devices.Enrollment.ReEnroll(ctx, enrollment.ReEnrollOptions{
 		CSR: secondCSR,
 	})
