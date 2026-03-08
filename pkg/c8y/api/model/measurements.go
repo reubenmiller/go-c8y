@@ -12,6 +12,18 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+// MeasurementAggregationType represents the type of aggregation applied to measurement series data
+type MeasurementAggregationType string
+
+const (
+	// MeasurementAggregationTypeDaily aggregates minutely values per day
+	MeasurementAggregationTypeDaily MeasurementAggregationType = "DAILY"
+	// MeasurementAggregationTypeHourly aggregates minutely values per hour
+	MeasurementAggregationTypeHourly MeasurementAggregationType = "HOURLY"
+	// MeasurementAggregationTypeMinutely aggregates raw values per minute
+	MeasurementAggregationTypeMinutely MeasurementAggregationType = "MINUTELY"
+)
+
 // SupportedMeasurements is the list of measurement types supported by a managed object
 type SupportedMeasurements struct {
 	Values []string `json:"c8y_SupportedMeasurements,omitempty"`

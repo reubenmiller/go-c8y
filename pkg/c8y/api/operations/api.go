@@ -312,7 +312,7 @@ type DeleteListOptions struct {
 	DeviceID managedobjects.DeviceRef `url:"deviceId,omitempty"`
 
 	// Status of the operation
-	Status string `url:"status,omitempty"`
+	Status types.OperationStatus `url:"status,omitempty"`
 }
 
 // Delete a list of operations

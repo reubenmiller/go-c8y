@@ -15,9 +15,12 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/certutil"
 )
 
+// TrustedCertificateStatus represents the status of a trusted certificate
+type TrustedCertificateStatus string
+
 const (
-	TrustedCertificateStatusEnabled  = "ENABLED"
-	TrustedCertificateStatusDisabled = "DISABLED"
+	TrustedCertificateStatusEnabled  TrustedCertificateStatus = "ENABLED"
+	TrustedCertificateStatusDisabled TrustedCertificateStatus = "DISABLED"
 )
 
 type ProofOfPossession struct {
@@ -69,20 +72,20 @@ type TrustedCertificateRevocationCollection struct {
 
 // Certificate properties
 type TrustedCertificate struct {
-	AlgorithmName              string    `json:"algorithmName,omitempty"`
-	CertInPemFormat            string    `json:"certInPemFormat,omitempty"`
-	Fingerprint                string    `json:"fingerprint,omitempty"`
-	Issuer                     string    `json:"issuer,omitempty"`
-	Name                       string    `json:"name,omitempty"`
-	NotAfter                   time.Time `json:"notAfter,omitzero"`
-	NotBefore                  time.Time `json:"notBefore,omitzero"`
-	Self                       string    `json:"self,omitempty"`
-	SerialNumber               string    `json:"serialNumber,omitempty"`
-	Status                     string    `json:"status,omitempty"`
-	Subject                    string    `json:"subject,omitempty"`
-	AutoRegistrationEnabled    *bool     `json:"autoRegistrationEnabled,omitempty"`
-	TenantCertificateAuthority bool      `json:"tenantCertificateAuthority,omitempty"`
-	Version                    int       `json:"version,omitempty"`
+	AlgorithmName              string                   `json:"algorithmName,omitempty"`
+	CertInPemFormat            string                   `json:"certInPemFormat,omitempty"`
+	Fingerprint                string                   `json:"fingerprint,omitempty"`
+	Issuer                     string                   `json:"issuer,omitempty"`
+	Name                       string                   `json:"name,omitempty"`
+	NotAfter                   time.Time                `json:"notAfter,omitzero"`
+	NotBefore                  time.Time                `json:"notBefore,omitzero"`
+	Self                       string                   `json:"self,omitempty"`
+	SerialNumber               string                   `json:"serialNumber,omitempty"`
+	Status                     TrustedCertificateStatus `json:"status,omitempty"`
+	Subject                    string                   `json:"subject,omitempty"`
+	AutoRegistrationEnabled    *bool                    `json:"autoRegistrationEnabled,omitempty"`
+	TenantCertificateAuthority bool                     `json:"tenantCertificateAuthority,omitempty"`
+	Version                    int                      `json:"version,omitempty"`
 
 	// Proof of Possession
 	ProofOfPossessionUnsignedVerificationCode    string    `json:"proofOfPossessionUnsignedVerificationCode,omitempty"`
@@ -99,7 +102,7 @@ func (c *TrustedCertificate) IsAutoRegistrationEnabled() bool {
 }
 
 // Set the certificate status, ENABLED or DISABLED
-func (c *TrustedCertificate) WithStatus(v string) *TrustedCertificate {
+func (c *TrustedCertificate) WithStatus(v TrustedCertificateStatus) *TrustedCertificate {
 	c.Status = v
 	return c
 }

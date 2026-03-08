@@ -8,6 +8,7 @@ import (
 	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/realtime"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
@@ -334,7 +335,7 @@ type ListSeriesOptions struct {
 
 	AggregationInterval string `url:"aggregationInterval,omitempty"`
 
-	AggregationType string `url:"aggregationType,omitempty"`
+	AggregationType model.MeasurementAggregationType `url:"aggregationType,omitempty"`
 
 	Series []string `url:"series,omitempty"`
 

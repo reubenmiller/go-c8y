@@ -158,7 +158,7 @@ type CountOptions struct {
 	Resolved bool `url:"resolved,omitempty"`
 
 	// The severity of the alarm to search for
-	Severity []string `url:"severity,omitempty"`
+	Severity []model.AlarmSeverity `url:"severity,omitempty"`
 
 	// Source device to filter alarms by.
 	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
@@ -166,7 +166,7 @@ type CountOptions struct {
 	Source managedobjects.DeviceRef `url:"source,omitempty"`
 
 	// The status of the alarm to search for. Should not be used when resolved parameter is provided
-	Status []string `url:"status,omitempty"`
+	Status []model.AlarmStatus `url:"status,omitempty"`
 
 	// The types of alarm to search for
 	Type []string `url:"type,omitempty"`
@@ -200,10 +200,10 @@ type CreateOptions struct {
 	Text string
 
 	// Severity of the alarm (CRITICAL, MAJOR, MINOR, WARNING)
-	Severity string
+	Severity model.AlarmSeverity
 
 	// Status of the alarm (ACTIVE, ACKNOWLEDGED, CLEARED)
-	Status string
+	Status model.AlarmStatus
 
 	// Time when the alarm occurred
 	Time time.Time
@@ -380,7 +380,7 @@ type BulkUpdateOptions struct {
 	Resolved bool `url:"resolved,omitempty"`
 
 	// The severity of the alarm to search for
-	Severity []string `url:"severity,omitempty"`
+	Severity []model.AlarmSeverity `url:"severity,omitempty"`
 
 	// Source device to filter alarms by.
 	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
@@ -392,7 +392,7 @@ type BulkUpdateOptions struct {
 	// Type []string `url:"type,omitempty"`
 
 	// The status of the alarm to search for. Should not be used when resolved parameter is provided
-	Status []string `url:"status,omitempty"`
+	Status []model.AlarmStatus `url:"status,omitempty"`
 
 	// When set to true, alarms for related source assets, devices and additions will
 	// also be included in the response. When this parameter is provided a source
@@ -464,7 +464,7 @@ type DeleteListOptions struct {
 	Resolved bool `url:"resolved,omitempty"`
 
 	// The severity of the alarm to search for
-	Severity []string `url:"severity,omitempty"`
+	Severity []model.AlarmSeverity `url:"severity,omitempty"`
 
 	// Source device to filter alarms by.
 	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
@@ -476,7 +476,7 @@ type DeleteListOptions struct {
 	// Type []string `url:"type,omitempty"`
 
 	// The status of the alarm to search for. Should not be used when resolved parameter is provided
-	Status []string `url:"status,omitempty"`
+	Status []model.AlarmStatus `url:"status,omitempty"`
 
 	// The types of alarm to search for
 	Type []string `url:"type,omitempty"`
