@@ -69,13 +69,9 @@ func getAuthorizationRequest(ctx context.Context, client *http.Client, oauthUrl 
 
 					// remove the redirect_uri if found.
 					params := u.Query()
-					// TODO: Check if the redirect uri is needed here
 					if redirectURL != "" {
 						params.Set("redirect_uri", redirectURL)
 					}
-
-					// TODO: allow users to pass this value
-					// params.Set("originUri", redirectURL)
 
 					u.RawQuery = params.Encode()
 
