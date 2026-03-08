@@ -337,7 +337,7 @@ func parseMessage(raw []byte) *Message {
 			// Copy payload
 			message.Payload = make([]byte, len(line))
 			copy(message.Payload, line)
-			// TODO: Check if a single websocket message can continue multiple messages
+			// TODO: Check if a single websocket message can contain multiple messages
 			// Stop processing further messages
 			break
 		}
