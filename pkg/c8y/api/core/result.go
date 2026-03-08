@@ -3,6 +3,7 @@ package core
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/tidwall/gjson"
 	"resty.dev/v3"
@@ -54,8 +55,13 @@ func (r *Response) ForEach(p func(key gjson.Result, value gjson.Result) bool) {
 	}
 }
 
+func (r *Response) IsJSON() bool {
+	ct := strings.Split(r.Response.Header().Get("Content-Type"), ";")[0]
+	ct = strings.TrimSpace(ct)
+	return ct == "application/json" || strings.HasSuffix(ct, "+json")
+}
+
 func (r *Response) JSON(prop ...string) gjson.Result {
-	// TODO: How should non json data be handled
 	if !gjson.Valid(r.Response.String()) {
 		return gjson.Parse("")
 	}
