@@ -2,7 +2,7 @@ package microservice
 
 import (
 	"fmt"
-	"log/slog"
+	"log"
 	"strings"
 	"time"
 
@@ -10,6 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
+	"go.uber.org/zap"
 )
 
 // GetAgent returns the agent representation of the microservice
@@ -18,13 +19,13 @@ func (m *Microservice) GetAgent() *c8y.ManagedObject {
 	extID, _, err := m.Client.Identity.GetExternalID(m.WithServiceUser(), m.Config.GetIdentityType(), m.Config.GetApplicationName())
 
 	if err != nil {
-		slog.Warn("No external identity exists", "type", m.Config.GetIdentityType(), "id", m.Config.GetApplicationName(), "err", err)
+		zap.S().Warnf("No external identity exists for type=%s, id=%s. err %s", m.Config.GetIdentityType(), m.Config.GetApplicationName(), err)
 	} else {
-		slog.Info("Retrieving managed object by id found in external id")
+		zap.L().Info("Retrieving managed object by id found in external id")
 		mo, _, err := m.Client.Inventory.GetManagedObject(m.WithServiceUser(), extID.ManagedObject.ID, nil)
 
 		if err != nil {
-			slog.Error("Failed to return managed object by the ID given in the External Identity definition. %s", "id", extID.ManagedObject.ID, "err", err)
+			zap.S().Errorf("Failed to return managed object by the ID [%s] given in the External Identity definition. %s", extID.ManagedObject.ID, err)
 		}
 		agent = mo
 	}
@@ -37,8 +38,8 @@ func (m *Microservice) CreateMicroserviceRepresentation() (*c8y.ManagedObject, e
 	mo := m.GetAgent()
 
 	if mo != nil {
-		slog.Info("Found agent by its identity", "id", mo.ID)
-		slog.Info("Updating agent meta information (info and supported operations)", "id", mo.ID)
+		zap.S().Infof("Found agent by its identity. [%s]", mo.ID)
+		zap.S().Infof("Updating agent meta information (info and supported operations). [%s]", mo.ID)
 
 		agentMo := &AgentManagedObject{
 			AgentSupportedOperations: m.SupportedOperations,
@@ -50,14 +51,14 @@ func (m *Microservice) CreateMicroserviceRepresentation() (*c8y.ManagedObject, e
 		updatedMo, _, err := m.Client.Inventory.Update(m.WithServiceUser(), mo.ID, agentMo)
 
 		if err != nil {
-			slog.Error("Failed to update agent managed object with meta information", "err", err)
+			zap.S().Errorf("Failed to update agent managed object with meta information. %s", err)
 			return mo, nil
 		}
-		slog.Info("Updated agent meta information successfully", "id", mo.ID)
+		zap.S().Infof("Updated agent meta information successfully [%s]", mo.ID)
 		return updatedMo, nil
 	}
 
-	slog.Info("Could not find agent so it will be created")
+	zap.S().Infof("Could not find agent so it will be created")
 
 	// Create Managed Object (with agent fragment)
 
@@ -87,10 +88,10 @@ func (m *Microservice) CreateMicroserviceRepresentation() (*c8y.ManagedObject, e
 	mo, _, err := m.Client.Inventory.Create(m.WithServiceUser(), agentMo)
 
 	if err != nil {
-		slog.Error("Could not create device managed object", "err", err)
+		zap.S().Errorf("Could not create device managed object. %s", err)
 		return nil, fmt.Errorf("Error creating the device managed object")
 	}
-	slog.Info("Created managed object", "id", mo.ID)
+	zap.S().Infof("Created managed object: %s", mo.ID)
 
 	// Create External ID reference to the new managed object
 	if _, _, err := m.Client.Identity.Create(m.WithServiceUser(), mo.ID, identityType, externalID); err != nil {
@@ -144,39 +145,39 @@ func (m *Microservice) DeleteMicroserviceAgent() error {
 	if m.AgentID == "" {
 		return nil
 	}
-	slog.Info("Deleting microservice's agent managed object", "id", m.AgentID)
+	zap.S().Infof("Deleting microservice's agent managed object [id=%s]", m.AgentID)
 
 	_, err := m.Client.Inventory.Delete(
 		m.WithServiceUser(),
 		m.AgentID,
 	)
 	if err != nil {
-		slog.Error("Could not delete microservice's agent managed object", "err", err)
+		zap.S().Errorf("Could not delete microservice's agent managed object. %s", err)
 	}
 	return err
 }
 
 // RegisterMicroserviceAgent registers an agent representation of the microservice
 func (m *Microservice) RegisterMicroserviceAgent() error {
-	slog.Info("Registering microservice agent")
+	zap.L().Info("Registering microservice agent")
 
 	mo, err := m.CreateMicroserviceRepresentation()
 
 	if err == nil {
-		slog.Info("Start Polling for Operations on device", "id", mo.ID)
+		zap.S().Infof("Start Polling for Operations on device %s", mo.ID)
 		m.AgentID = mo.ID
 
 		// Get existing configuration
 		m.CheckForNewConfiguration()
 
 		if existingConfig, configErr := m.GetConfiguration(); configErr == nil {
-			slog.Info("Loading existing configuration from the platform")
+			zap.L().Info("Loading existing configuration from the platform")
 			m.UpdateApplicationConfiguration(existingConfig)
 		}
 
 		for _, key := range m.Config.viper.AllKeys() {
 			value := m.Config.viper.GetString(key)
-			slog.Info("property", "key", key, "value", value)
+			log.Printf("property: %s=%s", key, value)
 		}
 
 		m.StartOperationPolling()
@@ -211,11 +212,11 @@ func (m *Microservice) GetOperations(status string) (*c8y.OperationCollection, *
 
 // UpdateApplicationConfiguration updates the application configuration based on a new config which is parsed from a string. Values should be in the form of "<key>=<value>" separated by a \n char
 func (m *Microservice) UpdateApplicationConfiguration(configAsString string) {
-	slog.Info("Updating application configuration")
+	zap.L().Info("Updating application configuration")
 	items := strings.Split(configAsString, "\n")
 
 	for _, item := range items {
-		slog.Info("Parsing configuration item", "value", item)
+		zap.S().Infof("Parsing configuration item: %s", item)
 		parts := strings.Split(item, "=")
 
 		if len(parts) == 2 {
@@ -223,13 +224,15 @@ func (m *Microservice) UpdateApplicationConfiguration(configAsString string) {
 			value := strings.TrimSpace(parts[1])
 
 			if m.Config.isPrivateSetting(key) {
-				slog.Info("Ignoring private property", "key", key)
+				zap.S().Infof("Ignoring private property [%s]", key)
 			} else if strings.HasPrefix(key, "#") {
-				slog.Info("Ignore comment", "key", key)
+				zap.S().Infof("Ignore comment [%s]", key)
 			} else {
-				slog.Info("Setting property", "key", key, "value", value)
+				zap.S().Infof("Setting property [%s] to [%s]", key, value)
 				m.Config.viper.Set(key, value)
 			}
+		} else {
+			zap.L().Info("Checking item")
 		}
 	}
 }
@@ -266,7 +269,7 @@ func (m *Microservice) onUpdateConfigurationOperation(operationID string, newCon
 		)
 
 		if m.Hooks.OnConfigurationUpdateFunc != nil {
-			slog.Info("Calling OnConfigurationUpdate lifecycle hook")
+			zap.S().Info("Calling OnConfigurationUpdate lifecycle hook")
 			go m.Hooks.OnConfigurationUpdateFunc(*m.Config)
 		}
 	}
@@ -274,11 +277,11 @@ func (m *Microservice) onUpdateConfigurationOperation(operationID string, newCon
 
 // CheckForNewConfiguration checks for any pending operations with new configuration
 func (m *Microservice) CheckForNewConfiguration() {
-	slog.Info("Checking pending operations")
+	zap.L().Info("checking pending operations")
 	data, _, err := m.GetOperations(c8y.OperationStatusPending)
 
 	if err != nil {
-		slog.Error("Failed to get operations", "err", err)
+		log.Printf("Error getting operations. %s", err)
 		return
 	}
 
@@ -299,15 +302,15 @@ func (m *Microservice) StartOperationPolling() {
 	interval := strings.TrimSpace(m.Config.viper.GetString("agent.operations.pollRate"))
 
 	if interval == "" || interval == "0" {
-		slog.Info("Skipping operation polling task")
+		zap.S().Infof("Skipping operation polling task")
 		return
 	}
-	slog.Info("Adding operation polling task with interval", "value", interval)
+	zap.S().Infof("Adding operation polling task with interval: %s", interval)
 	_, err := m.Scheduler.cronjob.AddFunc(interval, func() {
 		m.CheckForNewConfiguration()
 	})
 
 	if err != nil {
-		slog.Error("Could not create polling task with interval", "value", interval, "err", err)
+		zap.S().Errorf("Could not create polling task with interval [%s]. %s", interval, err)
 	}
 }

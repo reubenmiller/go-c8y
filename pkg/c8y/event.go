@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/tidwall/gjson"
+	"go.uber.org/zap"
 )
 
 // EventService does something
@@ -130,7 +130,7 @@ func (s *EventService) DownloadBinary(ctx context.Context, ID string) (filepath 
 
 	req, err := s.client.NewRequest("GET", u, "", nil)
 	if err != nil {
-		slog.Error("Could not create request", "err", err)
+		zap.S().Errorf("Could not create request. %s", err)
 		return
 	}
 
@@ -187,7 +187,7 @@ func (s *EventService) CreateBinary(ctx context.Context, filename string, ID str
 	req, err := prepareMultipartRequest("POST", u.String(), values)
 	if err != nil {
 		err = errors.Wrap(err, "Could not create binary upload request object")
-		slog.Error(err.Error())
+		zap.S().Error(err)
 		return nil, nil, err
 	}
 	s.client.SetAuthorization(req)
@@ -219,8 +219,7 @@ type EventBinary struct {
 func (s *EventService) UpdateBinary(ctx context.Context, ID, filename string) (*EventBinary, *Response, error) {
 	binaryData, err := os.Open(filename)
 	if err != nil {
-		slog.Error(err.Error())
-		os.Exit(1)
+		Logger.Fatal(err)
 	}
 	defer binaryData.Close()
 

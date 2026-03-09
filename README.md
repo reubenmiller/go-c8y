@@ -30,7 +30,7 @@ We encourage you to try the package in your projects, just keep these caveats in
 
     import (
         "context"
-        "log/slog"
+        "log"
 
         "github.com/reubenmiller/go-c8y/pkg/c8y"
     )
@@ -50,11 +50,10 @@ We encourage you to try the package in your projects, just keep these caveats in
 
         // Always check for errors
         if err != nil {
-            slog.Error("Could not retrieve alarms", "err", err)
-            panic(err)
+            log.Fatalf("Could not retrieve alarms. %s", err)
         }
 
-        slog.Info("Found alarms", "total", len(alarmCollection.Alarms))
+        log.Printf("Total alarms: %d", len(alarmCollection.Alarms))
     }
     ```
 

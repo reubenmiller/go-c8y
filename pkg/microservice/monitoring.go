@@ -3,7 +3,6 @@ package microservice
 import (
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"os"
 	"strconv"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.uber.org/zap"
 )
 
 // AddHealthEndpointHandlers adds a set of health endpoints to the microservice
@@ -21,11 +21,11 @@ import (
 //   - /logfile
 func (m *Microservice) AddHealthEndpointHandlers(e *echo.Echo) {
 	if e == nil {
-		slog.Error("Failed to end health endpoints because the echo server is nil")
+		zap.S().Errorf("Failed to end health endpoints because the echo server is nil")
 		return
 	}
 
-	slog.Info("Adding /prometheus, /health, /env and /logfile endpoints to the microservice")
+	zap.S().Infof("Adding /prometheus, /health, /env and /logfile endpoints to the microservice")
 
 	e.GET("/prometheus", echo.WrapHandler(promhttp.Handler()))
 	e.GET("/health", m.HealthHandler)

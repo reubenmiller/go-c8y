@@ -3,7 +3,7 @@ package c8ytestutils
 import (
 	"context"
 	"fmt"
-	"log/slog"
+	"log"
 	"math/rand"
 	"net/http"
 	"os"
@@ -60,7 +60,7 @@ func (s *SetupConfiguration) NewClient() *c8y.Client {
 	password := config.GetString("c8y.password")
 	token := config.GetString("c8y.token")
 
-	slog.Info("Creating client", "host", host, "tenant", tenant, "username", username, "password", password)
+	log.Printf("Host=%s, Tenant=%s, Username=%s, Password=%s\n", host, tenant, username, password)
 
 	httpClient := c8y.NewHTTPClient(
 		WithCompression(false),
@@ -81,7 +81,7 @@ func readConfig() *viper.Viper {
 	err := config.ReadInConfig()
 
 	if err != nil {
-		slog.Warn("Could not read configuration file")
+		log.Printf("Warning could not read configuration file")
 	}
 
 	// Set default settings
@@ -142,7 +142,7 @@ func (s *SetupConfiguration) BootstrapApplication(appName ...string) *microservi
 	username := config.GetString("c8y.username")
 	password := config.GetString("c8y.password")
 
-	slog.Info("Bootstrapping application", "host", host, "tenant", tenant, "username", username, "password", password)
+	log.Printf("Host=%s, Tenant=%s, Username=%s, Password=%s\n", host, tenant, username, password)
 	client := s.BootstrapClient
 	if client == nil {
 		client = c8y.NewClient(nil, host, tenant, username, password, false)
@@ -154,8 +154,7 @@ func (s *SetupConfiguration) BootstrapApplication(appName ...string) *microservi
 	)
 
 	if err != nil {
-		slog.Error("Could not create application. %s", "err", err)
-		os.Exit(1)
+		log.Fatalf("Could not create application. %s", err)
 	}
 
 	// Set required roles
@@ -184,8 +183,7 @@ func (s *SetupConfiguration) BootstrapApplication(appName ...string) *microservi
 	)
 
 	if err != nil {
-		slog.Error("Could not update microservice's requiredRoles", "err", err)
-		os.Exit(1)
+		log.Fatalf("Could not update microservice's requiredRoles. %s", err)
 	}
 
 	// Subscribe to application
@@ -196,8 +194,7 @@ func (s *SetupConfiguration) BootstrapApplication(appName ...string) *microservi
 	)
 
 	if err != nil {
-		slog.Error("Could not subscribe to application", "err", err)
-		os.Exit(1)
+		log.Fatalf("Could not subscribe to application. %s", err)
 	}
 
 	// Get Microservice Credentials
@@ -207,8 +204,7 @@ func (s *SetupConfiguration) BootstrapApplication(appName ...string) *microservi
 	)
 
 	if err != nil {
-		slog.Error("Could not get application credentials", "err", err)
-		os.Exit(1)
+		log.Fatalf("Could not get application credentials. %s", err)
 	}
 
 	// Set microservice env variables
@@ -220,8 +216,7 @@ func (s *SetupConfiguration) BootstrapApplication(appName ...string) *microservi
 	ms := microservice.NewDefaultMicroservice(microservice.Options{})
 
 	if err := ms.TestClientConnection(); err != nil {
-		slog.Error("Microservice test connection failed", "err", err)
-		os.Exit(1)
+		log.Fatalf("Microservice test connection failed. %s", err)
 	}
 
 	s.mu.Lock()
@@ -239,7 +234,7 @@ func (s *SetupConfiguration) BootstrapApplication(appName ...string) *microservi
 
 // Cleanup removes all of the test devices and clients created in the Test setup
 func (s *SetupConfiguration) Cleanup() {
-	slog.Info("Running Cleanup")
+	log.Printf("Running Cleanup\n")
 
 	client := s.NewClient()
 	s.mu.Lock()
@@ -249,7 +244,7 @@ func (s *SetupConfiguration) Cleanup() {
 	for _, mo := range s.Devices {
 		_, err := client.Inventory.Delete(context.Background(), mo.ID)
 		if err != nil {
-			slog.Warn("Could not remove the id", "err", err)
+			log.Printf("Could not remove the id. %s", err)
 		}
 	}
 	s.Devices = nil
@@ -258,12 +253,12 @@ func (s *SetupConfiguration) Cleanup() {
 	for _, ms := range s.Microservices {
 		ms.DeleteMicroserviceAgent()
 
-		slog.Info("Deleting application", "id", ms.Application.ID)
+		log.Printf("Deleting application id=%s", ms.Application.ID)
 		if _, err := client.Application.Delete(
 			context.Background(),
 			ms.Application.ID,
 		); err != nil {
-			slog.Warn("Failed to delete microservice application", "err", err)
+			log.Printf("Failed to delete microservice application. %s", err)
 		}
 	}
 }

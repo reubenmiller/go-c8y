@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -15,6 +14,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/contentType"
 
 	"github.com/tidwall/gjson"
+	"go.uber.org/zap"
 )
 
 // DeviceFragmentName name of the c8yDevice Fragment property
@@ -409,7 +409,7 @@ func (s *InventoryService) DownloadBinary(ctx context.Context, ID string) (filep
 	mo, _, err := client.Inventory.GetManagedObject(ctx, ID, nil)
 
 	if err != nil {
-		slog.Error("Could not retrieve managed object", "err", err)
+		zap.S().Errorf("Could not retrieve managed object. %s", err)
 		return
 	}
 
@@ -418,7 +418,7 @@ func (s *InventoryService) DownloadBinary(ctx context.Context, ID string) (filep
 	// req, err := http.NewRequest("GET", u.String(), nil)
 	req, err := s.client.NewRequest("GET", u, "", nil)
 	if err != nil {
-		slog.Error("Could not create request", "err", err)
+		zap.S().Errorf("Could not create request. %s", err)
 		return
 	}
 
@@ -472,7 +472,7 @@ func (s *InventoryService) CreateBinary(ctx context.Context, binaryFile binary.M
 	req, err := prepareMultipartRequest("POST", u.String(), values)
 	if err != nil {
 		err = errors.Wrap(err, "Could not create binary upload request object")
-		slog.Error(err.Error())
+		zap.S().Error(err)
 		return nil, nil, err
 	}
 	s.client.SetAuthorization(req)
@@ -534,12 +534,12 @@ func (s *InventoryService) ExpandCollection(ctx context.Context, col *ManagedObj
 		if out.Next == nil {
 			return
 		}
-		slog.Info("Requesting page", "index", i, "max", maxPages, "next", *out.Next)
+		Logger.Infof("Requesting page (index=%d, max=%d): %s", i, maxPages, *out.Next)
 
 		urlObj, err := url.Parse(*out.Next)
 
 		if err != nil {
-			slog.Error(err.Error())
+			zap.S().Errorf("")
 			return
 		}
 
@@ -555,7 +555,7 @@ func (s *InventoryService) ExpandCollection(ctx context.Context, col *ManagedObj
 			return
 		}
 
-		slog.Info("Adding pagination results (managed objects)", "total", len(data.ManagedObjects))
+		Logger.Infof("Adding pagination results - %d managed objects found", len(data.ManagedObjects))
 
 		out.Items = append(out.Items, data.Items...)
 		out.ManagedObjects = append(out.ManagedObjects, data.ManagedObjects...)
@@ -563,7 +563,7 @@ func (s *InventoryService) ExpandCollection(ctx context.Context, col *ManagedObj
 		out.Statistics = data.Statistics
 
 		if len(data.ManagedObjects) < *data.Statistics.PageSize {
-			slog.Info("No more results in pagination result", "total", len(data.ManagedObjects), "pages", *data.Statistics.PageSize)
+			Logger.Infof("No more results in pagination result. total=%d, pages=%d", len(data.ManagedObjects), *data.Statistics.PageSize)
 			return
 		}
 

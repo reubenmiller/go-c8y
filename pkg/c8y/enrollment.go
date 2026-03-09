@@ -10,7 +10,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -426,7 +425,7 @@ func (s *DeviceEnrollmentService) PollEnroll(ctx context.Context, opts DeviceEnr
 
 	if opts.Banner != nil && opts.Banner.Enable {
 		if err := s.printEnrollmentLog(opts.ExternalID, opts.OneTimePassword, *opts.Banner); err != nil {
-			slog.Warn("Failed to print enrollment banner", "err", err)
+			Logger.Warnf("Failed to print enrollment banner .err=%s", err)
 		}
 	}
 

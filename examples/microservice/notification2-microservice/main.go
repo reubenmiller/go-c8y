@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -19,8 +20,7 @@ func health(w http.ResponseWriter, r *http.Request) {
 
 func handleRequests() {
 	http.HandleFunc("/health", health)
-	slog.Error(http.ListenAndServe(":80", nil).Error())
-	os.Exit(1)
+	log.Fatal(http.ListenAndServe(":80", nil))
 }
 
 func subscribeToNotifications(ctx context.Context, subscription string, consumer string) {
@@ -69,7 +69,7 @@ func subscribeToNotifications(ctx context.Context, subscription string, consumer
 			}
 		case <-signalCh:
 			// Enable ctrl-c to stop
-			slog.Info("Stopping client")
+			log.Printf("Stopping client")
 			notificationClient.Close()
 			return
 		}

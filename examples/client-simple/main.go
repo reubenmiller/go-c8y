@@ -2,8 +2,7 @@ package main
 
 import (
 	"context"
-	"log/slog"
-	"os"
+	"log"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 )
@@ -33,11 +32,10 @@ func main() {
 
 	// Always check for errors
 	if err != nil {
-		slog.Error("Could not retrieve alarms", "err", err)
-		os.Exit(1)
+		log.Fatalf("Could not retrieve alarms. %s", err)
 	}
 
-	slog.Info("Alarms", "total", len(alarmCollection.Alarms))
+	log.Printf("Total alarms: %d", len(alarmCollection.Alarms))
 
 	// Create custom managed object
 	mo := &ExampleMO{
@@ -50,9 +48,8 @@ func main() {
 	}
 	_, resp, err := client.Inventory.Create(context.Background(), mo)
 	if err != nil {
-		slog.Error("Failed to create the managed object", "err", err)
-		os.Exit(1)
+		log.Fatalf("Failed to create the managed object. %s", err)
 	}
 
-	slog.Info("mo", "value", resp.JSON().Raw)
+	log.Printf("mo: %v", resp.JSON().Raw)
 }

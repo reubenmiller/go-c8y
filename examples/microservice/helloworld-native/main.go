@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -11,7 +12,7 @@ func health(w http.ResponseWriter, r *http.Request) {
 
 func handleRequests() {
 	http.HandleFunc("/health", health)
-	panic(http.ListenAndServe(":80", nil))
+	log.Fatal(http.ListenAndServe(":80", nil))
 }
 
 func main() {

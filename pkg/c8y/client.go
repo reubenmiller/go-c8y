@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -26,6 +25,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/go-querystring/query"
 	"github.com/reubenmiller/go-c8y/pkg/jsonUtilities"
+	"github.com/reubenmiller/go-c8y/pkg/logger"
 )
 
 var ErrNotFound = errors.New("item: not found")
@@ -88,6 +88,30 @@ type DefaultRequestOptions struct {
 func FromAuthFuncContext(ctx context.Context) (AuthFunc, bool) {
 	u, ok := ctx.Value(GetContextAuthFuncKey()).(AuthFunc)
 	return u, ok
+}
+
+// contextSilentLogKey disables logging for a request
+type contextSilentLogKey string
+
+// getSilentLoggerContextKey get the silent log context key
+func getSilentLoggerContextKey() contextSilentLogKey {
+	return contextSilentLogKey("silentLog")
+}
+
+func getSilentLogContextValue(ctx context.Context) (bool, bool) {
+	disabled, ok := ctx.Value(getSilentLoggerContextKey()).(bool)
+	return disabled, ok
+}
+
+func NewSilentLoggerContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, getSilentLoggerContextKey(), true)
+}
+
+func NewLoggerFromContext(ctx context.Context) logger.Logger {
+	if disabled, ok := getSilentLogContextValue(ctx); ok && disabled {
+		return logger.NewDummyLogger("silent")
+	}
+	return Logger
 }
 
 type service struct {
@@ -292,8 +316,7 @@ type ClientOption = func(http.RoundTripper) http.RoundTripper
 // If no service user is found for the set tenant, then nil is returned
 func (c *Client) NewRealtimeClientFromServiceUser(tenant string) *RealtimeClient {
 	if len(c.ServiceUsers) == 0 {
-		slog.Error("No service users found")
-		os.Exit(1)
+		Logger.Fatal("No service users found")
 	}
 	for _, user := range c.ServiceUsers {
 		if tenant == user.Tenant || tenant == "" {
@@ -378,7 +401,7 @@ func WithClientCertificate(cert tls.Certificate) ClientOption {
 	}
 }
 
-func WithRequestDebugLogger(l slog.Logger) ClientOption {
+func WithRequestDebugLogger(l logger.Logger) ClientOption {
 	return func(tr http.RoundTripper) http.RoundTripper {
 		return &LoggingTransport{
 			Logger: l,
@@ -395,12 +418,14 @@ func (tr funcTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 type LoggingTransport struct {
-	Logger slog.Logger
+	Logger logger.Logger
 }
 
 func (t *LoggingTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 	reqInfo, _ := httputil.DumpRequestOut(r, true)
-	t.Logger.Debug("Sending request.", "request", reqInfo)
+	if t.Logger != nil {
+		t.Logger.Debugf("Sending request. %s", reqInfo)
+	}
 	resp, err := http.DefaultTransport.RoundTrip(r)
 	return resp, err
 }
@@ -788,6 +813,8 @@ func (r *RequestOptions) GetQuery() (string, error) {
 
 // SendRequest creates and sends a request
 func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Response, error) {
+
+	localLogger := NewLoggerFromContext(ctx)
 	var err error
 
 	currentPath, err := options.GetPath()
@@ -803,7 +830,7 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 	var req *http.Request
 
 	if len(options.FormData) > 0 {
-		slog.Info("Sending multipart form-data")
+		localLogger.Infof("Sending multipart form-data")
 		// Process FormData (for multipart/form-data requests)
 		// TODO: Somehow use the c.NewRequest function as it provides
 		// the authentication required for the request
@@ -880,12 +907,12 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 		baseURL, parseErr := url.Parse(host)
 
 		if parseErr != nil {
-			slog.Warn("Ignoring invalid host.", "host", host, "err", parseErr)
+			localLogger.Warnf("Ignoring invalid host %s. %s", host, parseErr)
 			err = parseErr
 		} else {
 			req.URL.Host = baseURL.Host
 			req.URL.Scheme = baseURL.Scheme
-			slog.Info("Using alternative host.", "host", fmt.Sprintf("%s://%s", req.URL.Scheme, req.URL.Host))
+			localLogger.Infof("Using alternative host %s://%s", req.URL.Scheme, req.URL.Host)
 		}
 
 	}
@@ -900,9 +927,8 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 	if ctxOptions := ctx.Value(GetContextCommonOptionsKey()); ctxOptions != nil {
 		if ctxOptions, ok := ctxOptions.(CommonOptions); ok {
 
-			slog.Debug(
-				"Overriding common options provided in the context.",
-				"dryRun",
+			localLogger.Debugf(
+				"Overriding common options provided in the context. dryRun=%s",
 				strconv.FormatBool(ctxOptions.DryRun),
 			)
 			dryRun = ctxOptions.DryRun
@@ -950,7 +976,7 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 		return resp, dryRunErr
 	}
 
-	slog.Info(c.HideSensitiveInformationIfActive(fmt.Sprintf("Headers: %v", req.Header)))
+	localLogger.Info(c.HideSensitiveInformationIfActive(fmt.Sprintf("Headers: %v", req.Header)))
 
 	if options.PrepareRequest != nil {
 		req, err = options.PrepareRequest(req)
@@ -1479,23 +1505,26 @@ func withContext(ctx context.Context, req *http.Request) *http.Request {
 func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}, middleware ...RequestMiddleware) (*Response, error) {
 	req = withContext(ctx, req)
 
+	// Set local logger
+	localLogger := NewLoggerFromContext(ctx)
+
 	// Check if custom auth function is provided
 	if ctxAuthFunc, ok := FromAuthFuncContext(ctx); ok {
 		auth, authErr := ctxAuthFunc(req)
 		if authErr != nil {
-			slog.Info("Authorization function returned an error.", "err", authErr)
+			localLogger.Infof("Authorization function returned an error. %s", authErr)
 		} else if auth != "" {
-			slog.Info("Using authorization provided by an auth function")
+			localLogger.Infof("Using authorization provided by an auth function")
 			req.Header.Set("Authorization", auth)
 		}
 	} else if authToken := ctx.Value(GetContextAuthTokenKey()); authToken != nil {
 		// Check if an authorization key is provided in the context, if so then override the c8y authentication
-		slog.Info("Using authorization provided in the context")
+		localLogger.Infof("Using authorization provided in the context")
 		req.Header.Set("Authorization", authToken.(string))
 	}
 
 	if req != nil {
-		slog.Info("Sending request", "method", req.Method, "url", c.HideSensitiveInformationIfActive(req.URL.String()))
+		localLogger.Infof("Sending request: %s %s", req.Method, c.HideSensitiveInformationIfActive(req.URL.String()))
 	}
 
 	// Log the body (if applicable)
@@ -1503,9 +1532,9 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}, middl
 		switch v := req.Body.(type) {
 		case *os.File:
 			// Only log the file name
-			slog.Info("Body (file):", "path", v.Name())
+			localLogger.Infof("Body (file): %s", v.Name())
 		case *ProxyReader:
-			slog.Info("Body:", "path", v.GetValue())
+			localLogger.Infof("Body: %s", v.GetValue())
 		default:
 			// Don't print out multi part forms, but everything else is fine.
 			if !strings.Contains(req.Header.Get("Content-Type"), "multipart/form-data") {
@@ -1513,7 +1542,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}, middl
 				bodyBytes, _ := io.ReadAll(v)
 				req.Body.Close() //  must close
 				req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-				slog.Debug("Body", "contents", bytes.TrimSpace(bodyBytes))
+				localLogger.Infof("Body: %s", bytes.TrimSpace(bodyBytes))
 			}
 		}
 	}
@@ -1532,7 +1561,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}, middl
 	if err != nil {
 		// If we got an error, and the context has been canceled,
 		// the context's error is probably more useful.
-		slog.Info("ERROR: Request failed.", "err", err)
+		localLogger.Infof("ERROR: Request failed. %s", err)
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
@@ -1556,7 +1585,7 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}, middl
 	if err != nil {
 		// even though there was an error, we still return the response
 		// in case the caller wants to inspect it further
-		slog.Info("Invalid response received from server", "err", err)
+		localLogger.Infof("Invalid response received from server. %s", err)
 		return response, err
 	}
 
@@ -1568,7 +1597,6 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}, middl
 		}
 	}
 
-	responseSize := int64(-1)
 	if v != nil {
 		defer resp.Body.Close()
 
@@ -1577,12 +1605,11 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}, middl
 		} else {
 			buf, _ := io.ReadAll(response.Response.Body)
 			response.body = buf
-			responseSize = int64(len(buf))
 
 			if jsonUtilities.IsValidJSON(buf) {
 				err = response.DecodeJSON(v)
 				if err == io.EOF {
-					slog.Info("Error decoding body", "err", err)
+					localLogger.Infof("Error decoding body. %s", err)
 					err = nil // ignore EOF errors caused by empty response body
 				}
 			}
@@ -1591,30 +1618,11 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}, middl
 		defer resp.Body.Close()
 		buf, _ := io.ReadAll(response.Response.Body)
 		response.body = buf
-		responseSize = int64(len(buf))
 	}
 
-	if resp.ContentLength > -1 {
-		responseSize = resp.ContentLength
-	}
-
-	slog.Info(
-		"Response",
-		"code", response.StatusCode(),
-		"len", toKB(responseSize),
-		"compressed", !resp.Uncompressed,
-		"duration", fmt.Sprintf("%dms", response.Duration().Milliseconds()),
-		"content_type", resp.Header.Get("Content-Type"),
-	)
+	localLogger.Info(fmt.Sprintf("Status code: %v", response.StatusCode()))
 
 	return response, err
-}
-
-func toKB(v int64) string {
-	if v == -1 {
-		return "-1"
-	}
-	return fmt.Sprintf("%0.1fKB", float64(v/1024))
 }
 
 // sanitizeURL redacts the client_secret parameter from the URL which may be
@@ -1810,7 +1818,7 @@ func (c *Client) DefaultDryRunHandler(options *RequestOptions, req *http.Request
 		}
 	}
 
-	slog.Info(c.HideSensitiveInformationIfActive(message))
+	Logger.Info(c.HideSensitiveInformationIfActive(message))
 }
 
 type CumulocityTokenClaim struct {
