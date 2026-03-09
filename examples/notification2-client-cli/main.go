@@ -3,7 +3,8 @@ package main
 import (
 	"context"
 	"flag"
-	"log/slog"
+	"io"
+	"log"
 	"os"
 	"os/signal"
 
@@ -23,8 +24,7 @@ func main() {
 	flag.Parse()
 
 	if !*verbose {
-		handler := slog.New(slog.DiscardHandler)
-		slog.SetDefault(handler)
+		log.SetOutput(io.Discard)
 	}
 
 	// Create the client from the following environment variables
@@ -62,19 +62,19 @@ func main() {
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, os.Interrupt)
 
-	slog.Info("Listening to messages")
+	log.Printf("Listening to messages")
 
 	for {
 		select {
 		case msg := <-ch:
-			slog.Info("On message", "payload", msg.Payload)
+			log.Printf("On message: %s", msg.Payload)
 			if err := notificationClient.SendMessageAck(msg.Identifier); err != nil {
-				slog.Warn("Failed to send message ack", "err", err)
+				log.Printf("Failed to send message ack: %s", err)
 			}
 
 		case <-signalCh:
 			// Enable ctrl-c to stop
-			slog.Info("Stopping client")
+			log.Printf("Stopping client")
 			notificationClient.Close()
 			return
 		}

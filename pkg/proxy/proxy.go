@@ -2,10 +2,10 @@ package proxy
 
 import (
 	"io"
-	"log/slog"
 	"net"
 
 	"github.com/gorilla/websocket"
+	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"github.com/reubenmiller/go-c8y/pkg/wsconnadapter"
 )
 
@@ -45,14 +45,14 @@ func Copy(gwsConn *websocket.Conn, tcpConn net.Conn) {
 		select {
 		case wsData := <-wsChan:
 			if wsData == nil {
-				slog.Info("Connection closed", "dst", tcpConn.LocalAddr(), "src", wsConn.RemoteAddr())
+				c8y.Logger.Infof("Connection closed: D: %v, S: %v", tcpConn.LocalAddr(), wsConn.RemoteAddr())
 				return
 			} else {
 				tcpConn.Write(wsData)
 			}
 		case tcpData := <-tcpChan:
 			if tcpData == nil {
-				slog.Info("Connection closed", "dst", tcpConn.LocalAddr(), "src", wsConn.LocalAddr())
+				c8y.Logger.Infof("Connection closed: D: %v, S: %v", tcpConn.LocalAddr(), wsConn.LocalAddr())
 				return
 			} else {
 				wsConn.Write(tcpData)
@@ -74,14 +74,14 @@ func CopyReadWriter(gwsConn *websocket.Conn, r io.ReadCloser, w io.Writer) {
 		select {
 		case wsData := <-wsChan:
 			if wsData == nil {
-				slog.Info("STDIO connection closed", "dst", "stdio", "src", wsConn.RemoteAddr())
+				c8y.Logger.Infof("STDIO connection closed: D: %v, S: %v", "stdio", wsConn.RemoteAddr())
 				return
 			} else {
 				w.Write(wsData)
 			}
 		case tcpData := <-stdioChan:
 			if tcpData == nil {
-				slog.Info("STDIO connection closed", "dst", "stdio", "src", wsConn.LocalAddr())
+				c8y.Logger.Infof("STDIO connection closed: D: %v, S: %v", "stdio", wsConn.LocalAddr())
 				return
 			} else {
 				wsConn.Write(tcpData)
