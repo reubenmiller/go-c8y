@@ -54,6 +54,7 @@ import (
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/repository"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/retentionrules"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/tenants"
+	"github.com/reubenmiller/go-c8y/pkg/c8y/api/tenants/currenttenant"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/tenants/devicestatistics"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/tenants/logintokens"
 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/trustedcertificates"
@@ -480,6 +481,21 @@ func NewClient(opts ClientOptions) *Client {
 		}
 	} else {
 		c.SetAuth(opts.Auth)
+	}
+
+	// Auto-resolve the tenant ID if it was not provided by the caller.
+	// This makes a single authenticated call to /tenant/currentTenant so that
+	// path-param APIs (e.g. /application/applicationsByTenant/{tenantId}) work
+	// correctly even when C8Y_TENANT is not set in the environment.
+	if c.Auth.Tenant == "" {
+		if result := c.Tenants.Current.Get(context.Background(), currenttenant.GetOptions{}); result.Err == nil {
+			if id := result.Data.Name(); id != "" {
+				c.Auth.Tenant = id
+				c.HTTPClient.SetPathParam(core.PathParamTenantID, id)
+			}
+		} else {
+			slog.Debug("Failed to auto-resolve tenant ID", "err", result.Err)
+		}
 	}
 
 	return c
