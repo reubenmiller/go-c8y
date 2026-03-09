@@ -283,7 +283,7 @@ func (s *SetupConfiguration) NewRandomTestDevice(prefix ...string) (*c8y.Managed
 		c8y.NewAgent(deviceName),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create device: %s", err)
+		return nil, fmt.Errorf("failed to create device: %s", err)
 	}
 	// Store a reference to the test device
 	s.mu.Lock()

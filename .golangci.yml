@@ -1,27 +1,28 @@
+version: "2"
+
 run:
   timeout: 30m
-  tests: true
-
-linters-settings:
-  govet:
-    disable:
-      - fieldalignment
-  gofmt:
-    simplify: true
-  
-  misspell:
-    # Correct spellings using locale preferences for US or UK.
-    # Setting locale to US will correct the British spelling of 'colour' to 'color'.
-    # Default is to use a neutral variety of English.
-    locale: US
-    # Default: []
-    ignore-words:
-      - mosquitto
 
 linters:
   enable:
-    - goimports
-    - gofmt
     - misspell
   disable:
     - errcheck
+  settings:
+    govet:
+      disable:
+        - fieldalignment
+    misspell:
+      # Correct spellings using locale preferences for US or UK.
+      # Setting locale to US will correct the British spelling of 'colour' to 'color'.
+      # Default is to use a neutral variety of English.
+      locale: US
+      # Treat 'mosquitto' as a correctly spelled word.
+      extra-words:
+        - typo: mosquitto
+          correction: mosquitto
+
+formatters:
+  enable:
+    - goimports
+    - gofmt

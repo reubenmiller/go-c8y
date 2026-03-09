@@ -1,17 +1,17 @@
 module github.com/reubenmiller/example
 
-go 1.24.2
+go 1.25.0
 
 require (
-	github.com/alecthomas/kong v1.11.0
-	github.com/eclipse/paho.golang v0.22.0
+	github.com/alecthomas/kong v1.14.0
+	github.com/eclipse/paho.golang v0.23.0
 	github.com/reubenmiller/go-c8y v0.0.0-00010101000000-000000000000
 )
 
 require (
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
-	github.com/golang-jwt/jwt/v5 v5.2.2 // indirect
-	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
+	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/mdp/qrterminal/v3 v3.2.1 // indirect
 	github.com/obeattie/ohmyglob v0.0.0-20150811221449-290764208a0d // indirect
@@ -22,10 +22,10 @@ require (
 	github.com/tidwall/pretty v1.2.1 // indirect
 	go.mozilla.org/pkcs7 v0.9.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/net v0.41.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
-	golang.org/x/term v0.32.0 // indirect
+	go.uber.org/zap v1.27.1 // indirect
+	golang.org/x/net v0.51.0 // indirect
+	golang.org/x/sys v0.41.0 // indirect
+	golang.org/x/term v0.40.0 // indirect
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637 // indirect
 	rsc.io/qr v0.2.0 // indirect
 )
