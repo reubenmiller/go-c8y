@@ -43,6 +43,7 @@
         "paho",
         "pkid",
         "ICCID",
+        "myapi",
         // URLs and query parameters
         "bygroupid",
         "devicecontrol",
