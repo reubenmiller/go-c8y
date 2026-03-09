@@ -50,11 +50,8 @@ func main() {
 		client.Realtime.Close()
 	}()
 	go func() {
-		select {
-		case <-signalCh:
-			cancel()
-			return
-		}
+		<-signalCh
+		cancel()
 	}()
 	<-exitCh
 

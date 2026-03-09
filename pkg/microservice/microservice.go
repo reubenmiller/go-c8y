@@ -154,7 +154,7 @@ func (s *RealtimeClientCache) LoadOrNewClient(user c8y.ServiceUser) (*c8y.Realti
 		s.SetClient(user, client)
 		return client, nil
 	}
-	return nil, errors.New("No existing realtime clients")
+	return nil, errors.New("no existing realtime clients")
 }
 
 // GetClient returns a realtime client if it already exists in the cache. If no realtime client already exists for the service user, then an error is returned
@@ -164,7 +164,7 @@ func (s *RealtimeClientCache) GetClient(user c8y.ServiceUser) (*c8y.RealtimeClie
 	if v, ok := s.clients[user.Tenant]; ok {
 		return v, nil
 	}
-	return nil, errors.New("No realtime client found for tenant")
+	return nil, errors.New("no realtime client found for tenant")
 
 }
 
@@ -233,7 +233,7 @@ func (m *Microservice) TestClientConnection() error {
 func (m *Microservice) SetMicroserviceHost(host string) {
 	_, err := url.Parse(host)
 	if err != nil {
-		panic(fmt.Errorf("Invalid microservice host. %s", err))
+		panic(fmt.Errorf("invalid microservice host. %s", err))
 	}
 	m.MicroserviceHost = host
 }
@@ -275,7 +275,7 @@ func (m *Microservice) WithBootstrapUserCredentials() c8y.ServiceUser {
 // WithServiceUserCredentials returns the service user credentials associated with the tenant. If no tenant is given, then the first service user will be returned
 func (m *Microservice) WithServiceUserCredentials(tenant ...string) c8y.ServiceUser {
 	if len(tenant) > 1 {
-		panic(fmt.Errorf("Only accepts 1 tenant"))
+		panic(fmt.Errorf("only accepts 1 tenant"))
 	}
 
 	tenantName := ""
