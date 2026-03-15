@@ -8,8 +8,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	"github.com/tidwall/gjson"
 	"resty.dev/v3"
 )

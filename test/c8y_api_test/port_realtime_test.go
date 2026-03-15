@@ -6,16 +6,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
-	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
+	"github.com/reubenmiller/go-c8y/v2/internal/pkg/testingutils"
+	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/measurements"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/operations"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/realtime"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/measurements"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/operations"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/realtime"
 )
 
 func OperationSenderFactory(client *api.Client, deviceID string, t *testing.T) func() {
@@ -154,7 +154,7 @@ func TestRealtimeSubscriptions_SubscribeToMeasurements(t *testing.T) {
 }
 
 func TestRealtimeSubscriptions_Unsubscribe(t *testing.T) {
-	// Issue #2: https://github.com/reubenmiller/go-c8y/issues/2
+	// Issue #2: https://github.com/reubenmiller/go-c8y/v2/issues/2
 	// A subscribe -> unsubscribe -> subscribe should not result in duplicate
 	// items on the channel
 	// https://www.ardanlabs.com/blog/2017/10/the-behavior-of-channels.html

@@ -10,16 +10,16 @@ import (
 	"time"
 
 	"github.com/destel/rill"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alarms"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/binaries"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/measurements"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/jsonmodels"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/alarms"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/binaries"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/measurements"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 )
 
 type CustomField struct {

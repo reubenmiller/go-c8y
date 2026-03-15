@@ -17,7 +17,7 @@
 //
 //	import (
 //	    "context"
-//	    c8yctx "github.com/reubenmiller/go-c8y/pkg/c8y/api/context"
+//	    c8yctx "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/context"
 //	)
 //
 //	// Set processing mode to transient for real-time tracking without storage

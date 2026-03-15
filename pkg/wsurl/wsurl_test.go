@@ -3,7 +3,7 @@ package wsurl
 import (
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
+	"github.com/reubenmiller/go-c8y/v2/internal/pkg/testingutils"
 )
 
 func Test_GetEndpoint(t *testing.T) {

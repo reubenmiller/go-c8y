@@ -8,9 +8,9 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
-	api_notification2 "github.com/reubenmiller/go-c8y/pkg/c8y/api/notification2"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
+	api_notification2 "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/notification2"
 )
 
 func health(w http.ResponseWriter, r *http.Request) {

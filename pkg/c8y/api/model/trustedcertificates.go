@@ -12,7 +12,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/reubenmiller/go-c8y/pkg/certutil"
+	"github.com/reubenmiller/go-c8y/v2/pkg/certutil"
 )
 
 // TrustedCertificateStatus represents the status of a trusted certificate

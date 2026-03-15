@@ -3,7 +3,7 @@ package contexthelpers
 import (
 	"context"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 )
 
 type processingModeKey struct{}

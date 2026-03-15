@@ -4,7 +4,7 @@ import (
 	"context"
 	"iter"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 )
 
 // PaginationConfig controls pagination behavior

@@ -3,11 +3,11 @@ package applicationplugins
 import (
 	"context"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/jsondoc"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
 )
 

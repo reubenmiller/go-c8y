@@ -1,6 +1,6 @@
 package jsonmodels
 
-import "github.com/reubenmiller/go-c8y/pkg/c8y/jsondoc"
+import "github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
 
 // ApplicationVersion represents an application version
 type ApplicationVersion struct {

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/internal/pkg/fakeserver"
+	"github.com/reubenmiller/go-c8y/v2/internal/pkg/fakeserver"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

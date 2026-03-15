@@ -1,10 +1,10 @@
 package firmware
 
 import (
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/repository/firmware/firmwareitems"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/repository/firmware/firmwarepatches"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/repository/firmware/firmwareversions"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/repository/firmware/firmwareitems"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/repository/firmware/firmwarepatches"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/repository/firmware/firmwareversions"
 )
 
 var ApiManagedObjects = "/inventory/managedObjects"

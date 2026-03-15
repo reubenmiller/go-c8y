@@ -16,8 +16,8 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
-	"github.com/reubenmiller/go-c8y/pkg/certutil"
+	"github.com/reubenmiller/go-c8y/v2/internal/pkg/testingutils"
+	"github.com/reubenmiller/go-c8y/v2/pkg/certutil"
 )
 
 func TestMakeEllipticPrivateKeyPEM(t *testing.T) {

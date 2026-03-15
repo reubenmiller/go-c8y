@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/source"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/source"
 )
 
 // DeviceRef is a typed reference to a device or managed object. Construct it

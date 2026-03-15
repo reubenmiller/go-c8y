@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/reubenmiller/go-c8y/pkg/wsurl"
+	"github.com/reubenmiller/go-c8y/v2/pkg/wsurl"
 	"github.com/tidwall/gjson"
 )
 

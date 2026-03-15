@@ -8,12 +8,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/applications"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/microservices"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
-	"github.com/reubenmiller/go-c8y/pkg/microservice"
+	"github.com/reubenmiller/go-c8y/v2/internal/pkg/testingutils"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/applications"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/microservices"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
+	"github.com/reubenmiller/go-c8y/v2/pkg/microservice"
 	"github.com/spf13/viper"
 )
 

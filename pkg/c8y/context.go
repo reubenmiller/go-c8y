@@ -8,8 +8,8 @@ package c8y
 // 	"net/http"
 // 	"strings"
 
-// 	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
-// 	"github.com/reubenmiller/go-c8y/pkg/c8y/api/microservices"
+// 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
+// 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/microservices"
 // )
 
 // // ContextService api

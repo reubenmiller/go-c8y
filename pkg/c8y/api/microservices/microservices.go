@@ -12,10 +12,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/applications"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core/artifact"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/applications"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core/artifact"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 )
 
 type CreateOptions struct {

@@ -3,15 +3,15 @@ package tenants
 import (
 	"context"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/tenants/currenttenant"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/tenants/systemoptions"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/tenants/tenantoptions"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/tenants/usagestatistics"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/jsonmodels"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/currenttenant"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/systemoptions"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/tenantoptions"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/usagestatistics"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
 )
 

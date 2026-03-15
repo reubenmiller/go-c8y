@@ -3,7 +3,7 @@ package model
 import (
 	"time"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 )
 
 type Operation struct {

@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
-	c8yapi "github.com/reubenmiller/go-c8y/pkg/c8y/api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/trustedcertificates"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/trustedcertificates/certificateauthority"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
-	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
+	c8yapi "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/trustedcertificates"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/trustedcertificates/certificateauthority"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
+	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

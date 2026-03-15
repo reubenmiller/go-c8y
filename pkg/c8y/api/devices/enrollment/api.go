@@ -17,11 +17,11 @@ import (
 	"time"
 
 	"github.com/mdp/qrterminal/v3"
-	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/api/contexthelpers"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
-	"github.com/reubenmiller/go-c8y/pkg/certutil"
-	"github.com/reubenmiller/go-c8y/pkg/password"
+	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
+	"github.com/reubenmiller/go-c8y/v2/pkg/certutil"
+	"github.com/reubenmiller/go-c8y/v2/pkg/password"
 	"go.mozilla.org/pkcs7"
 	"resty.dev/v3"
 )

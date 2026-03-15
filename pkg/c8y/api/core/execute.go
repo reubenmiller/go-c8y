@@ -5,10 +5,10 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
-	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/api/contexthelpers"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/jsondoc"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
+	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
 )
 

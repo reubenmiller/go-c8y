@@ -3,8 +3,8 @@ package plugins
 import (
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	"github.com/stretchr/testify/assert"
 	"resty.dev/v3"
 )

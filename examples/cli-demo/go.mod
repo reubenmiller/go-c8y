@@ -1,9 +1,9 @@
-module github.com/reubenmiller/go-c8y/examples/cli-demo
+module github.com/reubenmiller/go-c8y/v2/examples/cli-demo
 
 go 1.25.0
 
 require (
-	github.com/reubenmiller/go-c8y v0.0.0-00010101000000-000000000000
+	github.com/reubenmiller/go-c8y/v2 v0.0.0-00010101000000-000000000000
 	github.com/spf13/cobra v1.9.1
 )
 
@@ -31,4 +31,4 @@ require (
 	rsc.io/qr v0.2.0 // indirect
 )
 
-replace github.com/reubenmiller/go-c8y => ../../
+replace github.com/reubenmiller/go-c8y/v2 => ../../

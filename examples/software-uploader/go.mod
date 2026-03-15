@@ -1,11 +1,11 @@
-module github.com/reubenmiller/go-c8y/examples/software-uploader
+module github.com/reubenmiller/go-c8y/v2/examples/software-uploader
 
 go 1.25.0
 
-replace github.com/reubenmiller/go-c8y => ../..
+replace github.com/reubenmiller/go-c8y/v2 => ../..
 
 require (
-	github.com/reubenmiller/go-c8y v0.0.0
+	github.com/reubenmiller/go-c8y/v2 v0.0.0
 	github.com/schollz/progressbar/v3 v3.14.1
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/term v0.40.0

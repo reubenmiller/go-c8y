@@ -5,7 +5,7 @@ import (
 	"iter"
 	"time"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/jsondoc"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
 )
 
 type Measurement struct {

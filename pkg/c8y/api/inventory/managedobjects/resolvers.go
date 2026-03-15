@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/source"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/source"
 )
 
 // externalIDResolver looks up a managed object by external identity

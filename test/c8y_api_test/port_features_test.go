@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
-	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
+	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

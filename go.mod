@@ -1,4 +1,4 @@
-module github.com/reubenmiller/go-c8y
+module github.com/reubenmiller/go-c8y/v2
 
 require (
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
@@ -66,14 +66,14 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-replace github.com/reubenmiller/go-c8y/pkg/c8y => ./pkg/c8y
+replace github.com/reubenmiller/go-c8y/v2/pkg/c8y => ./pkg/c8y
 
-replace github.com/reubenmiller/go-c8y/pkg/microservice => ./pkg/microservice
+replace github.com/reubenmiller/go-c8y/v2/pkg/microservice => ./pkg/microservice
 
-replace github.com/reubenmiller/go-c8y/test/c8y_test => ./test/c8y_test
+replace github.com/reubenmiller/go-c8y/v2/test/c8y_test => ./test/c8y_test
 
-replace github.com/reubenmiller/go-c8y/test/c8y_api_test => ./test/c8y_api_test
+replace github.com/reubenmiller/go-c8y/v2/test/c8y_api_test => ./test/c8y_api_test
 
-replace github.com/reubenmiller/go-c8y/test/c8y_microservice => ./test/c8y_microservice
+replace github.com/reubenmiller/go-c8y/v2/test/c8y_microservice => ./test/c8y_microservice
 
 go 1.25.0

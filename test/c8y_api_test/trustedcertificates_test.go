@@ -9,13 +9,13 @@ import (
 	"path"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/trustedcertificates"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/trustedcertificates/certificaterevocationlist"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/jsondoc"
-	"github.com/reubenmiller/go-c8y/pkg/certutil"
-	"github.com/reubenmiller/go-c8y/test/c8y_api_test/testcore"
+	"github.com/reubenmiller/go-c8y/v2/internal/pkg/testingutils"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/trustedcertificates"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/trustedcertificates/certificaterevocationlist"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
+	"github.com/reubenmiller/go-c8y/v2/pkg/certutil"
+	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 )
 

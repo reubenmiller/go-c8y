@@ -3,17 +3,17 @@ package devices
 import (
 	"context"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/devices/enrollment"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/devices/registration"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects/childadditions"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects/childassets"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects/childdevices"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/jsonmodels"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/devices/enrollment"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/devices/registration"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects/childadditions"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects/childassets"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects/childdevices"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
 )
 

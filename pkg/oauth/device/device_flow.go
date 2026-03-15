@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/reubenmiller/go-c8y/pkg/oauth/api"
+	"github.com/reubenmiller/go-c8y/v2/pkg/oauth/api"
 )
 
 var (

@@ -12,15 +12,15 @@ import (
 	cron "gopkg.in/robfig/cron.v2"
 	"resty.dev/v3"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/devices"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/microservices"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/realtime"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/jsonmodels"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/devices"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/microservices"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/realtime"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 )
 
 // Options contains the additional microservice options

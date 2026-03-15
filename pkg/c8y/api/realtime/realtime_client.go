@@ -21,9 +21,9 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/jsondoc"
-	"github.com/reubenmiller/go-c8y/pkg/matcher"
-	"github.com/reubenmiller/go-c8y/pkg/wsurl"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
+	"github.com/reubenmiller/go-c8y/v2/pkg/matcher"
+	"github.com/reubenmiller/go-c8y/v2/pkg/wsurl"
 	"golang.org/x/net/publicsuffix"
 )
 

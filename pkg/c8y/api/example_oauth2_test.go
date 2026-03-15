@@ -12,13 +12,13 @@ import (
 	"strings"
 	"time"
 
-	api "github.com/reubenmiller/go-c8y/pkg/c8y/api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alarms"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/devices"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/jsondoc"
-	"github.com/reubenmiller/go-c8y/pkg/oauth/clientcredentials"
+	api "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/alarms"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/devices"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
+	"github.com/reubenmiller/go-c8y/v2/pkg/oauth/clientcredentials"
 )
 
 // clientCredentialsSource fetches tokens from a standard OAuth2 token endpoint

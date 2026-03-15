@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/alarms"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/jsondoc"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/alarms"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

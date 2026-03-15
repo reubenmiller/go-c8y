@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/model"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/realtime"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/realtime"
 )
 
 // SubscribeToOperations subscribes to operations added to the microservice's agent managed object. onMessageFunc is called on every operation

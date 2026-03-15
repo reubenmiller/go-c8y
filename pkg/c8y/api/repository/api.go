@@ -1,10 +1,10 @@
 package repository
 
 import (
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/repository/configuration"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/repository/firmware"
-	software "github.com/reubenmiller/go-c8y/pkg/c8y/api/repository/software"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/repository/configuration"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/repository/firmware"
+	software "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/repository/software"
 )
 
 func NewService(s *core.Service) *Service {

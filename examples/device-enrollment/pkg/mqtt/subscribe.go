@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/reubenmiller/example/pkg/cli"
-	"github.com/reubenmiller/go-c8y/pkg/certutil"
+	"github.com/reubenmiller/go-c8y/v2/pkg/certutil"
 )
 
 /*

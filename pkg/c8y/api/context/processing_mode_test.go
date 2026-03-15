@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	"github.com/stretchr/testify/assert"
 )
 

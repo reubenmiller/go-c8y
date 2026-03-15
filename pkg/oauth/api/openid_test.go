@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/internal/pkg/testingutils"
+	"github.com/reubenmiller/go-c8y/v2/internal/pkg/testingutils"
 )
 
 func Test_GetOpenIDFromMicrosoftURL(t *testing.T) {

@@ -1,6 +1,6 @@
 package child
 
-import "github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
+import "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 
 type ListOptions struct {
 	Query             string `url:"query,omitempty"`

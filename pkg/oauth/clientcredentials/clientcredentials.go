@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
 )
 
 // Config holds the parameters for an OAuth 2.0 client_credentials grant.

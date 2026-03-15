@@ -5,8 +5,8 @@ import (
 	"iter"
 	"log/slog"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/jsondoc"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 )
 
 // JSONDocument represents any type that can provide iteration over JSON documents

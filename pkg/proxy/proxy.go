@@ -6,7 +6,7 @@ import (
 	"net"
 
 	"github.com/gorilla/websocket"
-	"github.com/reubenmiller/go-c8y/pkg/wsconnadapter"
+	"github.com/reubenmiller/go-c8y/v2/pkg/wsconnadapter"
 )
 
 func chanFromConn(conn io.Reader) chan []byte {

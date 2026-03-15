@@ -1,6 +1,6 @@
 package model
 
-import "github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
+import "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
 
 type OAIToken struct {
 	AccessToken string `json:"access_token,omitempty"`

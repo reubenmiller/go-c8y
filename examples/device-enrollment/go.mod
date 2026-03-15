@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/alecthomas/kong v1.12.1
 	github.com/eclipse/paho.golang v0.22.0
-	github.com/reubenmiller/go-c8y v0.0.0-00010101000000-000000000000
+	github.com/reubenmiller/go-c8y/v2 v0.0.0-00010101000000-000000000000
 )
 
 require (
@@ -30,4 +30,4 @@ require (
 	rsc.io/qr v0.2.0 // indirect
 )
 
-replace github.com/reubenmiller/go-c8y => ../../
+replace github.com/reubenmiller/go-c8y/v2 => ../../

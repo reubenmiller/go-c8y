@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/reubenmiller/go-c8y/pkg/oauth/device"
+	"github.com/reubenmiller/go-c8y/v2/pkg/oauth/device"
 )
 
 // This demonstrates how to perform OAuth Device Authorization Flow for GitHub.com.

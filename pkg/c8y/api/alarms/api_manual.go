@@ -3,11 +3,11 @@ package alarms
 import (
 	"context"
 
-	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/api/contexthelpers"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/core"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
+	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/tidwall/gjson"
 	"resty.dev/v3"
 )

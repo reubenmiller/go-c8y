@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/reubenmiller/go-c8y/pkg/password"
+	"github.com/reubenmiller/go-c8y/v2/pkg/password"
 )
 
 const charset = "abcdefghijklmnopqrstuvwxyz" +

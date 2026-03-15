@@ -1,7 +1,7 @@
 package jsonmodels
 
 import (
-	"github.com/reubenmiller/go-c8y/pkg/c8y/jsondoc"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
 )
 
 // InventoryRole represents a Cumulocity inventory role (scoped permission set).

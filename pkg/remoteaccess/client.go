@@ -10,9 +10,9 @@ import (
 	"strings"
 
 	"github.com/gorilla/websocket"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/tenants/currenttenant"
-	"github.com/reubenmiller/go-c8y/pkg/proxy"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/currenttenant"
+	"github.com/reubenmiller/go-c8y/v2/pkg/proxy"
 )
 
 type RemoteAccessOptions struct {

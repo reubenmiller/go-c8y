@@ -1,6 +1,6 @@
 package jsonmodels
 
-import "github.com/reubenmiller/go-c8y/pkg/c8y/jsondoc"
+import "github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
 
 // TenantTFA represents the TFA settings of a tenant (tenantTfaData schema).
 type TenantTFA struct {

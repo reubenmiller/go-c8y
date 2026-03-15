@@ -6,10 +6,10 @@ import (
 	"net/url"
 
 	"github.com/google/go-querystring/query"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
-	ctxhelpers "github.com/reubenmiller/go-c8y/pkg/c8y/api/contexthelpers"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/realtime"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
+	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/realtime"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	"resty.dev/v3"
 )
 

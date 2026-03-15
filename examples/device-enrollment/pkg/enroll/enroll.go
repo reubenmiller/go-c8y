@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/reubenmiller/example/pkg/cli"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/devices/enrollment"
-	"github.com/reubenmiller/go-c8y/pkg/certutil"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/devices/enrollment"
+	"github.com/reubenmiller/go-c8y/v2/pkg/certutil"
 )
 
 /*

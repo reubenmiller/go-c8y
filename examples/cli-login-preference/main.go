@@ -105,13 +105,13 @@ import (
 	"strings"
 
 	"github.com/mdp/qrterminal/v3"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/authentication"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/devices"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/pagination"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/tenants/currenttenant"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/users/currentuser/totp"
-	"github.com/reubenmiller/go-c8y/pkg/oauth/device"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/devices"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/currenttenant"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/users/currentuser/totp"
+	"github.com/reubenmiller/go-c8y/v2/pkg/oauth/device"
 	"golang.org/x/term"
 )
 

@@ -7,9 +7,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/reubenmiller/go-c8y/pkg/c8y/jsonmodels"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/op"
-	"github.com/reubenmiller/go-c8y/pkg/c8y/api/source"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/source"
 )
 
 // OPTION 1: Add SourceRef field alongside Source (Recommended for backward compatibility)
