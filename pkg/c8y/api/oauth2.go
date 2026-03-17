@@ -249,11 +249,11 @@ type BrowserFlowOptions struct {
 	// Accepted forms (all equivalent in terms of where the local server listens
 	// and which path it registers the handler on):
 	//
-	//   http://127.0.0.1:5001/callback  – explicit scheme, host, port, path
-	//   127.0.0.1:5001/callback         – scheme inferred as http
-	//   127.0.0.1:5001                  – path defaults to /callback
+	//   http://localhost:5001/callback  – explicit scheme, host, port, path
+	//   localhost:5001/callback         – scheme inferred as http
+	//   localhost:5001                  – path defaults to /callback
 	//
-	// Defaults to "http://127.0.0.1:5001/callback" when empty.
+	// Defaults to "http://localhost:5001/callback" when empty.
 	CallbackURL string
 
 	OriginURL string
@@ -300,12 +300,12 @@ func generatePKCEPair() (verifier, challenge string, err error) {
 //
 // Input forms handled:
 //
-//	http://127.0.0.1:5001/callback  -> ("127.0.0.1:5001", "/callback", "http://127.0.0.1:5001/callback")
-//	127.0.0.1:5001/mypath           -> ("127.0.0.1:5001", "/mypath",   "http://127.0.0.1:5001/mypath")
-//	127.0.0.1:5001                  -> ("127.0.0.1:5001", "/callback", "http://127.0.0.1:5001/callback")
-//	"" (empty)                      -> ("127.0.0.1:5001", "/callback", "http://127.0.0.1:5001/callback")
+//	http://localhost:5001/callback  -> ("localhost:5001", "/callback", "http://localhost:5001/callback")
+//	localhost:5001/mypath           -> ("localhost:5001", "/mypath",   "http://localhost:5001/mypath")
+//	localhost:5001                  -> ("localhost:5001", "/callback", "http://localhost:5001/callback")
+//	"" (empty)                      -> ("localhost:5001", "/callback", "http://localhost:5001/callback")
 func parseBrowserCallbackURL(raw string) (listenAddr, path, callbackURL string, err error) {
-	const defaultAddr = "127.0.0.1:5001"
+	const defaultAddr = "localhost:5001"
 	const defaultPath = "/callback"
 
 	if raw == "" {

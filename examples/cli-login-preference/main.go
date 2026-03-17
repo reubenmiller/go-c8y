@@ -23,10 +23,10 @@
 //
 //	-browser-addr     Callback URL for the OAUTH2_BROWSER_FLOW redirect.
 //	                  Accepted forms:
-//	                    http://127.0.0.1:5001/callback  (explicit)
-//	                    127.0.0.1:5001/login            (scheme inferred)
-//	                    127.0.0.1:5001                  (path defaults to /callback)
-//	                  Default: "127.0.0.1:5001" --> http://127.0.0.1:5001/callback.
+//	                    http://localhost:5001/callback  (explicit)
+//	                    localhost:5001/login            (scheme inferred)
+//	                    localhost:5001                  (path defaults to /callback)
+//	                  Default: "localhost:5001" --> http://localhost:5001/callback.
 //	                  Must match the redirect URI registered in the SSO provider.
 //
 //	-browser-pkce     Enable PKCE (Proof Key for Code Exchange, RFC 7636) for the
@@ -146,7 +146,7 @@ func main() {
 		debugFlag       bool
 		methodFlag      string
 		preferFlags     stringSliceFlag
-		browserAddrFlag = "http://127.0.0.1:5001/callback"
+		browserAddrFlag = "http://localhost:5001/callback"
 		browserPKCEFlag bool
 		totpSecretFlag  string
 	)
@@ -176,9 +176,9 @@ func main() {
 			"The first available method in the list is used.")
 	flag.StringVar(&browserAddrFlag, "browser-addr", browserAddrFlag,
 		"Callback URL for the OAUTH2_BROWSER_FLOW redirect, e.g.\n"+
-			"  http://127.0.0.1:5001/callback  (explicit)\n"+
-			"  127.0.0.1:5001/login            (scheme inferred as http)\n"+
-			"  127.0.0.1:5001                  (path defaults to /callback)\n"+
+			"  http://localhost:5001/callback  (explicit)\n"+
+			"  localhost:5001/login            (scheme inferred as http)\n"+
+			"  localhost:5001                  (path defaults to /callback)\n"+
 			"Must match the redirect URI registered in your SSO provider.")
 	flag.BoolVar(&browserPKCEFlag, "browser-pkce", false,
 		"Enable PKCE (RFC 7636) for OAUTH2_BROWSER_FLOW.\n"+
@@ -345,9 +345,9 @@ func main() {
 		// BrowserFlow is used when OAUTH2_BROWSER_FLOW is selected.
 		// CallbackURL must exactly match the redirect URI registered in the
 		// SSO provider. Accepted forms:
-		//   http://127.0.0.1:5001/callback  (explicit)
-		//   127.0.0.1:5001/login            (scheme inferred)
-		//   127.0.0.1:5001                  (path defaults to /callback)
+		//   http://localhost:5001/callback  (explicit)
+		//   localhost:5001/login            (scheme inferred)
+		//   localhost:5001                  (path defaults to /callback)
 		BrowserFlow: &api.BrowserFlowOptions{
 			CallbackURL: browserAddrFlag,
 			PKCE:        browserPKCEFlag,
@@ -575,10 +575,10 @@ AUTHENTICATION FLAGS
                      Example: -prefer OAUTH2_INTERNAL -prefer OAUTH2_DEVICE_FLOW
 
   -browser-addr      Callback URL for OAUTH2_BROWSER_FLOW, e.g.:
-                       http://127.0.0.1:5001/callback  (explicit)
-                       127.0.0.1:5001/login            (scheme inferred)
-                       127.0.0.1:5001                  (path defaults to /callback)
-                     Default: 127.0.0.1:5001
+                       http://localhost:5001/callback  (explicit)
+                       localhost:5001/login            (scheme inferred)
+                       localhost:5001                  (path defaults to /callback)
+                     Default: localhost:5001
 
   -browser-pkce      Enable PKCE (RFC 7636) for OAUTH2_BROWSER_FLOW.
                      Requires support from both the external IdP and

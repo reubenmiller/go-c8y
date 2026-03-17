@@ -1222,7 +1222,7 @@ type LoginOptions struct {
 
 	// BrowserFlow configures the SSO Authorization Code flow. Used when
 	// LoginMethodOAuth2BrowserFlow is selected via Method or Preference.
-	// When nil, sane defaults are applied (listen on 127.0.0.1:5001, open
+	// When nil, sane defaults are applied (listen on localhost:5001, open
 	// the system browser).
 	BrowserFlow *BrowserFlowOptions
 
