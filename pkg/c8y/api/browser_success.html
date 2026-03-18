@@ -216,5 +216,12 @@
   {{end}}
   <span class="pill">&#x2714;&nbsp; Session active</span>
 </div>
+<script>
+  // Remove the ?code=... query string from the address bar immediately,
+  // without triggering any reload or network request.
+  if (window.history && window.history.replaceState) {
+    window.history.replaceState(null, '', window.location.pathname);
+  }
+</script>
 </body>
 </html>
