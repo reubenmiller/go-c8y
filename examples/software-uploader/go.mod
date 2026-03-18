@@ -5,7 +5,7 @@ go 1.25.0
 replace github.com/reubenmiller/go-c8y/v2 => ../..
 
 require (
-	github.com/reubenmiller/go-c8y/v2 v0.0.0
+	github.com/reubenmiller/go-c8y/v2 v2.0.0-00010101000000-000000000000
 	github.com/schollz/progressbar/v3 v3.14.1
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/term v0.40.0

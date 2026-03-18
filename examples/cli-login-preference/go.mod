@@ -6,7 +6,7 @@ replace github.com/reubenmiller/go-c8y/v2 => ../..
 
 require (
 	github.com/mdp/qrterminal/v3 v3.2.1
-	github.com/reubenmiller/go-c8y/v2 v0.0.0-00010101000000-000000000000
+	github.com/reubenmiller/go-c8y/v2 v2.0.0-00010101000000-000000000000
 	golang.org/x/term v0.40.0
 )
 
