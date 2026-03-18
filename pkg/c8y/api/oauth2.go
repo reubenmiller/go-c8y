@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"html/template"
 	"io"
 	"log/slog"
 	"net"
@@ -236,6 +237,12 @@ func DefaultBrowserOpen(url string) error {
 //go:embed browser_success.html
 var browserSuccessPage string
 
+var browserSuccessTemplate = template.Must(template.New("success").Parse(browserSuccessPage))
+
+type browserSuccessData struct {
+	TenantURL string
+}
+
 // BrowserFlowOptions controls the behaviour of AuthorizeWithBrowserFlow.
 type BrowserFlowOptions struct {
 	// OpenBrowser is called with the IdP authorization URL.  Defaults to
@@ -429,12 +436,15 @@ func (c *Client) AuthorizeWithBrowserFlow(ctx context.Context, initRequest strin
 			http.Error(w, "missing code parameter", http.StatusBadRequest)
 			return
 		}
-		successHTML := opts.SuccessPage
-		if successHTML == "" {
-			successHTML = browserSuccessPage
-		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		fmt.Fprint(w, successHTML)
+		if opts.SuccessPage != "" {
+			fmt.Fprint(w, opts.SuccessPage)
+		} else {
+			data := browserSuccessData{
+				TenantURL: c.HTTPClient.BaseURL(),
+			}
+			_ = browserSuccessTemplate.Execute(w, data)
+		}
 		codeCh <- code
 		go func() { _ = srv.Shutdown(context.Background()) }()
 	})
