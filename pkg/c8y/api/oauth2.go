@@ -129,7 +129,7 @@ func (c *Client) HasExternalAuthProvider(ctx context.Context) (loginOption *json
 // AuthorizeWithDeviceFlow authorize the client using the OAuth2 Device Authorization Flow (the Auth provider must support it)
 func (c *Client) AuthorizeWithDeviceFlow(ctx context.Context, initRequest string, auth_endpoints oauth2_api.AuthEndpoints, displayFunc device.DeviceCodeFunc) (*api.AccessToken, error) {
 	if initRequest == "" {
-		loginOption, found, err := c.HasExternalAuthProvider(context.Background())
+		loginOption, found, err := c.HasExternalAuthProvider(ctx)
 		if err != nil {
 			// error getting details
 			return nil, err
@@ -370,19 +370,6 @@ type DeviceFlowOptions struct {
 //
 // The method blocks until the code is received or ctx is cancelled.
 func (c *Client) AuthorizeWithBrowserFlow(ctx context.Context, initRequest string, opts BrowserFlowOptions) (*api.AccessToken, error) {
-	if initRequest == "" {
-		loginOption, found, err := c.HasExternalAuthProvider(context.Background())
-		if err != nil {
-			// error getting details
-			return nil, err
-		}
-		if !found {
-			// no external auth provider
-			return nil, core.ErrNoAuth2Provider
-		}
-		initRequest = loginOption.InitRequest()
-	}
-
 	if opts.OpenBrowser == nil {
 		opts.OpenBrowser = DefaultBrowserOpen
 	}
@@ -390,6 +377,25 @@ func (c *Client) AuthorizeWithBrowserFlow(ctx context.Context, initRequest strin
 	listenAddr, callbackPath, callbackURL, err := parseBrowserCallbackURL(opts.CallbackURL)
 	if err != nil {
 		return nil, err
+	}
+
+	// Start local callback server first so port conflicts are caught immediately,
+	// before any network calls to discover the external auth provider.
+	ln, err := net.Listen("tcp", listenAddr)
+	if err != nil {
+		return nil, fmt.Errorf("browser flow: start callback listener: %w", err)
+	}
+	defer ln.Close() //nolint:errcheck
+
+	if initRequest == "" {
+		loginOption, found, err := c.HasExternalAuthProvider(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if !found {
+			return nil, core.ErrNoAuth2Provider
+		}
+		initRequest = loginOption.InitRequest()
 	}
 
 	var pkceVerifier string
@@ -402,13 +408,8 @@ func (c *Client) AuthorizeWithBrowserFlow(ctx context.Context, initRequest strin
 		_ = pkceChallenge // S256 challenge is re-derived from pkceVerifier below
 	}
 
-	// Start local callback server.
-	ln, err := net.Listen("tcp", listenAddr)
-	if err != nil {
-		return nil, fmt.Errorf("browser flow: start callback listener: %w", err)
-	}
-
 	codeCh := make(chan string, 1)
+	servErrCh := make(chan error, 1)
 	mux := http.NewServeMux()
 	srv := &http.Server{Handler: mux}
 
@@ -440,7 +441,7 @@ func (c *Client) AuthorizeWithBrowserFlow(ctx context.Context, initRequest strin
 
 	go func() {
 		if err := srv.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			slog.Error("Browser flow: callback server error", "err", err)
+			servErrCh <- fmt.Errorf("browser flow: callback server error: %w", err)
 		}
 	}()
 	defer srv.Shutdown(ctx) //nolint:errcheck
@@ -473,6 +474,8 @@ func (c *Client) AuthorizeWithBrowserFlow(ctx context.Context, initRequest strin
 
 	// Wait for the authorization code.
 	select {
+	case err := <-servErrCh:
+		return nil, err
 	case code := <-codeCh:
 		if code == "" {
 			return nil, fmt.Errorf("browser flow: SSO callback returned an error")
