@@ -128,7 +128,7 @@
     animation: fade-in .5s 1.2s both;
   }
   .details {
-    margin-top: 24px;
+    margin-top: 8px;
     background: rgba(255,255,255,.04);
     border: 1px solid rgba(255,255,255,.08);
     border-radius: 12px;
@@ -136,11 +136,20 @@
     text-align: left;
     animation: fade-in .5s 1.1s both;
   }
+  .url-label {
+    margin-top: 20px;
+    margin-bottom: 0;
+    font-size: .75rem;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.35);
+    animation: fade-in .5s 1.1s both;
+  }
   .detail-row {
     display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 16px;
+    flex-direction: column;
+    gap: 6px;
     font-size: .82rem;
   }
   .detail-row + .detail-row {
@@ -153,14 +162,39 @@
     font-weight: 500;
     white-space: nowrap;
     flex-shrink: 0;
+    text-align: center;
   }
   .detail-value {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .detail-value a {
     color: rgba(255,255,255,.75);
     font-family: ui-monospace, "Cascadia Code", monospace;
     font-size: .78rem;
     word-break: break-all;
-    text-align: right;
+    text-decoration: none;
+    transition: color .15s;
+    flex: 1;
   }
+  .detail-value a:hover { color: #ffd200; }
+  .copy-btn {
+    flex-shrink: 0;
+    background: none;
+    border: 1px solid rgba(255,255,255,.2);
+    border-radius: 6px;
+    color: rgba(255,255,255,.45);
+    cursor: pointer;
+    padding: 2px 6px;
+    font-size: .7rem;
+    line-height: 1.4;
+    min-width: 4.5em;
+    transition: border-color .15s, color .15s;
+  }
+  .copy-btn:hover { border-color: rgba(255,255,255,.5); color: rgba(255,255,255,.8); }
+  .copy-btn.copied { border-color: #ffd200; color: #ffd200; }
 
 </style>
 </head>
@@ -207,10 +241,13 @@
   <h1>Authentication successful</h1>
   <p>You are now signed in via SSO.<br>You may close this tab and return to your terminal.</p>
   {{if .TenantURL}}
+  <p class="url-label">Tenant URL</p>
   <div class="details">
     <div class="detail-row">
-      <span class="detail-label">URL</span>
-      <span class="detail-value">{{.TenantURL}}</span>
+      <span class="detail-value">
+        <a href="{{.TenantURL}}" target="_blank" rel="noopener noreferrer">{{.TenantURL}}</a>
+        <button class="copy-btn" id="copy-btn" title="Copy URL">Copy</button>
+      </span>
     </div>
   </div>
   {{end}}
@@ -221,6 +258,39 @@
   // without triggering any reload or network request.
   if (window.history && window.history.replaceState) {
     window.history.replaceState(null, '', window.location.pathname);
+  }
+
+  // Copy-to-clipboard button (no dependencies; Clipboard API with execCommand fallback).
+  var btn = document.getElementById('copy-btn');
+  if (btn) {
+    btn.addEventListener('click', function () {
+      var url = btn.closest('.detail-value').querySelector('a').href;
+      var reset = function () {
+        btn.textContent = 'Copy';
+        btn.classList.remove('copied');
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(function () {
+          btn.textContent = 'Copied!';
+          btn.classList.add('copied');
+          setTimeout(reset, 2000);
+        });
+      } else {
+        // Fallback for older browsers.
+        var ta = document.createElement('textarea');
+        ta.value = url;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        try { document.execCommand('copy'); } catch (e) {}
+        document.body.removeChild(ta);
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(reset, 2000);
+      }
+    });
   }
 </script>
 </body>
