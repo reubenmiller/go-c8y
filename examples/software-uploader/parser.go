@@ -67,6 +67,44 @@ func (p *DebianParser) Parse(filePath, filename string) (*SoftwareInfo, error) {
 	return info, nil
 }
 
+// IPKParser handles OpenWrt/OpenEmbedded/Yocto .ipk package naming convention
+// Format: name_version_architecture.ipk
+// Example: tedge_1.6.2~584+gd629c53_aarch64.ipk
+type IPKParser struct{}
+
+func (p *IPKParser) CanParse(filename string) bool {
+	return strings.HasSuffix(strings.ToLower(filename), ".ipk")
+}
+
+func (p *IPKParser) Parse(filePath, filename string) (*SoftwareInfo, error) {
+	// Remove .ipk extension
+	nameWithoutExt := strings.TrimSuffix(filename, ".ipk")
+
+	// IPK format mirrors Debian: name_version_arch
+	parts := strings.Split(nameWithoutExt, "_")
+
+	info := &SoftwareInfo{
+		FilePath:     filePath,
+		Filename:     filename,
+		SoftwareType: "ipk",
+		Metadata:     make(map[string]string),
+	}
+
+	if len(parts) >= 3 {
+		info.Name = parts[0]
+		info.Version = parts[1]
+		info.Architecture = parts[2]
+	} else if len(parts) == 2 {
+		info.Name = parts[0]
+		info.Version = parts[1]
+	} else {
+		info.Name = nameWithoutExt
+		info.Version = "1.0.0"
+	}
+
+	return info, nil
+}
+
 // RPMParser handles .rpm package naming convention
 // Format: name-version-release.architecture.rpm
 // Example: tedge-flows-1.6.2~584+gd629c53-1.aarch64.rpm
@@ -254,6 +292,55 @@ func (p *TarGzParser) Parse(filePath, filename string) (*SoftwareInfo, error) {
 	return info, nil
 }
 
+// ArchLinuxParser handles Arch Linux pacman package naming convention
+// Format: name-version-pkgrel-architecture.pkg.tar.zst (or .pkg.tar.xz)
+// Example: pacman-6.0.2-6-x86_64.pkg.tar.zst
+type ArchLinuxParser struct{}
+
+func (p *ArchLinuxParser) CanParse(filename string) bool {
+	lower := strings.ToLower(filename)
+	return strings.HasSuffix(lower, ".pkg.tar.zst") || strings.HasSuffix(lower, ".pkg.tar.xz")
+}
+
+func (p *ArchLinuxParser) Parse(filePath, filename string) (*SoftwareInfo, error) {
+	lower := strings.ToLower(filename)
+	nameWithoutExt := filename
+	if strings.HasSuffix(lower, ".pkg.tar.zst") {
+		nameWithoutExt = filename[:len(filename)-12]
+	} else if strings.HasSuffix(lower, ".pkg.tar.xz") {
+		nameWithoutExt = filename[:len(filename)-11]
+	}
+
+	info := &SoftwareInfo{
+		FilePath:     filePath,
+		Filename:     filename,
+		SoftwareType: "pacman",
+		Metadata:     make(map[string]string),
+	}
+
+	// Arch format: name-version-pkgrel-arch
+	// pkgver must not contain hyphens, so we can safely split from the right.
+	parts := strings.Split(nameWithoutExt, "-")
+	if len(parts) >= 4 {
+		info.Architecture = parts[len(parts)-1]
+		info.Metadata["pkgrel"] = parts[len(parts)-2]
+		info.Version = parts[len(parts)-3]
+		info.Name = strings.Join(parts[:len(parts)-3], "-")
+	} else if len(parts) == 3 {
+		info.Architecture = parts[2]
+		info.Version = parts[1]
+		info.Name = parts[0]
+	} else if len(parts) == 2 {
+		info.Version = parts[1]
+		info.Name = parts[0]
+	} else {
+		info.Name = nameWithoutExt
+		info.Version = "1.0.0"
+	}
+
+	return info, nil
+}
+
 // GenericParser is a fallback parser for unknown file types
 type GenericParser struct {
 	softwareType string
@@ -294,7 +381,9 @@ type ParserRegistry struct {
 func NewParserRegistry() *ParserRegistry {
 	return &ParserRegistry{
 		parsers: []Parser{
+			&ArchLinuxParser{}, // must come before TarGzParser (.pkg.tar.zst/.pkg.tar.xz)
 			&DebianParser{},
+			&IPKParser{},
 			&RPMParser{},
 			&APKParser{},
 			&TarGzParser{},
@@ -364,11 +453,17 @@ func ParseSoftwareFromFilename(filePath string, defaultType string, namePrefix s
 func detectSoftwareType(filename string) string {
 	lower := strings.ToLower(filename)
 
+	// Arch Linux packages use triple extensions — check before single-ext logic
+	if strings.HasSuffix(lower, ".pkg.tar.zst") || strings.HasSuffix(lower, ".pkg.tar.xz") {
+		return "pacman"
+	}
+
 	// Package manager specific extensions
 	typeMap := map[string]string{
 		".deb":      "apt",
 		".rpm":      "rpm",
 		".apk":      "apk",
+		".ipk":      "ipk",
 		".jar":      "java",
 		".war":      "java",
 		".ear":      "java",
@@ -420,8 +515,9 @@ func detectSoftwareType(filename string) string {
 
 // stripExtensions removes common file extensions from filename
 func stripExtensions(filename string) string {
-	// Handle double extensions like .tar.gz first
+	// Handle triple/double extensions first
 	doubleExtensions := []string{
+		".pkg.tar.zst", ".pkg.tar.xz",
 		".tar.gz", ".tar.bz2", ".tar.xz", ".tar.zst",
 	}
 
@@ -519,28 +615,30 @@ func GroupBySoftwareName(infos []*SoftwareInfo) map[string][]*SoftwareInfo {
 	return groups
 }
 
-// GroupBySoftwareNameAndArch groups software info by name and architecture
-// This allows separate software items for different architectures
+// GroupBySoftwareNameAndArch groups software info by name, architecture, and software type
+// This allows separate software items for different architectures and package types
+// (e.g. noarch.rpm and noarch.apk are distinct packages)
 func GroupBySoftwareNameAndArch(infos []*SoftwareInfo) map[string][]*SoftwareInfo {
 	groups := make(map[string][]*SoftwareInfo)
 
 	for _, info := range infos {
-		key := info.Name
-		if info.Architecture != "" {
-			key = info.Name + "_" + info.Architecture
-		}
+		key := GetSoftwareKey(info.Name, info.Architecture, info.SoftwareType)
 		groups[key] = append(groups[key], info)
 	}
 
 	return groups
 }
 
-// GetSoftwareKey returns a unique key for the software (name + architecture)
-func GetSoftwareKey(name, arch string) string {
+// GetSoftwareKey returns a unique key for the software (name + architecture + softwareType)
+func GetSoftwareKey(name, arch, softwareType string) string {
+	key := name
 	if arch != "" {
-		return name + "_" + arch
+		key += "_" + arch
 	}
-	return name
+	if softwareType != "" {
+		key += "_" + softwareType
+	}
+	return key
 }
 
 // SoftwareSummary provides a summary of software packages to be uploaded

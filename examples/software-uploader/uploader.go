@@ -247,8 +247,8 @@ func UploadSoftwareVersions(
 			defer wg.Done()
 
 			for info := range workQueue {
-				// Get software ID using name+arch key
-				key := GetSoftwareKey(info.Name, info.Architecture)
+				// Get software ID using name+arch+type key
+				key := GetSoftwareKey(info.Name, info.Architecture, info.SoftwareType)
 				softwareID, ok := softwareIDs[key]
 				if !ok {
 					mu.Lock()
@@ -417,34 +417,51 @@ func uploadVersion(
 func detectContentType(filename string) string {
 	ext := filepath.Ext(filename)
 
+	// Check for triple/double extensions first (before filepath.Ext strips only the last part)
+	lower := strings.ToLower(filename)
+	doubleExtTypes := map[string]string{
+		".pkg.tar.zst": "application/zstd",
+		".pkg.tar.xz":  "application/x-xz",
+		".tar.gz":      "application/gzip",
+		".tar.bz2":     "application/x-bzip2",
+		".tar.xz":      "application/x-xz",
+		".tar.zst":     "application/zstd",
+	}
+	for doubleExt, ct := range doubleExtTypes {
+		if strings.HasSuffix(lower, doubleExt) {
+			return ct
+		}
+	}
+
 	contentTypes := map[string]string{
-		".tar.gz": "application/gzip",
-		".tgz":    "application/gzip",
-		".tar":    "application/x-tar",
-		".zip":    "application/zip",
-		".bin":    "application/octet-stream",
-		".deb":    "application/vnd.debian.binary-package",
-		".rpm":    "application/x-rpm",
-		".apk":    "application/vnd.android.package-archive",
-		".jar":    "application/java-archive",
-		".war":    "application/java-archive",
-		".exe":    "application/x-msdownload",
-		".msi":    "application/x-msi",
+		".tgz":      "application/gzip",
+		".tar":      "application/x-tar",
+		".gz":       "application/gzip",
+		".bz2":      "application/x-bzip2",
+		".xz":       "application/x-xz",
+		".zst":      "application/zstd",
+		".zip":      "application/zip",
+		".7z":       "application/x-7z-compressed",
+		".rar":      "application/vnd.rar",
+		".bin":      "application/octet-stream",
+		".deb":      "application/vnd.debian.binary-package",
+		".rpm":      "application/x-rpm",
+		".apk":      "application/octet-stream",
+		".ipk":      "application/octet-stream",
+		".jar":      "application/java-archive",
+		".war":      "application/java-archive",
+		".ear":      "application/java-archive",
+		".exe":      "application/x-msdownload",
+		".msi":      "application/x-msi",
+		".dmg":      "application/x-apple-diskimage",
+		".pkg":      "application/vnd.apple.installer+xml",
+		".snap":     "application/vnd.snap",
+		".flatpak":  "application/octet-stream",
+		".appimage": "application/octet-stream",
 	}
 
 	if ct, ok := contentTypes[strings.ToLower(ext)]; ok {
 		return ct
-	}
-
-	// Check for double extensions
-	if strings.HasSuffix(strings.ToLower(filename), ".tar.gz") {
-		return "application/gzip"
-	}
-	if strings.HasSuffix(strings.ToLower(filename), ".tar.bz2") {
-		return "application/x-bzip2"
-	}
-	if strings.HasSuffix(strings.ToLower(filename), ".tar.xz") {
-		return "application/x-xz"
 	}
 
 	return "application/octet-stream"

@@ -265,20 +265,25 @@ func printUploadPlan(summary *SoftwareSummary) {
 		// Sort versions
 		sort.Strings(versionStrs)
 
-		// Get actual software name and architecture from first version
+		// Get actual software name, architecture and type from first version
 		actualName := versions[0].Name
 		arch := versions[0].Architecture
-		archSuffix := ""
-		if arch != "" {
-			archSuffix = fmt.Sprintf(" [%s]", arch)
+		softwareType := versions[0].SoftwareType
+		qualifier := ""
+		if arch != "" && softwareType != "" {
+			qualifier = fmt.Sprintf(" [%s/%s]", arch, softwareType)
+		} else if arch != "" {
+			qualifier = fmt.Sprintf(" [%s]", arch)
+		} else if softwareType != "" {
+			qualifier = fmt.Sprintf(" [%s]", softwareType)
 		}
 
 		// Print software and its versions
 		if len(versionStrs) <= 3 {
-			fmt.Printf("  • %s%s: %d version(s) [%s]\n", actualName, archSuffix, len(versions), strings.Join(versionStrs, ", "))
+			fmt.Printf("  • %s%s: %d version(s) [%s]\n", actualName, qualifier, len(versions), strings.Join(versionStrs, ", "))
 		} else {
 			fmt.Printf("  • %s%s: %d version(s) [%s, ... and %d more]\n",
-				actualName, archSuffix, len(versions), strings.Join(versionStrs[:3], ", "), len(versionStrs)-3)
+				actualName, qualifier, len(versions), strings.Join(versionStrs[:3], ", "), len(versionStrs)-3)
 		}
 	}
 

@@ -97,6 +97,65 @@ func TestParseSoftwareFromFilename(t *testing.T) {
 			wantVersion: "1.2.3",
 			wantType:    "archive",
 		},
+		// noarch/all architecture variants
+		{
+			name:        "rpm noarch package",
+			filepath:    "/path/to/tedge-mapper-thingsboard-0.0.1-1.noarch.rpm",
+			wantName:    "tedge-mapper-thingsboard",
+			wantVersion: "0.0.1",
+			wantArch:    "noarch",
+			wantType:    "rpm",
+		},
+		{
+			name:        "deb all architecture package",
+			filepath:    "/path/to/tedge-mapper-thingsboard_0.0.1_all.deb",
+			wantName:    "tedge-mapper-thingsboard",
+			wantVersion: "0.0.1",
+			wantArch:    "all",
+			wantType:    "apt",
+		},
+		{
+			name:        "apk noarch package",
+			filepath:    "/path/to/tedge-mapper-thingsboard_0.0.1_noarch.apk",
+			wantName:    "tedge-mapper-thingsboard",
+			wantVersion: "0.0.1",
+			wantArch:    "noarch",
+			wantType:    "apk",
+		},
+		// IPK packages (OpenWrt/OpenEmbedded)
+		{
+			name:        "ipk package standard",
+			filepath:    "/path/to/tedge_1.6.2~584+gd629c53_aarch64.ipk",
+			wantName:    "tedge",
+			wantVersion: "1.6.2~584+gd629c53",
+			wantArch:    "aarch64",
+			wantType:    "ipk",
+		},
+		{
+			name:        "ipk package all arch",
+			filepath:    "/path/to/tedge-mapper_0.0.1_all.ipk",
+			wantName:    "tedge-mapper",
+			wantVersion: "0.0.1",
+			wantArch:    "all",
+			wantType:    "ipk",
+		},
+		// Arch Linux packages
+		{
+			name:        "arch linux pkg.tar.zst",
+			filepath:    "/path/to/pacman-6.0.2-6-x86_64.pkg.tar.zst",
+			wantName:    "pacman",
+			wantVersion: "6.0.2",
+			wantArch:    "x86_64",
+			wantType:    "pacman",
+		},
+		{
+			name:        "arch linux pkg.tar.xz hyphenated name",
+			filepath:    "/path/to/linux-firmware-20241210.b81c7f9-1-any.pkg.tar.xz",
+			wantName:    "linux-firmware",
+			wantVersion: "20241210.b81c7f9",
+			wantArch:    "any",
+			wantType:    "pacman",
+		},
 	}
 
 	for _, tt := range tests {
