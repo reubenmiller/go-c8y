@@ -407,6 +407,12 @@ func (r *ParserRegistry) GetParser(filename string) Parser {
 // Global parser registry
 var defaultRegistry = NewParserRegistry()
 
+// TypeMapping maps a filename glob pattern to a software type
+type TypeMapping struct {
+	Pattern      string // glob pattern matched against the filename (e.g. "*.bin", ".deb")
+	SoftwareType string // software type to assign (e.g. "firmware", "apt")
+}
+
 // ParseSoftwareFromFilename extracts software name and version from a filename
 // using extension-specific parsers for better accuracy.
 //
@@ -414,7 +420,7 @@ var defaultRegistry = NewParserRegistry()
 //   - "tedge-flows_1.6.2~584+gd629c53_arm64.deb" -> name: "tedge-flows", version: "1.6.2~584+gd629c53", arch: "arm64"
 //   - "tedge-flows-1.6.2~584+gd629c53-1.aarch64.rpm" -> name: "tedge-flows", version: "1.6.2~584+gd629c53", arch: "aarch64"
 //   - "myapp-1.2.3.tar.gz" -> name: "myapp", version: "1.2.3"
-func ParseSoftwareFromFilename(filePath string, defaultType string, namePrefix string) (*SoftwareInfo, error) {
+func ParseSoftwareFromFilename(filePath string, defaultType string, namePrefix string, typeMappings ...TypeMapping) (*SoftwareInfo, error) {
 	filename := filepath.Base(filePath)
 
 	// Get the appropriate parser
@@ -426,7 +432,22 @@ func ParseSoftwareFromFilename(filePath string, defaultType string, namePrefix s
 		return nil, err
 	}
 
-	// Override software type if explicitly provided
+	// Apply user-provided type mappings (checked in order; first match wins)
+	// These override auto-detected types but are overridden by an explicit --type flag.
+	for _, m := range typeMappings {
+		pattern := m.Pattern
+		// Treat bare extensions like ".deb" as "*.deb" for convenience
+		if strings.HasPrefix(pattern, ".") && !strings.ContainsAny(pattern, "*?") {
+			pattern = "*" + pattern
+		}
+		matched, err := filepath.Match(strings.ToLower(pattern), strings.ToLower(filename))
+		if err == nil && matched {
+			info.SoftwareType = m.SoftwareType
+			break
+		}
+	}
+
+	// Override software type if explicitly provided via --type flag
 	if defaultType != "" {
 		info.SoftwareType = defaultType
 	}

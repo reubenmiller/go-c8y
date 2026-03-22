@@ -5,10 +5,11 @@ A CLI tool for bulk uploading software packages to Cumulocity IoT. It recursivel
 ## Features
 
 - 🔍 **Smart Filename Parsing**: Automatically extracts software name, version, and architecture from filenames
-  - Extension-specific parsers for Debian (.deb), RPM (.rpm), Alpine (.apk), and archives (.tar.gz)
+  - Extension-specific parsers for Debian (.deb), RPM (.rpm), Alpine (.apk), OpenWrt/Yocto (.ipk), Arch Linux (.pkg.tar.zst/.pkg.tar.xz), and archives (.tar.gz)
   - Supports complex version schemes with `~`, `+`, `-` (e.g., `1.6.2~584+gd629c53`)
-  - Auto-detects architecture (arm64, amd64, aarch64, x86_64, etc.)
-- 🏗️ **Architecture Grouping**: Creates separate software items per architecture for proper device targeting
+  - Auto-detects architecture (arm64, amd64, aarch64, x86_64, noarch, any, etc.)
+- 🏗️ **Architecture + Type Grouping**: Creates separate software items per architecture *and* package type (e.g. `noarch/rpm` and `noarch/apk` produce distinct items)
+- 🗺️ **Custom Type Mappings**: Map filename glob patterns to software types with `--type-map` (e.g. `*.bin=firmware`)
 - 🚀 **Concurrent Uploads**: Processes multiple version uploads simultaneously for better performance
 - 📊 **Progress Tracking**: Real-time progress bars showing upload status
 - 🎯 **Efficient Deduplication**: Groups files by software name and architecture to minimize API calls
@@ -69,42 +70,66 @@ Example CI usage:
 
 ### Flags
 
-- `--dir` (required): Directory to search for software packages
-- `--pattern` (default: `"*"`): Glob pattern for matching files (can be specified multiple times)
-- `--type` (optional): Software type to assign (e.g., "firmware", "application", "debian-package")
-- `--concurrency` (default: `5`): Number of concurrent uploads (1-20)
-- `--dry-run`: Preview what would be uploaded without actually uploading
-- `--verbose`: Enable detailed logging to track software creation and version uploads
-- `--debug`: Enable debug mode (verbose logging + HTTP request/response details)
-- `--force`: Force replacement of existing version binaries (deletes old binary, uploads new one)
-- `--no-progress`: Disable progress bar (automatically disabled in non-TTY environments like CI)
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--dir` | *(required)* | Directory to search for software packages |
+| `--pattern` | `*` | Glob pattern for matching files (repeatable) |
+| `--type` | | Force a software type for all packages (overrides all detection) |
+| `--type-map` | | Map filename glob to software type, e.g. `*.bin=firmware` (repeatable, first match wins) |
+| `--name-prefix` | | Prefix added to every parsed software name |
+| `--concurrency` | `5` | Number of concurrent uploads (1–20) |
+| `--dry-run` | | Preview what would be uploaded without actually uploading |
+| `--verbose` | | Enable detailed logging |
+| `--debug` | | Verbose logging + HTTP request/response details |
+| `--force` | | Replace existing version binaries |
+| `--no-progress` | | Disable progress bar (auto-disabled in non-TTY environments) |
 
 ## Filename Parsing Examples
 
 The tool uses extension-specific parsers to accurately extract software name, version, and architecture:
 
-### Linux Package Formats
+### Supported Package Formats
+
+| Format | Extension(s) | `softwareType` | Naming Convention |
+|--------|-------------|----------------|-------------------|
+| Debian | `.deb` | `apt` | `name_version_arch.deb` |
+| RPM | `.rpm` | `rpm` | `name-version-release.arch.rpm` |
+| Alpine | `.apk` | `apk` | `name_version-release_arch.apk` |
+| OpenWrt/Yocto | `.ipk` | `ipk` | `name_version_arch.ipk` |
+| Arch Linux | `.pkg.tar.zst`, `.pkg.tar.xz` | `pacman` | `name-version-pkgrel-arch.pkg.tar.zst` |
+| Archives | `.tar.gz`, `.tgz`, `.tar.bz2`, `.tar.xz`, `.tar.zst`, `.zip`, `.7z`, `.rar` | `archive` | `name-version_arch.tar.gz` |
+| Binary | `.bin` | `binary` | `name-version.bin` |
+| Java | `.jar`, `.war`, `.ear` | `java` | |
+| Snap | `.snap` | `snap` | |
+| Flatpak | `.flatpak` | `flatpak` | |
+| AppImage | `.appimage` | `appimage` | |
+| Windows | `.exe`, `.msi` | `windows` | |
+| macOS | `.dmg`, `.pkg` | `macos` | |
+
+### Parsing Examples
 
 | Filename | Name | Version | Arch | Type |
 |----------|------|---------|------|------|
 | `tedge-flows_1.6.2~584+gd629c53_arm64.deb` | tedge-flows | 1.6.2~584+gd629c53 | arm64 | apt |
+| `tedge-mapper-thingsboard_0.0.1_all.deb` | tedge-mapper-thingsboard | 0.0.1 | all | apt |
 | `tedge-flows-1.6.2~584+gd629c53-1.aarch64.rpm` | tedge-flows | 1.6.2~584+gd629c53 | aarch64 | rpm |
+| `tedge-mapper-thingsboard-0.0.1-1.noarch.rpm` | tedge-mapper-thingsboard | 0.0.1 | noarch | rpm |
 | `tedge-flows_1.6.2_rc584+gd629c53-r0_aarch64.apk` | tedge-flows | 1.6.2_rc584+gd629c53 | aarch64 | apk |
+| `tedge-mapper-thingsboard_0.0.1_noarch.apk` | tedge-mapper-thingsboard | 0.0.1 | noarch | apk |
+| `tedge_1.6.2~584+gd629c53_aarch64.ipk` | tedge | 1.6.2~584+gd629c53 | aarch64 | ipk |
+| `pacman-6.0.2-6-x86_64.pkg.tar.zst` | pacman | 6.0.2 | x86_64 | pacman |
+| `linux-firmware-20241210.b81c7f9-1-any.pkg.tar.xz` | linux-firmware | 20241210.b81c7f9 | any | pacman |
 | `tedge_1.6.2-rc584+gd629c53_aarch64-unknown-linux-musl.tar.gz` | tedge | 1.6.2-rc584+gd629c53 | aarch64 | archive |
-
-### Generic Formats
-
-| Filename | Name | Version | Type |
-|----------|------|---------|------|
-| `myapp-1.2.3.tar.gz` | myapp | 1.2.3 | archive |
-| `device-firmware_v2.0.1.bin` | device-firmware | 2.0.1 | binary |
-| `com.example.app-3.4.5-beta.1.zip` | com.example.app | 3.4.5-beta.1 | archive |
+| `myapp-1.2.3.tar.gz` | myapp | 1.2.3 | | archive |
+| `device-firmware_v2.0.1.bin` | device-firmware | 2.0.1 | | binary |
 
 1. **Extension-Specific Parsing**: Uses specialized parsers for different package formats
    - **Debian (.deb)**: `name_version_architecture.deb` format
    - **RPM (.rpm)**: `name-version-release.architecture.rpm` format
    - **Alpine (.apk)**: `name_version-release_architecture.apk` format
-   - **Archives (.tar.gz)**: Detects architecture patterns in filename
+   - **OpenWrt/Yocto (.ipk)**: `name_version_architecture.ipk` format (same convention as Debian)
+   - **Arch Linux (.pkg.tar.zst/.pkg.tar.xz)**: `name-version-pkgrel-architecture.pkg.tar.zst` format
+   - **Archives (.tar.gz, .tgz, etc.)**: Detects architecture patterns in filename
    - **Generic**: Falls back to pattern matching for other formats
 2. **Version Detection**: Supports complex versioning including:
    - Semantic versioning (1.2.3)
@@ -112,13 +137,15 @@ The tool uses extension-specific parsers to accurately extract software name, ve
    - Build metadata (1.0.0+build.123, 1.6.2~584+gd629c53)
    - Tildes for Debian epochs (1.6.2~584)
 3. **Architecture Detection**: Automatically identifies CPU architectures
-   - Common: arm64, amd64, aarch64, x86_64, i386, armhf
+   - Common: arm64, amd64, aarch64, x86_64, i386, armhf, noarch, all, any
    - Target triples: aarch64-unknown-linux-musl, x86_64-unknown-linux-gnu
-4. **Architecture Grouping**: Creates separate software items per architecture
-   - Example: `tedge [arm64]` and `tedge [amd64]` are distinct software packages
+4. **Grouping by Name + Architecture + Type**: Creates separate software items per unique (name, arch, type) combination
+   - Example: `noarch/rpm` and `noarch/apk` produce **distinct** software items even when arch matches
    - Allows proper device targeting in Cumulocity
+5. **Device Type Filtering**: Architecture-specific packages (e.g. `arm64`, `aarch64`, `x86_64`) set `c8y_Filter.type` so they are only offered to matching devices. Architecture-agnostic values (`all`, `noarch`, `any`) do **not** set a device type filter — the package is available to all devices.
 5. **Type Auto-Detection**: Automatically assigns software type based on extension
-   - .deb → apt, .rpm → rpm, .apk → apk, .jar → java, etc.
+   - .deb→apt, .rpm→rpm, .apk→apk, .ipk→ipk, .pkg.tar.zst/.pkg.tar.xz→pacman, .jar→java, etc.
+6. **Custom Type Mappings**: Override auto-detected types with `--type-map` glob rules (see below)
 
 ## Example Output
 
@@ -127,29 +154,47 @@ The tool uses extension-specific parsers to accurately extract software name, ve
 📦 Found 27 files matching pattern(s): *.deb, *.rpm, *.apk
 
 📋 Upload Plan:
-  • tedge-flows [aarch64]: 2 version(s) [1.6.2_rc584+gd629c53, 1.6.2~584+gd629c53]
-  • tedge-flows [arm64]: 1 version(s) [1.6.2~584+gd629c53]
-  • tedge-agent [aarch64]: 2 version(s) [1.6.2_rc584+gd629c53, 1.6.2~584+gd629c53]
-  • tedge-agent [arm64]: 1 version(s) [1.6.2~584+gd629c53]
+  • tedge-mapper-thingsboard [all/apt]:    1 version(s) [0.0.1]
+  • tedge-mapper-thingsboard [noarch/apk]: 1 version(s) [0.0.1]
+  • tedge-mapper-thingsboard [noarch/rpm]: 1 version(s) [0.0.1]
+  • tedge-flows [aarch64/apt]:             2 version(s) [1.6.2_rc584+gd629c53, 1.6.2~584+gd629c53]
+  • tedge-flows [arm64/apt]:               1 version(s) [1.6.2~584+gd629c53]
 
-📊 Summary: 18 software package(s), 27 version(s) total
+📊 Summary: 5 software package(s), 6 version(s) total
 
-✅ Successfully processed 27 version(s)
-   📤 Newly uploaded: 15
-   ♻️  Already existed: 12
+✅ Successfully processed 6 version(s)
+   📤 Newly uploaded: 4
+   ♻️  Already existed: 2
 
-⏱️  Total time: 12.3s
+⏱️  Total time: 5.1s
 
 ──────────────────────────────────────────────────
-Total: 27 processed (15 new, 0 replaced, 12 existing), 0 failed
+Total: 6 processed (4 new, 0 replaced, 2 existing), 0 failed
 ```
 
-The tool now tracks and displays:
-- **Newly uploaded versions**: Versions that were uploaded to Cumulocity for the first time
-- **Replaced**: Versions that were forcibly replaced with new binaries (only in --force mode)
-- **Already existed**: Versions that were already present (skipped, idempotent operation)
+Each entry in the plan shows `name [arch/type]` so it's immediately clear which package format and architecture each software item targets. The upload statistics then tell you how many versions were new vs. already present.
 
-This helps you understand on subsequent runs how many versions are new vs. already synchronized vs. forcibly updated.
+### Custom Type Mappings
+
+Use `--type-map pattern=softwaretype` to override auto-detected types. This is useful when filenames don't follow a standard convention, or when you want to assign a custom type like `firmware`.
+
+```bash
+# Tag all .bin files as firmware
+./software-uploader --dir ./dist --type-map '*.bin=firmware'
+
+# Multiple mappings — checked in order, first match wins
+./software-uploader --dir ./dist \
+  --type-map '*.bin=firmware' \
+  --type-map 'tedge-mapper-*=plugin'
+
+# Bare extension shorthand (equivalent to *.deb)
+./software-uploader --dir ./dist --type-map '.deb=custom-apt'
+```
+
+**Priority order** (highest to lowest):
+1. `--type` — forces a type for all packages, overrides everything
+2. `--type-map` — per-pattern rules, first match wins
+3. Parser auto-detection (based on file extension)
 
 ### Force Replacement Mode
 

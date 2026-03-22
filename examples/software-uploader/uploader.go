@@ -87,9 +87,12 @@ func EnsureSoftwarePackages(
 			description = fmt.Sprintf("Software package: %s (Architecture: %s)", name, arch)
 		}
 
+		// Architecture-agnostic values do not restrict to a specific device type
+		archAgnostic := arch == "" || arch == "all" || arch == "noarch" || arch == "any"
+
 		// Build query to find software by name, type, and deviceType (architecture)
 		var query string
-		if arch != "" {
+		if !archAgnostic {
 			// Include deviceType in query to find software with matching architecture
 			query = fmt.Sprintf("name eq '%s' and softwareType eq '%s' and c8y_Filter.type eq '%s'", name, softwareType, arch)
 			slog.Debug("Looking up software with architecture",
@@ -98,30 +101,36 @@ func EnsureSoftwarePackages(
 				"architecture", arch,
 				"query", query)
 		} else {
-			// No architecture - just query by name and type
+			// No architecture restriction - just query by name and type
 			query = fmt.Sprintf("name eq '%s' and softwareType eq '%s'", name, softwareType)
-			slog.Debug("Looking up software without architecture",
+			slog.Debug("Looking up software without architecture restriction",
 				"name", name,
 				"type", softwareType,
 				"query", query)
 		}
 
 		// Create body
-		body := map[string]any{
-			"name":         name,
-			"type":         "c8y_Software",
-			"softwareType": softwareType,
-			"description":  description,
-			// Add fragment to identify software uploaded by this tool
-			"c8y_SoftwareUploader": map[string]any{
-				"uploadedAt": time.Now(),
-				"tool":       "software-uploader",
-			},
+		uploaderMeta := map[string]any{
+			"uploadedAt": time.Now(),
+			"tool":       "software-uploader",
+		}
+		if arch != "" {
+			uploaderMeta["arch"] = arch
 		}
 
-		// store architecture and use it as the device type filter
-		if arch != "" {
-			body["arch"] = arch
+		body := map[string]any{
+			"name":                 name,
+			"type":                 "c8y_Software",
+			"softwareType":         softwareType,
+			"description":          description,
+			"c8y_SoftwareUploader": uploaderMeta,
+		}
+
+		// Set c8y_Filter.type only for architecture-specific packages so that
+		// the software item is offered only to matching devices.
+		// Architecture-agnostic values (all, noarch, any) apply to every device,
+		// so we skip the filter — but arch is still recorded in c8y_SoftwareUploader above.
+		if !archAgnostic {
 			body["c8y_Filter"] = map[string]string{
 				"type": arch,
 			}

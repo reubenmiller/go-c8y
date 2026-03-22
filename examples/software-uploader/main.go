@@ -32,12 +32,36 @@ func (p *patternsFlag) Set(value string) error {
 	return nil
 }
 
+// typeMappingsFlag is a custom flag type for --type-map entries (pattern=softwaretype)
+type typeMappingsFlag []TypeMapping
+
+func (t *typeMappingsFlag) String() string {
+	parts := make([]string, len(*t))
+	for i, m := range *t {
+		parts[i] = m.Pattern + "=" + m.SoftwareType
+	}
+	return strings.Join(parts, ", ")
+}
+
+func (t *typeMappingsFlag) Set(value string) error {
+	idx := strings.LastIndex(value, "=")
+	if idx <= 0 || idx == len(value)-1 {
+		return fmt.Errorf("invalid type mapping %q: expected pattern=softwaretype (e.g. *.bin=firmware)", value)
+	}
+	*t = append(*t, TypeMapping{
+		Pattern:      value[:idx],
+		SoftwareType: value[idx+1:],
+	})
+	return nil
+}
+
 func main() {
 	// Parse command-line flags
 	var (
 		dir          = flag.String("dir", "", "Directory to search for software packages (required)")
 		patterns     patternsFlag
-		softwareType = flag.String("type", "", "Software type (e.g., 'firmware', 'application')")
+		typeMappings typeMappingsFlag
+		softwareType = flag.String("type", "", "Software type (e.g., 'firmware', 'application'). Overrides all auto-detection.")
 		namePrefix   = flag.String("name-prefix", "", "Prefix to be added to the software package when uploading it")
 		concurrency  = flag.Int("concurrency", 5, "Number of concurrent uploads")
 		dryRun       = flag.Bool("dry-run", false, "Preview what would be uploaded without actually uploading")
@@ -48,6 +72,7 @@ func main() {
 	)
 
 	flag.Var(&patterns, "pattern", "Glob pattern for matching files (can be specified multiple times, default: *)")
+	flag.Var(&typeMappings, "type-map", "Map a filename glob pattern to a software type, e.g. '*.bin=firmware' or '.deb=apt' (can be specified multiple times)")
 
 	flag.Parse()
 
@@ -119,7 +144,7 @@ func main() {
 	// Parse software information from filenames
 	var softwareInfos []*SoftwareInfo
 	for _, file := range files {
-		info, err := ParseSoftwareFromFilename(file, *softwareType, *namePrefix)
+		info, err := ParseSoftwareFromFilename(file, *softwareType, *namePrefix, typeMappings...)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: skipping %s: %v\n", file, err)
 			continue
