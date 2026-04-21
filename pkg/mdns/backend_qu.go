@@ -13,17 +13,22 @@ import (
 const (
 	mdnsIPv4Addr = "224.0.0.251:5353"
 	mdnsIPv6Addr = "[ff02::fb]:5353"
+
+	// quRetryInterval is how often the QU query is re-sent during the scan
+	// window.  Some devices wake up late or miss the first probe.
+	quRetryInterval = 2 * time.Second
 )
 
 // browseWithQU sends mDNS queries with the QU (Unicast-response) bit set from
 // an ephemeral UDP port so that mDNS responders send their answers directly
-// back as unicast UDP. This avoids any conflict with systemd-resolved or avahi
-// holding port 5353.
+// back as unicast UDP. This avoids any conflict with systemd-resolved, avahi,
+// or the Windows DNS Client holding port 5353.
 //
 // Reference: RFC 6762 §5.4 — when the source port is not 5353, or the QU bit
 // is set, responders SHOULD reply via unicast to the source address:port.
 func (s *Scanner) browseWithQU(ctx context.Context) (<-chan ServiceInstance, error) {
-	// Bind to an ephemeral UDP port on the wildcard address.
+	// Bind to an ephemeral UDP port on the wildcard address.  All unicast
+	// replies from devices will arrive here.
 	conn, err := net.ListenUDP("udp4", &net.UDPAddr{})
 	if err != nil {
 		return nil, fmt.Errorf("mdns QU: listen: %w", err)
@@ -40,9 +45,8 @@ func (s *Scanner) browseWithQU(ctx context.Context) (<-chan ServiceInstance, err
 	m := new(dns.Msg)
 	m.SetQuestion(fqdn, dns.TypePTR)
 	m.RecursionDesired = false
-	// Set QU bit on the question.
 	for i := range m.Question {
-		m.Question[i].Qclass |= 1 << 15
+		m.Question[i].Qclass |= 1 << 15 // QU bit
 	}
 	pkt, err := m.Pack()
 	if err != nil {
@@ -50,8 +54,52 @@ func (s *Scanner) browseWithQU(ctx context.Context) (<-chan ServiceInstance, err
 		return nil, fmt.Errorf("mdns QU: pack query: %w", err)
 	}
 
+	s.opts.Logger.Printf("mdns QU: listening for unicast replies on %s", conn.LocalAddr())
+
 	out := make(chan ServiceInstance)
 	seen := make(map[string]bool)
+
+	// sendQuery blasts a PTR query out on every suitable interface IP.
+	sendQuery := func() {
+		ifaces, err := activeMulticastIfaces(s.opts.Ifaces)
+		if err != nil {
+			s.opts.Logger.Printf("mdns QU: interface enumeration error: %v", err)
+		}
+		sent := 0
+		for _, iface := range ifaces {
+			addrs, _ := iface.Addrs()
+			for _, addr := range addrs {
+				ip, _, err := net.ParseCIDR(addr.String())
+				if err != nil || ip.IsLoopback() || ip.To4() == nil {
+					continue
+				}
+				src := &net.UDPAddr{IP: ip, Port: 0}
+				sock, err := net.ListenUDP("udp4", src)
+				if err != nil {
+					s.opts.Logger.Printf("mdns QU: bind %s: %v", ip, err)
+					continue
+				}
+				n, werr := sock.WriteToUDP(pkt, dest)
+				sock.Close()
+				if werr != nil {
+					s.opts.Logger.Printf("mdns QU: send from %s: %v", ip, werr)
+				} else {
+					s.opts.Logger.Printf("mdns QU: sent %d-byte query from %s → %s (iface %s)", n, ip, dest, iface.Name)
+					sent++
+				}
+			}
+		}
+		// Wildcard send as a fallback (OS picks the default interface).
+		if n, werr := conn.WriteToUDP(pkt, dest); werr != nil {
+			s.opts.Logger.Printf("mdns QU: wildcard send: %v", werr)
+		} else {
+			s.opts.Logger.Printf("mdns QU: sent %d-byte query from wildcard → %s", n, dest)
+			sent++
+		}
+		if sent == 0 {
+			s.opts.Logger.Printf("mdns QU: WARNING: no queries were sent — check interface selection and firewall rules")
+		}
+	}
 
 	go func() {
 		defer close(out)
@@ -63,64 +111,61 @@ func (s *Scanner) browseWithQU(ctx context.Context) (<-chan ServiceInstance, err
 		}
 		conn.SetDeadline(deadline)
 
-		// Send the query on each suitable interface.
-		ifaces, _ := activeMulticastIfaces(s.opts.Ifaces)
-		for _, iface := range ifaces {
-			addrs, _ := iface.Addrs()
-			for _, addr := range addrs {
-				ip, _, err := net.ParseCIDR(addr.String())
-				if err != nil || ip.IsLoopback() || ip.To4() == nil {
-					continue
-				}
-				src := &net.UDPAddr{IP: ip, Port: 0}
-				sock, err := net.ListenUDP("udp4", src)
-				if err != nil {
-					continue
-				}
-				sock.WriteToUDP(pkt, dest)
-				sock.Close()
-			}
-		}
-		// Also send once from the wildcard so devices respond regardless of
-		// which interface they see the query arrive on.
-		conn.WriteToUDP(pkt, dest)
+		// Initial query burst.
+		sendQuery()
+
+		// Periodic re-send so devices that miss the first probe still respond.
+		ticker := time.NewTicker(quRetryInterval)
+		defer ticker.Stop()
 
 		buf := make([]byte, 65535)
 		for {
 			select {
 			case <-ctx.Done():
 				return
+			case <-ticker.C:
+				sendQuery()
 			default:
 			}
 
-			n, _, err := conn.ReadFromUDP(buf)
+			// Short read deadline so the retry ticker fires even while waiting.
+			conn.SetReadDeadline(time.Now().Add(500 * time.Millisecond))
+			n, from, err := conn.ReadFromUDP(buf)
 			if err != nil {
-				// deadline exceeded or ctx cancelled
+				if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+					// Check ctx / overall deadline before looping.
+					if time.Now().After(deadline) || ctx.Err() != nil {
+						return
+					}
+					continue
+				}
 				return
 			}
 
+			s.opts.Logger.Printf("mdns QU: received %d bytes from %s", n, from)
+
 			resp := new(dns.Msg)
 			if err := resp.Unpack(buf[:n]); err != nil {
+				s.opts.Logger.Printf("mdns QU: unpack error from %s: %v", from, err)
 				continue
 			}
 
 			instances := extractInstances(resp, s.opts.ServiceType, s.opts.Domain)
+			s.opts.Logger.Printf("mdns QU: parsed %d instance(s) from %s", len(instances), from)
 			for _, inst := range instances {
 				if seen[inst.Name] {
 					continue
 				}
 				seen[inst.Name] = true
 
-				if !s.opts.Quick {
-					// Resolve host → IPs via system resolver (goes through
-					// systemd-resolved which handles .local names).
-					if inst.Host != "" {
-						addrs, err := net.DefaultResolver.LookupHost(ctx, inst.Host)
-						if err == nil {
-							for _, a := range addrs {
-								if ip := net.ParseIP(a); ip != nil {
-									inst.IPs = append(inst.IPs, ip)
-								}
+				if !s.opts.Quick && inst.Host != "" {
+					addrs, err := net.DefaultResolver.LookupHost(ctx, inst.Host)
+					if err != nil {
+						s.opts.Logger.Printf("mdns QU: resolve %s: %v", inst.Host, err)
+					} else {
+						for _, a := range addrs {
+							if ip := net.ParseIP(a); ip != nil {
+								inst.IPs = append(inst.IPs, ip)
 							}
 						}
 					}
