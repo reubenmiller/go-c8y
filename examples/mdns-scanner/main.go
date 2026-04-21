@@ -114,19 +114,20 @@ Platform notes:
 }
 
 func run(serviceType, domain string, timeout time.Duration, output outputFormat, verbose bool, quick bool, ifaceNames []string, pattern string, maxResults int) error {
-	logger := log.New(os.Stderr, "[mdns] ", log.LstdFlags)
-	if !verbose {
-		// Suppress all diagnostic messages in non-verbose mode except warnings.
-		// We do this by directing the logger to a discard writer and emitting
-		// warnings ourselves through scanner callbacks.
-		logger = log.New(os.Stderr, "[mdns] WARNING: ", 0)
-	}
+	// warnLogger is always active: prints warnings and errors from the library.
+	warnLogger := log.New(os.Stderr, "[mdns] ", 0)
 
 	opts := []mdns.Option{
 		mdns.WithServiceType(serviceType),
 		mdns.WithDomain(domain),
 		mdns.WithTimeout(timeout),
-		mdns.WithLogger(logger),
+		mdns.WithLogger(warnLogger),
+	}
+	if verbose {
+		// In verbose mode also enable the debug logger (same destination, with
+		// timestamps so individual events can be correlated).
+		debugLogger := log.New(os.Stderr, "[mdns] ", log.LstdFlags)
+		opts = append(opts, mdns.WithDebugLogger(debugLogger))
 	}
 	if quick {
 		opts = append(opts, mdns.WithQuick())

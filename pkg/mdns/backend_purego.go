@@ -24,7 +24,7 @@ func (s *Scanner) browseWithPureGo(ctx context.Context) (<-chan ServiceInstance,
 	if len(ifaces) == 0 {
 		return nil, fmt.Errorf("no active multicast-capable network interfaces found")
 	}
-	s.opts.Logger.Printf("mdns: using interfaces: %v", ifaceNames(ifaces))
+	s.debugf("mdns: using interfaces: %v", ifaceNames(ifaces))
 
 	resolver, err := zeroconf.NewResolver(zeroconf.SelectIfaces(ifaces))
 	if err != nil {

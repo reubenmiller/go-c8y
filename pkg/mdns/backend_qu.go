@@ -19,24 +19,19 @@ const (
 	quRetryInterval = 2 * time.Second
 )
 
-// browseWithQU sends mDNS queries with the QU (Unicast-response) bit set from
-// an ephemeral UDP port so that mDNS responders send their answers directly
-// back as unicast UDP. This avoids any conflict with systemd-resolved, avahi,
-// or the Windows DNS Client holding port 5353.
+// browseWithQU sends mDNS queries with the QU (Unicast-response) bit set.
+// Crucially, one persistent UDP socket is opened per interface IP (plus a
+// wildcard fallback) and kept open for the entire scan.  Because RFC 6762 §5.4
+// requires responders to unicast their answer back to the source address:port
+// of the query, those sockets must remain open; closing them immediately after
+// sending (as a short-lived socket would) causes every unicast reply to be
+// dropped before it can be read.
 //
-// Reference: RFC 6762 §5.4 — when the source port is not 5353, or the QU bit
-// is set, responders SHOULD reply via unicast to the source address:port.
+// This avoids conflicts with systemd-resolved, avahi, or the Windows DNS
+// Client holding port 5353.
 func (s *Scanner) browseWithQU(ctx context.Context) (<-chan ServiceInstance, error) {
-	// Bind to an ephemeral UDP port on the wildcard address.  All unicast
-	// replies from devices will arrive here.
-	conn, err := net.ListenUDP("udp4", &net.UDPAddr{})
-	if err != nil {
-		return nil, fmt.Errorf("mdns QU: listen: %w", err)
-	}
-
 	dest, err := net.ResolveUDPAddr("udp4", mdnsIPv4Addr)
 	if err != nil {
-		conn.Close()
 		return nil, err
 	}
 
@@ -50,50 +45,105 @@ func (s *Scanner) browseWithQU(ctx context.Context) (<-chan ServiceInstance, err
 	}
 	pkt, err := m.Pack()
 	if err != nil {
-		conn.Close()
 		return nil, fmt.Errorf("mdns QU: pack query: %w", err)
 	}
 
-	s.opts.Logger.Printf("mdns QU: listening for unicast replies on %s", conn.LocalAddr())
+	// Open one persistent socket per interface IP.  These must stay open so
+	// that unicast QU replies directed back to each socket's ephemeral source
+	// port are actually received.
+	type ifSocket struct {
+		conn *net.UDPConn
+		ip   net.IP
+		name string // interface name for logging
+	}
+	var sockets []ifSocket
 
-	out := make(chan ServiceInstance)
-	seen := make(map[string]bool)
-
-	// sendQuery blasts a PTR query out on every suitable interface IP.
-	sendQuery := func() {
-		ifaces, err := activeMulticastIfaces(s.opts.Ifaces)
-		if err != nil {
-			s.opts.Logger.Printf("mdns QU: interface enumeration error: %v", err)
+	ifaces, err := activeMulticastIfaces(s.opts.Ifaces)
+	if err != nil {
+		s.opts.Logger.Printf("mdns QU: interface enumeration: %v", err)
+	}
+	for _, iface := range ifaces {
+		addrs, _ := iface.Addrs()
+		for _, addr := range addrs {
+			ip, _, err := net.ParseCIDR(addr.String())
+			if err != nil || ip.IsLoopback() || ip.To4() == nil {
+				continue
+			}
+			sock, err := net.ListenUDP("udp4", &net.UDPAddr{IP: ip})
+			if err != nil {
+				s.opts.Logger.Printf("mdns QU: bind %s: %v", ip, err)
+				continue
+			}
+			sockets = append(sockets, ifSocket{conn: sock, ip: ip, name: iface.Name})
+			s.debugf("mdns QU: listening on %s (iface %s)", sock.LocalAddr(), iface.Name)
 		}
-		sent := 0
-		for _, iface := range ifaces {
-			addrs, _ := iface.Addrs()
-			for _, addr := range addrs {
-				ip, _, err := net.ParseCIDR(addr.String())
-				if err != nil || ip.IsLoopback() || ip.To4() == nil {
+	}
+
+	// Wildcard fallback socket: catches any multicast replies the OS routes back
+	// on the default interface and acts as a safety net when no per-interface
+	// sockets could be opened.
+	wildcard, err := net.ListenUDP("udp4", &net.UDPAddr{})
+	if err != nil {
+		for i := range sockets {
+			sockets[i].conn.Close()
+		}
+		return nil, fmt.Errorf("mdns QU: listen wildcard: %w", err)
+	}
+	s.debugf("mdns QU: wildcard listener on %s", wildcard.LocalAddr())
+
+	deadline := time.Now().Add(s.opts.Timeout)
+	if d, ok := ctx.Deadline(); ok && d.Before(deadline) {
+		deadline = d
+	}
+
+	type udpPacket struct {
+		data []byte
+		from *net.UDPAddr
+	}
+	rawCh := make(chan udpPacket, 64)
+
+	// startReader drains conn until deadline or ctx is cancelled, forwarding
+	// every received packet to rawCh.  It exits when the socket is closed
+	// (by the defers in the main goroutine) or the deadline passes.
+	startReader := func(conn *net.UDPConn) {
+		buf := make([]byte, 65535)
+		for {
+			conn.SetReadDeadline(time.Now().Add(500 * time.Millisecond))
+			n, from, err := conn.ReadFromUDP(buf)
+			if err != nil {
+				if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+					if time.Now().After(deadline) || ctx.Err() != nil {
+						return
+					}
 					continue
 				}
-				src := &net.UDPAddr{IP: ip, Port: 0}
-				sock, err := net.ListenUDP("udp4", src)
-				if err != nil {
-					s.opts.Logger.Printf("mdns QU: bind %s: %v", ip, err)
-					continue
-				}
-				n, werr := sock.WriteToUDP(pkt, dest)
-				sock.Close()
-				if werr != nil {
-					s.opts.Logger.Printf("mdns QU: send from %s: %v", ip, werr)
-				} else {
-					s.opts.Logger.Printf("mdns QU: sent %d-byte query from %s → %s (iface %s)", n, ip, dest, iface.Name)
-					sent++
-				}
+				return // socket closed or fatal error
+			}
+			data := make([]byte, n)
+			copy(data, buf[:n])
+			select {
+			case rawCh <- udpPacket{data: data, from: from}:
+			case <-ctx.Done():
+				return
 			}
 		}
-		// Wildcard send as a fallback (OS picks the default interface).
-		if n, werr := conn.WriteToUDP(pkt, dest); werr != nil {
+	}
+
+	sendQuery := func() {
+		sent := 0
+		for _, sock := range sockets {
+			n, werr := sock.conn.WriteToUDP(pkt, dest)
+			if werr != nil {
+				s.opts.Logger.Printf("mdns QU: send from %s: %v", sock.ip, werr)
+			} else {
+				s.debugf("mdns QU: sent %d-byte query from %s \u2192 %s (iface %s)", n, sock.ip, dest, sock.name)
+				sent++
+			}
+		}
+		if n, werr := wildcard.WriteToUDP(pkt, dest); werr != nil {
 			s.opts.Logger.Printf("mdns QU: wildcard send: %v", werr)
 		} else {
-			s.opts.Logger.Printf("mdns QU: sent %d-byte query from wildcard → %s", n, dest)
+			s.debugf("mdns QU: sent %d-byte query from wildcard \u2192 %s", n, dest)
 			sent++
 		}
 		if sent == 0 {
@@ -101,15 +151,22 @@ func (s *Scanner) browseWithQU(ctx context.Context) (<-chan ServiceInstance, err
 		}
 	}
 
+	out := make(chan ServiceInstance)
+
 	go func() {
 		defer close(out)
-		defer conn.Close()
-
-		deadline := time.Now().Add(s.opts.Timeout)
-		if d, ok := ctx.Deadline(); ok && d.Before(deadline) {
-			deadline = d
+		defer wildcard.Close()
+		for i := range sockets {
+			defer sockets[i].conn.Close()
 		}
-		conn.SetDeadline(deadline)
+
+		// Start one reader goroutine per socket (including wildcard).
+		// Closing the sockets in the defers above will unblock any pending
+		// ReadFromUDP, causing the readers to exit cleanly.
+		go startReader(wildcard)
+		for i := range sockets {
+			go startReader(sockets[i].conn)
+		}
 
 		// Initial query burst.
 		sendQuery()
@@ -117,64 +174,54 @@ func (s *Scanner) browseWithQU(ctx context.Context) (<-chan ServiceInstance, err
 		// Periodic re-send so devices that miss the first probe still respond.
 		ticker := time.NewTicker(quRetryInterval)
 		defer ticker.Stop()
+		timer := time.NewTimer(time.Until(deadline))
+		defer timer.Stop()
 
-		buf := make([]byte, 65535)
+		seen := make(map[string]bool)
 		for {
 			select {
 			case <-ctx.Done():
 				return
+			case <-timer.C:
+				return
 			case <-ticker.C:
 				sendQuery()
-			default:
-			}
-
-			// Short read deadline so the retry ticker fires even while waiting.
-			conn.SetReadDeadline(time.Now().Add(500 * time.Millisecond))
-			n, from, err := conn.ReadFromUDP(buf)
-			if err != nil {
-				if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-					// Check ctx / overall deadline before looping.
-					if time.Now().After(deadline) || ctx.Err() != nil {
-						return
+			case pkt, ok := <-rawCh:
+				if !ok {
+					return
+				}
+				s.debugf("mdns QU: received %d bytes from %s", len(pkt.data), pkt.from)
+				resp := new(dns.Msg)
+				if err := resp.Unpack(pkt.data); err != nil {
+					s.opts.Logger.Printf("mdns QU: unpack error from %s: %v", pkt.from, err)
+					continue
+				}
+				instances := extractInstances(resp, s.opts.ServiceType, s.opts.Domain)
+				s.debugf("mdns QU: parsed %d instance(s) from %s", len(instances), pkt.from)
+				for _, inst := range instances {
+					if seen[inst.Name] {
+						continue
 					}
-					continue
-				}
-				return
-			}
-
-			s.opts.Logger.Printf("mdns QU: received %d bytes from %s", n, from)
-
-			resp := new(dns.Msg)
-			if err := resp.Unpack(buf[:n]); err != nil {
-				s.opts.Logger.Printf("mdns QU: unpack error from %s: %v", from, err)
-				continue
-			}
-
-			instances := extractInstances(resp, s.opts.ServiceType, s.opts.Domain)
-			s.opts.Logger.Printf("mdns QU: parsed %d instance(s) from %s", len(instances), from)
-			for _, inst := range instances {
-				if seen[inst.Name] {
-					continue
-				}
-				seen[inst.Name] = true
-
-				if !s.opts.Quick && inst.Host != "" {
-					addrs, err := net.DefaultResolver.LookupHost(ctx, inst.Host)
-					if err != nil {
-						s.opts.Logger.Printf("mdns QU: resolve %s: %v", inst.Host, err)
-					} else {
-						for _, a := range addrs {
-							if ip := net.ParseIP(a); ip != nil {
-								inst.IPs = append(inst.IPs, ip)
+					seen[inst.Name] = true
+					if !s.opts.Quick && inst.Host != "" {
+						addrs, err := net.DefaultResolver.LookupHost(ctx, inst.Host)
+						if err != nil {
+							if ctx.Err() == nil {
+								s.opts.Logger.Printf("mdns QU: resolve %s: %v", inst.Host, err)
+							}
+						} else {
+							for _, a := range addrs {
+								if ip := net.ParseIP(a); ip != nil {
+									inst.IPs = append(inst.IPs, ip)
+								}
 							}
 						}
 					}
-				}
-
-				select {
-				case out <- inst:
-				case <-ctx.Done():
-					return
+					select {
+					case out <- inst:
+					case <-ctx.Done():
+						return
+					}
 				}
 			}
 		}

@@ -15,6 +15,7 @@ import (
 	"log"
 	"net"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -60,8 +61,12 @@ type Options struct {
 	// Ifaces restricts scanning to specific network interfaces. When nil all
 	// suitable interfaces are used (UP, multicast, non-loopback, with carrier).
 	Ifaces []net.Interface
-	// Logger receives diagnostic and warning messages. Defaults to log.Default().
+	// Logger receives warning and error messages. Defaults to log.Default().
 	Logger *log.Logger
+	// DebugLogger, when non-nil, receives verbose diagnostic messages such as
+	// backend selection, per-interface socket details, and per-instance discovery
+	// events. Nil by default (debug output suppressed).
+	DebugLogger *log.Logger
 	// Filter, when non-nil, restricts results to instances whose Name matches
 	// the compiled regular expression.
 	Filter *regexp.Regexp
@@ -89,9 +94,16 @@ func WithTimeout(t time.Duration) Option {
 	return func(o *Options) { o.Timeout = t }
 }
 
-// WithLogger sets a custom logger for diagnostic and warning messages.
+// WithLogger sets a custom logger for warning and error messages.
 func WithLogger(l *log.Logger) Option {
 	return func(o *Options) { o.Logger = l }
+}
+
+// WithDebugLogger sets a logger for verbose diagnostic messages (backend
+// selection, per-interface details, per-instance discovery events). Pass nil
+// to disable debug output (the default).
+func WithDebugLogger(l *log.Logger) Option {
+	return func(o *Options) { o.DebugLogger = l }
 }
 
 // WithQuick enables quick mode: only instance names are returned without
@@ -124,6 +136,14 @@ func WithMaxResults(n int) Option {
 // Scanner discovers mDNS service instances on the local network.
 type Scanner struct {
 	opts Options
+}
+
+// debugf writes to DebugLogger when it is non-nil. Call for verbose
+// diagnostic messages that should not appear in normal (non-verbose) output.
+func (s *Scanner) debugf(format string, args ...any) {
+	if s.opts.DebugLogger != nil {
+		s.opts.DebugLogger.Printf(format, args...)
+	}
 }
 
 // NewScanner creates a Scanner with the given options.
@@ -174,6 +194,9 @@ func (s *Scanner) Browse(ctx context.Context) (<-chan ServiceInstance, error) {
 			if s.opts.Filter != nil && !s.opts.Filter.MatchString(inst.Name) {
 				continue
 			}
+			// Normalize the hostname: strip any trailing dot that DNS backends
+			// include in fully-qualified names (e.g. "my-device.local." → "my-device.local").
+			inst.Host = strings.TrimSuffix(inst.Host, ".")
 			select {
 			case out <- inst:
 			case <-ctx.Done():
