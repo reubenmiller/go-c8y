@@ -7,8 +7,10 @@ require (
 	github.com/google/go-jsonnet v0.21.0
 	github.com/google/go-querystring v1.2.0
 	github.com/gorilla/websocket v1.5.3
+	github.com/grandcat/zeroconf v1.0.0
 	github.com/labstack/echo/v4 v4.15.1
 	github.com/mdp/qrterminal/v3 v3.2.1
+	github.com/miekg/dns v1.1.27
 	github.com/prometheus/client_golang v1.23.2
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
@@ -27,6 +29,7 @@ require (
 	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/danieljoos/wincred v1.2.2 // indirect
