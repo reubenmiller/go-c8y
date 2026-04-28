@@ -211,6 +211,9 @@ func (fs *fileStorage) read(key string) (*http.Response, error) {
 	}
 
 	res, err := http.ReadResponse(bufio.NewReader(body), nil)
+	if err != nil {
+		return nil, err
+	}
 	if res.Header.Get("ETag") == "" {
 		res.Header.Set("ETag", key)
 	}
