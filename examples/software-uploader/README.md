@@ -21,6 +21,16 @@ A CLI tool for bulk uploading software packages to Cumulocity IoT. It recursivel
 
 ## Installation
 
+### Using `go install` (no checkout required)
+
+```bash
+go install github.com/reubenmiller/go-c8y/v2/examples/software-uploader@latest
+```
+
+This installs the binary to `$GOPATH/bin` (or `$HOME/go/bin` if `GOPATH` is unset). Make sure that directory is on your `PATH`.
+
+### Build from source
+
 ```bash
 cd examples/software-uploader
 go build -o software-uploader
