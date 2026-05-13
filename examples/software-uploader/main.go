@@ -67,6 +67,7 @@ func main() {
 		namePrefix      = flag.String("name-prefix", "", "Prefix to be added to the software package when uploading it")
 		concurrency     = flag.Int("concurrency", 5, "Number of concurrent uploads")
 		dryRun          = flag.Bool("dry-run", false, "Preview what would be uploaded without actually uploading")
+		dryRunAlias     = flag.Bool("dry", false, "Alias for --dry-run")
 		verbose         = flag.Bool("verbose", false, "Enable detailed logging")
 		debug           = flag.Bool("debug", false, "Enable debug mode (verbose logging + HTTP debug)")
 		force           = flag.Bool("force", false, "Force replacement of existing versions (deletes old binary and uploads new one)")
@@ -77,6 +78,11 @@ func main() {
 	flag.Var(&typeMappings, "type-map", "Map a filename glob pattern to a software type, e.g. '*.bin=firmware' or '.deb=apt' (can be specified multiple times)")
 
 	flag.Parse()
+
+	// --dry is an alias for --dry-run
+	if *dryRunAlias {
+		*dryRun = true
+	}
 
 	// Configure logging (debug implies verbose)
 	if *debug || *verbose {
