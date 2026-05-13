@@ -4,6 +4,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -457,10 +458,8 @@ func ParseSoftwareFromFilename(filePath string, defaultType string, namePrefix s
 		info.SoftwareType = detectSoftwareType(filename)
 	}
 
-	// Decode name if it is url encoded
-	if unescapedName, err := url.QueryUnescape(info.Name); err == nil {
-		info.Name = unescapedName
-	}
+	// Decode name (handles standard %XX encoding and artifact services that replace % with .)
+	info.Name = decodeSoftwareName(info.Name)
 
 	// Add a prefix to the name if provided
 	if namePrefix != "" {
@@ -468,6 +467,48 @@ func ParseSoftwareFromFilename(filePath string, defaultType string, namePrefix s
 	}
 
 	return info, nil
+}
+
+// dotHexPattern matches ".XX" sequences where XX are two hexadecimal digits.
+// Some artifact hosting services (e.g., GitHub Actions) replace '%' with '.'
+// when storing artifacts, so "%2F" becomes ".2F".
+var dotHexPattern = regexp.MustCompile(`\.([0-9A-Fa-f]{2})`)
+
+// decodeSoftwareName decodes a software name that may be encoded in one of two ways:
+//  1. Standard URL percent-encoding: "c8y%2Fexample" → "c8y/example"
+//  2. Artifact-service encoding where '%' is replaced with '.': "c8y.2Fexample" → "c8y/example"
+//
+// For case 2, only characters that are printable, non-alphanumeric, and not URL-safe
+// filename characters are decoded, to reduce false positives from version components
+// that contain hex-looking digit sequences (e.g., "python3.10").
+func decodeSoftwareName(name string) string {
+	// Try standard URL percent-decoding first
+	if decoded, err := url.QueryUnescape(name); err == nil && decoded != name {
+		return decoded
+	}
+
+	// Handle the artifact-service case: replace ".XX" with the decoded character,
+	// but only for characters that would normally be percent-encoded.
+	return dotHexPattern.ReplaceAllStringFunc(name, func(match string) string {
+		n, err := strconv.ParseUint(match[1:], 16, 8)
+		if err != nil {
+			return match
+		}
+		ch := byte(n)
+		// Skip control characters, non-ASCII, and characters that are URL-safe
+		// (alphanumeric, '-', '_', '.', '~') — those would never be percent-encoded.
+		if ch < 0x21 || ch > 0x7E {
+			return match
+		}
+		if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') {
+			return match
+		}
+		switch ch {
+		case '-', '_', '.', '~':
+			return match
+		}
+		return string(ch)
+	})
 }
 
 // detectSoftwareType detects the software type based on file extension

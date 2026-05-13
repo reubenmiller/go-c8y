@@ -174,6 +174,89 @@ func TestParseSoftwareFromFilename(t *testing.T) {
 	}
 }
 
+func TestDecodeSoftwareName(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "plain name unchanged",
+			input: "myapp",
+			want:  "myapp",
+		},
+		{
+			name:  "standard percent-encoding decoded",
+			input: "c8y%2Fexample",
+			want:  "c8y/example",
+		},
+		{
+			name:  "github artifact dot-encoding decoded",
+			input: "c8y.2Fexample",
+			want:  "c8y/example",
+		},
+		{
+			name:  "at-sign encoding decoded",
+			input: "scope.40package",
+			want:  "scope@package",
+		},
+		{
+			name:  "colon encoding decoded",
+			input: "ns.3Aservice",
+			want:  "ns:service",
+		},
+		{
+			name:  "version component not corrupted (python3.10 style)",
+			input: "python3.10",
+			want:  "python3.10",
+		},
+		{
+			name:  "semver dots not corrupted (1.0.0 style)",
+			input: "myapp-1.0.0",
+			want:  "myapp-1.0.0",
+		},
+		{
+			name:  "multiple encoded chars decoded",
+			input: "c8y.2Forg.2Fpackage",
+			want:  "c8y/org/package",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := decodeSoftwareName(tt.input)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestDecodeSoftwareNameInFilename(t *testing.T) {
+	tests := []struct {
+		name     string
+		filepath string
+		wantName string
+	}{
+		{
+			name:     "deb with percent-encoded slash in name",
+			filepath: "/path/to/c8y%2Fexample_1.0.0_arm64.deb",
+			wantName: "c8y/example",
+		},
+		{
+			name:     "deb with github-artifact dot-encoded slash in name",
+			filepath: "/path/to/c8y.2Fexample_1.0.0_arm64.deb",
+			wantName: "c8y/example",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			info, err := ParseSoftwareFromFilename(tt.filepath, "", "")
+			assert.NoError(t, err)
+			assert.Equal(t, tt.wantName, info.Name)
+		})
+	}
+}
+
 func TestStripExtensions(t *testing.T) {
 	tests := []struct {
 		input string
