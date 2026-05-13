@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -642,5 +644,172 @@ func TestTarGzParser(t *testing.T) {
 			}
 			assert.Equal(t, "archive", info.SoftwareType)
 		})
+	}
+}
+
+func TestComposeParser_CanParse(t *testing.T) {
+	parser := &ComposeParser{}
+
+	accept := []string{
+		"compose.yaml",
+		"compose.yml",
+		"docker-compose.yaml",
+		"docker-compose.yml",
+		"compose.myapp.yaml",
+		"compose.myapp.yml",
+		"docker-compose.myapp.yaml",
+		"docker-compose.myapp.yml",
+		"COMPOSE.YAML", // case-insensitive
+		"Docker-Compose.yml",
+	}
+	reject := []string{
+		"compose.yaml.bak",
+		"mycompose.yaml",
+		"docker-compose", // no extension
+		"random.yaml",
+		"values.yaml",
+	}
+
+	for _, f := range accept {
+		assert.True(t, parser.CanParse(f), "expected CanParse=true for %q", f)
+	}
+	for _, f := range reject {
+		assert.False(t, parser.CanParse(f), "expected CanParse=false for %q", f)
+	}
+}
+
+func TestComposeParser_NameFromFilename(t *testing.T) {
+	// These cases derive the name entirely from the filename, so the file does not
+	// need to exist on disk.
+	parser := &ComposeParser{}
+
+	tests := []struct {
+		filename    string
+		wantName    string
+		wantVersion string
+	}{
+		{"compose.myapp.yaml", "myapp", "latest"},
+		{"compose.myapp.yml", "myapp", "latest"},
+		{"docker-compose.myapp.yaml", "myapp", "latest"},
+		{"docker-compose.myapp.yml", "myapp", "latest"},
+		{"compose.my-service.yaml", "my-service", "latest"},
+		// "stack-v2" → extractNameAndVersion splits off the v-prefixed major version
+		{"docker-compose.stack-v2.yaml", "stack", "2"},
+		// version encoded in the name segment
+		{"compose.myapp-1.2.3.yaml", "myapp", "1.2.3"},
+		{"docker-compose.myapp-1.2.3.yaml", "myapp", "1.2.3"},
+		{"compose.my-service_2.0.0.yaml", "my-service", "2.0.0"},
+		{"compose.backend-v1.0.0.yml", "backend", "1.0.0"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.filename, func(t *testing.T) {
+			info, err := parser.Parse("/nonexistent/"+tt.filename, tt.filename)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.wantName, info.Name)
+			assert.Equal(t, tt.wantVersion, info.Version)
+			assert.Equal(t, "container-group", info.SoftwareType)
+		})
+	}
+}
+
+func TestComposeParser_NameFromContent(t *testing.T) {
+	// Write a real compose file with a "name" and "services" field.
+	dir := t.TempDir()
+	filename := "compose.yaml"
+	content := "name: my-project\nservices:\n  web:\n    image: nginx\n"
+	filePath := filepath.Join(dir, filename)
+	require_NoError(t, os.WriteFile(filePath, []byte(content), 0600))
+
+	parser := &ComposeParser{}
+	info, err := parser.Parse(filePath, filename)
+	assert.NoError(t, err)
+	assert.Equal(t, "my-project", info.Name)
+	assert.Equal(t, "container-group", info.SoftwareType)
+	assert.Equal(t, "latest", info.Version)
+}
+
+func TestComposeParser_NameFromParentDir(t *testing.T) {
+	// compose.yaml with no "name" field → fall back to parent directory name.
+	dir := t.TempDir()
+	// Create a subdirectory whose name will be used as the software name.
+	projectDir := filepath.Join(dir, "awesome-stack")
+	require_NoError(t, os.MkdirAll(projectDir, 0700))
+	filename := "compose.yaml"
+	content := "services:\n  web:\n    image: nginx\n"
+	filePath := filepath.Join(projectDir, filename)
+	require_NoError(t, os.WriteFile(filePath, []byte(content), 0600))
+
+	parser := &ComposeParser{}
+	info, err := parser.Parse(filePath, filename)
+	assert.NoError(t, err)
+	assert.Equal(t, "awesome-stack", info.Name)
+	assert.Equal(t, "container-group", info.SoftwareType)
+}
+
+func TestComposeParser_NonExistentFile_UsesParentDir(t *testing.T) {
+	// When the file cannot be read and there's no name segment in the filename,
+	// the parser should fall back to the parent directory name gracefully.
+	parser := &ComposeParser{}
+	info, err := parser.Parse("/projects/my-service/compose.yaml", "compose.yaml")
+	assert.NoError(t, err)
+	assert.Equal(t, "my-service", info.Name)
+	assert.Equal(t, "container-group", info.SoftwareType)
+}
+
+func TestComposeParser_ViaParseFromFilename(t *testing.T) {
+	tests := []struct {
+		name     string
+		filepath string
+		wantName string
+		wantType string
+	}{
+		{
+			name:     "compose with name segment",
+			filepath: "/path/to/compose.myapp.yaml",
+			wantName: "myapp",
+			wantType: "container-group",
+		},
+		{
+			name:     "compose with name and version segment",
+			filepath: "/path/to/compose.myapp-1.2.3.yaml",
+			wantName: "myapp",
+			wantType: "container-group",
+		},
+		{
+			name:     "docker-compose with name segment",
+			filepath: "/path/to/docker-compose.backend.yml",
+			wantName: "backend",
+			wantType: "container-group",
+		},
+		{
+			name:     "plain compose.yaml falls back to parent dir",
+			filepath: "/projects/my-stack/compose.yaml",
+			wantName: "my-stack",
+			wantType: "container-group",
+		},
+		{
+			name:     "plain docker-compose.yaml falls back to parent dir",
+			filepath: "/projects/infra/docker-compose.yml",
+			wantName: "infra",
+			wantType: "container-group",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			info, err := ParseSoftwareFromFilename(tt.filepath, "", "")
+			assert.NoError(t, err)
+			assert.Equal(t, tt.wantName, info.Name)
+			assert.Equal(t, tt.wantType, info.SoftwareType)
+		})
+	}
+}
+
+// require_NoError is a small helper to fail fast on setup errors.
+func require_NoError(t *testing.T, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }

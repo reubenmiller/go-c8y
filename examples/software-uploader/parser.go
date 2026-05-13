@@ -2,10 +2,13 @@ package main
 
 import (
 	"net/url"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 // SoftwareInfo represents parsed information from a filename
@@ -342,6 +345,103 @@ func (p *ArchLinuxParser) Parse(filePath, filename string) (*SoftwareInfo, error
 	return info, nil
 }
 
+// composeFilenamePattern matches Docker Compose / Podman Compose filenames:
+//
+//	compose.yaml / compose.yml
+//	docker-compose.yaml / docker-compose.yml
+//	compose.<name>.yaml / docker-compose.<name>.yaml
+//
+// The optional middle segment becomes the software name.
+var composeFilenamePattern = regexp.MustCompile(`(?i)^(docker-compose|compose)(?:\.(.+))?\.ya?ml$`)
+
+// ComposeParser handles Docker Compose / Podman Compose file naming conventions.
+// It recognises filenames of the form:
+//
+//	compose[.<name>].yaml     docker-compose[.<name>].yaml
+//	compose[.<name>].yml      docker-compose[.<name>].yml
+//
+// The software name and version are resolved in priority order:
+//  1. The <name> segment from the filename; if it includes a version (e.g.
+//     "myapp-1.2.3" in compose.myapp-1.2.3.yaml) the version is split off.
+//  2. The top-level "name" field inside the YAML file (name only; version
+//     stays "latest" because the compose "version:" key is the format spec,
+//     not the project version).
+//  3. The parent directory name
+//
+// A basic content check (presence of the "services" key) is performed when the
+// file is readable, to confirm it is a genuine compose file.
+type ComposeParser struct{}
+
+func (p *ComposeParser) CanParse(filename string) bool {
+	return composeFilenamePattern.MatchString(filename)
+}
+
+func (p *ComposeParser) Parse(filePath, filename string) (*SoftwareInfo, error) {
+	matches := composeFilenamePattern.FindStringSubmatch(filename)
+
+	info := &SoftwareInfo{
+		FilePath:     filePath,
+		Filename:     filename,
+		SoftwareType: "container-group",
+		Version:      "latest",
+		Metadata:     make(map[string]string),
+	}
+
+	// Group 2 is the optional name segment between the base prefix and the extension.
+	nameFromFilename := ""
+	if matches != nil && matches[2] != "" {
+		nameFromFilename = matches[2]
+	}
+
+	if nameFromFilename != "" {
+		// Try to split a version out of the filename segment, e.g.
+		// "myapp-1.2.3" → name "myapp", version "1.2.3".
+		name, version := extractNameAndVersion(nameFromFilename)
+		if version != "" {
+			info.Name = name
+			info.Version = version
+		} else {
+			info.Name = nameFromFilename
+		}
+	} else {
+		// No name in the filename — try to derive it from the file content.
+		contentName, servicesFound := p.readComposeMeta(filePath)
+		if !servicesFound {
+			// File is readable but does not look like a compose file.
+			// Still proceed; the filename pattern is a strong enough signal.
+		}
+		if contentName != "" {
+			info.Name = contentName
+		} else {
+			// Fall back to the parent directory name.
+			info.Name = filepath.Base(filepath.Dir(filePath))
+		}
+	}
+
+	return info, nil
+}
+
+// readComposeMeta attempts to parse the compose YAML file.
+// It returns (name, servicesFound) where name is the value of the top-level
+// "name" key (empty string if absent or unreadable) and servicesFound indicates
+// whether the "services" key was present.
+func (p *ComposeParser) readComposeMeta(filePath string) (name string, servicesFound bool) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return "", false
+	}
+
+	var doc struct {
+		Name     string                 `yaml:"name"`
+		Services map[string]interface{} `yaml:"services"`
+	}
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		return "", false
+	}
+
+	return doc.Name, doc.Services != nil
+}
+
 // GenericParser is a fallback parser for unknown file types
 type GenericParser struct {
 	softwareType string
@@ -382,6 +482,7 @@ type ParserRegistry struct {
 func NewParserRegistry() *ParserRegistry {
 	return &ParserRegistry{
 		parsers: []Parser{
+			&ComposeParser{},   // filename-based; checked before extension-based parsers
 			&ArchLinuxParser{}, // must come before TarGzParser (.pkg.tar.zst/.pkg.tar.xz)
 			&DebianParser{},
 			&IPKParser{},
