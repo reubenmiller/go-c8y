@@ -58,17 +58,19 @@ func (t *typeMappingsFlag) Set(value string) error {
 func main() {
 	// Parse command-line flags
 	var (
-		dir          = flag.String("dir", "", "Directory to search for software packages (required)")
-		patterns     patternsFlag
-		typeMappings typeMappingsFlag
-		softwareType = flag.String("type", "", "Software type (e.g., 'firmware', 'application'). Overrides all auto-detection.")
-		namePrefix   = flag.String("name-prefix", "", "Prefix to be added to the software package when uploading it")
-		concurrency  = flag.Int("concurrency", 5, "Number of concurrent uploads")
-		dryRun       = flag.Bool("dry-run", false, "Preview what would be uploaded without actually uploading")
-		verbose      = flag.Bool("verbose", false, "Enable detailed logging")
-		debug        = flag.Bool("debug", false, "Enable debug mode (verbose logging + HTTP debug)")
-		force        = flag.Bool("force", false, "Force replacement of existing versions (deletes old binary and uploads new one)")
-		noProgress   = flag.Bool("no-progress", false, "Disable progress bar (automatic in non-TTY environments)")
+		dir             = flag.String("dir", "", "Directory to search for software packages")
+		file            = flag.String("file", "", "Path to a single software package file to upload (alternative to --dir)")
+		patterns        patternsFlag
+		typeMappings    typeMappingsFlag
+		softwareType    = flag.String("type", "", "Software type (e.g., 'firmware', 'application'). Overrides all auto-detection.")
+		softwareVersion = flag.String("version", "", "Version to use for the software package (overrides auto-detected version)")
+		namePrefix      = flag.String("name-prefix", "", "Prefix to be added to the software package when uploading it")
+		concurrency     = flag.Int("concurrency", 5, "Number of concurrent uploads")
+		dryRun          = flag.Bool("dry-run", false, "Preview what would be uploaded without actually uploading")
+		verbose         = flag.Bool("verbose", false, "Enable detailed logging")
+		debug           = flag.Bool("debug", false, "Enable debug mode (verbose logging + HTTP debug)")
+		force           = flag.Bool("force", false, "Force replacement of existing versions (deletes old binary and uploads new one)")
+		noProgress      = flag.Bool("no-progress", false, "Disable progress bar (automatic in non-TTY environments)")
 	)
 
 	flag.Var(&patterns, "pattern", "Glob pattern for matching files (can be specified multiple times, default: *)")
@@ -93,21 +95,38 @@ func main() {
 	}
 
 	// Validate required flags
-	if *dir == "" {
-		fmt.Fprintf(os.Stderr, "Error: --dir flag is required\n\n")
+	if *file != "" && *dir != "" {
+		fmt.Fprintf(os.Stderr, "Error: --file and --dir are mutually exclusive\n\n")
+		flag.Usage()
+		os.Exit(1)
+	}
+	if *file == "" && *dir == "" {
+		fmt.Fprintf(os.Stderr, "Error: either --dir or --file is required\n\n")
 		flag.Usage()
 		os.Exit(1)
 	}
 
-	// Validate directory exists
-	dirInfo, err := os.Stat(*dir)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: directory not found: %s\n", *dir)
-		os.Exit(1)
-	}
-	if !dirInfo.IsDir() {
-		fmt.Fprintf(os.Stderr, "Error: %s is not a directory\n", *dir)
-		os.Exit(1)
+	// Validate file/directory exists
+	if *file != "" {
+		fileInfo, err := os.Stat(*file)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: file not found: %s\n", *file)
+			os.Exit(1)
+		}
+		if fileInfo.IsDir() {
+			fmt.Fprintf(os.Stderr, "Error: %s is a directory; use --dir instead\n", *file)
+			os.Exit(1)
+		}
+	} else {
+		dirInfo, err := os.Stat(*dir)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: directory not found: %s\n", *dir)
+			os.Exit(1)
+		}
+		if !dirInfo.IsDir() {
+			fmt.Fprintf(os.Stderr, "Error: %s is not a directory\n", *dir)
+			os.Exit(1)
+		}
 	}
 
 	// Initialize Cumulocity client
@@ -126,32 +145,48 @@ func main() {
 	// Print header
 	printHeader()
 
-	// Scan directory for matching files
-	fmt.Printf("🔍 Scanning directory: %s\n", *dir)
-	files, err := findMatchingFiles(*dir, patterns)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: failed to scan directory: %v\n", err)
-		os.Exit(1)
-	}
+	// Collect files to process
+	var files []string
+	if *file != "" {
+		// Single-file mode: use the provided path directly
+		files = []string{*file}
+		fmt.Printf("📦 Processing file: %s\n\n", *file)
+	} else {
+		// Directory scan mode
+		fmt.Printf("🔍 Scanning directory: %s\n", *dir)
+		var err error
+		files, err = findMatchingFiles(*dir, patterns)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: failed to scan directory: %v\n", err)
+			os.Exit(1)
+		}
 
-	if len(files) == 0 {
-		fmt.Printf("❌ No files found matching pattern(s): %s\n", patterns.String())
-		os.Exit(0)
-	}
+		if len(files) == 0 {
+			fmt.Printf("❌ No files found matching pattern(s): %s\n", patterns.String())
+			os.Exit(0)
+		}
 
-	fmt.Printf("📦 Found %d file(s) matching pattern(s): %s\n\n", len(files), patterns.String())
+		fmt.Printf("📦 Found %d file(s) matching pattern(s): %s\n\n", len(files), patterns.String())
+	}
 
 	// Parse software information from filenames
 	var softwareInfos []*SoftwareInfo
-	for _, file := range files {
-		info, err := ParseSoftwareFromFilename(file, *softwareType, *namePrefix, typeMappings...)
+	for _, f := range files {
+		info, err := ParseSoftwareFromFilename(f, *softwareType, *namePrefix, typeMappings...)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: skipping %s: %v\n", file, err)
+			fmt.Fprintf(os.Stderr, "Warning: skipping %s: %v\n", f, err)
 			continue
 		}
 
+		// Override version if the user explicitly provided one.
+		// The parser still runs normally so that version info is stripped
+		// from the software name; only the detected version value is replaced.
+		if *softwareVersion != "" {
+			info.Version = *softwareVersion
+		}
+
 		if err := ValidateSoftwareInfo(info); err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: skipping %s: %v\n", file, err)
+			fmt.Fprintf(os.Stderr, "Warning: skipping %s: %v\n", f, err)
 			continue
 		}
 
