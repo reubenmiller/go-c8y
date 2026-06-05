@@ -1586,6 +1586,14 @@ func (c *Client) Do(ctx context.Context, req *http.Request, v interface{}, middl
 		// even though there was an error, we still return the response
 		// in case the caller wants to inspect it further
 		localLogger.Infof("Invalid response received from server. %s", err)
+
+		// decode body even on error responses
+		if response != nil && response.Response != nil {
+			defer response.Response.Body.Close()
+			buf, _ := io.ReadAll(response.Response.Body)
+			response.body = buf
+		}
+
 		return response, err
 	}
 
