@@ -69,7 +69,7 @@ func FromManagedObjectChildReferences(value any) (string, any) {
 		for _, ID := range v {
 			data.References = append(data.References, *NewManagedObjectReference(ID))
 		}
-		return types.MimeTypeManagedObjectCollection, data
+		return types.MimeTypeManagedObjectReferenceCollection, data
 	default:
 		return types.MimeTypeManagedObject, v
 	}

@@ -121,7 +121,7 @@ func (s *Service) Unassign(ctx context.Context, parentID string, child any) op.R
 func (s *Service) unassignB(parentID string, child any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetContentType(types.MimeTypeManagedObjectCollection).
+		SetContentType(types.MimeTypeManagedObjectReferenceCollection).
 		SetBody(model.ToManagedObjectChildReferences(child)).
 		SetPathParam(ParamID, parentID).
 		SetURL(ApiManagedObjectChildDevices)

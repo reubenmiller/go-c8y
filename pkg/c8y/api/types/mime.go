@@ -8,7 +8,7 @@ var MimeTypePkixCRL = "application/pkix-crl"
 
 var MimeTypeCumulocityMeasurementCollection = "application/vnd.com.nsn.cumulocity.measurementCollection+json"
 
-var MimeTypeManagedObjectCollection = "application/vnd.com.nsn.cumulocity.managedobjectreferencecollection+json"
+var MimeTypeManagedObjectReferenceCollection = "application/vnd.com.nsn.cumulocity.managedobjectreferencecollection+json"
 var MimeTypeManagedObject = "application/vnd.com.nsn.cumulocity.managedobject+json"
 var MimeTypeManagedObjectReference = "application/vnd.com.nsn.cumulocity.managedobjectreference+json"
 
