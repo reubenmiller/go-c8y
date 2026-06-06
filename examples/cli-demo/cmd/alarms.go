@@ -348,8 +348,8 @@ func runAlarmsCreate(f *createAlarmsFlags) error {
 		Source:   managedobjects.DeviceRef(f.device),
 		Type:     f.alarmType,
 		Text:     f.text,
-		Severity: f.severity,
-		Status:   f.status,
+		Severity: model.AlarmSeverity(f.severity),
+		Status:   model.AlarmStatus(f.status),
 	}
 
 	if f.alarmTime != "" {
@@ -432,10 +432,10 @@ func runAlarmsCount(f *countAlarmsFlags) error {
 		Resolved: f.resolved,
 	}
 	for _, s := range f.status {
-		opts.Status = append(opts.Status, string(s))
+		opts.Status = append(opts.Status, model.AlarmStatus(s))
 	}
 	for _, s := range f.severity {
-		opts.Severity = append(opts.Severity, string(s))
+		opts.Severity = append(opts.Severity, model.AlarmSeverity(s))
 	}
 	if f.dateFrom != "" {
 		t, err := parseRelativeTime(f.dateFrom)
