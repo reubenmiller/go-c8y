@@ -26,6 +26,8 @@ type ManagedObject struct {
 	CreationTime time.Time `json:"creationTime,omitzero"`
 	LastUpdated  time.Time `json:"lastUpdated,omitzero"`
 
+	ExternalIDs []Identity `json:"externalIds,omitempty"`
+
 	DeviceParents   *ManagedObjectReferenceCollection `json:"deviceParents,omitempty"`
 	ChildDevices    *ManagedObjectReferenceCollection `json:"childDevices,omitempty"`
 	AdditionParents *ManagedObjectReferenceCollection `json:"additionParents,omitempty"`

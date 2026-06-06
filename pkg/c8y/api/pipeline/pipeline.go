@@ -355,6 +355,41 @@ func Single[T any](item T) iter.Seq2[T, error] {
 	}
 }
 
+// FromSlice converts a slice into an iter.Seq2[T, error].
+// This is a convenience alternative to pipeline.Values(slices.Values(s)) for the common
+// case of wrapping a plain slice as a pipeline input.
+func FromSlice[T any](s []T) iter.Seq2[T, error] {
+	return func(yield func(T, error) bool) {
+		for _, item := range s {
+			if !yield(item, nil) {
+				return
+			}
+		}
+	}
+}
+
+// FromChannel drains ch into an iter.Seq2[T, error], respecting context cancellation.
+// The sequence ends when ch is closed or ctx is done. If ctx is cancelled,
+// the sequence ends with ctx.Err().
+func FromChannel[T any](ctx context.Context, ch <-chan T) iter.Seq2[T, error] {
+	return func(yield func(T, error) bool) {
+		for {
+			select {
+			case <-ctx.Done():
+				yield(*new(T), ctx.Err())
+				return
+			case item, ok := <-ch:
+				if !ok {
+					return
+				}
+				if !yield(item, nil) {
+					return
+				}
+			}
+		}
+	}
+}
+
 // Values converts an iter.Seq[T] to iter.Seq2[T, error].
 // This is a convenience wrapper for working with standard library iterators
 // (like slices.Values) in pipeline operations that expect error-capable sequences.

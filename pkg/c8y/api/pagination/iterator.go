@@ -99,6 +99,16 @@ func (it *Iterator[T]) Preview() error {
 	return nil
 }
 
+// NewIterator wraps a pre-built iter.Seq2 in an Iterator.
+// TotalCount and TotalPages will return -1 (not applicable for non-paginated sources).
+func NewIterator[T any](items iter.Seq2[T, error]) *Iterator[T] {
+	return &Iterator[T]{
+		items:      items,
+		totalCount: -1,
+		totalPages: -1,
+	}
+}
+
 // Paginate creates an iterator that fetches pages and constructs items of type T
 // The iterator is fully lazy - no API calls are made until Items() is called for iteration.
 // Call Preview() to fetch metadata before iteration, or metadata will be populated from first page.

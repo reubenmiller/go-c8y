@@ -3,12 +3,14 @@ package managedobjects
 import (
 	"context"
 	"fmt"
+	"iter"
 
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/identity"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pipeline"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
@@ -16,6 +18,10 @@ import (
 
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.ManagedObject] {
 	return core.Execute(ctx, s.createB(body), jsonmodels.NewManagedObject)
+}
+
+func (s *Service) CreateBulk(ctx context.Context, managedObjects []any) op.Result[jsonmodels.ManagedObject] {
+	return core.ExecuteCollection(ctx, s.createBulkB(managedObjects), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
 // CreateWithBinaryOptions options for creating a managed object with an associated binary file
@@ -174,6 +180,120 @@ func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jso
 	}
 
 	return core.Execute(ctx, s.updateB(resolvedID, body), jsonmodels.NewManagedObject, meta)
+}
+
+func (s *Service) UpdateBulk(ctx context.Context, managedObjects []any) op.Result[jsonmodels.ManagedObject] {
+	return core.ExecuteCollection(ctx, s.updateBulkB(managedObjects), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
+}
+
+// DefaultBulkBatchSize is the Cumulocity API limit for bulk managed object requests.
+const DefaultBulkBatchSize = 50
+
+// BulkStreamOptions controls behaviour of UpdateBulkStream and CreateBulkStream.
+type BulkStreamOptions struct {
+	// BatchSize is the maximum number of managed objects per API request.
+	// Defaults to DefaultBulkBatchSize (50) when 0 or not set.
+	// Values above DefaultBulkBatchSize are silently capped to DefaultBulkBatchSize.
+	BatchSize int
+}
+
+func (o BulkStreamOptions) batchSize() int {
+	if o.BatchSize > 0 && o.BatchSize < DefaultBulkBatchSize {
+		return o.BatchSize
+	}
+	return DefaultBulkBatchSize
+}
+
+// EffectiveBatchSize returns the batch size that will be used for requests.
+// Zero or values above DefaultBulkBatchSize are clamped to DefaultBulkBatchSize.
+func (o BulkStreamOptions) EffectiveBatchSize() int {
+	return o.batchSize()
+}
+
+// UpdateBulkStream accepts an iter.Seq2[any, error] of managed objects and returns a
+// *ManagedObjectIterator that streams all updated objects back. Batching up to
+// DefaultBulkBatchSize items per request is handled transparently.
+//
+// For timeout-based flushing of sparse/real-time inputs, compose the input with
+// rill.Batch before passing it here (rill is already in go.mod).
+func (s *Service) UpdateBulkStream(ctx context.Context, items iter.Seq2[any, error], opts BulkStreamOptions) *ManagedObjectIterator {
+	return pagination.NewIterator(s.updateBulkSeq(ctx, items, opts))
+}
+
+func (s *Service) updateBulkSeq(ctx context.Context, items iter.Seq2[any, error], opts BulkStreamOptions) iter.Seq2[jsonmodels.ManagedObject, error] {
+	return func(yield func(jsonmodels.ManagedObject, error) bool) {
+		for batch, err := range pipeline.Batch(items, opts.batchSize()) {
+			if err != nil {
+				yield(*new(jsonmodels.ManagedObject), err)
+				return
+			}
+			select {
+			case <-ctx.Done():
+				yield(*new(jsonmodels.ManagedObject), ctx.Err())
+				return
+			default:
+			}
+			result := core.ExecuteCollection(
+				ctx,
+				s.updateBulkB(batch),
+				ResultProperty,
+				types.ResponseFieldStatistics,
+				jsonmodels.NewManagedObject,
+			)
+			if result.Err != nil {
+				yield(*new(jsonmodels.ManagedObject), result.Err)
+				return
+			}
+			for doc := range result.Data.Iter() {
+				if !yield(jsonmodels.NewManagedObject(doc.Bytes()), nil) {
+					return
+				}
+			}
+		}
+	}
+}
+
+// CreateBulkStream accepts an iter.Seq2[any, error] of managed objects and returns a
+// *ManagedObjectIterator that streams all created objects back. Batching up to
+// DefaultBulkBatchSize items per request is handled transparently.
+//
+// For timeout-based flushing of sparse/real-time inputs, compose the input with
+// rill.Batch before passing it here (rill is already in go.mod).
+func (s *Service) CreateBulkStream(ctx context.Context, items iter.Seq2[any, error], opts BulkStreamOptions) *ManagedObjectIterator {
+	return pagination.NewIterator(s.createBulkSeq(ctx, items, opts))
+}
+
+func (s *Service) createBulkSeq(ctx context.Context, items iter.Seq2[any, error], opts BulkStreamOptions) iter.Seq2[jsonmodels.ManagedObject, error] {
+	return func(yield func(jsonmodels.ManagedObject, error) bool) {
+		for batch, err := range pipeline.Batch(items, opts.batchSize()) {
+			if err != nil {
+				yield(*new(jsonmodels.ManagedObject), err)
+				return
+			}
+			select {
+			case <-ctx.Done():
+				yield(*new(jsonmodels.ManagedObject), ctx.Err())
+				return
+			default:
+			}
+			result := core.ExecuteCollection(
+				ctx,
+				s.createBulkB(batch),
+				ResultProperty,
+				types.ResponseFieldStatistics,
+				jsonmodels.NewManagedObject,
+			)
+			if result.Err != nil {
+				yield(*new(jsonmodels.ManagedObject), result.Err)
+				return
+			}
+			for doc := range result.Data.Iter() {
+				if !yield(jsonmodels.NewManagedObject(doc.Bytes()), nil) {
+					return
+				}
+			}
+		}
+	}
 }
 
 func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.Result[core.NoContent] {

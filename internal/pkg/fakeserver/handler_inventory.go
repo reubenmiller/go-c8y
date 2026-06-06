@@ -60,6 +60,12 @@ func (fs *FakeServer) handleManagedObjectCollection(w http.ResponseWriter, r *ht
 		writeJSON(w, http.StatusOK, BuildCollectionResponse(r, fs.URL(), "managedObjects", page))
 
 	case http.MethodPost:
+		ct := r.Header.Get("Content-Type")
+		if strings.Contains(ct, "vnd.com.nsn.cumulocity.managedobjectcollection") {
+			// Bulk create: body is {"managedObjects": [...]}
+			fs.handleBulkCreateManagedObjects(w, r)
+			return
+		}
 		body, err := readBody(r)
 		if err != nil {
 			writeError(w, http.StatusBadRequest, "general/badRequest", err.Error())
@@ -69,9 +75,72 @@ func (fs *FakeServer) handleManagedObjectCollection(w http.ResponseWriter, r *ht
 		_, doc := fs.ManagedObjects.Create(body, fs.URL()+"/inventory/managedObjects")
 		writeJSON(w, http.StatusCreated, doc)
 
+	case http.MethodPut:
+		// Bulk update: Content-Type application/vnd.com.nsn.cumulocity.managedobjectcollection+json
+		fs.handleBulkUpdateManagedObjects(w, r)
+
 	default:
 		writeError(w, http.StatusMethodNotAllowed, "general/methodNotAllowed", "Method not allowed")
 	}
+}
+
+// handleBulkCreateManagedObjects processes a bulk POST of managed objects.
+func (fs *FakeServer) handleBulkCreateManagedObjects(w http.ResponseWriter, r *http.Request) {
+	body, err := readBody(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "general/badRequest", err.Error())
+		return
+	}
+	var envelope struct {
+		ManagedObjects []json.RawMessage `json:"managedObjects"`
+	}
+	if err := json.Unmarshal(body, &envelope); err != nil {
+		writeError(w, http.StatusBadRequest, "general/badRequest", err.Error())
+		return
+	}
+	var created []json.RawMessage
+	for _, item := range envelope.ManagedObjects {
+		item = setDefaultField(item, "owner", "admin")
+		_, doc := fs.ManagedObjects.Create(item, fs.URL()+"/inventory/managedObjects")
+		created = append(created, doc)
+	}
+	if created == nil {
+		created = []json.RawMessage{}
+	}
+	page := Paginate(r, created)
+	writeJSON(w, http.StatusOK, BuildCollectionResponse(r, fs.URL(), "managedObjects", page))
+}
+
+// handleBulkUpdateManagedObjects processes a bulk PUT of managed objects.
+func (fs *FakeServer) handleBulkUpdateManagedObjects(w http.ResponseWriter, r *http.Request) {
+	body, err := readBody(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "general/badRequest", err.Error())
+		return
+	}
+	var envelope struct {
+		ManagedObjects []json.RawMessage `json:"managedObjects"`
+	}
+	if err := json.Unmarshal(body, &envelope); err != nil {
+		writeError(w, http.StatusBadRequest, "general/badRequest", err.Error())
+		return
+	}
+	var updated []json.RawMessage
+	for _, item := range envelope.ManagedObjects {
+		id := getJSONString(item, "id")
+		if id == "" {
+			continue
+		}
+		doc, ok := fs.ManagedObjects.Update(id, item)
+		if ok {
+			updated = append(updated, doc)
+		}
+	}
+	if updated == nil {
+		updated = []json.RawMessage{}
+	}
+	page := Paginate(r, updated)
+	writeJSON(w, http.StatusOK, BuildCollectionResponse(r, fs.URL(), "managedObjects", page))
 }
 
 func (fs *FakeServer) handleManagedObjectSingle(w http.ResponseWriter, r *http.Request, id string) {

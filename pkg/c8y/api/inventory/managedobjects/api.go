@@ -169,6 +169,18 @@ func (s *Service) createB(body any) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req, "")
 }
 
+func (s *Service) createBulkB(managedObjects []any) *core.TryRequest {
+	body := make(map[string]any, 0)
+	body[ResultProperty] = managedObjects
+	req := s.Client.R().
+		SetMethod(resty.MethodPost).
+		SetBody(body).
+		SetHeader("Content-Type", types.MimeTypeManagedObjectCollection).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetURL(ApiManagedObjects)
+	return core.NewTryRequest(s.Client, req, ResultProperty)
+}
+
 // Get a managed object
 func (s *Service) getB(ID string, opt GetOptions) *core.TryRequest {
 	req := s.Client.R().
@@ -190,6 +202,18 @@ func (s *Service) updateB(ID string, body any) *core.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObject)
 	return core.NewTryRequest(s.Client, req)
+}
+
+func (s *Service) updateBulkB(managedObjects []any) *core.TryRequest {
+	body := make(map[string]any, 0)
+	body[ResultProperty] = managedObjects
+	req := s.Client.R().
+		SetMethod(resty.MethodPut).
+		SetBody(body).
+		SetHeader("Content-Type", types.MimeTypeManagedObjectCollection).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetURL(ApiManagedObjects)
+	return core.NewTryRequest(s.Client, req, ResultProperty)
 }
 
 // List of supported measurement types for a given managed object
