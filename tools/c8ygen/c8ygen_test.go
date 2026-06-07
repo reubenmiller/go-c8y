@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -187,6 +189,73 @@ func TestRenderModelAccessors(t *testing.T) {
 	}
 	if strings.Contains(out, "func (m Alarm) Source") {
 		t.Errorf("source should be skipped (nested object)")
+	}
+}
+
+func TestLoadOverlay(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "overlay.yml")
+	content := `
+resources:
+  - package: alarms
+    options:
+      - type: ListOptions
+        path: /alarm/alarms
+        method: GET
+        doc: |-
+          ListOptions doc.
+        fields:
+          source:
+            type: managedobjects.DeviceRef
+            doc: Source device.
+          status:
+            type: "[]model.AlarmStatus"
+        embeds:
+          - import: x/pagination
+            type: pagination.PaginationOptions
+        imports:
+          - x/model
+    models:
+      - type: Alarm
+        schema: alarm
+        skip: [source]
+`
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	resources, err := LoadOverlay(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(resources) != 1 || resources[0].Pkg != "alarms" {
+		t.Fatalf("unexpected resources: %+v", resources)
+	}
+	opt := resources[0].Options[0]
+	if opt.TypeName != "ListOptions" || opt.Path != "/alarm/alarms" || opt.Method != "GET" {
+		t.Errorf("option header wrong: %+v", opt)
+	}
+	if opt.FieldType["source"] != "managedobjects.DeviceRef" || opt.FieldType["status"] != "[]model.AlarmStatus" {
+		t.Errorf("field type overrides wrong: %+v", opt.FieldType)
+	}
+	if opt.FieldDoc["source"] != "Source device." {
+		t.Errorf("field doc override wrong: %+v", opt.FieldDoc)
+	}
+	if len(opt.Embeds) != 1 || opt.Embeds[0].Type != "pagination.PaginationOptions" {
+		t.Errorf("embeds wrong: %+v", opt.Embeds)
+	}
+	m := resources[0].Models[0]
+	if m.TypeName != "Alarm" || m.Schema != "alarm" || !m.SkipProps["source"] {
+		t.Errorf("model spec wrong: %+v", m)
+	}
+}
+
+func TestLoadOverlayMissingFileIsEmpty(t *testing.T) {
+	resources, err := LoadOverlay(filepath.Join(t.TempDir(), "does-not-exist.yml"))
+	if err != nil {
+		t.Fatalf("missing overlay should not error: %v", err)
+	}
+	if len(resources) != 0 {
+		t.Errorf("missing overlay should yield no resources, got %d", len(resources))
 	}
 }
 

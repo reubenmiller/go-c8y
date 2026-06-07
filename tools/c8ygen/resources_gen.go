@@ -15,10 +15,10 @@ type ResourcesResult struct {
 }
 
 // GenerateResources emits the per-resource Layer-0 artifacts (option structs, façade
-// models) for every resource in the pilot registry, rooted at repo dir `root`.
-func GenerateResources(doc *OAS, source, root string) (ResourcesResult, error) {
+// models) for every resource in the overlay, rooted at repo dir `root`.
+func GenerateResources(doc *OAS, source, root string, resources []resource) (ResourcesResult, error) {
 	res := ResourcesResult{}
-	for _, r := range pilotResources {
+	for _, r := range resources {
 		if len(r.Options) > 0 {
 			path := filepath.Join(root, "pkg", "c8y", "api", r.Pkg, "zz_generated_options.go")
 			src, err := renderOptions(doc, source, r)

@@ -64,17 +64,23 @@ go run ./tools/c8ygen generate --fetch
 Dependencies are deliberately minimal: standard library + `gopkg.in/yaml.v3` (already a
 SDK dependency). No heavy OpenAPI toolkit is pulled into the module.
 
-## Per-resource generation (Phase 2)
+## Per-resource generation (Phases 2–3)
 
-`c8ygen resources` generates, for each resource in the `resources.go` registry:
+`c8ygen resources` reads the **SDK overlay** ([docs/c8y-oas.overlay.yml](../../docs/c8y-oas.overlay.yml))
+and generates, for each resource declared there:
 
 - the full option struct (query params, with type/doc overrides for divergences like the
   `Source` resolver field) into `pkg/c8y/api/<pkg>/zz_generated_options.go`, and
 - façade accessors for the response schema into `pkg/c8y/jsonmodels/zz_generated_<schema>.go`.
 
-`task generate` runs both `generate` and `resources`. The pilot covers `alarms`; add more
-by extending `pilotResources`. See [docs/API_GEN.md](../../docs/API_GEN.md) §8 for the
-design finding on why option structs are generated whole rather than embedded.
+`task generate` runs both `generate` and `resources`. **Adding a resource is a docs
+change**: append an entry to the overlay, run `task generate`, and delete the superseded
+hand-written struct/accessors (keep the resolver field, nested-object accessors like
+`SourceID`, and constructors). The overlay is kept separate from `c8y-oas.yml` so it
+survives `task fetch-spec`.
+
+Currently migrated: `alarms`, `events`. See [docs/API_GEN.md](../../docs/API_GEN.md) §8
+for the design finding on why option structs are generated whole rather than embedded.
 
 ## Adding later phases
 

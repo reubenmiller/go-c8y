@@ -19,9 +19,9 @@ import (
 	"resty.dev/v3"
 )
 
-// Regenerate the per-resource Layer-0 files (option structs, façade models) for all
-// pilot resources. Runs from any one resource since the generator is registry-driven.
-//go:generate go run ../../../../tools/c8ygen resources --spec ../../../../docs/c8y-oas.yml --root ../../../..
+// Regenerate the per-resource Layer-0 files (option structs, façade models) for every
+// resource in the SDK overlay. Runs from here since the generator is overlay-driven.
+//go:generate go run ../../../../tools/c8ygen resources --spec ../../../../docs/c8y-oas.yml --overlay ../../../../docs/c8y-oas.overlay.yml --root ../../../..
 
 var ApiAlarms = "/alarm/alarms"
 var ApiAlarmsCount = "/alarm/alarms/count"

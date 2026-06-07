@@ -1,0 +1,86 @@
+# SDK overlay for go-c8y v2 code generation.
+#
+# This file carries the SDK-specific codegen directives layered on top of the upstream
+# OpenAPI spec (c8y-oas.yml): which operation becomes which option struct, the deliberate
+# API-vs-SDK divergences (resolver-typed fields, typed enum slices), embeds, and which
+# schemas map to façade models. It is kept separate from c8y-oas.yml so it survives
+# `task fetch-spec`.
+#
+# Consumed by tools/c8ygen (`task generate` / `c8ygen resources`). See docs/API_GEN.md.
+#
+# Per option struct:
+#   type    - generated Go struct name (replaces the hand-written one)
+#   path    - OAS path
+#   method  - HTTP method
+#   doc     - struct doc comment
+#   fields  - per-parameter overrides:
+#               type - Go type override (e.g. a resolver ref or typed enum slice)
+#               doc  - doc-comment override
+#   embeds  - anonymously-embedded structs (import + qualified type)
+#   imports - extra imports the overrides require
+# Per model:
+#   type   - existing façade type (methods are added to it)
+#   schema - components/schemas key
+#   skip   - properties kept hand-written (nested objects / non-derivable)
+
+resources:
+  - package: alarms
+    options:
+      - type: ListOptions
+        path: /alarm/alarms
+        method: GET
+        doc: |-
+          ListOptions to use when searching for alarms.
+
+          The struct shape is generated from the OpenAPI spec; the Source resolver
+          field is a deliberate divergence (it accepts "name:"/"ext:"/"query:"
+          strings, resolved by the List method). See docs/API_GEN.md.
+        fields:
+          source:
+            type: managedobjects.DeviceRef
+            doc: |-
+              Source device to filter alarms by.
+              Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
+              or cast a string variable with managedobjects.DeviceRef(id).
+          status:
+            type: "[]model.AlarmStatus"
+          severity:
+            type: "[]model.AlarmSeverity"
+        embeds:
+          - import: github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination
+            type: pagination.PaginationOptions
+        imports:
+          - github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model
+          - github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects
+    models:
+      - type: Alarm
+        schema: alarm
+        skip: [source] # nested object: SourceID() stays hand-written
+
+  - package: events
+    options:
+      - type: ListOptions
+        path: /event/events
+        method: GET
+        doc: |-
+          ListOptions to use when searching for events.
+
+          The struct shape is generated from the OpenAPI spec; the Source resolver
+          field is a deliberate divergence (it accepts "name:"/"ext:"/"query:"
+          strings, resolved by the List method). See docs/API_GEN.md.
+        fields:
+          source:
+            type: managedobjects.DeviceRef
+            doc: |-
+              Source device to filter events by.
+              Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
+              or cast a string variable with managedobjects.DeviceRef(id).
+        embeds:
+          - import: github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination
+            type: pagination.PaginationOptions
+        imports:
+          - github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects
+    models:
+      - type: Event
+        schema: event
+        skip: [source] # nested object: SourceID() stays hand-written

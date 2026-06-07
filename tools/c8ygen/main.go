@@ -101,6 +101,7 @@ func cmdResources(args []string) error {
 	fs := flag.NewFlagSet("resources", flag.ExitOnError)
 	opt := loadFlags(fs)
 	root := fs.String("root", ".", "repository root for resolving per-resource output paths")
+	overlay := fs.String("overlay", DefaultOverlayPath, "SDK overlay file (resource directives)")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -109,8 +110,16 @@ func cmdResources(args []string) error {
 	if err != nil {
 		return err
 	}
+	resources, err := LoadOverlay(*overlay)
+	if err != nil {
+		return err
+	}
+	if len(resources) == 0 {
+		fmt.Printf("no resources declared in %s; nothing to generate\n", *overlay)
+		return nil
+	}
 	source := specSource(*opt)
-	res, err := GenerateResources(doc, source, *root)
+	res, err := GenerateResources(doc, source, *root, resources)
 	if err != nil {
 		return err
 	}

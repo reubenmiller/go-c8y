@@ -190,7 +190,7 @@ generator uses, so it is a stepping-stone, not throwaway work.
 | **0** | OAS parser + `task lint-api` drift report (non-gating) | ✅ **done** |
 | **1** | Generator (`tools/c8ygen`); emit `zz_generated_paths.go` + `zz_generated_enums.go` into `pkg/c8y/api/spec` | ✅ **done** |
 | **2** | Generate option struct + façade model for the **pilot** resource (`alarms`); refactor `api.go`/`jsonmodels` to compose them. Prove the seam. | ✅ **done** |
-| **3** | Roll the pilot pattern across resources, resource-by-resource; replace the in-code resource registry with `x-c8y-sdk-*` overlay | ⬜ next |
+| **3** | Replace the in-code registry with a spec overlay (`docs/c8y-oas.overlay.yml`); roll the pattern across resources, resource-by-resource | 🔄 **in progress** — overlay done; `alarms` + `events` migrated; more resources incremental |
 | **4** | Make `task lint-api` **gating** (`--strict`) in CI; add `CONTRIBUTING` note: edit the spec/overlay, not `zz_generated_*.go` | ⬜ |
 
 Each phase leaves the repo building and tested (the offline suite in
@@ -247,6 +247,25 @@ divergences — `source → managedobjects.DeviceRef`, `status → []model.Alarm
 the generated struct is API-compatible with the hand-written one it replaced. Façade
 **models** compose the opposite way (generated methods + hand-written methods on the same
 type), which has no literal-initialization constraint.
+
+### What Phase 3 delivered (so far)
+
+- **The overlay file is real** — the in-code registry is gone; `tools/c8ygen` now reads
+  `docs/c8y-oas.overlay.yml`. The overlay declares, per resource, the option structs
+  (path/method, field type & doc overrides, embeds, imports) and façade models (schema,
+  skipped props). It is **kept separate from `c8y-oas.yml` so it survives `task fetch-spec`**.
+  Implemented as a pragmatic operation-keyed overlay, not full OpenAPI Overlay 1.0 JSONPath
+  (a possible future step); the structure mirrors the generator's model for clarity.
+- **A second resource proves it generalizes** — `events` migrated to generated
+  `ListOptions` + façade model by adding ~30 overlay lines and slimming its hand-written
+  files to the resolver field / `SourceID()` / constructors. Byte-identical to the prior
+  surface; the events integration tests pass unchanged.
+- **Adding a resource is now a docs change**, not a Go change: append an entry to the
+  overlay, run `task generate`, delete the superseded hand-written struct/accessors.
+
+**Remaining rollout is intentionally incremental** — each resource needs its hand-written
+option struct and model slimmed and verified behaviour-identical, so it should land
+resource-by-resource (ideally maintainer-reviewed) rather than in one sweep.
 
 ---
 

@@ -45,8 +45,8 @@ type optionSpec struct {
 
 // embedSpec is an anonymously-embedded struct in a generated option type.
 type embedSpec struct {
-	Import string // import path, e.g. ".../pkg/c8y/api/pagination"
-	Type   string // qualified type, e.g. "pagination.PaginationOptions"
+	Import string `yaml:"import"` // import path, e.g. ".../pkg/c8y/api/pagination"
+	Type   string `yaml:"type"`   // qualified type, e.g. "pagination.PaginationOptions"
 }
 
 // modelSpec generates façade accessors for a response schema.
@@ -54,46 +54,4 @@ type modelSpec struct {
 	TypeName  string          // existing façade type, e.g. "Alarm"
 	Schema    string          // components/schemas key, e.g. "alarm"
 	SkipProps map[string]bool // properties kept hand-written (nested/non-derivable)
-}
-
-// pilotResources is the Phase-2 pilot: the alarms resource only.
-var pilotResources = []resource{
-	{
-		Pkg: "alarms",
-		Options: []optionSpec{
-			{
-				TypeName: "ListOptions",
-				Doc: "ListOptions to use when searching for alarms.\n\n" +
-					"The struct shape is generated from the OpenAPI spec; the Source resolver\n" +
-					"field is a deliberate divergence (it accepts \"name:\"/\"ext:\"/\"query:\"\n" +
-					"strings, resolved by the List method). See docs/API_GEN.md.",
-				Path:   "/alarm/alarms",
-				Method: "GET",
-				FieldType: map[string]string{
-					"status":   "[]model.AlarmStatus",
-					"severity": "[]model.AlarmSeverity",
-					"source":   "managedobjects.DeviceRef",
-				},
-				FieldDoc: map[string]string{
-					"source": "Source device to filter alarms by.\n" +
-						"Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,\n" +
-						"or cast a string variable with managedobjects.DeviceRef(id).",
-				},
-				Embeds: []embedSpec{
-					{Import: "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination", Type: "pagination.PaginationOptions"},
-				},
-				Imports: []string{
-					"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model",
-					"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects",
-				},
-			},
-		},
-		Models: []modelSpec{
-			{
-				TypeName:  "Alarm",
-				Schema:    "alarm",
-				SkipProps: map[string]bool{"source": true}, // nested object: SourceID() stays hand-written
-			},
-		},
-	},
 }

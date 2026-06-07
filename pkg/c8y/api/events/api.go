@@ -40,69 +40,7 @@ type Service struct {
 	DeviceResolver *managedobjects.DeviceResolver
 }
 
-// ListOptions to use when search for events
-type ListOptions struct {
-	// Start date or date and time of the event's creation (set by the platform during creation)
-	CreatedFrom time.Time `url:"createdFrom,omitempty,omitzero"`
-
-	// End date or date and time of the event's creation (set by the platform during creation)
-	CreatedTo time.Time `url:"createdTo,omitempty,omitzero"`
-
-	// Start date or date and time of the last update made
-	LastUpdatedFrom time.Time `url:"lastUpdatedFrom,omitempty,omitzero"`
-
-	// End date or date and time of the last update made
-	LastUpdatedTo time.Time `url:"lastUpdatedTo,omitempty,omitzero"`
-
-	// Start date or date and time of the event occurrence (provided by the device).
-	DateFrom time.Time `url:"dateFrom,omitempty,omitzero"`
-
-	// End date or date and time of the last update made
-	DateTo time.Time `url:"dateTo,omitempty,omitzero"`
-
-	// Allows filtering events by the fragment's value, but only
-	// when provided together with fragmentType.
-	FragmentType string `url:"fragmentType,omitempty"`
-
-	// Allows filtering events by the fragment's value, but only
-	// when provided together with fragmentType.
-	// Important: Only fragments with a string value are supported.
-	FragmentValue string `url:"fragmentValue,omitempty"`
-
-	// If you are using a range query (that is, at least one of
-	// the dateFrom or dateTo parameters is included in the request),
-	// then setting revert=true will sort the results by the oldest
-	// events first. By default, the results are sorted by the newest
-	// events first.
-	Revert bool `url:"revert,omitempty"`
-
-	// The managed object ID to which the event is associated.
-	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
-	// or cast a string variable with managedobjects.DeviceRef(id).
-	Source managedobjects.DeviceRef `url:"source,omitempty"`
-
-	// The type of event to search for
-	Type string `url:"type,omitempty"`
-
-	// When set to true, events for related source assets, devices and additions will
-	// also be included in the response. When this parameter is provided a source
-	// must be specified.
-	WithSourceChildren bool `url:"withSourceChildren,omitempty"`
-
-	// When set to true, events for related source assets will also be included in
-	// the response. When this parameter is provided a source must be specified.
-	WithSourceAssets bool `url:"withSourceAssets,omitempty"`
-
-	// When set to true, events for related source devices will also be included in
-	// the response. When this parameter is provided a source must be specified.
-	WithSourceDevices bool `url:"withSourceDevices,omitempty"`
-
-	// When set to true, events for related source additions will also be included in
-	// the response. When this parameter is provided a source must be specified.
-	WithSourceAdditions bool `url:"withSourceAdditions,omitempty"`
-
-	pagination.PaginationOptions
-}
+// ListOptions is generated from the OpenAPI spec — see zz_generated_options.go.
 
 // EventIterator provides iteration over events
 type EventIterator = pagination.Iterator[jsonmodels.Event]
