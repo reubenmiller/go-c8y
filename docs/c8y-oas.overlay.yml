@@ -84,3 +84,51 @@ resources:
       - type: Event
         schema: event
         skip: [source] # nested object: SourceID() stays hand-written
+
+# Declared, known-acceptable drift between the OAS and the SDK. `c8ygen lint --strict`
+# (the CI api-drift gate) fails only on drift NOT listed here, so this section is the
+# single place where coverage decisions are recorded. Patterns match normalized paths
+# ({param} -> {}); a trailing "*" is a prefix wildcard.
+drift:
+  # OAS paths the SDK does not expose as a path literal.
+  ignoreMissing:
+    # Service root / API-discovery endpoints — intentionally not exposed (low value).
+    - /alarm
+    - /application
+    - /audit
+    - /certificate-authority
+    - /devicecontrol
+    - /event
+    - /features
+    - /identity
+    - /inventory
+    - /measurement
+    - /notification2
+    - /platform
+    - /tenant
+    - /user
+    # EST enrollment — handled in the devices package under a different path.
+    - /.well-known/est/*
+    # --- Known coverage gaps (TODO: implement; tracked in docs/assessment.md §2) ---
+    - /identity/search
+    - /features/{featureKey}
+    - /notification/realtime
+    - /application/applicationsByOwner/{tenantId}
+    - /application/applications/{id}/binaries/{binaryId}
+    - /application/applications/{id}/versions?version=1.0
+    - /inventory/managedObjects/{id}/childDevices/{childId}
+    - /tenant/loginOptions/{typeOrId}/accessMappings
+    - /tenant/loginOptions/{typeOrId}/accessMappings/{id}
+    - /tenant/loginOptions/{typeOrId}/inventoryAccessMappings
+    - /tenant/loginOptions/{typeOrId}/inventoryAccessMappings/{id}
+    - /tenant/loginOptions/{typeOrId}/restrict
+    - /tenant/tenants/{tenantId}/trusted-certificates/bulk
+    - /tenant/trusted-certificates/verify-cert-chain
+  # SDK path literals with no OAS counterpart — non-OAS features and variants.
+  ignoreExtra:
+    - /meta/*                   # CometD/Bayeux realtime channels (not in the REST OAS)
+    - /service/remoteaccess/*   # remote access service (not in the core OAS)
+    - /inventory/managedobjects # lowercase match in the offline mock server
+    - /roles/inventory          # inventory-roles alias path
+    - /tenant/statistics/device/ # trailing-slash device statistics variant
+    - /user/passwordReset       # password-reset endpoint (not in the core OAS)

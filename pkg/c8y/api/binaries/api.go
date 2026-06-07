@@ -13,7 +13,6 @@ import (
 
 var ApiBinaries = "/inventory/binaries"
 var ApiBinary = "/inventory/binaries/{id}"
-var ApiManagedObject = "/inventory/managedObject/{id}"
 
 var ParamID = "id"
 

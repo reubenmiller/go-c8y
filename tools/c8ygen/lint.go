@@ -18,18 +18,20 @@ var pathLiteral = regexp.MustCompile(`"(/[A-Za-z0-9_./{}-]+)"`)
 type LintResult struct {
 	OASPaths     int
 	SDKPaths     int
-	MissingInSDK []string // present in OAS, no matching path literal in the SDK
-	ExtraInSDK   []string // path literal in the SDK with no matching OAS path
+	MissingInSDK []string // present in OAS, no matching path literal in the SDK (unwaived)
+	ExtraInSDK   []string // path literal in the SDK with no matching OAS path (unwaived)
+	WaivedCount  int      // drift items suppressed by overlay waivers
 }
 
-// HasDrift reports whether any undeclared drift was found.
+// HasDrift reports whether any undeclared (unwaived) drift was found.
 func (r LintResult) HasDrift() bool {
 	return len(r.MissingInSDK) > 0 || len(r.ExtraInSDK) > 0
 }
 
-// Lint compares OAS paths against the path literals found in the SDK source tree.
-// srcDir is the root to scan (e.g. pkg/c8y/api).
-func Lint(doc *OAS, srcDir string) (LintResult, error) {
+// Lint compares OAS paths against the path literals found in the SDK source tree, then
+// suppresses any drift declared in the overlay waivers. srcDir is the root to scan
+// (e.g. pkg/c8y/api).
+func Lint(doc *OAS, srcDir string, waivers driftWaivers) (LintResult, error) {
 	res := LintResult{}
 
 	oas := map[string]string{} // normalized -> original
@@ -44,19 +46,67 @@ func Lint(doc *OAS, srcDir string) (LintResult, error) {
 	}
 	res.SDKPaths = len(sdk)
 
+	missing := normalizePatterns(waivers.IgnoreMissing)
+	extra := normalizePatterns(waivers.IgnoreExtra)
+
 	for norm, orig := range oas {
-		if _, ok := sdk[norm]; !ok {
-			res.MissingInSDK = append(res.MissingInSDK, orig)
+		if _, ok := sdk[norm]; ok {
+			continue
 		}
+		if matchesAny(norm, missing) {
+			res.WaivedCount++
+			continue
+		}
+		res.MissingInSDK = append(res.MissingInSDK, orig)
 	}
 	for norm, orig := range sdk {
-		if _, ok := oas[norm]; !ok {
-			res.ExtraInSDK = append(res.ExtraInSDK, orig)
+		if _, ok := oas[norm]; ok {
+			continue
 		}
+		if matchesAny(norm, extra) {
+			res.WaivedCount++
+			continue
+		}
+		res.ExtraInSDK = append(res.ExtraInSDK, orig)
 	}
 	sort.Strings(res.MissingInSDK)
 	sort.Strings(res.ExtraInSDK)
 	return res, nil
+}
+
+// normalizePatterns normalizes each waiver pattern's path component the same way SDK/OAS
+// paths are normalized ({param} → {}), preserving a trailing "*" wildcard.
+func normalizePatterns(patterns []string) []string {
+	out := make([]string, len(patterns))
+	for i, p := range patterns {
+		prefix, wild := strings.CutSuffix(p, "*")
+		np := normalizePath(prefix)
+		if wild {
+			// normalizePath trims trailing slashes; preserve one before a wildcard so
+			// "/meta/*" stays a path-segment prefix and does not match "/metabolism".
+			if strings.HasSuffix(prefix, "/") {
+				np += "/"
+			}
+			np += "*"
+		}
+		out[i] = np
+	}
+	return out
+}
+
+// matchesAny reports whether a normalized path matches any waiver pattern. A pattern
+// ending in "*" matches by prefix; otherwise the match is exact.
+func matchesAny(path string, patterns []string) bool {
+	for _, p := range patterns {
+		if prefix, ok := strings.CutSuffix(p, "*"); ok {
+			if strings.HasPrefix(path, prefix) {
+				return true
+			}
+		} else if path == p {
+			return true
+		}
+	}
+	return false
 }
 
 // scanSDKPaths walks srcDir and extracts API path literals from non-test, non-generated
@@ -154,7 +204,8 @@ func PrintLintReport(r LintResult) {
 	fmt.Printf("API drift report\n")
 	fmt.Printf("  OAS paths:  %d\n", r.OASPaths)
 	fmt.Printf("  SDK paths:  %d\n", r.SDKPaths)
-	fmt.Printf("  missing in SDK: %d   extra in SDK: %d\n\n", len(r.MissingInSDK), len(r.ExtraInSDK))
+	fmt.Printf("  undeclared drift — missing in SDK: %d   extra in SDK: %d   (waived: %d)\n\n",
+		len(r.MissingInSDK), len(r.ExtraInSDK), r.WaivedCount)
 
 	if len(r.MissingInSDK) > 0 {
 		fmt.Printf("OAS operations with no matching SDK path (potential coverage gaps):\n")
@@ -171,6 +222,6 @@ func PrintLintReport(r LintResult) {
 		fmt.Println()
 	}
 	if !r.HasDrift() {
-		fmt.Printf("No drift detected.\n")
+		fmt.Printf("No undeclared drift (%d waived by the overlay).\n", r.WaivedCount)
 	}
 }

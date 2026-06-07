@@ -191,7 +191,7 @@ generator uses, so it is a stepping-stone, not throwaway work.
 | **1** | Generator (`tools/c8ygen`); emit `zz_generated_paths.go` + `zz_generated_enums.go` into `pkg/c8y/api/spec` | ✅ **done** |
 | **2** | Generate option struct + façade model for the **pilot** resource (`alarms`); refactor `api.go`/`jsonmodels` to compose them. Prove the seam. | ✅ **done** |
 | **3** | Replace the in-code registry with a spec overlay (`docs/c8y-oas.overlay.yml`); roll the pattern across resources, resource-by-resource | 🔄 **in progress** — overlay done; `alarms` + `events` migrated; more resources incremental |
-| **4** | Make `task lint-api` **gating** (`--strict`) in CI; add `CONTRIBUTING` note: edit the spec/overlay, not `zz_generated_*.go` | ⬜ |
+| **4** | Make `task lint-api` **gating** (`--strict`) in CI; add `CONTRIBUTING` note: edit the spec/overlay, not `zz_generated_*.go` | ✅ **done** |
 
 Each phase leaves the repo building and tested (the offline suite in
 `OFFLINE_TESTING.md` is the regression net). Stop after any phase and still net positive.
@@ -266,6 +266,24 @@ type), which has no literal-initialization constraint.
 **Remaining rollout is intentionally incremental** — each resource needs its hand-written
 option struct and model slimmed and verified behaviour-identical, so it should land
 resource-by-resource (ideally maintainer-reviewed) rather than in one sweep.
+
+### What Phase 4 delivered
+
+- **The drift check is a CI gate.** `task lint-api -- --strict` (the `api-drift` job) fails
+  on any OAS↔SDK drift **not** declared in the overlay, so new endpoints, typos, and
+  accidental removals are caught on every PR.
+- **Declared waivers.** The overlay's `drift:` section enumerates the known-acceptable
+  drift — service-root/discovery endpoints, non-OAS features (`/meta/*` realtime,
+  `/service/remoteaccess/*`), and the known coverage gaps from the assessment (kept under
+  a `TODO` comment so they stay visible). 41 items are waived today; `lint` prints the
+  count and lists only undeclared drift. Patterns match normalized paths with a `*` prefix
+  wildcard.
+- **One real wart removed.** The gate forced resolution of the dead, typo'd
+  `binaries.ApiManagedObject` (`/inventory/managedObject/{id}`, singular) the drift check
+  first surfaced — deleted rather than waived.
+- **[CONTRIBUTING.md](../CONTRIBUTING.md)** documents the contract: edit the spec/overlay
+  and the hand-written layer, never `zz_generated_*.go`; run `task generate`; how to add a
+  resource and record a drift decision.
 
 ---
 

@@ -134,7 +134,8 @@ func cmdLint(args []string) error {
 	fs := flag.NewFlagSet("lint", flag.ExitOnError)
 	opt := loadFlags(fs)
 	src := fs.String("src", "pkg/c8y/api", "SDK source root to scan for path literals")
-	strict := fs.Bool("strict", false, "exit non-zero when drift is detected")
+	overlay := fs.String("overlay", DefaultOverlayPath, "SDK overlay file (drift waivers)")
+	strict := fs.Bool("strict", false, "exit non-zero on undeclared (unwaived) drift")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -143,13 +144,18 @@ func cmdLint(args []string) error {
 	if err != nil {
 		return err
 	}
-	res, err := Lint(doc, *src)
+	waivers, err := LoadDriftWaivers(*overlay)
+	if err != nil {
+		return err
+	}
+	res, err := Lint(doc, *src, waivers)
 	if err != nil {
 		return err
 	}
 	PrintLintReport(res)
 	if *strict && res.HasDrift() {
-		return fmt.Errorf("drift detected (%d missing, %d extra)", len(res.MissingInSDK), len(res.ExtraInSDK))
+		return fmt.Errorf("undeclared drift detected (%d missing, %d extra); implement it, or declare it under drift: in %s",
+			len(res.MissingInSDK), len(res.ExtraInSDK), *overlay)
 	}
 	return nil
 }

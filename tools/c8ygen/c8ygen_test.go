@@ -259,6 +259,74 @@ func TestLoadOverlayMissingFileIsEmpty(t *testing.T) {
 	}
 }
 
+func TestDriftWaiverMatching(t *testing.T) {
+	patterns := normalizePatterns([]string{
+		"/meta/*",
+		"/tenant/loginOptions/{typeOrId}/accessMappings",
+		"/.well-known/est/*",
+		"/user/passwordReset",
+	})
+	match := []string{
+		"/meta/connect",
+		"/meta/subscribe",
+		"/tenant/loginOptions/{}/accessMappings", // {typeOrId} normalized to {}
+		"/.well-known/est/simpleenroll",
+		"/user/passwordReset",
+	}
+	noMatch := []string{
+		"/meta", // prefix needs the trailing slash content
+		"/tenant/loginOptions/{}/accessMappings/{}", // more specific, not the exact pattern
+		"/user/password",
+	}
+	for _, p := range match {
+		if !matchesAny(p, patterns) {
+			t.Errorf("expected %q to be waived", p)
+		}
+	}
+	for _, p := range noMatch {
+		if matchesAny(p, patterns) {
+			t.Errorf("expected %q NOT to be waived", p)
+		}
+	}
+}
+
+func TestLintWaiversSuppressDrift(t *testing.T) {
+	doc := &OAS{Paths: map[string]PathItem{
+		"/alarm/alarms":    {Get: &Operation{}},
+		"/identity/search": {Post: &Operation{}}, // missing in SDK, will be waived
+	}}
+	dir := t.TempDir()
+	// SDK source with one path literal that is in the OAS, plus one extra (non-OAS).
+	src := "package p\nvar a = \"/alarm/alarms\"\nvar b = \"/service/remoteaccess/devices/{id}/configurations\"\n"
+	if err := os.WriteFile(filepath.Join(dir, "api.go"), []byte(src), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Without waivers: drift on both sides.
+	res, err := Lint(doc, dir, driftWaivers{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.HasDrift() || len(res.MissingInSDK) != 1 || len(res.ExtraInSDK) != 1 {
+		t.Fatalf("expected unwaived drift, got %+v", res)
+	}
+
+	// With waivers: both suppressed.
+	res, err = Lint(doc, dir, driftWaivers{
+		IgnoreMissing: []string{"/identity/search"},
+		IgnoreExtra:   []string{"/service/remoteaccess/*"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.HasDrift() {
+		t.Errorf("expected no undeclared drift, got %+v", res)
+	}
+	if res.WaivedCount != 2 {
+		t.Errorf("expected 2 waived, got %d", res.WaivedCount)
+	}
+}
+
 func TestStringEnumSkipsNonString(t *testing.T) {
 	if _, ok := stringEnum(Schema{Enum: []any{1, 2, 3}}); ok {
 		t.Errorf("numeric enum should be skipped")
