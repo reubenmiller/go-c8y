@@ -31,7 +31,7 @@ var ParamID = "id"
 
 const ResultProperty = "alarms"
 
-// Service provides api to get/set/delete audit entries in Cumulocity
+// Service provides api to get/set/delete alarms in Cumulocity
 type Service struct {
 	core.Service
 	DeviceResolver *managedobjects.DeviceResolver

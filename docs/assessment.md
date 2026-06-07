@@ -191,31 +191,22 @@ Standard/reasonable deps (HIGH): `golang-jwt/jwt/v5`, `tidwall/gjson`+`sjson`, `
 - **Stale "implementation status" checklists** — `V2.md` marks **OAuth2 as planned `[ ]`** and **Upsert as planned `[ ]`**, but both are **fully implemented** (OAuth2 has internal/browser/device flows + TFA; upsert has 6 variants in `pkg/c8y/op/upsert.go`). `API_DESIGN.md` correctly marks them done — so the docs **contradict each other**. *(HIGH)*
 - **Dual v1/v2 README** mixes ~80 lines of v1 with v2 and lacks a single "start here" path. *(MEDIUM)*
 
-### In-code godoc — good coverage, embarrassing copy-paste errors
+### In-code godoc — good coverage
 
 - Option struct **fields are documented** (genuinely good). Exported types/functions generally have doc comments following Go convention. *(HIGH)*
-- **Copy-paste service descriptions are wrong in 4 packages** *(HIGH — re-verified by grep):*
-  - `alarms/api.go:29` → "get/set/delete **audit entries**" (should be alarms)
-  - `identity/api.go:20` → "get/set/delete **audit entries**" (should be identities)
-  - `loginoptions/api.go:27` → "get/set/delete **events**" (should be login options)
-  - `remoteaccess/api.go:15` → "get/set/delete **events**" (should be remote access)
 - **Few runnable examples** — ~11 `ExampleXxx`, almost all auth-focused; none for CRUD/pagination/resolvers/deferred execution. *(HIGH)*
 
 ---
 
 ## Prioritized recommendations
 
-**P0 — correctness / credibility (hours):**
-1. **Migrate `.golangci.yml` to v2 format** so linting actually runs. *(HIGH value)*
-2. Fix the **4 copy-paste godoc errors** and the **stale `V2.md` status checklist**. *(HIGH value, trivial)*
-
 **P1 — risk reduction (days):**
-3. **Address `resty` pin** — track toward a tagged release or vendor/wrap the HTTP layer behind an interface to limit blast radius. *(HIGH value)*
+1. **Address `resty` pin** — track toward a tagged release or vendor/wrap the HTTP layer behind an interface to limit blast radius. *(HIGH value)*
 
 **P2 — polish (ongoing):**
-4. Add **offline tests for protocol areas** (realtime, notification2, oauth2, cache). *(MEDIUM)*
-5. Reduce API outliers: **service-level/context tenant default** for users/groups; consider unifying `applications` list variants and the ref types. *(MEDIUM)*
-6. **Enforce a coverage threshold** in CI now that the offline gate produces a profile. *(MEDIUM)*
+2. Add **offline tests for protocol areas** (realtime, notification2, oauth2, cache). *(MEDIUM)*
+3. Reduce API outliers: **service-level/context tenant default** for users/groups; consider unifying `applications` list variants and the ref types. *(MEDIUM)*
+4. **Enforce a coverage threshold** in CI now that the offline gate produces a profile. *(MEDIUM)*
 
 ---
 

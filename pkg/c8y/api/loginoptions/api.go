@@ -111,7 +111,7 @@ func (s *Service) listNoAuthB(opt any) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req, ResultProperty).WithNoAuth()
 }
 
-// Get an event
+// Get login option
 func (s *Service) Get(ctx context.Context, typeOrID string) op.Result[jsonmodels.LoginOption] {
 	return core.Execute(ctx, s.getB(typeOrID), jsonmodels.NewLoginOption)
 }

@@ -12,7 +12,7 @@ func NewService(s *core.Service) *Service {
 	}
 }
 
-// Service provides api to get/set/delete events in Cumulocity
+// Service provides api to managed Cloud Remote Access in Cumulocity
 type Service struct {
 	core.Service
 	Configurations *remoteaccess_configurations.Service

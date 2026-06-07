@@ -18,7 +18,7 @@ var DefaultType = "c8y_Global"
 
 const ResultProperty = "externalIds"
 
-// Service provides api to get/set/delete audit entries in Cumulocity
+// Service provides api to get/set/delete external identities in Cumulocity
 type Service struct{ core.Service }
 
 func NewService(common *core.Service) *Service {
