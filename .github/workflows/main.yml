@@ -29,6 +29,29 @@ jobs:
         with:
           version: latest
 
+  # API drift report: compares the vendored OpenAPI spec against the hand-written SDK.
+  # Non-gating (Phase 0 of docs/API_GEN.md) — reports coverage gaps without failing the
+  # build. Also verifies the generated Layer-0 substrate is committed and up to date.
+  api-drift:
+    name: api-drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Report API drift
+        run: task lint-api
+      - name: Verify generated code is up to date
+        run: |
+          task generate
+          git diff --exit-code pkg/c8y/api/spec/ \
+            || (echo "::error::Generated spec is stale. Run 'task generate' and commit." && exit 1)
+
   # Offline gate: runs on every push/PR (including forks) without a live tenant.
   test-offline:
     runs-on: ${{ matrix.os }}
