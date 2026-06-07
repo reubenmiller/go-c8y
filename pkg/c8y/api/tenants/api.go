@@ -46,20 +46,7 @@ type Service struct {
 	SystemOptions   *systemoptions.Service
 }
 
-// ListOptions tenant filter options
-type ListOptions struct {
-	// Company name associated with the Cumulocity tenant
-	Company string `url:"company,omitempty"`
-
-	// Domain name of the Cumulocity tenant
-	Domain string `url:"domain,omitempty"`
-
-	// Identifier of the Cumulocity tenant's parent. Works only for requests sent with management tenant credentials
-	Parent string `url:"parent,omitempty"`
-
-	// Pagination options
-	pagination.PaginationOptions
-}
+// ListOptions is generated from the OpenAPI spec — see zz_generated_options.go.
 
 // TenantIterator provides iteration over tenants
 type TenantIterator = pagination.Iterator[jsonmodels.Tenant]

@@ -152,6 +152,19 @@ resources:
         # deviceExternalIDs (object) is auto-skipped; deviceName/Description are not in
         # the schema, so those accessors stay hand-written.
 
+  - package: tenants
+    # Options-only: a plain resource with no resolver fields and no generated model.
+    # (The Tenant model stays hand-written — its schema would add ~9 incidental
+    # accessors and lacks the hand-written Name().)
+    options:
+      - type: ListOptions
+        path: /tenant/tenants
+        method: GET
+        doc: ListOptions to use when searching for tenants.
+        embeds:
+          - import: github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination
+            type: pagination.PaginationOptions
+
 # Declared, known-acceptable drift between the OAS and the SDK. `c8ygen lint --strict`
 # (the CI api-drift gate) fails only on drift NOT listed here, so this section is the
 # single place where coverage decisions are recorded. Patterns match normalized paths
