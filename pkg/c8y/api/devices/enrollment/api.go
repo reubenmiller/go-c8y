@@ -16,7 +16,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/mdp/qrterminal/v3"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
@@ -225,13 +224,25 @@ Use the following URL
 
 `
 
-func NewDeviceEnrollmentBannerOptions(showQRCode bool, showURL bool) *DeviceEnrollmentBannerOptions {
-	return &DeviceEnrollmentBannerOptions{
+// QRCodeRenderer renders the enrollment URL as a terminal-friendly string (e.g. an
+// ASCII/Unicode QR code). It is supplied by the caller so that the core SDK does not
+// depend on any QR-code rendering library; a CLI can plug in its renderer of choice.
+type QRCodeRenderer func(url string) (string, error)
+
+// NewDeviceEnrollmentBannerOptions creates banner options for PollEnroll. To render a
+// QR code, pass a QRCodeRenderer; without one the QR section is left empty even when
+// showQRCode is true (the core SDK does not bundle a QR-code library).
+func NewDeviceEnrollmentBannerOptions(showQRCode bool, showURL bool, renderer ...QRCodeRenderer) *DeviceEnrollmentBannerOptions {
+	opts := &DeviceEnrollmentBannerOptions{
 		Enable:     true,
 		ShowQRCode: showQRCode,
 		ShowURL:    showURL,
 		Template:   DeviceEnrollmentDefaultTemplate,
 	}
+	if len(renderer) > 0 {
+		opts.QRCodeRenderer = renderer[0]
+	}
+	return opts
 }
 
 type DeviceEnrollmentBannerOptions struct {
@@ -239,6 +250,10 @@ type DeviceEnrollmentBannerOptions struct {
 	Template   string
 	ShowQRCode bool
 	ShowURL    bool
+
+	// QRCodeRenderer renders the enrollment URL as a QR code for the banner. If nil,
+	// the QR code section is left empty even when ShowQRCode is true.
+	QRCodeRenderer QRCodeRenderer
 }
 
 type DeviceEnrollmentPollResult struct {
@@ -255,6 +270,18 @@ func (r *DeviceEnrollmentPollResult) Ok() bool {
 //go:embed device_registration.txt
 var DeviceRegistrationHeader string
 
+// EnrollmentURL returns the device registration URL for the given external ID and
+// one-time password. Callers (e.g. a CLI) can render this however they like — for
+// example as a clickable link or a QR code.
+func (s *Service) EnrollmentURL(externalID string, oneTimePassword string) string {
+	return fmt.Sprintf(
+		"%s/apps/devicemanagement/index.html#/deviceregistration?externalId=%s&one-time-password=%s",
+		strings.TrimRight(s.Client.BaseURL(), "/"),
+		externalID,
+		oneTimePassword,
+	)
+}
+
 func (s *Service) printEnrollmentLog(externalID string, oneTimePassword string, opts DeviceEnrollmentBannerOptions) error {
 	if opts.Template == "" {
 		opts.Template = DeviceEnrollmentDefaultTemplate
@@ -265,20 +292,15 @@ func (s *Service) printEnrollmentLog(externalID string, oneTimePassword string, 
 		return err
 	}
 
-	fullURL := fmt.Sprintf(
-		"%s/apps/devicemanagement/index.html#/deviceregistration?externalId=%s&one-time-password=%s",
-		strings.TrimRight(s.Client.BaseURL(), "/"),
-		externalID,
-		oneTimePassword,
-	)
+	fullURL := s.EnrollmentURL(externalID, oneTimePassword)
 
-	qrcode := bytes.NewBufferString("")
-	qrterminal.GenerateWithConfig(fullURL, qrterminal.Config{
-		Level:      qrterminal.M,
-		Writer:     qrcode,
-		HalfBlocks: true,
-		QuietZone:  1,
-	})
+	qrcode := ""
+	if opts.ShowQRCode && opts.QRCodeRenderer != nil {
+		qrcode, err = opts.QRCodeRenderer(fullURL)
+		if err != nil {
+			return err
+		}
+	}
 
 	b := bytes.NewBufferString("")
 	bannerTemplate.Execute(b, struct {
@@ -299,7 +321,7 @@ func (s *Service) printEnrollmentLog(externalID string, oneTimePassword string, 
 		OneTimePassword: oneTimePassword,
 		ShowQRCode:      opts.ShowQRCode,
 		ShowURL:         opts.ShowURL,
-		QRCode:          qrcode.String(),
+		QRCode:          qrcode,
 		Divider:         strings.Repeat("-", 80),
 	})
 	_, err = fmt.Fprintf(os.Stderr, "%s\n", b.String())

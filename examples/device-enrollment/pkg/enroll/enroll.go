@@ -1,6 +1,7 @@
 package enroll
 
 import (
+	"bytes"
 	"context"
 	"crypto/x509"
 	"errors"
@@ -9,11 +10,25 @@ import (
 	"os"
 	"time"
 
+	"github.com/mdp/qrterminal/v3"
 	"github.com/reubenmiller/example/pkg/cli"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/devices/enrollment"
 	"github.com/reubenmiller/go-c8y/v2/pkg/certutil"
 )
+
+// renderQRCode renders the enrollment URL as a terminal QR code. This lives in the
+// CLI rather than the SDK so the core client does not pull in a QR-code library.
+func renderQRCode(url string) (string, error) {
+	buf := bytes.NewBufferString("")
+	qrterminal.GenerateWithConfig(url, qrterminal.Config{
+		Level:      qrterminal.M,
+		Writer:     buf,
+		HalfBlocks: true,
+		QuietZone:  1,
+	})
+	return buf.String(), nil
+}
 
 /*
 Enroll command
@@ -94,11 +109,13 @@ func (r *EnrollCmd) Run(ctx *cli.Context) error {
 			// Give up after 10 minutes
 			Timeout: r.Timeout,
 
-			// Print enrollment information
+			// Print enrollment information. The QR code is rendered by the CLI so
+			// the core SDK does not depend on a QR-code library.
 			Banner: &enrollment.DeviceEnrollmentBannerOptions{
-				Enable:     true,
-				ShowQRCode: true,
-				ShowURL:    true,
+				Enable:         true,
+				ShowQRCode:     true,
+				ShowURL:        true,
+				QRCodeRenderer: renderQRCode,
 			},
 
 			CertificateSigningRequest: csr,

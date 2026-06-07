@@ -5,6 +5,7 @@ go 1.25.0
 require (
 	github.com/alecthomas/kong v1.12.1
 	github.com/eclipse/paho.golang v0.22.0
+	github.com/mdp/qrterminal/v3 v3.2.1
 	github.com/reubenmiller/go-c8y/v2 v2.0.0-00010101000000-000000000000
 )
 
@@ -16,13 +17,13 @@ require (
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
-	github.com/mdp/qrterminal/v3 v3.2.1 // indirect
+	github.com/smallstep/pkcs7 v0.2.1 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/zalando/go-keyring v0.2.6 // indirect
-	go.mozilla.org/pkcs7 v0.9.0 // indirect
+	golang.org/x/crypto v0.48.0 // indirect
 	golang.org/x/net v0.51.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/term v0.40.0 // indirect
