@@ -157,7 +157,7 @@ type CreateOptions struct {
 	Time time.Time
 
 	// Fragments are custom top-level fields — most importantly the measurement value
-	// fragments (e.g. c8y_Temperature). Each is serialized under its FragmentKey() and
+	// fragments (e.g. c8y_Temperature). Each is serialised under its FragmentKey() and
 	// deep-merged into the body; later entries win. Use a typed model.Fragment, or
 	// model.Frag("key", value) for ad-hoc fragments.
 	Fragments []model.Fragment

@@ -218,11 +218,11 @@ func (s *Service) ProofEndToEnd(ctx context.Context, opt ProofOptions) op.Result
 	if opt.PrivateKey != "" {
 		key, err := certutil.PrivateKeyFromFile(opt.PrivateKey)
 		if err != nil {
-			return op.Failed[jsonmodels.TrustedCertificate](fmt.Errorf("Failed to get private key. %w", err), false)
+			return op.Failed[jsonmodels.TrustedCertificate](fmt.Errorf("failed to get private key. %w", err), false)
 		}
 		signer, err := certutil.NewSignerFromKey(key)
 		if err != nil {
-			return op.Failed[jsonmodels.TrustedCertificate](fmt.Errorf("Failed to create signer for private key. %w", err), false)
+			return op.Failed[jsonmodels.TrustedCertificate](fmt.Errorf("failed to create signer for private key. %w", err), false)
 		}
 
 		certResult := s.Get(ctx, GetOptions{
@@ -250,7 +250,7 @@ func (s *Service) ProofEndToEnd(ctx context.Context, opt ProofOptions) op.Result
 
 		code, err := signer.SignSHA256([]byte(verificationCode))
 		if err != nil {
-			return op.Failed[jsonmodels.TrustedCertificate](fmt.Errorf("Failed to sign verification code. %w", err), false)
+			return op.Failed[jsonmodels.TrustedCertificate](fmt.Errorf("failed to sign verification code. %w", err), false)
 		}
 
 		opt.Code = base64.StdEncoding.EncodeToString(code)

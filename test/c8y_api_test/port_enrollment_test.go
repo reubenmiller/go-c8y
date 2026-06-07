@@ -79,7 +79,7 @@ func Test_Enrollment_Register(t *testing.T) {
 	// Delete any pre-existing values, but ignore any errors
 	client.Devices.Registration.Delete(ctx, deviceID)
 
-	// Cleanup all of the artifacts afterwards
+	// Cleanup all of the artefacts afterwards
 	t.Cleanup(func() {
 		xidResult := client.Identity.Get(ctx, identity.IdentityOptions{
 			Type:       "c8y_Serial",

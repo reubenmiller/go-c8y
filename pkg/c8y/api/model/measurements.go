@@ -351,7 +351,7 @@ func NewSimpleMeasurementRepresentation(opt SimpleMeasurementOptions) *Measureme
 
 var ErrInvalidMeasurementValueType = errors.New("only numbers are supported as measurement values")
 
-// MarshalJSON custom marshaling of the Value Fragment Type representation in a measurement
+// MarshalJSON custom marshalling of the Value Fragment Type representation in a measurement
 func (m ValueFragmentType) MarshalJSON() ([]byte, error) {
 	buffer := bytes.NewBufferString("{")
 
@@ -409,7 +409,7 @@ func (m ValueFragmentType) MarshalJSON() ([]byte, error) {
 		valueFragmentSeries = append(valueFragmentSeries, fmt.Sprintf("\"%s\": %s", value.Name, valueStr))
 	}
 
-	buffer.WriteString(fmt.Sprintf("\"%s\":{%s}", m.Name, strings.Join(valueFragmentSeries, ",")))
+	fmt.Fprintf(buffer, "\"%s\":{%s}", m.Name, strings.Join(valueFragmentSeries, ","))
 
 	buffer.WriteString("}")
 
@@ -417,7 +417,7 @@ func (m ValueFragmentType) MarshalJSON() ([]byte, error) {
 }
 
 // MarshalJSON converts the Measurement Representation to a json string
-// A custom marshaling is required as the measurement object is structured
+// A custom marshalling is required as the measurement object is structured
 // differently to the official Cumulocity Measurement structure to make it easier to handle
 func (m MeasurementRepresentation) MarshalJSON() ([]byte, error) {
 	// Collect the json property strings, then join all of the parts together at the end

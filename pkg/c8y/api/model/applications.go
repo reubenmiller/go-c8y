@@ -50,7 +50,7 @@ type ApplicationVersion struct {
 	BinaryID string   `json:"binaryId,omitempty"`
 	Tags     []string `json:"tags,omitempty"`
 
-	Application *Application `json:"-,omitempty"`
+	Application *Application `json:"-"`
 }
 
 // ApplicationVersionsCollection a list of versions related to an application

@@ -135,7 +135,7 @@ func Test_Pagination_WithDryRun(t *testing.T) {
 	ctx := api.WithDryRun(context.Background(), true)
 	ctx = api.WithMockResponses(ctx, true)
 
-	// Dry run with mock responses (legacy behavior)
+	// Dry run with mock responses (legacy behaviour)
 	it := client.ManagedObjects.ListAll(ctx, managedobjects.ListOptions{
 		PaginationOptions: pagination.PaginationOptions{
 			PageSize: 5,

@@ -28,12 +28,12 @@ func EncodeUTF16(s string, addBOM bool) []byte {
 func DecodeUTF16(b []byte) (string, error) {
 
 	if len(b)%2 != 0 {
-		return "", fmt.Errorf("Must have even length byte slice")
+		return "", fmt.Errorf("must have even length byte slice")
 	}
 
 	bom := UTF16Bom(b)
 	if bom < 0 {
-		return "", fmt.Errorf("Buffer is too small")
+		return "", fmt.Errorf("buffer is too small")
 	}
 
 	u16s := make([]uint16, 1)

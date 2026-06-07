@@ -90,24 +90,6 @@ func getJSONString(doc json.RawMessage, key string) string {
 	return s
 }
 
-// getJSONNumber extracts a top-level number field from raw JSON as a string.
-func getJSONNumber(doc json.RawMessage, key string) string {
-	var m map[string]json.RawMessage
-	if err := json.Unmarshal(doc, &m); err != nil {
-		return ""
-	}
-	v, ok := m[key]
-	if !ok {
-		return ""
-	}
-	return strings.Trim(string(v), `"`)
-}
-
-// buildSelfURL builds a "self" URL for a given resource path.
-func buildSelfURL(baseURL, path string) string {
-	return baseURL + path
-}
-
 // buildSourceSelfURL builds a self URL for a source object reference.
 func buildSourceSelfURL(baseURL, sourceID string) string {
 	return fmt.Sprintf("%s/inventory/managedObjects/%s", baseURL, sourceID)

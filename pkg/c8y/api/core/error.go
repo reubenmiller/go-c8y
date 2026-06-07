@@ -78,7 +78,7 @@ func coupleAPIErrors(r *resty.Response, err error) (*resty.Response, error) {
 	}
 
 	if !r.IsRead {
-		// Manually parse the response to analyze the error message
+		// Manually parse the response to analyse the error message
 		defer r.Body.Close()
 		buf, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -122,7 +122,7 @@ func NewError(err any) *Error {
 		apiError, ok := e.ResultError().(*APIError)
 
 		if !ok {
-			// If Build error manually if the APIError wasn't serialized
+			// If Build error manually if the APIError wasn't serialised
 			wrappedErr := &Error{
 				Code:       e.StatusCode(),
 				Type:       "NoContent",

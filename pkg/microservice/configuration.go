@@ -23,7 +23,7 @@ type Configuration struct {
 	viper *viper.Viper
 }
 
-// InitConfiguration initializes the configuration (i.e. reads from file / environment variables)
+// InitConfiguration initialises the configuration (i.e. reads from file / environment variables)
 func (c *Configuration) InitConfiguration() {
 	config := c.viper
 	config.SetConfigName("application")
@@ -52,7 +52,7 @@ func (c *Configuration) InitConfiguration() {
 	config.BindEnv("c8y.microservice.isolation", microservices.EnvironmentMicroserviceIsolation)
 
 	// Set proxy settings if defined. Otherwise the existing HTTP_PROXY and HTTPS_PROXY settings
-	// will be honored
+	// will be honoured
 	proxyHost := config.GetString("http.proxyHost")
 	proxyPort := config.GetString("http.proxyPort")
 

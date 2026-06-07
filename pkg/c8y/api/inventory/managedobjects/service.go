@@ -360,7 +360,7 @@ func (s *Service) getOrCreateWithQuery(ctx context.Context, body map[string]any,
 	// Define finder function
 	finder := func(ctx context.Context) (op.Result[jsonmodels.ManagedObject], bool) {
 		searchOpts := ListOptions{}
-		searchOpts.PaginationOptions.PageSize = 1
+		searchOpts.PageSize = 1
 		searchOpts.Query = query
 
 		listResult := s.List(ctx, searchOpts)
@@ -467,7 +467,7 @@ func (s *Service) executeGetOrCreateByExternalID(
 	opts GetOrCreateByExternalIDOptions,
 ) op.Result[jsonmodels.ManagedObject] {
 
-	// Initialize state
+	// Initialise state
 	state := &externalIDState{
 		externalID:     opts.ExternalID,
 		externalIDType: opts.ExternalIDType,

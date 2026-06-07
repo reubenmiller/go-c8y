@@ -20,7 +20,7 @@ func Test_SoftwareVersion(t *testing.T) {
 	// Get Or Create software version (new item)
 	softwareName := "software" + testingutils.RandomString(16)
 	version := "1.0.1"
-	softwareType := "ci-artifact"
+	softwareType := "ci-artifact" //nolint:misspell
 	tempFile := testingutils.CreateTempFile(t, "test binary content")
 
 	result := client.Repository.Software.Versions.GetOrCreateVersion(context.Background(), softwareversions.CreateVersionOptions{
@@ -95,7 +95,7 @@ func Test_SoftwareVersionResolver_ByID(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	softwareName := "software" + testingutils.RandomString(16)
 	version := "1.0.0"
-	softwareType := "ci-artifact"
+	softwareType := "ci-artifact" //nolint:misspell
 	tempFile := testingutils.CreateTempFile(t, "test binary content")
 
 	// Create software version
@@ -138,7 +138,7 @@ func Test_SoftwareVersionResolver_ByVersion(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	softwareName := "software" + testingutils.RandomString(16)
 	version := "2.0.0"
-	softwareType := "ci-artifact"
+	softwareType := "ci-artifact" //nolint:misspell
 	tempFile := testingutils.CreateTempFile(t, "test binary content")
 
 	// Create software version
@@ -183,7 +183,7 @@ func Test_SoftwareVersionResolver_ByVersionAndName(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	softwareName := "software" + testingutils.RandomString(16)
 	version := "3.0.0"
-	softwareType := "ci-artifact"
+	softwareType := "ci-artifact" //nolint:misspell
 	tempFile := testingutils.CreateTempFile(t, "test binary content")
 
 	// Create software version
@@ -265,7 +265,7 @@ func Test_SoftwareVersionUpdate_WithResolver(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	softwareName := "software" + testingutils.RandomString(16)
 	version := "4.0.0"
-	softwareType := "ci-artifact"
+	softwareType := "ci-artifact" //nolint:misspell
 	tempFile := testingutils.CreateTempFile(t, "test binary content")
 
 	// Create software version
@@ -302,7 +302,7 @@ func Test_SoftwareVersionDelete_WithResolver(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	softwareName := "software" + testingutils.RandomString(16)
 	version := "5.0.0"
-	softwareType := "ci-artifact"
+	softwareType := "ci-artifact" //nolint:misspell
 	tempFile := testingutils.CreateTempFile(t, "test binary content")
 
 	// Create software version
@@ -340,7 +340,7 @@ func Test_SoftwareVersionDeferredExecution(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	softwareName := "software" + testingutils.RandomString(16)
 	version := "6.0.0"
-	softwareType := "ci-artifact"
+	softwareType := "ci-artifact" //nolint:misspell
 	tempFile := testingutils.CreateTempFile(t, "test binary content")
 
 	// Create software version
@@ -424,7 +424,7 @@ func Test_SoftwareVersionMetadata(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	softwareName := "software" + testingutils.RandomString(16)
 	version := "7.0.0"
-	softwareType := "ci-artifact"
+	softwareType := "ci-artifact" //nolint:misspell
 	tempFile := testingutils.CreateTempFile(t, "test binary content")
 
 	// Create software version
@@ -461,7 +461,7 @@ func Test_SoftwareVersionMetadata(t *testing.T) {
 func Test_SoftwareVersionGetOrCreate_MultipleVersions(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	softwareName := "software" + testingutils.RandomString(16)
-	softwareType := "ci-artifact"
+	softwareType := "ci-artifact" //nolint:misspell
 	tempFile := testingutils.CreateTempFile(t, "test binary content")
 
 	// Create first version

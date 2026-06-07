@@ -19,12 +19,12 @@ func Test_Software(t *testing.T) {
 
 	// Get Or Create software item (new item)
 	softwareName := "software" + testingutils.RandomString(16)
-	softwareType := "ci-artifact"
+	softwareType := "ci-artifact" //nolint:misspell
 	software := client.Repository.Software.GetOrCreateByName(context.Background(), softwareName, softwareType, model.Software{
 		Name:         softwareName,
 		Type:         "c8y_Software",
 		SoftwareType: softwareType,
-		Description:  "Some custom artifact name",
+		Description:  "Some custom artifact name", //nolint:misspell
 	})
 	assert.NoError(t, software.Err)
 	t.Cleanup(func() {
@@ -47,7 +47,7 @@ func Test_Software(t *testing.T) {
 		Name:         softwareName,
 		Type:         "c8y_Software",
 		SoftwareType: softwareType,
-		Description:  "Some custom artifact name",
+		Description:  "Some custom artifact name", //nolint:misspell
 	})
 	assert.NoError(t, software2.Err)
 	t.Cleanup(func() {
@@ -86,13 +86,13 @@ func Test_SoftwareResolver(t *testing.T) {
 
 	// Get Or Create software item (new item)
 	softwareName := "software" + testingutils.RandomString(16)
-	softwareType := "ci-artifact"
+	softwareType := "ci-artifact" //nolint:misspell
 
 	software := client.Repository.Software.GetOrCreateByName(context.Background(), softwareName, softwareType, model.Software{
 		Name:         softwareName,
 		Type:         "c8y_Software",
 		SoftwareType: softwareType,
-		Description:  "Some custom artifact name",
+		Description:  "Some custom artifact name", //nolint:misspell
 	})
 	assert.NoError(t, software.Err)
 	t.Cleanup(func() {
@@ -118,7 +118,7 @@ func Test_SoftwareResolver(t *testing.T) {
 func Test_SoftwareResolver_ByID(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	softwareName := "software" + testingutils.RandomString(16)
-	softwareType := "ci-artifact"
+	softwareType := "ci-artifact" //nolint:misspell
 
 	// Create software item
 	software := client.Repository.Software.Create(context.Background(), model.Software{
@@ -155,7 +155,7 @@ func Test_SoftwareResolver_ByID(t *testing.T) {
 func Test_SoftwareResolver_ByName(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	softwareName := "software" + testingutils.RandomString(16)
-	softwareType := "ci-artifact"
+	softwareType := "ci-artifact" //nolint:misspell
 
 	// Create software item
 	software := client.Repository.Software.Create(context.Background(), model.Software{
@@ -196,7 +196,7 @@ func Test_SoftwareResolver_ByName(t *testing.T) {
 func Test_SoftwareResolver_ByQuery(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	softwareName := "software" + testingutils.RandomString(16)
-	softwareType := "ci-artifact"
+	softwareType := "ci-artifact" //nolint:misspell
 
 	// Create software item
 	software := client.Repository.Software.Create(context.Background(), model.Software{
@@ -258,7 +258,7 @@ func Test_SoftwareResolver_Errors(t *testing.T) {
 func Test_SoftwareUpdate_WithResolver(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	softwareName := "software" + testingutils.RandomString(16)
-	softwareType := "ci-artifact"
+	softwareType := "ci-artifact" //nolint:misspell
 
 	// Create software item
 	software := client.Repository.Software.Create(context.Background(), model.Software{
@@ -289,7 +289,7 @@ func Test_SoftwareUpdate_WithResolver(t *testing.T) {
 func Test_SoftwareDelete_WithResolver(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	softwareName := "software" + testingutils.RandomString(16)
-	softwareType := "ci-artifact"
+	softwareType := "ci-artifact" //nolint:misspell
 
 	// Create software item
 	software := client.Repository.Software.Create(context.Background(), model.Software{
@@ -321,7 +321,7 @@ func Test_SoftwareDelete_WithResolver(t *testing.T) {
 func Test_SoftwareDeferredExecution(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	softwareName := "software" + testingutils.RandomString(16)
-	softwareType := "ci-artifact"
+	softwareType := "ci-artifact" //nolint:misspell
 
 	// Create software item
 	software := client.Repository.Software.Create(context.Background(), model.Software{
@@ -380,7 +380,7 @@ func Test_SoftwareDeferredExecution(t *testing.T) {
 func Test_SoftwareMetadata(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	softwareName := "software" + testingutils.RandomString(16)
-	softwareType := "ci-artifact"
+	softwareType := "ci-artifact" //nolint:misspell
 
 	// Create software item
 	software := client.Repository.Software.Create(context.Background(), model.Software{

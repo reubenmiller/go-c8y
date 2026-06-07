@@ -541,7 +541,7 @@ func (fs *FakeServer) handleOAuth(w http.ResponseWriter, r *http.Request) {
 
 	// Simple credential check — accept the seeded admin user.
 	if username != "admin" || password != "admin-pass" {
-		writeError(w, http.StatusUnauthorized, "security/Unauthorized", "Invalid credentials")
+		writeError(w, http.StatusUnauthorized, "security/Unauthorized", "Invalid credentials") //nolint:misspell
 		return
 	}
 

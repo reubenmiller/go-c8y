@@ -12,8 +12,6 @@ import (
 type Result[A any] struct {
 	Request  *resty.Request
 	Response *resty.Response
-
-	data A
 }
 
 func NewResult[A any](r *resty.Request) *Result[A] {

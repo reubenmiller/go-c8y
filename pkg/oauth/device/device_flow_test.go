@@ -191,12 +191,12 @@ func TestRequestCode(t *testing.T) {
 			},
 		},
 		{
-			name: "unauthorized client",
+			name: "unauthorized client", //nolint:misspell
 			args: args{
 				http: apiClient{
 					stubs: []apiStub{
 						{
-							body:        "error=unauthorized_client",
+							body:        "error=unauthorized_client", //nolint:misspell
 							status:      400,
 							contentType: "application/x-www-form-urlencoded; charset=utf-8",
 						},

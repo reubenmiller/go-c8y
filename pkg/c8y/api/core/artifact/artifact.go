@@ -1,4 +1,4 @@
-package artifact
+package artifact //nolint:misspell
 
 import (
 	"path/filepath"

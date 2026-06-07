@@ -58,7 +58,7 @@ func Test_ForEachManagedObjectsMaxPages(t *testing.T) {
 	assert.Greater(t, total, 0)
 }
 
-func Test_ForEachCustomModel_Infallable(t *testing.T) {
+func Test_ForEachCustomModel_Infallible(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
 	// Create custom model which can also re-use fields from the default model

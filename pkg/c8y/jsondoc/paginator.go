@@ -7,7 +7,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 )
 
-// PaginationConfig controls pagination behavior
+// PaginationConfig controls pagination behaviour
 type PaginationConfig struct {
 	MaxItems    int // Maximum total items to fetch (0 = unlimited)
 	MaxPages    int // Maximum pages to fetch (0 = unlimited)

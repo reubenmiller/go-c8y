@@ -59,7 +59,7 @@ func NewService(s *core.Service) *Service {
 
 	service.lookupByName = func(ctx context.Context, name string) (string, map[string]any, error) {
 		opts := ListOptions{}
-		opts.PaginationOptions.PageSize = 1
+		opts.PageSize = 1
 		opts.Query = model.NewInventoryQuery().
 			AddFilterEqStr("name", name).
 			AddOrderBy("name").
@@ -84,7 +84,7 @@ func NewService(s *core.Service) *Service {
 
 	service.lookupByQuery = func(ctx context.Context, query string) (string, map[string]any, error) {
 		opts := ListOptions{}
-		opts.PaginationOptions.PageSize = 1
+		opts.PageSize = 1
 		opts.Query = query
 
 		result := service.List(ctx, opts)

@@ -142,7 +142,7 @@ func Test_redactSensitiveHeaders_DoesNotModifyOriginal(t *testing.T) {
 func Test_ShouldRedactHeaders_Default(t *testing.T) {
 	ctx := context.Background()
 
-	// Default behavior should be to redact
+	// Default behaviour should be to redact
 	assert.True(t, ShouldRedactHeaders(ctx), "Should redact headers by default")
 }
 

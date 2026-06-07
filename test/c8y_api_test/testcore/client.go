@@ -210,7 +210,7 @@ func NewDummyFile(t *testing.T, name string, contents string) (createFilePath st
 	fullPath := filepath.Join(t.TempDir(), name)
 	f, err := os.Create(fullPath)
 	if err != nil {
-		panic(fmt.Errorf("Error creating dummy file. %w", err))
+		panic(fmt.Errorf("error creating dummy file. %w", err))
 	}
 
 	defer f.Close()
@@ -218,7 +218,7 @@ func NewDummyFile(t *testing.T, name string, contents string) (createFilePath st
 	f.WriteString(contents)
 
 	if err := f.Sync(); err != nil {
-		panic(fmt.Errorf("Failed to fill file with dummy information. %w", err))
+		panic(fmt.Errorf("failed to fill file with dummy information. %w", err))
 	}
 
 	createFilePath = f.Name()
@@ -239,17 +239,17 @@ func NewDummyFileWithSize(t *testing.T, name string, size int64) (createFilePath
 	fullPath := filepath.Join(t.TempDir(), name)
 	f, err := os.Create(fullPath)
 	if err != nil {
-		panic(fmt.Errorf("Error creating dummy file. %w", err))
+		panic(fmt.Errorf("error creating dummy file. %w", err))
 	}
 
 	defer f.Close()
 
 	if err := f.Truncate(size); err != nil {
-		panic(fmt.Errorf("Failed to fill file with dummy information. %w", err))
+		panic(fmt.Errorf("failed to fill file with dummy information. %w", err))
 	}
 
 	if err := f.Sync(); err != nil {
-		panic(fmt.Errorf("Failed to sync file with dummy information. %w", err))
+		panic(fmt.Errorf("failed to sync file with dummy information. %w", err))
 	}
 
 	createFilePath = f.Name()

@@ -34,7 +34,7 @@ func (r LintResult) HasDrift() bool {
 func Lint(doc *OAS, srcDir string, waivers driftWaivers) (LintResult, error) {
 	res := LintResult{}
 
-	oas := map[string]string{} // normalized -> original
+	oas := map[string]string{} // normalised -> original
 	for _, p := range sortedKeys(doc.Paths) {
 		oas[normalizePath(p)] = p
 	}
@@ -74,8 +74,8 @@ func Lint(doc *OAS, srcDir string, waivers driftWaivers) (LintResult, error) {
 	return res, nil
 }
 
-// normalizePatterns normalizes each waiver pattern's path component the same way SDK/OAS
-// paths are normalized ({param} → {}), preserving a trailing "*" wildcard.
+// normalizePatterns normalises each waiver pattern's path component the same way SDK/OAS
+// paths are normalised ({param} → {}), preserving a trailing "*" wildcard.
 func normalizePatterns(patterns []string) []string {
 	out := make([]string, len(patterns))
 	for i, p := range patterns {
@@ -94,7 +94,7 @@ func normalizePatterns(patterns []string) []string {
 	return out
 }
 
-// matchesAny reports whether a normalized path matches any waiver pattern. A pattern
+// matchesAny reports whether a normalised path matches any waiver pattern. A pattern
 // ending in "*" matches by prefix; otherwise the match is exact.
 func matchesAny(path string, patterns []string) bool {
 	for _, p := range patterns {
@@ -110,7 +110,7 @@ func matchesAny(path string, patterns []string) bool {
 }
 
 // scanSDKPaths walks srcDir and extracts API path literals from non-test, non-generated
-// Go source. Returns a map of normalized -> a representative original literal.
+// Go source. Returns a map of normalised -> a representative original literal.
 func scanSDKPaths(srcDir string) (map[string]string, error) {
 	out := map[string]string{}
 	err := filepath.WalkDir(srcDir, func(path string, d fs.DirEntry, err error) error {

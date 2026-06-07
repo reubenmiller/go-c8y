@@ -123,7 +123,7 @@ type CreateOptions struct {
 	Description string
 
 	// Fragments are custom top-level fields — most importantly the operation fragment
-	// that defines what to do (e.g. c8y_Restart). Each is serialized under its
+	// that defines what to do (e.g. c8y_Restart). Each is serialised under its
 	// FragmentKey() and deep-merged into the body; later entries win. Use a typed
 	// model.Fragment, or model.Frag("key", value) for ad-hoc fragments.
 	Fragments []model.Fragment

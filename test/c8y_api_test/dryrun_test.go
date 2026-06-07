@@ -214,7 +214,7 @@ func Test_DryRun_Disabled_RealRequest(t *testing.T) {
 	result := client.ManagedObjects.Get(ctx, "12345", managedobjects.GetOptions{})
 
 	// Will error because it tries to make a real request
-	// This is expected behavior - just verifying dry run is not interfering
+	// This is expected behaviour - just verifying dry run is not interfering
 	_ = result
 }
 

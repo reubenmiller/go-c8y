@@ -70,7 +70,7 @@ func Parallel[T any](steps ...Step[T]) Step[T] {
 		}()
 
 		// Collect results - return first error
-		var lastResult T = in
+		lastResult := in
 		for r := range results {
 			if r.err != nil {
 				cancel()
@@ -174,7 +174,7 @@ func Noop[T any]() Step[T] {
 	}
 }
 
-// RetryConfig configures retry behavior
+// RetryConfig configures retry behaviour
 type RetryConfig struct {
 	MaxAttempts     int              // Maximum number of retry attempts (0 = no retry)
 	InitialInterval time.Duration    // Initial backoff interval
@@ -184,7 +184,7 @@ type RetryConfig struct {
 	RetryableCheck  func(error) bool // Function to determine if error is retryable
 }
 
-// DefaultRetryConfig provides sensible defaults for retry behavior
+// DefaultRetryConfig provides sensible defaults for retry behaviour
 var DefaultRetryConfig = RetryConfig{
 	MaxAttempts:     3,
 	InitialInterval: 100 * time.Millisecond,

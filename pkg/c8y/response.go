@@ -12,13 +12,6 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-// newResponse creates a new Response for the provided http.Response.
-// r must not be nil.
-func newResponse(r *http.Response, duration time.Duration) *Response {
-	response := &Response{Response: r, duration: duration}
-	return response
-}
-
 //‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
 // Response struct and methods
 //_______________________________________________________________________

@@ -35,7 +35,7 @@ type overlayFragment struct {
 
 // driftWaivers declares known-acceptable drift between the OAS and the SDK, so the
 // `lint --strict` CI gate fails only on NEW, undeclared drift. Patterns are matched
-// against normalized paths ({param} → {}); a trailing "*" is a prefix wildcard.
+// against normalised paths ({param} → {}); a trailing "*" is a prefix wildcard.
 type driftWaivers struct {
 	IgnoreMissing []string `yaml:"ignoreMissing"` // OAS paths the SDK intentionally omits / known TODOs
 	IgnoreExtra   []string `yaml:"ignoreExtra"`   // SDK paths with no OAS counterpart (non-OAS features)

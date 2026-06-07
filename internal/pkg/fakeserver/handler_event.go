@@ -196,8 +196,3 @@ func (fs *FakeServer) handleEventBinaries(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusMethodNotAllowed, "general/methodNotAllowed", "Method not allowed")
 	}
 }
-
-// isEventBinaryPath checks if the path includes a binary sub-resource.
-func isEventBinaryPath(path string) bool {
-	return strings.Contains(path, "/binaries")
-}

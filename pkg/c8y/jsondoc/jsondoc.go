@@ -27,7 +27,7 @@ func (d JSONDoc) Bytes() []byte {
 }
 
 // MarshalJSON implements json.Marshaler to allow JSONDoc to be
-// marshaled by returning the raw bytes directly
+// marshalled by returning the raw bytes directly
 func (d JSONDoc) MarshalJSON() ([]byte, error) {
 	return d.raw, nil
 }
@@ -202,7 +202,7 @@ func IterWith[F Unwrapper, T any](seq iter.Seq[F], constructor func([]byte) T) i
 }
 
 // IterWithErr transforms an iterator of types that embed JSONDoc using a fallible constructor.
-// Items that fail to construct are skipped (similar to DecodeIter behavior).
+// Items that fail to construct are skipped (similar to DecodeIter behaviour).
 // Works with both iter.Seq[JSONDoc] and iter.Seq[jsonmodels.X] (any type embedding JSONDoc).
 // Example: jsondoc.IterWithErr(result.Data.Iter(), parseCustomModel)
 // Example: jsondoc.IterWithErr(iterator.Items(), parseCustomModel)

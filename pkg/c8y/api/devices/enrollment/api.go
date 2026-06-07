@@ -93,7 +93,7 @@ func (s *Service) ReEnroll(ctx context.Context, opt ReEnrollOptions) op.Result[X
 func (s *Service) CreateCertificateSigningRequest(externalId string, key any) (*x509.CertificateRequest, error) {
 	return certutil.CreateCertificateSigningRequest(pkix.Name{
 		CommonName:         externalId,
-		Organization:       []string{"Cumulocity"},
+		Organization:       []string{"Cumulocity"}, //nolint:misspell
 		OrganizationalUnit: []string{"Device"},
 	}, key)
 }

@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+type contextKey string
+
 var ErrNotFound = errors.New("resource not found")
 
 // GetFunc retrieves a resource by key
@@ -102,7 +104,7 @@ func GetOrCreateIdempotent[T any](
 		// Add idempotency key to context if provided
 		if idempotencyKey != "" {
 			// Store in context for use by HTTP layer
-			ctx = context.WithValue(ctx, "X-Idempotency-Key", idempotencyKey)
+			ctx = context.WithValue(ctx, contextKey("X-Idempotency-Key"), idempotencyKey)
 		}
 
 		fn := GetOrCreate(getter, creator, keyFunc)

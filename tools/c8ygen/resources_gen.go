@@ -13,7 +13,7 @@ type ResourcesResult struct {
 	Models  int
 }
 
-// GenerateResources emits the per-resource Layer-0 artifacts (option structs, façade
+// GenerateResources emits the per-resource Layer-0 artefacts (option structs, façade
 // models) for every resource in the overlay, rooted at repo dir `root`.
 func GenerateResources(doc *OAS, source, root string, resources []resource) (ResourcesResult, error) {
 	res := ResourcesResult{}

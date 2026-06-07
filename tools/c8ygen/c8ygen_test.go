@@ -38,9 +38,9 @@ func TestNormalizePath(t *testing.T) {
 			t.Errorf("normalizePath(%q) = %q, want %q", c.in, got, c.want)
 		}
 	}
-	// Two paths differing only in parameter name must normalize equal.
+	// Two paths differing only in parameter name must normalise equal.
 	if normalizePath("/x/{id}") != normalizePath("/x/{deviceId}") {
-		t.Errorf("parameter names should normalize equal")
+		t.Errorf("parameter names should normalise equal")
 	}
 }
 
@@ -298,7 +298,7 @@ func TestDriftWaiverMatching(t *testing.T) {
 	match := []string{
 		"/meta/connect",
 		"/meta/subscribe",
-		"/tenant/loginOptions/{}/accessMappings", // {typeOrId} normalized to {}
+		"/tenant/loginOptions/{}/accessMappings", // {typeOrId} normalised to {}
 		"/.well-known/est/simpleenroll",
 		"/user/passwordReset",
 	}

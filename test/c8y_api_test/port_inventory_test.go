@@ -55,7 +55,7 @@ func TestInventoryService_AuthenticationToken(t *testing.T) {
 	})
 
 	assert.Error(t, result.Err)
-	assert.Equal(t, http.StatusUnauthorized, result.HTTPStatus, "Expected unauthorized access response")
+	assert.Equal(t, http.StatusUnauthorized, result.HTTPStatus, "Expected unauthorised access response")
 }
 
 func TestInventoryService_CreateDevice(t *testing.T) {

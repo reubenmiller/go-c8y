@@ -554,16 +554,6 @@ func (s *Service) UpsertByName(ctx context.Context, opt CreateOptions) op.Result
 
 // Builder methods
 
-func (s *Service) createB(body any) *core.TryRequest {
-	req := s.Client.R().
-		SetMethod(resty.MethodPost).
-		SetBody(body).
-		SetContentType(types.MimeTypeManagedObject).
-		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiManagedObjects)
-	return core.NewTryRequest(s.Client, req, "")
-}
-
 func (s *Service) getB(ID string, opt GetOptions) *core.TryRequest {
 	getOpts := managedobjects.GetOptions{
 		WithParents: opt.WithParents,

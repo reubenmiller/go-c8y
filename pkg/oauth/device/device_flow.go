@@ -95,7 +95,7 @@ func RequestCode(c httpClient, uri string, clientID string, scopes []string,
 	if resp.StatusCode == 401 || resp.StatusCode == 403 || resp.StatusCode == 404 || resp.StatusCode == 422 ||
 		(resp.StatusCode == 200 && verificationURI == "") ||
 		(resp.StatusCode == 400 && resp.Get("error") == "device_flow_disabled") ||
-		(resp.StatusCode == 400 && resp.Get("error") == "unauthorized_client") {
+		(resp.StatusCode == 400 && resp.Get("error") == "unauthorized_client") { //nolint:misspell
 		return nil, ErrUnsupported
 	}
 
@@ -189,7 +189,7 @@ func Wait(ctx context.Context, c httpClient, uri string, opts WaitOptions) (*api
 		token, err := resp.AccessToken()
 		if err == nil {
 			return token, nil
-		} else if !(errors.As(err, &apiError) && apiError.Code == "authorization_pending") {
+		} else if !errors.As(err, &apiError) || apiError.Code != "authorization_pending" {
 			return nil, err
 		}
 	}

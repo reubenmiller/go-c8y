@@ -192,7 +192,7 @@ func cmdFetch(args []string) error {
 }
 
 // specSource returns a stable, human-readable description of where the spec came from,
-// for the generated-file header. The label is normalized so the output is identical
+// for the generated-file header. The label is normalised so the output is identical
 // whether the generator is invoked from the repo root (task generate) or from the spec
 // package directory (go generate) — leading "../" / "./" hops are stripped.
 func specSource(opt LoadOptions) string {

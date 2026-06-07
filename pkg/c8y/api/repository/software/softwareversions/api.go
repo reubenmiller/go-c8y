@@ -574,7 +574,7 @@ func (s *Service) DeleteAndCreate(ctx context.Context, versionID string, opt Cre
 // These methods follow the finder/updater/creator pattern from op.UpsertR
 // They search for an existing version, update it if found (optionally replacing binaries), or create it if not found.
 //
-// Key behaviors:
+// Key behaviours:
 // - When updating: deletes old binary (if hosted on tenant) and uploads new one
 // - When creating: uploads binary and creates version
 // - Returns Status: "Created" or "Updated" with Meta["found"] indicating if resource existed

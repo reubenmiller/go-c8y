@@ -91,16 +91,11 @@ func (fs *FakeServer) handleMeasurementSeries(w http.ResponseWriter, r *http.Req
 		Type string
 	}
 	seriesSet := make(map[string]seriesInfo)
-	var timestamps []string
 
 	for _, item := range items {
 		var m map[string]any
 		if err := json.Unmarshal(item, &m); err != nil {
 			continue
-		}
-		timeVal, _ := m["time"].(string)
-		if timeVal != "" {
-			timestamps = append(timestamps, timeVal)
 		}
 		// Find measurement fragment (any key that's a map with nested series data)
 		for k, v := range m {

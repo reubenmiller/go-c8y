@@ -72,16 +72,16 @@ func TestManagedObject_Delete_NotFound(t *testing.T) {
 	assert.True(t, core.IsNotFound(result.Err))
 }
 
-// --- 401 Unauthorized scenarios ---
+// --- 401 Unauthorised scenarios ---
 
-func TestAlarm_List_Unauthorized(t *testing.T) {
+func TestAlarm_List_Unauthorised(t *testing.T) {
 	client := testcore.CreateTestClientNoAuth(t)
 	result := client.Alarms.List(context.Background(), alarms.ListOptions{})
 	assert.Error(t, result.Err)
 	assert.Equal(t, http.StatusUnauthorized, result.HTTPStatus)
 }
 
-func TestManagedObject_List_Unauthorized(t *testing.T) {
+func TestManagedObject_List_Unauthorised(t *testing.T) {
 	client := testcore.CreateTestClientNoAuth(t)
 	result := client.ManagedObjects.List(context.Background(), managedobjects.ListOptions{})
 	assert.Error(t, result.Err)

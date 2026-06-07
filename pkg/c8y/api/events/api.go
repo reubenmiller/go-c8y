@@ -119,7 +119,7 @@ type CreateOptions struct {
 	// Time when the event occurred
 	Time time.Time
 
-	// Fragments are custom top-level fields (e.g. c8y_* fragments). Each is serialized
+	// Fragments are custom top-level fields (e.g. c8y_* fragments). Each is serialised
 	// under its FragmentKey() and deep-merged into the body; later entries win. Use a
 	// typed model.Fragment, or model.Frag("key", value) for ad-hoc fragments.
 	Fragments []model.Fragment

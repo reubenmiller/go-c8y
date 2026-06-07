@@ -36,10 +36,10 @@ func subscribeToNotifications(ctx context.Context, subscription string, consumer
 
 	consumer = c8yClient.Notification2.NormalizedConsumer(consumer)
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	ctx, stop := signal.NotifyContext(ctx, os.Interrupt)
 	defer stop()
 
-	result := c8yClient.Notification2.SubscribeStream(context.Background(), api_notification2.ClientOptions{
+	result := c8yClient.Notification2.SubscribeStream(ctx, api_notification2.ClientOptions{
 		Consumer: consumer,
 		Options: api_notification2.TokenOptions{
 			ExpiresInMinutes:  1440,

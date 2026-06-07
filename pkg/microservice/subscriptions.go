@@ -23,11 +23,11 @@ func (m *Microservice) SubscribeToNotifications(user model.ServiceUser, realtime
 	realtimeClient, err := m.NewRealtimeClient(user)
 
 	if err != nil {
-		return errors.New("Failed to retrieve valid realtime client")
+		return errors.New("failed to retrieve valid realtime client")
 	}
 
 	if connErr := realtimeClient.Connect(); connErr != nil {
-		return fmt.Errorf("Failed to connect. %s", connErr)
+		return fmt.Errorf("failed to connect. %s", connErr)
 	}
 	ch := make(chan *realtime.Message)
 

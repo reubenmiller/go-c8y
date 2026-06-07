@@ -142,7 +142,7 @@ func MarshalPrivateKeyToPEM(privateKey crypto.PrivateKey) ([]byte, error) {
 		}
 		return pem.EncodeToMemory(block), nil
 	default:
-		return nil, fmt.Errorf("private key is not a recognized type: %T", privateKey)
+		return nil, fmt.Errorf("private key is not a recognised type: %T", privateKey)
 	}
 }
 
@@ -184,7 +184,7 @@ func verifyKeyData(data []byte) bool {
 }
 
 // ParsePrivateKeyPEM returns a private key parsed from a PEM block in the supplied data.
-// Recognizes PEM blocks for "EC PRIVATE KEY", "RSA PRIVATE KEY", or "PRIVATE KEY"
+// Recognises PEM blocks for "EC PRIVATE KEY", "RSA PRIVATE KEY", or "PRIVATE KEY"
 func ParsePrivateKeyPEM(keyData []byte) (any, error) {
 	var privateKeyPemBlock *pem.Block
 	for {
@@ -215,7 +215,7 @@ func ParsePrivateKeyPEM(keyData []byte) (any, error) {
 		// originally, only the first PEM block was parsed and expected to be a key block
 	}
 
-	// we read all the PEM blocks and didn't recognize one
+	// we read all the PEM blocks and didn't recognise one
 	return nil, fmt.Errorf("data does not contain a valid RSA or ECDSA private key")
 }
 
@@ -260,7 +260,7 @@ func ParsePublicKeysPEM(keyData []byte) ([]any, error) {
 }
 
 // ParseCertificatePEM returns a certificate parsed from a PEM block in the supplied data.
-// Recognizes PEM blocks for "CERTIFICATE"
+// Recognises PEM blocks for "CERTIFICATE"
 func ParseCertificatePEM(keyData []byte) (*x509.Certificate, error) {
 	var certificatePemBlock *pem.Block
 	for {
@@ -281,7 +281,7 @@ func ParseCertificatePEM(keyData []byte) (*x509.Certificate, error) {
 		// originally, only the first PEM block was parsed and expected to be a key block
 	}
 
-	// we read all the PEM blocks and didn't recognize one
+	// we read all the PEM blocks and didn't recognise one
 	return nil, fmt.Errorf("data does not contain a valid CERTIFICATE")
 }
 

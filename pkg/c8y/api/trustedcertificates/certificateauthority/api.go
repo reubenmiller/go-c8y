@@ -116,7 +116,7 @@ type DeleteOptions struct {
 // If no CA certificate exists the call is a no-op and returns successfully.
 func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.NoContent] {
 	// Step 1: get the CA certificate so we can extract the fingerprint
-	cert := s.Get(ctx, GetOptions{TenantID: opt.TenantID})
+	cert := s.Get(ctx, GetOptions(opt))
 	if cert.IsError() {
 		// No CA present — intent is already fulfilled, but surface the fact as metadata
 		if cert.HTTPStatus == 404 {

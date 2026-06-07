@@ -79,9 +79,6 @@ type Client struct {
 	dialer        *websocket.Dialer
 	ws            *websocket.Conn
 	extension     any
-	tenant        string
-	username      string
-	password      string
 	requestID     uint64
 	requestHeader http.Header
 
@@ -210,7 +207,7 @@ type ClientOptions struct {
 	InsecureSkipVerify bool
 }
 
-// NewClient initializes a new Bayeux client. By default `http.DefaultClient`
+// NewClient initialises a new Bayeux client. By default `http.DefaultClient`
 // is used for HTTP connections.
 func NewClient(wsDialer *websocket.Dialer, opt ClientOptions) *Client {
 	if wsDialer == nil {

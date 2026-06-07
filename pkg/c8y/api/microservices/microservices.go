@@ -14,7 +14,7 @@ import (
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/applications"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core/artifact"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core/artifact" //nolint:misspell
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 )
 
@@ -35,7 +35,7 @@ func getApplicationDetails(opt CreateOptions) (*model.Microservice, error) {
 
 	// set default name to the file name
 	fileExt := filepath.Ext(opt.File)
-	appNameFromFile := artifact.ParseName(opt.File)
+	appNameFromFile := artifact.ParseName(opt.File) //nolint:misspell
 
 	// Set application properties
 

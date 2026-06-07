@@ -115,7 +115,7 @@ func New(t *testing.T) *FakeServer {
 		public := strings.HasPrefix(p, "/tenant/loginOptions") ||
 			strings.HasPrefix(p, "/tenant/oauth")
 		if !public && r.Header.Get("Authorization") == "" {
-			writeError(w, http.StatusUnauthorized, "security/Unauthorized", "Missing credentials")
+			writeError(w, http.StatusUnauthorized, "security/Unauthorized", "Missing credentials") //nolint:misspell
 			return
 		}
 		mux.ServeHTTP(w, r)

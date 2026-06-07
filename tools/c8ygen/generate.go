@@ -44,14 +44,14 @@ func collectPaths(doc *OAS) []pathEntry {
 		}
 		seen[ident] = true
 
-		comment := summarize(doc.Paths[path])
+		comment := summarise(doc.Paths[path])
 		entries = append(entries, pathEntry{Ident: ident, Path: path, Comment: comment})
 	}
 	return entries
 }
 
-// summarize produces a short comment for a path from its operations' methods.
-func summarize(item PathItem) string {
+// summarise produces a short comment for a path from its operations' methods.
+func summarise(item PathItem) string {
 	methods := []string{}
 	for _, mo := range item.Operations() {
 		methods = append(methods, mo.Method)

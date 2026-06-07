@@ -192,7 +192,7 @@ func shuffleBytes(b []byte) {
 // It returns the generated password string and an error if any validation or
 // generation step fails.
 func NewRandomPassword(opts ...PasswordOption) (string, error) {
-	// Initialize a default password configuration.
+	// Initialise a default password configuration.
 	// These defaults are applied if no specific options are provided by the user.
 	config := PasswordConfig{
 		maximumLength: 0, // Enforce a maximum length when not set to 0
@@ -319,7 +319,7 @@ func NewRandomPassword(opts ...PasswordOption) (string, error) {
 		password[i] = char
 	}
 
-	// Shuffle the entire password byte slice to randomize the positions of characters.
+	// Shuffle the entire password byte slice to randomise the positions of characters.
 	// This ensures that the required characters are not always at the beginning.
 	shuffleBytes(password)
 

@@ -17,7 +17,7 @@ var paginationParams = map[string]bool{
 	"withTotalElements": true,
 }
 
-// resource describes a single hand-written package and the generated artifacts it composes.
+// resource describes a single hand-written package and the generated artefacts it composes.
 type resource struct {
 	Pkg     string       // Go package name and output sub-directory under pkg/c8y/api
 	Options []optionSpec // option structs to generate (query params)
@@ -25,7 +25,7 @@ type resource struct {
 }
 
 // optionSpec generates one query-parameter option struct from an operation. The struct
-// shape is owned by Layer 0 (this generator); the resolver *behavior* stays in the
+// shape is owned by Layer 0 (this generator); the resolver *behaviour* stays in the
 // hand-written service method. Type overrides express the deliberate API-vs-SDK
 // divergences (e.g. a resolver-typed Source, typed enum slices).
 //

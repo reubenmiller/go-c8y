@@ -25,7 +25,6 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/logintokens"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
-	"github.com/reubenmiller/go-c8y/v2/pkg/oauth/api"
 	oauth2_api "github.com/reubenmiller/go-c8y/v2/pkg/oauth/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/oauth/device"
 	"github.com/tidwall/gjson"
@@ -34,7 +33,7 @@ import (
 var ErrSSOInvalidConfiguration = errors.New("invalid sso configuration")
 
 // GetLoginOptions returns the login options available for the tenant
-func getAuthorizationRequest(ctx context.Context, client *http.Client, oauthUrl string, redirectURL string) (*api.AuthorizationRequest, error) {
+func getAuthorizationRequest(ctx context.Context, client *http.Client, oauthUrl string, redirectURL string) (*oauth2_api.AuthorizationRequest, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", oauthUrl, nil)
 	if err != nil {
 		return nil, err
@@ -82,11 +81,11 @@ func getAuthorizationRequest(ctx context.Context, client *http.Client, oauthUrl 
 		}
 	}
 
-	return &api.AuthorizationRequest{}, fmt.Errorf("not found")
+	return &oauth2_api.AuthorizationRequest{}, fmt.Errorf("not found")
 }
 
-func getAuthorizationEndpointFromURL(u *url.URL) *api.AuthorizationRequest {
-	endpoint := &api.AuthorizationRequest{
+func getAuthorizationEndpointFromURL(u *url.URL) *oauth2_api.AuthorizationRequest {
+	endpoint := &oauth2_api.AuthorizationRequest{
 		URL: u,
 	}
 
@@ -128,7 +127,7 @@ func (c *Client) HasExternalAuthProvider(ctx context.Context) (loginOption *json
 }
 
 // AuthorizeWithDeviceFlow authorize the client using the OAuth2 Device Authorization Flow (the Auth provider must support it)
-func (c *Client) AuthorizeWithDeviceFlow(ctx context.Context, initRequest string, auth_endpoints oauth2_api.AuthEndpoints, displayFunc device.DeviceCodeFunc) (*api.AccessToken, error) {
+func (c *Client) AuthorizeWithDeviceFlow(ctx context.Context, initRequest string, auth_endpoints oauth2_api.AuthEndpoints, displayFunc device.DeviceCodeFunc) (*oauth2_api.AccessToken, error) {
 	if initRequest == "" {
 		loginOption, found, err := c.HasExternalAuthProvider(ctx)
 		if err != nil {
@@ -156,13 +155,13 @@ func (c *Client) AuthorizeWithDeviceFlow(ctx context.Context, initRequest string
 
 	if auth_endpoints.TokenURL == "" || auth_endpoints.DeviceAuthorizationURL == "" {
 		// Try detecting the endpoints via the open-id configuration endpoint
-		openIDConfig := &api.OpenIDConfiguration{}
+		openIDConfig := &oauth2_api.OpenIDConfiguration{}
 
 		if auth_endpoints.OpenIDConfigurationURL == "" {
-			auth_endpoints.OpenIDConfigurationURL = api.GetOpenIDConnectConfigurationURL(endpoint.URL)
+			auth_endpoints.OpenIDConfigurationURL = oauth2_api.GetOpenIDConnectConfigurationURL(endpoint.URL)
 		}
 
-		if err := api.GetOpenIDConfiguration(ctx, httpClient, endpoint.URL, auth_endpoints.OpenIDConfigurationURL, openIDConfig); err != nil {
+		if err := oauth2_api.GetOpenIDConfiguration(ctx, httpClient, endpoint.URL, auth_endpoints.OpenIDConfigurationURL, openIDConfig); err != nil {
 			return nil, fmt.Errorf("%w. %w", ErrSSOInvalidConfiguration, err)
 		} else {
 			slog.Debug("Found OpenID Connect configuration", "url", auth_endpoints.OpenIDConfigurationURL, "config", openIDConfig)
@@ -181,9 +180,9 @@ func (c *Client) AuthorizeWithDeviceFlow(ctx context.Context, initRequest string
 		}
 	}
 
-	deviceCodeURL := api.GetEndpointUrl(endpoint.URL, auth_endpoints.DeviceAuthorizationURL)
-	requestCodeOptions := append([]api.AuthRequestEditorFn{}, auth_endpoints.AuthRequestOptions...)
-	requestCodeOptions = append(requestCodeOptions, api.WithAudience(endpoint.Audience))
+	deviceCodeURL := oauth2_api.GetEndpointUrl(endpoint.URL, auth_endpoints.DeviceAuthorizationURL)
+	requestCodeOptions := append([]oauth2_api.AuthRequestEditorFn{}, auth_endpoints.AuthRequestOptions...)
+	requestCodeOptions = append(requestCodeOptions, oauth2_api.WithAudience(endpoint.Audience))
 	slog.Debug("Requesting device code", "url", deviceCodeURL, "client_id", endpoint.ClientID, "scopes", scopes)
 	code, err := device.RequestCode(httpClient, deviceCodeURL, endpoint.ClientID, scopes, requestCodeOptions...)
 	if err != nil {
@@ -198,7 +197,7 @@ func (c *Client) AuthorizeWithDeviceFlow(ctx context.Context, initRequest string
 		return nil, displayErr
 	}
 
-	accessToken, err := device.Wait(context.TODO(), httpClient, api.GetEndpointUrl(endpoint.URL, auth_endpoints.TokenURL), device.WaitOptions{
+	accessToken, err := device.Wait(context.TODO(), httpClient, oauth2_api.GetEndpointUrl(endpoint.URL, auth_endpoints.TokenURL), device.WaitOptions{
 		ClientID:   endpoint.ClientID,
 		DeviceCode: code,
 	})
@@ -376,7 +375,7 @@ type DeviceFlowOptions struct {
 //  6. The client's auth is updated with the new token.
 //
 // The method blocks until the code is received or ctx is cancelled.
-func (c *Client) AuthorizeWithBrowserFlow(ctx context.Context, initRequest string, opts BrowserFlowOptions) (*api.AccessToken, error) {
+func (c *Client) AuthorizeWithBrowserFlow(ctx context.Context, initRequest string, opts BrowserFlowOptions) (*oauth2_api.AccessToken, error) {
 	if opts.OpenBrowser == nil {
 		opts.OpenBrowser = DefaultBrowserOpen
 	}
@@ -507,7 +506,7 @@ func (c *Client) AuthorizeWithBrowserFlow(ctx context.Context, initRequest strin
 			return nil, fmt.Errorf("browser flow: token exchange returned empty access token")
 		}
 		c.SetAuth(authentication.AuthOptions{Token: accessToken})
-		return &api.AccessToken{Token: accessToken}, nil
+		return &oauth2_api.AccessToken{Token: accessToken}, nil
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}

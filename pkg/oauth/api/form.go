@@ -69,7 +69,7 @@ func (e Error) Error() string {
 	return fmt.Sprintf("HTTP %d", e.ResponseCode)
 }
 
-// PostForm makes an POST request by serializing input parameters as a form and parsing the response
+// PostForm makes an POST request by serialising input parameters as a form and parsing the response
 // of the same type.
 func PostForm(c httpClient, u string, params url.Values) (*FormResponse, error) {
 	resp, err := c.PostForm(u, params)

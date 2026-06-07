@@ -1,4 +1,4 @@
-// Package context provides context helpers for configuring Cumulocity API behavior.
+// Package context provides context helpers for configuring Cumulocity API behaviour.
 //
 // # Processing Mode Context Helpers
 //

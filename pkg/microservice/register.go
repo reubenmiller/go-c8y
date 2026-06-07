@@ -82,7 +82,7 @@ func (m *Microservice) GetConfiguration() (string, error) {
 
 	node := mo.Data.Get("c8y_Configuration.config")
 	if !node.Exists() {
-		return "", fmt.Errorf("No configuration found on managed object id=%s", mo.Data.ID())
+		return "", fmt.Errorf("no configuration found on managed object id=%s", mo.Data.ID())
 	}
 
 	return node.String(), nil
@@ -106,7 +106,7 @@ func (m *Microservice) SaveConfiguration(rawConfiguration string) error {
 	body["c8y_Configuration"] = configuration
 
 	if result := m.Client.ManagedObjects.Update(m.ServiceUserContext(), m.AgentID, body); result.Err != nil {
-		return fmt.Errorf("Error updating the configuration in the managed object. %s", result.Err)
+		return fmt.Errorf("error updating the configuration in the managed object. %s", result.Err)
 	}
 
 	return nil
@@ -252,7 +252,7 @@ func (m *Microservice) CheckForNewConfiguration() {
 		return
 	}
 
-	for item, _ := range op.Iter2(result) {
+	for item := range op.Iter2(result) {
 
 		//
 		// Update Configuration Operation

@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// Options controls the behavior of ForEach and Collect.
+// Options controls the behaviour of ForEach and Collect.
 type Options struct {
 	// Workers is the number of concurrent goroutines processing items.
 	// Defaults to 1 (serial execution) when <= 0.

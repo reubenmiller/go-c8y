@@ -12,8 +12,8 @@ import (
 var ErrFragmentNotFound = errors.New("fragment not found")
 
 // Fragment is a self-describing custom fragment: a value that knows the top-level JSON
-// key it serializes under. Any user-defined type can implement it to gain typed,
-// discoverable create/update bodies. The value serializes to its JSON representation
+// key it serialises under. Any user-defined type can implement it to gain typed,
+// discoverable create/update bodies. The value serialises to its JSON representation
 // under FragmentKey() (see Raw for the ad-hoc case).
 //
 // Example:

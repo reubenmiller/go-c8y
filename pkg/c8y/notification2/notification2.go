@@ -127,7 +127,7 @@ func getEndpoint(host string, subscription Subscription) *url.URL {
 	return c8yHost
 }
 
-// NewNotification2Client initializes a new notification2 client used to subscribe to realtime notifications from Cumulocity
+// NewNotification2Client initialises a new notification2 client used to subscribe to realtime notifications from Cumulocity
 func NewNotification2Client(host string, wsDialer *websocket.Dialer, subscription Subscription, options ConnectionOptions) *Notification2Client {
 	if wsDialer == nil {
 		// Default client ignores self signed certificates (to enable compatibility to the edge which uses self signed certs)
@@ -325,11 +325,12 @@ func parseMessage(raw []byte) *Message {
 			continue
 		}
 		if inHeader {
-			if i == 0 {
+			switch i {
+			case 0:
 				message.Identifier = string(line)
-			} else if i == 1 {
+			case 1:
 				message.Description = string(line)
-			} else if i == 2 {
+			case 2:
 				message.Action = string(line)
 			}
 			// Ignore unknown header indexes

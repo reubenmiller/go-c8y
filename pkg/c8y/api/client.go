@@ -184,7 +184,7 @@ var (
 	EnvVarLoggerHideSensitive = "C8Y_LOGGER_HIDE_SENSITIVE"
 )
 
-// Format the base url to ensure it is normalized for cases where the
+// Format the base url to ensure it is normalised for cases where the
 // scheme can be missing, and the trailing slash (which affects the default path used in calls)
 func FormatBaseURL(v string) string {
 	// add a default scheme if missing
@@ -422,7 +422,7 @@ func NewClient(opts ClientOptions) *Client {
 	c.Identity = identity.NewService(&c.common)
 	c.ManagedObjects = managedobjects.NewService(&c.common)
 
-	// Services that use device resolver must be initialized after ManagedObjects
+	// Services that use device resolver must be initialised after ManagedObjects
 	c.Alarms = alarms.NewService(&c.common, c.ManagedObjects)
 	c.Measurements = measurements.NewService(&c.common, c.ManagedObjects)
 	c.Operations = operations.NewService(&c.common, c.ManagedObjects)
@@ -695,8 +695,8 @@ func clientTLSCerts(client *resty.Client) []tls.Certificate {
 }
 
 // debugLogMiddleware returns a response middleware that logs request and response details.
-// When sanitize is true, sensitive headers (Authorization, Cookie, etc.) are redacted.
-func debugLogMiddleware(sanitize bool) func(*resty.Client, *resty.Response) error {
+// When sanitise is true, sensitive headers (Authorization, Cookie, etc.) are redacted.
+func debugLogMiddleware(sanitise bool) func(*resty.Client, *resty.Response) error {
 	return func(client *resty.Client, resp *resty.Response) error {
 		req := resp.Request.RawRequest
 
@@ -721,10 +721,10 @@ func debugLogMiddleware(sanitize bool) func(*resty.Client, *resty.Response) erro
 			}
 		}
 
-		// Sanitize headers if requested
+		// Sanitise headers if requested
 		reqHeaders := req.Header
-		if sanitize {
-			reqHeaders = sanitizeHeaders(req.Header)
+		if sanitise {
+			reqHeaders = sanitiseHeaders(req.Header)
 		}
 		fmt.Fprintf(os.Stderr, "HEADERS:\n%s\n", composeHeaders(reqHeaders))
 
@@ -819,16 +819,16 @@ func debugLogMiddleware(sanitize bool) func(*resty.Client, *resty.Response) erro
 		fmt.Fprintf(os.Stderr, "RECEIVED AT  : %v\n", resp.ReceivedAt().Format(time.RFC3339Nano))
 		fmt.Fprintf(os.Stderr, "DURATION     : %v\n", resp.Duration())
 
-		// Sanitize response headers if requested
+		// Sanitise response headers if requested
 		respHeaders := resp.Header()
-		if sanitize {
-			respHeaders = sanitizeHeaders(resp.Header())
+		if sanitise {
+			respHeaders = sanitiseHeaders(resp.Header())
 		}
 		fmt.Fprintf(os.Stderr, "HEADERS      :\n%s\n", composeHeaders(respHeaders))
 
 		respBytes := resp.Bytes()
 		// If resty auto-unmarshaled the body into Result/ResultError, bodyBytes is
-		// consumed. Fall back to marshaling the parsed struct so the debug output
+		// consumed. Fall back to marshalling the parsed struct so the debug output
 		// is still useful.
 		if len(respBytes) == 0 && resp.IsRead {
 			var data any
@@ -1128,9 +1128,9 @@ func composeHeaders(headers http.Header) string {
 	return s
 }
 
-// sanitizeHeaders returns a clone of headers with sensitive values redacted.
+// sanitiseHeaders returns a clone of headers with sensitive values redacted.
 // Sensitive headers include Authorization, Cookie, Set-Cookie, and X-Auth-Token.
-func sanitizeHeaders(headers http.Header) http.Header {
+func sanitiseHeaders(headers http.Header) http.Header {
 	if len(headers) == 0 {
 		return headers
 	}
@@ -1145,20 +1145,20 @@ func sanitizeHeaders(headers http.Header) http.Header {
 	}
 
 	// Clone headers
-	sanitized := make(http.Header, len(headers))
+	sanitised := make(http.Header, len(headers))
 	for key, values := range headers {
-		sanitized[key] = make([]string, len(values))
-		copy(sanitized[key], values)
+		sanitised[key] = make([]string, len(values))
+		copy(sanitised[key], values)
 	}
 
 	// Redact sensitive headers
 	for _, key := range sensitiveHeaders {
-		if _, exists := sanitized[key]; exists {
-			sanitized[key] = []string{"********************"}
+		if _, exists := sanitised[key]; exists {
+			sanitised[key] = []string{"********************"}
 		}
 	}
 
-	return sanitized
+	return sanitised
 }
 
 func (c *Client) Login(ctx context.Context) (token string, err error) {
@@ -1863,9 +1863,6 @@ func TokenRenewalRetry(c *Client) func(res *resty.Response, err error) bool {
 func TokenRenewalRetryMiddleware(c *Client) resty.ResponseMiddleware {
 	return func(c *resty.Client, r *resty.Response) error {
 		slog.Warn("")
-		if r.StatusCode() == 401 {
-
-		}
 		return nil
 	}
 }

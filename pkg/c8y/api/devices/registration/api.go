@@ -154,16 +154,6 @@ func (s *Service) CreateCredentials(ctx context.Context, opt CreateCredentialsOp
 	return core.Execute(ctx, s.createB(opt), jsonmodels.NewDeviceCredentials)
 }
 
-func (s *Service) createCredentialsB(body any) *core.TryRequest {
-	req := s.Client.R().
-		SetMethod(resty.MethodPost).
-		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetContentType(types.MimeTypeDeviceCredentials).
-		SetBody(body).
-		SetURL(ApiDeviceCredentials)
-	return core.NewTryRequest(s.Client, req)
-}
-
 // PollNewDeviceRequest continuously polls a device request for a specified id at defined intervals. The func will wait until the device request has been set to ACCEPTED.
 // If the device request does not reach the ACCEPTED state in the defined timeout period, then an error will be returned.
 func (s *Service) PollNewDeviceRequest(ctx context.Context, id string, interval time.Duration, timeout time.Duration) (<-chan struct{}, <-chan error) {
