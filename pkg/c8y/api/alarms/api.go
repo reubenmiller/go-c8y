@@ -19,6 +19,10 @@ import (
 	"resty.dev/v3"
 )
 
+// Regenerate the per-resource Layer-0 files (option structs, façade models) for all
+// pilot resources. Runs from any one resource since the generator is registry-driven.
+//go:generate go run ../../../../tools/c8ygen resources --spec ../../../../docs/c8y-oas.yml --root ../../../..
+
 var ApiAlarms = "/alarm/alarms"
 var ApiAlarmsCount = "/alarm/alarms/count"
 var ApiAlarmsUpsert = "/alarm/alarms/upsert"
@@ -42,63 +46,7 @@ func NewService(common *core.Service, moService *managedobjects.Service) *Servic
 	}
 }
 
-// ListOptions to use when search for alarms
-type ListOptions struct {
-	// Start date or date and time of the alarm creation
-	CreatedFrom time.Time `url:"createdFrom,omitempty,omitzero"`
-
-	// End date or date and time of the alarm creation
-	CreatedTo time.Time `url:"createdTo,omitempty,omitzero"`
-
-	// Start date or date and time of the last update made
-	LastUpdatedFrom time.Time `url:"lastUpdatedFrom,omitempty,omitzero"`
-
-	// End date or date and time of the last update made
-	LastUpdatedTo time.Time `url:"lastUpdatedTo,omitempty,omitzero"`
-
-	// Start date or date and time of the alarm occurrence
-	DateFrom time.Time `url:"dateFrom,omitempty,omitzero"`
-
-	// End date or date and time of the alarm occurrence
-	DateTo time.Time `url:"dateTo,omitempty,omitzero"`
-
-	// Source device to filter alarms by.
-	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
-	// or cast a string variable with managedobjects.DeviceRef(id).
-	Source managedobjects.DeviceRef `url:"source,omitempty"`
-
-	// The types of alarm to search for
-	Type []string `url:"type,omitempty"`
-
-	// The status of the alarm to search for. Should not be used when resolved parameter is provided
-	Status []model.AlarmStatus `url:"status,omitempty"`
-
-	// The severity of the alarm to search for
-	Severity []model.AlarmSeverity `url:"severity,omitempty"`
-
-	// When set to true only alarms with status CLEARED will be fetched, whereas false will fetch all
-	// alarms with status ACTIVE or ACKNOWLEDGED. Takes precedence over the status parameter
-	Resolved bool `url:"resolved,omitempty"`
-
-	// When set to true, alarms for related source assets, devices and additions will
-	// also be included in the response. When this parameter is provided a source
-	// must be specified.
-	WithSourceChildren bool `url:"withSourceChildren,omitempty"`
-
-	// When set to true, alarms for related source assets will also be included in
-	// the response. When this parameter is provided a source must be specified.
-	WithSourceAssets bool `url:"withSourceAssets,omitempty"`
-
-	// When set to true, alarms for related source devices will also be included in
-	// the response. When this parameter is provided a source must be specified.
-	WithSourceDevices bool `url:"withSourceDevices,omitempty"`
-
-	// When set to true, alarms for related source additions will also be included in
-	// the response. When this parameter is provided a source must be specified.
-	WithSourceAdditions bool `url:"withSourceAdditions,omitempty"`
-
-	pagination.PaginationOptions
-}
+// ListOptions is generated from the OpenAPI spec — see zz_generated_options.go.
 
 // AlarmIterator provides iteration over alarms
 type AlarmIterator = pagination.Iterator[jsonmodels.Alarm]

@@ -49,8 +49,8 @@ jobs:
       - name: Verify generated code is up to date
         run: |
           task generate
-          git diff --exit-code pkg/c8y/api/spec/ \
-            || (echo "::error::Generated spec is stale. Run 'task generate' and commit." && exit 1)
+          git diff --exit-code -- 'pkg/c8y/api/spec/*.go' '**/zz_generated_*.go' \
+            || (echo "::error::Generated code is stale. Run 'task generate' and commit." && exit 1)
 
   # Offline gate: runs on every push/PR (including forks) without a live tenant.
   test-offline:

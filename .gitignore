@@ -44,3 +44,6 @@ device.key
 testdata/golden/
 !testdata/golden/.gitkeep
 *.key
+
+# c8ygen binary (go build output)
+/c8ygen

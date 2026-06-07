@@ -189,8 +189,8 @@ generator uses, so it is a stepping-stone, not throwaway work.
 |---|---|---|
 | **0** | OAS parser + `task lint-api` drift report (non-gating) | ✅ **done** |
 | **1** | Generator (`tools/c8ygen`); emit `zz_generated_paths.go` + `zz_generated_enums.go` into `pkg/c8y/api/spec` | ✅ **done** |
-| **2** | Generate option structs + façade models for **one pilot** resource (`alarms`), refactor its `api.go` to embed/wrap. Prove the seam. | ⬜ next |
-| **3** | Roll the pilot pattern across resources, resource-by-resource; add `x-c8y-sdk-*` overlay as needed | ⬜ |
+| **2** | Generate option struct + façade model for the **pilot** resource (`alarms`); refactor `api.go`/`jsonmodels` to compose them. Prove the seam. | ✅ **done** |
+| **3** | Roll the pilot pattern across resources, resource-by-resource; replace the in-code resource registry with `x-c8y-sdk-*` overlay | ⬜ next |
 | **4** | Make `task lint-api` **gating** (`--strict`) in CI; add `CONTRIBUTING` note: edit the spec/overlay, not `zz_generated_*.go` | ⬜ |
 
 Each phase leaves the repo building and tested (the offline suite in
@@ -213,6 +213,40 @@ Each phase leaves the repo building and tested (the offline suite in
 
 > **Note on counts:** the generator extracts **146** paths from the spec (vs the
 > assessment's manually-counted 145/146); both round-trip to the same coverage picture.
+
+### What Phase 2 delivered (pilot: `alarms`)
+
+- **Generated option struct** — `c8ygen resources` emits `pkg/c8y/api/alarms/zz_generated_options.go`
+  containing the full `ListOptions` (all GET `/alarm/alarms` query params, typed enum
+  slices, the `Source` resolver field, embedded pagination). The hand-written `api.go`
+  no longer declares the struct; its `List` method keeps the resolver *behavior*.
+- **Generated façade model** — `pkg/c8y/jsonmodels/zz_generated_alarm.go` holds the
+  derivable scalar accessors (`ID`, `Severity`, `Time`, …). The hand-written `alarm.go`
+  keeps only the non-derivable `SourceID()` (nested object) and the constructors.
+- **Behaviour-preserving** — the full offline suite (incl. the alarms-heavy integration
+  tests) passes unchanged. The generated output is byte-identical to the previous
+  hand-written surface.
+- **Driver** — an in-code `resources.go` registry declares the seam per resource
+  (option type, field-type/doc overrides, embeds). This is the **precursor to the
+  `x-c8y-sdk-*` overlay**; Phase 3 reads the same intent from the spec instead.
+
+#### Design finding: generate the whole struct, don't embed a params sub-struct
+
+`API_GEN.md` originally sketched the hand-written `ListOptions` *embedding* a generated
+`GenListParams`. Implementing it surfaced a hard Go constraint: **promoted fields cannot
+be set in a composite literal** — `alarms.ListOptions{Severity: …}` stops compiling once
+`Severity` lives in an embedded struct, a breaking change for every caller. So the seam
+for option structs is instead:
+
+- **Layer 0 owns the whole struct's *shape*** (generated, including the `Source` field
+  typed via override and the embedded `pagination.PaginationOptions`).
+- **Layer 1 owns *behavior*** (the resolver step in `List`, `Upsert`, iterators, …).
+
+Type/doc **overrides** in the registry (later: overlay) express the deliberate
+divergences — `source → managedobjects.DeviceRef`, `status → []model.AlarmStatus` — so
+the generated struct is API-compatible with the hand-written one it replaced. Façade
+**models** compose the opposite way (generated methods + hand-written methods on the same
+type), which has no literal-initialization constraint.
 
 ---
 

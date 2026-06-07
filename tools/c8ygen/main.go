@@ -31,6 +31,8 @@ func main() {
 	switch cmd {
 	case "generate", "gen":
 		err = cmdGenerate(args)
+	case "resources":
+		err = cmdResources(args)
 	case "lint":
 		err = cmdLint(args)
 	case "fetch":
@@ -89,6 +91,30 @@ func cmdGenerate(args []string) error {
 		return err
 	}
 	fmt.Printf("generated %d path constants and %d enums from %s\n", res.Paths, res.Enums, source)
+	for _, f := range res.Files {
+		fmt.Printf("  wrote %s\n", f)
+	}
+	return nil
+}
+
+func cmdResources(args []string) error {
+	fs := flag.NewFlagSet("resources", flag.ExitOnError)
+	opt := loadFlags(fs)
+	root := fs.String("root", ".", "repository root for resolving per-resource output paths")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+
+	doc, _, err := Load(*opt)
+	if err != nil {
+		return err
+	}
+	source := specSource(*opt)
+	res, err := GenerateResources(doc, source, *root)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("generated %d option struct(s) and %d model(s) from %s\n", res.Options, res.Models, source)
 	for _, f := range res.Files {
 		fmt.Printf("  wrote %s\n", f)
 	}

@@ -54,15 +54,30 @@ go run ./tools/c8ygen generate --fetch
 |---|---|
 | `main.go` | CLI dispatch and flags |
 | `spec.go` | Spec loading (file/URL) + minimal OAS model + YAML parsing |
-| `ident.go` | Path/word → Go identifier naming (initialisms, camel-split) |
-| `generate.go` | Path/enum extraction + code emission |
+| `ident.go` | Path/word → Go identifier naming (initialisms, camel/underscore split) |
+| `resolve.go` | `$ref` resolution + schema → Go type mapping |
+| `generate.go` | Central path/enum extraction + emission (→ `pkg/c8y/api/spec`) |
+| `resources.go` | Per-resource registry (the in-code precursor to the `x-c8y-sdk-*` overlay) |
+| `resources_gen.go` | Per-resource option-struct + façade-model emission |
 | `lint.go` | Drift detection (scan SDK literals, compare to OAS) |
 
 Dependencies are deliberately minimal: standard library + `gopkg.in/yaml.v3` (already a
 SDK dependency). No heavy OpenAPI toolkit is pulled into the module.
 
+## Per-resource generation (Phase 2)
+
+`c8ygen resources` generates, for each resource in the `resources.go` registry:
+
+- the full option struct (query params, with type/doc overrides for divergences like the
+  `Source` resolver field) into `pkg/c8y/api/<pkg>/zz_generated_options.go`, and
+- façade accessors for the response schema into `pkg/c8y/jsonmodels/zz_generated_<schema>.go`.
+
+`task generate` runs both `generate` and `resources`. The pilot covers `alarms`; add more
+by extending `pilotResources`. See [docs/API_GEN.md](../../docs/API_GEN.md) §8 for the
+design finding on why option structs are generated whole rather than embedded.
+
 ## Adding later phases
 
-Option structs and façade models (Phase 2+) require `$ref`/`allOf` resolution. When that
-lands, either grow `spec.go`'s resolver or switch parsing to a dedicated library; the
-emission templates and the `zz_generated_*.go` / DO-NOT-EDIT contract stay the same.
+Request-body structs (`CreateOptions`) need `allOf` flattening; grow `resolve.go` or
+switch parsing to a dedicated library. The emission templates and the
+`zz_generated_*.go` / DO-NOT-EDIT contract stay the same.

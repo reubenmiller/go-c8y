@@ -32,46 +32,10 @@ func NewAlarmWithType(sourceID, alarmType, severity, text string, fragments map[
 	return Alarm{jsondoc.Facade{JSONDoc: jsondoc.New(b)}}
 }
 
-func (a Alarm) ID() string {
-	return a.Get("id").String()
-}
-
-func (a Alarm) Type() string {
-	return a.Get("type").String()
-}
-
-func (a Alarm) Text() string {
-	return a.Get("text").String()
-}
-
+// SourceID returns the id of the managed object the alarm is associated with.
+// Hand-written: the OAS models `source` as a nested object, so this accessor is not
+// mechanically derivable. The scalar accessors (ID, Type, Severity, ...) are generated
+// in zz_generated_alarm.go.
 func (a Alarm) SourceID() string {
 	return a.Get("source.id").String()
-}
-
-func (a Alarm) Severity() string {
-	return a.Get("severity").String()
-}
-
-func (a Alarm) Status() string {
-	return a.Get("status").String()
-}
-
-func (a Alarm) Time() time.Time {
-	return a.Get("time").Time()
-}
-
-func (a Alarm) CreationTime() time.Time {
-	return a.Get("creationTime").Time()
-}
-
-func (a Alarm) FirstOccurrenceTime() time.Time {
-	return a.Get("firstOccurrenceTime").Time()
-}
-
-func (a Alarm) Count() int64 {
-	return a.Get("count").Int()
-}
-
-func (a Alarm) Self() string {
-	return a.Get("self").String()
 }

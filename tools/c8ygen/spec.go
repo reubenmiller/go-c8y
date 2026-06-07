@@ -68,11 +68,12 @@ type MethodOp struct {
 
 // Operation is a single API operation.
 type Operation struct {
-	OperationID  string    `yaml:"operationId"`
-	ResourceName string    `yaml:"x-codegen-resource-name"`
-	Tags         []string  `yaml:"tags"`
-	Summary      string    `yaml:"summary"`
-	Ignore       yaml.Node `yaml:"x-codegen-ignore"`
+	OperationID  string      `yaml:"operationId"`
+	ResourceName string      `yaml:"x-codegen-resource-name"`
+	Tags         []string    `yaml:"tags"`
+	Summary      string      `yaml:"summary"`
+	Parameters   []Parameter `yaml:"parameters"`
+	Ignore       yaml.Node   `yaml:"x-codegen-ignore"`
 }
 
 // Ignored reports whether the operation is marked to be skipped by codegen.
