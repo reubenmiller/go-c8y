@@ -294,6 +294,36 @@ func (fs *FakeServer) handleChildRelationship(w http.ResponseWriter, r *http.Req
 		})
 		writeJSON(w, http.StatusCreated, ref)
 
+	case http.MethodDelete:
+		// Unassign: body is a managedObjectReferenceCollection containing
+		// references with managedObject.id values to remove from this parent.
+		body, _ := readBody(r)
+		var envelope struct {
+			References []struct {
+				ManagedObject struct {
+					ID string `json:"id"`
+				} `json:"managedObject"`
+			} `json:"references"`
+		}
+		_ = json.Unmarshal(body, &envelope)
+		toRemove := map[string]struct{}{}
+		for _, ref := range envelope.References {
+			if ref.ManagedObject.ID != "" {
+				toRemove[ref.ManagedObject.ID] = struct{}{}
+			}
+		}
+		fs.ManagedObjects.mu.Lock()
+		filtered := relMap[parentID][:0]
+		for _, id := range relMap[parentID] {
+			if _, drop := toRemove[id]; drop {
+				continue
+			}
+			filtered = append(filtered, id)
+		}
+		relMap[parentID] = filtered
+		fs.ManagedObjects.mu.Unlock()
+		writeNoContent(w)
+
 	default:
 		writeError(w, http.StatusMethodNotAllowed, "general/methodNotAllowed", "Method not allowed")
 	}

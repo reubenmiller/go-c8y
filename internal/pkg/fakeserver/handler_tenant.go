@@ -110,6 +110,28 @@ func (fs *FakeServer) handleTenantsCRUD(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// /tenant/tenants/{id}/applications and /tenant/tenants/{id}/applications/{appId}
+	if len(segments) >= 2 && segments[1] == "applications" {
+		switch r.Method {
+		case http.MethodGet:
+			items := fs.Applications.List()
+			page := Paginate(r, items)
+			writeJSON(w, http.StatusOK, BuildCollectionResponse(r, fs.URL(), "applications", page))
+		case http.MethodPost:
+			body, err := readBody(r)
+			if err != nil {
+				writeError(w, http.StatusBadRequest, "general/badRequest", err.Error())
+				return
+			}
+			writeJSON(w, http.StatusCreated, body)
+		case http.MethodDelete:
+			writeNoContent(w)
+		default:
+			writeError(w, http.StatusMethodNotAllowed, "general/methodNotAllowed", "Method not allowed")
+		}
+		return
+	}
+
 	// /tenant/tenants/{id}/tfa
 	if len(segments) >= 2 && segments[1] == "tfa" {
 		switch r.Method {

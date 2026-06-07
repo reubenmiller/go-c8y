@@ -63,6 +63,12 @@ type FakeServer struct {
 	LoginOptionAccessMappings map[string]*Store
 	// Login-option inventory access mappings: loginOption typeOrId → Store
 	LoginOptionInventoryAccessMappings map[string]*Store
+
+	// Realtime is the state of any active /cep/realtime websocket connections.
+	Realtime *realtimeState
+	// Notification2 is the state of any active /notification2/consumer/
+	// websocket connections.
+	Notification2 *notification2State
 }
 
 // New creates a new FakeServer with an httptest.Server and registers cleanup.
@@ -103,6 +109,9 @@ func New(t *testing.T) *FakeServer {
 
 		LoginOptionAccessMappings:          make(map[string]*Store),
 		LoginOptionInventoryAccessMappings: make(map[string]*Store),
+
+		Realtime:      newRealtimeState(),
+		Notification2: newNotification2State(),
 	}
 
 	mux := http.NewServeMux()
@@ -113,7 +122,9 @@ func New(t *testing.T) *FakeServer {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		p := r.URL.Path
 		public := strings.HasPrefix(p, "/tenant/loginOptions") ||
-			strings.HasPrefix(p, "/tenant/oauth")
+			strings.HasPrefix(p, "/tenant/oauth") ||
+			p == "/cep/realtime" ||
+			strings.HasPrefix(p, "/notification2/consumer")
 		if !public && r.Header.Get("Authorization") == "" {
 			writeError(w, http.StatusUnauthorized, "security/Unauthorized", "Missing credentials") //nolint:misspell
 			return
@@ -200,6 +211,14 @@ func (fs *FakeServer) registerRoutes(mux *http.ServeMux) {
 		// Features
 		case strings.HasPrefix(path, "/features"):
 			fs.handleFeatures(w, r)
+
+		// Realtime (Bayeux) websocket
+		case path == "/cep/realtime":
+			fs.handleRealtime(w, r)
+
+		// Notification2 consumer websocket
+		case strings.HasPrefix(path, "/notification2/consumer"):
+			fs.handleNotification2Stream(w, r)
 
 		// Notification2
 		case strings.HasPrefix(path, "/notification2/"):

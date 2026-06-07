@@ -1,9 +1,46 @@
 package fakeserver
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
+	"strings"
+	"time"
 )
+
+// fakeNotification2Token returns a JWT-shaped token whose payload encodes the
+// subscriber, subscription and expiry derived from the inbound request body so
+// that the SDK's token-renewal path can parse it without panicking.  The
+// signature segment is a fixed dummy value because the SDK only does
+// ParseUnverified.
+func fakeNotification2Token(body json.RawMessage) string {
+	var req struct {
+		Subscriber   string `json:"subscriber"`
+		Subscription string `json:"subscription"`
+		Shared       bool   `json:"shared"`
+	}
+	_ = json.Unmarshal(body, &req)
+	if req.Subscriber == "" {
+		req.Subscriber = "goc8y"
+	}
+	if req.Subscription == "" {
+		req.Subscription = "fake"
+	}
+	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"HS256","typ":"JWT"}`))
+	sharedStr := "false"
+	if req.Shared {
+		sharedStr = "true"
+	}
+	now := time.Now().Unix()
+	payload, _ := json.Marshal(map[string]any{
+		"sub":    req.Subscriber,
+		"topic":  "t12345/" + req.Subscription,
+		"shared": sharedStr,
+		"iat":    now,
+		"exp":    now + 3600,
+	})
+	return header + "." + base64.RawURLEncoding.EncodeToString(payload) + ".dummy-sig"
+}
 
 // handleAuditRecords routes /audit/auditRecords requests.
 func (fs *FakeServer) handleAuditRecords(w http.ResponseWriter, r *http.Request) {
@@ -169,11 +206,12 @@ func (fs *FakeServer) handleNotification2(w http.ResponseWriter, r *http.Request
 	id := extractID(r.URL.Path, "/notification2/subscriptions")
 
 	// /notification2/token
-	if extractID(r.URL.Path, "/notification2/token") != "" || r.URL.Path == "/notification2/token" {
+	if strings.HasPrefix(r.URL.Path, "/notification2/token") {
 		switch r.Method {
 		case http.MethodPost:
+			body, _ := readBody(r)
 			resp := marshalJSON(map[string]any{
-				"token": "fake-notification2-token",
+				"token": fakeNotification2Token(body),
 			})
 			writeJSON(w, http.StatusOK, resp)
 		default:
@@ -231,9 +269,42 @@ func (fs *FakeServer) handleNotification2(w http.ResponseWriter, r *http.Request
 		_, doc := fs.Notification2Subscriptions.Create(body, fs.URL()+"/notification2/subscriptions")
 		writeJSON(w, http.StatusCreated, doc)
 
+	case http.MethodDelete:
+		// DeleteBySource: source/context query params filter what gets removed.
+		src := r.URL.Query().Get("source")
+		ctxFilter := r.URL.Query().Get("context")
+		for _, doc := range fs.Notification2Subscriptions.List() {
+			docID := getJSONString(doc, "id")
+			docCtx := getJSONString(doc, "context")
+			if src != "" && getJSONString(doc, "source") != src {
+				// "source" may be a nested object; fall back to source.id.
+				if getNestedString(doc, "source", "id") != src {
+					continue
+				}
+			}
+			if ctxFilter != "" && docCtx != ctxFilter {
+				continue
+			}
+			fs.Notification2Subscriptions.Delete(docID)
+		}
+		writeNoContent(w)
+
 	default:
 		writeError(w, http.StatusMethodNotAllowed, "general/methodNotAllowed", "Method not allowed")
 	}
+}
+
+// getNestedString extracts a nested string field like body[outer][inner].
+func getNestedString(doc json.RawMessage, outer, inner string) string {
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal(doc, &m); err != nil {
+		return ""
+	}
+	raw, ok := m[outer]
+	if !ok {
+		return ""
+	}
+	return getJSONString(raw, inner)
 }
 
 // handleDeviceRequests routes /devicecontrol/newDeviceRequests.

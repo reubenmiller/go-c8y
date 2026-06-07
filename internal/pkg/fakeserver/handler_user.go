@@ -65,6 +65,27 @@ func (fs *FakeServer) handleCurrentUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// /user/currentUser/totpSecret
+	if strings.Contains(path, "/totpSecret") {
+		switch r.Method {
+		case http.MethodPost:
+			writeJSON(w, http.StatusOK, marshalJSON(map[string]any{
+				"isActive":    false,
+				"rawSecret":   "ABCDEFGHIJKLMNOP",
+				"secretQrUrl": "otpauth://totp/test:admin?secret=ABCDEFGHIJKLMNOP",
+			}))
+		case http.MethodGet:
+			writeJSON(w, http.StatusOK, marshalJSON(map[string]any{
+				"isActive": true,
+			}))
+		case http.MethodDelete:
+			writeNoContent(w)
+		default:
+			writeError(w, http.StatusMethodNotAllowed, "general/methodNotAllowed", "Method not allowed")
+		}
+		return
+	}
+
 	switch r.Method {
 	case http.MethodGet:
 		doc, ok := fs.Users.Get("admin")

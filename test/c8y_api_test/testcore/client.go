@@ -106,6 +106,21 @@ func CreateTestClient(t *testing.T) *api.Client {
 	return client
 }
 
+// CreateTestClientWithFakeServer creates a test client and returns the
+// underlying FakeServer (or nil in non-offline modes) so the test can
+// interact with the fake's WebSocket and store state directly.
+func CreateTestClientWithFakeServer(t *testing.T) (*api.Client, *fakeserver.FakeServer) {
+	t.Setenv("C8Y_TOKEN", "")
+	srv := setupFakeServer(t)
+	opts := api.ClientOptions{}
+	if rec := setupRecorder(t); rec != nil {
+		opts.Transport = rec
+	}
+	client := api.NewClientFromEnvironment(opts)
+	client.HTTPClient.SetRetryCount(1)
+	return client, srv
+}
+
 func CreateTestClientNoAuth(t *testing.T) *api.Client {
 	srv := setupFakeServer(t)
 	if srv != nil {
