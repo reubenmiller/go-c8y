@@ -2,7 +2,6 @@ package jsonmodels
 
 import (
 	"encoding/json"
-	"time"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
 )
@@ -27,30 +26,15 @@ func NewOperationWithStatus(deviceID, status string, fragments map[string]any) O
 	return Operation{jsondoc.Facade{JSONDoc: jsondoc.New(b)}}
 }
 
-func (o Operation) ID() string {
-	return o.Get("id").String()
-}
-
-func (o Operation) DeviceID() string {
-	return o.Get("deviceId").String()
-}
-
+// DeviceName returns the operation's device name. Hand-written: `deviceName` is not a
+// property in the OAS operation schema. The scalar accessors (ID, DeviceID, Status,
+// CreationTime, ...) are generated in zz_generated_operation.go.
 func (o Operation) DeviceName() string {
 	return o.Get("deviceName").String()
 }
 
-func (o Operation) Status() string {
-	return o.Get("status").String()
-}
-
+// Description returns the operation's description. Hand-written: `description` is not a
+// property in the OAS operation schema.
 func (o Operation) Description() string {
 	return o.Get("description").String()
-}
-
-func (o Operation) CreationTime() time.Time {
-	return o.Get("creationTime").Time()
-}
-
-func (o Operation) Self() string {
-	return o.Get("self").String()
 }

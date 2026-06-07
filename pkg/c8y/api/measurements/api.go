@@ -40,29 +40,7 @@ func NewService(common *core.Service, moService *managedobjects.Service) *Servic
 	}
 }
 
-// ListOptions
-type ListOptions struct {
-	// Source device to filter measurements by.
-	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
-	// or cast a string variable with managedobjects.DeviceRef(id).
-	Source managedobjects.DeviceRef `url:"source,omitempty"`
-
-	// DateFrom Timestamp `url:"dateFrom,omitempty"`
-	DateFrom time.Time `url:"dateFrom,omitempty,omitzero"`
-
-	DateTo time.Time `url:"dateTo,omitempty,omitzero"`
-
-	Type string `url:"type,omitempty"`
-
-	ValueFragmentType string `url:"valueFragmentType,omitempty"`
-
-	ValueFragmentSeries string `url:"valueFragmentSeries,omitempty"`
-
-	Revert bool `url:"revert,omitempty"`
-
-	// Pagination options
-	pagination.PaginationOptions
-}
+// ListOptions is generated from the OpenAPI spec — see zz_generated_options.go.
 
 // MeasurementIterator provides iteration over measurements
 type MeasurementIterator = pagination.Iterator[jsonmodels.Measurement]

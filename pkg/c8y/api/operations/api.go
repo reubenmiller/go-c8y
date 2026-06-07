@@ -38,42 +38,7 @@ func NewService(common *core.Service, moService *managedobjects.Service) *Servic
 	}
 }
 
-// ListOptions to use when search for operations
-type ListOptions struct {
-	// An agent ID that may be part of the operation. If this parameter is set,
-	// the operation response objects contain the deviceExternalIDs object.
-	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
-	// or cast a string variable with managedobjects.DeviceRef(id).
-	AgentID managedobjects.DeviceRef `url:"agentId,omitempty"`
-
-	// The bulk operation ID that this operation belongs to
-	BulkOperationID string `url:"bulkOperationId,omitempty"`
-
-	// Start date or date and time of the operation
-	DateFrom time.Time `url:"dateFrom,omitempty,omitzero"`
-
-	// End date or date and time of the operation
-	DateTo time.Time `url:"dateTo,omitempty,omitzero"`
-
-	// The ID of the device the operation is performed for.
-	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
-	// or cast a string variable with managedobjects.DeviceRef(id).
-	DeviceID managedobjects.DeviceRef `url:"deviceId,omitempty"`
-
-	// The type of fragment that must be part of the operation
-	FragmentType string `url:"fragmentType,omitempty"`
-
-	// If you are using a range query (that is, at least one of
-	// the dateFrom or dateTo parameters is included in the request),
-	// then setting revert=true will sort the results by the newest operations
-	// first. By default, the results are sorted by the oldest operations first.
-	Revert bool `url:"revert,omitempty"`
-
-	// Status of the operation
-	Status types.OperationStatus `url:"status,omitempty"`
-
-	pagination.PaginationOptions
-}
+// ListOptions is generated from the OpenAPI spec — see zz_generated_options.go.
 
 // OperationIterator provides iteration over operations
 type OperationIterator = pagination.Iterator[jsonmodels.Operation]

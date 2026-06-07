@@ -85,6 +85,73 @@ resources:
         schema: event
         skip: [source] # nested object: SourceID() stays hand-written
 
+  - package: measurements
+    options:
+      - type: ListOptions
+        path: /measurement/measurements
+        method: GET
+        doc: |-
+          ListOptions to use when searching for measurements.
+
+          The struct shape is generated from the OpenAPI spec; the Source resolver
+          field is a deliberate divergence (it accepts "name:"/"ext:"/"query:"
+          strings, resolved by the List method). See docs/API_GEN.md.
+        fields:
+          source:
+            type: managedobjects.DeviceRef
+            doc: |-
+              Source device to filter measurements by.
+              Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
+              or cast a string variable with managedobjects.DeviceRef(id).
+        embeds:
+          - import: github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination
+            type: pagination.PaginationOptions
+        imports:
+          - github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects
+    models:
+      - type: Measurement
+        schema: measurement
+        skip: [source] # nested object: SourceID() stays hand-written
+
+  - package: operations
+    options:
+      - type: ListOptions
+        path: /devicecontrol/operations
+        method: GET
+        doc: |-
+          ListOptions to use when searching for operations.
+
+          The struct shape is generated from the OpenAPI spec; the AgentID/DeviceID
+          resolver fields are a deliberate divergence (they accept
+          "name:"/"ext:"/"query:" strings, resolved by the List method).
+          See docs/API_GEN.md.
+        fields:
+          agentId:
+            type: managedobjects.DeviceRef
+            doc: |-
+              An agent ID that may be part of the operation.
+              Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
+              or cast a string variable with managedobjects.DeviceRef(id).
+          deviceId:
+            type: managedobjects.DeviceRef
+            doc: |-
+              The ID of the device the operation is performed for.
+              Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
+              or cast a string variable with managedobjects.DeviceRef(id).
+          status:
+            type: types.OperationStatus
+        embeds:
+          - import: github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination
+            type: pagination.PaginationOptions
+        imports:
+          - github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects
+          - github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types
+    models:
+      - type: Operation
+        schema: operation
+        # deviceExternalIDs (object) is auto-skipped; deviceName/Description are not in
+        # the schema, so those accessors stay hand-written.
+
 # Declared, known-acceptable drift between the OAS and the SDK. `c8ygen lint --strict`
 # (the CI api-drift gate) fails only on drift NOT listed here, so this section is the
 # single place where coverage decisions are recorded. Patterns match normalized paths
