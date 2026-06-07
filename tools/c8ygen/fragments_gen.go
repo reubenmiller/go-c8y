@@ -52,7 +52,7 @@ func renderFragment(doc *OAS, f overlayFragment, schema Schema) (string, bool) {
 	needTime := false
 	var b strings.Builder
 	if d := cleanComment(schema.Description); d != "" {
-		fmt.Fprintf(&b, "// %s %s\n", f.Type, lowerFirst(d))
+		fmt.Fprintf(&b, "// %s %s\n", f.Type, d)
 	}
 	fmt.Fprintf(&b, "type %s struct {\n", f.Type)
 	for _, propName := range sortedKeys(schema.Properties) {

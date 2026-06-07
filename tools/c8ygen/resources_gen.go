@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"path/filepath"
-	"sort"
 	"strings"
 )
 
@@ -171,7 +170,7 @@ func optionFields(doc *OAS, spec optionSpec, op opWithParams) ([]optionField, []
 			Comment: comment,
 		})
 	}
-	return fields, sortedSet(imports), nil
+	return fields, sortedKeys(imports), nil
 }
 
 // writeDoc emits a multi-line doc comment.
@@ -233,7 +232,7 @@ func renderModel(doc *OAS, source string, m modelSpec) (string, error) {
 	fmt.Fprintf(&out, "// accessors (e.g. SourceID) and constructors are hand-written in %s.go.\n", strings.ToLower(m.Schema))
 	for _, a := range accessors {
 		if a.Comment != "" {
-			fmt.Fprintf(&out, "\n// %s %s\n", a.Method, lowerFirst(a.Comment))
+			fmt.Fprintf(&out, "\n// %s %s\n", a.Method, a.Comment)
 		} else {
 			out.WriteString("\n")
 		}
@@ -268,7 +267,7 @@ func renderImports(imports map[string]bool) string {
 		return ""
 	}
 	var std, ext []string
-	for _, imp := range sortedSet(imports) {
+	for _, imp := range sortedKeys(imports) {
 		first := strings.SplitN(imp, "/", 2)[0]
 		if strings.Contains(first, ".") {
 			ext = append(ext, imp)
@@ -289,15 +288,6 @@ func renderImports(imports map[string]bool) string {
 	}
 	b.WriteString(")\n")
 	return b.String()
-}
-
-func sortedSet(m map[string]bool) []string {
-	out := make([]string, 0, len(m))
-	for k := range m {
-		out = append(out, k)
-	}
-	sort.Strings(out)
-	return out
 }
 
 func lastPathSegment(s string) string {
@@ -322,13 +312,4 @@ func cleanComment(s string) string {
 		return ""
 	}
 	return s
-}
-
-func lowerFirst(s string) string {
-	if s == "" {
-		return ""
-	}
-	r := []rune(s)
-	// Don't lowercase acronyms / proper nouns starting words like "ID".
-	return string(r)
 }

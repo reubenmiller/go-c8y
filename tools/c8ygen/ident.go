@@ -94,9 +94,7 @@ func pathIdent(path string) string {
 	for _, seg := range segs {
 		// {id} -> Id, {childId} -> ChildId
 		seg = strings.TrimSuffix(strings.TrimPrefix(seg, "{"), "}")
-		for _, tok := range splitToken(seg) {
-			b.WriteString(pascal(tok))
-		}
+		b.WriteString(pascalAll(seg))
 	}
 	id := b.String()
 	if id == "" {
