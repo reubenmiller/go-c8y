@@ -190,7 +190,7 @@ generator uses, so it is a stepping-stone, not throwaway work.
 | **0** | OAS parser + `task lint-api` drift report (non-gating) | ✅ **done** |
 | **1** | Generator (`tools/c8ygen`); emit `zz_generated_paths.go` + `zz_generated_enums.go` into `pkg/c8y/api/spec` | ✅ **done** |
 | **2** | Generate option struct + façade model for the **pilot** resource (`alarms`); refactor `api.go`/`jsonmodels` to compose them. Prove the seam. | ✅ **done** |
-| **3** | Replace the in-code registry with a spec overlay (`docs/c8y-oas.overlay.yml`); roll the pattern across resources, resource-by-resource | 🔄 **in progress** — overlay done; `alarms` + `events` migrated; more resources incremental |
+| **3** | Replace the in-code registry with a spec overlay (`docs/c8y-oas.overlay.yml`); roll the pattern across resources, resource-by-resource | 🔄 **in progress** — overlay done; `alarms`, `events`, `measurements`, `operations`, `tenants` migrated; remainder is divergent or low-value (see below) |
 | **4** | Make `task lint-api` **gating** (`--strict`) in CI; add `CONTRIBUTING` note: edit the spec/overlay, not `zz_generated_*.go` | ✅ **done** |
 
 Each phase leaves the repo building and tested (the offline suite in
@@ -266,6 +266,30 @@ type), which has no literal-initialization constraint.
 **Remaining rollout is intentionally incremental** — each resource needs its hand-written
 option struct and model slimmed and verified behaviour-identical, so it should land
 resource-by-resource (ideally maintainer-reviewed) rather than in one sweep.
+
+#### Migration triage
+
+The migration invariant is **behaviour-identical**: the generated `ListOptions` must have
+exactly the same field set as the hand-written one (the generator emits only OAS params,
+so a hand-written field absent from the OAS would be silently dropped — a breaking change).
+Triaging the remaining resources against that invariant:
+
+- **Migrated (5):** `alarms`, `events`, `measurements`, `operations` (resolver/enum-heavy —
+  the highest-value cases), and `tenants` (plain, options-only).
+- **Skipped — would drop a non-OAS field:** `auditrecords` (`Revert`), `binaries` (`Text`).
+  Their hand-written option struct carries a field the OAS does not list; migrating would
+  remove it. Needs a deliberate API decision or an overlay "extra field" directive.
+- **Skipped — deliberately curated / would expand the public API:** `inventory/managedobjects`
+  (6 curated fields + embedded `GetOptions` over ~17 OAS params), `applications`
+  (`ListByName/ByTenant/ByUser` variants), `users` (per-call tenant). These intentionally
+  expose a different surface than the raw OAS.
+- **Skipped — pagination-only:** `bulkoperations`, `retentionrules`, `userroles`,
+  `*options`, `*/versions`, … — nothing to generate beyond the pagination embed.
+- **Not yet evaluated:** `repository/*` (firmware/software), `microservices`, `notification2`,
+  `loginoptions`, `trustedcertificates`, `usergroups`, statistics sub-resources.
+
+The two "skipped — would drop a field" cases are the only ones where the generator is
+currently *unable* to reproduce the surface; everything else is a value/scope judgement.
 
 ### What Phase 4 delivered
 
