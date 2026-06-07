@@ -15,7 +15,6 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
-	"github.com/reubenmiller/go-c8y/v2/pkg/jsonUtilities"
 	"resty.dev/v3"
 )
 
@@ -158,35 +157,32 @@ type CreateOptions struct {
 	// Time when the alarm occurred
 	Time time.Time
 
-	// AdditionalProperties allows for custom fields to be added to the alarm
-	// Can be a struct, map[string]any, or any JSON-serializable type
-	// These properties are deep-merged with the base alarm fields
-	AdditionalProperties any
+	// Fragments are custom top-level fields (e.g. c8y_* fragments). Each is serialized
+	// under its FragmentKey() and deep-merged into the body; later entries win. Use a
+	// typed model.Fragment, or model.Frag("key", value) for ad-hoc fragments.
+	Fragments []model.Fragment
 }
 
-// Create an alarm
-// Accepts either CreateOptions (for resolver support and property merging) or any other type (passed through as-is)
-//
-// Using CreateOptions:
+// Create an alarm from typed, resolver-aware options.
 //
 //	result := client.Alarms.Create(ctx, alarms.CreateOptions{
 //	    Source: "name:myDevice",  // Resolver string
-//	    Type: "c8y_TestAlarm",
-//	    Text: "Test alarm",
-//	    AdditionalProperties: map[string]any{"custom": "value"},
+//	    Type:   "c8y_TestAlarm",
+//	    Text:   "Test alarm",
+//	    Fragments: []model.Fragment{model.Frag("custom", "value")},
 //	})
 //
-// Using direct struct/map:
-//
-//	result := client.Alarms.Create(ctx, model.Alarm{...})
-//	result := client.Alarms.Create(ctx, map[string]any{...})
-func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Alarm] {
-	// Check if body is CreateOptions - if so, handle resolver and merge logic
-	if opts, ok := body.(CreateOptions); ok {
-		return s.createWithOptions(ctx, opts)
-	}
+// To send a fully pre-built body (struct, map, json.RawMessage, MapBuilder, …), use
+// CreateRaw instead.
+func (s *Service) Create(ctx context.Context, opts CreateOptions) op.Result[jsonmodels.Alarm] {
+	return s.createWithOptions(ctx, opts)
+}
 
-	// Otherwise, pass through as-is
+// CreateRaw creates an alarm from a pre-built body, passed through to the API as-is.
+// It is the explicit escape hatch for shapes the typed CreateOptions does not cover.
+//
+//	result := client.Alarms.CreateRaw(ctx, map[string]any{...})
+func (s *Service) CreateRaw(ctx context.Context, body any) op.Result[jsonmodels.Alarm] {
 	return core.Execute(ctx, s.createB(body), jsonmodels.NewAlarm)
 }
 
@@ -263,21 +259,11 @@ func (s *Service) buildAlarmBody(ctx context.Context, opts CreateOptions) ([]byt
 		return nil, meta, err
 	}
 
-	// If there are additional properties, merge them with the base
-	if opts.AdditionalProperties != nil {
-		additionalJSON, err := json.Marshal(opts.AdditionalProperties)
-		if err != nil {
-			return nil, meta, err
-		}
-
-		// Deep merge: additional properties override/extend base properties
-		finalJSON, err := jsonUtilities.MergePatch(baseJSON, additionalJSON)
-		if err != nil {
-			return nil, meta, err
-		}
-		return finalJSON, meta, nil
+	// Deep-merge each custom fragment under its key; later entries win.
+	baseJSON, err = model.MergeFragments(baseJSON, opts.Fragments)
+	if err != nil {
+		return nil, meta, err
 	}
-
 	return baseJSON, meta, nil
 }
 
@@ -309,29 +295,24 @@ func (s *Service) createBWithJSON(bodyJSON []byte) *core.TryRequest {
 // response has HTTP status 201 (Result.Status == StatusCreated,
 // Result.Meta["found"] == false).
 //
-// Like Create, it accepts either CreateOptions (for resolver support and
-// property merging) or any other JSON-serializable type (passed through as-is).
-//
-// Using CreateOptions:
+// It takes typed, resolver-aware options:
 //
 //	result := client.Alarms.Upsert(ctx, alarms.CreateOptions{
-//	    Source: "name:myDevice",  // Resolver string
-//	    Type: "c8y_UnavailabilityAlarm",
-//	    Text: "No data received from the device within the required interval.",
+//	    Source:   "name:myDevice",  // Resolver string
+//	    Type:     "c8y_UnavailabilityAlarm",
+//	    Text:     "No data received from the device within the required interval.",
 //	    Severity: "MAJOR",
 //	})
 //
-// Using direct struct/map:
-//
-//	result := client.Alarms.Upsert(ctx, model.Alarm{...})
-//	result := client.Alarms.Upsert(ctx, map[string]any{...})
-func (s *Service) Upsert(ctx context.Context, body any) op.Result[jsonmodels.Alarm] {
-	// Check if body is CreateOptions - if so, handle resolver and merge logic
-	if opts, ok := body.(CreateOptions); ok {
-		return s.upsertWithOptions(ctx, opts)
-	}
+// To upsert a fully pre-built body, use UpsertRaw instead.
+func (s *Service) Upsert(ctx context.Context, opts CreateOptions) op.Result[jsonmodels.Alarm] {
+	return s.upsertWithOptions(ctx, opts)
+}
 
-	// Otherwise, pass through as-is
+// UpsertRaw upserts an alarm from a pre-built body, passed through to the API as-is.
+//
+//	result := client.Alarms.UpsertRaw(ctx, map[string]any{...})
+func (s *Service) UpsertRaw(ctx context.Context, body any) op.Result[jsonmodels.Alarm] {
 	return markUpsertResult(core.Execute(ctx, s.upsertB(body), jsonmodels.NewAlarm))
 }
 

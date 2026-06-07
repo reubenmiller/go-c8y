@@ -92,7 +92,7 @@ func TestMicroservice_OnUpdateConfigurationHook(t *testing.T) {
 
 	//
 	// Create update config operation
-	result := app.Client.Operations.Create(
+	result := app.Client.Operations.CreateRaw(
 		app.ServiceUserContext(),
 		map[string]any{
 			"deviceId": app.AgentID,
@@ -160,7 +160,7 @@ func TestMicroservice_SubscribeToNotifications(t *testing.T) {
 	time.Sleep(5 * time.Second)
 
 	// Create event
-	result1 := app.Client.Events.Create(
+	result1 := app.Client.Events.CreateRaw(
 		app.ServiceUserContext(),
 		&model.Event{
 			Time:   time.Now(),
@@ -178,7 +178,7 @@ func TestMicroservice_SubscribeToNotifications(t *testing.T) {
 			"name": "Custom Operation 1",
 		},
 	}
-	result2 := app.Client.Operations.Create(
+	result2 := app.Client.Operations.CreateRaw(
 		app.ServiceUserContext(),
 		op,
 	)

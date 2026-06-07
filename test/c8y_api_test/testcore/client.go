@@ -192,7 +192,7 @@ func CreateDeviceAgent(t *testing.T, client *api.Client) op.Result[jsonmodels.Ma
 }
 
 func CreateEvent(t *testing.T, client *api.Client, mo *jsonmodels.ManagedObject) op.Result[jsonmodels.Event] {
-	return client.Events.Create(context.TODO(), model.Event{
+	return client.Events.CreateRaw(context.TODO(), model.Event{
 		Source: model.NewSource(mo.ID()),
 		Type:   "ci_" + testingutils.RandomString(10),
 		Text:   "Test event",

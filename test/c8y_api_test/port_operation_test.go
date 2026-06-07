@@ -30,7 +30,7 @@ func Test_CreateOperation(t *testing.T) {
 		},
 	}
 
-	result := client.Operations.Create(ctx, body)
+	result := client.Operations.CreateRaw(ctx, body)
 	require.NoError(t, result.Err)
 	assert.Equal(t, 201, result.HTTPStatus)
 	assert.Equal(t, device.ID(), result.Data.DeviceID())
@@ -69,7 +69,7 @@ func Test_UpdateOperation(t *testing.T) {
 		},
 	}
 
-	op1 := client.Operations.Create(ctx, body)
+	op1 := client.Operations.CreateRaw(ctx, body)
 	require.NoError(t, op1.Err)
 	assert.Equal(t, 201, op1.HTTPStatus)
 
@@ -115,7 +115,7 @@ func Test_DeleteOperations(t *testing.T) {
 				},
 			},
 		}
-		result := client.Operations.Create(ctx, body)
+		result := client.Operations.CreateRaw(ctx, body)
 		require.NoError(t, result.Err)
 		assert.Equal(t, 201, result.HTTPStatus)
 	}

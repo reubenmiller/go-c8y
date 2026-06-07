@@ -14,6 +14,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/measurements"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/operations"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/realtime"
 )
@@ -25,13 +26,13 @@ func OperationSenderFactory(client *api.Client, deviceID string, t *testing.T) f
 			operations.CreateOptions{
 				DeviceID:    managedobjects.DeviceRef(deviceID),
 				Description: "Test operation",
-				AdditionalProperties: map[string]any{
-					"test_operation": map[string]any{
+				Fragments: []model.Fragment{
+					model.Frag("test_operation", map[string]any{
 						"name": "test operation",
 						"parameters": map[string]any{
 							"value1": 1,
 						},
-					},
+					}),
 				},
 			},
 		)
@@ -117,13 +118,13 @@ func TestRealtimeSubscriptions_SubscribeToMeasurements(t *testing.T) {
 				Source: managedobjects.DeviceRef(device.Data.ID()),
 				Type:   "testMeasurement1",
 				Time:   time.Now(),
-				AdditionalProperties: map[string]any{
-					"c8y_Test": map[string]any{
+				Fragments: []model.Fragment{
+					model.Frag("c8y_Test", map[string]any{
 						"Measurement1": map[string]any{
 							"value": value,
 							"unit":  "Counter",
 						},
-					},
+					}),
 				},
 			},
 		)

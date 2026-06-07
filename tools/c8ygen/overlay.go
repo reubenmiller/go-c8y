@@ -21,7 +21,16 @@ const DefaultOverlayPath = "docs/c8y-oas.overlay.yml"
 
 type overlayFile struct {
 	Resources []overlayResource `yaml:"resources"`
+	Fragments []overlayFragment `yaml:"fragments"`
 	Drift     driftWaivers      `yaml:"drift"`
+}
+
+// overlayFragment declares a well-known custom fragment to generate as a typed struct
+// (with a FragmentKey() method) from an OAS schema.
+type overlayFragment struct {
+	Type   string `yaml:"type"`   // generated Go type name, e.g. "Position"
+	Schema string `yaml:"schema"` // components/schemas key, e.g. "c8y_Position"
+	Key    string `yaml:"key"`    // fragment JSON key, e.g. "c8y_Position"
 }
 
 // driftWaivers declares known-acceptable drift between the OAS and the SDK, so the
@@ -84,6 +93,12 @@ func parseOverlay(path string) (overlayFile, error) {
 func LoadDriftWaivers(path string) (driftWaivers, error) {
 	f, err := parseOverlay(path)
 	return f.Drift, err
+}
+
+// LoadFragments reads the fragment declarations from the overlay.
+func LoadFragments(path string) ([]overlayFragment, error) {
+	f, err := parseOverlay(path)
+	return f.Fragments, err
 }
 
 // LoadOverlay reads the SDK overlay file and converts it into the generator's resource

@@ -14,7 +14,6 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
-	"github.com/reubenmiller/go-c8y/v2/pkg/jsonUtilities"
 	"resty.dev/v3"
 )
 
@@ -157,39 +156,35 @@ type CreateOptions struct {
 	// Time when the measurement was taken
 	Time time.Time
 
-	// AdditionalProperties allows for custom fields to be added to the measurement
-	// Can be a struct, map[string]any, or any JSON-serializable type
-	// These properties are deep-merged with the base measurement fields
-	AdditionalProperties any
+	// Fragments are custom top-level fields — most importantly the measurement value
+	// fragments (e.g. c8y_Temperature). Each is serialized under its FragmentKey() and
+	// deep-merged into the body; later entries win. Use a typed model.Fragment, or
+	// model.Frag("key", value) for ad-hoc fragments.
+	Fragments []model.Fragment
 }
 
-// Create posts a new measurement to the platform
-// Accepts either CreateOptions (for resolver support and property merging) or any other type (passed through as-is)
-//
-// Using CreateOptions:
+// Create posts a new measurement from typed, resolver-aware options.
 //
 //	result := client.Measurements.Create(ctx, measurements.CreateOptions{
 //	    Source: "name:myDevice",  // Resolver string
-//	    Type: "c8y_Temperature",
-//	    Time: time.Now(),
-//	    AdditionalProperties: map[string]any{
-//	        "c8y_Temperature": map[string]any{
+//	    Type:   "c8y_Temperature",
+//	    Time:   time.Now(),
+//	    Fragments: []model.Fragment{
+//	        model.Frag("c8y_Temperature", map[string]any{
 //	            "T": map[string]any{"value": 23.5, "unit": "°C"},
-//	        },
+//	        }),
 //	    },
 //	})
 //
-// Using direct struct/map:
-//
-//	result := client.Measurements.Create(ctx, model.Measurement{...})
-//	result := client.Measurements.Create(ctx, map[string]any{...})
-func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Measurement] {
-	// Check if body is CreateOptions - if so, handle resolver and merge logic
-	if opts, ok := body.(CreateOptions); ok {
-		return s.createWithOptions(ctx, opts)
-	}
+// To send a fully pre-built body, use CreateRaw.
+func (s *Service) Create(ctx context.Context, opts CreateOptions) op.Result[jsonmodels.Measurement] {
+	return s.createWithOptions(ctx, opts)
+}
 
-	// Otherwise, pass through as-is
+// CreateRaw posts a measurement from a pre-built body, passed through to the API as-is.
+//
+//	result := client.Measurements.CreateRaw(ctx, map[string]any{...})
+func (s *Service) CreateRaw(ctx context.Context, body any) op.Result[jsonmodels.Measurement] {
 	return core.Execute(ctx, s.createB(body), jsonmodels.NewMeasurement)
 }
 
@@ -232,21 +227,10 @@ func (s *Service) createWithOptions(ctx context.Context, opts CreateOptions) op.
 		return op.Failed[jsonmodels.Measurement](err, true)
 	}
 
-	// If there are additional properties, merge them with the base
-	var finalJSON []byte
-	if opts.AdditionalProperties != nil {
-		additionalJSON, err := json.Marshal(opts.AdditionalProperties)
-		if err != nil {
-			return op.Failed[jsonmodels.Measurement](err, true)
-		}
-
-		// Deep merge: additional properties override/extend base properties
-		finalJSON, err = jsonUtilities.MergePatch(baseJSON, additionalJSON)
-		if err != nil {
-			return op.Failed[jsonmodels.Measurement](err, true)
-		}
-	} else {
-		finalJSON = baseJSON
+	// Deep-merge each custom fragment under its key; later entries win.
+	finalJSON, err := model.MergeFragments(baseJSON, opts.Fragments)
+	if err != nil {
+		return op.Failed[jsonmodels.Measurement](err, true)
 	}
 
 	// Create the measurement with the merged JSON and add metadata

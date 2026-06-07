@@ -114,8 +114,12 @@ func cmdResources(args []string) error {
 	if err != nil {
 		return err
 	}
-	if len(resources) == 0 {
-		fmt.Printf("no resources declared in %s; nothing to generate\n", *overlay)
+	fragments, err := LoadFragments(*overlay)
+	if err != nil {
+		return err
+	}
+	if len(resources) == 0 && len(fragments) == 0 {
+		fmt.Printf("no resources or fragments declared in %s; nothing to generate\n", *overlay)
 		return nil
 	}
 	source := specSource(*opt)
@@ -126,6 +130,14 @@ func cmdResources(args []string) error {
 	fmt.Printf("generated %d option struct(s) and %d model(s) from %s\n", res.Options, res.Models, source)
 	for _, f := range res.Files {
 		fmt.Printf("  wrote %s\n", f)
+	}
+
+	fragCount, fragFile, err := GenerateFragments(doc, source, *root, fragments)
+	if err != nil {
+		return err
+	}
+	if fragCount > 0 {
+		fmt.Printf("generated %d fragment type(s)\n  wrote %s\n", fragCount, fragFile)
 	}
 	return nil
 }

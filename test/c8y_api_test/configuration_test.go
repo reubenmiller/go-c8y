@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/v2/internal/pkg/testingutils"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/repository/configuration"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
@@ -81,13 +82,13 @@ func Test_Configuration_CreateWithAdditionalProperties(t *testing.T) {
 		Name:              name,
 		ConfigurationType: "custom",
 		Description:       "Configuration with additional properties",
-		AdditionalProperties: map[string]any{
-			"c8y_CustomFragment": map[string]any{
+		Fragments: []model.Fragment{
+			model.Frag("c8y_CustomFragment", map[string]any{
 				"customField1": "value1",
 				"customField2": 42,
-			},
-			"owner":    "admin",
-			"category": "testing",
+			}),
+			model.Frag("owner", "admin"),
+			model.Frag("category", "testing"),
 		},
 	}
 

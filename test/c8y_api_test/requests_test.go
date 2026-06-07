@@ -24,7 +24,7 @@ func Test_ErrorHandlingCreateEvent(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	client.SetDebug(true)
 
-	evt := client.Events.Create(context.Background(), model.Event{
+	evt := client.Events.CreateRaw(context.Background(), model.Event{
 		Source: model.NewSource("0"),
 	})
 	err := evt.Err

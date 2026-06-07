@@ -7,6 +7,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/alarms"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 )
 
@@ -161,13 +162,11 @@ func Test_Alarms_Create_WithResolver_Metadata(t *testing.T) {
 	deferredCtx := api.WithDeferredExecution(ctx, true)
 
 	opts := alarms.CreateOptions{
-		Source:   client.Alarms.DeviceResolver.ByName("device01"),
-		Type:     "c8y_TestAlarm",
-		Text:     "Test alarm",
-		Severity: "MAJOR",
-		AdditionalProperties: map[string]any{
-			"custom": "value",
-		},
+		Source:    client.Alarms.DeviceResolver.ByName("device01"),
+		Type:      "c8y_TestAlarm",
+		Text:      "Test alarm",
+		Severity:  "MAJOR",
+		Fragments: []model.Fragment{model.Frag("custom", "value")},
 	}
 
 	result := client.Alarms.Create(deferredCtx, opts)

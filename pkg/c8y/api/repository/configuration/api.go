@@ -52,10 +52,10 @@ type CreateOptions struct {
 	DeviceType        string
 	File              UploadFileOptions
 
-	// AdditionalProperties allows adding custom fields to the managed object
-	// These are merged into the body after standard fields are set
-	// Standard fields (type, name, configurationType, c8y_Global) cannot be overridden
-	AdditionalProperties map[string]any
+	// Fragments are custom top-level fields merged into the body before the standard
+	// fields (type, name, configurationType, c8y_Global), which always win. Use a typed
+	// model.Fragment, or model.Frag("key", value) for ad-hoc fragments.
+	Fragments []model.Fragment
 }
 
 // Create a configuration item
@@ -64,9 +64,11 @@ func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonm
 		// Build body - start with custom properties if provided
 		body := make(map[string]any)
 
-		// Merge custom properties first
-		for k, v := range opt.AdditionalProperties {
-			body[k] = v
+		// Merge custom fragments first (standard fields below override them)
+		for _, fr := range opt.Fragments {
+			if fr != nil {
+				body[fr.FragmentKey()] = fr
+			}
 		}
 
 		// Set standard fields (these override any Properties values)

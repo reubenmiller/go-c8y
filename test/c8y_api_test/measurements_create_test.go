@@ -8,6 +8,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/measurements"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 )
 
@@ -20,13 +21,13 @@ func Test_Measurements_Create_WithResolver_Metadata(t *testing.T) {
 		Source: client.Measurements.DeviceResolver.ByName("device01"),
 		Type:   "c8y_Temperature",
 		Time:   time.Now(),
-		AdditionalProperties: map[string]any{
-			"c8y_Temperature": map[string]any{
+		Fragments: []model.Fragment{
+			model.Frag("c8y_Temperature", map[string]any{
 				"T": map[string]any{
 					"value": 23.5,
 					"unit":  "°C",
 				},
-			},
+			}),
 		},
 	}
 
@@ -64,13 +65,13 @@ func Test_Measurements_Create_WithStringResolver_Metadata(t *testing.T) {
 		Source: managedobjects.ByQuery("type eq 'c8y_Device'"),
 		Type:   "c8y_Humidity",
 		Time:   time.Now(),
-		AdditionalProperties: map[string]any{
-			"c8y_Humidity": map[string]any{
+		Fragments: []model.Fragment{
+			model.Frag("c8y_Humidity", map[string]any{
 				"H": map[string]any{
 					"value": 65.0,
 					"unit":  "%",
 				},
-			},
+			}),
 		},
 	}
 
@@ -91,26 +92,20 @@ func Test_Measurements_Create_WithMultipleFragments(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := api.WithMockResponses(context.Background(), true)
 
-	type MultiMeasurement struct {
-		Temperature map[string]any `json:"c8y_Temperature"`
-		Humidity    map[string]any `json:"c8y_Humidity"`
-		Pressure    map[string]any `json:"c8y_Pressure"`
-	}
-
 	opts := measurements.CreateOptions{
 		Source: managedobjects.ByID("12345"),
 		Type:   "c8y_EnvironmentalMeasurement",
 		Time:   time.Now(),
-		AdditionalProperties: MultiMeasurement{
-			Temperature: map[string]any{
+		Fragments: []model.Fragment{
+			model.Frag("c8y_Temperature", map[string]any{
 				"T": map[string]any{"value": 23.5, "unit": "°C"},
-			},
-			Humidity: map[string]any{
+			}),
+			model.Frag("c8y_Humidity", map[string]any{
 				"H": map[string]any{"value": 65.0, "unit": "%"},
-			},
-			Pressure: map[string]any{
+			}),
+			model.Frag("c8y_Pressure", map[string]any{
 				"P": map[string]any{"value": 1013.25, "unit": "hPa"},
-			},
+			}),
 		},
 	}
 

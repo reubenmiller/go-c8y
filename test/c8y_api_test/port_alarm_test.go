@@ -28,7 +28,7 @@ func TestAlarmService_CreateAlarm(t *testing.T) {
 		Source:   model.NewSource(testDevice.Data.ID()),
 	}
 
-	alarm := client.Alarms.Create(context.Background(), value)
+	alarm := client.Alarms.CreateRaw(context.Background(), value)
 	assert.NoError(t, alarm.Err)
 	assert.Equal(t, http.StatusCreated, alarm.HTTPStatus)
 	assert.NotEmpty(t, alarm.Data.Length())
@@ -38,7 +38,7 @@ func TestAlarmService_UpdateAlarm(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	testDevice := testcore.CreateDevice(t, client)
 
-	alarm := client.Alarms.Create(
+	alarm := client.Alarms.CreateRaw(
 		context.Background(),
 		model.Alarm{
 			Time:     time.Now(),
@@ -109,7 +109,7 @@ func TestAlarmService_GetAlarmByID(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	testDevice := testcore.CreateDevice(t, client)
 
-	alarm := client.Alarms.Create(context.Background(), model.Alarm{
+	alarm := client.Alarms.CreateRaw(context.Background(), model.Alarm{
 		Time:     time.Now(),
 		Source:   model.NewSource(testDevice.Data.ID()),
 		Severity: "MAJOR",
@@ -139,7 +139,7 @@ func TestAlarmService_GetAlarmCollection(t *testing.T) {
 			Type:     alarmType,
 		}
 
-		alarmObj := client.Alarms.Create(context.Background(), alarm)
+		alarmObj := client.Alarms.CreateRaw(context.Background(), alarm)
 		assert.NoError(t, alarmObj.Err)
 		assert.Equal(t, http.StatusCreated, alarmObj.HTTPStatus)
 		assert.NotEmpty(t, alarmObj.Data)
@@ -204,7 +204,7 @@ func TestAlarmService_BulkUpdateAlarms(t *testing.T) {
 			Type:     alarmType,
 		}
 
-		alarmObj := client.Alarms.Create(context.Background(), alarm)
+		alarmObj := client.Alarms.CreateRaw(context.Background(), alarm)
 		assert.NoError(t, alarmObj.Err)
 		assert.Equal(t, http.StatusCreated, alarmObj.HTTPStatus)
 		assert.NotEmpty(t, alarmObj.Data)
@@ -282,7 +282,7 @@ func TestAlarmService_RemoveAlarmCollection(t *testing.T) {
 			Type:     alarmType,
 		}
 
-		alarmObj := client.Alarms.Create(context.Background(), alarm)
+		alarmObj := client.Alarms.CreateRaw(context.Background(), alarm)
 		assert.NoError(t, alarmObj.Err)
 		assert.Equal(t, http.StatusCreated, alarmObj.HTTPStatus)
 		assert.NotEmpty(t, alarmObj.Data)
