@@ -29,6 +29,29 @@ jobs:
         with:
           version: latest
 
+  # API drift gate: compares the vendored OpenAPI spec against the hand-written SDK and
+  # fails on any drift NOT declared under `drift:` in docs/c8y-oas.overlay.yml (Phase 4 of
+  # docs/API_GEN.md). Also verifies the generated Layer-0 substrate is committed and current.
+  api-drift:
+    name: api-drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check API drift (gating)
+        run: task lint-api -- --strict
+      - name: Verify generated code is up to date
+        run: |
+          task generate
+          git diff --exit-code -- 'pkg/c8y/api/spec/*.go' '**/zz_generated_*.go' \
+            || (echo "::error::Generated code is stale. Run 'task generate' and commit." && exit 1)
+
   # Offline gate: runs on every push/PR (including forks) without a live tenant.
   test-offline:
     runs-on: ${{ matrix.os }}

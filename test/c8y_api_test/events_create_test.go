@@ -8,6 +8,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/events"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 )
 
@@ -17,13 +18,11 @@ func Test_Events_Create_WithResolver_Metadata(t *testing.T) {
 	deferredCtx := api.WithDeferredExecution(ctx, true)
 
 	opts := events.CreateOptions{
-		Source: client.Events.DeviceResolver.ByName("device01"),
-		Type:   "c8y_TestEvent",
-		Text:   "Test event",
-		Time:   time.Now(),
-		AdditionalProperties: map[string]any{
-			"custom": "value",
-		},
+		Source:    client.Events.DeviceResolver.ByName("device01"),
+		Type:      "c8y_TestEvent",
+		Text:      "Test event",
+		Time:      time.Now(),
+		Fragments: []model.Fragment{model.Frag("custom", "value")},
 	}
 
 	result := client.Events.Create(deferredCtx, opts)
@@ -83,21 +82,14 @@ func Test_Events_Create_WithAdditionalProperties(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := api.WithMockResponses(context.Background(), true)
 
-	type CustomEvent struct {
-		Position map[string]any `json:"c8y_Position"`
-	}
-
 	opts := events.CreateOptions{
 		Source: managedobjects.ByID("12345"),
 		Type:   "c8y_LocationUpdate",
 		Text:   "Location updated",
 		Time:   time.Now(),
-		AdditionalProperties: CustomEvent{
-			Position: map[string]any{
-				"lat": 51.5074,
-				"lng": -0.1278,
-				"alt": 100.0,
-			},
+		// Typed, generated fragment (model.Position implements model.Fragment).
+		Fragments: []model.Fragment{
+			model.Position{Lat: 51.5074, Lng: -0.1278, Alt: 100.0},
 		},
 	}
 

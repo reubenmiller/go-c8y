@@ -15,9 +15,12 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
-	"github.com/reubenmiller/go-c8y/v2/pkg/jsonUtilities"
 	"resty.dev/v3"
 )
+
+// Regenerate the per-resource Layer-0 files (option structs, façade models) for every
+// resource in the SDK overlay. Runs from here since the generator is overlay-driven.
+//go:generate go run ../../../../tools/c8ygen resources --spec ../../../../docs/c8y-oas.yml --overlay ../../../../docs/c8y-oas.overlay.yml --root ../../../..
 
 var ApiAlarms = "/alarm/alarms"
 var ApiAlarmsCount = "/alarm/alarms/count"
@@ -42,63 +45,7 @@ func NewService(common *core.Service, moService *managedobjects.Service) *Servic
 	}
 }
 
-// ListOptions to use when search for alarms
-type ListOptions struct {
-	// Start date or date and time of the alarm creation
-	CreatedFrom time.Time `url:"createdFrom,omitempty,omitzero"`
-
-	// End date or date and time of the alarm creation
-	CreatedTo time.Time `url:"createdTo,omitempty,omitzero"`
-
-	// Start date or date and time of the last update made
-	LastUpdatedFrom time.Time `url:"lastUpdatedFrom,omitempty,omitzero"`
-
-	// End date or date and time of the last update made
-	LastUpdatedTo time.Time `url:"lastUpdatedTo,omitempty,omitzero"`
-
-	// Start date or date and time of the alarm occurrence
-	DateFrom time.Time `url:"dateFrom,omitempty,omitzero"`
-
-	// End date or date and time of the alarm occurrence
-	DateTo time.Time `url:"dateTo,omitempty,omitzero"`
-
-	// Source device to filter alarms by.
-	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
-	// or cast a string variable with managedobjects.DeviceRef(id).
-	Source managedobjects.DeviceRef `url:"source,omitempty"`
-
-	// The types of alarm to search for
-	Type []string `url:"type,omitempty"`
-
-	// The status of the alarm to search for. Should not be used when resolved parameter is provided
-	Status []model.AlarmStatus `url:"status,omitempty"`
-
-	// The severity of the alarm to search for
-	Severity []model.AlarmSeverity `url:"severity,omitempty"`
-
-	// When set to true only alarms with status CLEARED will be fetched, whereas false will fetch all
-	// alarms with status ACTIVE or ACKNOWLEDGED. Takes precedence over the status parameter
-	Resolved bool `url:"resolved,omitempty"`
-
-	// When set to true, alarms for related source assets, devices and additions will
-	// also be included in the response. When this parameter is provided a source
-	// must be specified.
-	WithSourceChildren bool `url:"withSourceChildren,omitempty"`
-
-	// When set to true, alarms for related source assets will also be included in
-	// the response. When this parameter is provided a source must be specified.
-	WithSourceAssets bool `url:"withSourceAssets,omitempty"`
-
-	// When set to true, alarms for related source devices will also be included in
-	// the response. When this parameter is provided a source must be specified.
-	WithSourceDevices bool `url:"withSourceDevices,omitempty"`
-
-	// When set to true, alarms for related source additions will also be included in
-	// the response. When this parameter is provided a source must be specified.
-	WithSourceAdditions bool `url:"withSourceAdditions,omitempty"`
-
-	pagination.PaginationOptions
-}
+// ListOptions is generated from the OpenAPI spec — see zz_generated_options.go.
 
 // AlarmIterator provides iteration over alarms
 type AlarmIterator = pagination.Iterator[jsonmodels.Alarm]
@@ -210,35 +157,32 @@ type CreateOptions struct {
 	// Time when the alarm occurred
 	Time time.Time
 
-	// AdditionalProperties allows for custom fields to be added to the alarm
-	// Can be a struct, map[string]any, or any JSON-serializable type
-	// These properties are deep-merged with the base alarm fields
-	AdditionalProperties any
+	// Fragments are custom top-level fields (e.g. c8y_* fragments). Each is serialized
+	// under its FragmentKey() and deep-merged into the body; later entries win. Use a
+	// typed model.Fragment, or model.Frag("key", value) for ad-hoc fragments.
+	Fragments []model.Fragment
 }
 
-// Create an alarm
-// Accepts either CreateOptions (for resolver support and property merging) or any other type (passed through as-is)
-//
-// Using CreateOptions:
+// Create an alarm from typed, resolver-aware options.
 //
 //	result := client.Alarms.Create(ctx, alarms.CreateOptions{
 //	    Source: "name:myDevice",  // Resolver string
-//	    Type: "c8y_TestAlarm",
-//	    Text: "Test alarm",
-//	    AdditionalProperties: map[string]any{"custom": "value"},
+//	    Type:   "c8y_TestAlarm",
+//	    Text:   "Test alarm",
+//	    Fragments: []model.Fragment{model.Frag("custom", "value")},
 //	})
 //
-// Using direct struct/map:
-//
-//	result := client.Alarms.Create(ctx, model.Alarm{...})
-//	result := client.Alarms.Create(ctx, map[string]any{...})
-func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Alarm] {
-	// Check if body is CreateOptions - if so, handle resolver and merge logic
-	if opts, ok := body.(CreateOptions); ok {
-		return s.createWithOptions(ctx, opts)
-	}
+// To send a fully pre-built body (struct, map, json.RawMessage, MapBuilder, …), use
+// CreateRaw instead.
+func (s *Service) Create(ctx context.Context, opts CreateOptions) op.Result[jsonmodels.Alarm] {
+	return s.createWithOptions(ctx, opts)
+}
 
-	// Otherwise, pass through as-is
+// CreateRaw creates an alarm from a pre-built body, passed through to the API as-is.
+// It is the explicit escape hatch for shapes the typed CreateOptions does not cover.
+//
+//	result := client.Alarms.CreateRaw(ctx, map[string]any{...})
+func (s *Service) CreateRaw(ctx context.Context, body any) op.Result[jsonmodels.Alarm] {
 	return core.Execute(ctx, s.createB(body), jsonmodels.NewAlarm)
 }
 
@@ -315,21 +259,11 @@ func (s *Service) buildAlarmBody(ctx context.Context, opts CreateOptions) ([]byt
 		return nil, meta, err
 	}
 
-	// If there are additional properties, merge them with the base
-	if opts.AdditionalProperties != nil {
-		additionalJSON, err := json.Marshal(opts.AdditionalProperties)
-		if err != nil {
-			return nil, meta, err
-		}
-
-		// Deep merge: additional properties override/extend base properties
-		finalJSON, err := jsonUtilities.MergePatch(baseJSON, additionalJSON)
-		if err != nil {
-			return nil, meta, err
-		}
-		return finalJSON, meta, nil
+	// Deep-merge each custom fragment under its key; later entries win.
+	baseJSON, err = model.MergeFragments(baseJSON, opts.Fragments)
+	if err != nil {
+		return nil, meta, err
 	}
-
 	return baseJSON, meta, nil
 }
 
@@ -361,29 +295,24 @@ func (s *Service) createBWithJSON(bodyJSON []byte) *core.TryRequest {
 // response has HTTP status 201 (Result.Status == StatusCreated,
 // Result.Meta["found"] == false).
 //
-// Like Create, it accepts either CreateOptions (for resolver support and
-// property merging) or any other JSON-serializable type (passed through as-is).
-//
-// Using CreateOptions:
+// It takes typed, resolver-aware options:
 //
 //	result := client.Alarms.Upsert(ctx, alarms.CreateOptions{
-//	    Source: "name:myDevice",  // Resolver string
-//	    Type: "c8y_UnavailabilityAlarm",
-//	    Text: "No data received from the device within the required interval.",
+//	    Source:   "name:myDevice",  // Resolver string
+//	    Type:     "c8y_UnavailabilityAlarm",
+//	    Text:     "No data received from the device within the required interval.",
 //	    Severity: "MAJOR",
 //	})
 //
-// Using direct struct/map:
-//
-//	result := client.Alarms.Upsert(ctx, model.Alarm{...})
-//	result := client.Alarms.Upsert(ctx, map[string]any{...})
-func (s *Service) Upsert(ctx context.Context, body any) op.Result[jsonmodels.Alarm] {
-	// Check if body is CreateOptions - if so, handle resolver and merge logic
-	if opts, ok := body.(CreateOptions); ok {
-		return s.upsertWithOptions(ctx, opts)
-	}
+// To upsert a fully pre-built body, use UpsertRaw instead.
+func (s *Service) Upsert(ctx context.Context, opts CreateOptions) op.Result[jsonmodels.Alarm] {
+	return s.upsertWithOptions(ctx, opts)
+}
 
-	// Otherwise, pass through as-is
+// UpsertRaw upserts an alarm from a pre-built body, passed through to the API as-is.
+//
+//	result := client.Alarms.UpsertRaw(ctx, map[string]any{...})
+func (s *Service) UpsertRaw(ctx context.Context, body any) op.Result[jsonmodels.Alarm] {
 	return markUpsertResult(core.Execute(ctx, s.upsertB(body), jsonmodels.NewAlarm))
 }
 

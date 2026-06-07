@@ -31,34 +31,10 @@ func NewEventWithType(sourceID, eventType, text string, fragments map[string]any
 	return Event{jsondoc.Facade{JSONDoc: jsondoc.New(b)}}
 }
 
-func (e Event) ID() string {
-	return e.Get("id").String()
-}
-
-func (e Event) Type() string {
-	return e.Get("type").String()
-}
-
-func (e Event) Text() string {
-	return e.Get("text").String()
-}
-
+// SourceID returns the id of the managed object the event is associated with.
+// Hand-written: the OAS models `source` as a nested object, so this accessor is not
+// mechanically derivable. The scalar accessors (ID, Type, Time, ...) are generated in
+// zz_generated_event.go.
 func (e Event) SourceID() string {
 	return e.Get("source.id").String()
-}
-
-func (e Event) Time() time.Time {
-	return e.Get("time").Time()
-}
-
-func (e Event) Self() string {
-	return e.Get("self").String()
-}
-
-func (e Event) CreationTime() time.Time {
-	return e.Get("creationTime").Time()
-}
-
-func (e Event) LastUpdated() time.Time {
-	return e.Get("lastUpdated").Time()
 }

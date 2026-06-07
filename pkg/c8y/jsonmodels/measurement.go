@@ -31,24 +31,12 @@ func NewMeasurementWithType(sourceID, measurementType string, fragments map[stri
 	return Measurement{jsondoc.Facade{JSONDoc: jsondoc.New(b)}}
 }
 
-func (m Measurement) ID() string {
-	return m.Get("id").String()
-}
-
-func (m Measurement) Type() string {
-	return m.Get("type").String()
-}
-
+// SourceID returns the id of the managed object the measurement is associated with.
+// Hand-written: the OAS models `source` as a nested object, so this accessor is not
+// mechanically derivable. The scalar accessors (ID, Type, Time, ...) are generated in
+// zz_generated_measurement.go.
 func (m Measurement) SourceID() string {
 	return m.Get("source.id").String()
-}
-
-func (m Measurement) Time() time.Time {
-	return m.Get("time").Time()
-}
-
-func (m Measurement) Self() string {
-	return m.Get("self").String()
 }
 
 // IterAs returns an iterator over measurements in the collection.

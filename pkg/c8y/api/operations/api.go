@@ -8,12 +8,12 @@ import (
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/realtime"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
-	"github.com/reubenmiller/go-c8y/v2/pkg/jsonUtilities"
 	"resty.dev/v3"
 )
 
@@ -38,42 +38,7 @@ func NewService(common *core.Service, moService *managedobjects.Service) *Servic
 	}
 }
 
-// ListOptions to use when search for operations
-type ListOptions struct {
-	// An agent ID that may be part of the operation. If this parameter is set,
-	// the operation response objects contain the deviceExternalIDs object.
-	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
-	// or cast a string variable with managedobjects.DeviceRef(id).
-	AgentID managedobjects.DeviceRef `url:"agentId,omitempty"`
-
-	// The bulk operation ID that this operation belongs to
-	BulkOperationID string `url:"bulkOperationId,omitempty"`
-
-	// Start date or date and time of the operation
-	DateFrom time.Time `url:"dateFrom,omitempty,omitzero"`
-
-	// End date or date and time of the operation
-	DateTo time.Time `url:"dateTo,omitempty,omitzero"`
-
-	// The ID of the device the operation is performed for.
-	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
-	// or cast a string variable with managedobjects.DeviceRef(id).
-	DeviceID managedobjects.DeviceRef `url:"deviceId,omitempty"`
-
-	// The type of fragment that must be part of the operation
-	FragmentType string `url:"fragmentType,omitempty"`
-
-	// If you are using a range query (that is, at least one of
-	// the dateFrom or dateTo parameters is included in the request),
-	// then setting revert=true will sort the results by the newest operations
-	// first. By default, the results are sorted by the oldest operations first.
-	Revert bool `url:"revert,omitempty"`
-
-	// Status of the operation
-	Status types.OperationStatus `url:"status,omitempty"`
-
-	pagination.PaginationOptions
-}
+// ListOptions is generated from the OpenAPI spec — see zz_generated_options.go.
 
 // OperationIterator provides iteration over operations
 type OperationIterator = pagination.Iterator[jsonmodels.Operation]
@@ -157,36 +122,30 @@ type CreateOptions struct {
 	// Description of the operation
 	Description string
 
-	// AdditionalProperties allows for custom fields to be added to the operation
-	// Can be a struct, map[string]any, or any JSON-serializable type
-	// These properties are deep-merged with the base operation fields
-	AdditionalProperties any
+	// Fragments are custom top-level fields — most importantly the operation fragment
+	// that defines what to do (e.g. c8y_Restart). Each is serialized under its
+	// FragmentKey() and deep-merged into the body; later entries win. Use a typed
+	// model.Fragment, or model.Frag("key", value) for ad-hoc fragments.
+	Fragments []model.Fragment
 }
 
-// Create an operation
-// Accepts either CreateOptions (for resolver support and property merging) or any other type (passed through as-is)
-//
-// Using CreateOptions:
+// Create an operation from typed, resolver-aware options.
 //
 //	result := client.Operations.Create(ctx, operations.CreateOptions{
-//	    DeviceID: "name:myDevice",  // Resolver string
+//	    DeviceID:    "name:myDevice",  // Resolver string
 //	    Description: "Restart device",
-//	    AdditionalProperties: map[string]any{
-//	        "c8y_Restart": map[string]any{},
-//	    },
+//	    Fragments:   []model.Fragment{model.Frag("c8y_Restart", map[string]any{})},
 //	})
 //
-// Using direct struct/map:
-//
-//	result := client.Operations.Create(ctx, model.Operation{...})
-//	result := client.Operations.Create(ctx, map[string]any{...})
-func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Operation] {
-	// Check if body is CreateOptions - if so, handle resolver and merge logic
-	if opts, ok := body.(CreateOptions); ok {
-		return s.createWithOptions(ctx, opts)
-	}
+// To send a fully pre-built body, use CreateRaw.
+func (s *Service) Create(ctx context.Context, opts CreateOptions) op.Result[jsonmodels.Operation] {
+	return s.createWithOptions(ctx, opts)
+}
 
-	// Otherwise, pass through as-is
+// CreateRaw creates an operation from a pre-built body, passed through to the API as-is.
+//
+//	result := client.Operations.CreateRaw(ctx, map[string]any{...})
+func (s *Service) CreateRaw(ctx context.Context, body any) op.Result[jsonmodels.Operation] {
 	return core.Execute(ctx, s.createB(body), jsonmodels.NewOperation)
 }
 
@@ -226,21 +185,10 @@ func (s *Service) createWithOptions(ctx context.Context, opts CreateOptions) op.
 		return op.Failed[jsonmodels.Operation](err, true)
 	}
 
-	// If there are additional properties, merge them with the base
-	var finalJSON []byte
-	if opts.AdditionalProperties != nil {
-		additionalJSON, err := json.Marshal(opts.AdditionalProperties)
-		if err != nil {
-			return op.Failed[jsonmodels.Operation](err, true)
-		}
-
-		// Deep merge: additional properties override/extend base properties
-		finalJSON, err = jsonUtilities.MergePatch(baseJSON, additionalJSON)
-		if err != nil {
-			return op.Failed[jsonmodels.Operation](err, true)
-		}
-	} else {
-		finalJSON = baseJSON
+	// Deep-merge each custom fragment under its key; later entries win.
+	finalJSON, err := model.MergeFragments(baseJSON, opts.Fragments)
+	if err != nil {
+		return op.Failed[jsonmodels.Operation](err, true)
 	}
 
 	// Create the operation with the merged JSON and add metadata

@@ -16,26 +16,22 @@ Every material claim carries a **confidence level** so you can tell verified fac
 
 This assessment was produced by five parallel investigations (consistency/UX, OAS coverage, maintainability/dependencies, test coverage, documentation), then key critical findings were re-verified by hand. Where a sub-investigation made a claim I could not confirm — or that I disproved — it is flagged explicitly. Methodology notes and the commands used are included per section.
 
-**Two corrections to sub-investigation claims, made during verification (both HIGH):**
-1. `test.log` (564 KB) is **NOT committed** — it is gitignored via `*.log` (`git check-ignore test.log` → matched). An earlier finding claiming it was tracked is wrong.
-2. `pkg/c8y/cache.go` is **365 lines**, not ~9500. The 9503 figure was a byte count misread as lines.
-
 ---
 
 ## Executive summary
 
-This is a **mature, thoughtfully-architected, mid-rewrite SDK**. The v2 design (generics, `op.Result[T]`, uniform service layer, lazy iterators, device resolvers, dry-run/deferred execution) is genuinely good and consistently applied. API coverage of the Cumulocity REST surface is broad (~85–90% of OAS operations at path granularity). The weak spots are operational rather than architectural: **CI gates on a live tenant instead of the excellent offline suite**, a **broken linter config**, a couple of **dependency-supply-chain risks**, **stale "implementation status" docs**, and **copy-paste godoc errors**. None are deep design flaws; most are a day or two of cleanup.
+This is a **mature, thoughtfully-architected, mid-rewrite SDK**. The v2 design (generics, `op.Result[T]`, uniform service layer, lazy iterators, device resolvers, dry-run/deferred execution) is genuinely good and consistently applied. API coverage of the Cumulocity REST surface is broad (~85–90% of OAS operations at path granularity). The weak spots are operational rather than architectural: a **broken linter config**, a **`resty` beta pin** under the HTTP layer, **stale "implementation status" docs**, and **copy-paste godoc errors**. None are deep design flaws; most are a day or two of cleanup.
 
 ### Scorecard
 
 | Dimension | Grade | Confidence | One-line summary |
 |---|---|---|---|
 | Consistency | **A−** | HIGH | Uniform CRUD/options/result patterns; a few outliers (users tenant param, applications list variants, resolver coverage). |
-| OAS coverage | **A−** | MEDIUM | ~85–90% of operations at path granularity; gaps in loginOptions sub-resources, identity search, alarm upsert. |
-| User experience | **B+** | HIGH | Strong ergonomics (resolvers, iterators, Result); footguns in `any` bodies, tenant repetition, context-only features. |
-| Maintainability | **B** | HIGH | Clean architecture & shared generic core; but 66 hand-written services (no codegen) + broken lint config. |
-| Dependencies | **B−** | HIGH | Core closure is lean; risks: resty pinned to unreleased beta, abandoned pkcs7 domain, old cron, qrterminal leak. |
-| Test coverage | **B−** → **B** | HIGH | Excellent offline fake-server design (~46% api coverage); ~~not run in CI; 1 real failing test; utils untested~~ — offline CI gate added, failing test fixed, util packages tested (2026-06-07). |
+| OAS coverage | **A−** | MEDIUM | ~85–90% of operations at path granularity; remaining gaps: trusted-cert edge endpoints, app per-binary. |
+| User experience | **B+** | HIGH | Strong ergonomics (resolvers, iterators, Result); footguns in tenant repetition and context-only features. |
+| Maintainability | **B** | HIGH | Clean architecture, shared generic core, spec-driven codegen + drift gate; broken lint config still open. |
+| Dependencies | **B−** | HIGH | Core closure is lean; risks: resty pinned to unreleased beta, old cron, full echo framework in microservice. |
+| Test coverage | **B** | HIGH | Excellent offline fake-server design (~46% api coverage) with an offline CI gate; protocol-area offline tests still thin. |
 | Documentation | **B+** | HIGH | Strong prose architecture docs; let down by stale status checklists and 4 copy-paste godoc errors. |
 
 ---
@@ -85,17 +81,16 @@ This is a **mature, thoughtfully-architected, mid-rewrite SDK**. The v2 design (
 | Users, current user/TOTP, groups, roles, inventory roles | `users`,`usergroups`,`userroles` | **Full** | HIGH |
 | Features, Notification2 | `features`,`notification2` | **Full** | HIGH |
 | Trusted certificates / CA | `trustedcertificates` | **Mostly full** | MEDIUM |
-| Identity | `identity` | **Partial** | HIGH |
-| Login options + accessMappings + restrict | `loginoptions` | **Partial** | HIGH |
+| Identity | `identity` | **Mostly full** | HIGH |
+| Login options + accessMappings + restrict | `loginoptions` | **Full** | HIGH |
 | Service-root/version discovery endpoints | — | **None** (low value) | HIGH |
 
 ### Biggest genuine gaps (HIGH these are unimplemented)
 
-1. **Login-options sub-resources** — `accessMappings`, `inventoryAccessMappings` (~8 ops), `PUT .../restrict`. The largest cohesive missing area.
-2. **`POST /identity/search`** — bulk external-ID search.
-3. **`POST /alarm/alarms/upsert`** — alarm upsert (events has upsert; alarms does not).
-4. **Trusted-cert edge endpoints** — `/bulk`, `/verify-cert-chain`, `/settings/crl`.
-5. **Per-binary application endpoints** — `GET/DELETE /application/applications/{id}/binaries/{binaryId}`.
+> These remaining gaps are tracked as declared drift waivers in `docs/c8y-oas.overlay.yml`.
+
+1. **Trusted-cert edge endpoints** — `/bulk`, `/verify-cert-chain`, `/settings/crl`.
+2. **Per-binary application endpoints** — `GET/DELETE /application/applications/{id}/binaries/{binaryId}`.
 
 ### Caveats
 
@@ -117,7 +112,6 @@ This is a **mature, thoughtfully-architected, mid-rewrite SDK**. The v2 design (
 
 ### Footguns / friction
 
-- **`any` / `AdditionalProperties` bodies** in some Create paths lose type safety for custom fragments. *(HIGH — `alarms/api.go:211-215`)*
 - **Tenant repetition** in `users`/`usergroups` is boilerplate-heavy. *(HIGH)*
 - **Power features are context-only and invisible in signatures** — dry-run, deferred, inspection are discoverable only via docs/examples, not types. *(MEDIUM)*
 - **Resolver string typos are unvalidated** (`"name:"` vs `"name :"`); no unified ref interface. *(MEDIUM)*
@@ -139,8 +133,6 @@ This is a **mature, thoughtfully-architected, mid-rewrite SDK**. The v2 design (
 
 ### Concerns
 
-- **No code generation despite an OAS being present.** ~66 service packages are **hand-written** (no `go:generate`, no `Code generated` markers, `tools/` has only a `.zshrc`). This is the dominant long-term maintenance cost and a drift risk against the API. Consistency is held by convention alone. *(HIGH)*
-- **Broken linter config.** `.golangci.yml` is **v1 format** (`run:`, `linters-settings:` at top level) but golangci-lint is now v2.x, which rejects v1 configs; CI uses `version: latest`. **Lint in CI is effectively broken or running defaults.** *(HIGH — verified config format + CI pin)*
 - **Largest files** are reasonable for a per-resource SDK: `client.go` (1875 lines, aggregates ~40 service constructors — the main hotspot), `realtime/realtime_client.go` (~970), repository firmware/software services (~800 each), `op/result.go` (~767), `pipeline/pipeline.go` (~760). None alarming. *(HIGH)*
 - **Inert/misleading `replace` directives.** `go.mod` has five `replace` directives pointing module paths (`pkg/c8y`, `pkg/microservice`, `test/...`) to local dirs, but those dirs are **not** separate modules — harmless today, but misleading and a trap if the project ever splits modules (replace directives don't propagate to consumers). *(HIGH facts / MEDIUM interpretation)*
 - **Taskfile path bug.** `test-c8y`/`test-microservice` reference module paths missing the `/v2` suffix; those tasks will fail to resolve as written. *(MEDIUM)*
@@ -158,10 +150,8 @@ This is a **mature, thoughtfully-architected, mid-rewrite SDK**. The v2 design (
 ### Risks (roughly in priority order)
 
 1. **`resty.dev/v3` pinned to an unreleased beta pseudo-version** (`v3.0.0-beta.6.0.20260128173335-37296c9841e6`) — not even a tagged beta. The **entire HTTP layer** rests on an unreleased commit with no stability guarantee. **Top supply-chain risk.** *(HIGH — verified in `go.mod`)*
-2. **`go.mozilla.org/pkcs7`** is on an **abandoned vanity domain** (Mozilla wound these down). Used in `pkg/certutil`. Migrate to a maintained fork (e.g. `github.com/smallstep/pkcs7`). *(MEDIUM-HIGH)*
-3. **`gopkg.in/robfig/cron.v2`** is the **old/unmaintained** cron; `robfig/cron/v3` is current. Isolated to `pkg/microservice`. *(MEDIUM)*
-4. **`mdp/qrterminal/v3` leaks into the core client closure** — `devices/enrollment/api.go` imports it and is reachable from `devices/api.go`, so **every consumer of the client pulls a terminal-QR-rendering library**. Enrollment should return the URL/payload and let the CLI render the QR. *(MEDIUM-HIGH — verified import location)*
-5. **`labstack/echo/v4`** (full web framework) is used only by `pkg/microservice/monitoring.go` for a health/metrics server; `net/http` would suffice but it's at least isolated. *(MEDIUM)*
+2. **`gopkg.in/robfig/cron.v2`** is the **old/unmaintained** cron; `robfig/cron/v3` is current. Isolated to `pkg/microservice`. *(MEDIUM)*
+3. **`labstack/echo/v4`** (full web framework) is used only by `pkg/microservice/monitoring.go` for a health/metrics server; `net/http` would suffice but it's at least isolated. *(MEDIUM)*
 
 Standard/reasonable deps (HIGH): `golang-jwt/jwt/v5`, `tidwall/gjson`+`sjson`, `google/go-querystring`, `gorilla/websocket`, `zalando/go-keyring`, `araddon/dateparse`, `golang.org/x/net`, `stretchr/testify`. `google/go-jsonnet` (heavy, isolated to `pkg/mapbuilder`) and `destel/rill` (examples/tests only) are acceptable.
 
@@ -181,21 +171,13 @@ Standard/reasonable deps (HIGH): `golang-jwt/jwt/v5`, `tidwall/gjson`+`sjson`, `
 
 - `TEST_MODE=offline go test ./test/c8y_api_test/...` → **395 PASS / 20 SKIP / 0 FAIL in ~13s**. *(HIGH)*
 - `TEST_MODE=offline go test -coverpkg=./pkg/c8y/api/... ./test/c8y_api_test/...` → **46.2% of statements** in the api tree. The per-package `0.0%` figures from `go test ./pkg/...` are misleading: services are exercised cross-package by the integration suite. *(HIGH)*
-- `go test ./pkg/...` highlights: `api/context` 100%, `core/artifact` 100%, `wsurl` 76.9%, `password` 67.2%, `oauth/device` 66.1%, `pipeline` 64.5%, `certutil` 54.4% **(FAILS)**, client `api` 13.2%, `model`/`pagination` ~6%. *(HIGH)*
+- `go test ./pkg/...` highlights: `api/context` 100%, `core/artifact` 100%, `wsurl` 76.9%, `password` 67.2%, `oauth/device` 66.1%, `pipeline` 64.5%, `certutil` 54.4%, client `api` 13.2%, `model`/`pagination` ~6%. *(HIGH)*
 
-### The two biggest problems
-
-1. **CI gates on a live tenant, not the offline suite.** ~~`.github/workflows/main.yml` runs `task test`, which is `test-c8y` + `test-microservice` — both **live** (need `C8Y_HOST`/credentials). The fast, green, 46%-coverage **offline** suite (`task test-offline`) is **never invoked by CI**. Consequence: forked/external PRs without secrets get red builds, and there is **no offline gate protecting `pkg/`**.~~ *(HIGH — re-verified workflow + Taskfile)* — **✅ RESOLVED 2026-06-07:** a `test-offline` CI job now runs `task test-ci` (unit tests + offline integration suite with coverage) on every push/PR without needing a tenant; the live `test` job is guarded by an `if:` so it only runs when secrets are present and no longer red-builds forks.
-2. **A genuinely failing test:** ~~`pkg/certutil` `TestParsePublicKeysPEM` and `TestPublicKeysFromFile` **FAIL deterministically offline** — `ParsePublicKeysPEM` can't derive an ECDSA public key from an ECDSA private-key PEM (RSA path works).~~ A real code-or-test defect, uncaught because CI doesn't run `./pkg/...`. *(HIGH — I reproduced it)* — **✅ RESOLVED 2026-06-07:** root cause was `parseECPrivateKey` only handling SEC1 keys while `MakeEllipticPrivateKeyPEM` emits PKCS#8; added a PKCS#8 fallback (symmetric with the RSA path). Both tests now pass.
 
 ### Other gaps
 
-- ~~**Live tests panic rather than skip** without credentials (`test/microservice_test` panics; `test/c8y_test` fails) — poor contributor experience.~~ *(HIGH)* — **✅ RESOLVED 2026-06-07:** `BootstrapApplication` now `t.Skip`s on missing config instead of panicking; the `c8y_test` cache tests skip via a `skipWithoutCredentials` guard.
-- ~~**Pure utility packages have no tests at all:** `pkg/mapbuilder`, `pkg/matcher`, `pkg/encoding`, `pkg/jsonUtilities` — low-hanging, high-value.~~ *(HIGH)* — **✅ RESOLVED 2026-06-07:** added table-driven testify suites for all four (coverage: `matcher` 89.7%, `encoding` 97.2%, `jsonUtilities` 93.9%, `mapbuilder` 93.4%).
 - **Protocol-sensitive areas thinly/untested offline:** realtime/WebSocket, notification2 streaming, oauth2 flow, and `cache.go` (only a live-only test, now skipped offline). *(MEDIUM — still open)*
-- ~~**Coverage is unmeasured in CI** — the real ~46% only surfaces via a manual `-coverpkg` run; regressions are invisible.~~ *(MEDIUM)* — **✅ PARTIALLY RESOLVED 2026-06-07:** the `test-ci` task now generates a coverage profile and prints the total in CI logs (no enforced threshold yet, so regressions are visible but not gated).
-
-> **Remediation summary (2026-06-07):** P0 testing items from this section are fixed — certutil ECDSA bug, offline CI gate + coverage, graceful skips for live tests, and unit tests for the four bare util packages. The `Taskfile` `/v2` path bug (section 4) was also fixed as part of wiring up CI. Remaining open: offline tests for protocol-sensitive areas (realtime/notification2/oauth2) and an enforced coverage threshold.
+- **No enforced coverage threshold in CI** — the `test-ci` task generates a coverage profile and prints the total in CI logs, but nothing gates on it, so regressions are visible but not blocked. *(MEDIUM — still open)*
 
 ---
 
@@ -223,25 +205,17 @@ Standard/reasonable deps (HIGH): `golang-jwt/jwt/v5`, `tidwall/gjson`+`sjson`, `
 
 ## Prioritized recommendations
 
-> **Status update (2026-06-07):** items 1, 2, the Taskfile/live-test halves of 8, and the util-package half of 9 are **done** (see section 6 remediation). Remaining P0: items 3 and 4.
-
 **P0 — correctness / credibility (hours):**
-1. ~~Fix the **failing `certutil` ECDSA test/code** (`pkg/certutil`).~~ **✅ DONE** — PKCS#8 fallback in `parseECPrivateKey`. *(HIGH value)*
-2. ~~**Add `task test-offline` (and ideally a coverage gate) to CI** so PRs are protected without a live tenant.~~ **✅ DONE** — `test-offline` CI job runs `task test-ci` (offline suite + `./pkg/...` + coverage). *(HIGH value)*
-3. **Migrate `.golangci.yml` to v2 format** so linting actually runs. *(HIGH value — still open)*
-4. Fix the **4 copy-paste godoc errors** and the **stale `V2.md` status checklist**. *(HIGH value, trivial — still open)*
+1. **Migrate `.golangci.yml` to v2 format** so linting actually runs. *(HIGH value)*
+2. Fix the **4 copy-paste godoc errors** and the **stale `V2.md` status checklist**. *(HIGH value, trivial)*
 
 **P1 — risk reduction (days):**
-5. **Address `resty` pin** — track toward a tagged release or vendor/wrap the HTTP layer behind an interface to limit blast radius. *(HIGH value)*
-6. **Move `qrterminal` out of the core closure** (enrollment returns payload; CLI renders). *(MEDIUM)*
-7. Replace **`go.mozilla.org/pkcs7`** and **`robfig/cron.v2`** with maintained equivalents. *(MEDIUM)*
-8. Fix the **`go vet` context leak** *(still open)*; ~~the **Taskfile `/v2` path bug**; make **live tests skip (not panic)** without credentials~~ **✅ DONE**. *(MEDIUM)*
+3. **Address `resty` pin** — track toward a tagged release or vendor/wrap the HTTP layer behind an interface to limit blast radius. *(HIGH value)*
 
 **P2 — polish (ongoing):**
-9. ~~Add **unit tests for pure util packages** (mapbuilder, matcher, encoding, jsonUtilities)~~ **✅ DONE** and protocol areas (realtime, notification2, oauth2, cache) *(still open)*. *(MEDIUM)*
-10. Reduce API outliers: **service-level/context tenant default** for users/groups; consider unifying `applications` list variants and the ref types. *(MEDIUM)*
-11. **Evaluate partial codegen from the OAS** for model structs / endpoint scaffolding to cut the 66-hand-written-service maintenance burden. *(LOW-MEDIUM — larger effort, big payoff)*
-12. Close the named **OAS gaps** (loginOptions sub-resources, identity search, alarm upsert) if relevant to consumers. *(MEDIUM)*
+4. Add **offline tests for protocol areas** (realtime, notification2, oauth2, cache). *(MEDIUM)*
+5. Reduce API outliers: **service-level/context tenant default** for users/groups; consider unifying `applications` list variants and the ref types. *(MEDIUM)*
+6. **Enforce a coverage threshold** in CI now that the offline gate produces a profile. *(MEDIUM)*
 
 ---
 

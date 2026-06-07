@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/loginoptions/accessmappings"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/loginoptions/inventoryaccessmappings"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
@@ -13,33 +15,56 @@ import (
 
 var ApiLoginOptions = "/tenant/loginOptions"
 var ApiLoginOption = "/tenant/loginOptions/{id}"
+var ApiLoginOptionRestrict = "/tenant/loginOptions/{typeOrId}/restrict"
 
 var ParamID = "id"
+var ParamTypeOrID = "typeOrId"
 
 const ResultProperty = "loginOptions"
 
 func NewService(s *core.Service) *Service {
 	return &Service{
-		Service: *s,
+		Service:                 *s,
+		AccessMappings:          accessmappings.NewService(s),
+		InventoryAccessMappings: inventoryaccessmappings.NewService(s),
 	}
 }
 
-// Service provides api to get/set/delete events in Cumulocity
+// Service provides api to get/set/delete login options in Cumulocity, plus their access
+// mappings, inventory access mappings, and access restriction.
 type Service struct {
 	core.Service
+
+	// AccessMappings manages a login option's access mappings (applications/groups).
+	AccessMappings *accessmappings.Service
+	// InventoryAccessMappings manages a login option's inventory-role access mappings.
+	InventoryAccessMappings *inventoryaccessmappings.Service
 }
 
-// ListOptions to filter the login options by
-type ListOptions struct {
-	// If this is set to true, the management tenant login options will be returned
-	Management bool `url:"management,omitempty"`
-
-	// Unique identifier of a Cumulocity tenant
-	TenantID bool `url:"tenantId,omitempty"`
-
-	// Pagination options
-	pagination.PaginationOptions
+// RestrictOptions is the body for restricting access to a login option (PUT .../restrict).
+type RestrictOptions struct {
+	// OnlyManagementTenantAccess restricts the login option to the management tenant.
+	OnlyManagementTenantAccess bool `json:"onlyManagementTenantAccess"`
 }
+
+// Restrict updates the access restriction of a login option (identified by type or id).
+func (s *Service) Restrict(ctx context.Context, typeOrID string, opt RestrictOptions) op.Result[jsonmodels.LoginOption] {
+	return core.Execute(ctx, s.restrictB(typeOrID, opt), jsonmodels.NewLoginOption)
+}
+
+func (s *Service) restrictB(typeOrID string, opt RestrictOptions) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodPut).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetContentType(types.MimeTypeApplicationJSON).
+		SetPathParam(ParamTypeOrID, typeOrID).
+		SetBody(opt).
+		SetURL(ApiLoginOptionRestrict)
+	return core.NewTryRequest(s.Client, req)
+}
+
+// ListOptions is generated from the OpenAPI spec — see zz_generated_options.go.
+// (TenantID is now correctly typed string; it was previously a typo'd bool.)
 
 // LoginOptionIterator provides iteration over login options
 type LoginOptionIterator = pagination.Iterator[jsonmodels.LoginOption]

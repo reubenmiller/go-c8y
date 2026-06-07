@@ -36,7 +36,7 @@ func TestPortEventService_CreateEvent(t *testing.T) {
 		},
 	}
 
-	result := client.Events.Create(ctx, event)
+	result := client.Events.CreateRaw(ctx, event)
 	assert.NoError(t, result.Err)
 	assert.NotEmpty(t, result.Data.ID())
 	assert.Equal(t, "testEvent", result.Data.Type())
@@ -149,7 +149,7 @@ func TestPortEventService_DeleteEvents(t *testing.T) {
 				"id": device.ID(),
 			},
 		}
-		result := client.Events.Create(ctx, event)
+		result := client.Events.CreateRaw(ctx, event)
 		assert.NoError(t, result.Err)
 	}
 
@@ -197,7 +197,7 @@ func TestPortEventService_CreateBinary(t *testing.T) {
 		Source: model.NewSource(device.ID()),
 	}
 
-	event1 := client.Events.Create(ctx, value1)
+	event1 := client.Events.CreateRaw(ctx, value1)
 	assert.NoError(t, event1.Err)
 	assert.Equal(t, http.StatusCreated, event1.HTTPStatus)
 	assert.NotEmpty(t, event1.Data.ID(), "ID should not be empty")

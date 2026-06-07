@@ -53,15 +53,13 @@ func Test_AlarmCreateWithOptions_WithResolver(t *testing.T) {
 	req := client.Alarms.Create(
 		deferredCtx,
 		alarms.CreateOptions{
-			Source:   client.Alarms.DeviceResolver.ByName(mo.Data.Name()), // Resolver string
-			Type:     "c8y_TestAlarm",
-			Text:     "Test alarm with resolver",
-			Time:     time.Now(),
-			Severity: "CRITICAL",
-			Status:   "ACTIVE",
-			AdditionalProperties: map[string]any{
-				"foo": "bar",
-			},
+			Source:    client.Alarms.DeviceResolver.ByName(mo.Data.Name()), // Resolver string
+			Type:      "c8y_TestAlarm",
+			Text:      "Test alarm with resolver",
+			Time:      time.Now(),
+			Severity:  "CRITICAL",
+			Status:    "ACTIVE",
+			Fragments: []model.Fragment{model.Frag("foo", "bar")},
 		},
 	)
 	assert.NoError(t, req.Err)
@@ -88,13 +86,6 @@ func Test_AlarmCreateWithOptions_WithCustomStruct(t *testing.T) {
 	mo := testcore.CreateManagedObject(t, client)
 	assert.NoError(t, mo.Err)
 
-	// Custom alarm type with additional fields
-	type CustomAlarmData struct {
-		CustomField1 string         `json:"customField1"`
-		CustomField2 int            `json:"customField2"`
-		C8yCustom    map[string]any `json:"c8y_CustomFragment"`
-	}
-
 	ctx := api.WithMockResponses(context.Background(), false)
 
 	now := time.Now()
@@ -106,13 +97,13 @@ func Test_AlarmCreateWithOptions_WithCustomStruct(t *testing.T) {
 			Text:     "Test with custom properties",
 			Severity: "MINOR",
 			Time:     now,
-			AdditionalProperties: CustomAlarmData{
-				CustomField1: "value1",
-				CustomField2: 42,
-				C8yCustom: map[string]any{
+			Fragments: []model.Fragment{
+				model.Frag("customField1", "value1"),
+				model.Frag("customField2", 42),
+				model.Frag("c8y_CustomFragment", map[string]any{
 					"temperature": 23.5,
 					"humidity":    65,
-				},
+				}),
 			},
 		},
 	)
@@ -139,17 +130,17 @@ func Test_AlarmCreateWithOptions_WithInlineMap(t *testing.T) {
 			Type:     "c8y_MapAlarm",
 			Text:     "Test with inline map",
 			Severity: "WARNING",
-			AdditionalProperties: map[string]any{
-				"c8y_Measurements": map[string]any{
+			Fragments: []model.Fragment{
+				model.Frag("c8y_Measurements", map[string]any{
 					"temperature": map[string]any{
 						"value": 25.3,
 						"unit":  "°C",
 					},
-				},
-				"metadata": map[string]any{
+				}),
+				model.Frag("metadata", map[string]any{
 					"createdBy": "test",
 					"version":   "1.0",
-				},
+				}),
 			},
 		},
 	)
@@ -204,7 +195,7 @@ func Test_AlarmCreateByName(t *testing.T) {
 	mo := testcore.CreateManagedObject(t, client)
 	assert.NoError(t, mo.Err)
 
-	result := client.Alarms.Create(
+	result := client.Alarms.CreateRaw(
 		context.Background(),
 		model.Alarm{
 			// For programmatic usage, use the model directly

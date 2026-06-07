@@ -324,6 +324,28 @@ func (fs *FakeServer) handleSystemOptions(w http.ResponseWriter, r *http.Request
 }
 
 func (fs *FakeServer) handleLoginOptions(w http.ResponseWriter, r *http.Request) {
+	// Route the sub-resources (.../{typeOrId}/accessMappings|inventoryAccessMappings|restrict)
+	// before the base login-option CRUD.
+	segments := extractPathSegments(r.URL.Path, "/tenant/loginOptions")
+	if len(segments) >= 2 {
+		typeOrID := segments[0]
+		var itemID string
+		if len(segments) >= 3 {
+			itemID = segments[2]
+		}
+		switch segments[1] {
+		case "accessMappings":
+			fs.handleLoginOptionMappings(w, r, fs.accessMappingStore(typeOrID), "accessMappings", itemID)
+			return
+		case "inventoryAccessMappings":
+			fs.handleLoginOptionMappings(w, r, fs.inventoryAccessMappingStore(typeOrID), "inventoryAccessMappings", itemID)
+			return
+		case "restrict":
+			fs.handleLoginOptionRestrict(w, r, typeOrID)
+			return
+		}
+	}
+
 	id := extractID(r.URL.Path, "/tenant/loginOptions")
 
 	if id != "" {

@@ -34,7 +34,7 @@ func Test_GetMeasurementSeries(t *testing.T) {
 			"B": map[string]any{"value": 23.0, "unit": "°C"},
 		},
 	}
-	createResult := client.Measurements.Create(ctx, body)
+	createResult := client.Measurements.CreateRaw(ctx, body)
 	require.NoError(t, createResult.Err)
 	assert.Equal(t, 201, createResult.HTTPStatus)
 
@@ -70,7 +70,7 @@ func Test_GetMeasurements(t *testing.T) {
 		},
 	}
 
-	createResult := client.Measurements.Create(ctx, body)
+	createResult := client.Measurements.CreateRaw(ctx, body)
 	require.NoError(t, createResult.Err)
 	assert.Equal(t, 201, createResult.HTTPStatus)
 	assert.NotEmpty(t, createResult.Data.ID(), "Measurement ID should not be empty")
@@ -112,7 +112,7 @@ func Test_CreateMeasurement(t *testing.T) {
 		},
 	}
 
-	result := client.Measurements.Create(ctx, body)
+	result := client.Measurements.CreateRaw(ctx, body)
 
 	require.NoError(t, result.Err)
 	assert.Equal(t, 201, result.HTTPStatus)
@@ -143,7 +143,7 @@ func Test_CreateMeasurementWithDifferentTypes(t *testing.T) {
 			},
 		}
 
-		result := client.Measurements.Create(ctx, body)
+		result := client.Measurements.CreateRaw(ctx, body)
 		require.NoError(t, result.Err)
 		assert.Equal(t, 201, result.HTTPStatus)
 
@@ -243,7 +243,7 @@ func Test_DeleteMeasurements(t *testing.T) {
 			"Variable1": map[string]any{"value": 1.0, "unit": "Counter"},
 		},
 	}
-	createResult1 := client.Measurements.Create(ctx, body1)
+	createResult1 := client.Measurements.CreateRaw(ctx, body1)
 	require.NoError(t, createResult1.Err)
 	assert.Equal(t, 201, createResult1.HTTPStatus)
 	assert.NotEmpty(t, createResult1.Data.ID(), "Measurement ID should not be empty")
@@ -258,7 +258,7 @@ func Test_DeleteMeasurements(t *testing.T) {
 			"Variable2": map[string]any{"value": 2.0, "unit": "Counter"},
 		},
 	}
-	createResult2 := client.Measurements.Create(ctx, body2)
+	createResult2 := client.Measurements.CreateRaw(ctx, body2)
 	require.NoError(t, createResult2.Err)
 	assert.Equal(t, 201, createResult2.HTTPStatus)
 	assert.NotEmpty(t, createResult2.Data.ID(), "Measurement ID should not be empty")

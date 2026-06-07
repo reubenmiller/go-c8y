@@ -18,6 +18,7 @@ require (
 	github.com/zalando/go-keyring v0.2.6
 	golang.org/x/net v0.51.0
 	gopkg.in/robfig/cron.v2 v2.0.0-20150107220207-be2e0b0deed5
+	gopkg.in/yaml.v3 v3.0.1
 	resty.dev/v3 v3.0.0-beta.6.0.20260128173335-37296c9841e6
 )
 
@@ -59,7 +60,6 @@ require (
 	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
 	google.golang.org/protobuf v1.36.8 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 

@@ -1,0 +1,281 @@
+# SDK overlay for go-c8y v2 code generation.
+#
+# This file carries the SDK-specific codegen directives layered on top of the upstream
+# OpenAPI spec (c8y-oas.yml): which operation becomes which option struct, the deliberate
+# API-vs-SDK divergences (resolver-typed fields, typed enum slices), embeds, and which
+# schemas map to façade models. It is kept separate from c8y-oas.yml so it survives
+# `task fetch-spec`.
+#
+# Consumed by tools/c8ygen (`task generate` / `c8ygen resources`). See docs/API_GEN.md.
+#
+# Per option struct:
+#   type    - generated Go struct name (replaces the hand-written one)
+#   path    - OAS path
+#   method  - HTTP method
+#   doc     - struct doc comment
+#   fields  - per-parameter overrides:
+#               type - Go type override (e.g. a resolver ref or typed enum slice)
+#               doc  - doc-comment override
+#   embeds  - anonymously-embedded structs (import + qualified type)
+#   imports - extra imports the overrides require
+# Per model:
+#   type   - existing façade type (methods are added to it)
+#   schema - components/schemas key
+#   skip   - properties kept hand-written (nested objects / non-derivable)
+
+resources:
+  - package: alarms
+    options:
+      - type: ListOptions
+        path: /alarm/alarms
+        method: GET
+        doc: |-
+          ListOptions to use when searching for alarms.
+
+          The struct shape is generated from the OpenAPI spec; the Source resolver
+          field is a deliberate divergence (it accepts "name:"/"ext:"/"query:"
+          strings, resolved by the List method). See docs/API_GEN.md.
+        fields:
+          source:
+            type: managedobjects.DeviceRef
+            doc: |-
+              Source device to filter alarms by.
+              Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
+              or cast a string variable with managedobjects.DeviceRef(id).
+          status:
+            type: "[]model.AlarmStatus"
+          severity:
+            type: "[]model.AlarmSeverity"
+        embeds:
+          - import: github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination
+            type: pagination.PaginationOptions
+        imports:
+          - github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model
+          - github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects
+    models:
+      - type: Alarm
+        schema: alarm
+        skip: [source] # nested object: SourceID() stays hand-written
+
+  - package: events
+    options:
+      - type: ListOptions
+        path: /event/events
+        method: GET
+        doc: |-
+          ListOptions to use when searching for events.
+
+          The struct shape is generated from the OpenAPI spec; the Source resolver
+          field is a deliberate divergence (it accepts "name:"/"ext:"/"query:"
+          strings, resolved by the List method). See docs/API_GEN.md.
+        fields:
+          source:
+            type: managedobjects.DeviceRef
+            doc: |-
+              Source device to filter events by.
+              Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
+              or cast a string variable with managedobjects.DeviceRef(id).
+        embeds:
+          - import: github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination
+            type: pagination.PaginationOptions
+        imports:
+          - github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects
+    models:
+      - type: Event
+        schema: event
+        skip: [source] # nested object: SourceID() stays hand-written
+
+  - package: measurements
+    options:
+      - type: ListOptions
+        path: /measurement/measurements
+        method: GET
+        doc: |-
+          ListOptions to use when searching for measurements.
+
+          The struct shape is generated from the OpenAPI spec; the Source resolver
+          field is a deliberate divergence (it accepts "name:"/"ext:"/"query:"
+          strings, resolved by the List method). See docs/API_GEN.md.
+        fields:
+          source:
+            type: managedobjects.DeviceRef
+            doc: |-
+              Source device to filter measurements by.
+              Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
+              or cast a string variable with managedobjects.DeviceRef(id).
+        embeds:
+          - import: github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination
+            type: pagination.PaginationOptions
+        imports:
+          - github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects
+    models:
+      - type: Measurement
+        schema: measurement
+        skip: [source] # nested object: SourceID() stays hand-written
+
+  - package: operations
+    options:
+      - type: ListOptions
+        path: /devicecontrol/operations
+        method: GET
+        doc: |-
+          ListOptions to use when searching for operations.
+
+          The struct shape is generated from the OpenAPI spec; the AgentID/DeviceID
+          resolver fields are a deliberate divergence (they accept
+          "name:"/"ext:"/"query:" strings, resolved by the List method).
+          See docs/API_GEN.md.
+        fields:
+          agentId:
+            type: managedobjects.DeviceRef
+            doc: |-
+              An agent ID that may be part of the operation.
+              Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
+              or cast a string variable with managedobjects.DeviceRef(id).
+          deviceId:
+            type: managedobjects.DeviceRef
+            doc: |-
+              The ID of the device the operation is performed for.
+              Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
+              or cast a string variable with managedobjects.DeviceRef(id).
+          status:
+            type: types.OperationStatus
+        embeds:
+          - import: github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination
+            type: pagination.PaginationOptions
+        imports:
+          - github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects
+          - github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types
+    models:
+      - type: Operation
+        schema: operation
+        # deviceExternalIDs (object) is auto-skipped; deviceName/Description are not in
+        # the schema, so those accessors stay hand-written.
+
+  - package: auditrecords
+    options:
+      - type: ListOptions
+        path: /audit/auditRecords
+        method: GET
+        doc: ListOptions to use when searching for audit records.
+        extraFields:
+          # `revert` is accepted by the server but absent from the vendored OAS.
+          - name: Revert
+            type: bool
+            tag: revert,omitempty
+            doc: |-
+              If you are using a range query, setting revert=true sorts the results by
+              the oldest audit records first (default: newest first).
+              Note: not present in the OpenAPI spec; supported by the server.
+        embeds:
+          - import: github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination
+            type: pagination.PaginationOptions
+
+  - package: binaries
+    # `Text` was dropped: it was a copy-paste from inventory options and is not a
+    # parameter of GET /inventory/binaries (confirmed unsupported).
+    options:
+      - type: ListOptions
+        path: /inventory/binaries
+        method: GET
+        doc: ListOptions to use when searching for binaries.
+        embeds:
+          - import: github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination
+            type: pagination.PaginationOptions
+
+  - package: notification2
+    # Additive migration: the OAS exposes `subscription` and `typeFilter` beyond the
+    # previously hand-written context/source (non-breaking — new fields).
+    options:
+      - type: ListOptions
+        path: /notification2/subscriptions
+        method: GET
+        doc: ListOptions to use when searching for notification subscriptions.
+        embeds:
+          - import: github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination
+            type: pagination.PaginationOptions
+
+  - package: loginoptions
+    # Migration fixes a bug: the hand-written TenantID was typed `bool`; the OAS (and the
+    # server) define tenantId as a string identifier, so it is now generated as string.
+    options:
+      - type: ListOptions
+        path: /tenant/loginOptions
+        method: GET
+        doc: ListOptions to filter the login options by.
+        embeds:
+          - import: github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination
+            type: pagination.PaginationOptions
+
+  - package: tenants
+    # Options-only: a plain resource with no resolver fields and no generated model.
+    # (The Tenant model stays hand-written — its schema would add ~9 incidental
+    # accessors and lacks the hand-written Name().)
+    options:
+      - type: ListOptions
+        path: /tenant/tenants
+        method: GET
+        doc: ListOptions to use when searching for tenants.
+        embeds:
+          - import: github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination
+            type: pagination.PaginationOptions
+
+# Well-known custom fragments generated as typed structs (model.Fragment) into
+# pkg/c8y/api/model/zz_generated_fragments.go. Each gains compile-time typing on both
+# the write side (CreateOptions.Fragments) and the read side (jsonmodels.GetFragment).
+# The long tail of fragments still works untyped via model.Frag(...) / GetAs[T].
+fragments:
+  - type: Position
+    schema: c8y_Position
+    key: c8y_Position
+  - type: Hardware
+    schema: c8y_Hardware
+    key: c8y_Hardware
+  - type: Firmware
+    schema: c8y_Firmware
+    key: c8y_Firmware
+  - type: Mobile
+    schema: c8y_Mobile
+    key: c8y_Mobile
+
+# Declared, known-acceptable drift between the OAS and the SDK. `c8ygen lint --strict`
+# (the CI api-drift gate) fails only on drift NOT listed here, so this section is the
+# single place where coverage decisions are recorded. Patterns match normalized paths
+# ({param} -> {}); a trailing "*" is a prefix wildcard.
+drift:
+  # OAS paths the SDK does not expose as a path literal.
+  ignoreMissing:
+    # Service root / API-discovery endpoints — intentionally not exposed (low value).
+    - /alarm
+    - /application
+    - /audit
+    - /certificate-authority
+    - /devicecontrol
+    - /event
+    - /features
+    - /identity
+    - /inventory
+    - /measurement
+    - /notification2
+    - /platform
+    - /tenant
+    - /user
+    # EST enrollment — handled in the devices package under a different path.
+    - /.well-known/est/*
+    # --- Known coverage gaps (TODO: implement; tracked in docs/assessment.md §2) ---
+    - /features/{featureKey}
+    - /notification/realtime
+    - /application/applicationsByOwner/{tenantId}
+    - /application/applications/{id}/binaries/{binaryId}
+    - /application/applications/{id}/versions?version=1.0
+    - /inventory/managedObjects/{id}/childDevices/{childId}
+    - /tenant/tenants/{tenantId}/trusted-certificates/bulk
+    - /tenant/trusted-certificates/verify-cert-chain
+  # SDK path literals with no OAS counterpart — non-OAS features and variants.
+  ignoreExtra:
+    - /meta/*                   # CometD/Bayeux realtime channels (not in the REST OAS)
+    - /service/remoteaccess/*   # remote access service (not in the core OAS)
+    - /inventory/managedobjects # lowercase match in the offline mock server
+    - /roles/inventory          # inventory-roles alias path
+    - /tenant/statistics/device/ # trailing-slash device statistics variant
+    - /user/passwordReset       # password-reset endpoint (not in the core OAS)

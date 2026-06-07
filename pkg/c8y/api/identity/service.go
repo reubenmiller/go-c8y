@@ -27,3 +27,15 @@ func (s *Service) Create(ctx context.Context, id string, opts IdentityOptions) o
 func (s *Service) Delete(ctx context.Context, opts IdentityOptions) op.Result[core.NoContent] {
 	return core.ExecuteNoContent(ctx, s.deleteB(opts)).IgnoreNotFound()
 }
+
+// Search looks up the global identifiers matching a list of external identifiers
+// (POST /identity/search). It returns the external-ID mappings as a collection.
+//
+//	result := client.Identity.Search(ctx, identity.SearchOptions{
+//	    ExternalIds: []identity.IdentityOptions{
+//	        {ExternalID: "device-001", Type: "c8y_Serial"},
+//	    },
+//	})
+func (s *Service) Search(ctx context.Context, opts SearchOptions) op.Result[jsonmodels.Identity] {
+	return core.ExecuteCollection(ctx, s.searchB(opts), ResultProperty, "", jsonmodels.NewIdentity)
+}

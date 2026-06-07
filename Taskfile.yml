@@ -70,6 +70,22 @@ tasks:
     cmds:
       - go test -race -timeout 30s github.com/reubenmiller/go-c8y/v2/test/c8y_test -run "^(TestRealtimeSubscriptions_Unsubscribe)$"
 
+  generate:
+    desc: Generate the Layer-0 SDK substrate (paths, enums, per-resource options/models) from the OpenAPI spec
+    cmds:
+      - go run ./tools/c8ygen generate {{.CLI_ARGS}}
+      - go run ./tools/c8ygen resources {{.CLI_ARGS}}
+
+  lint-api:
+    desc: Report drift between the OpenAPI spec and the hand-written SDK
+    cmds:
+      - go run ./tools/c8ygen lint {{.CLI_ARGS}}
+
+  fetch-spec:
+    desc: Download the latest Cumulocity OpenAPI spec into docs/c8y-oas.yml
+    cmds:
+      - go run ./tools/c8ygen fetch {{.CLI_ARGS}}
+
   lint:
     desc: Linting
     cmds:

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/operations"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 )
@@ -17,9 +18,7 @@ func Test_Operations_Create_WithResolver_Metadata(t *testing.T) {
 	opts := operations.CreateOptions{
 		DeviceID:    client.Operations.DeviceResolver.ByName("device01"),
 		Description: "Restart device",
-		AdditionalProperties: map[string]any{
-			"c8y_Restart": map[string]any{},
-		},
+		Fragments:   []model.Fragment{model.Frag("c8y_Restart", map[string]any{})},
 	}
 
 	result := client.Operations.Create(deferredCtx, opts)
@@ -55,10 +54,10 @@ func Test_Operations_Create_WithStringResolver_Metadata(t *testing.T) {
 	opts := operations.CreateOptions{
 		DeviceID:    "ext:c8y_Serial:ABC123",
 		Description: "Configure device",
-		AdditionalProperties: map[string]any{
-			"c8y_Configuration": map[string]any{
+		Fragments: []model.Fragment{
+			model.Frag("c8y_Configuration", map[string]any{
 				"config": "value",
-			},
+			}),
 		},
 	}
 
@@ -79,15 +78,11 @@ func Test_Operations_Create_WithComplexPayload(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := api.WithMockResponses(context.Background(), true)
 
-	type SoftwareUpdate struct {
-		Software []map[string]any `json:"c8y_SoftwareUpdate"`
-	}
-
 	opts := operations.CreateOptions{
 		DeviceID:    "12345",
 		Description: "Install software",
-		AdditionalProperties: SoftwareUpdate{
-			Software: []map[string]any{
+		Fragments: []model.Fragment{
+			model.Frag("c8y_SoftwareUpdate", []map[string]any{
 				{
 					"name":    "package1",
 					"version": "1.0.0",
@@ -98,7 +93,7 @@ func Test_Operations_Create_WithComplexPayload(t *testing.T) {
 					"version": "2.0.0",
 					"url":     "http://example.com/package2",
 				},
-			},
+			}),
 		},
 	}
 
