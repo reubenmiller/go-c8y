@@ -73,9 +73,15 @@ func renderOptions(doc *OAS, source string, r resource) (string, error) {
 			imports[imp] = true
 		}
 		for _, imp := range spec.Imports {
-			// only add override imports if a field actually used an override type
+			// only add override imports if a field (OAS-derived or extra) used the type
+			seg := lastPathSegment(imp) + "."
 			for _, f := range fields {
-				if strings.Contains(f.Type, lastPathSegment(imp)+".") {
+				if strings.Contains(f.Type, seg) {
+					imports[imp] = true
+				}
+			}
+			for _, e := range spec.Extra {
+				if strings.Contains(e.Type, seg) {
 					imports[imp] = true
 				}
 			}
@@ -97,6 +103,18 @@ func renderOptions(doc *OAS, source string, r resource) (string, error) {
 				}
 			}
 			fmt.Fprintf(&b, "\t%s %s `url:%q`\n", f.Name, f.Type, f.Tag)
+		}
+		if len(spec.Extra) > 0 {
+			b.WriteString("\n\t// The following fields are not present in the OpenAPI spec\n")
+			b.WriteString("\t// (declared via the overlay's extraFields). See docs/API_GEN.md.\n")
+			for _, e := range spec.Extra {
+				for _, line := range strings.Split(e.Doc, "\n") {
+					if line != "" {
+						fmt.Fprintf(&b, "\t// %s\n", line)
+					}
+				}
+				fmt.Fprintf(&b, "\t%s %s `url:%q`\n", e.Name, e.Type, e.Tag)
+			}
 		}
 		for _, e := range spec.Embeds {
 			fmt.Fprintf(&b, "\n\t%s\n", e.Type)

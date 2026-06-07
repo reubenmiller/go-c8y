@@ -2,7 +2,6 @@ package auditrecords
 
 import (
 	"context"
-	"time"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
@@ -26,32 +25,9 @@ func NewService(common *core.Service) *Service {
 	return &Service{Service: *common}
 }
 
-// ListOptions to use when search for audit entries
-type ListOptions struct {
-	// Start date or date and time of the audit record (device time).
-	DateFrom time.Time `url:"dateFrom,omitempty,omitzero"`
-
-	// End date or date and time of the audit record (device time).
-	DateTo time.Time `url:"dateTo,omitempty,omitzero"`
-
-	// The type of audit record to search for.
-	Type string `url:"type,omitempty"`
-
-	// The platform component ID to which the audit is associated.
-	Source string `url:"source,omitempty"`
-
-	// Name of the application from which the audit was carried out
-	Application string `url:"application,omitempty"`
-
-	// The username to search for.
-	User string `url:"user,omitempty"`
-
-	// TODO: Check if this is supported or not
-	// https://cumulocity.com/api/core/#operation/getAuditRecordCollectionResource
-	Revert bool `url:"revert,omitempty"`
-
-	pagination.PaginationOptions
-}
+// ListOptions is generated from the OpenAPI spec — see zz_generated_options.go.
+// (Revert is added via the overlay's extraFields: the server supports it but the OAS
+// omits the parameter.)
 
 // AuditRecordIterator provides iteration over audit records
 type AuditRecordIterator = pagination.Iterator[jsonmodels.AuditRecord]

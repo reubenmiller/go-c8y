@@ -152,6 +152,37 @@ resources:
         # deviceExternalIDs (object) is auto-skipped; deviceName/Description are not in
         # the schema, so those accessors stay hand-written.
 
+  - package: auditrecords
+    options:
+      - type: ListOptions
+        path: /audit/auditRecords
+        method: GET
+        doc: ListOptions to use when searching for audit records.
+        extraFields:
+          # `revert` is accepted by the server but absent from the vendored OAS.
+          - name: Revert
+            type: bool
+            tag: revert,omitempty
+            doc: |-
+              If you are using a range query, setting revert=true sorts the results by
+              the oldest audit records first (default: newest first).
+              Note: not present in the OpenAPI spec; supported by the server.
+        embeds:
+          - import: github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination
+            type: pagination.PaginationOptions
+
+  - package: binaries
+    # `Text` was dropped: it was a copy-paste from inventory options and is not a
+    # parameter of GET /inventory/binaries (confirmed unsupported).
+    options:
+      - type: ListOptions
+        path: /inventory/binaries
+        method: GET
+        doc: ListOptions to use when searching for binaries.
+        embeds:
+          - import: github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination
+            type: pagination.PaginationOptions
+
   - package: tenants
     # Options-only: a plain resource with no resolver fields and no generated model.
     # (The Tenant model stays hand-written — its schema would add ~9 incidental

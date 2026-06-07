@@ -39,13 +39,14 @@ type overlayResource struct {
 }
 
 type overlayOption struct {
-	Type    string                  `yaml:"type"`
-	Doc     string                  `yaml:"doc"`
-	Path    string                  `yaml:"path"`
-	Method  string                  `yaml:"method"`
-	Fields  map[string]overlayField `yaml:"fields"`
-	Embeds  []embedSpec             `yaml:"embeds"`
-	Imports []string                `yaml:"imports"`
+	Type        string                  `yaml:"type"`
+	Doc         string                  `yaml:"doc"`
+	Path        string                  `yaml:"path"`
+	Method      string                  `yaml:"method"`
+	Fields      map[string]overlayField `yaml:"fields"`
+	Embeds      []embedSpec             `yaml:"embeds"`
+	Imports     []string                `yaml:"imports"`
+	ExtraFields []extraField            `yaml:"extraFields"`
 }
 
 type overlayField struct {
@@ -104,6 +105,7 @@ func LoadOverlay(path string) ([]resource, error) {
 				Method:    oo.Method,
 				Embeds:    oo.Embeds,
 				Imports:   oo.Imports,
+				Extra:     oo.ExtraFields,
 				FieldType: map[string]string{},
 				FieldDoc:  map[string]string{},
 			}

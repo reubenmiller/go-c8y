@@ -11,15 +11,21 @@ and I'll implement.
 
 ## Decision summary
 
-| # | Decision | Recommendation | Effort |
+| # | Decision | Recommendation | Status |
 |---|---|---|---|
-| 1 | `auditrecords.Revert` — not in OAS | Verify against the live API, then drop or add to overlay | S |
-| 2 | `binaries.Text` — not in OAS | Drop (likely vestigial copy-paste) | S |
-| 3 | Add an overlay "extra hand-written fields" directive? | Only if #1/#2 say "keep" | M |
-| 4 | Curated resources (`managedobjects`, `applications`, `users`) | Keep curated — do **not** auto-expand | — |
-| 5 | Continue migrating the unevaluated batch (`repository/*`, `microservices`, …) | Yes, triage + migrate the clean ones | M |
-| 6 | Implement the waived **coverage gaps** (loginOptions sub-resources, `identity/search`, …) | Separate effort, prioritise `identity/search` + loginOptions | L |
-| 7 | Push branch / open PR now, or after more migration? | Open PR now (infra is complete & self-contained) | S |
+| 1 | `auditrecords.Revert` — not in OAS | Verify against the live API, then drop or add to overlay | ✅ supported by server → added via `extraFields`; `auditrecords` migrated |
+| 2 | `binaries.Text` — not in OAS | Drop (likely vestigial copy-paste) | ✅ dropped; `binaries` migrated |
+| 3 | Add an overlay "extra hand-written fields" directive? | Only if #1/#2 say "keep" | ✅ `extraFields` directive built (needed for #1) |
+| 4 | Curated resources (`managedobjects`, `applications`, `users`) | Keep curated — do **not** auto-expand | ⬜ open |
+| 5 | Continue migrating the unevaluated batch (`repository/*`, `microservices`, …) | Yes, triage + migrate the clean ones | ⬜ open |
+| 6 | Implement the waived **coverage gaps** (loginOptions sub-resources, `identity/search`, …) | Separate effort, prioritise `identity/search` + loginOptions | ⬜ open |
+| 7 | Push branch / open PR now, or after more migration? | Open PR now (infra is complete & self-contained) | ⬜ open |
+
+> **Resolved 2026-06-07 — #1, #2, #3.** `revert` is a real server parameter the vendored
+> OAS omits, so it is declared via the new overlay `extraFields:` directive and
+> `auditrecords` is migrated. `binaries.Text` was a copy-paste from the inventory options
+> (unsupported by `GET /inventory/binaries`) and was dropped; `binaries` is migrated.
+> **7 resources are now generated.** Decisions #4–#7 remain open.
 
 Effort: S = <1h · M = a few hours · L = multi-day.
 

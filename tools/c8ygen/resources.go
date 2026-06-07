@@ -41,6 +41,17 @@ type optionSpec struct {
 	FieldDoc  map[string]string // param name -> doc-comment override
 	Embeds    []embedSpec       // structs to embed (e.g. pagination.PaginationOptions)
 	Imports   []string          // extra imports the overrides require
+	Extra     []extraField      // fields NOT in the OAS (server supports them, spec omits them)
+}
+
+// extraField is a struct field that is not derived from the OAS — declared in the overlay
+// for params the server accepts but the vendored spec omits. Use sparingly and document
+// why each one is needed.
+type extraField struct {
+	Name string `yaml:"name"` // Go field name, e.g. "Revert"
+	Type string `yaml:"type"` // Go type, e.g. "bool"
+	Tag  string `yaml:"tag"`  // url tag body, e.g. "revert,omitempty"
+	Doc  string `yaml:"doc"`  // doc comment (should explain why it is not in the OAS)
 }
 
 // embedSpec is an anonymously-embedded struct in a generated option type.

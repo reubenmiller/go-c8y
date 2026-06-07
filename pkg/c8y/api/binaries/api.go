@@ -26,32 +26,9 @@ func NewService(common *core.Service) *Service {
 	return &Service{Service: *common}
 }
 
-// ListOptions to filter for specific binaries
-type ListOptions struct {
-	// Search for a specific child addition and list all the groups to which it belongs
-	ChildAdditionID string `url:"childAdditionId,omitempty"`
-
-	// Search for a specific child asset and list all the groups to which it belongs
-	ChildAssetID string `url:"childAssetId,omitempty"`
-
-	// Search for a specific child device and list all the groups to which it belongs
-	ChildDeviceID string `url:"childDeviceId,omitempty"`
-
-	// The managed object IDs to search for
-	Ids []string `url:"ids,omitempty"`
-
-	// Username of the owner of the managed objects
-	Owner string `url:"owner,omitempty"`
-
-	// Search for managed objects where a property value is equal to the given one. The following properties are examined: id, type, name, owner, externalIds
-	Text string `url:"text,omitempty"`
-
-	// The type of managed object to search for
-	Type string `url:"type,omitempty"`
-
-	// Pagination options
-	pagination.PaginationOptions
-}
+// ListOptions is generated from the OpenAPI spec — see zz_generated_options.go.
+// (The former hand-written `Text` field was dropped: it was a copy-paste from the
+// inventory options and is not a parameter of GET /inventory/binaries.)
 
 // BinaryIterator provides iteration over binaries
 type BinaryIterator = pagination.Iterator[jsonmodels.Binary]

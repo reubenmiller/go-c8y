@@ -249,6 +249,35 @@ resources:
 	}
 }
 
+func TestRenderOptionsExtraFields(t *testing.T) {
+	doc := &OAS{Paths: map[string]PathItem{
+		"/audit/auditRecords": {Get: &Operation{Parameters: []Parameter{
+			{Name: "type", In: "query", Schema: Schema{Type: "string"}},
+		}}},
+	}}
+	r := resource{Pkg: "auditrecords", Options: []optionSpec{{
+		TypeName: "ListOptions",
+		Path:     "/audit/auditRecords",
+		Method:   "GET",
+		Extra: []extraField{
+			{Name: "Revert", Type: "bool", Tag: "revert,omitempty", Doc: "Not in the OAS; server supports it."},
+		},
+	}}}
+	out, err := renderOptions(doc, "test", r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "Type string `url:\"type,omitempty\"`") {
+		t.Errorf("missing OAS-derived field:\n%s", out)
+	}
+	if !strings.Contains(out, "Revert bool `url:\"revert,omitempty\"`") {
+		t.Errorf("missing extra field:\n%s", out)
+	}
+	if !strings.Contains(out, "not present in the OpenAPI spec") {
+		t.Errorf("missing extra-field marker comment:\n%s", out)
+	}
+}
+
 func TestLoadOverlayMissingFileIsEmpty(t *testing.T) {
 	resources, err := LoadOverlay(filepath.Join(t.TempDir(), "does-not-exist.yml"))
 	if err != nil {
