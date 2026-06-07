@@ -16,10 +16,20 @@ and I'll implement.
 | 1 | `auditrecords.Revert` — not in OAS | Verify against the live API, then drop or add to overlay | ✅ supported by server → added via `extraFields`; `auditrecords` migrated |
 | 2 | `binaries.Text` — not in OAS | Drop (likely vestigial copy-paste) | ✅ dropped; `binaries` migrated |
 | 3 | Add an overlay "extra hand-written fields" directive? | Only if #1/#2 say "keep" | ✅ `extraFields` directive built (needed for #1) |
-| 4 | Curated resources (`managedobjects`, `applications`, `users`) | Keep curated — do **not** auto-expand | ⬜ open |
-| 5 | Continue migrating the unevaluated batch (`repository/*`, `microservices`, …) | Yes, triage + migrate the clean ones | ⬜ open |
-| 6 | Implement the waived **coverage gaps** (loginOptions sub-resources, `identity/search`, …) | Separate effort, prioritise `identity/search` + loginOptions | ⬜ open |
-| 7 | Push branch / open PR now, or after more migration? | Open PR now (infra is complete & self-contained) | ⬜ open |
+| 4 | Curated resources (`managedobjects`, `applications`, `users`) | Keep curated — do **not** auto-expand | ✅ kept curated (documented in API_GEN.md triage) |
+| 5 | Continue migrating the unevaluated batch (`repository/*`, `microservices`, …) | Yes, triage + migrate the clean ones | ✅ triaged; `notification2` + `loginoptions` migrated; rest are wrappers/path-param (kept) |
+| 6 | Implement the waived **coverage gaps** (loginOptions sub-resources, `identity/search`, …) | Separate effort, prioritise `identity/search` + loginOptions | 🔶 `identity/search` **done**; loginOptions sub-resources **pending confirmation** (see note) |
+| 7 | Push branch / open PR now, or after more migration? | Open PR now (infra is complete & self-contained) | ⏸ deferred — bundling into one PR per user |
+
+> **#6 status.** `POST /identity/search` is implemented (`Identity.Search`). The
+> **loginOptions sub-resources** (`accessMappings`, `inventoryAccessMappings`, `restrict`)
+> are scoped but **not yet implemented**: 11 write-heavy operations (POST/PUT/DELETE) over
+> **auth-configuration access mappings** — which govern who is granted which roles/apps on
+> SSO login — plus 5 schemas, 2 new sub-packages and client wiring. Because it **mutates
+> security-sensitive config and cannot be validated by the offline test harness**, it
+> warrants explicit confirmation and ideally live-tenant validation before shipping. The
+> remaining gaps (trusted-cert `bulk`/`verify-cert-chain`, app `binaries/{binaryId}`,
+> `features/{featureKey}`, …) stay waived/deferred per the recommendation.
 
 > **Resolved 2026-06-07 — #1, #2, #3.** `revert` is a real server parameter the vendored
 > OAS omits, so it is declared via the new overlay `extraFields:` directive and

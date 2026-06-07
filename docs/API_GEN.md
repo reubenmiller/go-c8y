@@ -190,7 +190,7 @@ generator uses, so it is a stepping-stone, not throwaway work.
 | **0** | OAS parser + `task lint-api` drift report (non-gating) | ✅ **done** |
 | **1** | Generator (`tools/c8ygen`); emit `zz_generated_paths.go` + `zz_generated_enums.go` into `pkg/c8y/api/spec` | ✅ **done** |
 | **2** | Generate option struct + façade model for the **pilot** resource (`alarms`); refactor `api.go`/`jsonmodels` to compose them. Prove the seam. | ✅ **done** |
-| **3** | Replace the in-code registry with a spec overlay (`docs/c8y-oas.overlay.yml`); roll the pattern across resources, resource-by-resource | 🔄 **in progress** — overlay + `extraFields` done; 7 resources migrated (`alarms`, `events`, `measurements`, `operations`, `tenants`, `auditrecords`, `binaries`); remainder is divergent or low-value (see below) |
+| **3** | Replace the in-code registry with a spec overlay (`docs/c8y-oas.overlay.yml`); roll the pattern across resources, resource-by-resource | 🔄 **in progress** — overlay + `extraFields` done; 9 resources migrated (alarms, events, measurements, operations, tenants, auditrecords, binaries, notification2, loginoptions); remainder is divergent or low-value (see below) |
 | **4** | Make `task lint-api` **gating** (`--strict`) in CI; add `CONTRIBUTING` note: edit the spec/overlay, not `zz_generated_*.go` | ✅ **done** |
 
 Each phase leaves the repo building and tested (the offline suite in
@@ -274,20 +274,23 @@ exactly the same field set as the hand-written one (the generator emits only OAS
 so a hand-written field absent from the OAS would be silently dropped — a breaking change).
 Triaging the remaining resources against that invariant:
 
-- **Migrated (7):** `alarms`, `events`, `measurements`, `operations` (resolver/enum-heavy —
-  the highest-value cases), `tenants` (plain, options-only), and `auditrecords` + `binaries`
-  (resolved below).
+- **Migrated (9):** `alarms`, `events`, `measurements`, `operations` (resolver/enum-heavy —
+  the highest-value cases), `tenants`, `auditrecords`, `binaries`, `notification2`
+  (additive — gained `subscription`/`typeFilter`), and `loginoptions` (also fixed a bug:
+  `TenantID` was typed `bool`, now `string`).
 - **Resolved non-OAS-field cases:** `auditrecords.Revert` is a real server parameter the
   vendored OAS omits — kept via the overlay's **`extraFields:`** directive. `binaries.Text`
   was a copy-paste from the inventory options (unsupported by the endpoint) and was dropped.
-- **Skipped — deliberately curated / would expand the public API:** `inventory/managedobjects`
-  (6 curated fields + embedded `GetOptions` over ~17 OAS params), `applications`
-  (`ListByName/ByTenant/ByUser` variants), `users` (per-call tenant). These intentionally
+- **Skipped — deliberately curated / would expand the public API (decision #4: keep curated):**
+  `inventory/managedobjects` (6 curated fields + embedded `GetOptions` over ~17 OAS params),
+  `applications` (`ListByName/ByTenant/ByUser` variants), `users` (per-call tenant),
+  `microservices` (a curated wrapper over `/application/applications`). These intentionally
   expose a different surface than the raw OAS.
+- **Skipped — query-DSL / path-param wrappers:** `repository/*` (firmware/software — fields
+  are `url:"-"`, encoded into an inventory query), `usergroups` (`Tenant` path param),
+  `trustedcertificates` (`{tenantId}` path param, single field).
 - **Skipped — pagination-only:** `bulkoperations`, `retentionrules`, `userroles`,
   `*options`, `*/versions`, … — nothing to generate beyond the pagination embed.
-- **Not yet evaluated:** `repository/*` (firmware/software), `microservices`, `notification2`,
-  `loginoptions`, `trustedcertificates`, `usergroups`, statistics sub-resources.
 
 Everything remaining is a value/scope judgement rather than a generator limitation: the
 `extraFields:` directive now lets a generated struct carry params the spec omits, so
