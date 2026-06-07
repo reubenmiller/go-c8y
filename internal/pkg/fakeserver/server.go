@@ -58,6 +58,11 @@ type FakeServer struct {
 
 	// Group membership: groupID → list of userIDs
 	GroupMembers map[string][]string
+
+	// Login-option access mappings: loginOption typeOrId → Store of access mappings
+	LoginOptionAccessMappings map[string]*Store
+	// Login-option inventory access mappings: loginOption typeOrId → Store
+	LoginOptionInventoryAccessMappings map[string]*Store
 }
 
 // New creates a new FakeServer with an httptest.Server and registers cleanup.
@@ -95,6 +100,9 @@ func New(t *testing.T) *FakeServer {
 		EventBinaries:  make(map[string][]byte),
 		BinaryData:     make(map[string][]byte),
 		GroupMembers:   make(map[string][]string),
+
+		LoginOptionAccessMappings:          make(map[string]*Store),
+		LoginOptionInventoryAccessMappings: make(map[string]*Store),
 	}
 
 	mux := http.NewServeMux()

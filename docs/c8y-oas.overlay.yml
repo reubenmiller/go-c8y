@@ -251,11 +251,6 @@ drift:
     - /application/applications/{id}/binaries/{binaryId}
     - /application/applications/{id}/versions?version=1.0
     - /inventory/managedObjects/{id}/childDevices/{childId}
-    - /tenant/loginOptions/{typeOrId}/accessMappings
-    - /tenant/loginOptions/{typeOrId}/accessMappings/{id}
-    - /tenant/loginOptions/{typeOrId}/inventoryAccessMappings
-    - /tenant/loginOptions/{typeOrId}/inventoryAccessMappings/{id}
-    - /tenant/loginOptions/{typeOrId}/restrict
     - /tenant/tenants/{tenantId}/trusted-certificates/bulk
     - /tenant/trusted-certificates/verify-cert-chain
   # SDK path literals with no OAS counterpart — non-OAS features and variants.

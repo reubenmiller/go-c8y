@@ -18,18 +18,19 @@ and I'll implement.
 | 3 | Add an overlay "extra hand-written fields" directive? | Only if #1/#2 say "keep" | ✅ `extraFields` directive built (needed for #1) |
 | 4 | Curated resources (`managedobjects`, `applications`, `users`) | Keep curated — do **not** auto-expand | ✅ kept curated (documented in API_GEN.md triage) |
 | 5 | Continue migrating the unevaluated batch (`repository/*`, `microservices`, …) | Yes, triage + migrate the clean ones | ✅ triaged; `notification2` + `loginoptions` migrated; rest are wrappers/path-param (kept) |
-| 6 | Implement the waived **coverage gaps** (loginOptions sub-resources, `identity/search`, …) | Separate effort, prioritise `identity/search` + loginOptions | 🔶 `identity/search` **done**; loginOptions sub-resources **pending confirmation** (see note) |
+| 6 | Implement the waived **coverage gaps** (loginOptions sub-resources, `identity/search`, …) | Separate effort, prioritise `identity/search` + loginOptions | ✅ `identity/search` + loginOptions sub-resources **done** (offline-validated); rest deferred |
 | 7 | Push branch / open PR now, or after more migration? | Open PR now (infra is complete & self-contained) | ⏸ deferred — bundling into one PR per user |
 
 > **#6 status.** `POST /identity/search` is implemented (`Identity.Search`). The
-> **loginOptions sub-resources** (`accessMappings`, `inventoryAccessMappings`, `restrict`)
-> are scoped but **not yet implemented**: 11 write-heavy operations (POST/PUT/DELETE) over
-> **auth-configuration access mappings** — which govern who is granted which roles/apps on
-> SSO login — plus 5 schemas, 2 new sub-packages and client wiring. Because it **mutates
-> security-sensitive config and cannot be validated by the offline test harness**, it
-> warrants explicit confirmation and ideally live-tenant validation before shipping. The
-> remaining gaps (trusted-cert `bulk`/`verify-cert-chain`, app `binaries/{binaryId}`,
-> `features/{featureKey}`, …) stay waived/deferred per the recommendation.
+> **loginOptions sub-resources** are now implemented too: `accessMappings` and
+> `inventoryAccessMappings` (full CRUD, as `loginoptions/accessmappings` and
+> `loginoptions/inventoryaccessmappings` sub-services on `client.LoginOptions`) plus
+> `LoginOptions.Restrict` (PUT `.../restrict`). Per the decision, the destructive
+> operations are exercised against the **offline simulated backend only** — the fake
+> server gained handlers + per-login-option stores, and the new tests run offline only
+> (`Test_LoginOption{AccessMappings,InventoryAccessMappings,Restrict}`). Their five paths
+> were removed from the drift waivers. Remaining gaps (trusted-cert `bulk`/`verify-cert-chain`,
+> app `binaries/{binaryId}`, `features/{featureKey}`, …) stay waived/deferred.
 
 > **Resolved 2026-06-07 — #1, #2, #3.** `revert` is a real server parameter the vendored
 > OAS omits, so it is declared via the new overlay `extraFields:` directive and
