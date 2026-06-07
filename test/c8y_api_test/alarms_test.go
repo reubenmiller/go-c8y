@@ -157,6 +157,46 @@ func Test_AlarmCreateWithOptions_WithInlineMap(t *testing.T) {
 	assert.NotEmpty(t, result.Data.ID())
 }
 
+func Test_AlarmUpsert_CreatesThenUpdates(t *testing.T) {
+	client := testcore.CreateTestClient(t)
+	client.SetDebug(true)
+
+	mo := testcore.CreateManagedObject(t, client)
+	assert.NoError(t, mo.Err)
+
+	ctx := context.Background()
+
+	// First upsert: no matching alarm exists yet -> created (201)
+	created := client.Alarms.Upsert(
+		ctx,
+		alarms.CreateOptions{
+			Source:   managedobjects.DeviceRef(mo.Data.ID()),
+			Type:     "c8y_UnavailabilityAlarm",
+			Text:     "No data received from the device within the required interval.",
+			Severity: "MAJOR",
+		},
+	)
+	assert.NoError(t, created.Err)
+	assert.NotEmpty(t, created.Data.ID())
+	assert.Equal(t, 201, created.HTTPStatus)
+	assert.Equal(t, false, created.Meta["found"])
+
+	// Second upsert with the same source + type -> updated (200)
+	updated := client.Alarms.Upsert(
+		ctx,
+		alarms.CreateOptions{
+			Source:   managedobjects.DeviceRef(mo.Data.ID()),
+			Type:     "c8y_UnavailabilityAlarm",
+			Text:     "Still no data received.",
+			Severity: "CRITICAL",
+		},
+	)
+	assert.NoError(t, updated.Err)
+	assert.Equal(t, 200, updated.HTTPStatus)
+	assert.Equal(t, true, updated.Meta["found"])
+	assert.Equal(t, created.Data.ID(), updated.Data.ID())
+}
+
 func Test_AlarmCreateByName(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	client.SetDebug(true)

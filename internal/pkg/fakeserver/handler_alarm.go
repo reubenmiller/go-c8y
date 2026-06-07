@@ -21,6 +21,33 @@ func (fs *FakeServer) handleAlarms(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// /alarm/alarms/upsert
+	if strings.HasSuffix(path, "/upsert") {
+		if r.Method != http.MethodPost {
+			writeError(w, http.StatusMethodNotAllowed, "general/methodNotAllowed", "Method not allowed")
+			return
+		}
+		body, err := readBody(r)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "general/badRequest", err.Error())
+			return
+		}
+		body = setDefaultField(body, "status", "ACTIVE")
+		body = enrichSource(body, fs.URL())
+
+		// Upsert matches on a non-cleared alarm with the same source + type.
+		if existingID := fs.findUpsertableAlarm(body); existingID != "" {
+			doc, ok := fs.Alarms.Update(existingID, body)
+			if ok {
+				writeJSON(w, http.StatusOK, doc)
+				return
+			}
+		}
+		_, doc := fs.Alarms.Create(body, fs.URL()+"/alarm/alarms")
+		writeJSON(w, http.StatusCreated, doc)
+		return
+	}
+
 	// /alarm/alarms/{id}
 	id := extractID(path, "/alarm/alarms")
 	if id != "" {
@@ -108,6 +135,38 @@ func (fs *FakeServer) handleAlarms(w http.ResponseWriter, r *http.Request) {
 	default:
 		writeError(w, http.StatusMethodNotAllowed, "general/methodNotAllowed", "Method not allowed")
 	}
+}
+
+// findUpsertableAlarm returns the id of an existing non-cleared alarm that shares
+// the same source and type as the provided body, or "" if no match is found.
+func (fs *FakeServer) findUpsertableAlarm(body json.RawMessage) string {
+	wantSource := getJSONString(getJSONRaw(body, "source"), "id")
+	wantType := getJSONString(body, "type")
+	if wantSource == "" || wantType == "" {
+		return ""
+	}
+	for _, item := range fs.Alarms.List() {
+		if getJSONString(item, "status") == "CLEARED" {
+			continue
+		}
+		if getJSONString(getJSONRaw(item, "source"), "id") != wantSource {
+			continue
+		}
+		if getJSONString(item, "type") != wantType {
+			continue
+		}
+		return getJSONString(item, "id")
+	}
+	return ""
+}
+
+// getJSONRaw extracts a top-level field from raw JSON as a raw message.
+func getJSONRaw(doc json.RawMessage, key string) json.RawMessage {
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal(doc, &m); err != nil {
+		return nil
+	}
+	return m[key]
 }
 
 // setDefaultField sets a field on a JSON document only if it's not already present.

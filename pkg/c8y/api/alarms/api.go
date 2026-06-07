@@ -3,6 +3,7 @@ package alarms
 import (
 	"context"
 	"encoding/json"
+	"net/http"
 	"time"
 
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/contexthelpers"
@@ -20,6 +21,7 @@ import (
 
 var ApiAlarms = "/alarm/alarms"
 var ApiAlarmsCount = "/alarm/alarms/count"
+var ApiAlarmsUpsert = "/alarm/alarms/upsert"
 var ApiAlarm = "/alarm/alarms/{id}"
 
 var ParamID = "id"
@@ -242,6 +244,29 @@ func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Ala
 
 // createWithOptions handles the CreateOptions case with resolver support and property merging
 func (s *Service) createWithOptions(ctx context.Context, opts CreateOptions) op.Result[jsonmodels.Alarm] {
+	finalJSON, meta, err := s.buildAlarmBody(ctx, opts)
+	if err != nil {
+		return op.Failed[jsonmodels.Alarm](err, true)
+	}
+
+	// Create the alarm with the merged JSON and add metadata
+	result := core.Execute(ctx, s.createBWithJSON(finalJSON), jsonmodels.NewAlarm)
+
+	// Add resolver metadata to result
+	if result.Meta == nil {
+		result.Meta = make(map[string]any)
+	}
+	for k, v := range meta {
+		result.Meta[k] = v
+	}
+
+	return result
+}
+
+// buildAlarmBody resolves the source device from CreateOptions and builds the
+// alarm request body as JSON. It returns the marshalled body, resolver metadata
+// (e.g. the resolved source id/name), and any error encountered.
+func (s *Service) buildAlarmBody(ctx context.Context, opts CreateOptions) ([]byte, map[string]any, error) {
 	// Resolve the source device and capture metadata
 	sourceID := string(opts.Source)
 	meta := make(map[string]any)
@@ -251,16 +276,12 @@ func (s *Service) createWithOptions(ctx context.Context, opts CreateOptions) op.
 
 		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, managedobjects.DeviceRef(sourceID), meta)
 		if err != nil {
-			return op.Failed[jsonmodels.Alarm](err, true)
+			return nil, meta, err
 		}
 		sourceID = resolvedID
 
 		// Populate metadata with resolved device information
 		meta["id"] = resolvedID
-		if name, ok := meta["name"].(string); ok {
-			// name is already in meta from ResolveID
-			_ = name
-		}
 	} else if sourceID != "" {
 		// Direct ID provided without resolution
 		meta["id"] = sourceID
@@ -291,38 +312,25 @@ func (s *Service) createWithOptions(ctx context.Context, opts CreateOptions) op.
 	// Marshal base alarm to JSON
 	baseJSON, err := json.Marshal(baseAlarm)
 	if err != nil {
-		return op.Failed[jsonmodels.Alarm](err, true)
+		return nil, meta, err
 	}
 
 	// If there are additional properties, merge them with the base
-	var finalJSON []byte
 	if opts.AdditionalProperties != nil {
 		additionalJSON, err := json.Marshal(opts.AdditionalProperties)
 		if err != nil {
-			return op.Failed[jsonmodels.Alarm](err, true)
+			return nil, meta, err
 		}
 
 		// Deep merge: additional properties override/extend base properties
-		finalJSON, err = jsonUtilities.MergePatch(baseJSON, additionalJSON)
+		finalJSON, err := jsonUtilities.MergePatch(baseJSON, additionalJSON)
 		if err != nil {
-			return op.Failed[jsonmodels.Alarm](err, true)
+			return nil, meta, err
 		}
-	} else {
-		finalJSON = baseJSON
+		return finalJSON, meta, nil
 	}
 
-	// Create the alarm with the merged JSON and add metadata
-	result := core.Execute(ctx, s.createBWithJSON(finalJSON), jsonmodels.NewAlarm)
-
-	// Add resolver metadata to result
-	if result.Meta == nil {
-		result.Meta = make(map[string]any)
-	}
-	for k, v := range meta {
-		result.Meta[k] = v
-	}
-
-	return result
+	return baseJSON, meta, nil
 }
 
 func (s *Service) createB(body any) *core.TryRequest {
@@ -343,6 +351,104 @@ func (s *Service) createBWithJSON(bodyJSON []byte) *core.TryRequest {
 		SetBody(bodyJSON).
 		SetURL(ApiAlarms)
 	return core.NewTryRequest(s.Client, req)
+}
+
+// Upsert creates or updates an alarm.
+//
+// If a non-cleared alarm with the same type and source already exists, it is
+// updated and the response has HTTP status 200 (Result.Status == StatusUpdated,
+// Result.Meta["found"] == true). Otherwise a new alarm is created and the
+// response has HTTP status 201 (Result.Status == StatusCreated,
+// Result.Meta["found"] == false).
+//
+// Like Create, it accepts either CreateOptions (for resolver support and
+// property merging) or any other JSON-serializable type (passed through as-is).
+//
+// Using CreateOptions:
+//
+//	result := client.Alarms.Upsert(ctx, alarms.CreateOptions{
+//	    Source: "name:myDevice",  // Resolver string
+//	    Type: "c8y_UnavailabilityAlarm",
+//	    Text: "No data received from the device within the required interval.",
+//	    Severity: "MAJOR",
+//	})
+//
+// Using direct struct/map:
+//
+//	result := client.Alarms.Upsert(ctx, model.Alarm{...})
+//	result := client.Alarms.Upsert(ctx, map[string]any{...})
+func (s *Service) Upsert(ctx context.Context, body any) op.Result[jsonmodels.Alarm] {
+	// Check if body is CreateOptions - if so, handle resolver and merge logic
+	if opts, ok := body.(CreateOptions); ok {
+		return s.upsertWithOptions(ctx, opts)
+	}
+
+	// Otherwise, pass through as-is
+	return markUpsertResult(core.Execute(ctx, s.upsertB(body), jsonmodels.NewAlarm))
+}
+
+// upsertWithOptions handles the CreateOptions case with resolver support and property merging
+func (s *Service) upsertWithOptions(ctx context.Context, opts CreateOptions) op.Result[jsonmodels.Alarm] {
+	finalJSON, meta, err := s.buildAlarmBody(ctx, opts)
+	if err != nil {
+		return op.Failed[jsonmodels.Alarm](err, true)
+	}
+
+	// Upsert the alarm with the merged JSON and add metadata
+	result := markUpsertResult(core.Execute(ctx, s.upsertBWithJSON(finalJSON), jsonmodels.NewAlarm))
+
+	// Add resolver metadata to result
+	if result.Meta == nil {
+		result.Meta = make(map[string]any)
+	}
+	for k, v := range meta {
+		result.Meta[k] = v
+	}
+
+	return result
+}
+
+func (s *Service) upsertB(body any) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodPost).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetContentType(types.MimeTypeApplicationJSON).
+		SetBody(body).
+		SetURL(ApiAlarmsUpsert)
+	return core.NewTryRequest(s.Client, req)
+}
+
+func (s *Service) upsertBWithJSON(bodyJSON []byte) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodPost).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetContentType(types.MimeTypeApplicationJSON).
+		SetBody(bodyJSON).
+		SetURL(ApiAlarmsUpsert)
+	return core.NewTryRequest(s.Client, req)
+}
+
+// markUpsertResult annotates an upsert response based on its HTTP status code.
+// The upsert endpoint returns 201 when a new alarm was created and 200 when an
+// existing alarm was updated. Since the request is a POST, core.Execute reports
+// a 200 as StatusOK; remap it to StatusUpdated and record whether an existing
+// alarm was found via Meta["found"].
+func markUpsertResult(result op.Result[jsonmodels.Alarm]) op.Result[jsonmodels.Alarm] {
+	if result.Err != nil {
+		return result
+	}
+	if result.Meta == nil {
+		result.Meta = make(map[string]any)
+	}
+	switch result.HTTPStatus {
+	case http.StatusOK:
+		result.Status = op.StatusUpdated
+		result.Meta["found"] = true
+	case http.StatusCreated:
+		result.Status = op.StatusCreated
+		result.Meta["found"] = false
+	}
+	return result
 }
 
 // Update an alarm
