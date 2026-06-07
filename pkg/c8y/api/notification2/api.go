@@ -58,9 +58,7 @@ func (nt *TokenOptions) GetDefaultSubscriber() string {
 	return "goc8y"
 }
 
-// ListOptions is generated from the OpenAPI spec — see zz_generated_options.go.
-// (The generated struct also exposes Subscription and TypeFilter, which the OAS lists
-// but the previous hand-written struct omitted.)
+// ListOptions is generated from the OpenAPI spec — see zz_generated_options.go
 
 type DeleteBySourceOptions struct {
 	Context string `url:"context,omitempty"`
