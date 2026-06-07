@@ -359,10 +359,13 @@ func parseECPublicKey(data []byte) (*ecdsa.PublicKey, error) {
 func parseECPrivateKey(data []byte) (*ecdsa.PrivateKey, error) {
 	var err error
 
-	// Parse the key
+	// Parse the key, trying the SEC1 "EC PRIVATE KEY" format first and falling
+	// back to PKCS#8 (the format produced by MakeEllipticPrivateKeyPEM).
 	var parsedKey any
 	if parsedKey, err = x509.ParseECPrivateKey(data); err != nil {
-		return nil, err
+		if parsedKey, err = x509.ParsePKCS8PrivateKey(data); err != nil {
+			return nil, err
+		}
 	}
 
 	// Test if parsed key is an ECDSA Private Key

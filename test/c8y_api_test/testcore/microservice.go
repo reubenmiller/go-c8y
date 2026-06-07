@@ -2,7 +2,6 @@ package testcore
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"os"
 	"strings"
@@ -17,7 +16,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func readConfig() *viper.Viper {
+func readConfig(t *testing.T) *viper.Viper {
 	// Read configuration
 	config := viper.New()
 	config.SetConfigName("application")
@@ -51,27 +50,31 @@ func readConfig() *viper.Viper {
 		// "c8y.password",
 	}
 
-	CheckRequiredConfiguration(config, requiredProperties...)
+	// The microservice tests require a live Cumulocity tenant. When the
+	// credentials are not configured (e.g. forked PRs without secrets), skip
+	// the test rather than panicking so the suite stays green for contributors.
+	if missing := MissingConfiguration(config, requiredProperties...); len(missing) > 0 {
+		t.Skipf("skipping live microservice test: missing required configuration: %s", strings.Join(missing, ", "))
+	}
 
 	return config
 }
 
-// CheckRequiredConfiguration checks to see if all of the required properties are present
-func CheckRequiredConfiguration(config *viper.Viper, props ...string) {
+// MissingConfiguration returns the subset of props that are not set in the
+// given configuration.
+func MissingConfiguration(config *viper.Viper, props ...string) []string {
 	missingProps := []string{}
 	for _, prop := range props {
 		if config.GetString(prop) == "" {
 			missingProps = append(missingProps, prop)
 		}
 	}
-	if len(missingProps) > 0 {
-		panic(fmt.Sprintf("Missing required properties. %s", strings.Join(missingProps, ",")))
-	}
+	return missingProps
 }
 
 // BootstrapApplication creates an application
 func BootstrapApplication(t *testing.T, appName ...string) *microservice.Microservice {
-	config := readConfig()
+	config := readConfig(t)
 
 	var applicationName string
 

@@ -16,6 +16,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// skipWithoutCredentials skips a live test when no Cumulocity host is configured
+// (e.g. forked PRs without secrets), keeping the suite green for contributors.
+func skipWithoutCredentials(t *testing.T) {
+	t.Helper()
+	for _, name := range []string{"C8Y_HOST", "C8Y_BASEURL"} {
+		if os.Getenv(name) != "" {
+			return
+		}
+	}
+	t.Skip("skipping live test: no Cumulocity host configured (set C8Y_HOST)")
+}
+
 func createCachedClient(keys []string) *api.Client {
 	isCacheableRequest := func(req *http.Request) bool {
 		if strings.EqualFold(req.Method, "GET") || strings.EqualFold(req.Method, "HEAD") {
@@ -39,6 +51,7 @@ func createCachedClient(keys []string) *api.Client {
 }
 
 func Test_CachedClientWithMissingBodyKeys(t *testing.T) {
+	skipWithoutCredentials(t)
 
 	parameters := []struct {
 		Keys  []string
@@ -124,6 +137,7 @@ func Test_CachedClientWithMissingBodyKeys(t *testing.T) {
 }
 
 func Test_CachedClientWithSelectKeys(t *testing.T) {
+	skipWithoutCredentials(t)
 
 	parameters := []struct {
 		Keys  []string

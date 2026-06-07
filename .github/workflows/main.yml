@@ -29,8 +29,32 @@ jobs:
         with:
           version: latest
 
+  # Offline gate: runs on every push/PR (including forks) without a live tenant.
+  test-offline:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: 'go.mod'
+    - name: Install Task
+      uses: arduino/setup-task@v2
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Run offline tests
+      run: task test-ci
+
+  # Live tests against a real tenant. Only runs when credentials are available
+  # (i.e. not on forked-PR builds), so external contributors are not blocked.
   test:
     runs-on: ${{ matrix.os }}
+    if: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
     env:
       C8Y_HOST: ${{ secrets.C8Y_HOST }}
       C8Y_TENANT: ${{ secrets.C8Y_TENANT }}

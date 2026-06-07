@@ -13,6 +13,7 @@ main.exe
 *.log
 output
 trace.out
+coverage.out
 .DS_Store
 docs/_site
 _site

@@ -228,6 +228,7 @@ func Test_BulkStreamOptions_DefaultBatchSize(t *testing.T) {
 func Test_CreateBulkStream_ContextCancellation(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	const total = 10
 	items := make([]any, total)
