@@ -10,13 +10,13 @@ require (
 	github.com/labstack/echo/v4 v4.15.1
 	github.com/mdp/qrterminal/v3 v3.2.1
 	github.com/prometheus/client_golang v1.23.2
+	github.com/smallstep/pkcs7 v0.2.1
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
 	github.com/tidwall/gjson v1.18.0
 	github.com/tidwall/sjson v1.2.5
 	github.com/vbauerster/mpb/v8 v8.12.0
 	github.com/zalando/go-keyring v0.2.6
-	go.mozilla.org/pkcs7 v0.9.0
 	golang.org/x/net v0.51.0
 	gopkg.in/robfig/cron.v2 v2.0.0-20150107220207-be2e0b0deed5
 	resty.dev/v3 v3.0.0-beta.6.0.20260128173335-37296c9841e6

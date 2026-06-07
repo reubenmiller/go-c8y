@@ -22,7 +22,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/pkg/certutil"
 	"github.com/reubenmiller/go-c8y/v2/pkg/password"
-	"go.mozilla.org/pkcs7"
+	"github.com/smallstep/pkcs7"
 	"resty.dev/v3"
 )
 
