@@ -134,7 +134,6 @@ This is a **mature, thoughtfully-architected, mid-rewrite SDK**. The v2 design (
 ### Concerns
 
 - **Largest files** are reasonable for a per-resource SDK: `client.go` (1875 lines, aggregates ~40 service constructors — the main hotspot), `realtime/realtime_client.go` (~970), repository firmware/software services (~800 each), `op/result.go` (~767), `pipeline/pipeline.go` (~760). None alarming. *(HIGH)*
-- **Inert/misleading `replace` directives.** `go.mod` has five `replace` directives pointing module paths (`pkg/c8y`, `pkg/microservice`, `test/...`) to local dirs, but those dirs are **not** separate modules — harmless today, but misleading and a trap if the project ever splits modules (replace directives don't propagate to consumers). *(HIGH facts / MEDIUM interpretation)*
 - **Taskfile path bug.** `test-c8y`/`test-microservice` reference module paths missing the `/v2` suffix; those tasks will fail to resolve as written. *(MEDIUM)*
 
 ---

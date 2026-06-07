@@ -63,14 +63,4 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-replace github.com/reubenmiller/go-c8y/v2/pkg/c8y => ./pkg/c8y
-
-replace github.com/reubenmiller/go-c8y/v2/pkg/microservice => ./pkg/microservice
-
-replace github.com/reubenmiller/go-c8y/v2/test/c8y_test => ./test/c8y_test
-
-replace github.com/reubenmiller/go-c8y/v2/test/c8y_api_test => ./test/c8y_api_test
-
-replace github.com/reubenmiller/go-c8y/v2/test/c8y_microservice => ./test/c8y_microservice
-
 go 1.25.0
