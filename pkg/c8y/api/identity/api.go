@@ -8,6 +8,7 @@ import (
 
 var ApiIdentities = "/identity/globalIds/{id}/externalIds"
 var ApiIdentity = "/identity/externalIds/{type}/{externalID}"
+var ApiSearch = "/identity/search"
 
 var ParamID = "id"
 var ParamType = "type"
@@ -76,6 +77,22 @@ func (s *Service) createB(id string, opts IdentityOptions) *core.TryRequest {
 		SetBody(opts.withDefaults()).
 		SetURL(ApiIdentities)
 	return core.NewTryRequest(s.Client, req)
+}
+
+// SearchOptions is the request body for a bulk external-ID search (POST /identity/search).
+type SearchOptions struct {
+	// ExternalIds is the list of external identifiers to look up.
+	ExternalIds []IdentityOptions `json:"externalIds"`
+}
+
+func (s *Service) searchB(opts SearchOptions) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodPost).
+		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetBody(opts).
+		SetURL(ApiSearch)
+	return core.NewTryRequest(s.Client, req, ResultProperty)
 }
 
 func (s *Service) deleteB(opts IdentityOptions) *core.TryRequest {

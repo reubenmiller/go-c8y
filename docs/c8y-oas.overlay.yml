@@ -245,7 +245,6 @@ drift:
     # EST enrollment — handled in the devices package under a different path.
     - /.well-known/est/*
     # --- Known coverage gaps (TODO: implement; tracked in docs/assessment.md §2) ---
-    - /identity/search
     - /features/{featureKey}
     - /notification/realtime
     - /application/applicationsByOwner/{tenantId}
