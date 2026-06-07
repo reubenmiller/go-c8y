@@ -183,6 +183,30 @@ resources:
           - import: github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination
             type: pagination.PaginationOptions
 
+  - package: notification2
+    # Additive migration: the OAS exposes `subscription` and `typeFilter` beyond the
+    # previously hand-written context/source (non-breaking — new fields).
+    options:
+      - type: ListOptions
+        path: /notification2/subscriptions
+        method: GET
+        doc: ListOptions to use when searching for notification subscriptions.
+        embeds:
+          - import: github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination
+            type: pagination.PaginationOptions
+
+  - package: loginoptions
+    # Migration fixes a bug: the hand-written TenantID was typed `bool`; the OAS (and the
+    # server) define tenantId as a string identifier, so it is now generated as string.
+    options:
+      - type: ListOptions
+        path: /tenant/loginOptions
+        method: GET
+        doc: ListOptions to filter the login options by.
+        embeds:
+          - import: github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination
+            type: pagination.PaginationOptions
+
   - package: tenants
     # Options-only: a plain resource with no resolver fields and no generated model.
     # (The Tenant model stays hand-written — its schema would add ~9 incidental

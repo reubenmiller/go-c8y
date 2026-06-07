@@ -29,17 +29,8 @@ type Service struct {
 	core.Service
 }
 
-// ListOptions to filter the login options by
-type ListOptions struct {
-	// If this is set to true, the management tenant login options will be returned
-	Management bool `url:"management,omitempty"`
-
-	// Unique identifier of a Cumulocity tenant
-	TenantID bool `url:"tenantId,omitempty"`
-
-	// Pagination options
-	pagination.PaginationOptions
-}
+// ListOptions is generated from the OpenAPI spec — see zz_generated_options.go.
+// (TenantID is now correctly typed string; it was previously a typo'd bool.)
 
 // LoginOptionIterator provides iteration over login options
 type LoginOptionIterator = pagination.Iterator[jsonmodels.LoginOption]
