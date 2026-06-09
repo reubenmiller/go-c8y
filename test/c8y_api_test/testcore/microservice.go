@@ -169,7 +169,12 @@ func BootstrapApplication(t *testing.T, appName ...string) *microservice.Microse
 	os.Setenv(microservices.EnvironmentBootstrapPassword, appCredentials.Data.Password())
 	// os.Unsetenv("C8Y_TOKEN")
 
-	ms := microservice.NewDefaultMicroservice(microservice.Options{})
+	ms := microservice.New(microservice.Options{})
+
+	if err := ms.Bootstrap(context.Background()); err != nil {
+		slog.Error("Microservice bootstrap failed", "err", err)
+		t.FailNow()
+	}
 
 	if err := ms.TestClientConnection(); err != nil {
 		slog.Error("Microservice test connection failed", "err", err)

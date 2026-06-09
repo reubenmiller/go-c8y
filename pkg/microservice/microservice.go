@@ -10,7 +10,6 @@ import (
 	"sync"
 
 	cron "gopkg.in/robfig/cron.v2"
-	"resty.dev/v3"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
@@ -33,15 +32,19 @@ type Options struct {
 	HTTPClient *http.Client
 }
 
-// NewDefaultMicroservice returns a new microservice instance.
-// Bootstrap credentials are read automatically from the C8Y_BOOTSTRAP_TENANT,
-// C8Y_BOOTSTRAP_USER and C8Y_BOOTSTRAP_PASSWORD environment variables.
-// The Cumulocity host is read from C8Y_BASEURL.
+// New returns a new microservice instance without contacting the Cumulocity
+// platform. Bootstrap credentials are read automatically from the
+// C8Y_BOOTSTRAP_TENANT, C8Y_BOOTSTRAP_USER and C8Y_BOOTSTRAP_PASSWORD
+// environment variables, and the Cumulocity host from C8Y_BASEURL.
 //
-// NOTE: The microservice agent is not registered automatically. Call
-// RegisterMicroserviceAgent() after setting any default configuration values
-// via Config.SetDefault().
-func NewDefaultMicroservice(opts Options) *Microservice {
+// Call Bootstrap() afterwards to load the application metadata and the
+// per-tenant service users:
+//
+//	ms := microservice.New(microservice.Options{})
+//	if err := ms.Bootstrap(context.Background()); err != nil {
+//		log.Fatal(err)
+//	}
+func New(opts Options) *Microservice {
 	config := NewConfiguration()
 	config.InitConfiguration()
 
@@ -54,6 +57,7 @@ func NewDefaultMicroservice(opts Options) *Microservice {
 		Scheduler:           NewScheduler(),
 		SupportedOperations: supportedOperations,
 		AgentInformation:    opts.AgentInformation,
+		RealtimeClientCache: NewRealtimeClientCache(config.GetHost()),
 	}
 
 	// Build a bootstrap client from C8Y_BOOTSTRAP_* environment variables.
@@ -64,26 +68,52 @@ func NewDefaultMicroservice(opts Options) *Microservice {
 	}
 	ms.Client = NewBootstrapClient(bootstrapOpts)
 
+	return ms
+}
+
+// Bootstrap loads the current application metadata and the service users for
+// all subscribed tenants. It should be called once after New() before serving
+// requests. The returned error is non-nil when the service users could not be
+// loaded (e.g. wrong bootstrap credentials); a failure to read the application
+// metadata is logged but not fatal.
+func (m *Microservice) Bootstrap(ctx context.Context) error {
 	// Retrieve current application metadata.
-	currentApplication := ms.Client.Microservices.CurrentMicroservice.Get(context.Background())
+	currentApplication := m.Client.Microservices.CurrentMicroservice.Get(ctx)
 	if currentApplication.Err != nil {
-		slog.Error("Failed to get current application information", "err", currentApplication.Err)
+		slog.Warn("Failed to get current application information", "err", currentApplication.Err)
 	} else {
-		ms.Application = &currentApplication.Data
+		m.Application = &currentApplication.Data
 	}
 
 	// Fetch service users (one per subscribed tenant) so per-tenant API calls
 	// are available immediately.
-	if err := ms.RefreshServiceUsers(context.Background()); err != nil {
-		slog.Warn("Failed to load service users – are the bootstrap credentials correct?", "err", err)
+	if err := m.RefreshServiceUsers(ctx); err != nil {
+		return fmt.Errorf("failed to load service users (are the bootstrap credentials correct?): %w", err)
+	}
+	return nil
+}
+
+// NewDefaultMicroservice returns a new microservice instance and immediately
+// bootstraps it (loads application metadata and service users) and verifies
+// platform connectivity. Errors during bootstrap are logged but do not prevent
+// the microservice from being returned.
+//
+// NOTE: The microservice agent is not registered automatically. Call
+// RegisterMicroserviceAgent() after setting any default configuration values
+// via Config.SetDefault().
+//
+// Deprecated: Use New() followed by Bootstrap() for explicit error handling.
+func NewDefaultMicroservice(opts Options) *Microservice {
+	ms := New(opts)
+
+	if err := ms.Bootstrap(context.Background()); err != nil {
+		slog.Warn("Failed to bootstrap microservice", "err", err)
 	}
 
 	// Verify connectivity using the first available service user.
 	if err := ms.TestClientConnection(); err != nil {
 		slog.Error("Could not connect to Cumulocity. If running locally, check bootstrap credentials.", "err", err)
 	}
-
-	ms.RealtimeClientCache = NewRealtimeClientCache(config.GetHost())
 
 	return ms
 }
@@ -119,9 +149,8 @@ func NewMicroservice(host string, clientOpts ...func(*api.ClientOptions)) *Micro
 //   - Auth     → C8Y_BOOTSTRAP_TENANT / C8Y_BOOTSTRAP_USER / C8Y_BOOTSTRAP_PASSWORD
 //
 // Values already set in opts are never overwritten, so callers retain full
-// control. The service-user auth middleware is always registered so that
-// contexts produced by ServiceUserContext() work correctly with the returned
-// client.
+// control. Per-tenant calls are made by passing a context produced by
+// api.WithServiceUser() (or Microservice.WithServiceUser()) to any API call.
 //
 // Use this when you want the raw *api.Client without the full Microservice
 // wrapper (no agent registration, scheduler, or configuration management).
@@ -139,33 +168,7 @@ func NewBootstrapClient(opts api.ClientOptions) *api.Client {
 	}
 	client := api.NewClient(opts)
 	client.UseTenantInUsername = true
-	client.HTTPClient.AddRequestMiddleware(middlewareServiceUserAuth())
 	return client
-}
-
-// serviceUserAuthKey is an unexported context key used to carry per-request
-// service-user credentials without leaking into other packages.
-type serviceUserAuthKey struct{}
-
-// middlewareServiceUserAuth returns a resty middleware that overrides the
-// client-level bootstrap credentials when a ServiceUser has been embedded in
-// the request context via ServiceUserContext().
-// It runs early so that resty's own auth machinery sees the header already set.
-func middlewareServiceUserAuth() resty.RequestMiddleware {
-	return func(_ *resty.Client, r *resty.Request) error {
-		user, ok := r.Context().Value(serviceUserAuthKey{}).(model.ServiceUser)
-		if !ok || user.Tenant == "" {
-			return nil
-		}
-		// TODO: Can the basic auth tokens be exchanged for a token instead?
-		r.SetAuthToken("")
-		r.SetAuthScheme("Basic")
-		// Set per-request basic auth using tenantID/username format.
-		r.SetBasicAuth(authentication.JoinTenantUser(user.Tenant, user.Username), user.Password)
-		// Also update the {tenantID} path parameter used in tenant-scoped URLs.
-		r.SetPathParam("tenantID", user.Tenant)
-		return nil
-	}
 }
 
 // Microservice represents a running Cumulocity microservice.
@@ -241,51 +244,113 @@ func (m *Microservice) RefreshServiceUsers(ctx context.Context) error {
 // If still not found, a plain context.Background() is returned so the call
 // proceeds with bootstrap credentials.
 //
-// Example – MULTI_TENANT microservice iterating all subscribed tenants:
-//
-//	for _, user := range ms.ServiceUsers {
-//		ctx := ms.ServiceUserContext(user.Tenant)
-//		result := ms.Client.Devices.List(ctx, devices.ListOptions{})
-//	}
+// Use WithServiceUser to derive from an existing context (preserving
+// cancellation and deadlines) instead of context.Background().
 func (m *Microservice) ServiceUserContext(tenant ...string) context.Context {
-	// An empty targetTenant means "any" – findServiceUserContext will return
-	// the first available service user, which is the correct behaviour when
-	// the caller does not specify a tenant.
+	return m.WithServiceUser(context.Background(), tenant...)
+}
+
+// WithServiceUser returns a copy of the parent context carrying the
+// service-user credentials for the given tenant, preserving any cancellation,
+// deadline or values already present on the parent.
+//
+// If no tenant is specified the first available service user is used.
+// If the tenant is not found in the local cache a single refresh of
+// /application/currentApplication/subscriptions is attempted before giving up;
+// if still not found the parent context is returned unchanged so the call
+// proceeds with bootstrap credentials.
+//
+// Example – MULTI_TENANT microservice making a call for a specific tenant:
+//
+//	ctx := ms.WithServiceUser(ctx, "t12345")
+//	result := ms.Client.Devices.List(ctx, devices.ListOptions{})
+func (m *Microservice) WithServiceUser(parent context.Context, tenant ...string) context.Context {
+	// An empty targetTenant means "any" – GetServiceUser will return the first
+	// available service user, which is the correct behaviour when the caller
+	// does not specify a tenant.
 	targetTenant := ""
 	if len(tenant) > 0 {
 		targetTenant = tenant[0]
 	}
-	if ctx, ok := m.findServiceUserContext(targetTenant); ok {
-		return ctx
-	}
-	// Tenant not in cache – refresh once and retry.
-	slog.Debug("Service user not found in cache, refreshing subscriptions", "tenant", targetTenant)
-	if err := m.RefreshServiceUsers(context.Background()); err != nil {
-		slog.Warn("Failed to refresh service users", "err", err)
-	}
-	if ctx, ok := m.findServiceUserContext(targetTenant); ok {
-		return ctx
+	if user, ok := m.GetServiceUser(targetTenant); ok {
+		return api.WithServiceUser(parent, user)
 	}
 	slog.Warn("No service user found for tenant, using bootstrap credentials", "tenant", targetTenant)
-	return context.Background()
+	return parent
 }
 
-// findServiceUserContext searches the cached ServiceUsers list and returns a
-// context containing matching credentials. The second return value is false
-// when no match is found.
-//
-// If targetTenant is empty the first service user in the list is returned,
-// which covers the common single-tenant case and the no-arg ServiceUserContext
-// call.
-func (m *Microservice) findServiceUserContext(targetTenant string) (context.Context, bool) {
+// GetServiceUser returns the cached service user for the given tenant. When
+// tenant is empty the first available service user is returned. If the tenant
+// is not found in the local cache, a single refresh of the application
+// subscriptions is attempted before giving up.
+func (m *Microservice) GetServiceUser(tenant string) (model.ServiceUser, bool) {
+	if user, ok := m.lookupServiceUser(tenant); ok {
+		return user, true
+	}
+	// Tenant not in cache – refresh once and retry (e.g. the tenant subscribed
+	// after the service users were last loaded).
+	if m.Client == nil {
+		return model.ServiceUser{}, false
+	}
+	slog.Debug("Service user not found in cache, refreshing subscriptions", "tenant", tenant)
+	if err := m.RefreshServiceUsers(context.Background()); err != nil {
+		slog.Warn("Failed to refresh service users", "err", err)
+		return model.ServiceUser{}, false
+	}
+	return m.lookupServiceUser(tenant)
+}
+
+// lookupServiceUser searches the cached ServiceUsers list. When targetTenant is
+// empty the first service user in the list is returned, which covers the common
+// single-tenant case.
+func (m *Microservice) lookupServiceUser(targetTenant string) (model.ServiceUser, bool) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	for _, user := range m.ServiceUsers {
 		if targetTenant == "" || user.Tenant == targetTenant {
-			return context.WithValue(context.Background(), serviceUserAuthKey{}, user), true
+			return user, true
 		}
 	}
-	return nil, false
+	return model.ServiceUser{}, false
+}
+
+// SetServiceUsers replaces the cached service-user list. Mainly useful in tests
+// or when service users are managed externally.
+func (m *Microservice) SetServiceUsers(users []model.ServiceUser) {
+	m.mu.Lock()
+	m.ServiceUsers = users
+	m.mu.Unlock()
+}
+
+// ForEachTenant runs fn once for every subscribed tenant. The context passed to
+// fn carries that tenant's service-user credentials, so any m.Client API call
+// made with it executes as that tenant (equivalent to the Java SDK's
+// MicroserviceSubscriptionsService.runForEachTenant).
+//
+// The iteration stops at the first error returned by fn or when ctx is
+// cancelled.
+//
+// Example – periodically count devices per tenant:
+//
+//	ms.ForEachTenant(ctx, func(ctx context.Context, user model.ServiceUser) error {
+//		result := ms.Client.Devices.List(ctx, devices.ListOptions{})
+//		return result.Err
+//	})
+func (m *Microservice) ForEachTenant(ctx context.Context, fn func(ctx context.Context, user model.ServiceUser) error) error {
+	m.mu.RLock()
+	users := make([]model.ServiceUser, len(m.ServiceUsers))
+	copy(users, m.ServiceUsers)
+	m.mu.RUnlock()
+
+	for _, user := range users {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		if err := fn(api.WithServiceUser(ctx, user), user); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // NewRealtimeClientCache returns a new realtime client cache where realtime
