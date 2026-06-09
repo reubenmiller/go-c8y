@@ -1,6 +1,7 @@
 package microservice_test
 
 import (
+	"context"
 	"log/slog"
 	"sync/atomic"
 	"testing"
@@ -84,12 +85,24 @@ func TestMicroservice_OnUpdateConfigurationHook(t *testing.T) {
 		ch <- true
 	}
 
-	app.Config.SetDefault("agent.operations.pollRate", "@every 5s")
-
-	// Operation polling starts automatically as part of agent registration
 	err = app.RegisterMicroserviceAgent()
 	assert.NoError(t, err)
-	t.Cleanup(app.StopOperationPolling)
+
+	// The SDK no longer polls in the background — run the check on our own timer
+	pollCtx, stopPolling := context.WithCancel(context.Background())
+	t.Cleanup(stopPolling)
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				app.CheckForNewConfiguration()
+			case <-pollCtx.Done():
+				return
+			}
+		}
+	}()
 
 	//
 	// Create update config operation

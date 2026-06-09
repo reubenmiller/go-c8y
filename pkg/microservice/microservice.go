@@ -196,9 +196,6 @@ type Microservice struct {
 	RealtimeClientCache *RealtimeClientCache
 
 	mu sync.RWMutex // protects ServiceUsers
-
-	pollingMu   sync.Mutex    // protects stopPolling
-	stopPolling chan struct{} // closed by StopOperationPolling; nil when not running
 }
 
 // RefreshServiceUsers fetches the current list of subscribed service users from

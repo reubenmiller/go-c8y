@@ -156,14 +156,22 @@ and now delegates to it.
   service users and returns an error instead of only logging.
   `NewDefaultMicroservice` remains as a deprecated wrapper with the previous
   log-and-continue behaviour.
-* **cron removed from the module.** The `Scheduler` type is gone; users who
-  need periodic work can use `time.Ticker` directly (see the multi-tenant
-  example). The built-in operation polling
-  (`StartOperationPolling`/`StopOperationPolling`) now uses a plain ticker and
-  parses `agent.operations.pollRate` as a Go duration (`"30s"`); the legacy
-  `"@every 30s"` form is still accepted, full cron expressions are not.
-  Polling starts automatically during `RegisterMicroserviceAgent()` — the
-  previous extra `Scheduler.Start()` call is no longer needed.
+* **cron removed from the module, along with built-in operation polling.**
+  The `Scheduler` type, `StartOperationPolling` and the
+  `agent.operations.pollRate` property are gone. The SDK no longer runs any
+  background timers of its own — `CheckForNewConfiguration()` remains public,
+  and users who want periodic operation handling call it from their own
+  `time.Ticker` (or a realtime/Notification 2.0 subscription):
+
+  ```go
+  go func() {
+      ticker := time.NewTicker(30 * time.Second)
+      defer ticker.Stop()
+      for range ticker.C {
+          ms.CheckForNewConfiguration()
+      }
+  }()
+  ```
 * Remaining dependencies (`viper` for configuration, `prometheus` for
   metrics) are kept: they are libraries rather than frameworks, do not leak
   into user-facing handler signatures, and the platform's conventions
@@ -177,5 +185,6 @@ and now delegates to it.
 | `ms.AddHealthEndpointHandlers(e)` (echo) | `ms.RegisterHealthEndpoints(mux)`, or per-handler `e.GET("/health", echo.WrapHandler(http.HandlerFunc(ms.HealthHandler)))` |
 | `NewDefaultMicroservice(opts)` | unchanged (deprecated) — prefer `New(opts)` + `Bootstrap(ctx)` |
 | `ms.ServiceUserContext(tenant)` | unchanged — prefer `ms.WithServiceUser(ctx, tenant)` |
+| `ms.Scheduler.AddFunc(spec, fn)` + `Scheduler.Start()` | own `time.Ticker` (e.g. calling `ms.CheckForNewConfiguration()`) |
 | manual loop over `ms.ServiceUsers` | `ms.ForEachTenant(ctx, fn)` |
 | (not available) per-request tenant binding | `ms.TenantContext()` middleware |
