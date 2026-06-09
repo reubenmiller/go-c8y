@@ -26,7 +26,7 @@ import (
 func (m *Microservice) RegisterHealthEndpoints(mux *http.ServeMux) {
 	slog.Info("Adding /prometheus, /health, /env and /logfile endpoints to the microservice")
 
-	mux.Handle("/prometheus", promhttp.Handler())
+	mux.Handle("/prometheus", m.PrometheusHandler())
 	mux.HandleFunc("/health", m.HealthHandler)
 	mux.HandleFunc("/env", m.EnvironmentVariablesHandler)
 	mux.HandleFunc("/logfile", m.GetLogFileHandler)
