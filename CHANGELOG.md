@@ -7,6 +7,8 @@
 * Added `Microservice.ForEachTenant()` and `Microservice.WithServiceUser()` helpers for running code within a tenant's context (parity with the Java SDK's `runForEachTenant`/`runForTenant`)
 * Added `microservice.New()` + `Microservice.Bootstrap(ctx)` for explicit, error-returning startup; `NewDefaultMicroservice` is deprecated but unchanged
 * **Breaking**: `pkg/microservice` no longer depends on the echo web framework. The health endpoints are now plain `net/http` handlers; use `RegisterHealthEndpoints(mux)` or mount the handlers individually (echo users can wrap them with `echo.WrapHandler`)
+* Added optional per-tenant token exchange: `api.ClientOptions{ContextTokenExchange: true}` (or `client.SetContextTokenExchange(true)`) exchanges per-request basic credentials for cached OAI-Secure bearer tokens, with automatic refresh, 401 invalidation and a basic-auth fallback when the tenant does not support OAI-Secure
+* **Breaking**: `pkg/microservice` no longer depends on the cron library and the `Scheduler` type has been removed — use a `time.Ticker` for periodic work. Operation polling (`StartOperationPolling`, stoppable via the new `StopOperationPolling`) uses a plain ticker and starts automatically during `RegisterMicroserviceAgent()`; `agent.operations.pollRate` accepts Go durations (`"30s"`) and the legacy `"@every 30s"` form, but no longer full cron expressions
 
 ## Released
 

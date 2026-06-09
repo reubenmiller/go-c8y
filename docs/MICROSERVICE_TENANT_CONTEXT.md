@@ -64,6 +64,32 @@ Implementation notes:
   which also benefits non-microservice use cases (e.g. management tools
   iterating subtenants).
 
+#### Optional: per-tenant token exchange
+
+By default, context credentials are sent as Basic auth on every request (the
+same behaviour as the Java SDK). The client can optionally exchange them for
+OAI-Secure bearer tokens, cached per tenant/user:
+
+```go
+client := api.NewClient(api.ClientOptions{..., ContextTokenExchange: true})
+// or at runtime:
+client.SetContextTokenExchange(true)
+```
+
+Behaviour:
+
+* The first request for a tenant/user pays one login round-trip
+  (`POST /tenant/oauth/token?tenant_id=...`); the token is then cached and
+  refreshed automatically before expiry. Concurrent first-time requests for
+  the same tenant are serialised so the login endpoint is not stampeded.
+* If the exchange fails (e.g. the tenant does not support OAI-Secure), the
+  request transparently falls back to Basic auth and the exchange is not
+  re-attempted for that tenant/user for a cooldown period (5 minutes).
+* If a cached token is rejected with a 401, it is invalidated and the request
+  is retried once with the original Basic credentials.
+* Credential rotation is detected (e.g. a service user recreated after an
+  unsubscribe/subscribe cycle): a changed password resets the cache entry.
+
 ### 2. Incoming-request tenant context (Java SDK parity)
 
 `pkg/microservice` gains a standard `net/http` middleware that mirrors the
@@ -130,11 +156,19 @@ and now delegates to it.
   service users and returns an error instead of only logging.
   `NewDefaultMicroservice` remains as a deprecated wrapper with the previous
   log-and-continue behaviour.
-* Remaining dependencies (`viper` for configuration, `cron` for the
-  scheduler, `prometheus` for metrics) are kept: they are libraries rather
-  than frameworks, do not leak into user-facing handler signatures, and the
-  platform's conventions (`application.properties`, `/prometheus`) rely on
-  them. They are candidates for future extraction into opt-in subpackages.
+* **cron removed from the module.** The `Scheduler` type is gone; users who
+  need periodic work can use `time.Ticker` directly (see the multi-tenant
+  example). The built-in operation polling
+  (`StartOperationPolling`/`StopOperationPolling`) now uses a plain ticker and
+  parses `agent.operations.pollRate` as a Go duration (`"30s"`); the legacy
+  `"@every 30s"` form is still accepted, full cron expressions are not.
+  Polling starts automatically during `RegisterMicroserviceAgent()` — the
+  previous extra `Scheduler.Start()` call is no longer needed.
+* Remaining dependencies (`viper` for configuration, `prometheus` for
+  metrics) are kept: they are libraries rather than frameworks, do not leak
+  into user-facing handler signatures, and the platform's conventions
+  (`application.properties`, `/prometheus`) rely on them. They are candidates
+  for future extraction into opt-in subpackages.
 
 ## Migration notes
 
