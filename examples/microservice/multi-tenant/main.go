@@ -33,6 +33,11 @@ func main() {
 		log.Fatalf("Failed to bootstrap microservice: %s", err)
 	}
 
+	// Optional: exchange per-tenant basic credentials for cached OAI-Secure
+	// bearer tokens instead of sending basic auth on every downstream request.
+	// Falls back to basic auth automatically when the tenant does not support it.
+	ms.Client.SetContextTokenExchange(true)
+
 	mux := http.NewServeMux()
 
 	// Standard endpoints: /health, /env, /prometheus, /logfile

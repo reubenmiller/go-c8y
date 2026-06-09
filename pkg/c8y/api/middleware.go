@@ -448,7 +448,12 @@ func MiddlewareRemoveEmptyTenantID() resty.RequestMiddleware {
 // present in the context they take priority over the client-level credentials
 // and token source, allowing a single shared client to act on behalf of multiple
 // tenants (e.g. service users inside a MULTI_TENANT microservice).
-func MiddlewareContextAuthorization() resty.RequestMiddleware {
+//
+// When the client has context token exchange enabled (see
+// Client.SetContextTokenExchange), basic credentials are exchanged for a cached
+// OAI-Secure bearer token, falling back to basic auth when the exchange is not
+// possible.
+func MiddlewareContextAuthorization(c *Client) resty.RequestMiddleware {
 	return func(_ *resty.Client, r *resty.Request) error {
 		auth, ok := authentication.AuthFromContext(r.Context())
 		if !ok {
@@ -461,8 +466,17 @@ func MiddlewareContextAuthorization() resty.RequestMiddleware {
 			r.SetAuthScheme("Bearer")
 			r.SetAuthToken(auth.Token)
 		case auth.Username != "" && auth.Password != "":
-			r.SetAuthScheme("Basic")
-			r.SetBasicAuth(authentication.JoinTenantUser(auth.Tenant, auth.Username), auth.Password)
+			token := ""
+			if !ctxhelpers.IsSkipContextTokenExchange(r.Context()) {
+				token = c.contextTokenFor(auth)
+			}
+			if token != "" {
+				r.SetAuthScheme("Bearer")
+				r.SetAuthToken(token)
+			} else {
+				r.SetAuthScheme("Basic")
+				r.SetBasicAuth(authentication.JoinTenantUser(auth.Tenant, auth.Username), auth.Password)
+			}
 		}
 		// Also update the {tenantId} path parameter used in tenant-scoped URLs
 		if auth.Tenant != "" {
