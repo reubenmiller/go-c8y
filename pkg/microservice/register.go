@@ -264,7 +264,27 @@ func (m *Microservice) CheckForNewConfiguration() {
 	}
 }
 
-// StartOperationPolling start the polling of the operations
+// ParsePollRate parses the "agent.operations.pollRate" configuration value
+// into a duration. Accepted formats are a Go duration string ("30s", "5m",
+// "1h30m") and, for backwards compatibility with the previous cron-based
+// scheduler, the "@every <duration>" form.
+func ParsePollRate(value string) (time.Duration, error) {
+	value = strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(value), "@every"))
+	d, err := time.ParseDuration(value)
+	if err != nil {
+		return 0, fmt.Errorf("invalid poll rate (expected a duration such as \"30s\" or \"@every 30s\"): %w", err)
+	}
+	if d <= 0 {
+		return 0, fmt.Errorf("invalid poll rate: duration must be positive, got %s", d)
+	}
+	return d, nil
+}
+
+// StartOperationPolling starts a background goroutine that periodically checks
+// for pending operations at the interval configured by the
+// "agent.operations.pollRate" property (e.g. "30s" or "@every 30s"). It is a
+// no-op when polling is already running or when no poll rate is configured.
+// Stop the polling with StopOperationPolling.
 func (m *Microservice) StartOperationPolling() {
 	interval := strings.TrimSpace(m.Config.viper.GetString("agent.operations.pollRate"))
 
@@ -272,12 +292,44 @@ func (m *Microservice) StartOperationPolling() {
 		slog.Info("Skipping operation polling task")
 		return
 	}
-	slog.Info("Adding operation polling task with interval", "value", interval)
-	_, err := m.Scheduler.cronjob.AddFunc(interval, func() {
-		m.CheckForNewConfiguration()
-	})
 
+	duration, err := ParsePollRate(interval)
 	if err != nil {
-		slog.Error("Could not create polling task with interval", "value", interval, "err", err)
+		slog.Error("Could not create polling task", "value", interval, "err", err)
+		return
+	}
+
+	m.pollingMu.Lock()
+	defer m.pollingMu.Unlock()
+	if m.stopPolling != nil {
+		slog.Info("Operation polling is already running")
+		return
+	}
+	stop := make(chan struct{})
+	m.stopPolling = stop
+
+	slog.Info("Starting operation polling task", "interval", duration)
+	go func() {
+		ticker := time.NewTicker(duration)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				m.CheckForNewConfiguration()
+			case <-stop:
+				return
+			}
+		}
+	}()
+}
+
+// StopOperationPolling stops the background operation polling started by
+// StartOperationPolling. It is safe to call when polling is not running.
+func (m *Microservice) StopOperationPolling() {
+	m.pollingMu.Lock()
+	defer m.pollingMu.Unlock()
+	if m.stopPolling != nil {
+		close(m.stopPolling)
+		m.stopPolling = nil
 	}
 }

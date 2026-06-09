@@ -9,8 +9,6 @@ import (
 	"net/url"
 	"sync"
 
-	cron "gopkg.in/robfig/cron.v2"
-
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/devices"
@@ -54,7 +52,6 @@ func New(opts Options) *Microservice {
 
 	ms := &Microservice{
 		Config:              config,
-		Scheduler:           NewScheduler(),
 		SupportedOperations: supportedOperations,
 		AgentInformation:    opts.AgentInformation,
 		RealtimeClientCache: NewRealtimeClientCache(config.GetHost()),
@@ -136,7 +133,6 @@ func NewMicroservice(host string, clientOpts ...func(*api.ClientOptions)) *Micro
 	return &Microservice{
 		Client:              client,
 		Config:              NewConfiguration(),
-		Scheduler:           NewScheduler(),
 		RealtimeClientCache: NewRealtimeClientCache(host),
 	}
 }
@@ -194,13 +190,15 @@ type Microservice struct {
 	// MicroserviceHost overrides the host used for outbound microservice requests.
 	MicroserviceHost string
 
-	Scheduler           *Scheduler
 	SupportedOperations AgentSupportedOperations
 	AgentInformation    AgentInformation
 	Hooks               Hooks
 	RealtimeClientCache *RealtimeClientCache
 
 	mu sync.RWMutex // protects ServiceUsers
+
+	pollingMu   sync.Mutex    // protects stopPolling
+	stopPolling chan struct{} // closed by StopOperationPolling; nil when not running
 }
 
 // RefreshServiceUsers fetches the current list of subscribed service users from
@@ -411,39 +409,6 @@ func (s *RealtimeClientCache) GetClient(user model.ServiceUser) (*realtime.Clien
 // Hooks contains lifecycle callback functions for the microservice.
 type Hooks struct {
 	OnConfigurationUpdateFunc func(Configuration)
-}
-
-// Scheduler controls cron-job tasks.
-type Scheduler struct {
-	cronjob *cron.Cron
-}
-
-// NewScheduler creates a new Scheduler.
-func NewScheduler() *Scheduler {
-	return &Scheduler{
-		cronjob: cron.New(),
-	}
-}
-
-// Start activates the scheduler so all configured tasks run at their intervals.
-func (s *Scheduler) Start() {
-	s.cronjob.Start()
-}
-
-// Stop pauses the scheduler. Existing job definitions are preserved.
-func (s *Scheduler) Stop() {
-	s.cronjob.Stop()
-}
-
-// AddFunc registers a function to run on the given cron schedule.
-func (s *Scheduler) AddFunc(spec string, cmd func()) error {
-	id, err := s.cronjob.AddFunc(spec, cmd)
-	if err != nil {
-		slog.Error("Could not create task scheduler", "spec", spec, "err", err)
-		return err
-	}
-	slog.Info("Added task to scheduler", "id", id, "schedule", spec)
-	return nil
 }
 
 // TestClientConnection verifies that the microservice can reach Cumulocity by

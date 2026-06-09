@@ -86,9 +86,10 @@ func TestMicroservice_OnUpdateConfigurationHook(t *testing.T) {
 
 	app.Config.SetDefault("agent.operations.pollRate", "@every 5s")
 
+	// Operation polling starts automatically as part of agent registration
 	err = app.RegisterMicroserviceAgent()
-	app.Scheduler.Start()
 	assert.NoError(t, err)
+	t.Cleanup(app.StopOperationPolling)
 
 	//
 	// Create update config operation
