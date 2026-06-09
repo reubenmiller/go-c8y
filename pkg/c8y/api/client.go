@@ -511,6 +511,11 @@ func (c *Client) AddMiddleware() error {
 	}))
 	c.HTTPClient.AddRetryConditions(TokenRenewalRetry(c))
 
+	// Apply per-request credentials carried in the context (see WithAuth /
+	// WithServiceUser). Registered after the token source middleware so that
+	// context credentials always take priority over client-level credentials.
+	c.HTTPClient.AddRequestMiddleware(MiddlewareContextAuthorization())
+
 	// Register a pre-prepare request middleware to capture multipart field content
 	// for debug logging. It must run before PrepareRequestMiddleware (which starts
 	// the streaming goroutine), so AddRequestMiddleware is used — it inserts before
