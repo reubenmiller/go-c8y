@@ -1,6 +1,7 @@
 package microservice
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
@@ -9,106 +10,133 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/labstack/echo/v4"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-// AddHealthEndpointHandlers adds a set of health endpoints to the microservice
-// The following endpoints are added:
+// RegisterHealthEndpoints adds the standard microservice endpoints to the given
+// mux:
+//
 //   - /prometheus
 //   - /health
 //   - /env
 //   - /logfile
-func (m *Microservice) AddHealthEndpointHandlers(e *echo.Echo) {
-	if e == nil {
-		slog.Error("Failed to end health endpoints because the echo server is nil")
-		return
-	}
-
+//
+// The handlers are plain net/http handlers so they can also be mounted
+// individually on any router (e.g. chi, gorilla, or echo via echo.WrapHandler).
+func (m *Microservice) RegisterHealthEndpoints(mux *http.ServeMux) {
 	slog.Info("Adding /prometheus, /health, /env and /logfile endpoints to the microservice")
 
-	e.GET("/prometheus", echo.WrapHandler(promhttp.Handler()))
-	e.GET("/health", m.HealthHandler)
-	e.GET("/env", m.EnvironmentVariablesHandler)
-	e.GET("/logfile", m.GetLogFileHandler)
+	mux.Handle("/prometheus", promhttp.Handler())
+	mux.HandleFunc("/health", m.HealthHandler)
+	mux.HandleFunc("/env", m.EnvironmentVariablesHandler)
+	mux.HandleFunc("/logfile", m.GetLogFileHandler)
 }
 
-// EnvironmentVariablesHandler return the list of environment variables
-func (m *Microservice) EnvironmentVariablesHandler(c echo.Context) error {
+// PrometheusHandler returns the Prometheus metrics handler served on /prometheus.
+func (m *Microservice) PrometheusHandler() http.Handler {
+	return promhttp.Handler()
+}
+
+// HealthHandler returns the health endpoint
+func (m *Microservice) HealthHandler(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]any{
+		"status": "UP",
+	})
+}
+
+// EnvironmentVariablesHandler returns the list of environment variables and
+// configuration properties. Values of keys containing "password" are masked.
+func (m *Microservice) EnvironmentVariablesHandler(w http.ResponseWriter, _ *http.Request) {
+	const masked = "*******************************************"
+
 	// System settings
 	systemProperties := map[string]any{}
 	for _, key := range m.Config.AllKeys() {
-		value := m.Config.GetString(key)
 		if strings.Contains(key, "password") {
-			systemProperties[key] = "*******************************************"
+			systemProperties[key] = masked
 		} else {
-			systemProperties[key] = value
+			systemProperties[key] = m.Config.GetString(key)
 		}
 	}
 
 	// Environment variables
 	environmentVariables := map[string]any{}
 	for _, e := range os.Environ() {
-		pair := strings.Split(e, "=")
+		pair := strings.SplitN(e, "=", 2)
+		if len(pair) != 2 {
+			continue
+		}
 		if strings.Contains(strings.ToLower(pair[0]), "password") {
-			environmentVariables[pair[0]] = "*******************************************"
+			environmentVariables[pair[0]] = masked
 		} else {
 			environmentVariables[pair[0]] = pair[1]
 		}
 	}
 
-	return c.JSON(http.StatusOK, map[string]any{
+	writeJSON(w, http.StatusOK, map[string]any{
 		"systemEnvironment": environmentVariables,
 		"systemProperties":  systemProperties,
 	})
 }
 
-// GetLogFileHandler get the current log file in json format
-func (m *Microservice) GetLogFileHandler(c echo.Context) error {
+// GetLogFileHandler returns the current log file contents. The optional "tail"
+// query parameter limits the output to the last n lines (capped at 200).
+func (m *Microservice) GetLogFileHandler(w http.ResponseWriter, r *http.Request) {
 	filepath := m.Config.GetString("log.file")
 
 	text := ""
-	tail := c.QueryParam("tail")
+	tail := r.URL.Query().Get("tail")
 	lines, err := strconv.ParseInt(tail, 10, 64)
 
 	if err == nil {
 		if lines > 200 {
 			lines = 200
 		}
-		text = getLastLineWithSeek(filepath, int64(lines))
-	} else {
-		b, err := os.ReadFile(filepath)
-
+		text, err = getLastLineWithSeek(filepath, lines)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, echo.Map{
+			writeJSON(w, http.StatusInternalServerError, map[string]any{
 				"reason": fmt.Sprintf("Could not read log file: %s", err),
 			})
+			return
 		}
-
+	} else {
+		b, err := os.ReadFile(filepath)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{
+				"reason": fmt.Sprintf("Could not read log file: %s", err),
+			})
+			return
+		}
 		text = string(b)
 	}
 
-	return c.String(http.StatusOK, text)
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, text)
 }
 
-// HealthHandler returns health endpoint
-func (m *Microservice) HealthHandler(c echo.Context) error {
-	return c.JSON(http.StatusOK, echo.Map{
-		"status": "UP",
-	})
+func writeJSON(w http.ResponseWriter, status int, body any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if err := json.NewEncoder(w).Encode(body); err != nil {
+		slog.Warn("Failed to encode response", "err", err)
+	}
 }
 
-func getLastLineWithSeek(filepath string, numberLines int64) string {
+func getLastLineWithSeek(filepath string, numberLines int64) (string, error) {
 	fileHandle, err := os.Open(filepath)
 
 	if err != nil {
-		panic("Cannot open file")
+		return "", err
 	}
 	defer fileHandle.Close()
 
 	line := ""
 	var cursor int64
-	stat, _ := fileHandle.Stat()
+	stat, err := fileHandle.Stat()
+	if err != nil {
+		return "", err
+	}
 	fileSize := stat.Size()
 	var totalLines int64
 	for {
@@ -133,5 +161,5 @@ func getLastLineWithSeek(filepath string, numberLines int64) string {
 		}
 	}
 
-	return line
+	return line, nil
 }
