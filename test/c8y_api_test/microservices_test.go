@@ -76,7 +76,7 @@ func Test_MicroserviceUpload(t *testing.T) {
 	manifest.Version = "1.0.1-SNAPSHOT"
 	manifest.APIVersion = "v2"
 	assert.NoError(t, err)
-	filename, err := microservice_builder.Build(microservice_builder.BuildOptions{
+	filename, err := microservice_builder.Build(context.Background(), microservice_builder.BuildOptions{
 		DockerFile:   RelativePath("./data/microservices/python-example/docker/Dockerfile"),
 		BuildContext: RelativePath("./data/microservices/python-example/docker"),
 		Image:        manifest.Name,
