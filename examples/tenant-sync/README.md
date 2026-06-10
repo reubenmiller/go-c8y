@@ -1,6 +1,6 @@
 # Tenant Sync
 
-A GitOps-style CLI tool for keeping Cumulocity IoT tenants in sync with a declarative manifest. Describe the desired tenant state in a YAML file — software, firmware and configuration repositories, tenant options, feature toggles, application subscriptions, users and user groups, SmartREST 2.0 templates, device profiles — and apply it idempotently to one or more tenants.
+A GitOps-style CLI tool for keeping Cumulocity IoT tenants in sync with a declarative manifest. Describe the desired tenant state in a YAML file — software, firmware and configuration repositories, tenant options, feature toggles, retention rules, application subscriptions, users and user groups, SmartREST 2.0 templates, device profiles — and apply it idempotently to one or more tenants.
 
 It generalises the [software-uploader](../software-uploader/README.md) example: the same filename parsing and idempotent upload logic, extended to firmware and configuration, with artifact sources that can be local files **or GitHub releases**, all driven from a single configuration file.
 
@@ -19,6 +19,7 @@ It generalises the [software-uploader](../software-uploader/README.md) example: 
                                                • application subscriptions
                                                • users & user groups
                                                • SmartREST 2.0 templates
+                                               • retention rules
 ```
 
 Because every operation is idempotent (get-or-create / upsert), the same manifest can be applied repeatedly and to multiple tenants — keep it in git, run it from CI, and your tenants stay in sync with the source of truth.
@@ -38,6 +39,7 @@ Because every operation is idempotent (get-or-create / upsert), the same manifes
 - 🐙 **GitHub sources**: point any entry at a GitHub repository — assets are pulled from releases (`latest`, a specific tag, or `all`), with the release tag as the version fallback; `linkOnly` mode references download URLs without re-hosting binaries
 - 🧩 **Device profiles**: declare firmware/software/configuration bundles; binary URLs are resolved from the tenant automatically
 - 🎛️ **Tenant options & feature toggles**: set options, enable/disable features, subscribe/unsubscribe applications
+- 🗑️ **Retention rules**: ensure retention rules exist, matched by their selector (dataType/fragmentType/type/source) with the retention period updated when it differs
 - 👥 **Users & user groups**: create user groups with roles, create users and assign them to groups — additively and idempotently
 - 📡 **SmartREST 2.0 templates**: sync template collections from JSON files exported by the platform — matched by external identity, updated only when the templates differ (order-insensitive)
 - 🏢 **Target tenants**: apply one manifest to all child tenants, an explicit list, or tenants matching a selector — with per-tenant credentials resolved automatically
@@ -102,7 +104,7 @@ set-session tenant-b && ./tenant-sync run -f tenant.yaml
 |------|---------|-------------|
 | `-f`, `--manifest` | `tenant.yaml` | Path to the manifest file (also accepted as a positional argument) |
 | `--dry-run`, `--dry` | | Preview changes without applying them |
-| `--only` | *(all)* | Comma-separated sections to apply: `tenantOptions`, `features`, `applications`, `userGroups`, `users`, `software`, `firmware`, `configuration`, `smartrestTemplates`, `deviceProfiles`, `commands` |
+| `--only` | *(all)* | Comma-separated sections to apply: `tenantOptions`, `features`, `retentionRules`, `applications`, `userGroups`, `users`, `software`, `firmware`, `configuration`, `smartrestTemplates`, `deviceProfiles`, `commands` |
 | `--force` | | Replace existing version binaries / configuration files |
 | `--concurrency` | `5` | Concurrent software version uploads (1–20) |
 | `--target` | | Apply to a tenant referenced by ID or domain; repeatable or comma-separated (overrides the manifest `targets` section) |
@@ -113,7 +115,7 @@ set-session tenant-b && ./tenant-sync run -f tenant.yaml
 | `--verbose` | | Detailed logging |
 | `--debug` | | Verbose logging + HTTP request/response details |
 
-Sections are applied in a fixed order — tenant options, features, applications, user groups, users, software, firmware, configuration, SmartREST templates, device profiles, then commands — so users can be assigned to groups created in the same run, profiles can reference repository items synced in the same run, and custom commands can build on everything the manifest declares.
+Sections are applied in a fixed order — tenant options, features, retention rules, applications, user groups, users, software, firmware, configuration, SmartREST templates, device profiles, then commands — so users can be assigned to groups created in the same run, profiles can reference repository items synced in the same run, and custom commands can build on everything the manifest declares.
 
 ## The Manifest
 
@@ -225,6 +227,21 @@ tenantOptions:
     valueFrom:
       application: devicemanagement
 ```
+
+### Retention rules
+
+Retention rules have no name, so a rule is identified by its selector combination — `dataType` plus the optional `fragmentType`, `type` and `source` filters (defaulting to the `*` wildcard). The rules in the tenant are matched against that combination: a missing rule is created, and an existing rule is updated when its `maximumAge` (or `editable`, when set) differs. Rules in the tenant that are absent from the manifest are left alone (no prune mode yet).
+
+```yaml
+retentionRules:
+  - dataType: MEASUREMENT # ALARM | AUDIT | BULK_OPERATION | EVENT | MEASUREMENT | OPERATION | *
+    maximumAge: 365       # days
+  - dataType: EVENT
+    type: c8y_LocationUpdate
+    maximumAge: 30
+```
+
+> **Note**: updating a rule that is marked non-editable in the tenant fails — such system rules must be unlocked or removed manually first.
 
 ### Application subscriptions
 

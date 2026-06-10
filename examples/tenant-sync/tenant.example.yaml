@@ -45,6 +45,19 @@ features:
   - key: feature-cep-custom-rules
     enabled: false
 
+# Ensure retention rules exist. Rules have no name: they are matched by the
+# selector combination (dataType/fragmentType/type/source, wildcards default
+# to "*") and maximumAge is updated when it differs.
+retentionRules:
+  - dataType: MEASUREMENT
+    maximumAge: 365 # days
+  - dataType: EVENT
+    type: c8y_LocationUpdate
+    maximumAge: 30
+  - dataType: ALARM
+    maximumAge: 90
+    editable: false # lock the rule in the UI
+
 # Subscribe applications to the target tenant (idempotent)
 applications:
   - name: advanced-software-mgmt
@@ -175,7 +188,7 @@ smartrestTemplates:
   # the file
   - name: custom_devmgmt
     source:
-      path: ./example-smartrestv2-collection.json
+      path: ./exports/custom_devmgmt.json
       optional: true
 
 # Create device profiles referencing the items synced above.

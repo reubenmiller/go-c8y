@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -16,9 +17,12 @@ import (
 // profiles) can reference items created by earlier ones (firmware, software,
 // configuration).
 type Manifest struct {
-	Targets       *TargetsSpec        `yaml:"targets" json:"targets,omitempty" jsonschema:"description=Which tenants the manifest is applied to (defaults to the current tenant); applying to other tenants requires parent/management tenant credentials"`
-	TenantOptions []TenantOptionSpec  `yaml:"tenantOptions" json:"tenantOptions,omitempty" jsonschema:"description=Tenant options to set (created if missing and updated when the value differs)"`
-	Features      []FeatureSpec       `yaml:"features" json:"features,omitempty" jsonschema:"description=Feature toggles to enable or disable for the current tenant"`
+	Targets       *TargetsSpec       `yaml:"targets" json:"targets,omitempty" jsonschema:"description=Which tenants the manifest is applied to (defaults to the current tenant); applying to other tenants requires parent/management tenant credentials"`
+	TenantOptions []TenantOptionSpec `yaml:"tenantOptions" json:"tenantOptions,omitempty" jsonschema:"description=Tenant options to set (created if missing and updated when the value differs)"`
+	Features      []FeatureSpec      `yaml:"features" json:"features,omitempty" jsonschema:"description=Feature toggles to enable or disable for the current tenant"`
+
+	RetentionRules []RetentionRuleSpec `yaml:"retentionRules" json:"retentionRules,omitempty" jsonschema:"description=Retention rules to ensure exist (matched by dataType/fragmentType/type/source; maximumAge updated when it differs)"`
+
 	Applications  []ApplicationSpec   `yaml:"applications" json:"applications,omitempty" jsonschema:"description=Applications to subscribe to the current tenant (optionally created/uploaded from a source)"`
 	UserGroups    []UserGroupSpec     `yaml:"userGroups" json:"userGroups,omitempty" jsonschema:"description=User groups (global roles) to create/update with roles assigned (additive: existing roles are never removed)"`
 	Users         []UserSpec          `yaml:"users" json:"users,omitempty" jsonschema:"description=Users to create/update and assign to user groups (additive: existing memberships are never removed)"`
@@ -212,6 +216,46 @@ type FeatureSpec struct {
 
 func (f FeatureSpec) IsEnabled() bool {
 	return f.Enabled == nil || *f.Enabled
+}
+
+// RetentionRuleDataTypes are the data types accepted by the retention rules API
+var RetentionRuleDataTypes = []string{"ALARM", "AUDIT", "BULK_OPERATION", "EVENT", "MEASUREMENT", "OPERATION", "*"}
+
+// RetentionRuleSpec ensures a retention rule exists with the desired maximum
+// age. Retention rules have no name: a rule is identified by its selector
+// combination (dataType, fragmentType, type, source — wildcards default to
+// "*"), and maximumAge (plus editable) is the managed value.
+type RetentionRuleSpec struct {
+	// DataType the rule applies to
+	DataType string `yaml:"dataType" json:"dataType" jsonschema:"description=Data type the rule applies to,enum=ALARM,enum=AUDIT,enum=BULK_OPERATION,enum=EVENT,enum=MEASUREMENT,enum=OPERATION,enum=*"`
+
+	// FragmentType restricts the rule to documents with the fragment (default "*")
+	FragmentType string `yaml:"fragmentType" json:"fragmentType,omitempty" jsonschema:"description=Restrict the rule to documents carrying this fragment (defaults to *)"`
+
+	// Type restricts the rule to documents of the type (default "*")
+	Type string `yaml:"type" json:"type,omitempty" jsonschema:"description=Restrict the rule to documents of this type (defaults to *)"`
+
+	// Source restricts the rule to documents of a source device (default "*")
+	Source string `yaml:"source" json:"source,omitempty" jsonschema:"description=Restrict the rule to documents of this source device ID (defaults to *)"`
+
+	// MaximumAge is the retention period in days
+	MaximumAge int64 `yaml:"maximumAge" json:"maximumAge" jsonschema:"description=Retention period in days,minimum=1"`
+
+	// Editable marks the rule as editable in the UI (only written when set)
+	Editable *bool `yaml:"editable" json:"editable,omitempty" jsonschema:"description=Whether the rule is editable in the UI (only written when set)"`
+}
+
+// Selector returns the rule identity (wildcards applied), used for matching
+// existing rules and as the display label
+func (r RetentionRuleSpec) Selector() string {
+	return orWildcard(r.DataType) + "/" + orWildcard(r.FragmentType) + "/" + orWildcard(r.Type) + "/" + orWildcard(r.Source)
+}
+
+func orWildcard(value string) string {
+	if value == "" {
+		return "*"
+	}
+	return value
 }
 
 // ApplicationSpec subscribes an application (by name) to the target tenant,
@@ -545,6 +589,21 @@ func (m *Manifest) Validate() error {
 		if feature.Key == "" {
 			errs = append(errs, fmt.Sprintf("features[%d]: key is required", i))
 		}
+	}
+	selectors := make(map[string]bool, len(m.RetentionRules))
+	for i, rule := range m.RetentionRules {
+		if rule.DataType == "" {
+			errs = append(errs, fmt.Sprintf("retentionRules[%d]: dataType is required", i))
+		} else if !slices.Contains(RetentionRuleDataTypes, rule.DataType) {
+			errs = append(errs, fmt.Sprintf("retentionRules[%d]: unknown dataType %q: supported values are %s", i, rule.DataType, strings.Join(RetentionRuleDataTypes, ", ")))
+		}
+		if rule.MaximumAge < 1 {
+			errs = append(errs, fmt.Sprintf("retentionRules[%d]: maximumAge must be at least 1 (days)", i))
+		}
+		if selectors[rule.Selector()] {
+			errs = append(errs, fmt.Sprintf("retentionRules[%d]: duplicate rule selector %s", i, rule.Selector()))
+		}
+		selectors[rule.Selector()] = true
 	}
 	for i, app := range m.Applications {
 		if app.Name == "" {

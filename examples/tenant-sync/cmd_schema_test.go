@@ -147,6 +147,21 @@ hooks:
 `,
 		},
 		{
+			name: "retention rule with unknown dataType",
+			content: `
+retentionRules:
+  - dataType: MEASUREMENTS
+    maximumAge: 365
+`,
+		},
+		{
+			name: "retention rule without maximumAge",
+			content: `
+retentionRules:
+  - dataType: MEASUREMENT
+`,
+		},
+		{
 			name: "smartrest template without source",
 			content: `
 smartrestTemplates:

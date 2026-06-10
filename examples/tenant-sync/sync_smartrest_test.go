@@ -10,9 +10,36 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// exportedCollection mirrors the JSON format of a collection exported by the
+// platform UI (including the bookkeeping fields exports carry)
+const exportedCollection = `{
+	"name": "custom_devmgmt",
+	"type": "c8y_SmartRest2Template",
+	"com_cumulocity_model_smartrest_csv_CsvSmartRestTemplate": {
+		"requestTemplates": [],
+		"responseTemplates": [
+			{
+				"msgId": "dm101",
+				"condition": "set_wifi",
+				"base": "set_wifi",
+				"name": "set_wifi",
+				"pattern": ["name", "ssid", "type"]
+			}
+		]
+	},
+	"__externalId": "custom_devmgmt"
+}`
+
 func TestLoadSmartRestCollection(t *testing.T) {
+	writeCollection := func(t *testing.T, content string) string {
+		t.Helper()
+		path := filepath.Join(t.TempDir(), "collection.json")
+		require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
+		return path
+	}
+
 	t.Run("exported example collection", func(t *testing.T) {
-		collection, err := loadSmartRestCollection("example-smartrestv2-collection.json", "")
+		collection, err := loadSmartRestCollection(writeCollection(t, exportedCollection), "")
 		require.NoError(t, err)
 		assert.Equal(t, "custom_devmgmt", collection.Name)
 		assert.Empty(t, collection.Templates.RequestTemplates)
@@ -21,17 +48,10 @@ func TestLoadSmartRestCollection(t *testing.T) {
 	})
 
 	t.Run("manifest name overrides the file", func(t *testing.T) {
-		collection, err := loadSmartRestCollection("example-smartrestv2-collection.json", "renamed")
+		collection, err := loadSmartRestCollection(writeCollection(t, exportedCollection), "renamed")
 		require.NoError(t, err)
 		assert.Equal(t, "renamed", collection.Name)
 	})
-
-	writeCollection := func(t *testing.T, content string) string {
-		t.Helper()
-		path := filepath.Join(t.TempDir(), "collection.json")
-		require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
-		return path
-	}
 
 	t.Run("name falls back to __externalId", func(t *testing.T) {
 		path := writeCollection(t, `{

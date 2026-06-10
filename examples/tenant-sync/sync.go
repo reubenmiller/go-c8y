@@ -36,6 +36,7 @@ const SyncToolFragment = "c8y_TenantSync"
 const (
 	SectionTenantOptions  = "tenantOptions"
 	SectionFeatures       = "features"
+	SectionRetentionRules = "retentionRules"
 	SectionApplications   = "applications"
 	SectionUserGroups     = "userGroups"
 	SectionUsers          = "users"
@@ -55,6 +56,7 @@ const (
 var SectionOrder = []string{
 	SectionTenantOptions,
 	SectionFeatures,
+	SectionRetentionRules,
 	SectionApplications,
 	SectionUserGroups,
 	SectionUsers,
@@ -299,6 +301,8 @@ func (s *Syncer) applyTarget(ctx, baseCtx context.Context, manifest *Manifest, o
 			err = s.SyncTenantOptions(ctx, manifest.TenantOptions)
 		case SectionFeatures:
 			err = s.SyncFeatures(baseCtx, manifest.Features)
+		case SectionRetentionRules:
+			err = s.SyncRetentionRules(ctx, manifest.RetentionRules)
 		case SectionApplications:
 			err = s.SyncApplications(baseCtx, manifest.Applications)
 		case SectionUserGroups:

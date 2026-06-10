@@ -54,6 +54,10 @@ software:
 # features:
 #   - key: feature-branding
 
+# retentionRules:
+#   - dataType: MEASUREMENT
+#     maximumAge: 365
+
 # applications:
 #   - name: advanced-software-mgmt
 

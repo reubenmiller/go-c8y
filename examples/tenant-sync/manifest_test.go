@@ -381,6 +381,42 @@ hooks:
 			errorMsg: "run is required",
 		},
 		{
+			name: "retention rule requires dataType",
+			content: `
+retentionRules:
+  - maximumAge: 365
+`,
+			errorMsg: "dataType is required",
+		},
+		{
+			name: "retention rule dataType is checked",
+			content: `
+retentionRules:
+  - dataType: MEASUREMENTS
+    maximumAge: 365
+`,
+			errorMsg: `unknown dataType "MEASUREMENTS"`,
+		},
+		{
+			name: "retention rule requires maximumAge",
+			content: `
+retentionRules:
+  - dataType: MEASUREMENT
+`,
+			errorMsg: "maximumAge must be at least 1",
+		},
+		{
+			name: "retention rule selectors must be unique",
+			content: `
+retentionRules:
+  - dataType: MEASUREMENT
+    maximumAge: 365
+  - dataType: MEASUREMENT
+    maximumAge: 30
+`,
+			errorMsg: "duplicate rule selector MEASUREMENT/*/*/*",
+		},
+		{
 			name: "smartrest source is required",
 			content: `
 smartrestTemplates:

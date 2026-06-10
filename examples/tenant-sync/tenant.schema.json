@@ -350,6 +350,50 @@
         "version"
       ]
     },
+    "RetentionRuleSpec": {
+      "properties": {
+        "dataType": {
+          "type": "string",
+          "enum": [
+            "ALARM",
+            "AUDIT",
+            "BULK_OPERATION",
+            "EVENT",
+            "MEASUREMENT",
+            "OPERATION",
+            "*"
+          ],
+          "description": "Data type the rule applies to"
+        },
+        "fragmentType": {
+          "type": "string",
+          "description": "Restrict the rule to documents carrying this fragment (defaults to *)"
+        },
+        "type": {
+          "type": "string",
+          "description": "Restrict the rule to documents of this type (defaults to *)"
+        },
+        "source": {
+          "type": "string",
+          "description": "Restrict the rule to documents of this source device ID (defaults to *)"
+        },
+        "maximumAge": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Retention period in days"
+        },
+        "editable": {
+          "type": "boolean",
+          "description": "Whether the rule is editable in the UI (only written when set)"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "dataType",
+        "maximumAge"
+      ]
+    },
     "SectionHooksSpec": {
       "properties": {
         "pre": {
@@ -765,6 +809,13 @@
       },
       "type": "array",
       "description": "Feature toggles to enable or disable for the current tenant"
+    },
+    "retentionRules": {
+      "items": {
+        "$ref": "#/$defs/RetentionRuleSpec"
+      },
+      "type": "array",
+      "description": "Retention rules to ensure exist (matched by dataType/fragmentType/type/source; maximumAge updated when it differs)"
     },
     "applications": {
       "items": {

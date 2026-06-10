@@ -36,6 +36,7 @@ func cmdValidate(args []string) error {
 	fmt.Printf("✓ %s is valid\n\n", manifestPath)
 	printSectionCount(SectionTenantOptions, len(manifest.TenantOptions))
 	printSectionCount(SectionFeatures, len(manifest.Features))
+	printSectionCount(SectionRetentionRules, len(manifest.RetentionRules))
 	printSectionCount(SectionApplications, len(manifest.Applications))
 	printSectionCount(SectionUserGroups, len(manifest.UserGroups))
 	printSectionCount(SectionUsers, len(manifest.Users))
