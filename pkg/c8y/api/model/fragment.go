@@ -66,3 +66,25 @@ func MergeFragments(body []byte, fragments []Fragment) ([]byte, error) {
 	}
 	return body, nil
 }
+
+// ApplyFragments merges fragments into an arbitrary JSON-object body and
+// returns the merged body as a map. The body must marshal to a JSON object
+// (e.g. a map or a struct). Used by upsert paths to attach annotation
+// fragments to a caller-provided body without mutating it.
+func ApplyFragments(body any, fragments []Fragment) (map[string]any, error) {
+	raw, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+
+	merged, err := MergeFragments(raw, fragments)
+	if err != nil {
+		return nil, err
+	}
+
+	result := map[string]any{}
+	if err := json.Unmarshal(merged, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
