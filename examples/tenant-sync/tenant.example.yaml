@@ -1,0 +1,137 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/reubenmiller/go-c8y/main/examples/tenant-sync/tenant.schema.json
+#
+# Example tenant-sync manifest
+#
+# Validate with: tenant-sync validate tenant.yaml
+# Preview with:  tenant-sync run -f tenant.yaml --dry-run
+# Apply with:    tenant-sync run -f tenant.yaml
+#
+# Environment variables are expanded with ${VAR} syntax before parsing,
+# so secrets (e.g. GitHub tokens) can be injected from the environment.
+
+# Set tenant options (created if missing, updated when the value differs)
+tenantOptions:
+  - category: configuration
+    key: device.bootstrap.enabled
+    value: "true"
+
+  # Values can also be resolved by lookup at apply time, e.g. an application
+  # ID looked up by name
+  - category: application
+    key: default.application
+    valueFrom:
+      application: devicemanagement
+
+# Enable/disable feature toggles for the current tenant
+features:
+  - key: feature-branding
+  - key: feature-cep-custom-rules
+    enabled: false
+
+# Subscribe applications to the current tenant (idempotent)
+applications:
+  - name: advanced-software-mgmt
+
+  # With a source, the application is created if missing and its binary (zip)
+  # uploaded on creation (or on every run with --force)
+  - name: my-microservice
+    type: MICROSERVICE
+    source:
+      path: ./build/my-microservice.zip
+      optional: true # skip instead of failing when the file does not exist
+
+# Sync software packages. Name, version, architecture and software type are
+# parsed from the filenames (same logic as the software-uploader example).
+software:
+  # From a local directory (searched recursively)
+  - source:
+      path: ./packages
+      patterns: ["*.deb", "*.rpm", "*.apk", "*.ipk"]
+
+  # From the latest GitHub release of a repository
+  - source:
+      github:
+        repo: thin-edge/tedge-container-bundle
+        release: latest # or "latest-N" (e.g. "latest-5"), a tag (e.g. "1.2.0"), or "all"
+        assets: ["*.deb"]
+        token: ${GITHUB_TOKEN} # optional, required for private repos
+
+  # Reference release assets by URL instead of uploading the binaries
+  # (only works for public repositories)
+  - namePrefix: "linked-"
+    source:
+      github:
+        repo: cli/cli
+        assets: ["gh_*_linux_arm64.deb"]
+        linkOnly: true
+
+# Sync firmware (OS images). Versions are parsed from common build system
+# naming conventions (Yocto, Buildroot, Rugix Bakery, SWUpdate, RAUC, Mender)
+# with fallback to the GitHub release tag.
+firmware:
+  # Yocto images from a local build directory. The deviceType supports
+  # {name}, {version} and {filename} placeholders derived from each artifact.
+  - deviceType: "{name}"
+    source:
+      path: ./tmp/deploy/images/raspberrypi4-64
+      patterns: ["*.rootfs.wic.bz2"]
+      optional: true # skip instead of failing when the build dir is missing
+
+  # Rugix Bakery images from GitHub releases; the release tag is used as the
+  # version when the filename does not contain one
+  - name: tedge-rugix-pi
+    description: thin-edge.io Rugix image for Raspberry Pi
+    deviceType: rugix-pi
+    source:
+      github:
+        repo: thin-edge/tedge-rugix-image
+        release: latest-5 # mirror the most recent five releases
+        assets: ["*.img.xz"]
+
+  # Custom firmware naming scheme: extract the version with a regex
+  - deviceType: model7
+    versionPattern: 'BUILD(\d+)'
+    source:
+      path: ./firmware
+      patterns: ["FW_MODEL7_*.custom"]
+
+# Sync configuration files into the configuration repository
+configuration:
+  - name: mosquitto
+    configurationType: mosquitto.conf
+    description: Default mosquitto configuration
+    deviceType: thin-edge.io
+    source:
+      path: ./config/mosquitto.conf
+
+  # Reference an external URL without uploading a binary
+  - name: tedge-default
+    configurationType: tedge.toml
+    source:
+      url: https://example.com/configs/tedge.toml
+
+# Create device profiles referencing the items synced above.
+# Binary URLs are resolved automatically from the tenant.
+deviceProfiles:
+  - name: rpi4-base
+    deviceType: raspberrypi4-64
+    firmware:
+      name: core-image-tedge-raspberrypi4-64
+      version: "20240115103000"
+    software:
+      - name: tedge
+        version: 1.6.2
+        action: install
+    configuration:
+      - name: mosquitto
+        type: mosquitto.conf
+
+# Commands executed around the sync (via 'sh -c', from the manifest directory,
+# with C8Y_* env vars passed through). A failing pre hook aborts the run; post
+# hooks always run and report failures without aborting.
+hooks:
+  pre:
+    - name: show session
+      run: echo "Syncing tenant $C8Y_TENANT"
+  post:
+    - run: echo "Sync finished"

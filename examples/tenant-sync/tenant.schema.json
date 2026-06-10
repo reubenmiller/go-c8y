@@ -1,0 +1,560 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/reubenmiller/go-c8y/main/examples/tenant-sync/tenant.schema.json",
+  "$defs": {
+    "ApplicationSpec": {
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Application name"
+        },
+        "type": {
+          "type": "string",
+          "description": "Application type (lookup filter; also used when creating from a source where it defaults to MICROSERVICE)",
+          "examples": [
+            "MICROSERVICE",
+            "HOSTED"
+          ]
+        },
+        "contextPath": {
+          "type": "string",
+          "description": "Context path used when creating the application (defaults to the name)"
+        },
+        "source": {
+          "$ref": "#/$defs/Source",
+          "description": "Where the application binary (zip) comes from; must resolve to a single file"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name"
+      ]
+    },
+    "ConfigurationSpec": {
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the configuration item (defaults to the filename without extension)"
+        },
+        "configurationType": {
+          "type": "string",
+          "description": "Configuration type",
+          "examples": [
+            "mosquitto.conf",
+            "properties"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the configuration item"
+        },
+        "deviceType": {
+          "type": "string",
+          "description": "Restrict the configuration to a device type"
+        },
+        "source": {
+          "$ref": "#/$defs/Source",
+          "description": "Where the configuration file comes from"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "configurationType",
+        "source"
+      ]
+    },
+    "DeviceProfileSpec": {
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the device profile"
+        },
+        "deviceType": {
+          "type": "string",
+          "description": "Restrict the profile to a device type (c8y_Filter.type)"
+        },
+        "firmware": {
+          "$ref": "#/$defs/ProfileFirmwareRef",
+          "description": "Firmware version included in the profile"
+        },
+        "software": {
+          "items": {
+            "$ref": "#/$defs/ProfileSoftwareRef"
+          },
+          "type": "array",
+          "description": "Software versions included in the profile"
+        },
+        "configuration": {
+          "items": {
+            "$ref": "#/$defs/ProfileConfigurationRef"
+          },
+          "type": "array",
+          "description": "Configuration items included in the profile"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name"
+      ]
+    },
+    "FeatureSpec": {
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "Feature toggle key"
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Desired feature state (defaults to true when omitted)"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "key"
+      ]
+    },
+    "FirmwareSpec": {
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Override the parsed firmware name (all files become versions of this single firmware item)"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the firmware item"
+        },
+        "deviceType": {
+          "type": "string",
+          "description": "Restrict the firmware to a device type (c8y_Filter.type); supports {name} {version} and {filename} placeholders derived from the artifact filename"
+        },
+        "version": {
+          "type": "string",
+          "description": "Override the version for all files (defaults to the version parsed from the filename and then the GitHub release tag)"
+        },
+        "versionPattern": {
+          "type": "string",
+          "description": "Regular expression with a single capture group to extract the version from the filename for custom naming schemes"
+        },
+        "source": {
+          "$ref": "#/$defs/Source",
+          "description": "Where the firmware images come from"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "source"
+      ]
+    },
+    "GitHubSource": {
+      "properties": {
+        "repo": {
+          "type": "string",
+          "pattern": "^[^/]+/[^/]+$",
+          "description": "Repository in the form owner/name"
+        },
+        "release": {
+          "type": "string",
+          "description": "Which release(s) to use: latest (default) or latest-N for the latest N releases or all or a specific tag",
+          "examples": [
+            "latest",
+            "latest-5",
+            "all",
+            "v1.2.3"
+          ]
+        },
+        "assets": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "Glob patterns matched against release asset filenames (default: *)"
+        },
+        "includePrereleases": {
+          "type": "boolean",
+          "description": "Include prereleases when release is latest or all"
+        },
+        "linkOnly": {
+          "type": "boolean",
+          "description": "Reference the asset download URL instead of uploading the binary (public repositories only)"
+        },
+        "token": {
+          "type": "string",
+          "description": "GitHub API token (falls back to GITHUB_TOKEN / GH_TOKEN env vars; supports ${VAR} expansion)"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "repo"
+      ]
+    },
+    "HookSpec": {
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Display name of the hook"
+        },
+        "run": {
+          "type": "string",
+          "description": "Command executed with 'sh -c' from the manifest directory"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "run"
+      ]
+    },
+    "HooksSpec": {
+      "properties": {
+        "pre": {
+          "items": {
+            "$ref": "#/$defs/HookSpec"
+          },
+          "type": "array",
+          "description": "Commands executed before the sync; a failing pre hook aborts the run"
+        },
+        "post": {
+          "items": {
+            "$ref": "#/$defs/HookSpec"
+          },
+          "type": "array",
+          "description": "Commands executed after the sync (also when sections failed); failures are reported but do not abort"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "ProfileConfigurationRef": {
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Configuration item name (must exist in the tenant)"
+        },
+        "type": {
+          "type": "string",
+          "description": "Configuration type of the referenced item"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name"
+      ]
+    },
+    "ProfileFirmwareRef": {
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Firmware name (must exist in the tenant)"
+        },
+        "version": {
+          "type": "string",
+          "description": "Firmware version (must exist in the tenant)"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name",
+        "version"
+      ]
+    },
+    "ProfileSoftwareRef": {
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Software name (must exist in the tenant)"
+        },
+        "version": {
+          "type": "string",
+          "description": "Software version (must exist in the tenant)"
+        },
+        "action": {
+          "type": "string",
+          "description": "Software action (defaults to install)",
+          "examples": [
+            "install"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name",
+        "version"
+      ]
+    },
+    "SoftwareSpec": {
+      "properties": {
+        "namePrefix": {
+          "type": "string",
+          "description": "Prefix added to every parsed software name"
+        },
+        "type": {
+          "type": "string",
+          "description": "Force the softwareType for all packages from this source (overrides auto-detection)"
+        },
+        "typeMap": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "Map filename glob patterns to software types (pattern=softwaretype; first match wins)"
+        },
+        "version": {
+          "type": "string",
+          "description": "Override the parsed version (useful for single-file sources)"
+        },
+        "source": {
+          "$ref": "#/$defs/Source",
+          "description": "Where the software packages come from"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "source"
+      ]
+    },
+    "Source": {
+      "oneOf": [
+        {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "url"
+                ]
+              },
+              {
+                "required": [
+                  "github"
+                ]
+              }
+            ]
+          },
+          "required": [
+            "path"
+          ]
+        },
+        {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "path"
+                ]
+              },
+              {
+                "required": [
+                  "github"
+                ]
+              }
+            ]
+          },
+          "required": [
+            "url"
+          ]
+        },
+        {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "path"
+                ]
+              },
+              {
+                "required": [
+                  "url"
+                ]
+              }
+            ]
+          },
+          "required": [
+            "github"
+          ]
+        }
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Local file or directory (relative paths are resolved against the manifest directory)"
+        },
+        "patterns": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "Glob patterns matched against filenames when path is a directory (default: *)"
+        },
+        "url": {
+          "type": "string",
+          "description": "External URL referenced without uploading a binary"
+        },
+        "github": {
+          "$ref": "#/$defs/GitHubSource",
+          "description": "Pull release assets from a GitHub repository"
+        },
+        "optional": {
+          "type": "boolean",
+          "description": "Skip this entry instead of failing when the path does not exist or nothing matches"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "TenantOptionSpec": {
+      "oneOf": [
+        {
+          "not": {
+            "required": [
+              "valueFrom"
+            ]
+          },
+          "required": [
+            "value"
+          ]
+        },
+        {
+          "not": {
+            "required": [
+              "value"
+            ]
+          },
+          "required": [
+            "valueFrom"
+          ]
+        }
+      ],
+      "properties": {
+        "category": {
+          "type": "string",
+          "description": "Tenant option category"
+        },
+        "key": {
+          "type": "string",
+          "description": "Tenant option key"
+        },
+        "value": {
+          "type": "string",
+          "description": "Desired value of the tenant option (mutually exclusive with valueFrom)"
+        },
+        "valueFrom": {
+          "$ref": "#/$defs/TenantOptionValueFrom",
+          "description": "Resolve the value by a named lookup at apply time (mutually exclusive with value)"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "category",
+        "key"
+      ]
+    },
+    "TenantOptionValueFrom": {
+      "oneOf": [
+        {
+          "not": {
+            "required": [
+              "device"
+            ]
+          },
+          "required": [
+            "application"
+          ]
+        },
+        {
+          "not": {
+            "required": [
+              "application"
+            ]
+          },
+          "required": [
+            "device"
+          ]
+        }
+      ],
+      "properties": {
+        "application": {
+          "type": "string",
+          "description": "Application name resolved to its application ID",
+          "examples": [
+            "devicemanagement"
+          ]
+        },
+        "device": {
+          "type": "string",
+          "description": "Device name resolved to its managed object ID"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    }
+  },
+  "properties": {
+    "tenantOptions": {
+      "items": {
+        "$ref": "#/$defs/TenantOptionSpec"
+      },
+      "type": "array",
+      "description": "Tenant options to set (created if missing and updated when the value differs)"
+    },
+    "features": {
+      "items": {
+        "$ref": "#/$defs/FeatureSpec"
+      },
+      "type": "array",
+      "description": "Feature toggles to enable or disable for the current tenant"
+    },
+    "applications": {
+      "items": {
+        "$ref": "#/$defs/ApplicationSpec"
+      },
+      "type": "array",
+      "description": "Applications to subscribe to the current tenant (optionally created/uploaded from a source)"
+    },
+    "software": {
+      "items": {
+        "$ref": "#/$defs/SoftwareSpec"
+      },
+      "type": "array",
+      "description": "Software packages to sync into the software repository"
+    },
+    "firmware": {
+      "items": {
+        "$ref": "#/$defs/FirmwareSpec"
+      },
+      "type": "array",
+      "description": "Firmware (OS images) to sync into the firmware repository"
+    },
+    "configuration": {
+      "items": {
+        "$ref": "#/$defs/ConfigurationSpec"
+      },
+      "type": "array",
+      "description": "Configuration files to sync into the configuration repository"
+    },
+    "deviceProfiles": {
+      "items": {
+        "$ref": "#/$defs/DeviceProfileSpec"
+      },
+      "type": "array",
+      "description": "Device profiles referencing firmware/software/configuration in the tenant"
+    },
+    "hooks": {
+      "$ref": "#/$defs/HooksSpec",
+      "description": "Commands executed before and after the sync (e.g. go-c8y-cli calls)"
+    }
+  },
+  "additionalProperties": false,
+  "type": "object",
+  "title": "tenant-sync manifest",
+  "description": "Declarative description of the desired state of a Cumulocity IoT tenant, applied with the tenant-sync CLI"
+}

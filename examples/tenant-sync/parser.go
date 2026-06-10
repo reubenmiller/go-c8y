@@ -1,0 +1,831 @@
+package main
+
+import (
+	"net/url"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strconv"
+	"strings"
+
+	"gopkg.in/yaml.v3"
+)
+
+// SoftwareInfo represents parsed information from a filename
+type SoftwareInfo struct {
+	FilePath     string
+	Filename     string
+	Name         string
+	Version      string
+	SoftwareType string
+	Architecture string            // e.g., "arm64", "amd64", "aarch64", "x86_64"
+	ExternalURL  string            // when set, the version references this URL instead of uploading a binary
+	Metadata     map[string]string // Additional metadata like release, epoch, etc.
+}
+
+// Parser interface for extension-specific parsing strategies
+type Parser interface {
+	// CanParse checks if this parser can handle the given filename
+	CanParse(filename string) bool
+	// Parse extracts software information from the filename
+	Parse(filepath, filename string) (*SoftwareInfo, error)
+}
+
+// DebianParser handles .deb package naming convention
+// Format: name_version_architecture.deb
+// Example: tedge-flows_1.6.2~584+gd629c53_arm64.deb
+type DebianParser struct{}
+
+func (p *DebianParser) CanParse(filename string) bool {
+	return strings.HasSuffix(strings.ToLower(filename), ".deb")
+}
+
+func (p *DebianParser) Parse(filePath, filename string) (*SoftwareInfo, error) {
+	// Remove .deb extension
+	nameWithoutExt := strings.TrimSuffix(filename, ".deb")
+
+	// Debian format: name_version_arch
+	parts := strings.Split(nameWithoutExt, "_")
+
+	info := &SoftwareInfo{
+		FilePath:     filePath,
+		Filename:     filename,
+		SoftwareType: "apt",
+		Metadata:     make(map[string]string),
+	}
+
+	if len(parts) >= 3 {
+		// Standard format: name_version_arch
+		info.Name = parts[0]
+		info.Version = parts[1]
+		info.Architecture = parts[2]
+	} else if len(parts) == 2 {
+		// Missing architecture: name_version
+		info.Name = parts[0]
+		info.Version = parts[1]
+	} else {
+		// Fall back to generic parsing
+		info.Name = nameWithoutExt
+		info.Version = "1.0.0"
+	}
+
+	return info, nil
+}
+
+// IPKParser handles OpenWrt/OpenEmbedded/Yocto .ipk package naming convention
+// Format: name_version_architecture.ipk
+// Example: tedge_1.6.2~584+gd629c53_aarch64.ipk
+type IPKParser struct{}
+
+func (p *IPKParser) CanParse(filename string) bool {
+	return strings.HasSuffix(strings.ToLower(filename), ".ipk")
+}
+
+func (p *IPKParser) Parse(filePath, filename string) (*SoftwareInfo, error) {
+	// Remove .ipk extension
+	nameWithoutExt := strings.TrimSuffix(filename, ".ipk")
+
+	// IPK format mirrors Debian: name_version_arch
+	parts := strings.Split(nameWithoutExt, "_")
+
+	info := &SoftwareInfo{
+		FilePath:     filePath,
+		Filename:     filename,
+		SoftwareType: "ipk",
+		Metadata:     make(map[string]string),
+	}
+
+	if len(parts) >= 3 {
+		info.Name = parts[0]
+		info.Version = parts[1]
+		info.Architecture = parts[2]
+	} else if len(parts) == 2 {
+		info.Name = parts[0]
+		info.Version = parts[1]
+	} else {
+		info.Name = nameWithoutExt
+		info.Version = "1.0.0"
+	}
+
+	return info, nil
+}
+
+// RPMParser handles .rpm package naming convention
+// Format: name-version-release.architecture.rpm
+// Example: tedge-flows-1.6.2~584+gd629c53-1.aarch64.rpm
+type RPMParser struct{}
+
+func (p *RPMParser) CanParse(filename string) bool {
+	return strings.HasSuffix(strings.ToLower(filename), ".rpm")
+}
+
+func (p *RPMParser) Parse(filePath, filename string) (*SoftwareInfo, error) {
+	// Remove .rpm extension
+	nameWithoutExt := strings.TrimSuffix(filename, ".rpm")
+
+	info := &SoftwareInfo{
+		FilePath:     filePath,
+		Filename:     filename,
+		SoftwareType: "rpm",
+		Metadata:     make(map[string]string),
+	}
+
+	// RPM format: name-version-release.arch
+	// Find the architecture (usually the last part before .rpm)
+	lastDot := strings.LastIndex(nameWithoutExt, ".")
+	if lastDot > 0 {
+		info.Architecture = nameWithoutExt[lastDot+1:]
+		nameWithoutExt = nameWithoutExt[:lastDot]
+	}
+
+	// Now split by dashes, but we need to be careful as name can contain dashes
+	// Find the last two dash-separated parts (release and version)
+	parts := strings.Split(nameWithoutExt, "-")
+	if len(parts) >= 3 {
+		// Take the last part as release
+		release := parts[len(parts)-1]
+		info.Metadata["release"] = release
+
+		// Take the second-to-last as version
+		version := parts[len(parts)-2]
+		info.Version = version
+
+		// Everything else is the name
+		info.Name = strings.Join(parts[:len(parts)-2], "-")
+	} else if len(parts) == 2 {
+		// name-version format
+		info.Name = parts[0]
+		info.Version = parts[1]
+	} else {
+		// Fallback
+		info.Name = nameWithoutExt
+		info.Version = "1.0.0"
+	}
+
+	return info, nil
+}
+
+// APKParser handles Alpine .apk package naming convention
+// Format: name_version-release_architecture.apk
+// Example: tedge-flows_1.6.2_rc584+gd629c53-r0_aarch64.apk
+type APKParser struct{}
+
+func (p *APKParser) CanParse(filename string) bool {
+	return strings.HasSuffix(strings.ToLower(filename), ".apk")
+}
+
+func (p *APKParser) Parse(filePath, filename string) (*SoftwareInfo, error) {
+	// Remove .apk extension
+	nameWithoutExt := strings.TrimSuffix(filename, ".apk")
+
+	info := &SoftwareInfo{
+		FilePath:     filePath,
+		Filename:     filename,
+		SoftwareType: "apk",
+		Metadata:     make(map[string]string),
+	}
+
+	// APK format: name_version-release_arch
+	// Architecture is typically the last underscore-separated part
+	// Common architectures: aarch64, x86_64, x86, armhf, armv7, etc.
+	// Need to handle x86_64 specially as it contains an underscore
+
+	// List of known architectures
+	knownArchs := []string{"x86_64", "aarch64", "x86", "armhf", "armv7", "arm", "i386", "i686", "noarch"}
+
+	// Try to find a known architecture at the end
+	for _, arch := range knownArchs {
+		suffix := "_" + arch
+		if strings.HasSuffix(nameWithoutExt, suffix) {
+			info.Architecture = arch
+			nameWithoutExt = nameWithoutExt[:len(nameWithoutExt)-len(suffix)]
+			break
+		}
+	}
+
+	// Now split name from version-release
+	firstUnderscore := strings.Index(nameWithoutExt, "_")
+	if firstUnderscore > 0 {
+		info.Name = nameWithoutExt[:firstUnderscore]
+		versionRelease := nameWithoutExt[firstUnderscore+1:]
+
+		// Try to split version from release using the last dash
+		if dashIdx := strings.LastIndex(versionRelease, "-"); dashIdx > 0 {
+			info.Version = versionRelease[:dashIdx]
+			info.Metadata["release"] = versionRelease[dashIdx+1:]
+		} else {
+			info.Version = versionRelease
+		}
+	} else {
+		// No underscore found, use entire name
+		info.Name = nameWithoutExt
+		info.Version = "1.0.0"
+	}
+
+	return info, nil
+}
+
+// TarGzParser handles .tar.gz archive naming convention
+// Usually follows: name-version.tar.gz or name_version.tar.gz
+// Example: tedge_1.6.2-rc584+gd629c53_aarch64-unknown-linux-musl.tar.gz
+type TarGzParser struct{}
+
+func (p *TarGzParser) CanParse(filename string) bool {
+	lower := strings.ToLower(filename)
+	return strings.HasSuffix(lower, ".tar.gz") || strings.HasSuffix(lower, ".tgz")
+}
+
+func (p *TarGzParser) Parse(filePath, filename string) (*SoftwareInfo, error) {
+	// Remove .tar.gz or .tgz extension
+	nameWithoutExt := filename
+	if strings.HasSuffix(strings.ToLower(filename), ".tar.gz") {
+		nameWithoutExt = filename[:len(filename)-7]
+	} else if strings.HasSuffix(strings.ToLower(filename), ".tgz") {
+		nameWithoutExt = filename[:len(filename)-4]
+	}
+
+	info := &SoftwareInfo{
+		FilePath:     filePath,
+		Filename:     filename,
+		SoftwareType: "archive",
+		Metadata:     make(map[string]string),
+	}
+
+	// Try to detect architecture patterns like aarch64-unknown-linux-musl
+	// These are typically at the end of the filename
+	archPatterns := []struct {
+		pattern string
+		arch    string
+	}{
+		{"aarch64-unknown-linux-musl", "aarch64"},
+		{"aarch64-unknown-linux-gnu", "aarch64"},
+		{"x86_64-unknown-linux-musl", "x86_64"},
+		{"x86_64-unknown-linux-gnu", "x86_64"},
+		{"aarch64", "aarch64"},
+		{"arm64", "arm64"},
+		{"x86_64", "x86_64"},
+		{"amd64", "amd64"},
+		{"i386", "i386"},
+		{"i686", "i686"},
+		{"armhf", "armhf"},
+		{"armv7", "armv7"},
+	}
+
+	for _, ap := range archPatterns {
+		pattern := "_" + ap.pattern
+		if idx := strings.LastIndex(nameWithoutExt, pattern); idx > 0 {
+			info.Architecture = ap.arch
+			nameWithoutExt = nameWithoutExt[:idx]
+			break
+		}
+		pattern = "-" + ap.pattern
+		if idx := strings.LastIndex(nameWithoutExt, pattern); idx > 0 {
+			info.Architecture = ap.arch
+			nameWithoutExt = nameWithoutExt[:idx]
+			break
+		}
+	}
+
+	// Use generic extraction
+	name, version := extractNameAndVersion(nameWithoutExt)
+	if version == "" {
+		version = "1.0.0"
+	}
+	info.Name = name
+	info.Version = version
+
+	return info, nil
+}
+
+// ArchLinuxParser handles Arch Linux pacman package naming convention
+// Format: name-version-pkgrel-architecture.pkg.tar.zst (or .pkg.tar.xz)
+// Example: pacman-6.0.2-6-x86_64.pkg.tar.zst
+type ArchLinuxParser struct{}
+
+func (p *ArchLinuxParser) CanParse(filename string) bool {
+	lower := strings.ToLower(filename)
+	return strings.HasSuffix(lower, ".pkg.tar.zst") || strings.HasSuffix(lower, ".pkg.tar.xz")
+}
+
+func (p *ArchLinuxParser) Parse(filePath, filename string) (*SoftwareInfo, error) {
+	lower := strings.ToLower(filename)
+	nameWithoutExt := filename
+	if strings.HasSuffix(lower, ".pkg.tar.zst") {
+		nameWithoutExt = filename[:len(filename)-12]
+	} else if strings.HasSuffix(lower, ".pkg.tar.xz") {
+		nameWithoutExt = filename[:len(filename)-11]
+	}
+
+	info := &SoftwareInfo{
+		FilePath:     filePath,
+		Filename:     filename,
+		SoftwareType: "pacman",
+		Metadata:     make(map[string]string),
+	}
+
+	// Arch format: name-version-pkgrel-arch
+	// pkgver must not contain hyphens, so we can safely split from the right.
+	parts := strings.Split(nameWithoutExt, "-")
+	if len(parts) >= 4 {
+		info.Architecture = parts[len(parts)-1]
+		info.Metadata["pkgrel"] = parts[len(parts)-2]
+		info.Version = parts[len(parts)-3]
+		info.Name = strings.Join(parts[:len(parts)-3], "-")
+	} else if len(parts) == 3 {
+		info.Architecture = parts[2]
+		info.Version = parts[1]
+		info.Name = parts[0]
+	} else if len(parts) == 2 {
+		info.Version = parts[1]
+		info.Name = parts[0]
+	} else {
+		info.Name = nameWithoutExt
+		info.Version = "1.0.0"
+	}
+
+	return info, nil
+}
+
+// composeFilenamePattern matches Docker Compose / Podman Compose filenames:
+//
+//	compose.yaml / compose.yml
+//	docker-compose.yaml / docker-compose.yml
+//	compose.<name>.yaml / docker-compose.<name>.yaml
+//
+// The optional middle segment becomes the software name.
+var composeFilenamePattern = regexp.MustCompile(`(?i)^(docker-compose|compose)(?:\.(.+))?\.ya?ml$`)
+
+// ComposeParser handles Docker Compose / Podman Compose file naming conventions.
+// It recognises filenames of the form:
+//
+//	compose[.<name>].yaml     docker-compose[.<name>].yaml
+//	compose[.<name>].yml      docker-compose[.<name>].yml
+//
+// The software name and version are resolved in priority order:
+//  1. The <name> segment from the filename; if it includes a version (e.g.
+//     "myapp-1.2.3" in compose.myapp-1.2.3.yaml) the version is split off.
+//  2. The top-level "name" field inside the YAML file (name only; version
+//     stays "latest" because the compose "version:" key is the format spec,
+//     not the project version).
+//  3. The parent directory name
+//
+// A basic content check (presence of the "services" key) is performed when the
+// file is readable, to confirm it is a genuine compose file.
+type ComposeParser struct{}
+
+func (p *ComposeParser) CanParse(filename string) bool {
+	return composeFilenamePattern.MatchString(filename)
+}
+
+func (p *ComposeParser) Parse(filePath, filename string) (*SoftwareInfo, error) {
+	matches := composeFilenamePattern.FindStringSubmatch(filename)
+
+	info := &SoftwareInfo{
+		FilePath:     filePath,
+		Filename:     filename,
+		SoftwareType: "container-group",
+		Version:      "latest",
+		Metadata:     make(map[string]string),
+	}
+
+	// Group 2 is the optional name segment between the base prefix and the extension.
+	nameFromFilename := ""
+	if matches != nil && matches[2] != "" {
+		nameFromFilename = matches[2]
+	}
+
+	if nameFromFilename != "" {
+		// Try to split a version out of the filename segment, e.g.
+		// "myapp-1.2.3" → name "myapp", version "1.2.3".
+		name, version := extractNameAndVersion(nameFromFilename)
+		if version != "" {
+			info.Name = name
+			info.Version = version
+		} else {
+			info.Name = nameFromFilename
+		}
+	} else {
+		// No name in the filename — try to derive it from the file content.
+		contentName, servicesFound := p.readComposeMeta(filePath)
+		if !servicesFound {
+			// File is readable but does not look like a compose file.
+			// Still proceed; the filename pattern is a strong enough signal.
+		}
+		if contentName != "" {
+			info.Name = contentName
+		} else {
+			// Fall back to the parent directory name.
+			info.Name = filepath.Base(filepath.Dir(filePath))
+		}
+	}
+
+	return info, nil
+}
+
+// readComposeMeta attempts to parse the compose YAML file.
+// It returns (name, servicesFound) where name is the value of the top-level
+// "name" key (empty string if absent or unreadable) and servicesFound indicates
+// whether the "services" key was present.
+func (p *ComposeParser) readComposeMeta(filePath string) (name string, servicesFound bool) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return "", false
+	}
+
+	var doc struct {
+		Name     string                 `yaml:"name"`
+		Services map[string]interface{} `yaml:"services"`
+	}
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		return "", false
+	}
+
+	return doc.Name, doc.Services != nil
+}
+
+// GenericParser is a fallback parser for unknown file types
+type GenericParser struct {
+	softwareType string
+}
+
+func (p *GenericParser) CanParse(filename string) bool {
+	return true // Always can parse as fallback
+}
+
+func (p *GenericParser) Parse(filePath, filename string) (*SoftwareInfo, error) {
+	// Strip extensions
+	nameWithoutExt := stripExtensions(filename)
+
+	// Try to extract version
+	name, version := extractNameAndVersion(nameWithoutExt)
+	if version == "" {
+		version = "1.0.0"
+	}
+
+	info := &SoftwareInfo{
+		FilePath:     filePath,
+		Filename:     filename,
+		Name:         name,
+		Version:      version,
+		SoftwareType: p.softwareType,
+		Metadata:     make(map[string]string),
+	}
+
+	return info, nil
+}
+
+// ParserRegistry manages the collection of parsers
+type ParserRegistry struct {
+	parsers []Parser
+}
+
+// NewParserRegistry creates a new parser registry with default parsers
+func NewParserRegistry() *ParserRegistry {
+	return &ParserRegistry{
+		parsers: []Parser{
+			&ComposeParser{},   // filename-based; checked before extension-based parsers
+			&ArchLinuxParser{}, // must come before TarGzParser (.pkg.tar.zst/.pkg.tar.xz)
+			&DebianParser{},
+			&IPKParser{},
+			&RPMParser{},
+			&APKParser{},
+			&TarGzParser{},
+		},
+	}
+}
+
+// GetParser returns the appropriate parser for the given filename
+func (r *ParserRegistry) GetParser(filename string) Parser {
+	for _, parser := range r.parsers {
+		if parser.CanParse(filename) {
+			return parser
+		}
+	}
+
+	// Fallback to generic parser
+	softwareType := detectSoftwareType(filename)
+	return &GenericParser{softwareType: softwareType}
+}
+
+// Global parser registry
+var defaultRegistry = NewParserRegistry()
+
+// TypeMapping maps a filename glob pattern to a software type
+type TypeMapping struct {
+	Pattern      string // glob pattern matched against the filename (e.g. "*.bin", ".deb")
+	SoftwareType string // software type to assign (e.g. "firmware", "apt")
+}
+
+// ParseSoftwareFromFilename extracts software name and version from a filename
+// using extension-specific parsers for better accuracy.
+//
+// Examples:
+//   - "tedge-flows_1.6.2~584+gd629c53_arm64.deb" -> name: "tedge-flows", version: "1.6.2~584+gd629c53", arch: "arm64"
+//   - "tedge-flows-1.6.2~584+gd629c53-1.aarch64.rpm" -> name: "tedge-flows", version: "1.6.2~584+gd629c53", arch: "aarch64"
+//   - "myapp-1.2.3.tar.gz" -> name: "myapp", version: "1.2.3"
+func ParseSoftwareFromFilename(filePath string, defaultType string, namePrefix string, typeMappings ...TypeMapping) (*SoftwareInfo, error) {
+	filename := filepath.Base(filePath)
+
+	// Get the appropriate parser
+	parser := defaultRegistry.GetParser(filename)
+
+	// Parse using the selected parser
+	info, err := parser.Parse(filePath, filename)
+	if err != nil {
+		return nil, err
+	}
+
+	// Apply user-provided type mappings (checked in order; first match wins)
+	// These override auto-detected types but are overridden by an explicit --type flag.
+	for _, m := range typeMappings {
+		pattern := m.Pattern
+		// Treat bare extensions like ".deb" as "*.deb" for convenience
+		if strings.HasPrefix(pattern, ".") && !strings.ContainsAny(pattern, "*?") {
+			pattern = "*" + pattern
+		}
+		matched, err := filepath.Match(strings.ToLower(pattern), strings.ToLower(filename))
+		if err == nil && matched {
+			info.SoftwareType = m.SoftwareType
+			break
+		}
+	}
+
+	// Override software type if explicitly provided via --type flag
+	if defaultType != "" {
+		info.SoftwareType = defaultType
+	}
+
+	// If no software type determined, try to detect it
+	if info.SoftwareType == "" {
+		info.SoftwareType = detectSoftwareType(filename)
+	}
+
+	// Decode name (handles standard %XX encoding and artifact services that replace % with .)
+	info.Name = decodeSoftwareName(info.Name)
+
+	// Add a prefix to the name if provided
+	if namePrefix != "" {
+		info.Name = namePrefix + info.Name
+	}
+
+	return info, nil
+}
+
+// dotHexPattern matches ".XX" sequences where XX are two hexadecimal digits.
+// Some artifact hosting services (e.g., GitHub Actions) replace '%' with '.'
+// when storing artifacts, so "%2F" becomes ".2F".
+var dotHexPattern = regexp.MustCompile(`\.([0-9A-Fa-f]{2})`)
+
+// decodeSoftwareName decodes a software name that may be encoded in one of two ways:
+//  1. Standard URL percent-encoding: "c8y%2Fexample" → "c8y/example"
+//  2. Artifact-service encoding where '%' is replaced with '.': "c8y.2Fexample" → "c8y/example"
+//
+// For case 2, only characters that are printable, non-alphanumeric, and not URL-safe
+// filename characters are decoded, to reduce false positives from version components
+// that contain hex-looking digit sequences (e.g., "python3.10").
+func decodeSoftwareName(name string) string {
+	// Try standard URL percent-decoding first
+	if decoded, err := url.QueryUnescape(name); err == nil && decoded != name {
+		return decoded
+	}
+
+	// Handle the artifact-service case: replace ".XX" with the decoded character,
+	// but only for characters that would normally be percent-encoded.
+	return dotHexPattern.ReplaceAllStringFunc(name, func(match string) string {
+		n, err := strconv.ParseUint(match[1:], 16, 8)
+		if err != nil {
+			return match
+		}
+		ch := byte(n)
+		// Skip control characters, non-ASCII, and characters that are URL-safe
+		// (alphanumeric, '-', '_', '.', '~') — those would never be percent-encoded.
+		if ch < 0x21 || ch > 0x7E {
+			return match
+		}
+		if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') {
+			return match
+		}
+		switch ch {
+		case '-', '_', '.', '~':
+			return match
+		}
+		return string(ch)
+	})
+}
+
+// detectSoftwareType detects the software type based on file extension
+func detectSoftwareType(filename string) string {
+	lower := strings.ToLower(filename)
+
+	// Arch Linux packages use triple extensions — check before single-ext logic
+	if strings.HasSuffix(lower, ".pkg.tar.zst") || strings.HasSuffix(lower, ".pkg.tar.xz") {
+		return "pacman"
+	}
+
+	// Package manager specific extensions
+	typeMap := map[string]string{
+		".deb":      "apt",
+		".rpm":      "rpm",
+		".apk":      "apk",
+		".ipk":      "ipk",
+		".jar":      "java",
+		".war":      "java",
+		".ear":      "java",
+		".msi":      "windows",
+		".exe":      "windows",
+		".dmg":      "macos",
+		".pkg":      "macos",
+		".snap":     "snap",
+		".flatpak":  "flatpak",
+		".appimage": "appimage",
+	}
+
+	// Check single extensions
+	ext := filepath.Ext(filename)
+	if softwareType, ok := typeMap[strings.ToLower(ext)]; ok {
+		return softwareType
+	}
+
+	// Generic archive types default to "archive"
+	archiveExtensions := map[string]bool{
+		".tar.gz":  true,
+		".tgz":     true,
+		".tar.bz2": true,
+		".tar.xz":  true,
+		".tar.zst": true,
+		".zip":     true,
+		".tar":     true,
+		".7z":      true,
+		".rar":     true,
+		".gz":      true,
+		".bz2":     true,
+		".xz":      true,
+	}
+
+	for ext := range archiveExtensions {
+		if strings.HasSuffix(lower, ext) {
+			return "archive"
+		}
+	}
+
+	// Binary files default to "binary"
+	if strings.HasSuffix(lower, ".bin") {
+		return "binary"
+	}
+
+	// Unknown type
+	return ""
+}
+
+// stripExtensions removes common file extensions from filename
+func stripExtensions(filename string) string {
+	// Handle triple/double extensions first
+	doubleExtensions := []string{
+		".pkg.tar.zst", ".pkg.tar.xz",
+		".tar.gz", ".tar.bz2", ".tar.xz", ".tar.zst",
+	}
+
+	lower := strings.ToLower(filename)
+	for _, ext := range doubleExtensions {
+		if strings.HasSuffix(lower, ext) {
+			return filename[:len(filename)-len(ext)]
+		}
+	}
+
+	// Handle single extensions
+	return strings.TrimSuffix(filename, filepath.Ext(filename))
+}
+
+// extractNameAndVersion attempts to split a string into name and version
+func extractNameAndVersion(input string) (name, version string) {
+	// Regex patterns for version detection (ordered by specificity)
+	patterns := []struct {
+		regex *regexp.Regexp
+		desc  string
+	}{
+		{
+			// Semver with optional v prefix and separators like -, _, .v, _v
+			// Examples: myapp-1.2.3, myapp_v2.0.1, myapp.v3.4.5-beta.1, tedge_1.6.2-rc584+gd629c53
+			regex: regexp.MustCompile(`^(.+?)[-_.]v?(\d+\.\d+\.\d+(?:[-+~][a-zA-Z0-9.+~-]+)?)$`),
+			desc:  "semver with separator",
+		},
+		{
+			// Semver at the end without separator
+			// Examples: myapp1.2.3 (less common but possible)
+			regex: regexp.MustCompile(`^(.+?)(\d+\.\d+\.\d+(?:[-+~][a-zA-Z0-9.+~-]+)?)$`),
+			desc:  "semver without separator",
+		},
+		{
+			// Major.minor version with optional v prefix
+			// Examples: myapp-1.2, myapp_v2.0
+			regex: regexp.MustCompile(`^(.+?)[-_.]v?(\d+\.\d+)$`),
+			desc:  "major.minor",
+		},
+		{
+			// Single version number with v prefix
+			// Examples: myapp-v1, myapp_v2
+			regex: regexp.MustCompile(`^(.+?)[-_.]v(\d+)$`),
+			desc:  "single version with v",
+		},
+	}
+
+	// Try each pattern
+	for _, pattern := range patterns {
+		matches := pattern.regex.FindStringSubmatch(input)
+		if len(matches) == 3 {
+			name = strings.TrimSpace(matches[1])
+			version = strings.TrimSpace(matches[2])
+
+			// Clean up name - remove trailing separators
+			name = strings.TrimRight(name, "-_.")
+
+			return name, version
+		}
+	}
+
+	// No version pattern found
+	return input, ""
+}
+
+// ValidateSoftwareInfo checks if the parsed information is valid
+func ValidateSoftwareInfo(info *SoftwareInfo) error {
+	if info.Name == "" {
+		return &ValidationError{Field: "name", Message: "name cannot be empty"}
+	}
+	if info.Version == "" {
+		return &ValidationError{Field: "version", Message: "version cannot be empty"}
+	}
+	return nil
+}
+
+// ValidationError represents a validation error
+type ValidationError struct {
+	Field   string
+	Message string
+}
+
+func (e *ValidationError) Error() string {
+	return e.Field + ": " + e.Message
+}
+
+// GroupBySoftwareName groups software info by name for consolidation
+func GroupBySoftwareName(infos []*SoftwareInfo) map[string][]*SoftwareInfo {
+	groups := make(map[string][]*SoftwareInfo)
+
+	for _, info := range infos {
+		groups[info.Name] = append(groups[info.Name], info)
+	}
+
+	return groups
+}
+
+// GroupBySoftwareNameAndArch groups software info by name, architecture, and software type
+// This allows separate software items for different architectures and package types
+// (e.g. noarch.rpm and noarch.apk are distinct packages)
+func GroupBySoftwareNameAndArch(infos []*SoftwareInfo) map[string][]*SoftwareInfo {
+	groups := make(map[string][]*SoftwareInfo)
+
+	for _, info := range infos {
+		key := GetSoftwareKey(info.Name, info.Architecture, info.SoftwareType)
+		groups[key] = append(groups[key], info)
+	}
+
+	return groups
+}
+
+// GetSoftwareKey returns a unique key for the software (name + architecture + softwareType)
+func GetSoftwareKey(name, arch, softwareType string) string {
+	key := name
+	if arch != "" {
+		key += "_" + arch
+	}
+	if softwareType != "" {
+		key += "_" + softwareType
+	}
+	return key
+}
+
+// SoftwareSummary provides a summary of software packages to be uploaded
+type SoftwareSummary struct {
+	TotalFiles    int
+	TotalSoftware int
+	TotalVersions int
+	Groups        map[string][]*SoftwareInfo
+}
+
+// CreateSummary creates a summary of the upload plan
+func CreateSummary(infos []*SoftwareInfo) *SoftwareSummary {
+	groups := GroupBySoftwareNameAndArch(infos)
+
+	totalVersions := 0
+	for _, versions := range groups {
+		totalVersions += len(versions)
+	}
+
+	return &SoftwareSummary{
+		TotalFiles:    len(infos),
+		TotalSoftware: len(groups),
+		TotalVersions: totalVersions,
+		Groups:        groups,
+	}
+}
