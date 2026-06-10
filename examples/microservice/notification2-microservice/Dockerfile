@@ -7,7 +7,7 @@ ARG TARGETARCH
 WORKDIR /app
 
 # Copy the source from the current directory to the Working Directory inside the container
-COPY . .
+COPY main.go .
 
 # Build the Go app
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags="-s -w" -a -installsuffix cgo -o main examples/microservice/notification2-microservice/main.go
