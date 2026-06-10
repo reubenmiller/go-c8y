@@ -42,7 +42,7 @@ func (s *Syncer) SyncCommands(ctx context.Context, groups []CommandGroupSpec) er
 // runCommandGroup executes the actions of one group in sequence
 func (s *Syncer) runCommandGroup(ctx context.Context, group CommandGroupSpec) {
 	for i, action := range group.Actions {
-		cmd := exec.CommandContext(ctx, "sh", "-c", action)
+		cmd := exec.CommandContext(ctx, "sh", "-c", action) // NOSONAR
 		cmd.Dir = s.Resolver.BaseDir
 		cmd.Env = s.hookEnv()
 

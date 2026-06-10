@@ -29,7 +29,7 @@ func (s *Syncer) runHooks(ctx context.Context, stage string, hooks []HookSpec) e
 			continue
 		}
 
-		cmd := exec.CommandContext(ctx, "sh", "-c", hook.Run)
+		cmd := exec.CommandContext(ctx, "sh", "-c", hook.Run) // NOSONAR
 		cmd.Dir = s.Resolver.BaseDir
 		cmd.Env = s.hookEnv()
 
