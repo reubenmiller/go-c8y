@@ -277,6 +277,46 @@ case op.StatusSkipped:
 }
 ```
 
+### Idempotent upserts: desired state vs annotations
+
+The repository upserts (software, firmware, configuration and their versions)
+separate the body into two classes of data:
+
+- **Desired state** (the body / `Fragments`): compared against the existing
+  object with `op.DesiredStateMatches` (a JSON-normalised *subset* match —
+  platform-managed fields such as `lastUpdated` or `additionParents` are
+  ignored). When everything already matches, the update is skipped and
+  `StatusSkipped` is returned, so re-applying the same desired state performs
+  no writes.
+- **Annotations** (`Annotations` / variadic `annotations ...model.Fragment`):
+  bookkeeping fragments (sync timestamps, provenance metadata) written
+  together with the body on create and on every *real* update, but excluded
+  from the comparison — they never trigger an update by themselves.
+
+```go
+// The c8y_TenantSync fragment may contain a timestamp without breaking
+// idempotency: it is only written when name/description/etc. actually change.
+result := client.Repository.Software.UpsertWith(ctx,
+    "name eq 'tedge' and softwareType eq 'apt'",
+    map[string]any{
+        "name":         "tedge",
+        "type":         "c8y_Software",
+        "softwareType": "apt",
+        "description":  "thin-edge.io",
+    },
+    model.Frag("c8y_TenantSync", map[string]any{
+        "tool":     "tenant-sync",
+        "syncedAt": time.Now().Format(time.RFC3339),
+    }),
+)
+// result.Status: Created | Updated | Skipped (no changes detected)
+```
+
+Version upserts (`UpsertByVersion`) skip the binary replacement when no file
+is supplied and the version/url already match. Caveats: arrays are compared
+wholesale (a reordered list counts as a change), and a supplied `File` always
+counts as a change since binary content cannot be compared by value.
+
 ---
 
 ## 5. Retry and Backoff ✅
