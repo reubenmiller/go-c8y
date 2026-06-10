@@ -53,6 +53,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/remoteaccess"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/repository"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/retentionrules"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/smartresttemplates"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/currenttenant"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/devicestatistics"
@@ -175,6 +176,7 @@ type Client struct {
 	Notification2        *notification2.Service
 	RemoteAccess         *remoteaccess.Service
 	RetentionRules       *retentionrules.Service
+	SmartRestTemplates   *smartresttemplates.Service
 	Users                *users.Service
 	UserGroups           *usergroups.Service
 	UserRoles            *userroles.Service
@@ -456,6 +458,7 @@ func NewClient(opts ClientOptions) *Client {
 	// c.Context = (*ContextService)(&c.common)
 	c.RemoteAccess = remoteaccess.NewService(&c.common)
 	c.RetentionRules = retentionrules.NewService(&c.common)
+	c.SmartRestTemplates = smartresttemplates.NewService(&c.common)
 	c.Users = users.NewService(&c.common)
 	c.UserGroups = usergroups.NewService(&c.common)
 	c.UserRoles = userroles.NewService(&c.common)
