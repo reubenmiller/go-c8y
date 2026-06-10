@@ -16,13 +16,18 @@ import (
 // profiles) can reference items created by earlier ones (firmware, software,
 // configuration).
 type Manifest struct {
-	Targets        *TargetsSpec        `yaml:"targets" json:"targets,omitempty" jsonschema:"description=Which tenants the manifest is applied to (defaults to the current tenant); applying to other tenants requires parent/management tenant credentials"`
-	TenantOptions  []TenantOptionSpec  `yaml:"tenantOptions" json:"tenantOptions,omitempty" jsonschema:"description=Tenant options to set (created if missing and updated when the value differs)"`
-	Features       []FeatureSpec       `yaml:"features" json:"features,omitempty" jsonschema:"description=Feature toggles to enable or disable for the current tenant"`
-	Applications   []ApplicationSpec   `yaml:"applications" json:"applications,omitempty" jsonschema:"description=Applications to subscribe to the current tenant (optionally created/uploaded from a source)"`
-	Software       []SoftwareSpec      `yaml:"software" json:"software,omitempty" jsonschema:"description=Software packages to sync into the software repository"`
-	Firmware       []FirmwareSpec      `yaml:"firmware" json:"firmware,omitempty" jsonschema:"description=Firmware (OS images) to sync into the firmware repository"`
-	Configuration  []ConfigurationSpec `yaml:"configuration" json:"configuration,omitempty" jsonschema:"description=Configuration files to sync into the configuration repository"`
+	Targets       *TargetsSpec        `yaml:"targets" json:"targets,omitempty" jsonschema:"description=Which tenants the manifest is applied to (defaults to the current tenant); applying to other tenants requires parent/management tenant credentials"`
+	TenantOptions []TenantOptionSpec  `yaml:"tenantOptions" json:"tenantOptions,omitempty" jsonschema:"description=Tenant options to set (created if missing and updated when the value differs)"`
+	Features      []FeatureSpec       `yaml:"features" json:"features,omitempty" jsonschema:"description=Feature toggles to enable or disable for the current tenant"`
+	Applications  []ApplicationSpec   `yaml:"applications" json:"applications,omitempty" jsonschema:"description=Applications to subscribe to the current tenant (optionally created/uploaded from a source)"`
+	UserGroups    []UserGroupSpec     `yaml:"userGroups" json:"userGroups,omitempty" jsonschema:"description=User groups (global roles) to create/update with roles assigned (additive: existing roles are never removed)"`
+	Users         []UserSpec          `yaml:"users" json:"users,omitempty" jsonschema:"description=Users to create/update and assign to user groups (additive: existing memberships are never removed)"`
+	Software      []SoftwareSpec      `yaml:"software" json:"software,omitempty" jsonschema:"description=Software packages to sync into the software repository"`
+	Firmware      []FirmwareSpec      `yaml:"firmware" json:"firmware,omitempty" jsonschema:"description=Firmware (OS images) to sync into the firmware repository"`
+	Configuration []ConfigurationSpec `yaml:"configuration" json:"configuration,omitempty" jsonschema:"description=Configuration files to sync into the configuration repository"`
+
+	SmartRestTemplates []SmartRestTemplateSpec `yaml:"smartrestTemplates" json:"smartrestTemplates,omitempty" jsonschema:"description=SmartREST 2.0 template collections to sync from exported JSON files (one collection per file)"`
+
 	DeviceProfiles []DeviceProfileSpec `yaml:"deviceProfiles" json:"deviceProfiles,omitempty" jsonschema:"description=Device profiles referencing firmware/software/configuration in the tenant"`
 	Commands       []CommandGroupSpec  `yaml:"commands" json:"commands,omitempty" jsonschema:"description=Named groups of shell commands run as the last section; actions within a group run in sequence and groups run concurrently"`
 	Hooks          HooksSpec           `yaml:"hooks" json:"hooks,omitempty" jsonschema:"description=Commands executed before and after the sync and around individual sections (e.g. go-c8y-cli calls)"`
@@ -235,6 +240,49 @@ func (a ApplicationSpec) IsSubscribed() bool {
 	return a.Subscribed == nil || *a.Subscribed
 }
 
+// UserGroupSpec ensures a user group (called "global role" in the Cumulocity
+// UI) exists with the given description and roles. Role assignments are
+// additive: roles already on the group but absent from the manifest are left
+// alone.
+type UserGroupSpec struct {
+	Name        string `yaml:"name" json:"name" jsonschema:"description=Name of the user group,example=operators"`
+	Description string `yaml:"description" json:"description,omitempty" jsonschema:"description=Description of the user group"`
+
+	// Roles lists role names assigned to the group. Missing roles are
+	// assigned; roles not listed are never removed.
+	Roles []string `yaml:"roles" json:"roles,omitempty" jsonschema:"description=Role names assigned to the group (additive; roles not listed are never removed),example=ROLE_INVENTORY_READ"`
+}
+
+// UserSpec ensures a user exists with the desired profile fields and group
+// memberships. The password is only used when creating the user (existing
+// passwords are never overwritten) and group memberships are additive.
+type UserSpec struct {
+	Username  string `yaml:"userName" json:"userName" jsonschema:"description=Username (login) of the user,example=jdoe@example.com"`
+	Email     string `yaml:"email" json:"email,omitempty" jsonschema:"description=Email address of the user"`
+	FirstName string `yaml:"firstName" json:"firstName,omitempty" jsonschema:"description=First name of the user"`
+	LastName  string `yaml:"lastName" json:"lastName,omitempty" jsonschema:"description=Last name of the user"`
+	Phone     string `yaml:"phone" json:"phone,omitempty" jsonschema:"description=Phone number of the user"`
+
+	// Enabled declares the desired account state (defaults to true)
+	Enabled *bool `yaml:"enabled" json:"enabled,omitempty" jsonschema:"description=Desired account state (defaults to true when omitted); false disables the user"`
+
+	// Password is only used when creating the user; existing passwords are
+	// never overwritten. Inject secrets with ${VAR} expansion.
+	Password string `yaml:"password" json:"password,omitempty" jsonschema:"description=Initial password used only when creating the user (never updated afterwards); supports ${VAR} expansion"`
+
+	// SendPasswordResetEmail asks the platform to email a password reset
+	// link on creation instead of (or in addition to) setting a password
+	SendPasswordResetEmail bool `yaml:"sendPasswordResetEmail" json:"sendPasswordResetEmail,omitempty" jsonschema:"description=Send a password reset email when creating the user (requires email; alternative to password)"`
+
+	// Groups lists user group names the user is assigned to. Missing
+	// memberships are added; memberships not listed are never removed.
+	Groups []string `yaml:"groups" json:"groups,omitempty" jsonschema:"description=User group names the user is assigned to (additive; memberships not listed are never removed),example=operators"`
+}
+
+func (u UserSpec) IsEnabled() bool {
+	return u.Enabled == nil || *u.Enabled
+}
+
 // Source describes where artifacts come from. Exactly one of Path, URL or
 // GitHub should be set.
 type Source struct {
@@ -373,6 +421,21 @@ type ConfigurationSpec struct {
 	Source Source `yaml:"source" json:"source" jsonschema:"description=Where the configuration file comes from"`
 }
 
+// SmartRestTemplateSpec syncs SmartREST 2.0 template collections from JSON
+// files as exported by the platform (one collection per file). The collection
+// name is taken from the file's "name" field (falling back to "__externalId")
+// and doubles as the external identity (X-Id) the upsert matches on. The
+// order of the request/response templates inside a file does not matter.
+type SmartRestTemplateSpec struct {
+	// Name overrides the collection name from the file (only sensible for
+	// single-file sources)
+	Name string `yaml:"name" json:"name,omitempty" jsonschema:"description=Override the collection name from the file (only sensible for single-file sources)"`
+
+	// Source provides the exported collection JSON files. Directories are
+	// scanned for *.json files by default.
+	Source Source `yaml:"source" json:"source" jsonschema:"description=Where the exported SmartREST 2.0 collection JSON files come from (directories are scanned for *.json by default)"`
+}
+
 // DeviceProfileSpec creates a device profile referencing firmware, software
 // and configuration already present in the tenant (typically synced by the
 // earlier sections of the same manifest).
@@ -385,20 +448,31 @@ type DeviceProfileSpec struct {
 	Configuration []ProfileConfigurationRef `yaml:"configuration" json:"configuration,omitempty" jsonschema:"description=Configuration items included in the profile"`
 }
 
+// Profile references resolve their binary URL automatically from the
+// repository item in the tenant (which is why the deviceProfiles section runs
+// after the repository sections), or take an explicit url that skips the
+// lookup entirely (e.g. for externally hosted binaries). The special url
+// values "-" and "none" disable the lookup AND leave the url off the profile
+// entry, for devices that resolve artifacts by name/version themselves.
+
 type ProfileFirmwareRef struct {
-	Name    string `yaml:"name" json:"name" jsonschema:"description=Firmware name (must exist in the tenant)"`
-	Version string `yaml:"version" json:"version" jsonschema:"description=Firmware version (must exist in the tenant)"`
+	Name    string `yaml:"name" json:"name" jsonschema:"description=Firmware name (must exist in the tenant unless url is set)"`
+	Version string `yaml:"version" json:"version" jsonschema:"description=Firmware version (must exist in the tenant unless url is set)"`
+	URL     string `yaml:"url" json:"url,omitempty" jsonschema:"description=Explicit binary URL skipping the lookup of the firmware version in the tenant; the special values - and none omit the url from the profile entirely,example=none"`
 }
 
 type ProfileSoftwareRef struct {
-	Name    string `yaml:"name" json:"name" jsonschema:"description=Software name (must exist in the tenant)"`
-	Version string `yaml:"version" json:"version" jsonschema:"description=Software version (must exist in the tenant)"`
+	Name    string `yaml:"name" json:"name" jsonschema:"description=Software name (must exist in the tenant unless url is set)"`
+	Version string `yaml:"version" json:"version" jsonschema:"description=Software version (must exist in the tenant unless url is set)"`
+	Type    string `yaml:"type" json:"type,omitempty" jsonschema:"description=Software type of the referenced item (disambiguates the lookup and is written to the profile entry),example=apt"`
+	URL     string `yaml:"url" json:"url,omitempty" jsonschema:"description=Explicit binary URL skipping the lookup of the software version in the tenant; the special values - and none omit the url from the profile entirely,example=none"`
 	Action  string `yaml:"action" json:"action,omitempty" jsonschema:"description=Software action (defaults to install),example=install"` // defaults to "install"
 }
 
 type ProfileConfigurationRef struct {
-	Name string `yaml:"name" json:"name" jsonschema:"description=Configuration item name (must exist in the tenant)"`
+	Name string `yaml:"name" json:"name" jsonschema:"description=Configuration item name (must exist in the tenant unless url is set)"`
 	Type string `yaml:"type" json:"type,omitempty" jsonschema:"description=Configuration type of the referenced item"`
+	URL  string `yaml:"url" json:"url,omitempty" jsonschema:"description=Explicit file URL skipping the lookup of the configuration item in the tenant; the special values - and none omit the url from the profile entirely,example=none"`
 }
 
 // LoadManifest reads a manifest file, expanding ${VAR} environment variable
@@ -482,6 +556,37 @@ func (m *Manifest) Validate() error {
 			}
 		}
 	}
+	groupNames := make(map[string]bool, len(m.UserGroups))
+	for i, group := range m.UserGroups {
+		if group.Name == "" {
+			errs = append(errs, fmt.Sprintf("userGroups[%d]: name is required", i))
+		} else if groupNames[group.Name] {
+			errs = append(errs, fmt.Sprintf("userGroups[%d]: duplicate group name %q", i, group.Name))
+		}
+		groupNames[group.Name] = true
+		for j, role := range group.Roles {
+			if strings.TrimSpace(role) == "" {
+				errs = append(errs, fmt.Sprintf("userGroups[%d].roles[%d]: role must not be empty", i, j))
+			}
+		}
+	}
+	usernames := make(map[string]bool, len(m.Users))
+	for i, user := range m.Users {
+		if user.Username == "" {
+			errs = append(errs, fmt.Sprintf("users[%d]: userName is required", i))
+		} else if usernames[user.Username] {
+			errs = append(errs, fmt.Sprintf("users[%d]: duplicate userName %q", i, user.Username))
+		}
+		usernames[user.Username] = true
+		if user.SendPasswordResetEmail && user.Email == "" {
+			errs = append(errs, fmt.Sprintf("users[%d]: sendPasswordResetEmail requires email", i))
+		}
+		for j, group := range user.Groups {
+			if strings.TrimSpace(group) == "" {
+				errs = append(errs, fmt.Sprintf("users[%d].groups[%d]: group must not be empty", i, j))
+			}
+		}
+	}
 	for i, sw := range m.Software {
 		if err := sw.Source.Validate(); err != nil {
 			errs = append(errs, fmt.Sprintf("software[%d]: %v", i, err))
@@ -509,6 +614,14 @@ func (m *Manifest) Validate() error {
 		}
 		if cfg.ConfigurationType == "" {
 			errs = append(errs, fmt.Sprintf("configuration[%d]: configurationType is required", i))
+		}
+	}
+	for i, spec := range m.SmartRestTemplates {
+		if err := spec.Source.Validate(); err != nil {
+			errs = append(errs, fmt.Sprintf("smartrestTemplates[%d]: %v", i, err))
+		}
+		if spec.Source.URL != "" {
+			errs = append(errs, fmt.Sprintf("smartrestTemplates[%d]: url sources are not supported (the collection file content must be available locally)", i))
 		}
 	}
 	for i, profile := range m.DeviceProfiles {

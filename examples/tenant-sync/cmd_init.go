@@ -42,6 +42,10 @@ software:
 #     source:
 #       path: ./config/myconfig.toml
 
+# smartrestTemplates:
+#   - source:
+#       path: ./smartrest # collection JSON files exported by the platform
+
 # tenantOptions:
 #   - category: configuration
 #     key: my.setting
@@ -52,6 +56,16 @@ software:
 
 # applications:
 #   - name: advanced-software-mgmt
+
+# userGroups:
+#   - name: operators
+#     roles: [ROLE_INVENTORY_READ, ROLE_ALARM_READ]
+
+# users:
+#   - userName: jdoe@example.com
+#     email: jdoe@example.com
+#     sendPasswordResetEmail: true
+#     groups: [operators]
 
 # deviceProfiles:
 #   - name: base-profile

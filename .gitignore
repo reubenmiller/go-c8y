@@ -35,6 +35,7 @@ examples/pipeline/pipeline
 examples/realtime-client-simple/realtime-client-simple
 examples/software-uploader/software-uploader
 examples/tenant-sync/tenant-sync
+examples/tenant-sync/state/
 
 # example files
 device.crt

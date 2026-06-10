@@ -146,6 +146,27 @@ hooks:
     - name: incomplete
 `,
 		},
+		{
+			name: "smartrest template without source",
+			content: `
+smartrestTemplates:
+  - name: custom_devmgmt
+`,
+		},
+		{
+			name: "user group without name",
+			content: `
+userGroups:
+  - description: missing name
+`,
+		},
+		{
+			name: "user without userName",
+			content: `
+users:
+  - email: jdoe@example.com
+`,
+		},
 	}
 
 	for _, tc := range testCases {

@@ -62,6 +62,7 @@ deviceProfiles:
     software:
       - name: tedge
         version: 1.6.0
+        type: apt
 `)
 
 	manifest, err := LoadManifest(path)
@@ -85,6 +86,8 @@ deviceProfiles:
 
 	require.Len(t, manifest.DeviceProfiles, 1)
 	assert.Equal(t, "1.0.0", manifest.DeviceProfiles[0].Firmware.Version)
+	require.Len(t, manifest.DeviceProfiles[0].Software, 1)
+	assert.Equal(t, "apt", manifest.DeviceProfiles[0].Software[0].Type)
 }
 
 func TestLoadManifestApplicationSubscribed(t *testing.T) {
@@ -376,6 +379,84 @@ hooks:
         - name: incomplete
 `,
 			errorMsg: "run is required",
+		},
+		{
+			name: "smartrest source is required",
+			content: `
+smartrestTemplates:
+  - name: custom_devmgmt
+`,
+			errorMsg: "source requires one of",
+		},
+		{
+			name: "smartrest url sources are rejected",
+			content: `
+smartrestTemplates:
+  - source:
+      url: https://example.com/collection.json
+`,
+			errorMsg: "url sources are not supported",
+		},
+		{
+			name: "user group requires name",
+			content: `
+userGroups:
+  - description: missing name
+`,
+			errorMsg: "name is required",
+		},
+		{
+			name: "user group names must be unique",
+			content: `
+userGroups:
+  - name: dup
+  - name: dup
+`,
+			errorMsg: `duplicate group name "dup"`,
+		},
+		{
+			name: "user group roles must not be blank",
+			content: `
+userGroups:
+  - name: operators
+    roles: ["ROLE_INVENTORY_READ", " "]
+`,
+			errorMsg: "role must not be empty",
+		},
+		{
+			name: "user requires userName",
+			content: `
+users:
+  - email: jdoe@example.com
+`,
+			errorMsg: "userName is required",
+		},
+		{
+			name: "usernames must be unique",
+			content: `
+users:
+  - userName: dup@example.com
+  - userName: dup@example.com
+`,
+			errorMsg: `duplicate userName "dup@example.com"`,
+		},
+		{
+			name: "password reset email requires email",
+			content: `
+users:
+  - userName: jdoe
+    sendPasswordResetEmail: true
+`,
+			errorMsg: "sendPasswordResetEmail requires email",
+		},
+		{
+			name: "user groups must not be blank",
+			content: `
+users:
+  - userName: jdoe
+    groups: ["operators", ""]
+`,
+			errorMsg: "group must not be empty",
 		},
 		{
 			name: "application source is validated",

@@ -1,6 +1,6 @@
 # Tenant Sync
 
-A GitOps-style CLI tool for keeping Cumulocity IoT tenants in sync with a declarative manifest. Describe the desired tenant state in a YAML file — software, firmware and configuration repositories, tenant options, feature toggles, application subscriptions, device profiles — and apply it idempotently to one or more tenants.
+A GitOps-style CLI tool for keeping Cumulocity IoT tenants in sync with a declarative manifest. Describe the desired tenant state in a YAML file — software, firmware and configuration repositories, tenant options, feature toggles, application subscriptions, users and user groups, SmartREST 2.0 templates, device profiles — and apply it idempotently to one or more tenants.
 
 It generalises the [software-uploader](../software-uploader/README.md) example: the same filename parsing and idempotent upload logic, extended to firmware and configuration, with artifact sources that can be local files **or GitHub releases**, all driven from a single configuration file.
 
@@ -17,6 +17,8 @@ It generalises the [software-uploader](../software-uploader/README.md) example: 
                      └──────────────────┘      • tenant options
                                                • feature toggles
                                                • application subscriptions
+                                               • users & user groups
+                                               • SmartREST 2.0 templates
 ```
 
 Because every operation is idempotent (get-or-create / upsert), the same manifest can be applied repeatedly and to multiple tenants — keep it in git, run it from CI, and your tenants stay in sync with the source of truth.
@@ -36,6 +38,8 @@ Because every operation is idempotent (get-or-create / upsert), the same manifes
 - 🐙 **GitHub sources**: point any entry at a GitHub repository — assets are pulled from releases (`latest`, a specific tag, or `all`), with the release tag as the version fallback; `linkOnly` mode references download URLs without re-hosting binaries
 - 🧩 **Device profiles**: declare firmware/software/configuration bundles; binary URLs are resolved from the tenant automatically
 - 🎛️ **Tenant options & feature toggles**: set options, enable/disable features, subscribe/unsubscribe applications
+- 👥 **Users & user groups**: create user groups with roles, create users and assign them to groups — additively and idempotently
+- 📡 **SmartREST 2.0 templates**: sync template collections from JSON files exported by the platform — matched by external identity, updated only when the templates differ (order-insensitive)
 - 🏢 **Target tenants**: apply one manifest to all child tenants, an explicit list, or tenants matching a selector — with per-tenant credentials resolved automatically
 - 🔎 **Dry-run**: preview every change before applying
 - 🔐 **Env var expansion**: `${VAR}` references in the manifest (e.g. GitHub tokens)
@@ -98,7 +102,7 @@ set-session tenant-b && ./tenant-sync run -f tenant.yaml
 |------|---------|-------------|
 | `-f`, `--manifest` | `tenant.yaml` | Path to the manifest file (also accepted as a positional argument) |
 | `--dry-run`, `--dry` | | Preview changes without applying them |
-| `--only` | *(all)* | Comma-separated sections to apply: `tenantOptions`, `features`, `applications`, `software`, `firmware`, `configuration`, `deviceProfiles`, `commands` |
+| `--only` | *(all)* | Comma-separated sections to apply: `tenantOptions`, `features`, `applications`, `userGroups`, `users`, `software`, `firmware`, `configuration`, `smartrestTemplates`, `deviceProfiles`, `commands` |
 | `--force` | | Replace existing version binaries / configuration files |
 | `--concurrency` | `5` | Concurrent software version uploads (1–20) |
 | `--target` | | Apply to a tenant referenced by ID or domain; repeatable or comma-separated (overrides the manifest `targets` section) |
@@ -109,7 +113,7 @@ set-session tenant-b && ./tenant-sync run -f tenant.yaml
 | `--verbose` | | Detailed logging |
 | `--debug` | | Verbose logging + HTTP request/response details |
 
-Sections are applied in a fixed order — tenant options, features, applications, software, firmware, configuration, device profiles, then commands — so profiles can reference repository items synced in the same run, and custom commands can build on everything the manifest declares.
+Sections are applied in a fixed order — tenant options, features, applications, user groups, users, software, firmware, configuration, SmartREST templates, device profiles, then commands — so users can be assigned to groups created in the same run, profiles can reference repository items synced in the same run, and custom commands can build on everything the manifest declares.
 
 ## The Manifest
 
@@ -245,6 +249,60 @@ applications:
       path: ./build/my-microservice.zip
 ```
 
+### Users and user groups
+
+The `userGroups` section creates user groups (called *global roles* in the Cumulocity UI) and assigns roles to them; the `users` section creates users and assigns them to groups. Both are idempotent and **additive**: roles and group memberships already present in the tenant but absent from the manifest are never removed, so built-in groups (`admins`, `business`, ...) can be extended and manually-managed assignments survive a sync.
+
+```yaml
+userGroups:
+  - name: operators
+    description: Read-only access for the operations team
+    roles:
+      - ROLE_INVENTORY_READ
+      - ROLE_ALARM_READ
+
+users:
+  - userName: jdoe@example.com
+    email: jdoe@example.com
+    firstName: Jane
+    lastName: Doe
+    sendPasswordResetEmail: true # email a reset link instead of setting a password
+    groups: [operators]          # groups synced above or already in the tenant
+
+  - userName: svc-dashboard
+    password: ${DASHBOARD_USER_PASSWORD} # injected from the environment
+    groups: [operators]
+
+  - userName: old-account@example.com
+    enabled: false # keep the account but disable it
+```
+
+User groups are synced before users, so `users[].groups` can reference groups declared in the same manifest (or groups that already exist in the tenant). Roles referenced by `userGroups[].roles` must exist in the tenant — note that some roles only appear after subscribing the microservice that provides them, which the `applications` section (applied earlier) can take care of.
+
+For existing users only the fields set in the manifest are compared and updated (empty fields are left alone), with two deliberate exceptions:
+
+- **`password` is only used when creating the user** and never updated afterwards, so re-running the sync doesn't reset credentials. Use `${VAR}` expansion to keep secrets out of the manifest, or prefer `sendPasswordResetEmail: true` to avoid handling passwords entirely.
+- **`enabled` defaults to true** and is always managed: a user disabled in the UI is re-enabled on the next sync unless the manifest says `enabled: false`.
+
+### SmartREST 2.0 template collections
+
+The `smartrestTemplates` section syncs SmartREST 2.0 template collections from JSON files as exported by the platform UI (Device Management → Device types → SmartREST templates → Export) — one collection per file. Point a source at a directory and every `*.json` file in it is synced:
+
+```yaml
+smartrestTemplates:
+  - source:
+      path: ./smartrest # scans for *.json by default
+
+  # or a single file, optionally renaming the collection
+  - name: custom_devmgmt
+    source:
+      path: ./exports/custom_devmgmt.json
+```
+
+A collection is stored as a managed object of type `c8y_SmartRest2Template` and matched via its external identity (`c8y_SmartRest2DeviceIdentifier`, the X-Id devices reference), taken from the file's `name` (falling back to `__externalId`). The upsert only writes when the collection actually differs from the file: the request/response template lists are compared **order-insensitively** (sorted by `msgId`), platform bookkeeping fields (`id`, `lastUpdated`, `owner`, ...) are ignored, and the `c8y_TenantSync` annotation never triggers an update by itself — so re-applying an unchanged export performs no writes.
+
+Since the file content must be read, `url` sources are not supported for this section (GitHub release assets work — they are downloaded first).
+
 ### Target tenants
 
 By default the manifest applies to the current tenant (the `C8Y_*` session). A `targets` section applies it to other tenants instead — run once from the parent/management tenant to keep a whole fleet of tenants in sync. The selection modes are additive (the union of all matches):
@@ -336,7 +394,9 @@ Commands execute like hooks: via `sh -c` from the manifest directory, with the `
 
 ### Device profiles
 
-Device profiles bundle firmware, software and configuration. References are looked up in the tenant and resolved to binary URLs, so list the referenced items in the same manifest (or make sure they already exist):
+Device profiles bundle firmware, software and configuration — a profile is essentially a set of links to existing repository items. By default each reference is looked up in the tenant and resolved to its binary URL; that's why the `deviceProfiles` section runs **after** the repository sections, so the referenced items can be synced by the same manifest. References to items outside the manifest must already exist in the tenant, otherwise the profile fails with a lookup error.
+
+Alternatively a reference can set `url` explicitly (e.g. for an externally hosted binary), which skips the repository lookup entirely. The special values `none` and `"-"` also skip the lookup but leave the `url` off the profile entry altogether — useful when the devices resolve artifacts by name/version themselves and the referenced item doesn't exist in the tenant at all:
 
 ```yaml
 deviceProfiles:
@@ -348,7 +408,16 @@ deviceProfiles:
     software:
       - name: tedge
         version: 1.6.2
+        type: apt # optional software type (disambiguates the lookup)
         action: install
+      # An explicit url skips the repository lookup
+      - name: sensor-agent
+        version: 2.1.0
+        url: https://example.com/packages/sensor-agent_2.1.0.deb
+      # url: none (or "-") additionally leaves the url off the profile entry
+      - name: managed-by-device
+        version: 3.0.0
+        url: none
     configuration:
       - name: mosquitto
         type: mosquitto.conf
@@ -434,21 +503,26 @@ Run the job per tenant (e.g. a matrix over credential sets) to maintain multiple
 │  sync_tenant.go    (options,     │
 │                     features,    │
 │                     apps)        │
+│  sync_users.go     (user groups, │
+│                     users, role/ │
+│                     group assign)│
 │  sync_software.go  + parser.go   │  package filename parsing
 │  sync_firmware.go  + firmware.go │  OS image filename parsing
 │  sync_configuration.go           │
+│  sync_smartrest.go               │  exported collection JSON files
 │  sync_profiles.go                │  resolves references to binary URLs
 └──────────────┬───────────────────┘
                │
         ┌────────────┐
         │  go-c8y SDK│  Repository.{Software,Firmware,Configuration},
-        └────────────┘  Tenants.Options, Features, Applications, ManagedObjects
+        └────────────┘  Tenants.Options, Features, Applications,
+                        Users, UserGroups, UserRoles,
+                        SmartRestTemplates, ManagedObjects
 ```
 
 ## Future Enhancements
 
-- Users and groups: create users if missing, assign to groups/roles
-- Prune mode: remove items present in the tenant but absent from the manifest
+- Prune mode: remove items present in the tenant but absent from the manifest (including group roles and user memberships)
 - Checksums/signatures for artifact integrity
 - Additional sources (S3, OCI registries, GitLab releases)
 - Watch mode for continuous reconciliation

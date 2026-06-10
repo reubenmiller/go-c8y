@@ -37,23 +37,31 @@ const (
 	SectionTenantOptions  = "tenantOptions"
 	SectionFeatures       = "features"
 	SectionApplications   = "applications"
+	SectionUserGroups     = "userGroups"
+	SectionUsers          = "users"
 	SectionSoftware       = "software"
 	SectionFirmware       = "firmware"
 	SectionConfiguration  = "configuration"
+	SectionSmartRest      = "smartrestTemplates"
 	SectionDeviceProfiles = "deviceProfiles"
 	SectionCommands       = "commands"
 )
 
-// SectionOrder is the order sections are applied in. Repositories are synced
-// before device profiles so profiles can reference the synced items; custom
-// commands run last so they can build on everything the manifest declares.
+// SectionOrder is the order sections are applied in. User groups are synced
+// before users so users can be assigned to groups created in the same run;
+// repositories are synced before device profiles so profiles can reference
+// the synced items; custom commands run last so they can build on everything
+// the manifest declares.
 var SectionOrder = []string{
 	SectionTenantOptions,
 	SectionFeatures,
 	SectionApplications,
+	SectionUserGroups,
+	SectionUsers,
 	SectionSoftware,
 	SectionFirmware,
 	SectionConfiguration,
+	SectionSmartRest,
 	SectionDeviceProfiles,
 	SectionCommands,
 }
@@ -293,12 +301,18 @@ func (s *Syncer) applyTarget(ctx, baseCtx context.Context, manifest *Manifest, o
 			err = s.SyncFeatures(baseCtx, manifest.Features)
 		case SectionApplications:
 			err = s.SyncApplications(baseCtx, manifest.Applications)
+		case SectionUserGroups:
+			err = s.SyncUserGroups(ctx, manifest.UserGroups)
+		case SectionUsers:
+			err = s.SyncUsers(ctx, manifest.Users)
 		case SectionSoftware:
 			err = s.SyncSoftware(ctx, manifest.Software)
 		case SectionFirmware:
 			err = s.SyncFirmware(ctx, manifest.Firmware)
 		case SectionConfiguration:
 			err = s.SyncConfiguration(ctx, manifest.Configuration)
+		case SectionSmartRest:
+			err = s.SyncSmartRestTemplates(ctx, manifest.SmartRestTemplates)
 		case SectionDeviceProfiles:
 			err = s.SyncDeviceProfiles(ctx, manifest.DeviceProfiles)
 		case SectionCommands:

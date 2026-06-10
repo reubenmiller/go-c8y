@@ -63,6 +63,34 @@ applications:
       path: ./build/my-microservice.zip
       optional: true # skip instead of failing when the file does not exist
 
+# Create user groups (called "global roles" in the UI) with roles assigned.
+# Role assignments are additive: roles already on a group but absent from the
+# manifest are kept, so built-in groups can be extended safely.
+userGroups:
+  - name: operators
+    description: Read-only access for the operations team
+    roles:
+      - ROLE_INVENTORY_READ
+      - ROLE_ALARM_READ
+      - ROLE_EVENT_READ
+
+# Create users and assign them to user groups. The password is only used when
+# creating a user (never updated afterwards); group memberships are additive.
+users:
+  - userName: jdoe@example.com
+    email: jdoe@example.com
+    firstName: Jane
+    lastName: Doe
+    sendPasswordResetEmail: true # email a reset link instead of setting a password
+    groups: [operators]
+
+  - userName: svc-dashboard
+    password: ${DASHBOARD_USER_PASSWORD} # injected from the environment
+    groups: [operators]
+
+  - userName: old-account@example.com
+    enabled: false # keep the account but disable it
+
 # Sync software packages. Name, version, architecture and software type are
 # parsed from the filenames (same logic as the software-uploader example).
 software:
@@ -133,8 +161,27 @@ configuration:
     source:
       url: https://example.com/configs/tedge.toml
 
+# Sync SmartREST 2.0 template collections from JSON files exported by the
+# platform (one collection per file). Collections are matched by their
+# external identity (X-Id) and only updated when they differ from the file —
+# the order of the templates inside a file does not matter.
+smartrestTemplates:
+  # Scan a directory (*.json by default)
+  - source:
+      path: ./smartrest
+      optional: true # skip instead of failing when the directory is missing
+
+  # A single exported collection, with the name from the manifest instead of
+  # the file
+  - name: custom_devmgmt
+    source:
+      path: ./example-smartrestv2-collection.json
+      optional: true
+
 # Create device profiles referencing the items synced above.
-# Binary URLs are resolved automatically from the tenant.
+# Binary URLs are resolved automatically from the tenant (which is why this
+# section runs after software/firmware/configuration), or given explicitly
+# with url to skip the lookup.
 deviceProfiles:
   - name: rpi4-base
     deviceType: raspberrypi4-64
@@ -144,7 +191,17 @@ deviceProfiles:
     software:
       - name: tedge
         version: 1.6.2
+        type: apt # optional software type (disambiguates the lookup)
         action: install
+      # An explicit url skips the repository lookup (externally hosted binary)
+      - name: sensor-agent
+        version: 2.1.0
+        url: https://example.com/packages/sensor-agent_2.1.0.deb
+      # url: none (or "-") skips the lookup AND leaves the url off the profile
+      # (for devices that resolve artifacts by name/version themselves)
+      - name: managed-by-device
+        version: 3.0.0
+        url: none
     configuration:
       - name: mosquitto
         type: mosquitto.conf

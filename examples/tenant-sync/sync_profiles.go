@@ -43,7 +43,7 @@ func (s *Syncer) SyncDeviceProfiles(ctx context.Context, specs []DeviceProfileSp
 			// manifest so re-applying an unchanged manifest is a no-op.
 			// The c8y_TenantSync annotation is deliberately not compared.
 			upToDate := jsonEqual(body["c8y_DeviceProfile"], result.Data.Get("c8y_DeviceProfile").Raw) &&
-				(spec.DeviceType == "" || result.Data.Get("c8y_Filter.type").String() == spec.DeviceType)
+				result.Data.Get("c8y_Filter.type").String() == spec.DeviceType
 			if upToDate {
 				action = ActionUnchanged
 			} else {
@@ -64,25 +64,48 @@ func escapeQueryValue(value string) string {
 	return strings.ReplaceAll(value, "'", "''")
 }
 
+// profileRefURL resolves the url of a profile reference: an explicit url is
+// used as-is, the sentinel values "-" and "none" disable the url entirely
+// (no lookup, no url field on the entry), and an empty url falls back to the
+// repository lookup.
+func profileRefURL(explicit string, lookup func() (string, error)) (url string, include bool, err error) {
+	switch explicit {
+	case "-", "none":
+		return "", false, nil
+	case "":
+		url, err = lookup()
+		return url, err == nil, err
+	default:
+		return explicit, true, nil
+	}
+}
+
 func (s *Syncer) buildProfileBody(ctx context.Context, spec DeviceProfileSpec) (map[string]any, error) {
 	profile := map[string]any{}
 
 	if spec.Firmware != nil {
-		url, err := s.lookupFirmwareVersionURL(ctx, spec.Firmware.Name, spec.Firmware.Version)
+		url, include, err := profileRefURL(spec.Firmware.URL, func() (string, error) {
+			return s.lookupFirmwareVersionURL(ctx, spec.Firmware.Name, spec.Firmware.Version)
+		})
 		if err != nil {
 			return nil, fmt.Errorf("firmware %s/%s: %w", spec.Firmware.Name, spec.Firmware.Version, err)
 		}
-		profile["firmware"] = map[string]any{
+		entry := map[string]any{
 			"name":    spec.Firmware.Name,
 			"version": spec.Firmware.Version,
-			"url":     url,
 		}
+		if include {
+			entry["url"] = url
+		}
+		profile["firmware"] = entry
 	}
 
 	if len(spec.Software) > 0 {
 		software := make([]map[string]any, 0, len(spec.Software))
 		for _, ref := range spec.Software {
-			url, err := s.lookupSoftwareVersionURL(ctx, ref.Name, ref.Version)
+			url, include, err := profileRefURL(ref.URL, func() (string, error) {
+				return s.lookupSoftwareVersionURL(ctx, ref.Name, ref.Type, ref.Version)
+			})
 			if err != nil {
 				return nil, fmt.Errorf("software %s/%s: %w", ref.Name, ref.Version, err)
 			}
@@ -90,12 +113,18 @@ func (s *Syncer) buildProfileBody(ctx context.Context, spec DeviceProfileSpec) (
 			if action == "" {
 				action = "install"
 			}
-			software = append(software, map[string]any{
+			entry := map[string]any{
 				"name":    ref.Name,
 				"version": ref.Version,
-				"url":     url,
 				"action":  action,
-			})
+			}
+			if include {
+				entry["url"] = url
+			}
+			if ref.Type != "" {
+				entry["softwareType"] = ref.Type
+			}
+			software = append(software, entry)
 		}
 		profile["software"] = software
 	}
@@ -103,27 +132,37 @@ func (s *Syncer) buildProfileBody(ctx context.Context, spec DeviceProfileSpec) (
 	if len(spec.Configuration) > 0 {
 		configs := make([]map[string]any, 0, len(spec.Configuration))
 		for _, ref := range spec.Configuration {
-			url, err := s.lookupConfigurationURL(ctx, ref.Name, ref.Type)
+			url, include, err := profileRefURL(ref.URL, func() (string, error) {
+				return s.lookupConfigurationURL(ctx, ref.Name, ref.Type)
+			})
 			if err != nil {
 				return nil, fmt.Errorf("configuration %s: %w", ref.Name, err)
 			}
-			configs = append(configs, map[string]any{
+			entry := map[string]any{
 				"name": ref.Name,
 				"type": ref.Type,
-				"url":  url,
-			})
+			}
+			if include {
+				entry["url"] = url
+			}
+			configs = append(configs, entry)
 		}
 		profile["configuration"] = configs
+	}
+
+	// c8y_Filter is a mandatory fragment on device profiles; without a
+	// device type restriction it is an empty map
+	filter := map[string]any{}
+	if spec.DeviceType != "" {
+		filter["type"] = spec.DeviceType
 	}
 
 	body := map[string]any{
 		"name":              spec.Name,
 		"type":              "c8y_Profile",
 		"c8y_DeviceProfile": profile,
+		"c8y_Filter":        filter,
 		SyncToolFragment:    syncMeta(),
-	}
-	if spec.DeviceType != "" {
-		body["c8y_Filter"] = map[string]any{"type": spec.DeviceType}
 	}
 	return body, nil
 }
@@ -150,8 +189,8 @@ func (s *Syncer) lookupFirmwareVersionURL(ctx context.Context, name, version str
 	return "", fmt.Errorf("version not found")
 }
 
-func (s *Syncer) lookupSoftwareVersionURL(ctx context.Context, name, version string) (string, error) {
-	software := s.Client.Repository.Software.Get(ctx, softwareitems.NewRef().ByName(name), softwareitems.GetOptions{})
+func (s *Syncer) lookupSoftwareVersionURL(ctx context.Context, name, softwareType, version string) (string, error) {
+	software := s.Client.Repository.Software.Get(ctx, softwareitems.NewRef().ByName(name, softwareType), softwareitems.GetOptions{})
 	if software.Err != nil {
 		return "", fmt.Errorf("software item not found: %w", software.Err)
 	}

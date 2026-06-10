@@ -266,11 +266,18 @@
       "properties": {
         "name": {
           "type": "string",
-          "description": "Configuration item name (must exist in the tenant)"
+          "description": "Configuration item name (must exist in the tenant unless url is set)"
         },
         "type": {
           "type": "string",
           "description": "Configuration type of the referenced item"
+        },
+        "url": {
+          "type": "string",
+          "description": "Explicit file URL skipping the lookup of the configuration item in the tenant; the special values - and none omit the url from the profile entirely",
+          "examples": [
+            "none"
+          ]
         }
       },
       "additionalProperties": false,
@@ -283,11 +290,18 @@
       "properties": {
         "name": {
           "type": "string",
-          "description": "Firmware name (must exist in the tenant)"
+          "description": "Firmware name (must exist in the tenant unless url is set)"
         },
         "version": {
           "type": "string",
-          "description": "Firmware version (must exist in the tenant)"
+          "description": "Firmware version (must exist in the tenant unless url is set)"
+        },
+        "url": {
+          "type": "string",
+          "description": "Explicit binary URL skipping the lookup of the firmware version in the tenant; the special values - and none omit the url from the profile entirely",
+          "examples": [
+            "none"
+          ]
         }
       },
       "additionalProperties": false,
@@ -301,11 +315,25 @@
       "properties": {
         "name": {
           "type": "string",
-          "description": "Software name (must exist in the tenant)"
+          "description": "Software name (must exist in the tenant unless url is set)"
         },
         "version": {
           "type": "string",
-          "description": "Software version (must exist in the tenant)"
+          "description": "Software version (must exist in the tenant unless url is set)"
+        },
+        "type": {
+          "type": "string",
+          "description": "Software type of the referenced item (disambiguates the lookup and is written to the profile entry)",
+          "examples": [
+            "apt"
+          ]
+        },
+        "url": {
+          "type": "string",
+          "description": "Explicit binary URL skipping the lookup of the software version in the tenant; the special values - and none omit the url from the profile entirely",
+          "examples": [
+            "none"
+          ]
         },
         "action": {
           "type": "string",
@@ -341,6 +369,23 @@
       },
       "additionalProperties": false,
       "type": "object"
+    },
+    "SmartRestTemplateSpec": {
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Override the collection name from the file (only sensible for single-file sources)"
+        },
+        "source": {
+          "$ref": "#/$defs/Source",
+          "description": "Where the exported SmartREST 2.0 collection JSON files come from (directories are scanned for *.json by default)"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "source"
+      ]
     },
     "SoftwareSpec": {
       "properties": {
@@ -616,6 +661,90 @@
       },
       "additionalProperties": false,
       "type": "object"
+    },
+    "UserGroupSpec": {
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the user group",
+          "examples": [
+            "operators"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the user group"
+        },
+        "roles": {
+          "items": {
+            "type": "string",
+            "examples": [
+              "ROLE_INVENTORY_READ"
+            ]
+          },
+          "type": "array",
+          "description": "Role names assigned to the group (additive; roles not listed are never removed)"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name"
+      ]
+    },
+    "UserSpec": {
+      "properties": {
+        "userName": {
+          "type": "string",
+          "description": "Username (login) of the user",
+          "examples": [
+            "jdoe@example.com"
+          ]
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "First name of the user"
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Last name of the user"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone number of the user"
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Desired account state (defaults to true when omitted); false disables the user"
+        },
+        "password": {
+          "type": "string",
+          "description": "Initial password used only when creating the user (never updated afterwards); supports ${VAR} expansion"
+        },
+        "sendPasswordResetEmail": {
+          "type": "boolean",
+          "description": "Send a password reset email when creating the user (requires email; alternative to password)"
+        },
+        "groups": {
+          "items": {
+            "type": "string",
+            "examples": [
+              "operators"
+            ]
+          },
+          "type": "array",
+          "description": "User group names the user is assigned to (additive; memberships not listed are never removed)"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "userName"
+      ]
     }
   },
   "properties": {
@@ -644,6 +773,20 @@
       "type": "array",
       "description": "Applications to subscribe to the current tenant (optionally created/uploaded from a source)"
     },
+    "userGroups": {
+      "items": {
+        "$ref": "#/$defs/UserGroupSpec"
+      },
+      "type": "array",
+      "description": "User groups (global roles) to create/update with roles assigned (additive: existing roles are never removed)"
+    },
+    "users": {
+      "items": {
+        "$ref": "#/$defs/UserSpec"
+      },
+      "type": "array",
+      "description": "Users to create/update and assign to user groups (additive: existing memberships are never removed)"
+    },
     "software": {
       "items": {
         "$ref": "#/$defs/SoftwareSpec"
@@ -664,6 +807,13 @@
       },
       "type": "array",
       "description": "Configuration files to sync into the configuration repository"
+    },
+    "smartrestTemplates": {
+      "items": {
+        "$ref": "#/$defs/SmartRestTemplateSpec"
+      },
+      "type": "array",
+      "description": "SmartREST 2.0 template collections to sync from exported JSON files (one collection per file)"
     },
     "deviceProfiles": {
       "items": {
