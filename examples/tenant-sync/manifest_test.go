@@ -87,6 +87,88 @@ deviceProfiles:
 	assert.Equal(t, "1.0.0", manifest.DeviceProfiles[0].Firmware.Version)
 }
 
+func TestLoadManifestApplicationSubscribed(t *testing.T) {
+	path := writeManifest(t, `
+applications:
+  - name: app-default
+  - name: app-on
+    subscribed: true
+  - name: app-off
+    subscribed: false
+`)
+
+	manifest, err := LoadManifest(path)
+	require.NoError(t, err)
+	require.Len(t, manifest.Applications, 3)
+	assert.True(t, manifest.Applications[0].IsSubscribed())
+	assert.True(t, manifest.Applications[1].IsSubscribed())
+	assert.False(t, manifest.Applications[2].IsSubscribed())
+}
+
+func TestLoadManifestTargets(t *testing.T) {
+	path := writeManifest(t, `
+targets:
+  current: true
+  allChildren: true
+  tenants: [t12345, child.example.com]
+  selector:
+    domain: "*.iot.example.com"
+    company: ACME
+  credentials:
+    mode: sessions
+    sessionHome: /tmp/sessions
+`)
+
+	manifest, err := LoadManifest(path)
+	require.NoError(t, err)
+	targets := manifest.Targets
+	require.NotNil(t, targets)
+	assert.True(t, targets.IncludesCurrent())
+	assert.True(t, targets.HasRemoteSelection())
+	assert.True(t, targets.AllChildren)
+	assert.Equal(t, []string{"t12345", "child.example.com"}, targets.Tenants)
+	require.NotNil(t, targets.Selector)
+	assert.Equal(t, "*.iot.example.com", targets.Selector.Domain)
+	assert.Equal(t, "ACME", targets.Selector.Company)
+	assert.Equal(t, CredentialsModeSessions, targets.CredentialsMode())
+	assert.Equal(t, "/tmp/sessions", targets.Credentials.SessionHome)
+}
+
+func TestLoadManifestCommandsAndSectionHooks(t *testing.T) {
+	path := writeManifest(t, `
+commands:
+  - name: mycustom1
+    actions:
+      - c8y devices create --name "foo"
+      - c8y devices create --name "bar"
+  - name: mycustom2
+    actions:
+      - c8y devices create --name "foo2"
+
+hooks:
+  pre:
+    - run: echo global-pre
+  sections:
+    software:
+      pre:
+        - run: echo before software
+      post:
+        - run: echo after software
+`)
+
+	manifest, err := LoadManifest(path)
+	require.NoError(t, err)
+
+	require.Len(t, manifest.Commands, 2)
+	assert.Equal(t, "mycustom1", manifest.Commands[0].Name)
+	assert.Len(t, manifest.Commands[0].Actions, 2)
+	assert.Equal(t, []string{`c8y devices create --name "foo2"`}, manifest.Commands[1].Actions)
+
+	require.Contains(t, manifest.Hooks.Sections, "software")
+	assert.Len(t, manifest.Hooks.Sections["software"].Pre, 1)
+	assert.Len(t, manifest.Hooks.Sections["software"].Post, 1)
+}
+
 func TestLoadManifestExpandsEnvVars(t *testing.T) {
 	t.Setenv("TEST_SYNC_TOKEN", "secret-token")
 
@@ -208,6 +290,90 @@ firmware:
 hooks:
   post:
     - name: incomplete
+`,
+			errorMsg: "run is required",
+		},
+		{
+			name: "targets selector requires criteria",
+			content: `
+targets:
+  selector: {}
+`,
+			errorMsg: "selector requires at least one of",
+		},
+		{
+			name: "targets must select something",
+			content: `
+targets:
+  current: false
+`,
+			errorMsg: "no tenants selected",
+		},
+		{
+			name: "targets credentials mode is checked",
+			content: `
+targets:
+  allChildren: true
+  credentials:
+    mode: magic
+`,
+			errorMsg: `unknown credentials mode "magic"`,
+		},
+		{
+			name: "command group requires name",
+			content: `
+commands:
+  - actions: ["echo hello"]
+`,
+			errorMsg: "name is required",
+		},
+		{
+			name: "command group requires actions",
+			content: `
+commands:
+  - name: empty
+`,
+			errorMsg: "at least one action is required",
+		},
+		{
+			name: "command group names must be unique",
+			content: `
+commands:
+  - name: dup
+    actions: ["echo a"]
+  - name: dup
+    actions: ["echo b"]
+`,
+			errorMsg: `duplicate group name "dup"`,
+		},
+		{
+			name: "command actions must not be blank",
+			content: `
+commands:
+  - name: blank
+    actions: ["echo a", "  "]
+`,
+			errorMsg: "action must not be empty",
+		},
+		{
+			name: "section hooks only for known sections",
+			content: `
+hooks:
+  sections:
+    softwarez:
+      pre:
+        - run: echo x
+`,
+			errorMsg: "unknown section",
+		},
+		{
+			name: "section hook requires run",
+			content: `
+hooks:
+  sections:
+    software:
+      pre:
+        - name: incomplete
 `,
 			errorMsg: "run is required",
 		},

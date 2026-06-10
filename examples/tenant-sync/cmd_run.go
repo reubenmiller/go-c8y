@@ -23,7 +23,14 @@ func cmdRun(args []string) error {
 		concurrency  = flags.Int("concurrency", 5, "Number of concurrent software version uploads (1-20)")
 		verbose      = flags.Bool("verbose", false, "Enable detailed logging")
 		debug        = flags.Bool("debug", false, "Enable debug mode (verbose logging + HTTP debug)")
+
+		allChildren     = flags.Bool("all-children", false, "Apply to all child tenants of the current tenant (overrides the manifest targets section)")
+		targetSelector  = flags.String("target-selector", "", "Apply to tenants matching criteria, e.g. domain=*.example.com,company=ACME (overrides the manifest targets section)")
+		includeCurrent  = flags.Bool("include-current", false, "Also include the current tenant when other target flags are used")
+		credentialsMode = flags.String("credentials-mode", "", "How credentials for other tenants are obtained: "+CredentialsModeServiceUser+" or "+CredentialsModeSessions+" (overrides the manifest)")
 	)
+	var targetFlags stringListFlag
+	flags.Var(&targetFlags, "target", "Apply to a tenant referenced by ID or domain; repeatable or comma-separated (overrides the manifest targets section)")
 	flags.StringVar(manifestFlag, "manifest", "", "Alias for -f")
 	flags.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: tenant-sync run [flags] [manifest.yaml]\n\nApply a manifest to the tenant (authentication via C8Y_* environment variables).\n\nFlags:\n")
@@ -46,6 +53,15 @@ func cmdRun(args []string) error {
 	manifest, err := LoadManifest(manifestPath)
 	if err != nil {
 		return err
+	}
+
+	targets, err := targetsFromFlags(targetFlags, *allChildren, *targetSelector, *includeCurrent)
+	if err != nil {
+		return err
+	}
+	targets = mergeTargetOverrides(manifest.Targets, targets, *credentialsMode)
+	if err := targets.Validate(); err != nil {
+		return fmt.Errorf("invalid targets: %w", err)
 	}
 
 	var onlySections []string
@@ -91,6 +107,7 @@ func cmdRun(args []string) error {
 		DryRun:      *dryRun,
 		Force:       *force,
 		Concurrency: *concurrency,
+		Targets:     targets,
 	}
 
 	startTime := time.Now()
@@ -108,6 +125,87 @@ func cmdRun(args []string) error {
 		fmt.Println("\n✓ Dry run complete - no changes made")
 	}
 	return nil
+}
+
+// stringListFlag collects the values of a repeatable flag
+type stringListFlag []string
+
+func (f *stringListFlag) String() string { return strings.Join(*f, ",") }
+
+func (f *stringListFlag) Set(value string) error {
+	*f = append(*f, value)
+	return nil
+}
+
+// targetsFromFlags builds a targets spec from the CLI flags. It returns nil
+// when no target flag was given (the manifest targets section then applies).
+func targetsFromFlags(targets []string, allChildren bool, selector string, includeCurrent bool) (*TargetsSpec, error) {
+	if len(targets) == 0 && !allChildren && selector == "" && !includeCurrent {
+		return nil, nil
+	}
+
+	spec := &TargetsSpec{AllChildren: allChildren}
+	for _, entry := range targets {
+		for _, part := range strings.Split(entry, ",") {
+			if part = strings.TrimSpace(part); part != "" {
+				spec.Tenants = append(spec.Tenants, part)
+			}
+		}
+	}
+	if selector != "" {
+		sel := &TenantSelector{}
+		for _, pair := range strings.Split(selector, ",") {
+			key, value, found := strings.Cut(pair, "=")
+			if !found {
+				return nil, fmt.Errorf("invalid --target-selector entry %q: expected key=value", pair)
+			}
+			switch strings.TrimSpace(key) {
+			case "domain":
+				sel.Domain = strings.TrimSpace(value)
+			case "company":
+				sel.Company = strings.TrimSpace(value)
+			default:
+				return nil, fmt.Errorf("unknown --target-selector key %q: supported keys are domain and company", strings.TrimSpace(key))
+			}
+		}
+		spec.Selector = sel
+	}
+	if includeCurrent {
+		include := true
+		spec.Current = &include
+	}
+	return spec, nil
+}
+
+// mergeTargetOverrides combines the manifest targets section with the CLI
+// overrides: any target selection flag replaces the manifest's selection
+// entirely (but keeps its credentials config), and --credentials-mode
+// overrides the credentials mode. Returns nil when nothing overrides the
+// manifest.
+func mergeTargetOverrides(fromManifest, fromFlags *TargetsSpec, credentialsMode string) *TargetsSpec {
+	spec := fromFlags
+	if spec != nil && fromManifest != nil {
+		spec.Credentials = fromManifest.Credentials
+	}
+
+	if credentialsMode != "" {
+		if spec == nil {
+			if fromManifest != nil {
+				clone := *fromManifest
+				spec = &clone
+			} else {
+				spec = &TargetsSpec{}
+			}
+		}
+		if spec.Credentials != nil {
+			creds := *spec.Credentials
+			creds.Mode = credentialsMode
+			spec.Credentials = &creds
+		} else {
+			spec.Credentials = &TargetCredentials{Mode: credentialsMode}
+		}
+	}
+	return spec
 }
 
 func isKnownSection(name string) bool {

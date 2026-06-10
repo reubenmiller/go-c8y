@@ -6,11 +6,13 @@ import (
 	"net/http"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/applications"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/currenttenant"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/tenantoptions"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 )
 
 // SyncTenantOptions ensures each tenant option exists with the desired value.
@@ -95,7 +97,10 @@ func (s *Syncer) resolveOptionValue(ctx context.Context, ref *TenantOptionValueF
 	}
 }
 
-// SyncFeatures enables/disables feature toggles for the current tenant
+// SyncFeatures enables/disables feature toggles for the target tenant. The
+// current tenant is managed via the regular features API; other tenants via
+// the per-tenant overrides API (which requires management tenant credentials,
+// so the call is made with the base credentials rather than the target's).
 func (s *Syncer) SyncFeatures(ctx context.Context, specs []FeatureSpec) error {
 	for _, spec := range specs {
 		desired := "enabled"
@@ -108,26 +113,64 @@ func (s *Syncer) SyncFeatures(ctx context.Context, specs []FeatureSpec) error {
 			continue
 		}
 
-		existing := s.Client.Features.Get(ctx, spec.Key)
-		if existing.Err == nil && existing.Data.Active() == spec.IsEnabled() {
-			s.record(SectionFeatures, spec.Key, ActionUnchanged, desired, nil)
+		if s.activeTarget == nil || s.activeTarget.Current {
+			existing := s.Client.Features.Get(ctx, spec.Key)
+			if existing.Err == nil && existing.Data.Active() == spec.IsEnabled() {
+				s.record(SectionFeatures, spec.Key, ActionUnchanged, desired, nil)
+				continue
+			}
+
+			var err error
+			if spec.IsEnabled() {
+				err = s.Client.Features.Enable(ctx, spec.Key).Err
+			} else {
+				err = s.Client.Features.Disable(ctx, spec.Key).Err
+			}
+			s.record(SectionFeatures, spec.Key, ActionUpdated, desired, err)
 			continue
 		}
 
-		var err error
-		if spec.IsEnabled() {
-			err = s.Client.Features.Enable(ctx, spec.Key).Err
-		} else {
-			err = s.Client.Features.Disable(ctx, spec.Key).Err
+		tenantID := s.activeTarget.TenantID
+		if active, known := s.featureOverride(ctx, spec.Key, tenantID); known && active == spec.IsEnabled() {
+			s.record(SectionFeatures, spec.Key, ActionUnchanged, desired, nil)
+			continue
 		}
-		s.record(SectionFeatures, spec.Key, ActionUpdated, desired, err)
+		result := s.Client.Features.Tenants.SetForTenant(ctx, spec.Key, tenantID, spec.IsEnabled())
+		s.record(SectionFeatures, spec.Key, ActionUpdated, desired, result.Err)
 	}
 	return nil
 }
 
+// featureOverride looks up the per-tenant override state of a feature toggle.
+// The override list is fetched once per key and cached for the whole run; an
+// unknown state (no override set, or the list not being readable) simply
+// means the toggle is written without change detection.
+func (s *Syncer) featureOverride(ctx context.Context, key, tenantID string) (active bool, known bool) {
+	if s.featureOverrides == nil {
+		s.featureOverrides = make(map[string]map[string]bool)
+	}
+	states, ok := s.featureOverrides[key]
+	if !ok {
+		states = make(map[string]bool)
+		result := s.Client.Features.Tenants.List(ctx, key)
+		if result.Err == nil {
+			for item, err := range op.Iter2(result) {
+				if err != nil {
+					break
+				}
+				states[item.TenantId()] = item.Active()
+			}
+		}
+		s.featureOverrides[key] = states
+	}
+	active, known = states[tenantID]
+	return active, known
+}
+
 // SyncApplications ensures applications exist (creating and uploading their
-// binary from a source when one is given) and subscribes them to the current
-// tenant
+// binary from a source when one is given) and subscribes them to the target
+// tenant, or unsubscribes them when subscribed: false. Subscriptions address
+// the target tenant by ID, so the calls run with the base credentials.
 func (s *Syncer) SyncApplications(ctx context.Context, specs []ApplicationSpec) error {
 	if len(specs) == 0 {
 		return nil
@@ -136,7 +179,9 @@ func (s *Syncer) SyncApplications(ctx context.Context, specs []ApplicationSpec) 
 	if s.DryRun {
 		for _, spec := range specs {
 			detail := "subscribe"
-			if spec.Source != nil {
+			if !spec.IsSubscribed() {
+				detail = "unsubscribe"
+			} else if spec.Source != nil {
 				detail = "create/upload if missing, then subscribe"
 			}
 			s.record(SectionApplications, spec.Name, ActionPlanned, detail, nil)
@@ -144,13 +189,28 @@ func (s *Syncer) SyncApplications(ctx context.Context, specs []ApplicationSpec) 
 		return nil
 	}
 
-	tenant := s.Client.Tenants.Current.Get(ctx, currenttenant.GetOptions{})
-	if tenant.Err != nil {
-		return fmt.Errorf("failed to get current tenant: %w", tenant.Err)
+	tenantID := ""
+	if s.activeTarget != nil {
+		tenantID = s.activeTarget.TenantID
 	}
-	tenantID := tenant.Data.Name()
+	if tenantID == "" {
+		// No targets configured: the target is the current tenant
+		tenant := s.Client.Tenants.Current.Get(ctx, currenttenant.GetOptions{})
+		if tenant.Err != nil {
+			return fmt.Errorf("failed to get current tenant: %w", tenant.Err)
+		}
+		tenantID = tenant.Data.Name()
+		if s.activeTarget != nil {
+			s.activeTarget.TenantID = tenantID
+		}
+	}
 
 	for _, spec := range specs {
+		if !spec.IsSubscribed() {
+			s.unsubscribeApplication(ctx, spec, tenantID)
+			continue
+		}
+
 		selfLink, ok := s.ensureApplication(ctx, spec)
 		if !ok {
 			continue
@@ -158,12 +218,12 @@ func (s *Syncer) SyncApplications(ctx context.Context, specs []ApplicationSpec) 
 
 		result := s.Client.Applications.Subscribe(ctx, tenantID, selfLink)
 		if result.Err != nil {
-			s.record(SectionApplications, spec.Name, ActionFailed, "subscribe", result.Err)
+			s.record(SectionApplications, spec.Name, ActionFailed, "subscribe", subscriptionErrorHint(result.Err, tenantID))
 			continue
 		}
 
 		// A 409 conflict means the tenant is already subscribed
-		if result.HTTPStatus == http.StatusConflict {
+		if result.Status == op.StatusDuplicate || result.HTTPStatus == http.StatusConflict {
 			s.record(SectionApplications, spec.Name, ActionUnchanged, "already subscribed", nil)
 		} else {
 			s.record(SectionApplications, spec.Name, ActionUpdated, "subscribed", nil)
@@ -172,16 +232,50 @@ func (s *Syncer) SyncApplications(ctx context.Context, specs []ApplicationSpec) 
 	return nil
 }
 
+// unsubscribeApplication removes the application subscription from the target
+// tenant. A missing application or subscription both count as the desired
+// state being reached.
+func (s *Syncer) unsubscribeApplication(ctx context.Context, spec ApplicationSpec, tenantID string) {
+	result := s.Client.Applications.Unsubscribe(ctx, tenantID, s.Client.Applications.ByName(spec.Name, spec.Type))
+	if result.Err != nil {
+		s.record(SectionApplications, spec.Name, ActionFailed, "unsubscribe", subscriptionErrorHint(result.Err, tenantID))
+		return
+	}
+	if result.Status == op.StatusSkipped {
+		// Application not found, or not subscribed (404)
+		s.record(SectionApplications, spec.Name, ActionUnchanged, "not subscribed", nil)
+		return
+	}
+	s.record(SectionApplications, spec.Name, ActionUpdated, "unsubscribed", nil)
+}
+
+// subscriptionErrorHint augments 403 errors from (un)subscribe calls, which
+// typically mean the application is not owned by a tenant the current
+// credentials can manage
+func subscriptionErrorHint(err error, tenantID string) error {
+	if core.ErrHasStatus(err, http.StatusForbidden) {
+		return fmt.Errorf("%w (access denied: the application is likely not owned by a tenant you can manage; run with the credentials of the application's owner tenant, e.g. from the parent tenant with a targets section selecting %s)", err, tenantID)
+	}
+	return err
+}
+
 // ensureApplication looks up the application and, when the spec has a source,
 // creates it if missing and uploads its binary. The binary is uploaded on
 // creation and, for existing applications, only with --force (binary content
 // cannot be compared, so unconditional uploads would break idempotency).
 // Returns the application self link and whether to continue with subscription.
+//
+// Successful results are cached by name so that the create/upload work (and
+// its result records) happen only once when applying to multiple tenants.
 func (s *Syncer) ensureApplication(ctx context.Context, spec ApplicationSpec) (string, bool) {
+	if selfLink, ok := s.appSelfLinks[spec.Name]; ok {
+		return selfLink, true
+	}
+
 	app := s.Client.Applications.Get(ctx, s.Client.Applications.ByName(spec.Name, spec.Type))
 
 	if app.Err == nil && spec.Source == nil {
-		return app.Data.Self(), true
+		return s.cacheAppSelfLink(spec.Name, app.Data.Self()), true
 	}
 
 	if app.Err != nil && spec.Source == nil {
@@ -219,7 +313,7 @@ func (s *Syncer) ensureApplication(ctx context.Context, spec ApplicationSpec) (s
 	if !created && !s.Force {
 		s.record(SectionApplications, spec.Name, ActionUnchanged,
 			"binary upload skipped (application exists; use --force to re-upload)", nil)
-		return app.Data.Self(), true
+		return s.cacheAppSelfLink(spec.Name, app.Data.Self()), true
 	}
 
 	files, ok := s.resolveSource(SectionApplications, spec.Name, *spec.Source)
@@ -252,5 +346,14 @@ func (s *Syncer) ensureApplication(ctx context.Context, spec ApplicationSpec) (s
 	} else {
 		s.record(SectionApplications, spec.Name, ActionUpdated, "re-uploaded "+files[0].Filename, nil)
 	}
-	return app.Data.Self(), true
+	return s.cacheAppSelfLink(spec.Name, app.Data.Self()), true
+}
+
+// cacheAppSelfLink stores an application self link for reuse by later targets
+func (s *Syncer) cacheAppSelfLink(name, selfLink string) string {
+	if s.appSelfLinks == nil {
+		s.appSelfLinks = make(map[string]string)
+	}
+	s.appSelfLinks[name] = selfLink
+	return selfLink
 }

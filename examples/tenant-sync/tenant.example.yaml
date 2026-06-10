@@ -9,6 +9,23 @@
 # Environment variables are expanded with ${VAR} syntax before parsing,
 # so secrets (e.g. GitHub tokens) can be injected from the environment.
 
+# Apply the manifest to other tenants than the current one. Selection modes
+# are additive (union of all matches) and overridable on the command line
+# (--target, --all-children, --target-selector, --include-current).
+# Credentials for the other tenants come from a placeholder microservice's
+# per-tenant service users (serviceUser mode, default) or from go-c8y-cli
+# session files (sessions mode).
+# targets:
+#   current: false      # include the current tenant (default: only when nothing else is selected)
+#   allChildren: true   # all child tenants of the current tenant
+#   tenants: [t12345, child.example.com] # by ID or domain
+#   selector:
+#     domain: "*.iot.example.com" # glob matched against the tenant domain
+#     company: ACME               # exact company name
+#   credentials:
+#     mode: serviceUser           # serviceUser (default) | sessions
+#     application: tenant-sync    # placeholder microservice name (serviceUser mode)
+
 # Set tenant options (created if missing, updated when the value differs)
 tenantOptions:
   - category: configuration
@@ -28,9 +45,15 @@ features:
   - key: feature-cep-custom-rules
     enabled: false
 
-# Subscribe applications to the current tenant (idempotent)
+# Subscribe applications to the target tenant (idempotent)
 applications:
   - name: advanced-software-mgmt
+
+  # subscribed: false unsubscribes the application. (Un)subscribing an
+  # application not owned by the current tenant requires running from the
+  # owner (parent) tenant, e.g. with a targets section.
+  - name: cloud-remote-access
+    subscribed: false
 
   # With a source, the application is created if missing and its binary (zip)
   # uploaded on creation (or on every run with --force)
@@ -126,12 +149,32 @@ deviceProfiles:
       - name: mosquitto
         type: mosquitto.conf
 
+# Named groups of shell commands, run as the last section. Actions within a
+# group run in sequence (a failing action skips the rest of its group);
+# separate groups run concurrently with each other.
+commands:
+  - name: seed-devices
+    actions:
+      - echo "c8y devices create --name foo"
+      - echo "c8y devices create --name foo2"
+  - name: smoke-test
+    actions:
+      - echo "c8y currenttenant get"
+
 # Commands executed around the sync (via 'sh -c', from the manifest directory,
 # with C8Y_* env vars passed through). A failing pre hook aborts the run; post
-# hooks always run and report failures without aborting.
+# hooks always run and report failures without aborting. Section hooks
+# (hooks.sections.<name>) run around a single section and are skipped when the
+# section is excluded by --only.
 hooks:
   pre:
     - name: show session
       run: echo "Syncing tenant $C8Y_TENANT"
   post:
     - run: echo "Sync finished"
+  sections:
+    software:
+      pre:
+        - run: echo "before the software section"
+      post:
+        - run: echo "after the software section"

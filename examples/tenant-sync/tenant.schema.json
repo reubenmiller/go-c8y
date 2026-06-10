@@ -16,6 +16,10 @@
             "HOSTED"
           ]
         },
+        "subscribed": {
+          "type": "boolean",
+          "description": "Desired subscription state (defaults to true when omitted); false unsubscribes the application from the target tenant"
+        },
         "contextPath": {
           "type": "string",
           "description": "Context path used when creating the application (defaults to the name)"
@@ -29,6 +33,27 @@
       "type": "object",
       "required": [
         "name"
+      ]
+    },
+    "CommandGroupSpec": {
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the command group (used in the output)"
+        },
+        "actions": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "Shell commands executed in sequence via 'sh -c' from the manifest directory; a failing action skips the rest of the group"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name",
+        "actions"
       ]
     },
     "ConfigurationSpec": {
@@ -225,6 +250,13 @@
           },
           "type": "array",
           "description": "Commands executed after the sync (also when sections failed); failures are reported but do not abort"
+        },
+        "sections": {
+          "additionalProperties": {
+            "$ref": "#/$defs/SectionHooksSpec"
+          },
+          "type": "object",
+          "description": "Hooks executed around individual sections (keyed by section name e.g. software); skipped when the section is excluded by --only"
         }
       },
       "additionalProperties": false,
@@ -289,6 +321,26 @@
         "name",
         "version"
       ]
+    },
+    "SectionHooksSpec": {
+      "properties": {
+        "pre": {
+          "items": {
+            "$ref": "#/$defs/HookSpec"
+          },
+          "type": "array",
+          "description": "Commands executed before the section; a failing pre hook aborts the run"
+        },
+        "post": {
+          "items": {
+            "$ref": "#/$defs/HookSpec"
+          },
+          "type": "array",
+          "description": "Commands executed after the section (also when items failed); failures are reported but do not abort"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
     },
     "SoftwareSpec": {
       "properties": {
@@ -410,6 +462,57 @@
       "additionalProperties": false,
       "type": "object"
     },
+    "TargetCredentials": {
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "serviceUser",
+            "sessions"
+          ],
+          "description": "Credential source for other tenants (defaults to serviceUser)"
+        },
+        "application": {
+          "type": "string",
+          "description": "Name of the placeholder microservice used in serviceUser mode (created if missing; defaults to tenant-sync)"
+        },
+        "sessionHome": {
+          "type": "string",
+          "description": "Directory containing go-c8y-cli session files for the sessions mode (defaults to $C8Y_SESSION_HOME and then ~/.cumulocity)"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "TargetsSpec": {
+      "properties": {
+        "current": {
+          "type": "boolean",
+          "description": "Include the current tenant (defaults to true only when no other selection mode is set)"
+        },
+        "allChildren": {
+          "type": "boolean",
+          "description": "Apply to all child tenants of the current tenant (requires parent/management tenant credentials)"
+        },
+        "tenants": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "Tenants referenced by ID or by domain (entries containing a dot are treated as domains)"
+        },
+        "selector": {
+          "$ref": "#/$defs/TenantSelector",
+          "description": "Select tenants matching criteria (domain glob and/or company name)"
+        },
+        "credentials": {
+          "$ref": "#/$defs/TargetCredentials",
+          "description": "How credentials for the other tenants are obtained (defaults to the serviceUser mode)"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
     "TenantOptionSpec": {
       "oneOf": [
         {
@@ -496,9 +599,30 @@
       },
       "additionalProperties": false,
       "type": "object"
+    },
+    "TenantSelector": {
+      "properties": {
+        "domain": {
+          "type": "string",
+          "description": "Glob pattern matched against the tenant domain",
+          "examples": [
+            "*.iot.example.com"
+          ]
+        },
+        "company": {
+          "type": "string",
+          "description": "Exact company name of the tenant"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
     }
   },
   "properties": {
+    "targets": {
+      "$ref": "#/$defs/TargetsSpec",
+      "description": "Which tenants the manifest is applied to (defaults to the current tenant); applying to other tenants requires parent/management tenant credentials"
+    },
     "tenantOptions": {
       "items": {
         "$ref": "#/$defs/TenantOptionSpec"
@@ -548,9 +672,16 @@
       "type": "array",
       "description": "Device profiles referencing firmware/software/configuration in the tenant"
     },
+    "commands": {
+      "items": {
+        "$ref": "#/$defs/CommandGroupSpec"
+      },
+      "type": "array",
+      "description": "Named groups of shell commands run as the last section; actions within a group run in sequence and groups run concurrently"
+    },
     "hooks": {
       "$ref": "#/$defs/HooksSpec",
-      "description": "Commands executed before and after the sync (e.g. go-c8y-cli calls)"
+      "description": "Commands executed before and after the sync and around individual sections (e.g. go-c8y-cli calls)"
     }
   },
   "additionalProperties": false,

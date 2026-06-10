@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
@@ -40,10 +41,12 @@ const (
 	SectionFirmware       = "firmware"
 	SectionConfiguration  = "configuration"
 	SectionDeviceProfiles = "deviceProfiles"
+	SectionCommands       = "commands"
 )
 
 // SectionOrder is the order sections are applied in. Repositories are synced
-// before device profiles so profiles can reference the synced items.
+// before device profiles so profiles can reference the synced items; custom
+// commands run last so they can build on everything the manifest declares.
 var SectionOrder = []string{
 	SectionTenantOptions,
 	SectionFeatures,
@@ -52,6 +55,7 @@ var SectionOrder = []string{
 	SectionFirmware,
 	SectionConfiguration,
 	SectionDeviceProfiles,
+	SectionCommands,
 }
 
 // ChangeResult records what happened to a single item
@@ -63,7 +67,7 @@ type ChangeResult struct {
 	Err     error
 }
 
-// Syncer applies a manifest to a tenant
+// Syncer applies a manifest to one or more tenants
 type Syncer struct {
 	Client      *api.Client
 	Resolver    *SourceResolver
@@ -71,12 +75,40 @@ type Syncer struct {
 	Force       bool
 	Concurrency int
 
+	// Targets overrides the manifest targets section (set from CLI flags)
+	Targets *TargetsSpec
+
 	Results []ChangeResult
+
+	// activeTarget is the tenant currently being applied
+	activeTarget *Target
+	// multiTarget is set when the run covers tenants other than the current
+	// one, enabling per-tenant labels in the output
+	multiTarget bool
+	// appSelfLinks caches application self links by name so create/upload
+	// only happens once when applying to multiple tenants
+	appSelfLinks map[string]string
+	// featureOverrides caches the per-tenant feature toggle overrides by
+	// feature key (tenant ID -> active)
+	featureOverrides map[string]map[string]bool
+
+	// mu guards Results and the printed output: command groups record
+	// results from concurrent goroutines
+	mu sync.Mutex
 }
 
 func (s *Syncer) record(section, item string, action Action, detail string, err error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.recordLocked(section, item, action, detail, err)
+}
+
+func (s *Syncer) recordLocked(section, item string, action Action, detail string, err error) {
 	if err != nil {
 		action = ActionFailed
+	}
+	if s.multiTarget && s.activeTarget != nil {
+		item = s.activeTarget.Label() + ": " + item
 	}
 	s.Results = append(s.Results, ChangeResult{
 		Section: section,
@@ -169,10 +201,59 @@ func actionFromResult(status op.Status, meta map[string]any) Action {
 	return ActionUnchanged
 }
 
-// Apply runs the pre hooks, all requested sections of the manifest in order,
-// and finally the post hooks. Hooks always run when defined, regardless of
-// any --only section filter; a failing pre hook aborts the run.
+// Apply resolves the target tenants and applies the manifest to each of them
+// in turn. The applications and features sections always run with the base
+// credentials (their APIs address other tenants by ID from the parent); all
+// other sections run with the target tenant's own credentials.
 func (s *Syncer) Apply(ctx context.Context, manifest *Manifest, only []string) error {
+	spec := s.Targets
+	if spec == nil {
+		spec = manifest.Targets
+	}
+
+	var targets []Target
+	if s.DryRun {
+		// No API calls in dry-run mode: describe the selection instead of
+		// resolving it
+		targets = dryRunTargets(spec)
+	} else {
+		var err error
+		targets, err = s.resolveTargets(ctx, spec)
+		if err != nil {
+			return err
+		}
+		if err := s.resolveTargetCredentials(ctx, targets, spec); err != nil {
+			return err
+		}
+	}
+
+	s.multiTarget = len(targets) > 1 || (len(targets) == 1 && !targets[0].Current)
+
+	for i := range targets {
+		s.activeTarget = &targets[i]
+		targetCtx := ctx
+		if targets[i].Auth != nil {
+			targetCtx = api.WithAuth(ctx, *targets[i].Auth)
+		}
+		if s.multiTarget {
+			fmt.Printf("\n🏢 Tenant: %s\n", targets[i].Label())
+		}
+		if err := s.applyTarget(targetCtx, ctx, manifest, only); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// applyTarget runs the pre hooks, all requested sections of the manifest in
+// order, and finally the post hooks for a single target tenant. Hooks always
+// run when defined, regardless of any --only section filter; a failing pre
+// hook aborts the run.
+//
+// ctx carries the target tenant's credentials; baseCtx the base credentials
+// of the current tenant (used by the sections that address the target tenant
+// by ID from the parent).
+func (s *Syncer) applyTarget(ctx, baseCtx context.Context, manifest *Manifest, only []string) error {
 	if err := s.runHooks(ctx, "pre", manifest.Hooks.Pre); err != nil {
 		return err
 	}
@@ -196,14 +277,22 @@ func (s *Syncer) Apply(ctx context.Context, manifest *Manifest, only []string) e
 			continue
 		}
 
+		// Section hooks run around the section (and only when the section
+		// itself runs). Like the global hooks, a failing pre hook aborts and
+		// post hooks always run.
+		sectionHooks := manifest.Hooks.Sections[section]
+		if err := s.runHooks(ctx, "sections."+section+".pre", sectionHooks.Pre); err != nil {
+			return err
+		}
+
 		var err error
 		switch section {
 		case SectionTenantOptions:
 			err = s.SyncTenantOptions(ctx, manifest.TenantOptions)
 		case SectionFeatures:
-			err = s.SyncFeatures(ctx, manifest.Features)
+			err = s.SyncFeatures(baseCtx, manifest.Features)
 		case SectionApplications:
-			err = s.SyncApplications(ctx, manifest.Applications)
+			err = s.SyncApplications(baseCtx, manifest.Applications)
 		case SectionSoftware:
 			err = s.SyncSoftware(ctx, manifest.Software)
 		case SectionFirmware:
@@ -212,7 +301,12 @@ func (s *Syncer) Apply(ctx context.Context, manifest *Manifest, only []string) e
 			err = s.SyncConfiguration(ctx, manifest.Configuration)
 		case SectionDeviceProfiles:
 			err = s.SyncDeviceProfiles(ctx, manifest.DeviceProfiles)
+		case SectionCommands:
+			err = s.SyncCommands(ctx, manifest.Commands)
 		}
+
+		s.runHooks(ctx, "sections."+section+".post", sectionHooks.Post)
+
 		if err != nil {
 			return fmt.Errorf("%s: %w", section, err)
 		}

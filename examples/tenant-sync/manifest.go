@@ -16,6 +16,7 @@ import (
 // profiles) can reference items created by earlier ones (firmware, software,
 // configuration).
 type Manifest struct {
+	Targets        *TargetsSpec        `yaml:"targets" json:"targets,omitempty" jsonschema:"description=Which tenants the manifest is applied to (defaults to the current tenant); applying to other tenants requires parent/management tenant credentials"`
 	TenantOptions  []TenantOptionSpec  `yaml:"tenantOptions" json:"tenantOptions,omitempty" jsonschema:"description=Tenant options to set (created if missing and updated when the value differs)"`
 	Features       []FeatureSpec       `yaml:"features" json:"features,omitempty" jsonschema:"description=Feature toggles to enable or disable for the current tenant"`
 	Applications   []ApplicationSpec   `yaml:"applications" json:"applications,omitempty" jsonschema:"description=Applications to subscribe to the current tenant (optionally created/uploaded from a source)"`
@@ -23,13 +24,149 @@ type Manifest struct {
 	Firmware       []FirmwareSpec      `yaml:"firmware" json:"firmware,omitempty" jsonschema:"description=Firmware (OS images) to sync into the firmware repository"`
 	Configuration  []ConfigurationSpec `yaml:"configuration" json:"configuration,omitempty" jsonschema:"description=Configuration files to sync into the configuration repository"`
 	DeviceProfiles []DeviceProfileSpec `yaml:"deviceProfiles" json:"deviceProfiles,omitempty" jsonschema:"description=Device profiles referencing firmware/software/configuration in the tenant"`
-	Hooks          HooksSpec           `yaml:"hooks" json:"hooks,omitempty" jsonschema:"description=Commands executed before and after the sync (e.g. go-c8y-cli calls)"`
+	Commands       []CommandGroupSpec  `yaml:"commands" json:"commands,omitempty" jsonschema:"description=Named groups of shell commands run as the last section; actions within a group run in sequence and groups run concurrently"`
+	Hooks          HooksSpec           `yaml:"hooks" json:"hooks,omitempty" jsonschema:"description=Commands executed before and after the sync and around individual sections (e.g. go-c8y-cli calls)"`
 }
 
-// HooksSpec defines commands executed around the sync
+// Credential modes for applying the manifest to other tenants
+const (
+	// CredentialsModeServiceUser provisions a placeholder microservice and
+	// uses its per-tenant service users (the go-c8y-cli "microservice service
+	// user" pattern)
+	CredentialsModeServiceUser = "serviceUser"
+	// CredentialsModeSessions reads credentials from go-c8y-cli session files
+	CredentialsModeSessions = "sessions"
+)
+
+// DefaultCredentialsApplication is the name of the placeholder microservice
+// created in serviceUser mode
+const DefaultCredentialsApplication = "tenant-sync"
+
+// TargetsSpec selects which tenants the manifest is applied to. The selection
+// modes are additive (the union of all matching tenants, deduplicated).
+// Without a targets section the manifest applies to the current tenant only.
+type TargetsSpec struct {
+	// Current includes the current tenant. Defaults to true when no other
+	// selection mode is set, false otherwise.
+	Current *bool `yaml:"current" json:"current,omitempty" jsonschema:"description=Include the current tenant (defaults to true only when no other selection mode is set)"`
+
+	// AllChildren selects every child tenant of the current tenant
+	AllChildren bool `yaml:"allChildren" json:"allChildren,omitempty" jsonschema:"description=Apply to all child tenants of the current tenant (requires parent/management tenant credentials)"`
+
+	// Tenants lists tenants explicitly by ID or domain (entries containing a
+	// "." are treated as domains)
+	Tenants []string `yaml:"tenants" json:"tenants,omitempty" jsonschema:"description=Tenants referenced by ID or by domain (entries containing a dot are treated as domains)"`
+
+	// Selector matches tenants by criteria
+	Selector *TenantSelector `yaml:"selector" json:"selector,omitempty" jsonschema:"description=Select tenants matching criteria (domain glob and/or company name)"`
+
+	// Credentials configures how per-tenant credentials are obtained for
+	// tenants other than the current one
+	Credentials *TargetCredentials `yaml:"credentials" json:"credentials,omitempty" jsonschema:"description=How credentials for the other tenants are obtained (defaults to the serviceUser mode)"`
+}
+
+// IncludesCurrent reports whether the current tenant is part of the targets
+func (t *TargetsSpec) IncludesCurrent() bool {
+	if t == nil {
+		return true
+	}
+	if t.Current != nil {
+		return *t.Current
+	}
+	return !t.HasRemoteSelection()
+}
+
+// HasRemoteSelection reports whether any selection mode other than the
+// current tenant is configured
+func (t *TargetsSpec) HasRemoteSelection() bool {
+	return t != nil && (t.AllChildren || len(t.Tenants) > 0 || t.Selector != nil)
+}
+
+// CredentialsMode returns the configured credentials mode (defaulting to
+// serviceUser)
+func (t *TargetsSpec) CredentialsMode() string {
+	if t == nil || t.Credentials == nil || t.Credentials.Mode == "" {
+		return CredentialsModeServiceUser
+	}
+	return t.Credentials.Mode
+}
+
+// TenantSelector matches tenants by criteria. All given criteria must match.
+type TenantSelector struct {
+	// Domain is a glob pattern matched against the tenant domain
+	Domain string `yaml:"domain" json:"domain,omitempty" jsonschema:"description=Glob pattern matched against the tenant domain,example=*.iot.example.com"`
+
+	// Company is the exact company name of the tenant
+	Company string `yaml:"company" json:"company,omitempty" jsonschema:"description=Exact company name of the tenant"`
+}
+
+// TargetCredentials configures how credentials for tenants other than the
+// current one are obtained
+type TargetCredentials struct {
+	// Mode selects the credential source: serviceUser (default) provisions a
+	// placeholder microservice owned by the current tenant, subscribes it to
+	// each target and uses the resulting per-tenant service users; sessions
+	// reads go-c8y-cli session files.
+	Mode string `yaml:"mode" json:"mode,omitempty" jsonschema:"description=Credential source for other tenants (defaults to serviceUser),enum=serviceUser,enum=sessions"`
+
+	// Application is the name of the placeholder microservice used in
+	// serviceUser mode (created if missing; defaults to tenant-sync)
+	Application string `yaml:"application" json:"application,omitempty" jsonschema:"description=Name of the placeholder microservice used in serviceUser mode (created if missing; defaults to tenant-sync)"`
+
+	// SessionHome is the directory containing go-c8y-cli session files used
+	// in sessions mode (defaults to $C8Y_SESSION_HOME and then ~/.cumulocity)
+	SessionHome string `yaml:"sessionHome" json:"sessionHome,omitempty" jsonschema:"description=Directory containing go-c8y-cli session files for the sessions mode (defaults to $C8Y_SESSION_HOME and then ~/.cumulocity)"`
+}
+
+func (t *TargetsSpec) Validate() error {
+	if t == nil {
+		return nil
+	}
+	if t.Selector != nil && t.Selector.Domain == "" && t.Selector.Company == "" {
+		return fmt.Errorf("selector requires at least one of: domain, company")
+	}
+	if t.Current != nil && !*t.Current && !t.HasRemoteSelection() {
+		return fmt.Errorf("no tenants selected: current is false and no other selection mode is set")
+	}
+	if t.Credentials != nil {
+		switch t.Credentials.Mode {
+		case "", CredentialsModeServiceUser, CredentialsModeSessions:
+		default:
+			return fmt.Errorf("unknown credentials mode %q: supported modes are %s and %s",
+				t.Credentials.Mode, CredentialsModeServiceUser, CredentialsModeSessions)
+		}
+	}
+	return nil
+}
+
+// HooksSpec defines commands executed around the sync and around individual
+// sections
 type HooksSpec struct {
 	Pre  []HookSpec `yaml:"pre" json:"pre,omitempty" jsonschema:"description=Commands executed before the sync; a failing pre hook aborts the run"`
 	Post []HookSpec `yaml:"post" json:"post,omitempty" jsonschema:"description=Commands executed after the sync (also when sections failed); failures are reported but do not abort"`
+
+	// Sections holds hooks running around individual sections (keyed by the
+	// section name). Unlike the global hooks they are skipped when the
+	// section is excluded by --only.
+	Sections map[string]SectionHooksSpec `yaml:"sections" json:"sections,omitempty" jsonschema:"description=Hooks executed around individual sections (keyed by section name e.g. software); skipped when the section is excluded by --only"`
+}
+
+// SectionHooksSpec defines commands executed around a single section
+type SectionHooksSpec struct {
+	Pre  []HookSpec `yaml:"pre" json:"pre,omitempty" jsonschema:"description=Commands executed before the section; a failing pre hook aborts the run"`
+	Post []HookSpec `yaml:"post" json:"post,omitempty" jsonschema:"description=Commands executed after the section (also when items failed); failures are reported but do not abort"`
+}
+
+// CommandGroupSpec is a named group of shell commands. The actions of a group
+// run in sequence (stopping at the first failure); separate groups run
+// concurrently with each other.
+type CommandGroupSpec struct {
+	// Name of the group (used in the output)
+	Name string `yaml:"name" json:"name" jsonschema:"description=Name of the command group (used in the output)"`
+
+	// Actions are shell commands executed in sequence via 'sh -c' from the
+	// manifest directory. A failing action skips the rest of its group.
+	Actions []string `yaml:"actions" json:"actions" jsonschema:"description=Shell commands executed in sequence via 'sh -c' from the manifest directory; a failing action skips the rest of the group"`
 }
 
 // HookSpec is a single command executed via the shell with the manifest
@@ -72,12 +209,18 @@ func (f FeatureSpec) IsEnabled() bool {
 	return f.Enabled == nil || *f.Enabled
 }
 
-// ApplicationSpec subscribes an application (by name) to the current tenant.
-// With a source, the application is also created if missing and its binary
-// (e.g. a microservice or web application zip) uploaded.
+// ApplicationSpec subscribes an application (by name) to the target tenant,
+// or unsubscribes it with subscribed: false. With a source, the application
+// is also created if missing and its binary (e.g. a microservice or web
+// application zip) uploaded.
 type ApplicationSpec struct {
 	Name string `yaml:"name" json:"name" jsonschema:"description=Application name"`
 	Type string `yaml:"type" json:"type,omitempty" jsonschema:"description=Application type (lookup filter; also used when creating from a source where it defaults to MICROSERVICE),example=MICROSERVICE,example=HOSTED"` // optional application type filter (e.g. MICROSERVICE, HOSTED)
+
+	// Subscribed declares the desired subscription state (defaults to true).
+	// With subscribed: false the application is unsubscribed from the target
+	// tenant (and never created/uploaded, even when a source is given).
+	Subscribed *bool `yaml:"subscribed" json:"subscribed,omitempty" jsonschema:"description=Desired subscription state (defaults to true when omitted); false unsubscribes the application from the target tenant"`
 
 	// ContextPath used when creating the application (defaults to the name)
 	ContextPath string `yaml:"contextPath" json:"contextPath,omitempty" jsonschema:"description=Context path used when creating the application (defaults to the name)"`
@@ -86,6 +229,10 @@ type ApplicationSpec struct {
 	// application is created if missing and the binary uploaded on creation
 	// (or on every run with --force).
 	Source *Source `yaml:"source" json:"source,omitempty" jsonschema:"description=Where the application binary (zip) comes from; must resolve to a single file"`
+}
+
+func (a ApplicationSpec) IsSubscribed() bool {
+	return a.Subscribed == nil || *a.Subscribed
 }
 
 // Source describes where artifacts come from. Exactly one of Path, URL or
@@ -293,6 +440,10 @@ func LoadManifest(path string) (*Manifest, error) {
 func (m *Manifest) Validate() error {
 	var errs []string
 
+	if err := m.Targets.Validate(); err != nil {
+		errs = append(errs, fmt.Sprintf("targets: %v", err))
+	}
+
 	for i, opt := range m.TenantOptions {
 		if opt.Category == "" || opt.Key == "" {
 			errs = append(errs, fmt.Sprintf("tenantOptions[%d]: category and key are required", i))
@@ -379,7 +530,33 @@ func (m *Manifest) Validate() error {
 		}
 	}
 
-	for stage, hooks := range map[string][]HookSpec{"pre": m.Hooks.Pre, "post": m.Hooks.Post} {
+	names := make(map[string]bool, len(m.Commands))
+	for i, group := range m.Commands {
+		if group.Name == "" {
+			errs = append(errs, fmt.Sprintf("commands[%d]: name is required", i))
+		} else if names[group.Name] {
+			errs = append(errs, fmt.Sprintf("commands[%d]: duplicate group name %q", i, group.Name))
+		}
+		names[group.Name] = true
+		if len(group.Actions) == 0 {
+			errs = append(errs, fmt.Sprintf("commands[%d]: at least one action is required", i))
+		}
+		for j, action := range group.Actions {
+			if strings.TrimSpace(action) == "" {
+				errs = append(errs, fmt.Sprintf("commands[%d].actions[%d]: action must not be empty", i, j))
+			}
+		}
+	}
+
+	hookStages := map[string][]HookSpec{"pre": m.Hooks.Pre, "post": m.Hooks.Post}
+	for section, sectionHooks := range m.Hooks.Sections {
+		if !isKnownSection(section) {
+			errs = append(errs, fmt.Sprintf("hooks.sections.%s: unknown section. Valid sections: %s", section, strings.Join(SectionOrder, ", ")))
+		}
+		hookStages["sections."+section+".pre"] = sectionHooks.Pre
+		hookStages["sections."+section+".post"] = sectionHooks.Post
+	}
+	for stage, hooks := range hookStages {
 		for i, hook := range hooks {
 			if hook.Run == "" {
 				errs = append(errs, fmt.Sprintf("hooks.%s[%d]: run is required", stage, i))

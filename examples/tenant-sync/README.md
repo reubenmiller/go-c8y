@@ -35,7 +35,8 @@ Because every operation is idempotent (get-or-create / upsert), the same manifes
 - ⚙️ **Configuration repository sync**: upload configuration files with type and device type filters
 - 🐙 **GitHub sources**: point any entry at a GitHub repository — assets are pulled from releases (`latest`, a specific tag, or `all`), with the release tag as the version fallback; `linkOnly` mode references download URLs without re-hosting binaries
 - 🧩 **Device profiles**: declare firmware/software/configuration bundles; binary URLs are resolved from the tenant automatically
-- 🎛️ **Tenant options & feature toggles**: set options, enable/disable features, subscribe applications
+- 🎛️ **Tenant options & feature toggles**: set options, enable/disable features, subscribe/unsubscribe applications
+- 🏢 **Target tenants**: apply one manifest to all child tenants, an explicit list, or tenants matching a selector — with per-tenant credentials resolved automatically
 - 🔎 **Dry-run**: preview every change before applying
 - 🔐 **Env var expansion**: `${VAR}` references in the manifest (e.g. GitHub tokens)
 
@@ -73,9 +74,13 @@ Authentication (for `run` only — `init` and `validate` work offline) uses the 
 # Replace existing version binaries (instead of skipping existing versions)
 ./tenant-sync run -f tenant.yaml --force
 
-# Sync multiple tenants from the same manifest
+# Sync multiple tenants from the same manifest (one session per tenant) ...
 set-session tenant-a && ./tenant-sync run -f tenant.yaml
 set-session tenant-b && ./tenant-sync run -f tenant.yaml
+
+# ... or apply to other tenants in one run from the parent tenant
+# (see "Target tenants" below)
+./tenant-sync run -f tenant.yaml --all-children
 ```
 
 ### Commands
@@ -93,13 +98,18 @@ set-session tenant-b && ./tenant-sync run -f tenant.yaml
 |------|---------|-------------|
 | `-f`, `--manifest` | `tenant.yaml` | Path to the manifest file (also accepted as a positional argument) |
 | `--dry-run`, `--dry` | | Preview changes without applying them |
-| `--only` | *(all)* | Comma-separated sections to apply: `tenantOptions`, `features`, `applications`, `software`, `firmware`, `configuration`, `deviceProfiles` |
+| `--only` | *(all)* | Comma-separated sections to apply: `tenantOptions`, `features`, `applications`, `software`, `firmware`, `configuration`, `deviceProfiles`, `commands` |
 | `--force` | | Replace existing version binaries / configuration files |
 | `--concurrency` | `5` | Concurrent software version uploads (1–20) |
+| `--target` | | Apply to a tenant referenced by ID or domain; repeatable or comma-separated (overrides the manifest `targets` section) |
+| `--all-children` | | Apply to all child tenants of the current tenant (overrides the manifest `targets` section) |
+| `--target-selector` | | Apply to tenants matching criteria, e.g. `domain=*.example.com,company=ACME` (overrides the manifest `targets` section) |
+| `--include-current` | | Also include the current tenant when other target flags are used |
+| `--credentials-mode` | | How credentials for other tenants are obtained: `serviceUser` or `sessions` (overrides the manifest) |
 | `--verbose` | | Detailed logging |
 | `--debug` | | Verbose logging + HTTP request/response details |
 
-Sections are applied in a fixed order — tenant options, features, applications, software, firmware, configuration, then device profiles — so profiles can reference repository items synced in the same run.
+Sections are applied in a fixed order — tenant options, features, applications, software, firmware, configuration, device profiles, then commands — so profiles can reference repository items synced in the same run, and custom commands can build on everything the manifest declares.
 
 ## The Manifest
 
@@ -212,9 +222,20 @@ tenantOptions:
       application: devicemanagement
 ```
 
-### Applications from sources
+### Application subscriptions
 
-Application entries normally just subscribe an existing application. With a `source`, the application is also created when missing (type defaults to `MICROSERVICE`, `contextPath` to the name) and its binary (a single zip) uploaded. Since binary content cannot be compared, the upload only happens on creation — or on every run with `--force`:
+Application entries normally just subscribe an existing application to the target tenant. `subscribed: false` declares the opposite — the application is unsubscribed (a missing application or subscription counts as the desired state, so the entry stays idempotent):
+
+```yaml
+applications:
+  - name: advanced-software-mgmt
+  - name: cloud-remote-access
+    subscribed: false
+```
+
+> **Note**: (un)subscribing an application that the tenant does not own fails with `403 security/Forbidden` — such subscriptions are managed by the application's owner tenant. Run tenant-sync from the owner (parent) tenant instead, typically with a [targets section](#target-tenants) selecting the tenants to maintain.
+
+With a `source`, the application is also created when missing (type defaults to `MICROSERVICE`, `contextPath` to the name) and its binary (a single zip) uploaded. Since binary content cannot be compared, the upload only happens on creation — or on every run with `--force`:
 
 ```yaml
 applications:
@@ -224,9 +245,54 @@ applications:
       path: ./build/my-microservice.zip
 ```
 
+### Target tenants
+
+By default the manifest applies to the current tenant (the `C8Y_*` session). A `targets` section applies it to other tenants instead — run once from the parent/management tenant to keep a whole fleet of tenants in sync. The selection modes are additive (the union of all matches):
+
+```yaml
+targets:
+  allChildren: true                    # every child tenant of the current tenant
+  tenants: [t12345, child.example.com] # explicit, by ID or domain
+  selector:
+    domain: "*.iot.example.com"        # glob matched against the tenant domain
+    company: ACME                      # exact company name
+  current: true                        # also include the current tenant
+                                       # (defaults to true only when nothing else is selected)
+```
+
+The selection can be overridden from the command line (any target flag replaces the manifest's selection entirely):
+
+```bash
+./tenant-sync run -f tenant.yaml --all-children
+./tenant-sync run -f tenant.yaml --target t12345 --target child.example.com
+./tenant-sync run -f tenant.yaml --target-selector "domain=*.iot.example.com" --include-current
+```
+
+Application subscriptions and feature toggles are managed directly from the parent (their APIs address the target tenant by ID). Everything else — tenant options, software/firmware/configuration repositories, device profiles, hooks — runs *inside* each target tenant and therefore needs per-tenant credentials, configured via `targets.credentials`:
+
+```yaml
+targets:
+  allChildren: true
+  credentials:
+    mode: serviceUser        # serviceUser (default) | sessions
+    application: tenant-sync # serviceUser mode: placeholder microservice name
+    sessionHome: ""          # sessions mode: session dir (default $C8Y_SESSION_HOME, then ~/.cumulocity)
+```
+
+- **`serviceUser`** (default) uses the [microservice service user](https://goc8ycli.netlify.app/docs/tutorials/microservice-serviceuser/) pattern: a placeholder `MICROSERVICE` application (default name `tenant-sync`, no binary, no deployment) is created in the current tenant, subscribed to every target tenant, and its per-tenant service users are fetched via the application bootstrap user. The application and subscriptions are idempotent and left in place between runs. Service users for freshly subscribed tenants can take a few seconds to appear; the tool retries briefly.
+- **`sessions`** reads [go-c8y-cli session files](https://goc8ycli.netlify.app/docs/gettingstarted/#sessions) and matches them to each target by tenant ID and then by domain. Encrypted sessions are not supported — the run fails with a clear error listing tenants without a matching session.
+
+In multi-tenant runs every result line and the hook environment (`C8Y_TENANT`, `C8Y_USERNAME`, `C8Y_PASSWORD`) are scoped to the tenant being applied:
+
+```
+🏢 Tenant: t12345
+  ✓ [applications] t12345: cloud-remote-access (unchanged): not subscribed
+  ↻ [features] t12345: mqtt-service.smartrest (updated): enabled
+```
+
 ### Hooks
 
-Pre and post hooks run arbitrary commands around the sync — for example go-c8y-cli calls for anything outside the manifest's scope. Hooks execute via `sh -c` from the manifest directory with the current environment (including the `C8Y_*` session variables) passed through. A failing pre hook aborts the run; post hooks always run (also after section failures) and their failures are reported without aborting. Hooks run regardless of `--only`, and are only printed (not executed) in dry-run mode.
+Pre and post hooks run arbitrary commands around the sync — for example go-c8y-cli calls for anything outside the manifest's scope. Hooks execute via `sh -c` from the manifest directory with the current environment (including the `C8Y_*` session variables) passed through. A failing pre hook aborts the run; post hooks always run (also after section failures) and their failures are reported without aborting. Hooks run regardless of `--only`, and are only printed (not executed) in dry-run mode. In multi-tenant runs hooks execute once per target tenant, with `C8Y_TENANT`, `C8Y_USERNAME` and `C8Y_PASSWORD` overridden to that tenant's resolved credentials (and `C8Y_TOKEN` cleared).
 
 ```yaml
 hooks:
@@ -236,6 +302,37 @@ hooks:
   post:
     - run: c8y inventory list --query "has(c8y_TenantSync)" --select id,name -o csv
 ```
+
+Hooks can also be scoped to a single section under `hooks.sections.<sectionName>` — they run immediately before/after that section, and (unlike the global hooks) are skipped when the section is excluded by `--only`. The same failure semantics apply: a failing section pre hook aborts the run, post hook failures are reported without aborting.
+
+```yaml
+hooks:
+  sections:
+    software:
+      pre:
+        - run: ./scripts/build-packages.sh
+      post:
+        - run: c8y software list --pageSize 100 -o csv
+```
+
+### Commands
+
+The `commands` section runs named groups of arbitrary shell commands as the last section — for anything declarative sections don't cover (creating devices, registering external IDs, smoke tests, ...). The **actions within a group run in sequence** (a failing action skips the rest of its group, reported as `skipped`), while **separate groups run concurrently** with each other — so order-dependent steps go in one group, and independent work goes in separate groups:
+
+```yaml
+commands:
+  - name: seed-devices
+    actions:
+      - c8y devices create --name "foo"
+      - c8y devices create --name "foo2"
+
+  # runs at the same time as seed-devices
+  - name: smoke-test
+    actions:
+      - c8y currenttenant get --select name -o csv
+```
+
+Commands execute like hooks: via `sh -c` from the manifest directory, with the `C8Y_*` session variables passed through (scoped to the target tenant in multi-tenant runs), printed but not executed in dry-run mode. Unlike a failing pre hook, a failing action does not abort the run — it fails its group and is reflected in the summary and exit code.
 
 ### Device profiles
 
