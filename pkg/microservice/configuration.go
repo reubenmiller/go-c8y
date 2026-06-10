@@ -40,7 +40,6 @@ func (c *Configuration) InitConfiguration() {
 	config.SetDefault("server.port", "80")
 	config.SetDefault("application.name", "go-microservice")
 	config.SetDefault("agent.identityType", "microservice")
-	config.SetDefault("agent.operations.pollRate", "")
 	config.SetDefault("log.file", "application.log")
 
 	// Enable all variables to be defined as (case-sensitive) environment variables in the form of

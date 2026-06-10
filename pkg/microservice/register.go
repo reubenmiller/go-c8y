@@ -131,13 +131,25 @@ func (m *Microservice) DeleteMicroserviceAgent() error {
 }
 
 // RegisterMicroserviceAgent registers an agent representation of the microservice
+// and applies any pending configuration-update operations once.
+//
+// The SDK does not poll for operations in the background. To react to new
+// operations, either call CheckForNewConfiguration() periodically from your own
+// timer, or subscribe to realtime operation notifications:
+//
+//	go func() {
+//		ticker := time.NewTicker(30 * time.Second)
+//		defer ticker.Stop()
+//		for range ticker.C {
+//			ms.CheckForNewConfiguration()
+//		}
+//	}()
 func (m *Microservice) RegisterMicroserviceAgent() error {
 	slog.Info("Registering microservice agent")
 
 	mo := m.CreateMicroserviceRepresentation()
 
 	if mo.Err == nil {
-		slog.Info("Start Polling for Operations on device", "id", mo.Data.ID())
 		m.AgentID = mo.Data.ID()
 
 		// Get existing configuration
@@ -152,9 +164,6 @@ func (m *Microservice) RegisterMicroserviceAgent() error {
 			value := m.Config.viper.GetString(key)
 			slog.Info("property", "key", key, "value", value)
 		}
-
-		m.StartOperationPolling()
-		// m.SubscribeToOperations(nil)
 	}
 	return mo.Err
 }
@@ -261,23 +270,5 @@ func (m *Microservice) CheckForNewConfiguration() {
 			m.onUpdateConfigurationOperation(item.ID(), c8yConfig.String())
 			configurationChangeCount.Inc()
 		}
-	}
-}
-
-// StartOperationPolling start the polling of the operations
-func (m *Microservice) StartOperationPolling() {
-	interval := strings.TrimSpace(m.Config.viper.GetString("agent.operations.pollRate"))
-
-	if interval == "" || interval == "0" {
-		slog.Info("Skipping operation polling task")
-		return
-	}
-	slog.Info("Adding operation polling task with interval", "value", interval)
-	_, err := m.Scheduler.cronjob.AddFunc(interval, func() {
-		m.CheckForNewConfiguration()
-	})
-
-	if err != nil {
-		slog.Error("Could not create polling task with interval", "value", interval, "err", err)
 	}
 }

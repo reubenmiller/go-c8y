@@ -127,6 +127,15 @@ type Client struct {
 	// from Auth credentials in NewClient, or can be supplied via AuthOptions.TokenSource.
 	tokenSource authentication.TokenSource
 
+	// contextTokenExchange controls whether per-request basic credentials
+	// (WithAuth / WithServiceUser) are exchanged for OAI-Secure bearer tokens.
+	// See SetContextTokenExchange.
+	contextTokenExchange atomic.Bool
+
+	// contextTokens caches per tenant/user token sources used by the context
+	// token exchange (key: "{tenant}/{username}", value: *contextTokenEntry).
+	contextTokens sync.Map
+
 	UseKeyRing bool
 
 	// Cumulocity Version
@@ -237,6 +246,11 @@ type ClientOptions struct {
 	// Defaults to "8443" when empty. This is the port on which Cumulocity listens for
 	// mTLS connections (e.g. POST /devicecontrol/deviceAccessToken).
 	MTLSPort string
+
+	// ContextTokenExchange enables exchanging per-request basic credentials
+	// (api.WithAuth / api.WithServiceUser) for OAI-Secure bearer tokens, cached
+	// per tenant/user. See Client.SetContextTokenExchange for details.
+	ContextTokenExchange bool
 }
 
 func (c *Client) Realtime() *realtime.Client {
@@ -406,6 +420,7 @@ func NewClient(opts ClientOptions) *Client {
 		showSensitive: opts.ShowSensitive,
 		UseKeyRing:    opts.UseKeyRing,
 	}
+	c.contextTokenExchange.Store(opts.ContextTokenExchange)
 	c.common.Client = rclient
 	c.common.MTLSPort = opts.MTLSPort
 	c.common.CertChainHeader = buildCertChainHeader(opts.Auth)
@@ -510,6 +525,11 @@ func (c *Client) AddMiddleware() error {
 		return c.tokenSource
 	}))
 	c.HTTPClient.AddRetryConditions(TokenRenewalRetry(c))
+
+	// Apply per-request credentials carried in the context (see WithAuth /
+	// WithServiceUser). Registered after the token source middleware so that
+	// context credentials always take priority over client-level credentials.
+	c.HTTPClient.AddRequestMiddleware(MiddlewareContextAuthorization(c))
 
 	// Register a pre-prepare request middleware to capture multipart field content
 	// for debug logging. It must run before PrepareRequestMiddleware (which starts
@@ -1820,6 +1840,24 @@ func TokenRenewalRetry(c *Client) func(res *resty.Response, err error) bool {
 		if statusCode == 401 {
 			if res.Request.Attempt > 1 {
 				slog.Warn("More than 1 401 detected, giving up", "err", res.ResultError())
+				return false
+			}
+
+			// Requests using per-request (context) credentials: when an exchanged
+			// bearer token was rejected, invalidate the cached token and retry once
+			// with the original basic credentials (request middlewares re-run on
+			// retry, so the retry is steered via the context rather than by setting
+			// headers here). A 401 on basic context credentials is a genuine auth
+			// failure and is not retried.
+			if auth, ok := authentication.AuthFromContext(res.Request.Context()); ok {
+				usedExchangedToken := auth.Token == "" && auth.Username != "" && res.Request.AuthToken != ""
+				if usedExchangedToken && !ctxhelpers.IsSkipContextTokenExchange(res.Request.Context()) {
+					slog.Debug("Exchanged context token rejected, retrying with basic credentials", "tenant", auth.Tenant)
+					c.invalidateContextToken(auth)
+					res.Request.SetContext(ctxhelpers.WithSkipContextTokenExchange(res.Request.Context()))
+					res.Request.Attempt = 0
+					return true
+				}
 				return false
 			}
 

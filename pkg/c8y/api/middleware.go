@@ -17,6 +17,7 @@ import (
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/mock"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"resty.dev/v3"
 )
 
@@ -148,6 +149,30 @@ func WithDeferredExecution(ctx context.Context, enabled bool) context.Context {
 // IsDeferredExecution checks if deferred execution is enabled in the context
 func IsDeferredExecution(ctx context.Context) bool {
 	return ctxhelpers.IsDeferredExecution(ctx)
+}
+
+// WithAuth returns a context that carries per-request credentials. API calls made
+// with the returned context use these credentials instead of the client-level
+// credentials, so one client can act on behalf of multiple tenants.
+func WithAuth(ctx context.Context, auth authentication.AuthOptions) context.Context {
+	return authentication.WithAuth(ctx, auth)
+}
+
+// WithServiceUser returns a context that carries the given service user's
+// credentials. API calls made with the returned context execute as that
+// tenant's service user (the typical pattern in MULTI_TENANT microservices).
+func WithServiceUser(ctx context.Context, user model.ServiceUser) context.Context {
+	return authentication.WithAuth(ctx, authentication.AuthOptions{
+		Tenant:   user.Tenant,
+		Username: user.Username,
+		Password: user.Password,
+	})
+}
+
+// WithTenant returns a context that overrides the {tenantId} path parameter for
+// tenant-scoped endpoints without changing which credentials are used.
+func WithTenant(ctx context.Context, tenant string) context.Context {
+	return ctxhelpers.WithTenant(ctx, tenant)
 }
 
 // DryRunTransport wraps an http.RoundTripper and intercepts requests when dry run is enabled
@@ -402,12 +427,60 @@ func MiddlewareRemoveEmptyTenantID() resty.RequestMiddleware {
 			delete(r.PathParams, core.PathParamTenantID)
 		}
 
-		// Allow overriding using context
+		// Allow overriding using context (see WithTenant)
+		if tenant, ok := ctxhelpers.TenantFromContext(r.Context()); ok && tenant != "" {
+			r.SetPathParam(core.PathParamTenantID, tenant)
+		}
+
+		// Deprecated: support the legacy untyped "tenant" context key
 		switch v := r.Context().Value("tenant").(type) {
 		case string:
 			if v != "" {
 				r.SetPathParam(core.PathParamTenantID, v)
 			}
+		}
+		return nil
+	}
+}
+
+// MiddlewareContextAuthorization applies per-request credentials carried in the
+// request context (see WithAuth / authentication.WithAuth). When credentials are
+// present in the context they take priority over the client-level credentials
+// and token source, allowing a single shared client to act on behalf of multiple
+// tenants (e.g. service users inside a MULTI_TENANT microservice).
+//
+// When the client has context token exchange enabled (see
+// Client.SetContextTokenExchange), basic credentials are exchanged for a cached
+// OAI-Secure bearer token, falling back to basic auth when the exchange is not
+// possible.
+func MiddlewareContextAuthorization(c *Client) resty.RequestMiddleware {
+	return func(_ *resty.Client, r *resty.Request) error {
+		auth, ok := authentication.AuthFromContext(r.Context())
+		if !ok {
+			return nil
+		}
+		// Clear any client-level token so the per-request credentials win
+		r.SetAuthToken("")
+		switch {
+		case auth.Token != "":
+			r.SetAuthScheme("Bearer")
+			r.SetAuthToken(auth.Token)
+		case auth.Username != "" && auth.Password != "":
+			token := ""
+			if !ctxhelpers.IsSkipContextTokenExchange(r.Context()) {
+				token = c.contextTokenFor(auth)
+			}
+			if token != "" {
+				r.SetAuthScheme("Bearer")
+				r.SetAuthToken(token)
+			} else {
+				r.SetAuthScheme("Basic")
+				r.SetBasicAuth(authentication.JoinTenantUser(auth.Tenant, auth.Username), auth.Password)
+			}
+		}
+		// Also update the {tenantId} path parameter used in tenant-scoped URLs
+		if auth.Tenant != "" {
+			r.SetPathParam(core.PathParamTenantID, auth.Tenant)
 		}
 		return nil
 	}
@@ -442,6 +515,11 @@ func TokenSourceMiddleware(getSource func() authentication.TokenSource) resty.Re
 			return nil
 		}
 		if ctxhelpers.IsSkipTokenSource(req.Context()) {
+			return nil
+		}
+		// Per-request credentials (see WithAuth) take priority over the client's
+		// token source, so skip token acquisition entirely for these requests.
+		if _, ok := authentication.AuthFromContext(req.Context()); ok {
 			return nil
 		}
 		// Skip token acquisition for dry-run requests: the DryRunTransport intercepts

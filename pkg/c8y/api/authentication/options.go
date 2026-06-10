@@ -1,6 +1,9 @@
 package authentication
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type AuthOptions struct {
 	// Username / Password Auth
@@ -73,4 +76,14 @@ func JoinTenantUser(tenant string, user string) string {
 		return fmt.Sprintf("%s/%s", tenant, user)
 	}
 	return user
+}
+
+// SplitTenantUser splits a Cumulocity username in the "{tenant}/{username}"
+// format into its tenant and username parts. When the value contains no tenant
+// prefix the tenant is returned empty.
+func SplitTenantUser(value string) (tenant string, user string) {
+	if before, after, found := strings.Cut(value, "/"); found {
+		return before, after
+	}
+	return "", value
 }

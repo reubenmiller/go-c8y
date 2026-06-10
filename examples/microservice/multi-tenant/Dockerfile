@@ -1,7 +1,5 @@
 # Start from the latest golang base image
-FROM --platform=${BUILDPLATFORM} golang:latest AS builder
-ARG TARGETOS
-ARG TARGETARCH
+FROM golang:latest AS builder
 
 # Set the Current Working Directory inside the container
 WORKDIR /app
@@ -10,7 +8,7 @@ WORKDIR /app
 COPY main.go .
 
 # Build the Go app
-RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags="-s -w" -a -installsuffix cgo -o main examples/microservice/notification2-microservice/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -a -installsuffix cgo -o main .
 
 
 ######## Start a new stage from scratch #######
@@ -23,8 +21,9 @@ WORKDIR /root/
 # Copy the Pre-built binary file from the previous stage
 COPY --from=builder /app/main .
 
-# Expose port 8080 to the outside world
-EXPOSE 8080
+# Create a non-root system user named 'app'
+RUN adduser -S app
 
 # Command to run the executable
-CMD ["./main"] 
+USER app
+CMD ["./main"]
