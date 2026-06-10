@@ -23,6 +23,9 @@ type Manifest struct {
 
 	RetentionRules []RetentionRuleSpec `yaml:"retentionRules" json:"retentionRules,omitempty" jsonschema:"description=Retention rules to ensure exist (matched by dataType/fragmentType/type/source; maximumAge updated when it differs)"`
 
+	TrustedCertificates        []TrustedCertificateSpec        `yaml:"trustedCertificates" json:"trustedCertificates,omitempty" jsonschema:"description=Trusted device certificates (PEM/DER) to upload into the tenant trust store (matched by fingerprint; name/status/autoRegistrationEnabled updated when they differ)"`
+	CertificateRevocationLists []CertificateRevocationListSpec `yaml:"certificateRevocationLists" json:"certificateRevocationLists,omitempty" jsonschema:"description=Certificate revocation entries to upload from CSV files (columns SERIALNO and optional DATE); additive: existing entries are never removed"`
+
 	Applications  []ApplicationSpec   `yaml:"applications" json:"applications,omitempty" jsonschema:"description=Applications to subscribe to the current tenant (optionally created/uploaded from a source)"`
 	UserGroups    []UserGroupSpec     `yaml:"userGroups" json:"userGroups,omitempty" jsonschema:"description=User groups (global roles) to create/update with roles assigned (additive: existing roles are never removed)"`
 	Users         []UserSpec          `yaml:"users" json:"users,omitempty" jsonschema:"description=Users to create/update and assign to user groups (additive: existing memberships are never removed)"`
@@ -256,6 +259,41 @@ func orWildcard(value string) string {
 		return "*"
 	}
 	return value
+}
+
+// TrustedCertificateStatuses are the statuses accepted by the trusted
+// certificates API
+var TrustedCertificateStatuses = []string{"ENABLED", "DISABLED"}
+
+// TrustedCertificateSpec uploads trusted device certificates into the tenant
+// trust store. Certificates are matched by their fingerprint: missing ones
+// are uploaded, and the name, status and autoRegistrationEnabled of existing
+// ones are updated when they differ. Certificates are never deleted.
+type TrustedCertificateSpec struct {
+	// Name overrides the certificate name (only sensible for sources that
+	// resolve to a single certificate). Defaults to the certificate subject
+	// common name, then the filename.
+	Name string `yaml:"name" json:"name,omitempty" jsonschema:"description=Override the certificate name (only sensible for sources resolving to a single certificate); defaults to the certificate subject common name and then the filename"`
+
+	// Status is the desired certificate status (defaults to ENABLED)
+	Status string `yaml:"status" json:"status,omitempty" jsonschema:"description=Desired certificate status (defaults to ENABLED),enum=ENABLED,enum=DISABLED"`
+
+	// AutoRegistrationEnabled lets devices presenting certificates signed by
+	// this certificate register automatically (only managed when set)
+	AutoRegistrationEnabled *bool `yaml:"autoRegistrationEnabled" json:"autoRegistrationEnabled,omitempty" jsonschema:"description=Allow devices presenting certificates signed by this certificate to register automatically (left untouched when omitted)"`
+
+	// Source provides the certificate files (PEM with one or more
+	// certificates, or a single DER/base64 encoded certificate per file)
+	Source Source `yaml:"source" json:"source" jsonschema:"description=Where the certificate files come from (PEM with one or more certificates or a single DER/base64 certificate per file; directories are scanned for *.pem and *.crt and *.cer by default)"`
+}
+
+// CertificateRevocationListSpec uploads certificate revocation entries from
+// CSV files (header SERIALNO[,DATE]; one certificate serial number in hex per
+// row). Uploads are additive: entries already on the tenant revocation list
+// are never removed.
+type CertificateRevocationListSpec struct {
+	// Source provides the CSV files (directories are scanned for *.csv)
+	Source Source `yaml:"source" json:"source" jsonschema:"description=Where the revocation list CSV files come from (columns SERIALNO and optional DATE; directories are scanned for *.csv by default)"`
 }
 
 // ApplicationSpec subscribes an application (by name) to the target tenant,
@@ -604,6 +642,25 @@ func (m *Manifest) Validate() error {
 			errs = append(errs, fmt.Sprintf("retentionRules[%d]: duplicate rule selector %s", i, rule.Selector()))
 		}
 		selectors[rule.Selector()] = true
+	}
+	for i, cert := range m.TrustedCertificates {
+		if err := cert.Source.Validate(); err != nil {
+			errs = append(errs, fmt.Sprintf("trustedCertificates[%d]: %v", i, err))
+		}
+		if cert.Source.URL != "" {
+			errs = append(errs, fmt.Sprintf("trustedCertificates[%d]: url sources are not supported (the certificate content must be available locally)", i))
+		}
+		if cert.Status != "" && !slices.Contains(TrustedCertificateStatuses, cert.Status) {
+			errs = append(errs, fmt.Sprintf("trustedCertificates[%d]: unknown status %q: supported values are %s", i, cert.Status, strings.Join(TrustedCertificateStatuses, ", ")))
+		}
+	}
+	for i, crl := range m.CertificateRevocationLists {
+		if err := crl.Source.Validate(); err != nil {
+			errs = append(errs, fmt.Sprintf("certificateRevocationLists[%d]: %v", i, err))
+		}
+		if crl.Source.URL != "" {
+			errs = append(errs, fmt.Sprintf("certificateRevocationLists[%d]: url sources are not supported (the CSV content must be available locally)", i))
+		}
 	}
 	for i, app := range m.Applications {
 		if app.Name == "" {

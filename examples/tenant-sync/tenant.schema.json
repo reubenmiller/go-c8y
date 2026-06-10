@@ -35,6 +35,19 @@
         "name"
       ]
     },
+    "CertificateRevocationListSpec": {
+      "properties": {
+        "source": {
+          "$ref": "#/$defs/Source",
+          "description": "Where the revocation list CSV files come from (columns SERIALNO and optional DATE; directories are scanned for *.csv by default)"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "source"
+      ]
+    },
     "CommandGroupSpec": {
       "properties": {
         "name": {
@@ -706,6 +719,35 @@
       "additionalProperties": false,
       "type": "object"
     },
+    "TrustedCertificateSpec": {
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Override the certificate name (only sensible for sources resolving to a single certificate); defaults to the certificate subject common name and then the filename"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "ENABLED",
+            "DISABLED"
+          ],
+          "description": "Desired certificate status (defaults to ENABLED)"
+        },
+        "autoRegistrationEnabled": {
+          "type": "boolean",
+          "description": "Allow devices presenting certificates signed by this certificate to register automatically (left untouched when omitted)"
+        },
+        "source": {
+          "$ref": "#/$defs/Source",
+          "description": "Where the certificate files come from (PEM with one or more certificates or a single DER/base64 certificate per file; directories are scanned for *.pem and *.crt and *.cer by default)"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "source"
+      ]
+    },
     "UserGroupSpec": {
       "properties": {
         "name": {
@@ -816,6 +858,20 @@
       },
       "type": "array",
       "description": "Retention rules to ensure exist (matched by dataType/fragmentType/type/source; maximumAge updated when it differs)"
+    },
+    "trustedCertificates": {
+      "items": {
+        "$ref": "#/$defs/TrustedCertificateSpec"
+      },
+      "type": "array",
+      "description": "Trusted device certificates (PEM/DER) to upload into the tenant trust store (matched by fingerprint; name/status/autoRegistrationEnabled updated when they differ)"
+    },
+    "certificateRevocationLists": {
+      "items": {
+        "$ref": "#/$defs/CertificateRevocationListSpec"
+      },
+      "type": "array",
+      "description": "Certificate revocation entries to upload from CSV files (columns SERIALNO and optional DATE); additive: existing entries are never removed"
     },
     "applications": {
       "items": {

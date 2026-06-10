@@ -254,6 +254,34 @@ deviceProfiles:
 			errorMsg: "name and version are required",
 		},
 		{
+			name: "trusted certificate url source",
+			content: `
+trustedCertificates:
+  - source:
+      url: https://example.com/device-ca.pem
+`,
+			errorMsg: "url sources are not supported",
+		},
+		{
+			name: "trusted certificate unknown status",
+			content: `
+trustedCertificates:
+  - status: PAUSED
+    source:
+      path: ./certificates
+`,
+			errorMsg: "unknown status",
+		},
+		{
+			name: "certificate revocation list url source",
+			content: `
+certificateRevocationLists:
+  - source:
+      url: https://example.com/revoked.csv
+`,
+			errorMsg: "url sources are not supported",
+		},
+		{
 			name: "tenant option value and valueFrom are exclusive",
 			content: `
 tenantOptions:

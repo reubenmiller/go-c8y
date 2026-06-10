@@ -37,6 +37,8 @@ func cmdValidate(args []string) error {
 	printSectionCount(SectionTenantOptions, len(manifest.TenantOptions))
 	printSectionCount(SectionFeatures, len(manifest.Features))
 	printSectionCount(SectionRetentionRules, len(manifest.RetentionRules))
+	printSectionCount(SectionTrustedCertificates, len(manifest.TrustedCertificates))
+	printSectionCount(SectionCertificateRevocations, len(manifest.CertificateRevocationLists))
 	printSectionCount(SectionApplications, len(manifest.Applications))
 	printSectionCount(SectionUserGroups, len(manifest.UserGroups))
 	printSectionCount(SectionUsers, len(manifest.Users))
@@ -77,6 +79,12 @@ func cmdValidate(args []string) error {
 	for i, spec := range manifest.SmartRestTemplates {
 		check(SectionSmartRest, i, spec.resolvedSource())
 	}
+	for i, spec := range manifest.TrustedCertificates {
+		check(SectionTrustedCertificates, i, spec.resolvedSource())
+	}
+	for i, spec := range manifest.CertificateRevocationLists {
+		check(SectionCertificateRevocations, i, spec.resolvedSource())
+	}
 
 	if failures > 0 {
 		return fmt.Errorf("%d source(s) failed to resolve", failures)
@@ -86,5 +94,5 @@ func cmdValidate(args []string) error {
 }
 
 func printSectionCount(section string, count int) {
-	fmt.Printf("  %-19s %d item(s)\n", section+":", count)
+	fmt.Printf("  %-27s %d item(s)\n", section+":", count)
 }

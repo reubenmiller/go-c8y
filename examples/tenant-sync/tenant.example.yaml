@@ -58,6 +58,33 @@ retentionRules:
     maximumAge: 90
     editable: false # lock the rule in the UI
 
+# Upload trusted device certificates (PEM or DER) into the tenant trust
+# store. Certificates are matched by fingerprint: missing ones are uploaded,
+# and the name/status/autoRegistrationEnabled of existing ones are updated
+# when they differ. Certificates are never deleted.
+trustedCertificates:
+  # Scan a directory (*.pem, *.crt, *.cer by default); names default to the
+  # certificate subject common name
+  - autoRegistrationEnabled: true
+    source:
+      path: ./certificates
+      optional: true # skip instead of failing when the directory is missing
+
+  # A single certificate with an explicit name, kept uploaded but disabled
+  - name: legacy-factory-ca
+    status: DISABLED
+    source:
+      path: ./certificates/archive/legacy-factory-ca.pem
+      optional: true
+
+# Upload certificate revocation entries from CSV files (header
+# SERIALNO[,DATE]; one certificate serial number in hex per row). Uploads are
+# additive: entries already on the tenant revocation list are never removed.
+certificateRevocationLists:
+  - source:
+      path: ./certificates/revoked.csv
+      optional: true
+
 # Subscribe applications to the target tenant (idempotent)
 applications:
   - name: advanced-software-mgmt

@@ -58,6 +58,15 @@ software:
 #   - dataType: MEASUREMENT
 #     maximumAge: 365
 
+# trustedCertificates:
+#   - autoRegistrationEnabled: true
+#     source:
+#       path: ./certificates # *.pem, *.crt, *.cer
+
+# certificateRevocationLists:
+#   - source:
+#       path: ./certificates/revoked.csv # SERIALNO[,DATE] per row
+
 # applications:
 #   - name: advanced-software-mgmt
 

@@ -34,18 +34,20 @@ const SyncToolFragment = "c8y_TenantSync"
 
 // Section names, used by --only filtering and in the apply order
 const (
-	SectionTenantOptions  = "tenantOptions"
-	SectionFeatures       = "features"
-	SectionRetentionRules = "retentionRules"
-	SectionApplications   = "applications"
-	SectionUserGroups     = "userGroups"
-	SectionUsers          = "users"
-	SectionSoftware       = "software"
-	SectionFirmware       = "firmware"
-	SectionConfiguration  = "configuration"
-	SectionSmartRest      = "smartrestTemplates"
-	SectionDeviceProfiles = "deviceProfiles"
-	SectionCommands       = "commands"
+	SectionTenantOptions          = "tenantOptions"
+	SectionFeatures               = "features"
+	SectionRetentionRules         = "retentionRules"
+	SectionTrustedCertificates    = "trustedCertificates"
+	SectionCertificateRevocations = "certificateRevocationLists"
+	SectionApplications           = "applications"
+	SectionUserGroups             = "userGroups"
+	SectionUsers                  = "users"
+	SectionSoftware               = "software"
+	SectionFirmware               = "firmware"
+	SectionConfiguration          = "configuration"
+	SectionSmartRest              = "smartrestTemplates"
+	SectionDeviceProfiles         = "deviceProfiles"
+	SectionCommands               = "commands"
 )
 
 // SectionOrder is the order sections are applied in. User groups are synced
@@ -57,6 +59,8 @@ var SectionOrder = []string{
 	SectionTenantOptions,
 	SectionFeatures,
 	SectionRetentionRules,
+	SectionTrustedCertificates,
+	SectionCertificateRevocations,
 	SectionApplications,
 	SectionUserGroups,
 	SectionUsers,
@@ -303,6 +307,10 @@ func (s *Syncer) applyTarget(ctx, baseCtx context.Context, manifest *Manifest, o
 			err = s.SyncFeatures(baseCtx, manifest.Features)
 		case SectionRetentionRules:
 			err = s.SyncRetentionRules(ctx, manifest.RetentionRules)
+		case SectionTrustedCertificates:
+			err = s.SyncTrustedCertificates(ctx, manifest.TrustedCertificates)
+		case SectionCertificateRevocations:
+			err = s.SyncCertificateRevocationLists(ctx, manifest.CertificateRevocationLists)
 		case SectionApplications:
 			err = s.SyncApplications(baseCtx, manifest.Applications)
 		case SectionUserGroups:

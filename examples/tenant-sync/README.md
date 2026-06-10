@@ -40,6 +40,7 @@ Because every operation is idempotent (get-or-create / upsert), the same manifes
 - 🧩 **Device profiles**: declare firmware/software/configuration bundles; binary URLs are resolved from the tenant automatically
 - 🎛️ **Tenant options & feature toggles**: set options, enable/disable features, subscribe/unsubscribe applications
 - 🗑️ **Retention rules**: ensure retention rules exist, matched by their selector (dataType/fragmentType/type/source) with the retention period updated when it differs
+- 📜 **Trusted certificates**: upload device CA certificates (PEM/DER) into the trust store — matched by fingerprint, with name/status/auto-registration updated when they differ — plus certificate revocation lists from CSV files
 - 👥 **Users & user groups**: create user groups with roles, create users and assign them to groups — additively and idempotently
 - 📡 **SmartREST 2.0 templates**: sync template collections from JSON files exported by the platform — matched by external identity, updated only when the templates differ (order-insensitive)
 - 🏢 **Target tenants**: apply one manifest to all child tenants, an explicit list, or tenants matching a selector — with per-tenant credentials resolved automatically
@@ -104,7 +105,7 @@ set-session tenant-b && ./tenant-sync run -f tenant.yaml
 |------|---------|-------------|
 | `-f`, `--manifest` | `tenant.yaml` | Path to the manifest file (also accepted as a positional argument) |
 | `--dry-run`, `--dry` | | Preview changes without applying them |
-| `--only` | *(all)* | Comma-separated sections to apply: `tenantOptions`, `features`, `retentionRules`, `applications`, `userGroups`, `users`, `software`, `firmware`, `configuration`, `smartrestTemplates`, `deviceProfiles`, `commands` |
+| `--only` | *(all)* | Comma-separated sections to apply: `tenantOptions`, `features`, `retentionRules`, `trustedCertificates`, `certificateRevocationLists`, `applications`, `userGroups`, `users`, `software`, `firmware`, `configuration`, `smartrestTemplates`, `deviceProfiles`, `commands` |
 | `--force` | | Replace existing version binaries / configuration files |
 | `--concurrency` | `5` | Concurrent software version uploads (1–20) |
 | `--target` | | Apply to a tenant referenced by ID or domain; repeatable or comma-separated (overrides the manifest `targets` section) |
@@ -242,6 +243,41 @@ retentionRules:
 ```
 
 > **Note**: updating a rule that is marked non-editable in the tenant fails — such system rules must be unlocked or removed manually first.
+
+### Trusted certificates and revocation lists
+
+The `trustedCertificates` section uploads device CA certificates into the tenant trust store (Device Management → Management → Trusted certificates). Sources may be PEM files (each `CERTIFICATE` block in a file is synced, so chain files work; other blocks such as private keys are ignored) or single DER/base64-encoded certificates; directories are scanned for `*.pem`, `*.crt` and `*.cer` by default. Certificates are matched by their SHA-1 fingerprint: missing ones are uploaded, and the `name`, `status` and `autoRegistrationEnabled` of existing ones are updated when they differ. Certificates are never deleted.
+
+```yaml
+trustedCertificates:
+  - autoRegistrationEnabled: true # only managed when set
+    source:
+      path: ./certificates # scans for *.pem, *.crt, *.cer by default
+
+  # a single certificate with an explicit name, kept uploaded but disabled
+  - name: legacy-factory-ca
+    status: DISABLED # ENABLED (default) | DISABLED
+    source:
+      path: ./certificates/archive/legacy-factory-ca.pem
+```
+
+The certificate name defaults to the certificate's subject common name, then the filename. `status` defaults to `ENABLED` and is always managed; `autoRegistrationEnabled` is only managed when set in the manifest.
+
+The `certificateRevocationLists` section uploads certificate revocation entries from CSV files (header `SERIALNO[,DATE]`, one certificate serial number in hex per row, the revocation date is optional). Files are validated locally before uploading. Uploads are **additive**: entries already on the tenant revocation list are never removed.
+
+```yaml
+certificateRevocationLists:
+  - source:
+      path: ./certificates/revoked.csv
+```
+
+```csv
+SERIALNO,DATE
+3f9a1c84d2,2026-01-15T00:00:00Z
+0b77e2
+```
+
+Since the file content must be read, `url` sources are not supported for these sections (GitHub release assets work — they are downloaded first).
 
 ### Application subscriptions
 
@@ -527,6 +563,7 @@ Run the job per tenant (e.g. a matrix over credential sets) to maintain multiple
 │  sync_firmware.go  + firmware.go │  OS image filename parsing
 │  sync_configuration.go           │
 │  sync_smartrest.go               │  exported collection JSON files
+│  sync_certificates.go            │  trust store + revocation lists
 │  sync_profiles.go                │  resolves references to binary URLs
 └──────────────┬───────────────────┘
                │
@@ -534,7 +571,8 @@ Run the job per tenant (e.g. a matrix over credential sets) to maintain multiple
         │  go-c8y SDK│  Repository.{Software,Firmware,Configuration},
         └────────────┘  Tenants.Options, Features, Applications,
                         Users, UserGroups, UserRoles,
-                        SmartRestTemplates, ManagedObjects
+                        SmartRestTemplates, TrustedCertificates,
+                        ManagedObjects
 ```
 
 ## Future Enhancements

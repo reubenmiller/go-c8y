@@ -169,6 +169,29 @@ smartrestTemplates:
 `,
 		},
 		{
+			name: "trusted certificate without source",
+			content: `
+trustedCertificates:
+  - name: device-ca
+`,
+		},
+		{
+			name: "trusted certificate with unknown status",
+			content: `
+trustedCertificates:
+  - status: PAUSED
+    source:
+      path: ./certificates
+`,
+		},
+		{
+			name: "certificate revocation list without source",
+			content: `
+certificateRevocationLists:
+  - {}
+`,
+		},
+		{
 			name: "user group without name",
 			content: `
 userGroups:
