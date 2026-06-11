@@ -4,48 +4,95 @@ import (
 	"bufio"
 	"io"
 	"strings"
-	"unicode/utf8"
 
+	"github.com/mattn/go-runewidth"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
+	"github.com/tidwall/gjson"
 )
 
+// Align controls horizontal cell alignment in rendered tables.
+type Align int8
+
+const (
+	AlignLeft Align = iota
+	AlignRight
+)
+
+// Column describes a resolved table column: its name, the width measured
+// from the sampled rows, and the alignment derived from the sampled values.
+type Column struct {
+	Name  string
+	Width int
+	Align Align
+}
+
 // RowWriter renders resolved table rows. Implementations own the
-// presentation (borders, colors, truncation); the Table engine owns column
-// resolution, width sampling and cell extraction.
+// presentation (borders, colors); the Table engine owns column resolution,
+// width sampling and cell extraction.
 //
-// WriteHeader is called exactly once, before any row, with the resolved
-// column names and the column widths measured from the sampled rows
-// (rune count, capped at MaxColumnWidth). Rows arriving after the sample
-// window may contain cells wider than the sampled widths — implementations
-// decide whether to truncate or let the layout grow.
+// WriteHeader is called exactly once, before any row. Cells passed to
+// WriteRow are already fitted to the column widths when a CellTransform is
+// configured; multi-line cells use embedded newlines.
 type RowWriter interface {
-	WriteHeader(columns []string, widths []int) error
+	WriteHeader(columns []Column) error
 	WriteRow(cells []string) error
 	Close() error
 }
 
+// CellFormatter extracts and formats a column's cell value from a document,
+// returning the display value and its alignment.
+type CellFormatter func(doc jsondoc.JSONDoc, column string) (cell string, align Align)
+
+// CellTransform fits a formatted cell value to the resolved column width,
+// e.g. by truncating or wrapping into multiple lines separated by newlines.
+// It is also applied during sampling (with MaxColumnWidth) so measured
+// widths reflect the displayed values.
+type CellTransform func(cell string, width int) string
+
 // TableOptions configures the streaming table engine.
 type TableOptions struct {
-	// Columns are the gjson paths rendered as table columns. When empty,
-	// columns are derived from the leaf paths of the first document.
+	// Columns are the gjson paths rendered as table columns.
 	Columns []string
+	// ColumnResolver lazily resolves the column names when Columns is empty.
+	// It is called when the sample window is flushed; when it returns no
+	// columns, they are derived from the leaf paths of the first document.
+	ColumnResolver func() []string
 	// SampleSize is the number of rows buffered to determine column widths
 	// before output begins, keeping memory usage O(SampleSize) regardless
 	// of stream length. Defaults to 50.
 	SampleSize int
+	// MinColumnWidth is the minimum content width of a column.
+	MinColumnWidth int
+	// MinEmptyColumnWidth is the minimum width used instead of
+	// MinColumnWidth when none of the sampled rows have a value for the
+	// column. Zero falls back to MinColumnWidth.
+	MinEmptyColumnWidth int
 	// MaxColumnWidth caps each column's width. Defaults to 60.
 	MaxColumnWidth int
+	// ColumnPadding is added to each column's measured content width.
+	ColumnPadding int
+	// MaxTableWidth limits the total table width: trailing columns that do
+	// not fit are dropped (the last kept column may be shrunk to the
+	// remaining space). Zero means unlimited.
+	MaxTableWidth int
+	// Formatter extracts and formats cell values. The default reads the
+	// column path, aligning numbers right and everything else left.
+	Formatter CellFormatter
+	// Transform fits formatted cells to the resolved column width. The
+	// default leaves values untouched (renderers may still truncate).
+	Transform CellTransform
 }
 
-// Table is the streaming table engine: it resolves columns, buffers the
-// first SampleSize rows to measure column widths, then hands the header and
-// rows to a RowWriter as they arrive.
+// Table is the streaming table engine: it buffers the first SampleSize
+// documents, resolves columns, alignments and widths from the sample, then
+// hands the header and rows to a RowWriter as they arrive.
 type Table struct {
 	rw      RowWriter
 	opts    TableOptions
-	columns []string
-	sample  [][]string
+	sample  []jsondoc.JSONDoc
+	columns []Column
 	flushed bool
+	closed  bool
 }
 
 // NewTable returns a table renderer writing plain aligned text to w
@@ -64,96 +111,204 @@ func NewTableWithWriter(rw RowWriter, opts TableOptions) *Table {
 	if opts.MaxColumnWidth <= 0 {
 		opts.MaxColumnWidth = 60
 	}
-	return &Table{
-		rw:      rw,
-		opts:    opts,
-		columns: opts.Columns,
+	if opts.Formatter == nil {
+		opts.Formatter = defaultCellFormatter
 	}
+	return &Table{rw: rw, opts: opts}
 }
 
+func defaultCellFormatter(doc jsondoc.JSONDoc, column string) (string, Align) {
+	node := doc.Get(column)
+	if node.Type == gjson.Number {
+		return node.String(), AlignRight
+	}
+	return sanitizeCell(node.String()), AlignLeft
+}
+
+// Write renders a single document as a table row. Documents written while
+// the sample window is open are buffered; the underlying bytes must remain
+// valid until the table is flushed.
 func (e *Table) Write(doc jsondoc.JSONDoc) error {
-	root := doc.Get()
-	if e.columns == nil {
-		e.columns = leafPaths(root)
-	}
-
-	row := make([]string, len(e.columns))
-	for i, col := range e.columns {
-		row[i] = sanitizeCell(root.Get(col).String())
-	}
-
 	if !e.flushed {
-		e.sample = append(e.sample, row)
+		e.sample = append(e.sample, doc)
 		if len(e.sample) >= e.opts.SampleSize {
-			return e.flushSample()
+			return e.Flush()
 		}
 		return nil
 	}
-	return e.rw.WriteRow(row)
+	return e.writeRow(doc)
 }
 
-func (e *Table) Close() error {
-	if !e.flushed {
-		if err := e.flushSample(); err != nil {
-			return err
-		}
+// Flush resolves the columns from the sampled documents and renders the
+// header and any buffered rows. It is called automatically once the sample
+// window fills or the table is closed; call it earlier to bound the latency
+// of streamed output (e.g. realtime subscriptions). Safe to call repeatedly.
+func (e *Table) Flush() error {
+	if e.flushed {
+		return nil
 	}
-	return e.rw.Close()
-}
-
-// flushSample fixes the column widths from the buffered rows, then emits the
-// header and the buffered rows to the RowWriter.
-func (e *Table) flushSample() error {
 	e.flushed = true
 
-	widths := make([]int, len(e.columns))
-	for i, col := range e.columns {
-		widths[i] = utf8.RuneCountInString(col)
+	names := e.resolveColumnNames()
+
+	// Extract and measure the sampled rows. Cells are measured after
+	// applying the transform at the column width cap so wrapped/truncated
+	// display values determine the widths.
+	type sampledCell struct {
+		value string
+		align Align
 	}
-	for _, row := range e.sample {
-		for i, cell := range row {
-			if w := utf8.RuneCountInString(cell); w > widths[i] {
-				widths[i] = w
-			}
+	rows := make([][]sampledCell, 0, len(e.sample))
+	for _, doc := range e.sample {
+		row := make([]sampledCell, len(names))
+		for i, name := range names {
+			cell, align := e.opts.Formatter(doc, name)
+			row[i] = sampledCell{value: cell, align: align}
 		}
-	}
-	for i := range widths {
-		widths[i] = min(widths[i], e.opts.MaxColumnWidth)
+		rows = append(rows, row)
 	}
 
-	if err := e.rw.WriteHeader(e.columns, widths); err != nil {
+	// Resolve column widths and alignments, dropping trailing columns that
+	// do not fit within MaxTableWidth.
+	const separatorOverhead = 3
+	const tableEndBuffer = 3
+	used := 0
+	e.columns = make([]Column, 0, len(names))
+	for i, name := range names {
+		cellWidth := 0
+		hasValue := false
+		align := AlignLeft
+		alignSet := false
+		for _, row := range rows {
+			cell := row[i].value
+			if cell != "" {
+				hasValue = true
+				if !alignSet {
+					align = row[i].align
+					alignSet = true
+				}
+			}
+			if w := displayWidth(e.transform(cell, e.opts.MaxColumnWidth)); w > cellWidth {
+				cellWidth = w
+			}
+		}
+
+		minWidth := e.opts.MinColumnWidth
+		if !hasValue && e.opts.MinEmptyColumnWidth > 0 {
+			minWidth = e.opts.MinEmptyColumnWidth
+		}
+
+		paddedWidth := cellWidth + e.opts.ColumnPadding
+		if paddedWidth > e.opts.MaxColumnWidth {
+			paddedWidth = e.opts.MaxColumnWidth
+		}
+
+		colWidth := max(paddedWidth, minWidth+e.opts.ColumnPadding, displayWidth(name))
+
+		if e.opts.MaxTableWidth > 0 && used+colWidth+separatorOverhead > e.opts.MaxTableWidth {
+			leftOver := e.opts.MaxTableWidth - used - separatorOverhead - tableEndBuffer
+			if leftOver > minWidth {
+				e.columns = append(e.columns, Column{Name: name, Width: leftOver, Align: align})
+			}
+			break
+		}
+		e.columns = append(e.columns, Column{Name: name, Width: colWidth, Align: align})
+		used += colWidth + separatorOverhead
+	}
+
+	if err := e.rw.WriteHeader(e.columns); err != nil {
 		return err
 	}
 
-	rows := e.sample
+	sample := e.sample
 	e.sample = nil
-	for _, row := range rows {
-		if err := e.rw.WriteRow(row); err != nil {
+	for _, doc := range sample {
+		if err := e.writeRow(doc); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// plainRowWriter is the built-in dependency-free presentation: aligned
-// columns separated by two spaces, a dashed divider under the header, and
-// cells truncated to the sampled widths with an ellipsis marker.
-type plainRowWriter struct {
-	w      *bufio.Writer
-	widths []int
+// Close flushes any sampled rows and closes the underlying writer.
+func (e *Table) Close() error {
+	if e.closed {
+		return nil
+	}
+	e.closed = true
+	if err := e.Flush(); err != nil {
+		return err
+	}
+	return e.rw.Close()
 }
 
-func (p *plainRowWriter) WriteHeader(columns []string, widths []int) error {
-	p.widths = widths
+func (e *Table) resolveColumnNames() []string {
+	if len(e.opts.Columns) > 0 {
+		return e.opts.Columns
+	}
+	if e.opts.ColumnResolver != nil {
+		if names := e.opts.ColumnResolver(); len(names) > 0 {
+			return names
+		}
+	}
+	if len(e.sample) > 0 {
+		return leafPaths(e.sample[0].Get())
+	}
+	return nil
+}
+
+func (e *Table) writeRow(doc jsondoc.JSONDoc) error {
+	cells := make([]string, len(e.columns))
+	for i, col := range e.columns {
+		cell, _ := e.opts.Formatter(doc, col.Name)
+		cells[i] = e.transform(cell, col.Width)
+	}
+	return e.rw.WriteRow(cells)
+}
+
+func (e *Table) transform(cell string, width int) string {
+	if e.opts.Transform == nil {
+		return cell
+	}
+	return e.opts.Transform(cell, width)
+}
+
+// displayWidth is the rendered width of a cell value, using the widest line
+// for multi-line (e.g. wrapped) values.
+func displayWidth(s string) int {
+	if !strings.Contains(s, "\n") {
+		return runewidth.StringWidth(s)
+	}
+	width := 0
+	for _, line := range strings.Split(s, "\n") {
+		if w := runewidth.StringWidth(line); w > width {
+			width = w
+		}
+	}
+	return width
+}
+
+// plainRowWriter is the built-in dependency-free presentation: aligned
+// columns separated by two spaces, a dashed divider under the header, and
+// cells truncated to the column widths with an ellipsis marker.
+type plainRowWriter struct {
+	w       *bufio.Writer
+	columns []Column
+}
+
+func (p *plainRowWriter) WriteHeader(columns []Column) error {
+	p.columns = columns
 	if len(columns) == 0 {
 		return nil
 	}
-	if err := p.WriteRow(columns); err != nil {
-		return err
-	}
+	names := make([]string, len(columns))
 	divider := make([]string, len(columns))
-	for i, w := range widths {
-		divider[i] = strings.Repeat("-", w)
+	for i, col := range columns {
+		names[i] = col.Name
+		divider[i] = strings.Repeat("-", col.Width)
+	}
+	if err := p.WriteRow(names); err != nil {
+		return err
 	}
 	return p.WriteRow(divider)
 }
@@ -165,18 +320,30 @@ func (p *plainRowWriter) WriteRow(cells []string) error {
 				return err
 			}
 		}
-		width := p.widths[i]
-		n := utf8.RuneCountInString(cell)
+		// Multi-line cells are not supported by the plain writer.
+		if strings.Contains(cell, "\n") {
+			cell = strings.ReplaceAll(cell, "\n", " ")
+		}
+		width := p.columns[i].Width
+		n := runewidth.StringWidth(cell)
 		if n > width {
 			cell = truncateRunes(cell, width)
 			n = width
+		}
+		pad := width - n
+		if p.columns[i].Align == AlignRight {
+			for ; pad > 0; pad-- {
+				if err := p.w.WriteByte(' '); err != nil {
+					return err
+				}
+			}
 		}
 		if _, err := p.w.WriteString(cell); err != nil {
 			return err
 		}
 		// Pad all but the last column.
-		if i < len(cells)-1 {
-			for ; n < width; n++ {
+		if p.columns[i].Align != AlignRight && i < len(cells)-1 {
+			for ; pad > 0; pad-- {
 				if err := p.w.WriteByte(' '); err != nil {
 					return err
 				}
