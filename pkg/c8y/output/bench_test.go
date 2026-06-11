@@ -22,6 +22,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/output/encode"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/output/filter"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/output/shape"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/output/template"
 )
 
 const benchItems = 2000
@@ -117,6 +118,16 @@ func BenchmarkFilterSelectCSV(b *testing.B) {
 func BenchmarkSelectJSONArray(b *testing.B) {
 	benchRender(b, func(w io.Writer) output.Renderer { return encode.NewJSONArray(w) },
 		shape.Select("id", "name", "c8y_Hardware.*"))
+}
+
+// Jsonnet response shaping: template compiled once (AST), evaluated per item.
+func BenchmarkJsonnetTemplateNDJSON(b *testing.B) {
+	stage, err := template.Jsonnet(
+		`{id: output.id, name: output.name, serial: output.c8y_Hardware.serialNumber, alarms: output.c8y_ActiveAlarmsStatus}`)
+	if err != nil {
+		b.Fatal(err)
+	}
+	benchRender(b, func(w io.Writer) output.Renderer { return encode.NewNDJSON(w) }, stage)
 }
 
 // Streaming source: items decoded incrementally from a reader, as they would
