@@ -120,6 +120,15 @@ func BenchmarkSelectJSONArray(b *testing.B) {
 		shape.Select("id", "name", "c8y_Hardware.*"))
 }
 
+// Streaming table with sampled column widths.
+func BenchmarkTable(b *testing.B) {
+	benchRender(b, func(w io.Writer) output.Renderer {
+		return encode.NewTable(w, encode.TableOptions{
+			Columns: []string{"id", "name", "type", "c8y_Hardware.serialNumber", "c8y_Availability.status"},
+		})
+	})
+}
+
 // Jsonnet response shaping: template compiled once (AST), evaluated per item.
 func BenchmarkJsonnetTemplateNDJSON(b *testing.B) {
 	stage, err := template.Jsonnet(
