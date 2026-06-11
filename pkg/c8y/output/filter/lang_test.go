@@ -1,6 +1,7 @@
 package filter_test
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
@@ -86,6 +87,14 @@ func TestParseOperators(t *testing.T) {
 		{"creationTime dategt 2026-06-01", false},
 		{"creationTime newerthan 2025-01-01", true},
 
+		// dates with relative references (resolved against now)
+		{"creationTime datelt -1h", true},
+		{"creationTime dategt -1h", false},
+		{"creationTime datelt now", true},
+		{"creationTime dategt '2026-01-15T10:00:00Z' - 1h", true},
+		{"creationTime datelt '2026-01-15T10:00:00Z' + 1h", true},
+		{"creationTime dategt '2026-01-15T10:00:00Z' + 1h", false},
+
 		// length
 		{"c8y_SupportedOperations leneq 2", true},
 		{"c8y_SupportedOperations lengt 1", true},
@@ -156,11 +165,59 @@ func TestCondition(t *testing.T) {
 		assert.Equal(t, tc.want, p(doc), "%s %s %v", tc.property, tc.operator, tc.value)
 	}
 
-	_, err := filter.Condition("a", "version", "> 1.0.0")
-	assert.Error(t, err, "unsupported operators must error so callers can fall back")
-
-	_, err = filter.Condition("a", "eq", []string{"x"})
+	_, err := filter.Condition("a", "eq", []string{"x"})
 	assert.Error(t, err, "unsupported value types must error so callers can fall back")
+}
+
+// TestVersionOperator mirrors go-c8y-cli's legacy gojsonq "version" macro:
+// semver constraint checks where invalid versions (including "") are treated
+// as 0.0.0, build metadata is ignored when comparing, and non-string values
+// never match.
+func TestVersionOperator(t *testing.T) {
+	versionDoc := func(v string) jsondoc.JSONDoc {
+		b, _ := json.Marshal(map[string]string{"value": v})
+		return jsondoc.New(b)
+	}
+	cases := []struct {
+		constraint string
+		value      string
+		want       bool
+	}{
+		{">=1.10.3+deb10", "1.10.3+deb10", true},
+		{">=1.10.3+deb10", "2.0.0", true},
+		{"<1.99", "1.10.3+deb10", true},
+		{"<1.99", "2.0.0", false},
+		// build metadata is not significant: 1.10.3+deb10 satisfies >=1.10.3+deb11
+		{">=1.10.3+deb11, < 2.0.0", "1.10.3+deb10", true},
+		{">=1.10.3+deb11, < 2.0.0", "2.0.0", false},
+		// invalid/empty versions are treated as 0.0.0
+		{">0", "", false},
+		{">=0", "", true},
+		{"<1.0", "not-a-version", true},
+	}
+	for _, tc := range cases {
+		p, err := filter.Condition("value", "version", tc.constraint)
+		require.NoError(t, err, "constraint %q", tc.constraint)
+		assert.Equal(t, tc.want, p(versionDoc(tc.value)), "value=%q version %s", tc.value, tc.constraint)
+	}
+
+	// version expressions also work via Parse
+	p, err := filter.Parse("value version >=1.0.0")
+	require.NoError(t, err)
+	assert.True(t, p(versionDoc("1.2.3")))
+	assert.False(t, p(versionDoc("0.9.0")))
+
+	// non-string values never match
+	p, err = filter.Condition("count", "version", ">=0")
+	require.NoError(t, err)
+	assert.False(t, p(doc))
+
+	// missing properties never match
+	assert.False(t, p(jsondoc.New([]byte(`{}`))))
+
+	// invalid constraints fail at compile time
+	_, err = filter.Condition("value", "version", "not >= a constraint")
+	assert.Error(t, err)
 }
 
 func TestParseMissingPropertyNeverMatches(t *testing.T) {

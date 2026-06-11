@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/araddon/dateparse"
+	"github.com/hashicorp/go-version"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
 	"github.com/tidwall/gjson"
 )
@@ -25,7 +25,7 @@ import (
 // lte (<=), contains, strictcontains, startswith, endswith, like, notlike,
 // match, notmatch, has (keyIn), hasnot/nothas/missing (keyNotIn), datelt,
 // datelte, olderthan, dategt, dategte, newerthan, leneq, lenneq, lengt,
-// lengte, lenlt, lenlte, includes, notincludes.
+// lengte, lenlt, lenlte, includes, notincludes, version.
 //
 // All pattern and date compilation happens here; the returned predicate
 // performs only path lookups and comparisons per document.
@@ -178,7 +178,10 @@ func compileCondition(property, operator, value string, quoted bool) (Predicate,
 		}
 		return p, nil
 	case "datelt", "datelte", "olderthan", "dategt", "dategte", "newerthan":
-		ref, err := dateparse.ParseAny(value)
+		// References may be absolute dates or relative expressions such as
+		// "-25h" or "'2026-01-01' + 1d"; relative references are resolved
+		// against now once at compile time.
+		ref, err := parseTimestamp(value)
 		if err != nil {
 			return nil, fmt.Errorf("filter: invalid date %q: %w", value, err)
 		}
@@ -187,7 +190,7 @@ func compileCondition(property, operator, value string, quoted bool) (Predicate,
 			if !v.Exists() {
 				return false
 			}
-			ts, err := dateparse.ParseAny(v.String())
+			ts, err := parseTimestamp(v.String())
 			if err != nil {
 				return false
 			}
@@ -227,6 +230,27 @@ func compileCondition(property, operator, value string, quoted bool) (Predicate,
 			default:
 				return n <= want
 			}
+		}, nil
+	case "version":
+		// Semver constraint check, e.g. "version >=1.2.0, <2.0.0". String
+		// values which are not valid versions (including "") are treated as
+		// 0.0.0; non-string values never match (mirroring go-c8y-cli's
+		// legacy gojsonq macro).
+		constraints, err := version.NewConstraint(value)
+		if err != nil {
+			return nil, fmt.Errorf("filter: invalid version constraint %q: %w", value, err)
+		}
+		fallback := version.Must(version.NewVersion("0.0.0"))
+		return func(d jsondoc.JSONDoc) bool {
+			v := get(d)
+			if v.Type != gjson.String {
+				return false
+			}
+			current, err := version.NewVersion(v.String())
+			if err != nil {
+				current = fallback
+			}
+			return constraints.Check(current)
 		}, nil
 	case "includes", "notincludes":
 		p := func(d jsondoc.JSONDoc) bool {

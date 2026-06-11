@@ -7,6 +7,8 @@ require (
 	github.com/google/go-jsonnet v0.21.0
 	github.com/google/go-querystring v1.2.0
 	github.com/gorilla/websocket v1.5.3
+	github.com/hashicorp/go-version v1.9.0
+	github.com/karrick/tparse/v2 v2.8.2
 	github.com/mattn/go-runewidth v0.0.20
 	github.com/prometheus/client_golang v1.23.2
 	github.com/smallstep/pkcs7 v0.2.1
