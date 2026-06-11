@@ -44,6 +44,31 @@ func Parse(expressions ...string) (Predicate, error) {
 	return And(preds...), nil
 }
 
+// Condition compiles a single (property, operator, value) triple into a
+// Predicate. This is the programmatic equivalent of one Parse expression for
+// callers that have already tokenized and coerced filter values (e.g.
+// go-c8y-cli's --filter handling). String values compare as strings; numeric
+// and boolean values compare with their native semantics.
+func Condition(property, operator string, value any) (Predicate, error) {
+	operator = strings.ToLower(strings.TrimSpace(operator))
+	switch v := value.(type) {
+	case string:
+		return compileCondition(property, operator, v, true)
+	case bool:
+		return compileCondition(property, operator, strconv.FormatBool(v), false)
+	case int:
+		return compileCondition(property, operator, strconv.Itoa(v), false)
+	case int64:
+		return compileCondition(property, operator, strconv.FormatInt(v, 10), false)
+	case float32:
+		return compileCondition(property, operator, strconv.FormatFloat(float64(v), 'f', -1, 64), false)
+	case float64:
+		return compileCondition(property, operator, strconv.FormatFloat(v, 'f', -1, 64), false)
+	default:
+		return nil, fmt.Errorf("filter: unsupported value type %T", value)
+	}
+}
+
 func parseExpression(expr string) (Predicate, error) {
 	property := ""
 	operator := ""

@@ -134,6 +134,35 @@ func TestParseErrors(t *testing.T) {
 	}
 }
 
+func TestCondition(t *testing.T) {
+	cases := []struct {
+		property string
+		operator string
+		value    any
+		want     bool
+	}{
+		{"count", "eq", 42, true},
+		{"count", "eq", float64(42), true},
+		{"count", "gt", 41, true},
+		{"count", "eq", "42", true}, // string compare against number still matches via String()
+		{"active", "eq", true, true},
+		{"name", "like", "linux*", true},
+		{"name", "keyIn", "doesNotExist", false},
+		{".", "keyIn", "c8y_Hardware", true},
+	}
+	for _, tc := range cases {
+		p, err := filter.Condition(tc.property, tc.operator, tc.value)
+		require.NoError(t, err, "%s %s %v", tc.property, tc.operator, tc.value)
+		assert.Equal(t, tc.want, p(doc), "%s %s %v", tc.property, tc.operator, tc.value)
+	}
+
+	_, err := filter.Condition("a", "version", "> 1.0.0")
+	assert.Error(t, err, "unsupported operators must error so callers can fall back")
+
+	_, err = filter.Condition("a", "eq", []string{"x"})
+	assert.Error(t, err, "unsupported value types must error so callers can fall back")
+}
+
 func TestParseMissingPropertyNeverMatches(t *testing.T) {
 	assert.False(t, match(t, "doesNotExist like *"))
 	assert.False(t, match(t, "doesNotExist gt 1"))
