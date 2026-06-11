@@ -9,33 +9,55 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
 )
 
-// TableOptions configures the streaming table renderer.
+// RowWriter renders resolved table rows. Implementations own the
+// presentation (borders, colors, truncation); the Table engine owns column
+// resolution, width sampling and cell extraction.
+//
+// WriteHeader is called exactly once, before any row, with the resolved
+// column names and the column widths measured from the sampled rows
+// (rune count, capped at MaxColumnWidth). Rows arriving after the sample
+// window may contain cells wider than the sampled widths — implementations
+// decide whether to truncate or let the layout grow.
+type RowWriter interface {
+	WriteHeader(columns []string, widths []int) error
+	WriteRow(cells []string) error
+	Close() error
+}
+
+// TableOptions configures the streaming table engine.
 type TableOptions struct {
 	// Columns are the gjson paths rendered as table columns. When empty,
 	// columns are derived from the leaf paths of the first document.
 	Columns []string
 	// SampleSize is the number of rows buffered to determine column widths
-	// before output begins. Later rows are truncated to the sampled widths,
-	// keeping memory usage O(SampleSize) regardless of stream length.
-	// Defaults to 50.
+	// before output begins, keeping memory usage O(SampleSize) regardless
+	// of stream length. Defaults to 50.
 	SampleSize int
 	// MaxColumnWidth caps each column's width. Defaults to 60.
 	MaxColumnWidth int
 }
 
-// Table renders documents as an aligned text table while streaming: the
-// first SampleSize rows are buffered to size the columns, then everything
-// is flushed and subsequent rows are written as they arrive.
+// Table is the streaming table engine: it resolves columns, buffers the
+// first SampleSize rows to measure column widths, then hands the header and
+// rows to a RowWriter as they arrive.
 type Table struct {
-	w       *bufio.Writer
+	rw      RowWriter
 	opts    TableOptions
 	columns []string
-	widths  []int
 	sample  [][]string
 	flushed bool
 }
 
+// NewTable returns a table renderer writing plain aligned text to w
+// (two-space column separator, dashed divider, cells truncated to the
+// sampled widths with an ellipsis marker).
 func NewTable(w io.Writer, opts TableOptions) *Table {
+	return NewTableWithWriter(&plainRowWriter{w: bufio.NewWriterSize(w, writeBufferSize)}, opts)
+}
+
+// NewTableWithWriter returns a table renderer that delegates presentation to
+// a custom RowWriter (e.g. an adapter for a rich table rendering library).
+func NewTableWithWriter(rw RowWriter, opts TableOptions) *Table {
 	if opts.SampleSize <= 0 {
 		opts.SampleSize = 50
 	}
@@ -43,7 +65,7 @@ func NewTable(w io.Writer, opts TableOptions) *Table {
 		opts.MaxColumnWidth = 60
 	}
 	return &Table{
-		w:       bufio.NewWriterSize(w, writeBufferSize),
+		rw:      rw,
 		opts:    opts,
 		columns: opts.Columns,
 	}
@@ -67,7 +89,7 @@ func (e *Table) Write(doc jsondoc.JSONDoc) error {
 		}
 		return nil
 	}
-	return e.writeRow(row)
+	return e.rw.WriteRow(row)
 }
 
 func (e *Table) Close() error {
@@ -76,77 +98,96 @@ func (e *Table) Close() error {
 			return err
 		}
 	}
-	return e.w.Flush()
+	return e.rw.Close()
 }
 
-// flushSample fixes the column widths from the buffered rows, then writes
-// the header and the buffered rows.
+// flushSample fixes the column widths from the buffered rows, then emits the
+// header and the buffered rows to the RowWriter.
 func (e *Table) flushSample() error {
 	e.flushed = true
-	e.widths = make([]int, len(e.columns))
+
+	widths := make([]int, len(e.columns))
 	for i, col := range e.columns {
-		e.widths[i] = utf8.RuneCountInString(col)
+		widths[i] = utf8.RuneCountInString(col)
 	}
 	for _, row := range e.sample {
 		for i, cell := range row {
-			if w := utf8.RuneCountInString(cell); w > e.widths[i] {
-				e.widths[i] = w
+			if w := utf8.RuneCountInString(cell); w > widths[i] {
+				widths[i] = w
 			}
 		}
 	}
-	for i := range e.widths {
-		e.widths[i] = min(e.widths[i], e.opts.MaxColumnWidth)
+	for i := range widths {
+		widths[i] = min(widths[i], e.opts.MaxColumnWidth)
 	}
 
-	if len(e.columns) > 0 {
-		if err := e.writeRow(e.columns); err != nil {
-			return err
-		}
-		divider := make([]string, len(e.columns))
-		for i, w := range e.widths {
-			divider[i] = strings.Repeat("-", w)
-		}
-		if err := e.writeRow(divider); err != nil {
-			return err
-		}
+	if err := e.rw.WriteHeader(e.columns, widths); err != nil {
+		return err
 	}
 
 	rows := e.sample
 	e.sample = nil
 	for _, row := range rows {
-		if err := e.writeRow(row); err != nil {
+		if err := e.rw.WriteRow(row); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (e *Table) writeRow(row []string) error {
-	for i, cell := range row {
+// plainRowWriter is the built-in dependency-free presentation: aligned
+// columns separated by two spaces, a dashed divider under the header, and
+// cells truncated to the sampled widths with an ellipsis marker.
+type plainRowWriter struct {
+	w      *bufio.Writer
+	widths []int
+}
+
+func (p *plainRowWriter) WriteHeader(columns []string, widths []int) error {
+	p.widths = widths
+	if len(columns) == 0 {
+		return nil
+	}
+	if err := p.WriteRow(columns); err != nil {
+		return err
+	}
+	divider := make([]string, len(columns))
+	for i, w := range widths {
+		divider[i] = strings.Repeat("-", w)
+	}
+	return p.WriteRow(divider)
+}
+
+func (p *plainRowWriter) WriteRow(cells []string) error {
+	for i, cell := range cells {
 		if i > 0 {
-			if _, err := e.w.WriteString("  "); err != nil {
+			if _, err := p.w.WriteString("  "); err != nil {
 				return err
 			}
 		}
-		width := e.widths[i]
+		width := p.widths[i]
 		n := utf8.RuneCountInString(cell)
 		if n > width {
 			cell = truncateRunes(cell, width)
 			n = width
 		}
-		if _, err := e.w.WriteString(cell); err != nil {
+		if _, err := p.w.WriteString(cell); err != nil {
 			return err
 		}
 		// Pad all but the last column.
-		if i < len(row)-1 {
+		if i < len(cells)-1 {
 			for ; n < width; n++ {
-				if err := e.w.WriteByte(' '); err != nil {
+				if err := p.w.WriteByte(' '); err != nil {
 					return err
 				}
 			}
 		}
 	}
-	return e.w.WriteByte('\n')
+	return p.w.WriteByte('\n')
+}
+
+func (p *plainRowWriter) Close() error {
+	return p.w.Flush()
 }
 
 // sanitizeCell makes a value safe for single-line table output.

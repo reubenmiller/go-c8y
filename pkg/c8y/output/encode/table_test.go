@@ -88,6 +88,67 @@ func TestTableEmptyStream(t *testing.T) {
 	assert.Equal(t, "id\n--\n", buf.String())
 }
 
+// recordingRowWriter stands in for a rich renderer (e.g. tablewriter in
+// streaming mode) to verify the engine/presentation split: the engine must
+// deliver the header (with sampled widths) exactly once before any row, and
+// rows in order.
+type recordingRowWriter struct {
+	columns []string
+	widths  []int
+	rows    [][]string
+	headers int
+	closed  bool
+}
+
+func (r *recordingRowWriter) WriteHeader(columns []string, widths []int) error {
+	r.headers++
+	r.columns = columns
+	r.widths = widths
+	return nil
+}
+
+func (r *recordingRowWriter) WriteRow(cells []string) error {
+	if r.headers == 0 {
+		panic("row written before header")
+	}
+	r.rows = append(r.rows, append([]string(nil), cells...))
+	return nil
+}
+
+func (r *recordingRowWriter) Close() error {
+	r.closed = true
+	return nil
+}
+
+func TestTableWithCustomRowWriter(t *testing.T) {
+	var sb strings.Builder
+	sb.WriteString(`[`)
+	for i := range 6 {
+		if i > 0 {
+			sb.WriteByte(',')
+		}
+		fmt.Fprintf(&sb, `{"id": "%d", "name": "device-%d"}`, i, i)
+	}
+	sb.WriteString(`]`)
+
+	rw := &recordingRowWriter{}
+	err := output.Render(context.Background(),
+		output.FromBytes([]byte(sb.String()), ""),
+		encode.NewTableWithWriter(rw, encode.TableOptions{
+			Columns:    []string{"id", "name"},
+			SampleSize: 3,
+		}))
+	require.NoError(t, err)
+
+	assert.Equal(t, 1, rw.headers, "header must be written exactly once")
+	assert.Equal(t, []string{"id", "name"}, rw.columns)
+	assert.Equal(t, []int{2, len("device-0")}, rw.widths, "widths from sample (max of header and sampled cells)")
+	require.Len(t, rw.rows, 6)
+	assert.Equal(t, []string{"0", "device-0"}, rw.rows[0])
+	assert.Equal(t, []string{"5", "device-5"}, rw.rows[5])
+	assert.True(t, rw.closed)
+}
+
 func TestTableMultilineValuesSanitized(t *testing.T) {
 	body := `[{"id": "1", "text": "line1\nline2"}]`
 	var buf bytes.Buffer
