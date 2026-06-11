@@ -39,13 +39,20 @@ takes ~3s to process in go-c8y-cli. Apple M1 Max:
 ```
 go test -bench . -benchmem -run '^$' ./pkg/c8y/output/
 
-BenchmarkPassthroughNDJSON         31.3ms   1114 MB/s      66KB allocs
-BenchmarkFilterNDJSON              31.7ms   1101 MB/s     114KB allocs
-BenchmarkFilterSelectCSV           34.8ms   1003 MB/s      25MB allocs
-BenchmarkSelectJSONArray           71.5ms    488 MB/s      41MB allocs
-BenchmarkStreamingReaderNDJSON    202.1ms    173 MB/s      37MB allocs
-BenchmarkHead10FromReader           1.0ms   (early exit on 33MB body)
+BenchmarkPassthroughNDJSON         31.7ms   1099 MB/s      66KB allocs
+BenchmarkFilterNDJSON              31.7ms   1100 MB/s     114KB allocs
+BenchmarkFilterSelectCSV           34.9ms   1000 MB/s      25MB allocs
+BenchmarkSelectJSONArray           72.7ms    480 MB/s      41MB allocs
+BenchmarkTable                     35.7ms    977 MB/s      37MB allocs
+BenchmarkJsonnetTemplateNDJSON    892.1ms     39 MB/s     949MB allocs
+BenchmarkStreamingReaderNDJSON    209.7ms    166 MB/s      37MB allocs
+BenchmarkHead10FromReader           1.1ms   (early exit on 33MB body)
 ```
+
+The jsonnet stage is the costly one (~450µs/item): std.parseJson must
+materialize each full document as interpreter values. The template itself is
+compiled to an AST once; a future optimization is pruning each document to
+the fields the template references before binding.
 
 ~3s in go-c8y-cli → 31–72ms here (40–95x), with peak memory bounded by one
 item plus I/O buffers in the streaming path. `Head10FromReader` demonstrates
@@ -60,7 +67,8 @@ the rest is never read.
   which dominates wall clock.
 - `shape.Select` builds output via per-match `sjson` sets; a single-walk
   streaming writer would cut the wildcard-select allocations further.
-- Not yet implemented from the proposal: table renderer with sampled column
-  widths, view definitions, jsonnet/gojq template stages, a parser for the
-  go-c8y-cli filter language (the predicate building blocks exist), and an
-  `ExecuteStream` variant on the core client to feed `FromReader` directly.
+- Not yet implemented from the proposal: view definitions (the table
+  renderer exists; the column auto-detection from view files does not), a
+  gojq template stage, the `version` filter operator (needs a semver
+  dependency), and an `ExecuteStream` variant on the core client to feed
+  `FromReader` directly.
