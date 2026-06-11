@@ -47,7 +47,7 @@ func parseTimestamp(value string) (time.Time, error) {
 //	outer='+', inner='-' → '-'   outer='-', inner='-' → '+'
 //
 // Spaces within the duration part are also removed.
-func normalizeOffset(outerSign string, durationPart string) string {
+func normalizeOffset(outerSign, durationPart string) string {
 	durationPart = strings.ReplaceAll(strings.TrimSpace(durationPart), " ", "")
 	if strings.HasPrefix(durationPart, "-") || strings.HasPrefix(durationPart, "+") {
 		innerSign := string(durationPart[0])

@@ -22,45 +22,47 @@ func flattenValue(nested map[string]any) map[string]any {
 }
 
 func flatten(top bool, flatMap map[string]any, nested any, prefix string) {
-	assign := func(newKey string, v any) {
-		switch typedV := v.(type) {
-		case map[string]any:
-			if len(typedV) == 0 {
-				flatMap[newKey] = typedV
-				return
-			}
-			flatten(false, flatMap, v, newKey)
-		case []any:
-			if len(typedV) == 0 {
-				flatMap[newKey] = typedV
-				return
-			}
-			flatten(false, flatMap, v, newKey)
-		default:
-			flatMap[newKey] = v
-		}
-	}
-
 	switch nestedValue := nested.(type) {
 	case map[string]any:
 		if len(nestedValue) == 0 {
-			assign(prefix, nestedValue)
+			assignFlat(flatMap, prefix, nestedValue)
 			return
 		}
 		for k, v := range nestedValue {
 			if isInteger(k) {
 				k = keyPrefix + k
 			}
-			assign(enkey(top, prefix, k), v)
+			assignFlat(flatMap, enkey(top, prefix, k), v)
 		}
 	case []any:
 		if len(nestedValue) == 0 {
-			assign(prefix, nestedValue)
+			assignFlat(flatMap, prefix, nestedValue)
 			return
 		}
 		for i, v := range nestedValue {
-			assign(enkey(top, prefix, strconv.Itoa(i)), v)
+			assignFlat(flatMap, enkey(top, prefix, strconv.Itoa(i)), v)
 		}
+	}
+}
+
+// assignFlat stores a leaf value under newKey, recursing into non-empty
+// containers (empty objects and arrays are leaves).
+func assignFlat(flatMap map[string]any, newKey string, v any) {
+	switch typedV := v.(type) {
+	case map[string]any:
+		if len(typedV) == 0 {
+			flatMap[newKey] = typedV
+			return
+		}
+		flatten(false, flatMap, v, newKey)
+	case []any:
+		if len(typedV) == 0 {
+			flatMap[newKey] = typedV
+			return
+		}
+		flatten(false, flatMap, v, newKey)
+	default:
+		flatMap[newKey] = v
 	}
 }
 

@@ -150,14 +150,32 @@ func (e *Table) Flush() error {
 	e.flushed = true
 
 	names := e.resolveColumnNames()
+	e.columns = e.resolveColumns(names, e.sampleCells(names))
 
-	// Extract and measure the sampled rows. Cells are measured after
-	// applying the transform at the column width cap so wrapped/truncated
-	// display values determine the widths.
-	type sampledCell struct {
-		value string
-		align Align
+	if err := e.rw.WriteHeader(e.columns); err != nil {
+		return err
 	}
+
+	sample := e.sample
+	e.sample = nil
+	for _, doc := range sample {
+		if err := e.writeRow(doc); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// sampledCell is a measured cell from the sample window.
+type sampledCell struct {
+	value string
+	align Align
+}
+
+// sampleCells extracts and measures the sampled rows. Cells are measured
+// after applying the transform at the column width cap so wrapped/truncated
+// display values determine the widths.
+func (e *Table) sampleCells(names []string) [][]sampledCell {
 	rows := make([][]sampledCell, 0, len(e.sample))
 	for _, doc := range e.sample {
 		row := make([]sampledCell, len(names))
@@ -167,31 +185,18 @@ func (e *Table) Flush() error {
 		}
 		rows = append(rows, row)
 	}
+	return rows
+}
 
-	// Resolve column widths and alignments, dropping trailing columns that
-	// do not fit within MaxTableWidth.
+// resolveColumns resolves column widths and alignments, dropping trailing
+// columns that do not fit within MaxTableWidth.
+func (e *Table) resolveColumns(names []string, rows [][]sampledCell) []Column {
 	const separatorOverhead = 3
 	const tableEndBuffer = 3
 	used := 0
-	e.columns = make([]Column, 0, len(names))
+	columns := make([]Column, 0, len(names))
 	for i, name := range names {
-		cellWidth := 0
-		hasValue := false
-		align := AlignLeft
-		alignSet := false
-		for _, row := range rows {
-			cell := row[i].value
-			if cell != "" {
-				hasValue = true
-				if !alignSet {
-					align = row[i].align
-					alignSet = true
-				}
-			}
-			if w := displayWidth(e.transform(cell, e.opts.MaxColumnWidth)); w > cellWidth {
-				cellWidth = w
-			}
-		}
+		cellWidth, hasValue, align := e.measureColumn(rows, i)
 
 		minWidth := e.opts.MinColumnWidth
 		if !hasValue && e.opts.MinEmptyColumnWidth > 0 {
@@ -208,26 +213,36 @@ func (e *Table) Flush() error {
 		if e.opts.MaxTableWidth > 0 && used+colWidth+separatorOverhead > e.opts.MaxTableWidth {
 			leftOver := e.opts.MaxTableWidth - used - separatorOverhead - tableEndBuffer
 			if leftOver > minWidth {
-				e.columns = append(e.columns, Column{Name: name, Width: leftOver, Align: align})
+				columns = append(columns, Column{Name: name, Width: leftOver, Align: align})
 			}
 			break
 		}
-		e.columns = append(e.columns, Column{Name: name, Width: colWidth, Align: align})
+		columns = append(columns, Column{Name: name, Width: colWidth, Align: align})
 		used += colWidth + separatorOverhead
 	}
+	return columns
+}
 
-	if err := e.rw.WriteHeader(e.columns); err != nil {
-		return err
-	}
-
-	sample := e.sample
-	e.sample = nil
-	for _, doc := range sample {
-		if err := e.writeRow(doc); err != nil {
-			return err
+// measureColumn returns the widest display value of a column across the
+// sampled rows, whether any row has a value, and the alignment of the first
+// non-empty cell.
+func (e *Table) measureColumn(rows [][]sampledCell, i int) (cellWidth int, hasValue bool, align Align) {
+	align = AlignLeft
+	alignSet := false
+	for _, row := range rows {
+		cell := row[i].value
+		if cell != "" {
+			hasValue = true
+			if !alignSet {
+				align = row[i].align
+				alignSet = true
+			}
+		}
+		if w := displayWidth(e.transform(cell, e.opts.MaxColumnWidth)); w > cellWidth {
+			cellWidth = w
 		}
 	}
-	return nil
+	return cellWidth, hasValue, align
 }
 
 // Close flushes any sampled rows and closes the underlying writer.
@@ -320,37 +335,49 @@ func (p *plainRowWriter) WriteRow(cells []string) error {
 				return err
 			}
 		}
-		// Multi-line cells are not supported by the plain writer.
-		if strings.Contains(cell, "\n") {
-			cell = strings.ReplaceAll(cell, "\n", " ")
-		}
-		width := p.columns[i].Width
-		n := runewidth.StringWidth(cell)
-		if n > width {
-			cell = truncateRunes(cell, width)
-			n = width
-		}
-		pad := width - n
-		if p.columns[i].Align == AlignRight {
-			for ; pad > 0; pad-- {
-				if err := p.w.WriteByte(' '); err != nil {
-					return err
-				}
-			}
-		}
-		if _, err := p.w.WriteString(cell); err != nil {
+		if err := p.writeCell(cell, i, i == len(cells)-1); err != nil {
 			return err
-		}
-		// Pad all but the last column.
-		if p.columns[i].Align != AlignRight && i < len(cells)-1 {
-			for ; pad > 0; pad-- {
-				if err := p.w.WriteByte(' '); err != nil {
-					return err
-				}
-			}
 		}
 	}
 	return p.w.WriteByte('\n')
+}
+
+// writeCell writes a single cell truncated and padded to its column width.
+func (p *plainRowWriter) writeCell(cell string, i int, last bool) error {
+	// Multi-line cells are not supported by the plain writer.
+	if strings.Contains(cell, "\n") {
+		cell = strings.ReplaceAll(cell, "\n", " ")
+	}
+	width := p.columns[i].Width
+	n := runewidth.StringWidth(cell)
+	if n > width {
+		cell = truncateRunes(cell, width)
+		n = width
+	}
+	pad := width - n
+	alignRight := p.columns[i].Align == AlignRight
+	if alignRight {
+		if err := p.writePadding(pad); err != nil {
+			return err
+		}
+	}
+	if _, err := p.w.WriteString(cell); err != nil {
+		return err
+	}
+	// Pad all but the last column.
+	if !alignRight && !last {
+		return p.writePadding(pad)
+	}
+	return nil
+}
+
+func (p *plainRowWriter) writePadding(pad int) error {
+	for ; pad > 0; pad-- {
+		if err := p.w.WriteByte(' '); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (p *plainRowWriter) Close() error {

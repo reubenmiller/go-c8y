@@ -20,7 +20,7 @@ type JsonnetOption func(*jsonnet.VM)
 // WithVar binds an external variable (a JSON value) that is constant for the
 // stream, available in the template via std.extVar(name). Use this for
 // request/response metadata, flags, etc.
-func WithVar(name string, jsonValue string) JsonnetOption {
+func WithVar(name, jsonValue string) JsonnetOption {
 	return func(vm *jsonnet.VM) {
 		vm.ExtCode(name, jsonValue)
 	}
@@ -28,7 +28,7 @@ func WithVar(name string, jsonValue string) JsonnetOption {
 
 // WithStringVar binds an external string variable, available in the template
 // via std.extVar(name).
-func WithStringVar(name string, value string) JsonnetOption {
+func WithStringVar(name, value string) JsonnetOption {
 	return func(vm *jsonnet.VM) {
 		vm.ExtVar(name, value)
 	}

@@ -100,6 +100,32 @@ func parseExpression(expr string) (Predicate, error) {
 	return compileCondition(property, strings.ToLower(operator), value, quoted)
 }
 
+// getter resolves the filtered property of a document.
+type getter = func(jsondoc.JSONDoc) gjson.Result
+
+// condValue is a filter value with go-c8y-cli's numeric/boolean coercion
+// applied (skipped for quoted values, mirroring AddRawFilters).
+type condValue struct {
+	raw    string
+	num    float64
+	isNum  bool
+	b      bool
+	isBool bool
+}
+
+func coerceValue(value string, quoted bool) condValue {
+	cv := condValue{raw: value}
+	if quoted {
+		return cv
+	}
+	if v, err := strconv.ParseFloat(value, 64); err == nil {
+		cv.num, cv.isNum = v, true
+	} else if v, err := strconv.ParseBool(value); err == nil {
+		cv.b, cv.isBool = v, true
+	}
+	return cv
+}
+
 func compileCondition(property, operator, value string, quoted bool) (Predicate, error) {
 	switch operator {
 	case "has", "keyin":
@@ -109,41 +135,18 @@ func compileCondition(property, operator, value string, quoted bool) (Predicate,
 	}
 
 	get := pathGetter(property)
-
-	// Numeric / boolean coercion (skipped for quoted values), mirroring
-	// go-c8y-cli's AddRawFilters.
-	var numValue float64
-	isNum := false
-	var boolValue, isBool bool
-	if !quoted {
-		if v, err := strconv.ParseFloat(value, 64); err == nil {
-			numValue, isNum = v, true
-		} else if v, err := strconv.ParseBool(value); err == nil {
-			boolValue, isBool = v, true
-		}
-	}
+	cv := coerceValue(value, quoted)
 
 	switch operator {
 	case "eq", "=", "==":
-		switch {
-		case isNum:
-			return func(d jsondoc.JSONDoc) bool { v := get(d); return v.Exists() && v.Float() == numValue }, nil
-		case isBool:
-			return func(d jsondoc.JSONDoc) bool { v := get(d); return v.Exists() && v.Bool() == boolValue }, nil
-		default:
-			return func(d jsondoc.JSONDoc) bool { v := get(d); return v.Exists() && v.String() == value }, nil
-		}
+		return compileEquals(get, cv), nil
 	case "neq", "!=", "<>":
-		eq, err := compileCondition(property, "eq", value, quoted)
-		if err != nil {
-			return nil, err
-		}
-		return Not(eq), nil
+		return Not(compileEquals(get, cv)), nil
 	case "gt", ">", "gte", ">=", "lt", "<", "lte", "<=":
-		if !isNum {
+		if !cv.isNum {
 			return nil, fmt.Errorf("filter: operator %q requires a numeric value, got %q", operator, value)
 		}
-		return numericCompare(get, operator, numValue), nil
+		return numericCompare(get, operator, cv.num), nil
 	case "contains":
 		needle := strings.ToLower(value)
 		return func(d jsondoc.JSONDoc) bool {
@@ -158,119 +161,153 @@ func compileCondition(property, operator, value string, quoted bool) (Predicate,
 	case "endswith":
 		return func(d jsondoc.JSONDoc) bool { return strings.HasSuffix(get(d).String(), value) }, nil
 	case "like", "-like", "notlike", "-notlike":
-		re, err := wildcardToRegexp(value)
-		if err != nil {
-			return nil, fmt.Errorf("filter: invalid wildcard pattern %q: %w", value, err)
-		}
-		p := func(d jsondoc.JSONDoc) bool { v := get(d); return v.Exists() && re.MatchString(v.String()) }
-		if strings.Contains(operator, "notlike") {
-			return Not(p), nil
-		}
-		return p, nil
+		return compileLike(get, operator, value)
 	case "match", "-match", "notmatch", "-notmatch":
-		re, err := regexp.Compile("(?ims)" + value)
-		if err != nil {
-			return nil, fmt.Errorf("filter: invalid regex %q: %w", value, err)
-		}
-		p := func(d jsondoc.JSONDoc) bool { v := get(d); return v.Exists() && re.MatchString(v.String()) }
-		if strings.Contains(operator, "notmatch") {
-			return Not(p), nil
-		}
-		return p, nil
+		return compileMatch(get, operator, value)
 	case "datelt", "datelte", "olderthan", "dategt", "dategte", "newerthan":
-		// References may be absolute dates or relative expressions such as
-		// "-25h" or "'2026-01-01' + 1d"; relative references are resolved
-		// against now once at compile time.
-		ref, err := parseTimestamp(value)
-		if err != nil {
-			return nil, fmt.Errorf("filter: invalid date %q: %w", value, err)
-		}
-		return func(d jsondoc.JSONDoc) bool {
-			v := get(d)
-			if !v.Exists() {
-				return false
-			}
-			ts, err := parseTimestamp(v.String())
-			if err != nil {
-				return false
-			}
-			switch operator {
-			case "datelt":
-				return ts.Before(ref)
-			case "datelte", "olderthan":
-				return ts.Before(ref) || ts.Equal(ref)
-			case "dategt":
-				return ts.After(ref)
-			default: // dategte, newerthan
-				return ts.After(ref) || ts.Equal(ref)
-			}
-		}, nil
+		return compileDateCompare(get, operator, value)
 	case "leneq", "lenneq", "lengt", "lengte", "lenlt", "lenlte":
-		if !isNum {
+		if !cv.isNum {
 			return nil, fmt.Errorf("filter: operator %q requires a numeric value, got %q", operator, value)
 		}
-		want := int(numValue)
-		return func(d jsondoc.JSONDoc) bool {
-			v := get(d)
-			if !v.Exists() {
-				return false
-			}
-			n := valueLength(v)
-			switch operator {
-			case "leneq":
-				return n == want
-			case "lenneq":
-				return n != want
-			case "lengt":
-				return n > want
-			case "lengte":
-				return n >= want
-			case "lenlt":
-				return n < want
-			default:
-				return n <= want
-			}
-		}, nil
+		return lengthCompare(get, operator, int(cv.num)), nil
 	case "version":
-		// Semver constraint check, e.g. "version >=1.2.0, <2.0.0". String
-		// values which are not valid versions (including "") are treated as
-		// 0.0.0; non-string values never match (mirroring go-c8y-cli's
-		// legacy gojsonq macro).
-		constraints, err := version.NewConstraint(value)
-		if err != nil {
-			return nil, fmt.Errorf("filter: invalid version constraint %q: %w", value, err)
-		}
-		fallback := version.Must(version.NewVersion("0.0.0"))
-		return func(d jsondoc.JSONDoc) bool {
-			v := get(d)
-			if v.Type != gjson.String {
-				return false
-			}
-			current, err := version.NewVersion(v.String())
-			if err != nil {
-				current = fallback
-			}
-			return constraints.Check(current)
-		}, nil
+		return compileVersion(get, value)
 	case "includes", "notincludes":
-		p := func(d jsondoc.JSONDoc) bool {
-			found := false
-			get(d).ForEach(func(_, item gjson.Result) bool {
-				if isNum && item.Type == gjson.Number {
-					found = item.Float() == numValue
-				} else {
-					found = item.String() == value
-				}
-				return !found
-			})
-			return found
-		}
-		if operator == "notincludes" {
-			return Not(p), nil
-		}
-		return p, nil
+		return compileIncludes(get, operator, cv), nil
 	}
 	return nil, fmt.Errorf("filter: unsupported operator %q", operator)
+}
+
+func compileEquals(get getter, want condValue) Predicate {
+	switch {
+	case want.isNum:
+		return func(d jsondoc.JSONDoc) bool { v := get(d); return v.Exists() && v.Float() == want.num }
+	case want.isBool:
+		return func(d jsondoc.JSONDoc) bool { v := get(d); return v.Exists() && v.Bool() == want.b }
+	default:
+		return func(d jsondoc.JSONDoc) bool { v := get(d); return v.Exists() && v.String() == want.raw }
+	}
+}
+
+func compileLike(get getter, operator, pattern string) (Predicate, error) {
+	re, err := wildcardToRegexp(pattern)
+	if err != nil {
+		return nil, fmt.Errorf("filter: invalid wildcard pattern %q: %w", pattern, err)
+	}
+	p := func(d jsondoc.JSONDoc) bool { v := get(d); return v.Exists() && re.MatchString(v.String()) }
+	if strings.Contains(operator, "notlike") {
+		return Not(p), nil
+	}
+	return p, nil
+}
+
+func compileMatch(get getter, operator, expr string) (Predicate, error) {
+	re, err := regexp.Compile("(?ims)" + expr)
+	if err != nil {
+		return nil, fmt.Errorf("filter: invalid regex %q: %w", expr, err)
+	}
+	p := func(d jsondoc.JSONDoc) bool { v := get(d); return v.Exists() && re.MatchString(v.String()) }
+	if strings.Contains(operator, "notmatch") {
+		return Not(p), nil
+	}
+	return p, nil
+}
+
+// compileDateCompare compiles the date operators. References may be absolute
+// dates or relative expressions such as "-25h" or "'2026-01-01' + 1d";
+// relative references are resolved against now once at compile time.
+func compileDateCompare(get getter, operator, value string) (Predicate, error) {
+	ref, err := parseTimestamp(value)
+	if err != nil {
+		return nil, fmt.Errorf("filter: invalid date %q: %w", value, err)
+	}
+	return func(d jsondoc.JSONDoc) bool {
+		v := get(d)
+		if !v.Exists() {
+			return false
+		}
+		ts, err := parseTimestamp(v.String())
+		if err != nil {
+			return false
+		}
+		switch operator {
+		case "datelt":
+			return ts.Before(ref)
+		case "datelte", "olderthan":
+			return ts.Before(ref) || ts.Equal(ref)
+		case "dategt":
+			return ts.After(ref)
+		default: // dategte, newerthan
+			return ts.After(ref) || ts.Equal(ref)
+		}
+	}, nil
+}
+
+func lengthCompare(get getter, operator string, want int) Predicate {
+	return func(d jsondoc.JSONDoc) bool {
+		v := get(d)
+		if !v.Exists() {
+			return false
+		}
+		n := valueLength(v)
+		switch operator {
+		case "leneq":
+			return n == want
+		case "lenneq":
+			return n != want
+		case "lengt":
+			return n > want
+		case "lengte":
+			return n >= want
+		case "lenlt":
+			return n < want
+		default:
+			return n <= want
+		}
+	}
+}
+
+// compileVersion compiles a semver constraint check, e.g.
+// "version >=1.2.0, <2.0.0". String values which are not valid versions
+// (including "") are treated as 0.0.0; non-string values never match
+// (mirroring go-c8y-cli's legacy gojsonq macro).
+func compileVersion(get getter, constraint string) (Predicate, error) {
+	constraints, err := version.NewConstraint(constraint)
+	if err != nil {
+		return nil, fmt.Errorf("filter: invalid version constraint %q: %w", constraint, err)
+	}
+	fallback := version.Must(version.NewVersion("0.0.0"))
+	return func(d jsondoc.JSONDoc) bool {
+		v := get(d)
+		if v.Type != gjson.String {
+			return false
+		}
+		current, err := version.NewVersion(v.String())
+		if err != nil {
+			current = fallback
+		}
+		return constraints.Check(current)
+	}, nil
+}
+
+func compileIncludes(get getter, operator string, want condValue) Predicate {
+	p := func(d jsondoc.JSONDoc) bool {
+		found := false
+		get(d).ForEach(func(_, item gjson.Result) bool {
+			if want.isNum && item.Type == gjson.Number {
+				found = item.Float() == want.num
+			} else {
+				found = item.String() == want.raw
+			}
+			return !found
+		})
+		return found
+	}
+	if operator == "notincludes" {
+		return Not(p)
+	}
+	return p
 }
 
 func numericCompare(get func(jsondoc.JSONDoc) gjson.Result, operator string, want float64) Predicate {

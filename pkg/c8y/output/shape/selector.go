@@ -177,6 +177,21 @@ func (s *Selection) Value(key string) (any, bool) {
 // is one decode+flatten pass and one match per (pattern, key) pair; all
 // pattern compilation already happened in NewSelector.
 func (s *Selector) Apply(doc []byte) (*Selection, error) {
+	src, err := s.flattenDoc(doc)
+	if err != nil {
+		return nil, err
+	}
+	sourceKeys := sortedNaturalKeys(src)
+
+	sel := &Selection{values: make(map[string]any)}
+	for _, p := range s.patterns {
+		matchPattern(p, sourceKeys, src, sel)
+	}
+	s.removeNegatedKeys(sel)
+	return sel, nil
+}
+
+func (s *Selector) flattenDoc(doc []byte) (map[string]any, error) {
 	if s.pruneSegments != nil {
 		doc = pruneDocument(doc, s.pruneSegments)
 	}
@@ -186,60 +201,54 @@ func (s *Selector) Apply(doc []byte) (*Selection, error) {
 	if err := decoder.Decode(&nested); err != nil {
 		return nil, err
 	}
+	return flattenValue(nested), nil
+}
 
-	src := flattenValue(nested)
-
-	// Natural sort the source keys so matching is stable when a pattern can
-	// match multiple values, and array elements order as 1, 2, 10.
-	sourceKeys := make([]string, 0, len(src))
+// sortedNaturalKeys returns the map keys natural-sorted so matching is stable
+// when a pattern can match multiple values, and array elements order as
+// 1, 2, 10.
+func sortedNaturalKeys(src map[string]any) []string {
+	keys := make([]string, 0, len(src))
 	for key := range src {
-		sourceKeys = append(sourceKeys, key)
+		keys = append(keys, key)
 	}
-	sort.Slice(sourceKeys, func(i, j int) bool { return naturalLess(sourceKeys[i], sourceKeys[j]) })
+	sort.Slice(keys, func(i, j int) bool { return naturalLess(keys[i], keys[j]) })
+	return keys
+}
 
-	sel := &Selection{values: make(map[string]any)}
+// matchPattern selects the source keys matching a single pattern into sel.
+func matchPattern(p selectPattern, sourceKeys []string, src map[string]any, sel *Selection) {
+	found := false
+	group := KeyGroup{Pattern: p.original}
+	for _, key := range sourceKeys {
+		value := src[key]
 
-	for _, p := range s.patterns {
-		found := false
-		group := KeyGroup{Pattern: p.original}
-		for _, key := range sourceKeys {
-			value := src[key]
+		// normalize key, and strip the integer key marker
+		keyl := strings.ReplaceAll(strings.ToLower(key), keyPrefix, "")
 
-			// normalize key, and strip the integer key marker
-			keyl := strings.ReplaceAll(strings.ToLower(key), keyPrefix, "")
-
-			if strings.HasPrefix(keyl, p.glob.String()+".") || (p.glob.MatchString(keyl) && !p.glob.IsNegative()) {
-				key = applyAlias(p, key, keyl)
-				sel.values[key] = value
-				sel.keys = append(sel.keys, key)
-				group.Keys = append(group.Keys, key)
-				found = true
-			}
-		}
-		if !found && !p.glob.IsNegative() {
-			// store non-matching patterns so e.g. csv output keeps a stable
-			// column for them
-			sel.keys = append(sel.keys, group.Pattern)
-		}
-		if !p.glob.IsNegative() {
-			sel.groups = append(sel.groups, group)
+		if strings.HasPrefix(keyl, p.glob.String()+".") || (p.glob.MatchString(keyl) && !p.glob.IsNegative()) {
+			key = applyAlias(p, key, keyl)
+			sel.values[key] = value
+			sel.keys = append(sel.keys, key)
+			group.Keys = append(group.Keys, key)
+			found = true
 		}
 	}
-
-	// filter out keys matched by negated patterns
-	isNegatedKey := func(key string) bool {
-		keyl := strings.ToLower(key)
-		for _, p := range s.patterns {
-			if p.glob.IsNegative() && p.glob.MatchString(keyl) {
-				return true
-			}
-		}
-		return false
+	if !found && !p.glob.IsNegative() {
+		// store non-matching patterns so e.g. csv output keeps a stable
+		// column for them
+		sel.keys = append(sel.keys, group.Pattern)
 	}
+	if !p.glob.IsNegative() {
+		sel.groups = append(sel.groups, group)
+	}
+}
 
+// removeNegatedKeys filters out keys matched by negated patterns.
+func (s *Selector) removeNegatedKeys(sel *Selection) {
 	matchingKeys := make([]string, 0, len(sel.keys))
 	for _, key := range sel.keys {
-		if isNegatedKey(key) {
+		if s.isNegatedKey(key) {
 			delete(sel.values, key)
 		} else {
 			matchingKeys = append(matchingKeys, key)
@@ -249,14 +258,22 @@ func (s *Selector) Apply(doc []byte) (*Selection, error) {
 	for i := range sel.groups {
 		groupKeys := make([]string, 0, len(sel.groups[i].Keys))
 		for _, key := range sel.groups[i].Keys {
-			if !isNegatedKey(key) {
+			if !s.isNegatedKey(key) {
 				groupKeys = append(groupKeys, key)
 			}
 		}
 		sel.groups[i].Keys = groupKeys
 	}
+}
 
-	return sel, nil
+func (s *Selector) isNegatedKey(key string) bool {
+	keyl := strings.ToLower(key)
+	for _, p := range s.patterns {
+		if p.glob.IsNegative() && p.glob.MatchString(keyl) {
+			return true
+		}
+	}
+	return false
 }
 
 // applyAlias renames a matched key using the pattern's alias. Wildcard
@@ -274,27 +291,36 @@ func applyAlias(p selectPattern, key, keyl string) string {
 		return p.alias + "." + key
 	}
 	if strings.HasSuffix(pattern, "*") {
-		paths := strings.Split(pattern, ".")
-		keyPaths := strings.Split(key, ".")
-		commonpath := bytes.Buffer{}
-		for idxPart, part := range paths {
-			if strings.Contains(part, "**") || part == "*" {
-				break
-			}
-			// get the real key path rather than the wildcard
-			if strings.Contains(part, "*") && idxPart < len(keyPaths) {
-				part = keyPaths[idxPart]
-				commonpath.WriteString("." + part)
-				break
-			}
-			commonpath.WriteString("." + part)
-		}
-		commonprefix := strings.TrimLeft(commonpath.String(), ".")
-		if strings.HasPrefix(keyl, strings.ToLower(commonprefix)) {
-			return p.alias + key[len(commonprefix):]
+		if aliased, ok := aliasWildcardSuffix(p.alias, pattern, key, keyl); ok {
+			return aliased
 		}
 	}
 	return p.alias
+}
+
+// aliasWildcardSuffix keeps the unmatched remainder of the key below the
+// alias for trailing-wildcard patterns (e.g. "c8y_Hardware.*").
+func aliasWildcardSuffix(alias, pattern, key, keyl string) (string, bool) {
+	paths := strings.Split(pattern, ".")
+	keyPaths := strings.Split(key, ".")
+	commonpath := bytes.Buffer{}
+	for idxPart, part := range paths {
+		if strings.Contains(part, "**") || part == "*" {
+			break
+		}
+		// get the real key path rather than the wildcard
+		if strings.Contains(part, "*") && idxPart < len(keyPaths) {
+			part = keyPaths[idxPart]
+			commonpath.WriteString("." + part)
+			break
+		}
+		commonpath.WriteString("." + part)
+	}
+	commonprefix := strings.TrimLeft(commonpath.String(), ".")
+	if strings.HasPrefix(keyl, strings.ToLower(commonprefix)) {
+		return alias + key[len(commonprefix):], true
+	}
+	return "", false
 }
 
 // JSON rebuilds the selection as a nested JSON document, with key order

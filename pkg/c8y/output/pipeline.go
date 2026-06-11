@@ -74,18 +74,22 @@ func Render(ctx context.Context, src Seq, r Renderer, stages ...Stage) error {
 func Map(fn func(jsondoc.JSONDoc) (jsondoc.JSONDoc, error)) Stage {
 	return func(src Seq) Seq {
 		return func(yield func(jsondoc.JSONDoc, error) bool) {
-			for doc, err := range src {
-				if err != nil {
-					if !yield(doc, err) {
-						return
-					}
-					continue
-				}
-				out, err := fn(doc)
-				if !yield(out, err) {
-					return
-				}
+			mapSeq(src, fn, yield)
+		}
+	}
+}
+
+func mapSeq(src Seq, fn func(jsondoc.JSONDoc) (jsondoc.JSONDoc, error), yield func(jsondoc.JSONDoc, error) bool) {
+	for doc, err := range src {
+		if err != nil {
+			if !yield(doc, err) {
+				return
 			}
+			continue
+		}
+		out, err := fn(doc)
+		if !yield(out, err) {
+			return
 		}
 	}
 }
@@ -95,20 +99,24 @@ func Map(fn func(jsondoc.JSONDoc) (jsondoc.JSONDoc, error)) Stage {
 func Filter(pred func(jsondoc.JSONDoc) bool) Stage {
 	return func(src Seq) Seq {
 		return func(yield func(jsondoc.JSONDoc, error) bool) {
-			for doc, err := range src {
-				if err != nil {
-					if !yield(doc, err) {
-						return
-					}
-					continue
-				}
-				if !pred(doc) {
-					continue
-				}
-				if !yield(doc, nil) {
-					return
-				}
+			filterSeq(src, pred, yield)
+		}
+	}
+}
+
+func filterSeq(src Seq, pred func(jsondoc.JSONDoc) bool, yield func(jsondoc.JSONDoc, error) bool) {
+	for doc, err := range src {
+		if err != nil {
+			if !yield(doc, err) {
+				return
 			}
+			continue
+		}
+		if !pred(doc) {
+			continue
+		}
+		if !yield(doc, nil) {
+			return
 		}
 	}
 }
@@ -119,20 +127,24 @@ func Filter(pred func(jsondoc.JSONDoc) bool) Stage {
 func Head(n int) Stage {
 	return func(src Seq) Seq {
 		return func(yield func(jsondoc.JSONDoc, error) bool) {
-			if n <= 0 {
+			headSeq(src, n, yield)
+		}
+	}
+}
+
+func headSeq(src Seq, n int, yield func(jsondoc.JSONDoc, error) bool) {
+	if n <= 0 {
+		return
+	}
+	count := 0
+	for doc, err := range src {
+		if !yield(doc, err) {
+			return
+		}
+		if err == nil {
+			count++
+			if count >= n {
 				return
-			}
-			count := 0
-			for doc, err := range src {
-				if !yield(doc, err) {
-					return
-				}
-				if err == nil {
-					count++
-					if count >= n {
-						return
-					}
-				}
 			}
 		}
 	}

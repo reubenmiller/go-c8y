@@ -54,7 +54,18 @@ func compilePathGlob(pattern string) (*pathGlob, error) {
 		rest = rest[1:]
 	}
 
-	// Tokenize
+	tokens := tokenizeGlob(rest)
+	tokens = collapseGlobstars(tokens)
+
+	re, err := regexp.Compile(globTokensToRegexp(tokens))
+	if err != nil {
+		return nil, err
+	}
+	g.re = re
+	return g, nil
+}
+
+func tokenizeGlob(rest string) []globToken {
 	var tokens []globToken
 	for i := 0; i < len(rest); {
 		switch rest[i] {
@@ -81,18 +92,26 @@ func compilePathGlob(pattern string) (*pathGlob, error) {
 				i++
 			}
 		default:
-			j := i
-			for j < len(rest) && rest[j] != '\\' && rest[j] != '.' && rest[j] != '?' && rest[j] != '*' {
-				j++
-			}
+			j := literalRunEnd(rest, i)
 			tokens = append(tokens, globToken{tokLiteral, rest[i:j]})
 			i = j
 		}
 	}
+	return tokens
+}
 
-	// Globstars take care of surrounding separators: a separator directly
-	// after a globstar is consumed, consecutive globstars collapse, and a
-	// trailing globstar absorbs the separator before it.
+// literalRunEnd returns the end of the run of literal characters starting at i.
+func literalRunEnd(rest string, i int) int {
+	for i < len(rest) && rest[i] != '\\' && rest[i] != '.' && rest[i] != '?' && rest[i] != '*' {
+		i++
+	}
+	return i
+}
+
+// collapseGlobstars normalizes separators around globstars: a separator
+// directly after a globstar is consumed, consecutive globstars collapse, and
+// a trailing globstar absorbs the separator before it.
+func collapseGlobstars(tokens []globToken) []globToken {
 	var processed []globToken
 	for i := 0; i < len(tokens); i++ {
 		t := tokens[i]
@@ -109,10 +128,13 @@ func compilePathGlob(pattern string) (*pathGlob, error) {
 		}
 		processed = append(processed, t)
 	}
+	return processed
+}
 
+func globTokensToRegexp(tokens []globToken) string {
 	var sb strings.Builder
 	sb.WriteString("^")
-	for i, t := range processed {
+	for i, t := range tokens {
 		switch t.typ {
 		case tokLiteral:
 			sb.WriteString(regexp.QuoteMeta(t.lit))
@@ -123,7 +145,7 @@ func compilePathGlob(pattern string) (*pathGlob, error) {
 		case tokAny:
 			sb.WriteString(`[^\.]`)
 		case tokGlobStar:
-			isLast := i == len(processed)-1
+			isLast := i == len(tokens)-1
 			sb.WriteString("(?:")
 			if isLast && i > 0 {
 				sb.WriteString(`\.`)
@@ -136,13 +158,7 @@ func compilePathGlob(pattern string) (*pathGlob, error) {
 		}
 	}
 	sb.WriteString("$")
-
-	re, err := regexp.Compile(sb.String())
-	if err != nil {
-		return nil, err
-	}
-	g.re = re
-	return g, nil
+	return sb.String()
 }
 
 // naturalLess compares two strings in natural order, e.g. "abc2" < "abc12".
@@ -150,46 +166,68 @@ func compilePathGlob(pattern string) (*pathGlob, error) {
 // (leading zeros as tie-breaker, so "2" < "02"). Only ASCII digits are
 // considered. Credit to https://github.com/fvbommel/sortorder
 func naturalLess(str1, str2 string) bool {
-	isdigit := func(b byte) bool { return '0' <= b && b <= '9' }
 	idx1, idx2 := 0, 0
 	for idx1 < len(str1) && idx2 < len(str2) {
 		c1, c2 := str1[idx1], str2[idx2]
-		dig1, dig2 := isdigit(c1), isdigit(c2)
-		switch {
-		case dig1 != dig2: // Digits before other characters.
+		dig1, dig2 := isASCIIDigit(c1), isASCIIDigit(c2)
+		if dig1 != dig2 { // Digits before other characters.
 			return dig1
-		case !dig1:
+		}
+		if !dig1 {
 			if c1 != c2 {
 				return c1 < c2
 			}
 			idx1++
 			idx2++
-		default: // Digits
-			// Eat zeros.
-			for ; idx1 < len(str1) && str1[idx1] == '0'; idx1++ {
-			}
-			for ; idx2 < len(str2) && str2[idx2] == '0'; idx2++ {
-			}
-			// Eat all digits.
-			nonZero1, nonZero2 := idx1, idx2
-			for ; idx1 < len(str1) && isdigit(str1[idx1]); idx1++ {
-			}
-			for ; idx2 < len(str2) && isdigit(str2[idx2]); idx2++ {
-			}
-			// If lengths of numbers with non-zero prefix differ, the shorter
-			// one is less.
-			if len1, len2 := idx1-nonZero1, idx2-nonZero2; len1 != len2 {
-				return len1 < len2
-			}
-			// If they're equal, string comparison is correct.
-			if nr1, nr2 := str1[nonZero1:idx1], str2[nonZero2:idx2]; nr1 != nr2 {
-				return nr1 < nr2
-			}
-			// Otherwise, the one with less zeros is less.
-			if nonZero1 != nonZero2 {
-				return nonZero1 < nonZero2
-			}
+			continue
+		}
+		if less, decided := compareDigitRuns(str1, str2, &idx1, &idx2); decided {
+			return less
 		}
 	}
 	return len(str1) < len(str2)
+}
+
+func isASCIIDigit(b byte) bool { return '0' <= b && b <= '9' }
+
+// compareDigitRuns compares the digit runs starting at *idx1/*idx2 (numbers
+// compare numerically, leading zeros as tie-breaker) and advances both
+// indices past the runs. decided is false when the runs are identical.
+func compareDigitRuns(str1, str2 string, idx1, idx2 *int) (less, decided bool) {
+	// Eat zeros, then all digits.
+	nonZero1 := skipZeros(str1, *idx1)
+	nonZero2 := skipZeros(str2, *idx2)
+	end1 := skipDigits(str1, nonZero1)
+	end2 := skipDigits(str2, nonZero2)
+	*idx1, *idx2 = end1, end2
+
+	// If lengths of numbers with non-zero prefix differ, the shorter
+	// one is less.
+	if len1, len2 := end1-nonZero1, end2-nonZero2; len1 != len2 {
+		return len1 < len2, true
+	}
+	// If they're equal, string comparison is correct.
+	if nr1, nr2 := str1[nonZero1:end1], str2[nonZero2:end2]; nr1 != nr2 {
+		return nr1 < nr2, true
+	}
+	// Otherwise, the one with less zeros is less (everything before the runs
+	// is equal, so comparing the indices after the zeros is sufficient).
+	if nonZero1 != nonZero2 {
+		return nonZero1 < nonZero2, true
+	}
+	return false, false
+}
+
+func skipZeros(s string, i int) int {
+	for i < len(s) && s[i] == '0' {
+		i++
+	}
+	return i
+}
+
+func skipDigits(s string, i int) int {
+	for i < len(s) && isASCIIDigit(s[i]) {
+		i++
+	}
+	return i
 }

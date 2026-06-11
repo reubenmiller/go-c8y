@@ -83,52 +83,51 @@ func rawBytes(body []byte, v gjson.Result) []byte {
 // the stream is left unread (callers should still close the body).
 func FromReader(r io.Reader, key string) Seq {
 	return func(yield func(jsondoc.JSONDoc, error) bool) {
-		dec := json.NewDecoder(r)
-
-		fail := func(err error) {
-			yield(jsondoc.Empty(), err)
-		}
-
-		if key == "" {
-			if err := expectDelim(dec, '['); err != nil {
-				fail(err)
-				return
-			}
-			yieldArrayElements(dec, yield)
-			return
-		}
-
-		if err := expectDelim(dec, '{'); err != nil {
-			fail(err)
-			return
-		}
-		for dec.More() {
-			tok, err := dec.Token()
-			if err != nil {
-				fail(err)
-				return
-			}
-			name, ok := tok.(string)
-			if !ok {
-				fail(fmt.Errorf("output: expected object key, got %v", tok))
-				return
-			}
-			if name != key {
-				if err := skipValue(dec); err != nil {
-					fail(err)
-					return
-				}
-				continue
-			}
-			if err := expectDelim(dec, '['); err != nil {
-				fail(err)
-				return
-			}
-			yieldArrayElements(dec, yield)
-			return
-		}
-		fail(fmt.Errorf("output: key %q not found in response body", key))
+		scanReader(json.NewDecoder(r), key, yield)
 	}
+}
+
+func scanReader(dec *json.Decoder, key string, yield func(jsondoc.JSONDoc, error) bool) {
+	if key == "" {
+		if err := expectDelim(dec, '['); err != nil {
+			yield(jsondoc.Empty(), err)
+			return
+		}
+		yieldArrayElements(dec, yield)
+		return
+	}
+
+	if err := seekArrayKey(dec, key); err != nil {
+		yield(jsondoc.Empty(), err)
+		return
+	}
+	yieldArrayElements(dec, yield)
+}
+
+// seekArrayKey advances the decoder past the opening of the array at the
+// given top-level key, skipping any preceding keys.
+func seekArrayKey(dec *json.Decoder, key string) error {
+	if err := expectDelim(dec, '{'); err != nil {
+		return err
+	}
+	for dec.More() {
+		tok, err := dec.Token()
+		if err != nil {
+			return err
+		}
+		name, ok := tok.(string)
+		if !ok {
+			return fmt.Errorf("output: expected object key, got %v", tok)
+		}
+		if name != key {
+			if err := skipValue(dec); err != nil {
+				return err
+			}
+			continue
+		}
+		return expectDelim(dec, '[')
+	}
+	return fmt.Errorf("output: key %q not found in response body", key)
 }
 
 func yieldArrayElements(dec *json.Decoder, yield func(jsondoc.JSONDoc, error) bool) {
