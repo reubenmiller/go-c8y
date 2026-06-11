@@ -26,6 +26,12 @@ func (d JSONDoc) Bytes() []byte {
 	return append([]byte(nil), d.raw...)
 }
 
+// Raw returns the underlying bytes without copying.
+// The caller must not modify the returned slice.
+func (d JSONDoc) Raw() []byte {
+	return d.raw
+}
+
 // MarshalJSON implements json.Marshaler to allow JSONDoc to be
 // marshalled by returning the raw bytes directly
 func (d JSONDoc) MarshalJSON() ([]byte, error) {

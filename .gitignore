@@ -11,7 +11,7 @@ c8y.env
 *.env
 main.exe
 *.log
-output
+/output/
 trace.out
 coverage.out
 .DS_Store
