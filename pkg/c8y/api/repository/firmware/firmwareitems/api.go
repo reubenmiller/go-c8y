@@ -54,7 +54,51 @@ type CreateOptions struct {
 	// Fragments are custom top-level fields merged into the body before the standard
 	// fields (type, name, c8y_Filter, c8y_Global), which always win. Use a typed
 	// model.Fragment, or model.Frag("key", value) for ad-hoc fragments.
+	// Fragments are part of the desired state: upserts compare them against the
+	// existing object to decide whether an update is needed.
 	Fragments []model.Fragment
+
+	// Annotations are written together with the body on create and on every
+	// real update, but are excluded from the upsert change detection so they
+	// never trigger an update by themselves (e.g. sync timestamps, provenance
+	// metadata).
+	Annotations []model.Fragment
+}
+
+// desiredBody returns the managed-fields body used for change detection:
+// everything Create writes except c8y_Global (a marker the platform manages)
+// and the binary file (which cannot be compared by value).
+func (opt CreateOptions) desiredBody() map[string]any {
+	body := make(map[string]any)
+	for _, fr := range opt.Fragments {
+		if fr != nil {
+			body[fr.FragmentKey()] = fr
+		}
+	}
+	body["type"] = FragmentFirmware
+	body["name"] = opt.Name
+	if opt.Description != "" {
+		body["description"] = opt.Description
+	}
+	if opt.URL != "" {
+		body["url"] = opt.URL
+	}
+	if opt.DeviceType != "" {
+		body["c8y_Filter"] = map[string]any{
+			"type": opt.DeviceType,
+		}
+	}
+	return body
+}
+
+// annotate merges the annotation fragments into a body
+func (opt CreateOptions) annotate(body map[string]any) map[string]any {
+	for _, fr := range opt.Annotations {
+		if fr != nil {
+			body[fr.FragmentKey()] = fr
+		}
+	}
+	return body
 }
 
 // Create a firmware item
@@ -65,6 +109,14 @@ func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonm
 
 		// Merge custom fragments first (standard fields below override them)
 		for _, fr := range opt.Fragments {
+			if fr != nil {
+				body[fr.FragmentKey()] = fr
+			}
+		}
+
+		// Annotations are bookkeeping fields: written but not part of the
+		// upsert change detection
+		for _, fr := range opt.Annotations {
 			if fr != nil {
 				body[fr.FragmentKey()] = fr
 			}
@@ -478,10 +530,15 @@ func (s *Service) UpsertByName(ctx context.Context, opt CreateOptions) op.Result
 		}
 
 		updater := func(ctx context.Context, existing op.Result[jsonmodels.Firmware]) op.Result[jsonmodels.Firmware] {
-			updateBody := map[string]any{}
+			updateBody := opt.desiredBody()
 
-			if opt.Description != "" {
-				updateBody["description"] = opt.Description
+			// Skip the update when the desired state already matches and no
+			// binary needs replacing; annotations are excluded from the
+			// comparison so they never force an update
+			if opt.File.IsZero() && op.DesiredStateMatches(updateBody, existing.Data.Bytes()) {
+				result := op.Skipped(existing.Data, "no changes detected")
+				result.HTTPStatus = existing.HTTPStatus
+				return result
 			}
 
 			// Handle binary upload and child addition linking
@@ -509,17 +566,7 @@ func (s *Service) UpsertByName(ctx context.Context, opt CreateOptions) op.Result
 				}
 			}
 
-			if opt.DeviceType != "" {
-				updateBody["c8y_Filter"] = map[string]any{
-					"type": opt.DeviceType,
-				}
-			}
-
-			if len(updateBody) == 0 {
-				return existing
-			}
-
-			return s.Update(ctx, existing.Data.ID(), updateBody)
+			return s.Update(ctx, existing.Data.ID(), opt.annotate(updateBody))
 		}
 
 		creator := func(ctx context.Context) op.Result[jsonmodels.Firmware] {

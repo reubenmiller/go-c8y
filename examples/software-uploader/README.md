@@ -2,6 +2,9 @@
 
 A CLI tool for bulk uploading software packages to Cumulocity IoT. It recursively searches directories for software artifacts, intelligently parses filenames to extract names and versions, and uploads them with concurrent processing and progress tracking.
 
+> [!TIP]
+> Looking for firmware images, configuration files, device profiles, tenant options or GitHub release sources? The [tenant-sync](../tenant-sync/README.md) example generalises this tool into a declarative, GitOps-style tenant synchronisation CLI driven by a YAML manifest.
+
 ## Features
 
 - 🔍 **Smart Filename Parsing**: Automatically extracts software name, version, and architecture from filenames

@@ -167,7 +167,7 @@ func NewTrustedCertificate(in []byte) (*TrustedCertificate, error) {
 		contents = derBytes
 	} else {
 		// Format: PEM format with headers
-		block, _ := pem.Decode(contents)
+		block, _ := pem.Decode(in)
 		if block == nil || block.Type != certutil.CertificateBlockType {
 			// Assume that contents should be unchanged
 			contents = in

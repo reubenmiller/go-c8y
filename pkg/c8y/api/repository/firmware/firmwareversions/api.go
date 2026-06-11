@@ -55,6 +55,10 @@ type CreateOptions struct {
 	Version string
 	URL     string
 	File    UploadFileOptions
+
+	// Annotations are bookkeeping fragments written into the version body
+	// (e.g. sync timestamps, provenance metadata)
+	Annotations []model.Fragment
 }
 
 // Create a firmware version under a firmware item
@@ -86,6 +90,11 @@ func (s *Service) Create(ctx context.Context, firmwareID string, opt CreateOptio
 		}
 		if url != "" {
 			versionBody["c8y_Firmware"].(map[string]any)["url"] = url
+		}
+		for _, fr := range opt.Annotations {
+			if fr != nil {
+				versionBody[fr.FragmentKey()] = fr
+			}
 		}
 
 		return core.Execute(execCtx, s.createB(resolvedID, versionBody), jsonmodels.NewFirmwareVersion)
@@ -425,6 +434,12 @@ type CreateVersionOptions struct {
 	Version string
 	URL     string
 	File    UploadFileOptions
+
+	// Annotations are written together with the version body on create and on
+	// every real update, but are excluded from the upsert change detection so
+	// they never trigger an update by themselves (e.g. sync timestamps,
+	// provenance metadata).
+	Annotations []model.Fragment
 }
 
 // CreateVersion creates a firmware version, automatically handling firmware item lookup/creation and binary upload
@@ -454,9 +469,10 @@ func (s *Service) CreateVersion(ctx context.Context, opt CreateVersionOptions) o
 
 		// Step 2: Create version (handles binary upload internally)
 		createOpt := CreateOptions{
-			Version: opt.Version,
-			URL:     opt.URL,
-			File:    opt.File,
+			Version:     opt.Version,
+			URL:         opt.URL,
+			File:        opt.File,
+			Annotations: opt.Annotations,
 		}
 		return s.Create(execCtx, firmwareID, createOpt)
 	}).WithMeta("operation", "createVersion").
@@ -651,6 +667,26 @@ func (s *Service) upsertWithQuery(ctx context.Context, query string, opt CreateV
 
 	// Define updater function
 	updater := func(ctx context.Context, existing op.Result[jsonmodels.FirmwareVersion]) op.Result[jsonmodels.FirmwareVersion] {
+		// Skip the update (and the binary replacement) when no file is being
+		// uploaded and the desired state already matches, e.g. a URL-only
+		// version whose version and url are unchanged. Annotations are
+		// excluded from the comparison so they never force an update.
+		if opt.File.IsZero() {
+			desired := map[string]any{
+				"c8y_Firmware": map[string]any{
+					"version": opt.Version,
+				},
+			}
+			if opt.URL != "" {
+				desired["c8y_Firmware"].(map[string]any)["url"] = opt.URL
+			}
+			if op.DesiredStateMatches(desired, existing.Data.Bytes()) {
+				result := op.Skipped(existing.Data, "no changes detected")
+				result.HTTPStatus = existing.HTTPStatus
+				return result
+			}
+		}
+
 		// Delete old binary if we're uploading a new one
 		if opt.File.FilePath != "" || opt.URL != "" {
 			s.deleteBinaryFromURL(ctx, existing.Data.URL())
@@ -670,6 +706,11 @@ func (s *Service) upsertWithQuery(ctx context.Context, query string, opt CreateV
 		}
 		if url != "" {
 			updateBody["c8y_Firmware"].(map[string]any)["url"] = url
+		}
+		for _, fr := range opt.Annotations {
+			if fr != nil {
+				updateBody[fr.FragmentKey()] = fr
+			}
 		}
 
 		// Update the version

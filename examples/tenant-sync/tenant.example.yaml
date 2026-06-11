@@ -1,0 +1,277 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/reubenmiller/go-c8y/main/examples/tenant-sync/tenant.schema.json
+#
+# Example tenant-sync manifest
+#
+# Validate with: tenant-sync validate tenant.yaml
+# Preview with:  tenant-sync run -f tenant.yaml --dry-run
+# Apply with:    tenant-sync run -f tenant.yaml
+#
+# Environment variables are expanded with ${VAR} syntax before parsing,
+# so secrets (e.g. GitHub tokens) can be injected from the environment.
+
+# Apply the manifest to other tenants than the current one. Selection modes
+# are additive (union of all matches) and overridable on the command line
+# (--target, --all-children, --target-selector, --include-current).
+# Credentials for the other tenants come from a placeholder microservice's
+# per-tenant service users (serviceUser mode, default) or from go-c8y-cli
+# session files (sessions mode).
+# targets:
+#   current: false      # include the current tenant (default: only when nothing else is selected)
+#   allChildren: true   # all child tenants of the current tenant
+#   tenants: [t12345, child.example.com] # by ID or domain
+#   selector:
+#     domain: "*.iot.example.com" # glob matched against the tenant domain
+#     company: ACME               # exact company name
+#   credentials:
+#     mode: serviceUser           # serviceUser (default) | sessions
+#     application: tenant-sync    # placeholder microservice name (serviceUser mode)
+
+# Set tenant options (created if missing, updated when the value differs)
+tenantOptions:
+  - category: configuration
+    key: device.bootstrap.enabled
+    value: "true"
+
+  # Values can also be resolved by lookup at apply time, e.g. an application
+  # ID looked up by name
+  - category: application
+    key: default.application
+    valueFrom:
+      application: devicemanagement
+
+# Enable/disable feature toggles for the current tenant
+features:
+  - key: feature-branding
+  - key: feature-cep-custom-rules
+    enabled: false
+
+# Ensure retention rules exist. Rules have no name: they are matched by the
+# selector combination (dataType/fragmentType/type/source, wildcards default
+# to "*") and maximumAge is updated when it differs.
+retentionRules:
+  - dataType: MEASUREMENT
+    maximumAge: 365 # days
+  - dataType: EVENT
+    type: c8y_LocationUpdate
+    maximumAge: 30
+  - dataType: ALARM
+    maximumAge: 90
+    editable: false # lock the rule in the UI
+
+# Upload trusted device certificates (PEM or DER) into the tenant trust
+# store. Certificates are matched by fingerprint: missing ones are uploaded,
+# and the name/status/autoRegistrationEnabled of existing ones are updated
+# when they differ. Certificates are never deleted.
+trustedCertificates:
+  # Scan a directory (*.pem, *.crt, *.cer by default); names default to the
+  # certificate subject common name
+  - autoRegistrationEnabled: true
+    source:
+      path: ./certificates
+      optional: true # skip instead of failing when the directory is missing
+
+  # A single certificate with an explicit name, kept uploaded but disabled
+  - name: legacy-factory-ca
+    status: DISABLED
+    source:
+      path: ./certificates/archive/legacy-factory-ca.pem
+      optional: true
+
+# Upload certificate revocation entries from CSV files (header
+# SERIALNO[,DATE]; one certificate serial number in hex per row). Uploads are
+# additive: entries already on the tenant revocation list are never removed.
+certificateRevocationLists:
+  - source:
+      path: ./certificates/revoked.csv
+      optional: true
+
+# Subscribe applications to the target tenant (idempotent)
+applications:
+  - name: advanced-software-mgmt
+
+  # subscribed: false unsubscribes the application. (Un)subscribing an
+  # application not owned by the current tenant requires running from the
+  # owner (parent) tenant, e.g. with a targets section.
+  - name: cloud-remote-access
+    subscribed: false
+
+  # With a source, the application is created if missing and its binary (zip)
+  # uploaded on creation (or on every run with --force)
+  - name: my-microservice
+    type: MICROSERVICE
+    source:
+      path: ./build/my-microservice.zip
+      optional: true # skip instead of failing when the file does not exist
+
+# Create user groups (called "global roles" in the UI) with roles assigned.
+# Role assignments are additive: roles already on a group but absent from the
+# manifest are kept, so built-in groups can be extended safely.
+userGroups:
+  - name: operators
+    description: Read-only access for the operations team
+    roles:
+      - ROLE_INVENTORY_READ
+      - ROLE_ALARM_READ
+      - ROLE_EVENT_READ
+
+# Create users and assign them to user groups. The password is only used when
+# creating a user (never updated afterwards); group memberships are additive.
+users:
+  - userName: jdoe@example.com
+    email: jdoe@example.com
+    firstName: Jane
+    lastName: Doe
+    sendPasswordResetEmail: true # email a reset link instead of setting a password
+    groups: [operators]
+
+  - userName: svc-dashboard
+    password: ${DASHBOARD_USER_PASSWORD} # injected from the environment
+    groups: [operators]
+
+  - userName: old-account@example.com
+    enabled: false # keep the account but disable it
+
+# Sync software packages. Name, version, architecture and software type are
+# parsed from the filenames (same logic as the software-uploader example).
+software:
+  # From a local directory (searched recursively)
+  - source:
+      path: ./packages
+      patterns: ["*.deb", "*.rpm", "*.apk", "*.ipk"]
+
+  # From the latest GitHub release of a repository
+  - source:
+      github:
+        repo: thin-edge/tedge-container-bundle
+        release: latest # or "latest-N" (e.g. "latest-5"), a tag (e.g. "1.2.0"), or "all"
+        assets: ["*.deb"]
+        token: ${GITHUB_TOKEN} # optional, required for private repos
+
+  # Reference release assets by URL instead of uploading the binaries
+  # (only works for public repositories)
+  - namePrefix: "linked-"
+    source:
+      github:
+        repo: cli/cli
+        assets: ["gh_*_linux_arm64.deb"]
+        linkOnly: true
+
+# Sync firmware (OS images). Versions are parsed from common build system
+# naming conventions (Yocto, Buildroot, Rugix Bakery, SWUpdate, RAUC, Mender)
+# with fallback to the GitHub release tag.
+firmware:
+  # Yocto images from a local build directory. The deviceType supports
+  # {name}, {version} and {filename} placeholders derived from each artifact.
+  - deviceType: "{name}"
+    source:
+      path: ./tmp/deploy/images/raspberrypi4-64
+      patterns: ["*.rootfs.wic.bz2"]
+      optional: true # skip instead of failing when the build dir is missing
+
+  # Rugix Bakery images from GitHub releases; the release tag is used as the
+  # version when the filename does not contain one
+  - name: tedge-rugix-pi
+    description: thin-edge.io Rugix image for Raspberry Pi
+    deviceType: rugix-pi
+    source:
+      github:
+        repo: thin-edge/tedge-rugix-image
+        release: latest-5 # mirror the most recent five releases
+        assets: ["*.img.xz"]
+
+  # Custom firmware naming scheme: extract the version with a regex
+  - deviceType: model7
+    versionPattern: 'BUILD(\d+)'
+    source:
+      path: ./firmware
+      patterns: ["FW_MODEL7_*.custom"]
+
+# Sync configuration files into the configuration repository
+configuration:
+  - name: mosquitto
+    configurationType: mosquitto.conf
+    description: Default mosquitto configuration
+    deviceType: thin-edge.io
+    source:
+      path: ./config/mosquitto.conf
+
+  # Reference an external URL without uploading a binary
+  - name: tedge-default
+    configurationType: tedge.toml
+    source:
+      url: https://example.com/configs/tedge.toml
+
+# Sync SmartREST 2.0 template collections from JSON files exported by the
+# platform (one collection per file). Collections are matched by their
+# external identity (X-Id) and only updated when they differ from the file —
+# the order of the templates inside a file does not matter.
+smartrestTemplates:
+  # Scan a directory (*.json by default)
+  - source:
+      path: ./smartrest
+      optional: true # skip instead of failing when the directory is missing
+
+  # A single exported collection, with the name from the manifest instead of
+  # the file
+  - name: custom_devmgmt
+    source:
+      path: ./exports/custom_devmgmt.json
+      optional: true
+
+# Create device profiles referencing the items synced above.
+# Binary URLs are resolved automatically from the tenant (which is why this
+# section runs after software/firmware/configuration), or given explicitly
+# with url to skip the lookup.
+deviceProfiles:
+  - name: rpi4-base
+    deviceType: raspberrypi4-64
+    firmware:
+      name: core-image-tedge-raspberrypi4-64
+      version: "20240115103000"
+    software:
+      - name: tedge
+        version: 1.6.2
+        type: apt # optional software type (disambiguates the lookup)
+        action: install
+      # An explicit url skips the repository lookup (externally hosted binary)
+      - name: sensor-agent
+        version: 2.1.0
+        url: https://example.com/packages/sensor-agent_2.1.0.deb
+      # url: none (or "-") skips the lookup AND leaves the url off the profile
+      # (for devices that resolve artifacts by name/version themselves)
+      - name: managed-by-device
+        version: 3.0.0
+        url: none
+    configuration:
+      - name: mosquitto
+        type: mosquitto.conf
+
+# Named groups of shell commands, run as the last section. Actions within a
+# group run in sequence (a failing action skips the rest of its group);
+# separate groups run concurrently with each other.
+commands:
+  - name: seed-devices
+    actions:
+      - echo "c8y devices create --name foo"
+      - echo "c8y devices create --name foo2"
+  - name: smoke-test
+    actions:
+      - echo "c8y currenttenant get"
+
+# Commands executed around the sync (via 'sh -c', from the manifest directory,
+# with C8Y_* env vars passed through). A failing pre hook aborts the run; post
+# hooks always run and report failures without aborting. Section hooks
+# (hooks.sections.<name>) run around a single section and are skipped when the
+# section is excluded by --only.
+hooks:
+  pre:
+    - name: show session
+      run: echo "Syncing tenant $C8Y_TENANT"
+  post:
+    - run: echo "Sync finished"
+  sections:
+    software:
+      pre:
+        - run: echo "before the software section"
+      post:
+        - run: echo "after the software section"

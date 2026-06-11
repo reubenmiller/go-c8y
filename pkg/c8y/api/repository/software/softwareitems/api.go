@@ -391,7 +391,7 @@ func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.R
 }
 
 // GetOrCreateByName searches by name and optional software type, creating if not found
-func (s *Service) GetOrCreateByName(ctx context.Context, name, softwareType string, body any) op.Result[jsonmodels.Software] {
+func (s *Service) GetOrCreateByName(ctx context.Context, name, softwareType string, body any, annotations ...model.Fragment) op.Result[jsonmodels.Software] {
 	return op.Result[jsonmodels.Software]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.Software] {
 		query := model.NewInventoryQuery().
 			AddFilterEqStr("type", FragmentSoftware).
@@ -400,7 +400,7 @@ func (s *Service) GetOrCreateByName(ctx context.Context, name, softwareType stri
 			AddOrderBy("name").
 			AddOrderBy("creationTime").
 			Build()
-		return s.getOrCreateWithQuery(execCtx, body, query)
+		return s.getOrCreateWithQuery(execCtx, body, query, annotations)
 	}).WithMeta("operation", "getOrCreateByName").
 		ExecuteOrDefer(ctx)
 }
@@ -409,7 +409,7 @@ func (s *Service) GetOrCreateByName(ctx context.Context, name, softwareType stri
 // Example queries:
 //   - "name eq 'MySoftware' and softwareType eq 'application'"
 //   - "name eq 'MySoftware'"
-func (s *Service) GetOrCreateWith(ctx context.Context, query string, body any) op.Result[jsonmodels.Software] {
+func (s *Service) GetOrCreateWith(ctx context.Context, query string, body any, annotations ...model.Fragment) op.Result[jsonmodels.Software] {
 	return op.Result[jsonmodels.Software]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.Software] {
 		query_ := model.NewInventoryQuery().
 			AddFilterEqStr("type", FragmentSoftware).
@@ -417,13 +417,13 @@ func (s *Service) GetOrCreateWith(ctx context.Context, query string, body any) o
 			AddOrderBy("name").
 			AddOrderBy("creationTime").
 			Build()
-		return s.getOrCreateWithQuery(execCtx, body, query_)
+		return s.getOrCreateWithQuery(execCtx, body, query_, annotations)
 	}).WithMeta("operation", "getOrCreateWith").
 		ExecuteOrDefer(ctx)
 }
 
 // getOrCreateWithQuery is the internal implementation
-func (s *Service) getOrCreateWithQuery(ctx context.Context, body any, query string) op.Result[jsonmodels.Software] {
+func (s *Service) getOrCreateWithQuery(ctx context.Context, body any, query string, annotations []model.Fragment) op.Result[jsonmodels.Software] {
 	// Define finder function
 	finder := func(ctx context.Context) (op.Result[jsonmodels.Software], bool) {
 		searchOpts := ListOptions{}
@@ -456,7 +456,11 @@ func (s *Service) getOrCreateWithQuery(ctx context.Context, body any, query stri
 
 	// Define creator function
 	creator := func(ctx context.Context) op.Result[jsonmodels.Software] {
-		createResult := s.Create(ctx, body)
+		createBody, err := model.ApplyFragments(body, annotations)
+		if err != nil {
+			return op.Failed[jsonmodels.Software](err, false)
+		}
+		createResult := s.Create(ctx, createBody)
 		if createResult.Err != nil {
 			return createResult
 		}
@@ -469,7 +473,10 @@ func (s *Service) getOrCreateWithQuery(ctx context.Context, body any, query stri
 
 // UpsertByName searches by name and optional software type, updating if found or creating if not found
 // This ensures metadata stays up-to-date on subsequent calls
-func (s *Service) UpsertByName(ctx context.Context, name, softwareType string, body any) op.Result[jsonmodels.Software] {
+// Annotations are written together with the body on create and on every real
+// update, but are excluded from the change detection so they never trigger an
+// update by themselves (e.g. sync timestamps, provenance metadata).
+func (s *Service) UpsertByName(ctx context.Context, name, softwareType string, body any, annotations ...model.Fragment) op.Result[jsonmodels.Software] {
 	return op.Result[jsonmodels.Software]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.Software] {
 		query := model.NewInventoryQuery().
 			AddFilterEqStr("type", FragmentSoftware).
@@ -478,7 +485,7 @@ func (s *Service) UpsertByName(ctx context.Context, name, softwareType string, b
 			AddOrderBy("name").
 			AddOrderBy("creationTime").
 			Build()
-		return s.upsertWithQuery(execCtx, query, body)
+		return s.upsertWithQuery(execCtx, query, body, annotations)
 	}).WithMeta("operation", "upsertByName").
 		ExecuteOrDefer(ctx)
 }
@@ -488,7 +495,10 @@ func (s *Service) UpsertByName(ctx context.Context, name, softwareType string, b
 // Example queries:
 //   - "name eq 'MySoftware' and softwareType eq 'application'"
 //   - "name eq 'MySoftware' and softwareType eq 'apt' and deviceType eq 'arm64'"
-func (s *Service) UpsertWith(ctx context.Context, query string, body any) op.Result[jsonmodels.Software] {
+//
+// Annotations are written together with the body on create and on every real
+// update, but are excluded from the change detection (see UpsertByName).
+func (s *Service) UpsertWith(ctx context.Context, query string, body any, annotations ...model.Fragment) op.Result[jsonmodels.Software] {
 	return op.Result[jsonmodels.Software]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.Software] {
 		query_ := model.NewInventoryQuery().
 			AddFilterEqStr("type", FragmentSoftware).
@@ -496,13 +506,13 @@ func (s *Service) UpsertWith(ctx context.Context, query string, body any) op.Res
 			AddOrderBy("name").
 			AddOrderBy("creationTime").
 			Build()
-		return s.upsertWithQuery(execCtx, query_, body)
+		return s.upsertWithQuery(execCtx, query_, body, annotations)
 	}).WithMeta("operation", "upsertWith").
 		ExecuteOrDefer(ctx)
 }
 
 // upsertWithQuery is the internal implementation for upsert
-func (s *Service) upsertWithQuery(ctx context.Context, query string, body any) op.Result[jsonmodels.Software] {
+func (s *Service) upsertWithQuery(ctx context.Context, query string, body any, annotations []model.Fragment) op.Result[jsonmodels.Software] {
 	// Define finder function
 	finder := func(ctx context.Context) (op.Result[jsonmodels.Software], bool) {
 		// Build query with the search criteria
@@ -533,8 +543,19 @@ func (s *Service) upsertWithQuery(ctx context.Context, query string, body any) o
 
 	// Define updater function
 	updater := func(ctx context.Context, existing op.Result[jsonmodels.Software]) op.Result[jsonmodels.Software] {
-		// Update the existing software item with new data
-		updateResult := s.Update(ctx, existing.Data.ID(), body)
+		// Skip the update when the desired state already matches; annotations
+		// are excluded from the comparison so they never force an update
+		if op.DesiredStateMatches(body, existing.Data.Bytes()) {
+			result := op.Skipped(existing.Data, "no changes detected")
+			result.HTTPStatus = existing.HTTPStatus
+			return result
+		}
+
+		updateBody, err := model.ApplyFragments(body, annotations)
+		if err != nil {
+			return op.Failed[jsonmodels.Software](err, false)
+		}
+		updateResult := s.Update(ctx, existing.Data.ID(), updateBody)
 		if updateResult.Err != nil {
 			return updateResult
 		}
@@ -543,7 +564,11 @@ func (s *Service) upsertWithQuery(ctx context.Context, query string, body any) o
 
 	// Define creator function
 	creator := func(ctx context.Context) op.Result[jsonmodels.Software] {
-		createResult := s.Create(ctx, body)
+		createBody, err := model.ApplyFragments(body, annotations)
+		if err != nil {
+			return op.Failed[jsonmodels.Software](err, false)
+		}
+		createResult := s.Create(ctx, createBody)
 		if createResult.Err != nil {
 			return createResult
 		}

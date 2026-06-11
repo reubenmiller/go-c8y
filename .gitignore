@@ -34,6 +34,8 @@ examples/notification2-client-cli/notification2-client-cli
 examples/pipeline/pipeline
 examples/realtime-client-simple/realtime-client-simple
 examples/software-uploader/software-uploader
+examples/tenant-sync/tenant-sync
+examples/tenant-sync/state/
 
 # example files
 device.crt
@@ -47,3 +49,4 @@ testdata/golden/
 
 # c8ygen binary (go build output)
 /c8ygen
+examples/tenant-sync/tenant.yaml

@@ -1,0 +1,832 @@
+package main
+
+import (
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"regexp"
+	"slices"
+	"strings"
+
+	"gopkg.in/yaml.v3"
+)
+
+// Manifest is the declarative description of the desired tenant state.
+// Sections are applied in a fixed order so that later sections (e.g. device
+// profiles) can reference items created by earlier ones (firmware, software,
+// configuration).
+type Manifest struct {
+	Targets       *TargetsSpec       `yaml:"targets" json:"targets,omitempty" jsonschema:"description=Which tenants the manifest is applied to (defaults to the current tenant); applying to other tenants requires parent/management tenant credentials"`
+	TenantOptions []TenantOptionSpec `yaml:"tenantOptions" json:"tenantOptions,omitempty" jsonschema:"description=Tenant options to set (created if missing and updated when the value differs)"`
+	Features      []FeatureSpec      `yaml:"features" json:"features,omitempty" jsonschema:"description=Feature toggles to enable or disable for the current tenant"`
+
+	RetentionRules []RetentionRuleSpec `yaml:"retentionRules" json:"retentionRules,omitempty" jsonschema:"description=Retention rules to ensure exist (matched by dataType/fragmentType/type/source; maximumAge updated when it differs)"`
+
+	TrustedCertificates        []TrustedCertificateSpec        `yaml:"trustedCertificates" json:"trustedCertificates,omitempty" jsonschema:"description=Trusted device certificates (PEM/DER) to upload into the tenant trust store (matched by fingerprint; name/status/autoRegistrationEnabled updated when they differ)"`
+	CertificateRevocationLists []CertificateRevocationListSpec `yaml:"certificateRevocationLists" json:"certificateRevocationLists,omitempty" jsonschema:"description=Certificate revocation entries to upload from CSV files (columns SERIALNO and optional DATE); additive: existing entries are never removed"`
+
+	Applications  []ApplicationSpec   `yaml:"applications" json:"applications,omitempty" jsonschema:"description=Applications to subscribe to the current tenant (optionally created/uploaded from a source)"`
+	UserGroups    []UserGroupSpec     `yaml:"userGroups" json:"userGroups,omitempty" jsonschema:"description=User groups (global roles) to create/update with roles assigned (additive: existing roles are never removed)"`
+	Users         []UserSpec          `yaml:"users" json:"users,omitempty" jsonschema:"description=Users to create/update and assign to user groups (additive: existing memberships are never removed)"`
+	Software      []SoftwareSpec      `yaml:"software" json:"software,omitempty" jsonschema:"description=Software packages to sync into the software repository"`
+	Firmware      []FirmwareSpec      `yaml:"firmware" json:"firmware,omitempty" jsonschema:"description=Firmware (OS images) to sync into the firmware repository"`
+	Configuration []ConfigurationSpec `yaml:"configuration" json:"configuration,omitempty" jsonschema:"description=Configuration files to sync into the configuration repository"`
+
+	SmartRestTemplates []SmartRestTemplateSpec `yaml:"smartrestTemplates" json:"smartrestTemplates,omitempty" jsonschema:"description=SmartREST 2.0 template collections to sync from exported JSON files (one collection per file)"`
+
+	DeviceProfiles []DeviceProfileSpec `yaml:"deviceProfiles" json:"deviceProfiles,omitempty" jsonschema:"description=Device profiles referencing firmware/software/configuration in the tenant"`
+	Commands       []CommandGroupSpec  `yaml:"commands" json:"commands,omitempty" jsonschema:"description=Named groups of shell commands run as the last section; actions within a group run in sequence and groups run concurrently"`
+	Hooks          HooksSpec           `yaml:"hooks" json:"hooks,omitempty" jsonschema:"description=Commands executed before and after the sync and around individual sections (e.g. go-c8y-cli calls)"`
+}
+
+// Credential modes for applying the manifest to other tenants
+const (
+	// CredentialsModeServiceUser provisions a placeholder microservice and
+	// uses its per-tenant service users (the go-c8y-cli "microservice service
+	// user" pattern)
+	CredentialsModeServiceUser = "serviceUser"
+	// CredentialsModeSessions reads credentials from go-c8y-cli session files
+	CredentialsModeSessions = "sessions"
+)
+
+// DefaultCredentialsApplication is the name of the placeholder microservice
+// created in serviceUser mode
+const DefaultCredentialsApplication = "tenant-sync"
+
+// TargetsSpec selects which tenants the manifest is applied to. The selection
+// modes are additive (the union of all matching tenants, deduplicated).
+// Without a targets section the manifest applies to the current tenant only.
+type TargetsSpec struct {
+	// Current includes the current tenant. Defaults to true when no other
+	// selection mode is set, false otherwise.
+	Current *bool `yaml:"current" json:"current,omitempty" jsonschema:"description=Include the current tenant (defaults to true only when no other selection mode is set)"`
+
+	// AllChildren selects every child tenant of the current tenant
+	AllChildren bool `yaml:"allChildren" json:"allChildren,omitempty" jsonschema:"description=Apply to all child tenants of the current tenant (requires parent/management tenant credentials)"`
+
+	// Tenants lists tenants explicitly by ID or domain (entries containing a
+	// "." are treated as domains)
+	Tenants []string `yaml:"tenants" json:"tenants,omitempty" jsonschema:"description=Tenants referenced by ID or by domain (entries containing a dot are treated as domains)"`
+
+	// Selector matches tenants by criteria
+	Selector *TenantSelector `yaml:"selector" json:"selector,omitempty" jsonschema:"description=Select tenants matching criteria (domain glob and/or company name)"`
+
+	// Credentials configures how per-tenant credentials are obtained for
+	// tenants other than the current one
+	Credentials *TargetCredentials `yaml:"credentials" json:"credentials,omitempty" jsonschema:"description=How credentials for the other tenants are obtained (defaults to the serviceUser mode)"`
+}
+
+// IncludesCurrent reports whether the current tenant is part of the targets
+func (t *TargetsSpec) IncludesCurrent() bool {
+	if t == nil {
+		return true
+	}
+	if t.Current != nil {
+		return *t.Current
+	}
+	return !t.HasRemoteSelection()
+}
+
+// HasRemoteSelection reports whether any selection mode other than the
+// current tenant is configured
+func (t *TargetsSpec) HasRemoteSelection() bool {
+	return t != nil && (t.AllChildren || len(t.Tenants) > 0 || t.Selector != nil)
+}
+
+// CredentialsMode returns the configured credentials mode (defaulting to
+// serviceUser)
+func (t *TargetsSpec) CredentialsMode() string {
+	if t == nil || t.Credentials == nil || t.Credentials.Mode == "" {
+		return CredentialsModeServiceUser
+	}
+	return t.Credentials.Mode
+}
+
+// TenantSelector matches tenants by criteria. All given criteria must match.
+type TenantSelector struct {
+	// Domain is a glob pattern matched against the tenant domain
+	Domain string `yaml:"domain" json:"domain,omitempty" jsonschema:"description=Glob pattern matched against the tenant domain,example=*.iot.example.com"`
+
+	// Company is the exact company name of the tenant
+	Company string `yaml:"company" json:"company,omitempty" jsonschema:"description=Exact company name of the tenant"`
+}
+
+// TargetCredentials configures how credentials for tenants other than the
+// current one are obtained
+type TargetCredentials struct {
+	// Mode selects the credential source: serviceUser (default) provisions a
+	// placeholder microservice owned by the current tenant, subscribes it to
+	// each target and uses the resulting per-tenant service users; sessions
+	// reads go-c8y-cli session files.
+	Mode string `yaml:"mode" json:"mode,omitempty" jsonschema:"description=Credential source for other tenants (defaults to serviceUser),enum=serviceUser,enum=sessions"`
+
+	// Application is the name of the placeholder microservice used in
+	// serviceUser mode (created if missing; defaults to tenant-sync)
+	Application string `yaml:"application" json:"application,omitempty" jsonschema:"description=Name of the placeholder microservice used in serviceUser mode (created if missing; defaults to tenant-sync)"`
+
+	// SessionHome is the directory containing go-c8y-cli session files used
+	// in sessions mode (defaults to $C8Y_SESSION_HOME and then ~/.cumulocity)
+	SessionHome string `yaml:"sessionHome" json:"sessionHome,omitempty" jsonschema:"description=Directory containing go-c8y-cli session files for the sessions mode (defaults to $C8Y_SESSION_HOME and then ~/.cumulocity)"`
+}
+
+func (t *TargetsSpec) Validate() error {
+	if t == nil {
+		return nil
+	}
+	if t.Selector != nil && t.Selector.Domain == "" && t.Selector.Company == "" {
+		return fmt.Errorf("selector requires at least one of: domain, company")
+	}
+	if t.Current != nil && !*t.Current && !t.HasRemoteSelection() {
+		return fmt.Errorf("no tenants selected: current is false and no other selection mode is set")
+	}
+	if t.Credentials != nil {
+		switch t.Credentials.Mode {
+		case "", CredentialsModeServiceUser, CredentialsModeSessions:
+		default:
+			return fmt.Errorf("unknown credentials mode %q: supported modes are %s and %s",
+				t.Credentials.Mode, CredentialsModeServiceUser, CredentialsModeSessions)
+		}
+	}
+	return nil
+}
+
+// HooksSpec defines commands executed around the sync and around individual
+// sections
+type HooksSpec struct {
+	Pre  []HookSpec `yaml:"pre" json:"pre,omitempty" jsonschema:"description=Commands executed before the sync; a failing pre hook aborts the run"`
+	Post []HookSpec `yaml:"post" json:"post,omitempty" jsonschema:"description=Commands executed after the sync (also when sections failed); failures are reported but do not abort"`
+
+	// Sections holds hooks running around individual sections (keyed by the
+	// section name). Unlike the global hooks they are skipped when the
+	// section is excluded by --only.
+	Sections map[string]SectionHooksSpec `yaml:"sections" json:"sections,omitempty" jsonschema:"description=Hooks executed around individual sections (keyed by section name e.g. software); skipped when the section is excluded by --only"`
+}
+
+// SectionHooksSpec defines commands executed around a single section
+type SectionHooksSpec struct {
+	Pre  []HookSpec `yaml:"pre" json:"pre,omitempty" jsonschema:"description=Commands executed before the section; a failing pre hook aborts the run"`
+	Post []HookSpec `yaml:"post" json:"post,omitempty" jsonschema:"description=Commands executed after the section (also when items failed); failures are reported but do not abort"`
+}
+
+// CommandGroupSpec is a named group of shell commands. The actions of a group
+// run in sequence (stopping at the first failure); separate groups run
+// concurrently with each other.
+type CommandGroupSpec struct {
+	// Name of the group (used in the output)
+	Name string `yaml:"name" json:"name" jsonschema:"description=Name of the command group (used in the output)"`
+
+	// Actions are shell commands executed in sequence via 'sh -c' from the
+	// manifest directory. A failing action skips the rest of its group.
+	Actions []string `yaml:"actions" json:"actions" jsonschema:"description=Shell commands executed in sequence via 'sh -c' from the manifest directory; a failing action skips the rest of the group"`
+}
+
+// HookSpec is a single command executed via the shell with the manifest
+// directory as the working directory and the current environment (including
+// C8Y_* session variables) passed through
+type HookSpec struct {
+	Name string `yaml:"name" json:"name,omitempty" jsonschema:"description=Display name of the hook"`
+	Run  string `yaml:"run" json:"run" jsonschema:"description=Command executed with 'sh -c' from the manifest directory"`
+}
+
+// TenantOptionSpec sets a tenant option (category/key/value). The value is
+// either given literally (value) or resolved from the tenant (valueFrom).
+type TenantOptionSpec struct {
+	Category string `yaml:"category" json:"category" jsonschema:"description=Tenant option category"`
+	Key      string `yaml:"key" json:"key" jsonschema:"description=Tenant option key"`
+	Value    string `yaml:"value" json:"value,omitempty" jsonschema:"description=Desired value of the tenant option (mutually exclusive with valueFrom)"`
+
+	// ValueFrom resolves the value by a named lookup at apply time,
+	// e.g. an application ID looked up by application name
+	ValueFrom *TenantOptionValueFrom `yaml:"valueFrom" json:"valueFrom,omitempty" jsonschema:"description=Resolve the value by a named lookup at apply time (mutually exclusive with value)"`
+}
+
+// TenantOptionValueFrom resolves a tenant option value by reference.
+// Exactly one field must be set.
+type TenantOptionValueFrom struct {
+	// Application resolves to the application ID looked up by name
+	Application string `yaml:"application" json:"application,omitempty" jsonschema:"description=Application name resolved to its application ID,example=devicemanagement"`
+
+	// Device resolves to the managed object ID of a device looked up by name
+	Device string `yaml:"device" json:"device,omitempty" jsonschema:"description=Device name resolved to its managed object ID"`
+}
+
+// FeatureSpec enables or disables a feature toggle on the current tenant
+type FeatureSpec struct {
+	Key     string `yaml:"key" json:"key" jsonschema:"description=Feature toggle key"`
+	Enabled *bool  `yaml:"enabled" json:"enabled,omitempty" jsonschema:"description=Desired feature state (defaults to true when omitted)"` // defaults to true when omitted
+}
+
+func (f FeatureSpec) IsEnabled() bool {
+	return f.Enabled == nil || *f.Enabled
+}
+
+// RetentionRuleDataTypes are the data types accepted by the retention rules API
+var RetentionRuleDataTypes = []string{"ALARM", "AUDIT", "BULK_OPERATION", "EVENT", "MEASUREMENT", "OPERATION", "*"}
+
+// RetentionRuleSpec ensures a retention rule exists with the desired maximum
+// age. Retention rules have no name: a rule is identified by its selector
+// combination (dataType, fragmentType, type, source — wildcards default to
+// "*"), and maximumAge (plus editable) is the managed value.
+type RetentionRuleSpec struct {
+	// DataType the rule applies to
+	DataType string `yaml:"dataType" json:"dataType" jsonschema:"description=Data type the rule applies to,enum=ALARM,enum=AUDIT,enum=BULK_OPERATION,enum=EVENT,enum=MEASUREMENT,enum=OPERATION,enum=*"`
+
+	// FragmentType restricts the rule to documents with the fragment (default "*")
+	FragmentType string `yaml:"fragmentType" json:"fragmentType,omitempty" jsonschema:"description=Restrict the rule to documents carrying this fragment (defaults to *)"`
+
+	// Type restricts the rule to documents of the type (default "*")
+	Type string `yaml:"type" json:"type,omitempty" jsonschema:"description=Restrict the rule to documents of this type (defaults to *)"`
+
+	// Source restricts the rule to documents of a source device (default "*")
+	Source string `yaml:"source" json:"source,omitempty" jsonschema:"description=Restrict the rule to documents of this source device ID (defaults to *)"`
+
+	// MaximumAge is the retention period in days
+	MaximumAge int64 `yaml:"maximumAge" json:"maximumAge" jsonschema:"description=Retention period in days,minimum=1"`
+
+	// Editable marks the rule as editable in the UI (only written when set)
+	Editable *bool `yaml:"editable" json:"editable,omitempty" jsonschema:"description=Whether the rule is editable in the UI (only written when set)"`
+}
+
+// Selector returns the rule identity (wildcards applied), used for matching
+// existing rules and as the display label
+func (r RetentionRuleSpec) Selector() string {
+	return orWildcard(r.DataType) + "/" + orWildcard(r.FragmentType) + "/" + orWildcard(r.Type) + "/" + orWildcard(r.Source)
+}
+
+func orWildcard(value string) string {
+	if value == "" {
+		return "*"
+	}
+	return value
+}
+
+// TrustedCertificateStatuses are the statuses accepted by the trusted
+// certificates API
+var TrustedCertificateStatuses = []string{"ENABLED", "DISABLED"}
+
+// TrustedCertificateSpec uploads trusted device certificates into the tenant
+// trust store. Certificates are matched by their fingerprint: missing ones
+// are uploaded, and the name, status and autoRegistrationEnabled of existing
+// ones are updated when they differ. Certificates are never deleted.
+type TrustedCertificateSpec struct {
+	// Name overrides the certificate name (only sensible for sources that
+	// resolve to a single certificate). Defaults to the certificate subject
+	// common name, then the filename.
+	Name string `yaml:"name" json:"name,omitempty" jsonschema:"description=Override the certificate name (only sensible for sources resolving to a single certificate); defaults to the certificate subject common name and then the filename"`
+
+	// Status is the desired certificate status (defaults to ENABLED)
+	Status string `yaml:"status" json:"status,omitempty" jsonschema:"description=Desired certificate status (defaults to ENABLED),enum=ENABLED,enum=DISABLED"`
+
+	// AutoRegistrationEnabled lets devices presenting certificates signed by
+	// this certificate register automatically (only managed when set)
+	AutoRegistrationEnabled *bool `yaml:"autoRegistrationEnabled" json:"autoRegistrationEnabled,omitempty" jsonschema:"description=Allow devices presenting certificates signed by this certificate to register automatically (left untouched when omitted)"`
+
+	// Source provides the certificate files (PEM with one or more
+	// certificates, or a single DER/base64 encoded certificate per file)
+	Source Source `yaml:"source" json:"source" jsonschema:"description=Where the certificate files come from (PEM with one or more certificates or a single DER/base64 certificate per file; directories are scanned for *.pem and *.crt and *.cer by default)"`
+}
+
+// CertificateRevocationListSpec uploads certificate revocation entries from
+// CSV files (header SERIALNO[,DATE]; one certificate serial number in hex per
+// row). Uploads are additive: entries already on the tenant revocation list
+// are never removed.
+type CertificateRevocationListSpec struct {
+	// Source provides the CSV files (directories are scanned for *.csv)
+	Source Source `yaml:"source" json:"source" jsonschema:"description=Where the revocation list CSV files come from (columns SERIALNO and optional DATE; directories are scanned for *.csv by default)"`
+}
+
+// ApplicationSpec subscribes an application (by name) to the target tenant,
+// or unsubscribes it with subscribed: false. With a source, the application
+// is also created if missing and its binary (e.g. a microservice or web
+// application zip) uploaded.
+type ApplicationSpec struct {
+	Name string `yaml:"name" json:"name" jsonschema:"description=Application name"`
+	Type string `yaml:"type" json:"type,omitempty" jsonschema:"description=Application type (lookup filter; also used when creating from a source where it defaults to MICROSERVICE),example=MICROSERVICE,example=HOSTED"` // optional application type filter (e.g. MICROSERVICE, HOSTED)
+
+	// Subscribed declares the desired subscription state (defaults to true).
+	// With subscribed: false the application is unsubscribed from the target
+	// tenant (and never created/uploaded, even when a source is given).
+	Subscribed *bool `yaml:"subscribed" json:"subscribed,omitempty" jsonschema:"description=Desired subscription state (defaults to true when omitted); false unsubscribes the application from the target tenant"`
+
+	// ContextPath used when creating the application (defaults to the name)
+	ContextPath string `yaml:"contextPath" json:"contextPath,omitempty" jsonschema:"description=Context path used when creating the application (defaults to the name)"`
+
+	// Source provides the application binary (a single zip file). The
+	// application is created if missing and the binary uploaded on creation
+	// (or on every run with --force).
+	Source *Source `yaml:"source" json:"source,omitempty" jsonschema:"description=Where the application binary (zip) comes from; must resolve to a single file"`
+}
+
+func (a ApplicationSpec) IsSubscribed() bool {
+	return a.Subscribed == nil || *a.Subscribed
+}
+
+// UserGroupSpec ensures a user group (called "global role" in the Cumulocity
+// UI) exists with the given description and roles. Role assignments are
+// additive: roles already on the group but absent from the manifest are left
+// alone.
+type UserGroupSpec struct {
+	Name        string `yaml:"name" json:"name" jsonschema:"description=Name of the user group,example=operators"`
+	Description string `yaml:"description" json:"description,omitempty" jsonschema:"description=Description of the user group"`
+
+	// Roles lists role names assigned to the group. Missing roles are
+	// assigned; roles not listed are never removed.
+	Roles []string `yaml:"roles" json:"roles,omitempty" jsonschema:"description=Role names assigned to the group (additive; roles not listed are never removed),example=ROLE_INVENTORY_READ"`
+}
+
+// UserSpec ensures a user exists with the desired profile fields and group
+// memberships. The password is only used when creating the user (existing
+// passwords are never overwritten) and group memberships are additive.
+type UserSpec struct {
+	Username  string `yaml:"userName" json:"userName" jsonschema:"description=Username (login) of the user,example=jdoe@example.com"`
+	Email     string `yaml:"email" json:"email,omitempty" jsonschema:"description=Email address of the user"`
+	FirstName string `yaml:"firstName" json:"firstName,omitempty" jsonschema:"description=First name of the user"`
+	LastName  string `yaml:"lastName" json:"lastName,omitempty" jsonschema:"description=Last name of the user"`
+	Phone     string `yaml:"phone" json:"phone,omitempty" jsonschema:"description=Phone number of the user"`
+
+	// Enabled declares the desired account state (defaults to true)
+	Enabled *bool `yaml:"enabled" json:"enabled,omitempty" jsonschema:"description=Desired account state (defaults to true when omitted); false disables the user"`
+
+	// Password is only used when creating the user; existing passwords are
+	// never overwritten. Inject secrets with ${VAR} expansion.
+	Password string `yaml:"password" json:"password,omitempty" jsonschema:"description=Initial password used only when creating the user (never updated afterwards); supports ${VAR} expansion"`
+
+	// SendPasswordResetEmail asks the platform to email a password reset
+	// link on creation instead of (or in addition to) setting a password
+	SendPasswordResetEmail bool `yaml:"sendPasswordResetEmail" json:"sendPasswordResetEmail,omitempty" jsonschema:"description=Send a password reset email when creating the user (requires email; alternative to password)"`
+
+	// Groups lists user group names the user is assigned to. Missing
+	// memberships are added; memberships not listed are never removed.
+	Groups []string `yaml:"groups" json:"groups,omitempty" jsonschema:"description=User group names the user is assigned to (additive; memberships not listed are never removed),example=operators"`
+}
+
+func (u UserSpec) IsEnabled() bool {
+	return u.Enabled == nil || *u.Enabled
+}
+
+// Source describes where artifacts come from. Exactly one of Path, URL or
+// GitHub should be set.
+type Source struct {
+	// Path is a local file or directory. Directories are searched recursively
+	// using Patterns.
+	Path     string   `yaml:"path" json:"path,omitempty" jsonschema:"description=Local file or directory (relative paths are resolved against the manifest directory)"`
+	Patterns []string `yaml:"patterns" json:"patterns,omitempty" jsonschema:"description=Glob patterns matched against filenames when path is a directory (default: *)"`
+
+	// URL references an external file without uploading a binary.
+	URL string `yaml:"url" json:"url,omitempty" jsonschema:"description=External URL referenced without uploading a binary"`
+
+	// GitHub pulls release assets from a GitHub repository.
+	GitHub *GitHubSource `yaml:"github" json:"github,omitempty" jsonschema:"description=Pull release assets from a GitHub repository"`
+
+	// Optional marks the source as optional: when the local path does not
+	// exist or no files/assets match, the entry is skipped instead of failing.
+	Optional bool `yaml:"optional" json:"optional,omitempty" jsonschema:"description=Skip this entry instead of failing when the path does not exist or nothing matches"`
+}
+
+func (s *Source) IsSet() bool {
+	return s != nil && (s.Path != "" || s.URL != "" || s.GitHub != nil)
+}
+
+func (s *Source) Validate() error {
+	count := 0
+	if s.Path != "" {
+		count++
+	}
+	if s.URL != "" {
+		count++
+	}
+	if s.GitHub != nil {
+		count++
+	}
+	if count == 0 {
+		return fmt.Errorf("source requires one of: path, url, github")
+	}
+	if count > 1 {
+		return fmt.Errorf("source fields path, url and github are mutually exclusive")
+	}
+	if s.GitHub != nil && !strings.Contains(s.GitHub.Repo, "/") {
+		return fmt.Errorf("github.repo must be in the form owner/repo, got %q", s.GitHub.Repo)
+	}
+	return nil
+}
+
+// GitHubSource selects release assets from a GitHub repository
+type GitHubSource struct {
+	// Repo in the form "owner/name"
+	Repo string `yaml:"repo" json:"repo" jsonschema:"description=Repository in the form owner/name,pattern=^[^/]+/[^/]+$"`
+
+	// Release selects which release(s) to use:
+	//   "latest" (default) - the latest non-prerelease release
+	//   "latest-N"         - the latest N releases (e.g. "latest-5")
+	//   "all"              - every release (use with care)
+	//   "<tag>"            - a specific release tag (e.g. "v1.2.3")
+	Release string `yaml:"release" json:"release,omitempty" jsonschema:"description=Which release(s) to use: latest (default) or latest-N for the latest N releases or all or a specific tag,example=latest,example=latest-5,example=all,example=v1.2.3"`
+
+	// Assets are glob patterns matched against asset filenames (default: ["*"])
+	Assets []string `yaml:"assets" json:"assets,omitempty" jsonschema:"description=Glob patterns matched against release asset filenames (default: *)"`
+
+	// IncludePrereleases includes prereleases when Release is "latest" or "all"
+	IncludePrereleases bool `yaml:"includePrereleases" json:"includePrereleases,omitempty" jsonschema:"description=Include prereleases when release is latest or all"`
+
+	// LinkOnly references the asset download URL instead of downloading and
+	// uploading the binary to Cumulocity. Only useful for public repositories
+	// since devices must be able to fetch the URL.
+	LinkOnly bool `yaml:"linkOnly" json:"linkOnly,omitempty" jsonschema:"description=Reference the asset download URL instead of uploading the binary (public repositories only)"`
+
+	// Token for the GitHub API (falls back to GITHUB_TOKEN / GH_TOKEN env vars).
+	// Supports ${VAR} expansion, e.g. token: ${MY_GITHUB_TOKEN}
+	Token string `yaml:"token" json:"token,omitempty" jsonschema:"description=GitHub API token (falls back to GITHUB_TOKEN / GH_TOKEN env vars; supports ${VAR} expansion)"`
+}
+
+// SoftwareSpec syncs software packages into the software repository.
+// Name, version, architecture and software type are parsed from filenames
+// (same logic as the software-uploader example).
+type SoftwareSpec struct {
+	// NamePrefix is added to every parsed software name
+	NamePrefix string `yaml:"namePrefix" json:"namePrefix,omitempty" jsonschema:"description=Prefix added to every parsed software name"`
+
+	// Type forces the softwareType for all packages from this source
+	Type string `yaml:"type" json:"type,omitempty" jsonschema:"description=Force the softwareType for all packages from this source (overrides auto-detection)"`
+
+	// TypeMap maps filename glob patterns to software types, first match wins.
+	// Example: ["*.bin=firmware", ".deb=custom-apt"]
+	TypeMap []string `yaml:"typeMap" json:"typeMap,omitempty" jsonschema:"description=Map filename glob patterns to software types (pattern=softwaretype; first match wins),example=*.bin=firmware"`
+
+	// Version overrides the parsed version (useful for single-file sources)
+	Version string `yaml:"version" json:"version,omitempty" jsonschema:"description=Override the parsed version (useful for single-file sources)"`
+
+	Source Source `yaml:"source" json:"source" jsonschema:"description=Where the software packages come from"`
+}
+
+// FirmwareSpec syncs firmware (OS images) into the firmware repository.
+// Supports common build system outputs (Yocto, Buildroot, Rugix Bakery,
+// SWUpdate, RAUC, Mender, ...) plus custom naming via versionPattern.
+type FirmwareSpec struct {
+	// Name overrides the parsed firmware name. When set, all files from the
+	// source are uploaded as versions of this single firmware item.
+	Name string `yaml:"name" json:"name,omitempty" jsonschema:"description=Override the parsed firmware name (all files become versions of this single firmware item)"`
+
+	Description string `yaml:"description" json:"description,omitempty" jsonschema:"description=Description of the firmware item"`
+
+	// DeviceType restricts the firmware to a device type (c8y_Filter.type).
+	// Supports placeholders derived from each parsed artifact: {name},
+	// {version} and {filename}, e.g. "linux-{name}".
+	DeviceType string `yaml:"deviceType" json:"deviceType,omitempty" jsonschema:"description=Restrict the firmware to a device type (c8y_Filter.type); supports {name} {version} and {filename} placeholders derived from the artifact filename"`
+
+	// Version overrides the version for all files (only sensible for
+	// single-file sources). Defaults to: parsed from filename, then the
+	// GitHub release tag.
+	Version string `yaml:"version" json:"version,omitempty" jsonschema:"description=Override the version for all files (defaults to the version parsed from the filename and then the GitHub release tag)"`
+
+	// VersionPattern is a regular expression with a single capture group used
+	// to extract the version from the filename for custom naming schemes.
+	// Example: 'myimage-(\d+\.\d+\.\d+)\.custom$'
+	VersionPattern string `yaml:"versionPattern" json:"versionPattern,omitempty" jsonschema:"description=Regular expression with a single capture group to extract the version from the filename for custom naming schemes"`
+
+	Source Source `yaml:"source" json:"source" jsonschema:"description=Where the firmware images come from"`
+}
+
+// ConfigurationSpec syncs configuration files into the configuration repository
+type ConfigurationSpec struct {
+	// Name of the configuration item (defaults to the filename)
+	Name string `yaml:"name" json:"name,omitempty" jsonschema:"description=Name of the configuration item (defaults to the filename without extension)"`
+
+	// ConfigurationType (e.g. "mosquitto.conf", "properties")
+	ConfigurationType string `yaml:"configurationType" json:"configurationType" jsonschema:"description=Configuration type,example=mosquitto.conf,example=properties"`
+
+	Description string `yaml:"description" json:"description,omitempty" jsonschema:"description=Description of the configuration item"`
+
+	// DeviceType restricts the configuration to a device type
+	DeviceType string `yaml:"deviceType" json:"deviceType,omitempty" jsonschema:"description=Restrict the configuration to a device type"`
+
+	Source Source `yaml:"source" json:"source" jsonschema:"description=Where the configuration file comes from"`
+}
+
+// SmartRestTemplateSpec syncs SmartREST 2.0 template collections from JSON
+// files as exported by the platform (one collection per file). The collection
+// name is taken from the file's "name" field (falling back to "__externalId")
+// and doubles as the external identity (X-Id) the upsert matches on. The
+// order of the request/response templates inside a file does not matter.
+type SmartRestTemplateSpec struct {
+	// Name overrides the collection name from the file (only sensible for
+	// single-file sources)
+	Name string `yaml:"name" json:"name,omitempty" jsonschema:"description=Override the collection name from the file (only sensible for single-file sources)"`
+
+	// Source provides the exported collection JSON files. Directories are
+	// scanned for *.json files by default.
+	Source Source `yaml:"source" json:"source" jsonschema:"description=Where the exported SmartREST 2.0 collection JSON files come from (directories are scanned for *.json by default)"`
+}
+
+// DeviceProfileSpec creates a device profile referencing firmware, software
+// and configuration already present in the tenant (typically synced by the
+// earlier sections of the same manifest).
+type DeviceProfileSpec struct {
+	Name       string `yaml:"name" json:"name" jsonschema:"description=Name of the device profile"`
+	DeviceType string `yaml:"deviceType" json:"deviceType,omitempty" jsonschema:"description=Restrict the profile to a device type (c8y_Filter.type)"`
+
+	Firmware      *ProfileFirmwareRef       `yaml:"firmware" json:"firmware,omitempty" jsonschema:"description=Firmware version included in the profile"`
+	Software      []ProfileSoftwareRef      `yaml:"software" json:"software,omitempty" jsonschema:"description=Software versions included in the profile"`
+	Configuration []ProfileConfigurationRef `yaml:"configuration" json:"configuration,omitempty" jsonschema:"description=Configuration items included in the profile"`
+}
+
+// Profile references resolve their binary URL automatically from the
+// repository item in the tenant (which is why the deviceProfiles section runs
+// after the repository sections), or take an explicit url that skips the
+// lookup entirely (e.g. for externally hosted binaries). The special url
+// values "-" and "none" disable the lookup AND leave the url off the profile
+// entry, for devices that resolve artifacts by name/version themselves.
+
+type ProfileFirmwareRef struct {
+	Name    string `yaml:"name" json:"name" jsonschema:"description=Firmware name (must exist in the tenant unless url is set)"`
+	Version string `yaml:"version" json:"version" jsonschema:"description=Firmware version (must exist in the tenant unless url is set)"`
+	URL     string `yaml:"url" json:"url,omitempty" jsonschema:"description=Explicit binary URL skipping the lookup of the firmware version in the tenant; the special values - and none omit the url from the profile entirely,example=none"`
+}
+
+type ProfileSoftwareRef struct {
+	Name    string `yaml:"name" json:"name" jsonschema:"description=Software name (must exist in the tenant unless url is set)"`
+	Version string `yaml:"version" json:"version" jsonschema:"description=Software version (must exist in the tenant unless url is set)"`
+	Type    string `yaml:"type" json:"type,omitempty" jsonschema:"description=Software type of the referenced item (disambiguates the lookup and is written to the profile entry),example=apt"`
+	URL     string `yaml:"url" json:"url,omitempty" jsonschema:"description=Explicit binary URL skipping the lookup of the software version in the tenant; the special values - and none omit the url from the profile entirely,example=none"`
+	Action  string `yaml:"action" json:"action,omitempty" jsonschema:"description=Software action (defaults to install),example=install"` // defaults to "install"
+}
+
+type ProfileConfigurationRef struct {
+	Name string `yaml:"name" json:"name" jsonschema:"description=Configuration item name (must exist in the tenant unless url is set)"`
+	Type string `yaml:"type" json:"type,omitempty" jsonschema:"description=Configuration type of the referenced item"`
+	URL  string `yaml:"url" json:"url,omitempty" jsonschema:"description=Explicit file URL skipping the lookup of the configuration item in the tenant; the special values - and none omit the url from the profile entirely,example=none"`
+}
+
+// LoadManifest reads a manifest file, expanding ${VAR} environment variable
+// references before parsing so secrets (e.g. GitHub tokens) can be injected.
+func LoadManifest(path string) (*Manifest, error) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read manifest: %w", err)
+	}
+
+	expanded := os.Expand(string(raw), func(name string) string {
+		// Leave unknown references intact so they are easy to spot in errors
+		if value, ok := os.LookupEnv(name); ok {
+			return value
+		}
+		return "${" + name + "}"
+	})
+
+	manifest := &Manifest{}
+	decoder := yaml.NewDecoder(strings.NewReader(expanded))
+	// Strict parsing: unknown fields are errors so typos are caught early
+	decoder.KnownFields(true)
+	if err := decoder.Decode(manifest); err != nil {
+		if errors.Is(err, io.EOF) {
+			// Empty manifest
+			return manifest, nil
+		}
+		return nil, fmt.Errorf("failed to parse manifest: %w", err)
+	}
+
+	if err := manifest.Validate(); err != nil {
+		return nil, err
+	}
+
+	return manifest, nil
+}
+
+// Validate checks the manifest for structural errors before any API calls
+func (m *Manifest) Validate() error {
+	var errs []string
+
+	if err := m.Targets.Validate(); err != nil {
+		errs = append(errs, fmt.Sprintf("targets: %v", err))
+	}
+
+	for i, opt := range m.TenantOptions {
+		if opt.Category == "" || opt.Key == "" {
+			errs = append(errs, fmt.Sprintf("tenantOptions[%d]: category and key are required", i))
+		}
+		if opt.Value != "" && opt.ValueFrom != nil {
+			errs = append(errs, fmt.Sprintf("tenantOptions[%d]: value and valueFrom are mutually exclusive", i))
+		}
+		if opt.Value == "" && opt.ValueFrom == nil {
+			errs = append(errs, fmt.Sprintf("tenantOptions[%d]: one of value or valueFrom is required", i))
+		}
+		if opt.ValueFrom != nil {
+			refs := 0
+			if opt.ValueFrom.Application != "" {
+				refs++
+			}
+			if opt.ValueFrom.Device != "" {
+				refs++
+			}
+			if refs != 1 {
+				errs = append(errs, fmt.Sprintf("tenantOptions[%d]: valueFrom requires exactly one of: application, device", i))
+			}
+		}
+	}
+	for i, feature := range m.Features {
+		if feature.Key == "" {
+			errs = append(errs, fmt.Sprintf("features[%d]: key is required", i))
+		}
+	}
+	selectors := make(map[string]bool, len(m.RetentionRules))
+	for i, rule := range m.RetentionRules {
+		if rule.DataType == "" {
+			errs = append(errs, fmt.Sprintf("retentionRules[%d]: dataType is required", i))
+		} else if !slices.Contains(RetentionRuleDataTypes, rule.DataType) {
+			errs = append(errs, fmt.Sprintf("retentionRules[%d]: unknown dataType %q: supported values are %s", i, rule.DataType, strings.Join(RetentionRuleDataTypes, ", ")))
+		}
+		if rule.MaximumAge < 1 {
+			errs = append(errs, fmt.Sprintf("retentionRules[%d]: maximumAge must be at least 1 (days)", i))
+		}
+		if selectors[rule.Selector()] {
+			errs = append(errs, fmt.Sprintf("retentionRules[%d]: duplicate rule selector %s", i, rule.Selector()))
+		}
+		selectors[rule.Selector()] = true
+	}
+	for i, cert := range m.TrustedCertificates {
+		if err := cert.Source.Validate(); err != nil {
+			errs = append(errs, fmt.Sprintf("trustedCertificates[%d]: %v", i, err))
+		}
+		if cert.Source.URL != "" {
+			errs = append(errs, fmt.Sprintf("trustedCertificates[%d]: url sources are not supported (the certificate content must be available locally)", i))
+		}
+		if cert.Status != "" && !slices.Contains(TrustedCertificateStatuses, cert.Status) {
+			errs = append(errs, fmt.Sprintf("trustedCertificates[%d]: unknown status %q: supported values are %s", i, cert.Status, strings.Join(TrustedCertificateStatuses, ", ")))
+		}
+	}
+	for i, crl := range m.CertificateRevocationLists {
+		if err := crl.Source.Validate(); err != nil {
+			errs = append(errs, fmt.Sprintf("certificateRevocationLists[%d]: %v", i, err))
+		}
+		if crl.Source.URL != "" {
+			errs = append(errs, fmt.Sprintf("certificateRevocationLists[%d]: url sources are not supported (the CSV content must be available locally)", i))
+		}
+	}
+	for i, app := range m.Applications {
+		if app.Name == "" {
+			errs = append(errs, fmt.Sprintf("applications[%d]: name is required", i))
+		}
+		if app.Source != nil {
+			if err := app.Source.Validate(); err != nil {
+				errs = append(errs, fmt.Sprintf("applications[%d]: %v", i, err))
+			}
+		}
+	}
+	groupNames := make(map[string]bool, len(m.UserGroups))
+	for i, group := range m.UserGroups {
+		if group.Name == "" {
+			errs = append(errs, fmt.Sprintf("userGroups[%d]: name is required", i))
+		} else if groupNames[group.Name] {
+			errs = append(errs, fmt.Sprintf("userGroups[%d]: duplicate group name %q", i, group.Name))
+		}
+		groupNames[group.Name] = true
+		for j, role := range group.Roles {
+			if strings.TrimSpace(role) == "" {
+				errs = append(errs, fmt.Sprintf("userGroups[%d].roles[%d]: role must not be empty", i, j))
+			}
+		}
+	}
+	usernames := make(map[string]bool, len(m.Users))
+	for i, user := range m.Users {
+		if user.Username == "" {
+			errs = append(errs, fmt.Sprintf("users[%d]: userName is required", i))
+		} else if usernames[user.Username] {
+			errs = append(errs, fmt.Sprintf("users[%d]: duplicate userName %q", i, user.Username))
+		}
+		usernames[user.Username] = true
+		if user.SendPasswordResetEmail && user.Email == "" {
+			errs = append(errs, fmt.Sprintf("users[%d]: sendPasswordResetEmail requires email", i))
+		}
+		for j, group := range user.Groups {
+			if strings.TrimSpace(group) == "" {
+				errs = append(errs, fmt.Sprintf("users[%d].groups[%d]: group must not be empty", i, j))
+			}
+		}
+	}
+	for i, sw := range m.Software {
+		if err := sw.Source.Validate(); err != nil {
+			errs = append(errs, fmt.Sprintf("software[%d]: %v", i, err))
+		}
+		for _, mapping := range sw.TypeMap {
+			if !strings.Contains(mapping, "=") {
+				errs = append(errs, fmt.Sprintf("software[%d]: invalid typeMap entry %q: expected pattern=softwaretype", i, mapping))
+			}
+		}
+	}
+	for i, fw := range m.Firmware {
+		if err := fw.Source.Validate(); err != nil {
+			errs = append(errs, fmt.Sprintf("firmware[%d]: %v", i, err))
+		}
+		if fw.Source.URL != "" && fw.Name == "" {
+			errs = append(errs, fmt.Sprintf("firmware[%d]: name is required when using a url source", i))
+		}
+		if err := validatePlaceholders(fw.DeviceType); err != nil {
+			errs = append(errs, fmt.Sprintf("firmware[%d].deviceType: %v", i, err))
+		}
+	}
+	for i, cfg := range m.Configuration {
+		if err := cfg.Source.Validate(); err != nil {
+			errs = append(errs, fmt.Sprintf("configuration[%d]: %v", i, err))
+		}
+		if cfg.ConfigurationType == "" {
+			errs = append(errs, fmt.Sprintf("configuration[%d]: configurationType is required", i))
+		}
+	}
+	for i, spec := range m.SmartRestTemplates {
+		if err := spec.Source.Validate(); err != nil {
+			errs = append(errs, fmt.Sprintf("smartrestTemplates[%d]: %v", i, err))
+		}
+		if spec.Source.URL != "" {
+			errs = append(errs, fmt.Sprintf("smartrestTemplates[%d]: url sources are not supported (the collection file content must be available locally)", i))
+		}
+	}
+	for i, profile := range m.DeviceProfiles {
+		if profile.Name == "" {
+			errs = append(errs, fmt.Sprintf("deviceProfiles[%d]: name is required", i))
+		}
+		if profile.Firmware != nil && (profile.Firmware.Name == "" || profile.Firmware.Version == "") {
+			errs = append(errs, fmt.Sprintf("deviceProfiles[%d].firmware: name and version are required", i))
+		}
+		for j, sw := range profile.Software {
+			if sw.Name == "" || sw.Version == "" {
+				errs = append(errs, fmt.Sprintf("deviceProfiles[%d].software[%d]: name and version are required", i, j))
+			}
+		}
+		for j, cfg := range profile.Configuration {
+			if cfg.Name == "" {
+				errs = append(errs, fmt.Sprintf("deviceProfiles[%d].configuration[%d]: name is required", i, j))
+			}
+		}
+	}
+
+	names := make(map[string]bool, len(m.Commands))
+	for i, group := range m.Commands {
+		if group.Name == "" {
+			errs = append(errs, fmt.Sprintf("commands[%d]: name is required", i))
+		} else if names[group.Name] {
+			errs = append(errs, fmt.Sprintf("commands[%d]: duplicate group name %q", i, group.Name))
+		}
+		names[group.Name] = true
+		if len(group.Actions) == 0 {
+			errs = append(errs, fmt.Sprintf("commands[%d]: at least one action is required", i))
+		}
+		for j, action := range group.Actions {
+			if strings.TrimSpace(action) == "" {
+				errs = append(errs, fmt.Sprintf("commands[%d].actions[%d]: action must not be empty", i, j))
+			}
+		}
+	}
+
+	hookStages := map[string][]HookSpec{"pre": m.Hooks.Pre, "post": m.Hooks.Post}
+	for section, sectionHooks := range m.Hooks.Sections {
+		if !isKnownSection(section) {
+			errs = append(errs, fmt.Sprintf("hooks.sections.%s: unknown section. Valid sections: %s", section, strings.Join(SectionOrder, ", ")))
+		}
+		hookStages["sections."+section+".pre"] = sectionHooks.Pre
+		hookStages["sections."+section+".post"] = sectionHooks.Post
+	}
+	for stage, hooks := range hookStages {
+		for i, hook := range hooks {
+			if hook.Run == "" {
+				errs = append(errs, fmt.Sprintf("hooks.%s[%d]: run is required", stage, i))
+			}
+		}
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("invalid manifest:\n  - %s", strings.Join(errs, "\n  - "))
+	}
+	return nil
+}
+
+// placeholderPattern matches {placeholder} references in template strings
+var placeholderPattern = regexp.MustCompile(`\{([a-zA-Z]+)\}`)
+
+// validatePlaceholders checks a template string only references the
+// placeholders derived from a parsed firmware artifact
+func validatePlaceholders(template string) error {
+	for _, match := range placeholderPattern.FindAllStringSubmatch(template, -1) {
+		switch match[1] {
+		case "name", "version", "filename":
+		default:
+			return fmt.Errorf("unknown placeholder {%s}: supported placeholders are {name}, {version} and {filename}", match[1])
+		}
+	}
+	return nil
+}
+
+// TypeMappings converts the string typeMap entries into parser TypeMapping values
+func (s *SoftwareSpec) TypeMappings() []TypeMapping {
+	mappings := make([]TypeMapping, 0, len(s.TypeMap))
+	for _, entry := range s.TypeMap {
+		idx := strings.LastIndex(entry, "=")
+		if idx <= 0 || idx == len(entry)-1 {
+			continue // validated in Manifest.Validate
+		}
+		mappings = append(mappings, TypeMapping{
+			Pattern:      entry[:idx],
+			SoftwareType: entry[idx+1:],
+		})
+	}
+	return mappings
+}
