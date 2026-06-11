@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
 
@@ -33,6 +34,13 @@ type KeyGroup struct {
 type Selector struct {
 	patterns []selectPattern
 	globOnly bool
+
+	// pruneSegments, when non-nil, holds the lowercased top-level segments
+	// the positive patterns can match. Documents are reduced to these
+	// top-level fields before flattening — a large win when a few
+	// properties are selected from large documents. It is nil (no pruning)
+	// when any positive pattern starts with a wildcard or escape sequence.
+	pruneSegments map[string]struct{}
 }
 
 type selectPattern struct {
@@ -72,7 +80,65 @@ func NewSelector(properties ...string) *Selector {
 		}
 		s.patterns = append(s.patterns, selectPattern{glob: g, alias: alias, original: p})
 	}
+	s.pruneSegments = resolvePruneSegments(s.patterns)
 	return s
+}
+
+// resolvePruneSegments determines the set of top-level document fields the
+// positive patterns can possibly match. It returns nil (pruning disabled)
+// when a positive pattern's first segment is not a plain literal.
+func resolvePruneSegments(patterns []selectPattern) map[string]struct{} {
+	segments := make(map[string]struct{}, len(patterns))
+	for _, p := range patterns {
+		if p.glob.IsNegative() {
+			// negative patterns only exclude already-selected keys
+			continue
+		}
+		pattern := strings.TrimLeft(p.glob.String(), "!")
+		seg, _, _ := strings.Cut(pattern, ".")
+		if seg == "" || strings.ContainsAny(seg, `*?\[{`) {
+			return nil
+		}
+		segments[seg] = struct{}{}
+	}
+	if len(segments) == 0 {
+		return nil
+	}
+	return segments
+}
+
+// pruneDocument reduces a JSON object to the top-level fields which the
+// selector's patterns can match, so only the relevant subtrees are decoded
+// and flattened.
+func pruneDocument(doc []byte, segments map[string]struct{}) []byte {
+	root := gjson.ParseBytes(doc)
+	if !root.IsObject() {
+		return doc
+	}
+	var buf bytes.Buffer
+	buf.Grow(len(doc) / 4)
+	buf.WriteByte('{')
+	first := true
+	root.ForEach(func(k, v gjson.Result) bool {
+		if _, ok := segments[strings.ToLower(k.String())]; !ok {
+			return true
+		}
+		if !first {
+			buf.WriteByte(',')
+		}
+		first = false
+		if k.Raw != "" {
+			buf.WriteString(k.Raw)
+		} else {
+			b, _ := json.Marshal(k.String())
+			buf.Write(b)
+		}
+		buf.WriteByte(':')
+		buf.WriteString(v.Raw)
+		return true
+	})
+	buf.WriteByte('}')
+	return buf.Bytes()
 }
 
 // SelectsEverything reports whether the selector consists of the single
@@ -111,6 +177,9 @@ func (s *Selection) Value(key string) (any, bool) {
 // is one decode+flatten pass and one match per (pattern, key) pair; all
 // pattern compilation already happened in NewSelector.
 func (s *Selector) Apply(doc []byte) (*Selection, error) {
+	if s.pruneSegments != nil {
+		doc = pruneDocument(doc, s.pruneSegments)
+	}
 	nested := make(map[string]any)
 	decoder := json.NewDecoder(bytes.NewReader(doc))
 	decoder.UseNumber()

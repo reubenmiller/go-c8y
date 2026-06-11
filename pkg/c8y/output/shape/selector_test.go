@@ -142,6 +142,30 @@ func TestSelectorGlobstarOnly(t *testing.T) {
 	assert.False(t, NewSelector("id").SelectsEverything())
 }
 
+func TestSelectorPruning(t *testing.T) {
+	// literal first segments enable pruning
+	s := NewSelector("id", "c8y_Hardware.*", "!c8y_Hardware.revision")
+	require.NotNil(t, s.pruneSegments)
+	assert.Len(t, s.pruneSegments, 2)
+
+	// pruning must not change the result
+	sel, err := s.Apply(selectorDoc)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"id", "c8y_Hardware.model", "c8y_Hardware.serialNumber"}, sel.Keys())
+
+	// pruning is case-insensitive on the document keys
+	sel, err = NewSelector("ID").Apply(selectorDoc)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"id"}, sel.Keys())
+
+	// wildcard first segments disable pruning
+	assert.Nil(t, NewSelector("*.id").pruneSegments)
+	assert.Nil(t, NewSelector("**").pruneSegments)
+	assert.Nil(t, NewSelector("id", "**.name").pruneSegments)
+	// escapes disable pruning (flattened keys escape dots)
+	assert.Nil(t, NewSelector(`my\.dotted\.key`).pruneSegments)
+}
+
 func TestSelectorInvalidJSON(t *testing.T) {
 	_, err := NewSelector("id").Apply([]byte(`not json`))
 	assert.Error(t, err)
