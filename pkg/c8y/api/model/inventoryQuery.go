@@ -22,6 +22,40 @@ func (b *InventoryQuery) AddOrderBy(key string) *InventoryQuery {
 	return b
 }
 
+type InventoryQueryCondition interface {
+	Enabled() bool
+	String() string
+}
+
+func FilterHasFragment(name string, enable bool) FilterCondition {
+	return FilterCondition{
+		Format:  "has(%s)",
+		Value:   name,
+		Disable: !enable,
+	}
+}
+
+type FilterCondition struct {
+	Format  string
+	Value   any
+	Disable bool
+}
+
+func (c FilterCondition) String() string {
+	if c.Format == "" {
+		return fmt.Sprintf("%s", c.Value)
+	}
+	return fmt.Sprintf(c.Format, c.Value)
+}
+
+func (c FilterCondition) Enabled() bool {
+	return !c.IsEmpty() && !c.Disable
+}
+
+func (c FilterCondition) IsEmpty() bool {
+	return fmt.Sprintf("%v", c.Value) == ""
+}
+
 func (b *InventoryQuery) AddFilterPart(parts ...string) *InventoryQuery {
 	for _, v := range parts {
 		if v != "" {
@@ -33,7 +67,7 @@ func (b *InventoryQuery) AddFilterPart(parts ...string) *InventoryQuery {
 
 func (b *InventoryQuery) HasFragment(v string) *InventoryQuery {
 	if v != "" {
-		b.Filter = append(b.Filter, fmt.Sprintf("has(%s)", v))
+		b.AddFilter(FilterHasFragment(v, true))
 	}
 	return b
 }
@@ -48,6 +82,15 @@ func (b *InventoryQuery) AddFilterEqStr(k string, v any) *InventoryQuery {
 		strValue := fmt.Sprintf("%v", value)
 		if strValue != "" {
 			b.Filter = append(b.Filter, fmt.Sprintf("(%s eq %v)", k, strValue))
+		}
+	}
+	return b
+}
+
+func (b *InventoryQuery) AddFilter(conditions ...InventoryQueryCondition) *InventoryQuery {
+	for _, cond := range conditions {
+		if cond.Enabled() {
+			b.Filter = append(b.Filter, cond.String())
 		}
 	}
 	return b
