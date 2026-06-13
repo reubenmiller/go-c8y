@@ -75,6 +75,7 @@ type Result[T any] struct {
     
     // Request inspection (see: REQUEST_INSPECTION.md)
     Request    *http.Request      // HTTP request that was (or would be) sent
+    Response   []byte             // Raw response body (full un-plucked envelope for collections; empty otherwise)
     
     // Deferred execution (see: DEFERRED_EXECUTION.md)
     executor   func(context.Context) Result[T]
