@@ -39,6 +39,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/bulkoperations"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/devicegroups"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/devices"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/events"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/features"
@@ -160,6 +161,7 @@ type Client struct {
 	LoginTokens *logintokens.Service
 
 	Devices              *devices.Service
+	DeviceGroups         *devicegroups.Service
 	ManagedObjects       *managedobjects.Service
 	Operations           *operations.Service
 	Tenants              *tenants.Service
@@ -447,6 +449,7 @@ func NewClient(opts ClientOptions) *Client {
 	c.Events = events.NewService(&c.common, c.ManagedObjects)
 
 	c.Devices = devices.NewService(&c.common)
+	c.DeviceGroups = devicegroups.NewService(&c.common)
 	c.Applications = applications.NewService(&c.common)
 	c.ApplicationVersions = appversions.NewService(&c.common)
 	c.Microservices = microservices.NewService(&c.common)
