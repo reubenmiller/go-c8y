@@ -54,11 +54,11 @@ func (s *selector) apply(doc jsondoc.JSONDoc) (jsondoc.JSONDoc, error) {
 	var err error
 
 	for _, path := range s.exact {
-		v := root.Get(path)
+		v := root.Get(escapeGJSONPath(path))
 		if !v.Exists() {
 			continue
 		}
-		out, err = sjson.SetRawBytesOptions(out, path, []byte(v.Raw), setOptions)
+		out, err = sjson.SetRawBytesOptions(out, safeSetPath(root, path), []byte(v.Raw), setOptions)
 		if err != nil {
 			return jsondoc.Empty(), err
 		}
@@ -68,7 +68,7 @@ func (s *selector) apply(doc jsondoc.JSONDoc) (jsondoc.JSONDoc, error) {
 		walk(root, "", func(path string, v gjson.Result) bool {
 			for _, re := range s.wildcards {
 				if re.MatchString(path) {
-					out, err = sjson.SetRawBytesOptions(out, path, []byte(v.Raw), setOptions)
+					out, err = sjson.SetRawBytesOptions(out, safeSetPath(root, path), []byte(v.Raw), setOptions)
 					return err == nil
 				}
 			}
@@ -80,6 +80,68 @@ func (s *selector) apply(doc jsondoc.JSONDoc) (jsondoc.JSONDoc, error) {
 	}
 
 	return jsondoc.New(out), nil
+}
+
+// safeSetPath rewrites a gjson path into an sjson set path that addresses the
+// intended literal keys. It handles two hazards:
+//
+//   - Numeric object keys: sjson treats an all-digit path segment as an array
+//     index and pre-allocates an array of that size, so a large numeric object
+//     key (e.g. a Cumulocity c8y_Dashboard widget id like "15426326034650895")
+//     would make it try to allocate ~10^16 elements and exhaust memory. Each
+//     all-digit segment whose parent in the source is an object is prefixed
+//     with ':' to force a literal key; genuine array indices keep their form.
+//   - Special characters: a key containing gjson/sjson syntax (|, #, @, *, ?)
+//     is escaped so the segment is taken literally rather than as a query.
+func safeSetPath(root gjson.Result, path string) string {
+	segs := splitPath(path)
+	node := root
+	for i, seg := range segs {
+		esc := escapeGJSONPath(seg)
+		if isAllDigits(seg) && !node.IsArray() {
+			esc = ":" + esc
+		}
+		node = node.Get(escapeGJSONPath(seg))
+		segs[i] = esc
+	}
+	return strings.Join(segs, ".")
+}
+
+// splitPath splits a gjson path on unescaped '.' separators, keeping any
+// escape sequences (e.g. "\.") within their segment.
+func splitPath(path string) []string {
+	var segs []string
+	var cur strings.Builder
+	for i := 0; i < len(path); i++ {
+		if path[i] == '\\' && i+1 < len(path) {
+			cur.WriteByte(path[i])
+			cur.WriteByte(path[i+1])
+			i++
+			continue
+		}
+		if path[i] == '.' {
+			segs = append(segs, cur.String())
+			cur.Reset()
+			continue
+		}
+		cur.WriteByte(path[i])
+	}
+	segs = append(segs, cur.String())
+	return segs
+}
+
+// isAllDigits reports whether s is non-empty and consists only of ASCII
+// digits — the form sjson interprets as an array index.
+func isAllDigits(s string) bool {
+	if s == "" {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		if s[i] < '0' || s[i] > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 // walk visits every leaf of the document in document order with its dotted
@@ -104,14 +166,23 @@ func walk(res gjson.Result, prefix string, visit func(string, gjson.Result) bool
 func globPathToRegexp(pattern string) *regexp.Regexp {
 	var sb strings.Builder
 	sb.WriteString("(?i)^")
-	for _, r := range pattern {
-		switch r {
+	rs := []rune(pattern)
+	for i := 0; i < len(rs); i++ {
+		// A backslash escapes the next character, so an escaped '*'/'?' (e.g.
+		// a key that literally contains those characters) matches literally
+		// rather than acting as a wildcard.
+		if rs[i] == '\\' && i+1 < len(rs) {
+			sb.WriteString(regexp.QuoteMeta(string(rs[i+1])))
+			i++
+			continue
+		}
+		switch rs[i] {
 		case '*':
 			sb.WriteString(".*")
 		case '?':
 			sb.WriteString(".")
 		default:
-			sb.WriteString(regexp.QuoteMeta(string(r)))
+			sb.WriteString(regexp.QuoteMeta(string(rs[i])))
 		}
 	}
 	sb.WriteString("$")
