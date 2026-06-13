@@ -59,6 +59,12 @@ type Result[T any] struct {
 	// Request details for inspection (e.g., dry run, debugging)
 	Request *http.Request // The HTTP request that was (or would be) sent
 
+	// Response is the raw response body exactly as received from the server.
+	// It is retained for collection results so callers can access the full
+	// envelope (items array, statistics, paging links) rather than the plucked
+	// items in Data. Empty when Data already holds the whole body.
+	Response []byte
+
 	// Deferred execution support
 	executor func(context.Context) Result[T] // Function to execute the actual operation
 }
@@ -205,6 +211,12 @@ func (r Result[T]) WithDuration(duration time.Duration) Result[T] {
 // WithRequest sets the HTTP request
 func (r Result[T]) WithRequest(req *http.Request) Result[T] {
 	r.Request = req
+	return r
+}
+
+// WithResponse attaches the raw response body (the full, un-plucked envelope).
+func (r Result[T]) WithResponse(body []byte) Result[T] {
+	r.Response = body
 	return r
 }
 

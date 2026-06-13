@@ -35,6 +35,7 @@ type JSONDocument interface {
 // you are willing to silently discard mid-iteration errors.
 type Iterator[T any] struct {
 	items       iter.Seq2[T, error]
+	pages       iter.Seq2[jsondoc.JSONDoc, error]
 	err         error
 	totalCount  int64
 	totalPages  int64
@@ -67,6 +68,28 @@ func (it *Iterator[T]) Seq() iter.Seq[T] {
 			}
 		}
 	}
+}
+
+// Pages returns an iterator that yields each page's full response envelope
+// (the un-plucked collection wrapper: items array, statistics and paging
+// links) exactly as received from the server. Use it for raw output where the
+// whole document — not the extracted items — is wanted. Pagination follows the
+// same rules as Items() (page size, MaxItems, total-page limits), so a plain
+// query yields one page and an unbounded one yields every page. Like Items(),
+// always check the error value:
+//
+//	for doc, err := range it.Pages() {
+//		if err != nil { ... }
+//	}
+//
+// Pages and Items are independent views over the same query — range over one
+// or the other, not both. Returns an empty sequence for iterators created via
+// NewIterator (which have no underlying page envelopes).
+func (it *Iterator[T]) Pages() iter.Seq2[jsondoc.JSONDoc, error] {
+	if it.pages == nil {
+		return func(yield func(jsondoc.JSONDoc, error) bool) {}
+	}
+	return it.pages
 }
 
 func (it *Iterator[T]) Err() error {
@@ -212,6 +235,69 @@ func Paginate[T any, D JSONDocument](
 
 			totalPages, ok := result.Meta["totalPages"].(int64)
 			if ok && page >= int(totalPages) {
+				return
+			}
+			page++
+		}
+	}
+
+	// pages mirrors the items loop but yields each page's full response
+	// envelope instead of the extracted items. Raw pages are emitted whole, so
+	// MaxItems is honoured at page granularity (stop after the page that
+	// reaches the cap).
+	iterator.pages = func(yield func(jsondoc.JSONDoc, error) bool) {
+		page := 1
+		count := int64(0)
+		for {
+			opts := paginationOpts
+			opts.CurrentPage = page
+			opts.WithTotalElements = true
+			opts.WithTotalPages = true
+
+			result := fetch(opts)
+			if result.Err != nil {
+				iterator.err = result.Err
+				yield(jsondoc.Empty(), result.Err)
+				return
+			}
+
+			if !iterator.previewDone {
+				iterator.previewDone = true
+				if totalElements, ok := result.Meta["totalElements"].(int64); ok {
+					iterator.totalCount = totalElements
+				}
+				if totalPages, ok := result.Meta["totalPages"].(int64); ok {
+					iterator.totalPages = totalPages
+				}
+			}
+
+			// Emit the whole page envelope as received. A zero-result query
+			// still has a body ({"managedObjects":[],...}) and is emitted; only
+			// a truly empty body (e.g. the 204 a dry-run short-circuit returns)
+			// is skipped so it produces no stray document.
+			if len(result.Response) > 0 {
+				if !yield(jsondoc.New(result.Response), nil) {
+					return
+				}
+			}
+
+			pageItems := int64(0)
+			for range result.Data.Iter() {
+				pageItems++
+			}
+			count += pageItems
+
+			if pageItems == 0 {
+				slog.Debug("Stopping pagination as results array is empty")
+				return
+			}
+			if maxItems > 0 && count >= maxItems {
+				return
+			}
+			if next, ok := result.Meta["next"].(string); !ok || next == "" {
+				return
+			}
+			if totalPages, ok := result.Meta["totalPages"].(int64); ok && page >= int(totalPages) {
 				return
 			}
 			page++

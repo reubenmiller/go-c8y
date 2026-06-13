@@ -242,6 +242,9 @@ func ExecuteCollection[T any](ctx context.Context, req *TryRequest, arrayPath, m
 	result.RequestID = resp.Header().Get("X-Request-ID")
 	result.Duration = resp.Duration()
 	result.Request = httpReq
+	// Retain the full envelope (un-plucked) for callers that want raw output.
+	// doc.Raw() shares the buffer already parsed above, so this is zero-copy.
+	result.Response = doc.Raw()
 
 	// Add cache headers to metadata
 	if xCache := resp.Header().Get("X-Cache"); xCache != "" {
