@@ -28,6 +28,10 @@ func ExecuteResponseOnly(ctx context.Context, req *TryRequest) (*resty.Response,
 		req.Request.SetAuthToken("")
 		ctx = ctxhelpers.WithNoAuth(ctx)
 	}
+	// Apply context-driven request options (e.g. processing mode) that live on
+	// the TryRequest wrapper — resty's own SetContext below does not know them.
+	req.ApplyProcessingModeFromContext(ctx)
+
 	resp, err := coupleAPIErrors(req.Request.
 		SetContext(ctx).
 		Send())

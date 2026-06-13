@@ -202,20 +202,22 @@ func (t *DryRunTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		return t.Transport.RoundTrip(req)
 	}
 
-	// If dry run is enabled, log the request
+	// If dry run is enabled, hand the request to a registered handler (e.g. a
+	// CLI renderer), falling back to a slog line.
 	if isDryRun {
-		// Determine which headers to log (redacted or full)
-		headers := req.Header
-		if ctxhelpers.ShouldRedactHeaders(ctx) {
-			headers = redactSensitiveHeaders(req.Header)
+		if handler := ctxhelpers.DryRunHandler(ctx); handler != nil {
+			handler(req)
+		} else {
+			headers := req.Header
+			if ctxhelpers.ShouldRedactHeaders(ctx) {
+				headers = redactSensitiveHeaders(req.Header)
+			}
+			slog.Info("DRY RUN",
+				"method", req.Method,
+				"url", req.URL.String(),
+				"headers", headers,
+			)
 		}
-
-		// Log the request details
-		slog.Info("DRY RUN",
-			"method", req.Method,
-			"url", req.URL.String(),
-			"headers", headers,
-		)
 	}
 
 	// If mock responses are enabled, return mock data
@@ -284,8 +286,20 @@ func (t *DryRunTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		return resp, nil
 	}
 
-	// Not a dry run, proceed with the actual request
-	return t.Transport.RoundTrip(req)
+	// Dry run without mock responses: never send the request. Return an empty
+	// success response so callers receive no data rather than fabricated data.
+	resp := &http.Response{
+		Status:     http.StatusText(http.StatusNoContent),
+		StatusCode: http.StatusNoContent,
+		Proto:      "HTTP/1.1",
+		ProtoMajor: 1,
+		ProtoMinor: 1,
+		Header:     make(http.Header),
+		Body:       io.NopCloser(bytes.NewReader(nil)),
+		Request:    req,
+	}
+	resp.Header.Set("X-Dry-Run", "true")
+	return resp, nil
 }
 
 // BaseTransport returns the underlying transport.
