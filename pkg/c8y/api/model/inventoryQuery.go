@@ -73,15 +73,22 @@ func (b *InventoryQuery) HasFragment(v string) *InventoryQuery {
 }
 
 func (b *InventoryQuery) AddFilterEqStr(k string, v any) *InventoryQuery {
+	return b.AddFilterOp(k, "eq", v)
+}
+
+// AddFilterOp appends a "(key <op> 'value')" comparison filter, where op is a
+// Cumulocity query operator such as eq, ne, le, lt, ge, gt. String values are
+// quoted; other types are rendered unquoted. Empty values are skipped.
+func (b *InventoryQuery) AddFilterOp(key, op string, v any) *InventoryQuery {
 	switch value := v.(type) {
 	case string:
 		if value != "" {
-			b.Filter = append(b.Filter, fmt.Sprintf("(%s eq '%v')", k, value))
+			b.Filter = append(b.Filter, fmt.Sprintf("(%s %s '%v')", key, op, value))
 		}
 	default:
 		strValue := fmt.Sprintf("%v", value)
 		if strValue != "" {
-			b.Filter = append(b.Filter, fmt.Sprintf("(%s eq %v)", k, strValue))
+			b.Filter = append(b.Filter, fmt.Sprintf("(%s %s %v)", key, op, strValue))
 		}
 	}
 	return b
