@@ -150,6 +150,20 @@ func (s *Service) deleteListB(opt DeleteListOptions) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req)
 }
 
+// Get a measurement by ID
+func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Measurement] {
+	return core.Execute(ctx, s.getB(ID), jsonmodels.NewMeasurement)
+}
+
+func (s *Service) getB(ID string) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetPathParam(ParamID, ID).
+		SetURL(ApiMeasurement)
+	return core.NewTryRequest(s.Client, req)
+}
+
 // Delete removes a single measurement by ID
 func (s *Service) Delete(ctx context.Context, ID string) op.Result[core.NoContent] {
 	return core.ExecuteNoContent(ctx, s.deleteB(ID)).IgnoreNotFound()
