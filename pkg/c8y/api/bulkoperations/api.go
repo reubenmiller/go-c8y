@@ -12,6 +12,7 @@ package bulkoperations
 
 import (
 	"context"
+	"time"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
@@ -49,6 +50,19 @@ type Service struct {
 
 // ListOptions controls filtering and pagination of a bulk-operation list request.
 type ListOptions struct {
+	// WithDeleted includes CANCELLED bulk operations in the results.
+	WithDeleted bool `url:"withDeleted,omitempty"`
+
+	// DateFrom is the start date (or date and time) of the bulk operation.
+	DateFrom time.Time `url:"dateFrom,omitempty,omitzero"`
+
+	// DateTo is the end date (or date and time) of the bulk operation.
+	DateTo time.Time `url:"dateTo,omitempty,omitzero"`
+
+	// GeneralStatus filters by the general status of the bulk operation
+	// (e.g. SCHEDULED, EXECUTING, FAILED). Multiple values are OR-combined.
+	GeneralStatus []string `url:"generalStatus,omitempty"`
+
 	pagination.PaginationOptions
 }
 
