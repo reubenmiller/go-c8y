@@ -18,6 +18,12 @@ type CSVOptions struct {
 	// columns are derived from the leaf paths of the first document and then
 	// fixed for the remainder of the stream.
 	Columns []string
+	// AutoFlush flushes csv.Writer's internal buffer after every row so rows
+	// appear as they are produced rather than only when Close is called. Enable
+	// it for interactive/streamed output (e.g. a terminal), where each item may
+	// arrive seconds apart; leave it off for bulk output, where flushing once at
+	// Close gives better throughput.
+	AutoFlush bool
 }
 
 // CSV renders documents as delimiter-separated rows, streaming one row per
@@ -61,7 +67,14 @@ func (e *CSV) Write(doc jsondoc.JSONDoc) error {
 	for i, col := range e.columns {
 		e.row[i] = root.Get(col).String()
 	}
-	return e.w.Write(e.row)
+	if err := e.w.Write(e.row); err != nil {
+		return err
+	}
+	if e.opts.AutoFlush {
+		e.w.Flush()
+		return e.w.Error()
+	}
+	return nil
 }
 
 func (e *CSV) Close() error {
