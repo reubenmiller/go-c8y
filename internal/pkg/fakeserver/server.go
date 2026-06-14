@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -107,6 +108,45 @@ func (fs *FakeServer) record(r *http.Request) {
 
 // New creates a new FakeServer with an httptest.Server and registers cleanup.
 func New(t *testing.T) *FakeServer {
+	fs := newUnstarted()
+	fs.Server = httptest.NewServer(fs.handler())
+	t.Cleanup(fs.Server.Close)
+
+	// Seed default data (current tenant, current user)
+	fs.seedDefaults()
+
+	return fs
+}
+
+// NewServer builds and starts a FakeServer listening on addr (e.g.
+// "127.0.0.1:8111"; an empty addr picks a random free port like the test
+// constructor). It is the entry point for the standalone c8y-fakeserver
+// binary, which needs the same stateful server the test suite uses but without
+// a *testing.T. Call fs.Server.Close() to stop it.
+func NewServer(addr string) (*FakeServer, error) {
+	fs := newUnstarted()
+	srv := httptest.NewUnstartedServer(fs.handler())
+	if addr != "" {
+		l, err := net.Listen("tcp", addr)
+		if err != nil {
+			return nil, err
+		}
+		_ = srv.Listener.Close()
+		srv.Listener = l
+	}
+	srv.Start()
+	fs.Server = srv
+
+	// Seed default data (current tenant, current user)
+	fs.seedDefaults()
+
+	return fs, nil
+}
+
+// newUnstarted allocates the FakeServer with all stores initialised but no
+// running HTTP server. Shared by New (tests) and NewServer (binary) so the two
+// entry points never drift.
+func newUnstarted() *FakeServer {
 	fs := &FakeServer{
 		Alarms:                     NewStore(),
 		Events:                     NewStore(),
@@ -147,13 +187,17 @@ func New(t *testing.T) *FakeServer {
 		Realtime:      newRealtimeState(),
 		Notification2: newNotification2State(),
 	}
+	return fs
+}
 
+// handler builds the routed, auth-wrapped http.Handler for this server.
+func (fs *FakeServer) handler() http.Handler {
 	mux := http.NewServeMux()
 	fs.registerRoutes(mux)
 
 	// Wrap with basic auth check – returns 401 when no credentials are supplied.
 	// Some endpoints are public (no auth required).
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		p := r.URL.Path
 		public := strings.HasPrefix(p, "/tenant/loginOptions") ||
 			strings.HasPrefix(p, "/tenant/oauth") ||
@@ -166,14 +210,6 @@ func New(t *testing.T) *FakeServer {
 		fs.record(r)
 		mux.ServeHTTP(w, r)
 	})
-
-	fs.Server = httptest.NewServer(handler)
-	t.Cleanup(fs.Server.Close)
-
-	// Seed default data (current tenant, current user)
-	fs.seedDefaults()
-
-	return fs
 }
 
 // URL returns the base URL of the fake server.
