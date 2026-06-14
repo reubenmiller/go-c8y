@@ -63,7 +63,7 @@ func (fs *FakeServer) handleAuditRecords(w http.ResponseWriter, r *http.Request)
 
 	switch r.Method {
 	case http.MethodGet:
-		items := ReverseItems(FilterItems(r, fs.AuditRecords.List()))
+		items := OrderTimeItems(r, FilterItems(r, fs.AuditRecords.List()))
 		page := Paginate(r, items)
 		writeJSON(w, http.StatusOK, BuildCollectionResponse(r, fs.URL(), "auditRecords", page))
 

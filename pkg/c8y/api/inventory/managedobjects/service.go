@@ -627,14 +627,24 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 // ManagedObjectIterator provides iteration over managed objects
 type ManagedObjectIterator = pagination.Iterator[jsonmodels.ManagedObject]
 
-// ListAll returns an iterator for all managed objects
+// ListAll returns an iterator for all managed objects. By default it uses the
+// _id keyset optimisation (see ResolveListStrategy); set
+// ListOptions.Strategy to override.
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *ManagedObjectIterator {
-	return pagination.Paginate(
+	strategy, err := ResolveListStrategy(opts.Strategy, opts.Query)
+	if err != nil {
+		return pagination.NewErrorIterator[jsonmodels.ManagedObject](err)
+	}
+	return pagination.PaginateWith(
 		ctx,
-		opts.PaginationOptions,
-		func(pageOpts pagination.PaginationOptions) op.Result[jsonmodels.ManagedObject] {
+		pagination.PageRequest{PaginationOptions: opts.PaginationOptions},
+		strategy,
+		func(req pagination.PageRequest) op.Result[jsonmodels.ManagedObject] {
 			o := opts
-			o.PaginationOptions = pageOpts
+			o.PaginationOptions = req.PaginationOptions
+			if req.AfterID != "" {
+				o.Query = model.WithIDCursor(opts.Query, req.AfterID)
+			}
 			return s.List(ctx, o)
 		},
 		jsonmodels.NewManagedObject,

@@ -132,9 +132,22 @@ func NewIterator[T any](items iter.Seq2[T, error]) *Iterator[T] {
 	}
 }
 
-// Paginate creates an iterator that fetches pages and constructs items of type T
-// The iterator is fully lazy - no API calls are made until Items() is called for iteration.
-// Call Preview() to fetch metadata before iteration, or metadata will be populated from first page.
+// NewErrorIterator returns an iterator that yields a single error and nothing
+// else. Used to surface up-front failures (e.g. an inapplicable pagination
+// strategy) through the normal Items()/Pages()/Err() interface.
+func NewErrorIterator[T any](err error) *Iterator[T] {
+	return &Iterator[T]{
+		items:      func(yield func(T, error) bool) { yield(*new(T), err) },
+		pages:      func(yield func(jsondoc.JSONDoc, error) bool) { yield(jsondoc.Empty(), err) },
+		err:        err,
+		totalCount: -1,
+		totalPages: -1,
+	}
+}
+
+// Paginate creates an iterator using classic offset pagination. It is a thin
+// wrapper over PaginateWith with OffsetStrategy, kept for the many callers that
+// don't need a keyset strategy.
 //
 // paginationOpts: pagination options (passed by value - will not modify caller's copy)
 // fetch: function to fetch a page (returns Result with collection)
@@ -145,9 +158,48 @@ func Paginate[T any, D JSONDocument](
 	fetch func(opts PaginationOptions) op.Result[D],
 	constructor func([]byte) T,
 ) *Iterator[T] {
+	return PaginateWith(
+		ctx,
+		PageRequest{PaginationOptions: paginationOpts},
+		OffsetStrategy{},
+		func(req PageRequest) op.Result[D] { return fetch(req.PaginationOptions) },
+		constructor,
+	)
+}
+
+// PaginateWith creates an iterator driven by the given Strategy. The iterator is
+// fully lazy — no API calls happen until Items() or Pages() is ranged. The
+// strategy decides the first request, how to advance (or stop), and which items
+// to emit (boundary dedup); the fetch closure applies the request — including
+// any keyset cursor in PageRequest — to the entity's own options.
+//
+// base: the starting request (pagination options + any cursor seed)
+// strategy: drives the page walk (OffsetStrategy reproduces classic paging)
+// fetch: function to fetch one page for a PageRequest
+// constructor: function to construct a T from JSON bytes
+func PaginateWith[T any, D JSONDocument](
+	ctx context.Context,
+	base PageRequest,
+	strategy Strategy,
+	fetch func(req PageRequest) op.Result[D],
+	constructor func([]byte) T,
+) *Iterator[T] {
 	iterator := &Iterator[T]{
 		totalCount: -1,
 		totalPages: -1,
+	}
+
+	captureMeta := func(result op.Result[D]) {
+		if iterator.previewDone {
+			return
+		}
+		iterator.previewDone = true
+		if totalElements, ok := result.Meta["totalElements"].(int64); ok {
+			iterator.totalCount = totalElements
+		}
+		if totalPages, ok := result.Meta["totalPages"].(int64); ok {
+			iterator.totalPages = totalPages
+		}
 	}
 
 	// Create preview function closure
@@ -156,13 +208,13 @@ func Paginate[T any, D JSONDocument](
 			return iterator.err
 		}
 
-		previewOpts := paginationOpts
-		previewOpts.PageSize = 1
-		previewOpts.CurrentPage = 1
-		previewOpts.WithTotalPages = true
-		previewOpts.WithTotalElements = true
+		previewReq := base
+		previewReq.PageSize = 1
+		previewReq.CurrentPage = 1
+		previewReq.WithTotalPages = true
+		previewReq.WithTotalElements = true
 
-		result := fetch(previewOpts)
+		result := fetch(previewReq)
 		iterator.previewDone = true
 
 		if result.Err != nil {
@@ -181,127 +233,73 @@ func Paginate[T any, D JSONDocument](
 	}
 
 	// Set optimal page size once
-	paginationOpts.PageSize = paginationOpts.OptimalPageSize()
-	maxItems := paginationOpts.GetMaxItems()
+	base.PageSize = base.OptimalPageSize()
+	maxItems := base.GetMaxItems()
+	readAhead := resolveReadAhead(base.PaginationOptions, strategy)
+	pageLimit := pageCap(maxItems, base.PageSize)
 
 	iterator.items = func(yield func(T, error) bool) {
-		page := 1
 		count := int64(0)
-		for {
-			// Copy and set current page for this iteration
-			opts := paginationOpts
-			opts.CurrentPage = page
-			opts.WithTotalElements = true // Always request metadata
-			opts.WithTotalPages = true
-
-			result := fetch(opts)
-			if result.Err != nil {
-				iterator.err = result.Err
-				// Yield the error and stop iteration
-				yield(*new(T), result.Err)
-				return
-			}
-
-			// Extract metadata on first page
-			if !iterator.previewDone {
-				iterator.previewDone = true
-				if totalElements, ok := result.Meta["totalElements"].(int64); ok {
-					iterator.totalCount = totalElements
+		walkPages(ctx, base, strategy, fetch, readAhead, pageLimit,
+			func(req PageRequest, result op.Result[D]) bool {
+				if result.Err != nil {
+					iterator.err = result.Err
+					yield(*new(T), result.Err) // surface the error to the consumer
+					return false
 				}
-				if totalPages, ok := result.Meta["totalPages"].(int64); ok {
-					iterator.totalPages = totalPages
+				captureMeta(result)
+				for doc := range result.Data.Iter() {
+					if !strategy.Accept(req, doc) {
+						continue // boundary duplicate dropped by the strategy
+					}
+					if maxItems > 0 && count >= maxItems {
+						return false
+					}
+					if !yield(constructor(doc.Bytes()), nil) {
+						return false
+					}
+					count++
 				}
-			}
-
-			countBeforeResults := count
-			for doc := range result.Data.Iter() {
-				if maxItems > 0 && count >= maxItems {
-					return
-				}
-				item := constructor(doc.Bytes())
-				if !yield(item, nil) {
-					return
-				}
-				count++
-			}
-			if countBeforeResults == count {
-				slog.Debug("Stopping pagination as results array is empty")
-				return
-			}
-
-			if next, ok := result.Meta["next"].(string); !ok || next == "" {
-				return
-			}
-
-			totalPages, ok := result.Meta["totalPages"].(int64)
-			if ok && page >= int(totalPages) {
-				return
-			}
-			page++
-		}
+				return true
+			})
 	}
 
-	// pages mirrors the items loop but yields each page's full response
-	// envelope instead of the extracted items. Raw pages are emitted whole, so
-	// MaxItems is honoured at page granularity (stop after the page that
-	// reaches the cap).
+	// pages mirrors items but yields each page's full response envelope instead
+	// of the extracted items. MaxItems is honoured at page granularity (stop
+	// after the page that reaches the cap). Raw pages are always walked
+	// sequentially (no boundary dedup is applied to whole envelopes).
 	iterator.pages = func(yield func(jsondoc.JSONDoc, error) bool) {
-		page := 1
 		count := int64(0)
-		for {
-			opts := paginationOpts
-			opts.CurrentPage = page
-			opts.WithTotalElements = true
-			opts.WithTotalPages = true
-
-			result := fetch(opts)
-			if result.Err != nil {
-				iterator.err = result.Err
-				yield(jsondoc.Empty(), result.Err)
-				return
-			}
-
-			if !iterator.previewDone {
-				iterator.previewDone = true
-				if totalElements, ok := result.Meta["totalElements"].(int64); ok {
-					iterator.totalCount = totalElements
+		walkPages(ctx, base, strategy, fetch, readAhead, pageLimit,
+			func(req PageRequest, result op.Result[D]) bool {
+				if result.Err != nil {
+					iterator.err = result.Err
+					yield(jsondoc.Empty(), result.Err)
+					return false
 				}
-				if totalPages, ok := result.Meta["totalPages"].(int64); ok {
-					iterator.totalPages = totalPages
+				captureMeta(result)
+
+				// Emit the whole page envelope as received. A zero-result query
+				// still has a body ({"managedObjects":[],...}) and is emitted;
+				// only a truly empty body (e.g. the 204 a dry-run short-circuit
+				// returns) is skipped so it produces no stray document.
+				if len(result.Response) > 0 {
+					if !yield(jsondoc.New(result.Response), nil) {
+						return false
+					}
 				}
-			}
 
-			// Emit the whole page envelope as received. A zero-result query
-			// still has a body ({"managedObjects":[],...}) and is emitted; only
-			// a truly empty body (e.g. the 204 a dry-run short-circuit returns)
-			// is skipped so it produces no stray document.
-			if len(result.Response) > 0 {
-				if !yield(jsondoc.New(result.Response), nil) {
-					return
+				pageItems := countDocs(result)
+				count += int64(pageItems)
+				if pageItems == 0 {
+					slog.Debug("Stopping pagination as results array is empty")
+					return false
 				}
-			}
-
-			pageItems := int64(0)
-			for range result.Data.Iter() {
-				pageItems++
-			}
-			count += pageItems
-
-			if pageItems == 0 {
-				slog.Debug("Stopping pagination as results array is empty")
-				return
-			}
-			if maxItems > 0 && count >= maxItems {
-				return
-			}
-			if next, ok := result.Meta["next"].(string); !ok || next == "" {
-				return
-			}
-			if totalPages, ok := result.Meta["totalPages"].(int64); ok && page >= int(totalPages) {
-				return
-			}
-			page++
-		}
+				if maxItems > 0 && count >= maxItems {
+					return false
+				}
+				return true
+			})
 	}
 
 	return iterator

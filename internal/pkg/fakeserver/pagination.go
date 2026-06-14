@@ -64,6 +64,13 @@ func Paginate(r *http.Request, items []json.RawMessage) PaginationResult {
 //	  "next": "..."  (when applicable)
 //	}
 func BuildCollectionResponse(r *http.Request, baseURL string, collectionKey string, page PaginationResult) json.RawMessage {
+	// Always emit an empty array (not null) for an empty page, matching real
+	// Cumulocity. A nil slice would marshal to null and be mis-parsed as a
+	// single element by collection models.
+	if page.Items == nil {
+		page.Items = []json.RawMessage{}
+	}
+
 	stats := map[string]int{
 		"currentPage":   page.CurrentPage,
 		"pageSize":      page.PageSize,

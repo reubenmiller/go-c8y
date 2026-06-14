@@ -30,10 +30,10 @@ type ListOptions struct {
 	CreatedTo time.Time `url:"createdTo,omitempty,omitzero"`
 
 	// Start date or date and time of the alarm occurrence.
-	DateFrom time.Time `url:"dateFrom,omitempty,omitzero"`
+	DateFrom time.Time `url:"dateFrom,omitempty,omitzero" layout:"2006-01-02T15:04:05.000Z07:00"`
 
 	// End date or date and time of the alarm occurrence.
-	DateTo time.Time `url:"dateTo,omitempty,omitzero"`
+	DateTo time.Time `url:"dateTo,omitempty,omitzero" layout:"2006-01-02T15:04:05.000Z07:00"`
 
 	// Start date or date and time of the last update made.
 	LastUpdatedFrom time.Time `url:"lastUpdatedFrom,omitempty,omitzero"`

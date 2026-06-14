@@ -29,10 +29,10 @@ type ListOptions struct {
 	CreatedTo time.Time `url:"createdTo,omitempty,omitzero"`
 
 	// Start date or date and time of the event occurrence (provided by the device).
-	DateFrom time.Time `url:"dateFrom,omitempty,omitzero"`
+	DateFrom time.Time `url:"dateFrom,omitempty,omitzero" layout:"2006-01-02T15:04:05.000Z07:00"`
 
 	// End date or date and time of the event occurrence (provided by the device).
-	DateTo time.Time `url:"dateTo,omitempty,omitzero"`
+	DateTo time.Time `url:"dateTo,omitempty,omitzero" layout:"2006-01-02T15:04:05.000Z07:00"`
 
 	// A characteristic which identifies a managed object or event, for example, geolocation, electricity sensor, relay state.
 	FragmentType string `url:"fragmentType,omitempty"`

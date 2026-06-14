@@ -3,6 +3,7 @@ package fakeserver
 import (
 	"encoding/json"
 	"net/http"
+	"sort"
 	"strings"
 )
 
@@ -394,8 +395,13 @@ func (fs *FakeServer) filterManagedObjects(r *http.Request) []json.RawMessage {
 		items = filtered
 	}
 
-	if queryStr := q.Get("query"); queryStr != "" {
+	queryStr := q.Get("query")
+	if queryStr == "" {
+		queryStr = q.Get("q")
+	}
+	if queryStr != "" {
 		items = applyCQLFilter(items, queryStr)
+		items = applyCQLOrderBy(items, queryStr)
 	}
 
 	return items
@@ -484,7 +490,84 @@ func applyCQLFilter(items []json.RawMessage, query string) []json.RawMessage {
 		}
 	}
 
+	// Handle comparison operators: "field gt 'value'" (also lt/ge/le/ne). This is
+	// what the inventory _id keyset cursor relies on ("_id gt '123'"). The
+	// pseudo-field _id maps to the document id and compares numerically; other
+	// fields compare numerically when both sides parse as numbers, lexically
+	// otherwise (so creationTime.date comparisons work on RFC3339 values).
+	for _, op := range []string{" ge ", " le ", " gt ", " lt ", " ne "} {
+		idx := strings.Index(query, op)
+		if idx < 0 {
+			continue
+		}
+		field := strings.TrimSpace(query[:idx])
+		value := strings.Trim(strings.TrimSpace(query[idx+len(op):]), "'\"")
+		path := field
+		if field == "_id" {
+			path = "id"
+		}
+		opName := strings.TrimSpace(op)
+		var filtered []json.RawMessage
+		for _, item := range items {
+			if matchesComparison(getJSONPath(item, path), opName, value) {
+				filtered = append(filtered, item)
+			}
+		}
+		return filtered
+	}
+
 	// Fallback: no filtering
+	return items
+}
+
+// matchesComparison evaluates "actual <op> value" using compareValues.
+func matchesComparison(actual, op, value string) bool {
+	c := compareValues(actual, value)
+	switch op {
+	case "gt":
+		return c > 0
+	case "lt":
+		return c < 0
+	case "ge":
+		return c >= 0
+	case "le":
+		return c <= 0
+	case "ne":
+		return c != 0
+	default:
+		return false
+	}
+}
+
+// applyCQLOrderBy parses a "$orderby=<field> [asc|desc]" clause from an inventory
+// query string and sorts items accordingly. _id sorts numerically by the
+// document id; other fields use compareValues. Only the first sort key is
+// honoured. No-op when the query carries no $orderby clause.
+func applyCQLOrderBy(items []json.RawMessage, query string) []json.RawMessage {
+	idx := strings.Index(query, "$orderby=")
+	if idx < 0 {
+		return items
+	}
+	clause := strings.TrimSpace(query[idx+len("$orderby="):])
+	if c := strings.Index(clause, ","); c >= 0 {
+		clause = strings.TrimSpace(clause[:c])
+	}
+	fields := strings.Fields(clause)
+	if len(fields) == 0 {
+		return items
+	}
+	path := fields[0]
+	if path == "_id" {
+		path = "id"
+	}
+	desc := len(fields) > 1 && strings.EqualFold(fields[1], "desc")
+	sort.SliceStable(items, func(i, j int) bool {
+		c := compareValues(getJSONPath(items[i], path), getJSONPath(items[j], path))
+		if desc {
+			return c > 0
+		}
+		return c < 0
+	})
 	return items
 }
 

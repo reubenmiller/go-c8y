@@ -66,14 +66,34 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewMeasurement)
 }
 
-// ListAll returns an iterator for all measurements
+// ListAll returns an iterator for all measurements. By default it uses the
+// time-window keyset optimisation; set ListOptions.Strategy to override.
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *MeasurementIterator {
-	return pagination.Paginate(
+	strategy, err := pagination.ResolveTimeStrategy(opts.Strategy)
+	if err != nil {
+		return pagination.NewErrorIterator[jsonmodels.Measurement](err)
+	}
+	base := pagination.PageRequest{PaginationOptions: opts.PaginationOptions, Ascending: opts.Revert}
+	if opts.Revert {
+		base.After = opts.DateFrom
+	} else {
+		base.Before = opts.DateTo
+	}
+	return pagination.PaginateWith(
 		ctx,
-		opts.PaginationOptions,
-		func(pageOpts pagination.PaginationOptions) op.Result[jsonmodels.Measurement] {
+		base,
+		strategy,
+		func(req pagination.PageRequest) op.Result[jsonmodels.Measurement] {
 			o := opts
-			o.PaginationOptions = pageOpts
+			o.PaginationOptions = req.PaginationOptions
+			o.Revert = req.Ascending
+			if req.Ascending {
+				if !req.After.IsZero() {
+					o.DateFrom = req.After
+				}
+			} else if !req.Before.IsZero() {
+				o.DateTo = req.Before
+			}
 			return s.List(ctx, o)
 		},
 		jsonmodels.NewMeasurement,

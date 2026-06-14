@@ -28,6 +28,20 @@ type PaginationOptions struct {
 
 	// Limit to the maximum number of items when doing client side paging
 	MaxItems int64 `url:"-"`
+
+	// Strategy selects how the collection is walked. Zero value (Auto) lets the
+	// entity pick its optimum. Client-side only; never sent to the server.
+	Strategy StrategyKind `url:"-" json:"-"`
+
+	// Concurrency is the maximum number of pages fetched in parallel. 0 or 1 is
+	// sequential. Values >1 fan out only for strategies whose pages are
+	// independent (offset); keyset strategies ignore it. Client-side only.
+	Concurrency int `url:"-" json:"-"`
+
+	// ReadAhead controls page prefetch depth: 0 uses the strategy default, a
+	// negative value disables it, a positive value sets an explicit depth.
+	// Client-side only.
+	ReadAhead int `url:"-" json:"-"`
 }
 
 func (o PaginationOptions) IsZero() bool {

@@ -59,7 +59,7 @@ func (fs *FakeServer) handleEvents(w http.ResponseWriter, r *http.Request) {
 	// /event/events (collection)
 	switch r.Method {
 	case http.MethodGet:
-		items := ReverseItems(FilterItems(r, fs.Events.List()))
+		items := OrderTimeItems(r, FilterItems(r, fs.Events.List()))
 		page := Paginate(r, items)
 		writeJSON(w, http.StatusOK, BuildCollectionResponse(r, fs.URL(), "events", page))
 

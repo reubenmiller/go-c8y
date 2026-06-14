@@ -8,9 +8,19 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
+
+// CapturedRequest is a lightweight record of a request the fake server handled,
+// used by tests to assert pagination request patterns (e.g. that the id keyset
+// always re-requests page 1 with an advancing _id cursor).
+type CapturedRequest struct {
+	Method   string
+	Path     string
+	RawQuery string
+}
 
 // FakeServer holds all in-memory stores and the httptest.Server.
 type FakeServer struct {
@@ -69,6 +79,30 @@ type FakeServer struct {
 	// Notification2 is the state of any active /notification2/consumer/
 	// websocket connections.
 	Notification2 *notification2State
+
+	// Request capture (for pagination assertions in tests).
+	capturedMu sync.Mutex
+	captured   []CapturedRequest
+}
+
+// Requests returns a copy of the requests captured so far.
+func (fs *FakeServer) Requests() []CapturedRequest {
+	fs.capturedMu.Lock()
+	defer fs.capturedMu.Unlock()
+	return append([]CapturedRequest(nil), fs.captured...)
+}
+
+// ResetRequests clears the captured request log.
+func (fs *FakeServer) ResetRequests() {
+	fs.capturedMu.Lock()
+	defer fs.capturedMu.Unlock()
+	fs.captured = nil
+}
+
+func (fs *FakeServer) record(r *http.Request) {
+	fs.capturedMu.Lock()
+	fs.captured = append(fs.captured, CapturedRequest{Method: r.Method, Path: r.URL.Path, RawQuery: r.URL.RawQuery})
+	fs.capturedMu.Unlock()
 }
 
 // New creates a new FakeServer with an httptest.Server and registers cleanup.
@@ -129,6 +163,7 @@ func New(t *testing.T) *FakeServer {
 			writeError(w, http.StatusUnauthorized, "security/Unauthorized", "Missing credentials") //nolint:misspell
 			return
 		}
+		fs.record(r)
 		mux.ServeHTTP(w, r)
 	})
 

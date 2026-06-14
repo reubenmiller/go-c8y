@@ -49,7 +49,7 @@ func (fs *FakeServer) handleOperations(w http.ResponseWriter, r *http.Request) {
 	// /devicecontrol/operations (collection)
 	switch r.Method {
 	case http.MethodGet:
-		items := ReverseItems(FilterItems(r, fs.Operations.List()))
+		items := OrderTimeItems(r, FilterItems(r, fs.Operations.List()))
 		page := Paginate(r, items)
 		writeJSON(w, http.StatusOK, BuildCollectionResponse(r, fs.URL(), "operations", page))
 

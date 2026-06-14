@@ -44,7 +44,7 @@ func (fs *FakeServer) handleMeasurements(w http.ResponseWriter, r *http.Request)
 	// /measurement/measurements (collection)
 	switch r.Method {
 	case http.MethodGet:
-		items := ReverseItems(FilterItems(r, fs.Measurements.List()))
+		items := OrderTimeItems(r, FilterItems(r, fs.Measurements.List()))
 		page := Paginate(r, items)
 		writeJSON(w, http.StatusOK, BuildCollectionResponse(r, fs.URL(), "measurements", page))
 

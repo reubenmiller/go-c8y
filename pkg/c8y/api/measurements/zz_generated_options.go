@@ -23,10 +23,10 @@ import (
 // strings, resolved by the List method). See docs/API_GEN.md.
 type ListOptions struct {
 	// Start date or date and time of the measurement.
-	DateFrom time.Time `url:"dateFrom,omitempty,omitzero"`
+	DateFrom time.Time `url:"dateFrom,omitempty,omitzero" layout:"2006-01-02T15:04:05.000Z07:00"`
 
 	// End date or date and time of the measurement.
-	DateTo time.Time `url:"dateTo,omitempty,omitzero"`
+	DateTo time.Time `url:"dateTo,omitempty,omitzero" layout:"2006-01-02T15:04:05.000Z07:00"`
 
 	// If you are using a range query (that is, at least one of the `dateFrom` or `dateTo` parameters is included in the request), then setting `revert=false` will sort the
 	Revert bool `url:"revert,omitempty"`

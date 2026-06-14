@@ -33,10 +33,10 @@ type ListOptions struct {
 	BulkOperationID int `url:"bulkOperationId,omitempty"`
 
 	// Start date or date and time of the operation.
-	DateFrom time.Time `url:"dateFrom,omitempty,omitzero"`
+	DateFrom time.Time `url:"dateFrom,omitempty,omitzero" layout:"2006-01-02T15:04:05.000Z07:00"`
 
 	// End date or date and time of the operation.
-	DateTo time.Time `url:"dateTo,omitempty,omitzero"`
+	DateTo time.Time `url:"dateTo,omitempty,omitzero" layout:"2006-01-02T15:04:05.000Z07:00"`
 
 	// The ID of the device the operation is performed for.
 	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,

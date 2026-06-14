@@ -103,6 +103,66 @@ func (b *InventoryQuery) ByGroupID(k string) *InventoryQuery {
 	return b
 }
 
+// WithIDCursor rewrites an inventory query so it pages by an ascending _id
+// keyset: it ANDs "_id gt '<afterID>'" into the existing filter and forces
+// "$orderby=_id asc". An empty afterID is treated as "0" (the start). This is
+// the v2 port of the go-c8y-cli v1 managed-object pagination optimisation.
+//
+//	WithIDCursor("", "0")                       => $filter=(_id gt '0') $orderby=_id asc
+//	WithIDCursor("$filter=(type eq 'x')", "42") => $filter=(_id gt '42' and (type eq 'x')) $orderby=_id asc
+func WithIDCursor(query, afterID string) string {
+	if afterID == "" {
+		afterID = "0"
+	}
+	cursor := fmt.Sprintf("_id gt '%s'", afterID)
+
+	body := extractFilterBody(query)
+	var filter string
+	switch {
+	case body == "":
+		filter = fmt.Sprintf("(%s)", cursor)
+	case strings.HasPrefix(body, "(") && strings.HasSuffix(body, ")"):
+		filter = fmt.Sprintf("(%s and %s)", cursor, body)
+	default:
+		filter = fmt.Sprintf("(%s and (%s))", cursor, body)
+	}
+	return fmt.Sprintf("$filter=%s $orderby=_id asc", filter)
+}
+
+// QueryHasConflictingOrder reports whether the query carries an explicit
+// $orderby that is not _id-based. Such an order is incompatible with the _id
+// keyset (which forces "$orderby=_id asc"): Auto falls back to offset to
+// preserve it, and an explicit id-keyset request is rejected.
+func QueryHasConflictingOrder(query string) bool {
+	i := strings.Index(query, "$orderby=")
+	if i < 0 {
+		return false
+	}
+	clause := strings.ToLower(strings.TrimSpace(query[i+len("$orderby="):]))
+	return clause != "" && clause != "_id" && clause != "_id asc"
+}
+
+// extractFilterBody returns the filter expression from an inventory query,
+// stripping the "$filter=" prefix and any "$orderby=" suffix. A bare expression
+// (no "$filter=") is returned as-is; an orderby-only query yields "".
+func extractFilterBody(query string) string {
+	q := strings.TrimSpace(query)
+	if q == "" {
+		return ""
+	}
+	if i := strings.Index(q, "$filter="); i >= 0 {
+		rest := q[i+len("$filter="):]
+		if j := strings.Index(rest, "$orderby="); j >= 0 {
+			rest = rest[:j]
+		}
+		return strings.TrimSpace(rest)
+	}
+	if strings.HasPrefix(q, "$orderby=") {
+		return ""
+	}
+	return q
+}
+
 func (b *InventoryQuery) Build() string {
 	q := &strings.Builder{}
 	if len(b.Filter) > 0 {

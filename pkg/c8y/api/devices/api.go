@@ -10,6 +10,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects/childadditions"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects/childassets"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects/childdevices"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
@@ -78,14 +79,23 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 	return core.ExecuteCollection(ctx, s.listB(opt), managedobjects.ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
-// ListAll returns an iterator for all devices
+// ListAll returns an iterator for all devices. By default it uses the _id
+// keyset optimisation; set ListOptions.Strategy to override.
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *ManagedObjectIterator {
-	return pagination.Paginate(
+	strategy, err := managedobjects.ResolveListStrategy(opts.Strategy, opts.Query)
+	if err != nil {
+		return pagination.NewErrorIterator[jsonmodels.ManagedObject](err)
+	}
+	return pagination.PaginateWith(
 		ctx,
-		opts.PaginationOptions,
-		func(pageOpts pagination.PaginationOptions) op.Result[jsonmodels.ManagedObject] {
+		pagination.PageRequest{PaginationOptions: opts.PaginationOptions},
+		strategy,
+		func(req pagination.PageRequest) op.Result[jsonmodels.ManagedObject] {
 			o := opts
-			o.PaginationOptions = pageOpts
+			o.PaginationOptions = req.PaginationOptions
+			if req.AfterID != "" {
+				o.Query = model.WithIDCursor(opts.Query, req.AfterID)
+			}
 			return s.List(ctx, o)
 		},
 		jsonmodels.NewManagedObject,

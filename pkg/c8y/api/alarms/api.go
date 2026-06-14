@@ -71,14 +71,25 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewAlarm)
 }
 
-// ListAll returns an iterator for all alarms
+// ListAll returns an iterator for all alarms. By default it uses the time-window
+// keyset optimisation (newest first; the alarm API has no revert option); set
+// ListOptions.Strategy to override.
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *AlarmIterator {
-	return pagination.Paginate(
+	strategy, err := pagination.ResolveTimeStrategy(opts.Strategy)
+	if err != nil {
+		return pagination.NewErrorIterator[jsonmodels.Alarm](err)
+	}
+	base := pagination.PageRequest{PaginationOptions: opts.PaginationOptions, Before: opts.DateTo}
+	return pagination.PaginateWith(
 		ctx,
-		opts.PaginationOptions,
-		func(pageOpts pagination.PaginationOptions) op.Result[jsonmodels.Alarm] {
+		base,
+		strategy,
+		func(req pagination.PageRequest) op.Result[jsonmodels.Alarm] {
 			o := opts
-			o.PaginationOptions = pageOpts
+			o.PaginationOptions = req.PaginationOptions
+			if !req.Before.IsZero() {
+				o.DateTo = req.Before
+			}
 			return s.List(ctx, o)
 		},
 		jsonmodels.NewAlarm,

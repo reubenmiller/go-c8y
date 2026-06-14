@@ -89,7 +89,7 @@ func (fs *FakeServer) handleAlarms(w http.ResponseWriter, r *http.Request) {
 	// /alarm/alarms (collection)
 	switch r.Method {
 	case http.MethodGet:
-		items := ReverseItems(FilterItems(r, fs.Alarms.List()))
+		items := OrderTimeItems(r, FilterItems(r, fs.Alarms.List()))
 		page := Paginate(r, items)
 		writeJSON(w, http.StatusOK, BuildCollectionResponse(r, fs.URL(), "alarms", page))
 
