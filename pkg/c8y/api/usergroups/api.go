@@ -2,7 +2,10 @@ package usergroups
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
@@ -91,13 +94,48 @@ func ByID(id string) GroupRef { return GroupRef(id) }
 // ByName creates a group reference resolved by name.
 func ByName(name string) GroupRef { return GroupRef("name:" + name) }
 
+// ResolveID resolves a group reference to a concrete group id within the given
+// tenant. A plain string (or "id:<id>") is used as-is; "name:<name>" is looked up
+// via the groupByName endpoint. An empty tenant defaults to the current tenant
+// (handled by the client). User groups are not managed objects, so there is no
+// inventory query — name resolution uses the dedicated group-by-name endpoint.
+func (s *Service) ResolveID(ctx context.Context, tenant, ref string) (string, error) {
+	if ref == "" {
+		return "", fmt.Errorf("empty user group reference")
+	}
+	scheme, value, hasScheme := strings.Cut(ref, ":")
+	if !hasScheme {
+		return ref, nil
+	}
+	// Resolve for real even under dry run / deferred execution.
+	ctx = contexthelpers.ResolutionContext(ctx)
+	switch scheme {
+	case "id":
+		return value, nil
+	case "name":
+		result := s.GetByName(ctx, GetByNameOptions{Tenant: tenant, GroupName: value})
+		if result.Err != nil {
+			return "", result.Err
+		}
+		return result.Data.ID(), nil
+	default:
+		return "", fmt.Errorf("unknown user group resolver scheme: %q", scheme)
+	}
+}
+
 type GetOptions struct {
 	Tenant string   `url:"-"`
 	ID     GroupRef `url:"-"`
 }
 
-// Get a user group
+// Get a user group. The id may be a plain group id or a "name:<name>" reference,
+// which is resolved via the groupByName endpoint.
 func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.UserGroup] {
+	id, err := s.ResolveID(ctx, opt.Tenant, string(opt.ID))
+	if err != nil {
+		return op.Failed[jsonmodels.UserGroup](err, false)
+	}
+	opt.ID = GroupRef(id)
 	return core.Execute(ctx, s.getB(opt), jsonmodels.NewUserGroup)
 }
 
@@ -153,8 +191,14 @@ type UpdateOptions struct {
 	ForceLogout bool `url:"forceLogout,omitzero"`
 }
 
-// Update a user group
+// Update a user group. The id may be a plain group id or a "name:<name>"
+// reference, which is resolved via the groupByName endpoint.
 func (s *Service) Update(ctx context.Context, opt UpdateOptions, body any) op.Result[jsonmodels.UserGroup] {
+	id, err := s.ResolveID(ctx, opt.Tenant, string(opt.ID))
+	if err != nil {
+		return op.Failed[jsonmodels.UserGroup](err, false)
+	}
+	opt.ID = GroupRef(id)
 	return core.Execute(ctx, s.updateB(opt, body), jsonmodels.NewUserGroup)
 }
 
@@ -178,8 +222,14 @@ type DeleteOptions struct {
 	ForceLogout bool `url:"forceLogout,omitzero"`
 }
 
-// Delete a user group
+// Delete a user group. The id may be a plain group id or a "name:<name>"
+// reference, which is resolved via the groupByName endpoint.
 func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.NoContent] {
+	id, err := s.ResolveID(ctx, opt.Tenant, string(opt.ID))
+	if err != nil {
+		return op.Failed[core.NoContent](err, false)
+	}
+	opt.ID = GroupRef(id)
 	return core.ExecuteNoContent(ctx, s.deleteB(opt)).IgnoreNotFound()
 }
 
