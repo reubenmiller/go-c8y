@@ -20,6 +20,7 @@ var (
 	ApiApplications          = "/application/applications"
 	ApiApplication           = "/application/applications/{id}"
 	ApiApplicationBinaries   = "/application/applications/{id}/binaries"
+	ApiApplicationBinary     = "/application/applications/{id}/binaries/{binaryId}"
 	ApiApplicationClone      = "/application/applications/{id}/clone"
 	ApiApplicationByName     = "/application/applicationsByName/{name}"
 	ApiApplicationByTenantID = "/application/applicationsByTenant/{tenantId}"
@@ -116,6 +117,9 @@ type ListOptions struct {
 	// field that is not empty. When set to false, the result will contain applications with an
 	// empty applicationVersions field
 	HasVersions string `url:"hasVersions,omitempty"`
+
+	// Application access level for other tenants (e.g. MARKET, PRIVATE)
+	Availability string `url:"availability,omitempty"`
 
 	// Pagination options
 	pagination.PaginationOptions
@@ -455,6 +459,48 @@ func (s *Service) uploadB(ID string, opt UploadFileOptions) *core.TryRequest {
 		SetMultipartFields(core.NewMultiPartFile(opt)...).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiApplicationBinaries)
+	return core.NewTryRequest(s.Client, req)
+}
+
+// ListBinaries lists the binary attachments of an application. The id may be a
+// plain id or a resolver string ("name:appName"). The attachments are returned
+// as a flat (non-paginated) collection under the "attachments" property.
+func (s *Service) ListBinaries(ctx context.Context, id string) op.Result[jsonmodels.ApplicationBinary] {
+	resolvedID, err := s.ResolveID(ctxhelpers.ResolutionContext(ctx), id, nil)
+	if err != nil {
+		return op.Failed[jsonmodels.ApplicationBinary](err, false)
+	}
+	return core.ExecuteCollection(ctx, s.listBinariesB(resolvedID), "attachments", types.ResponseFieldStatistics, jsonmodels.NewApplicationBinary)
+}
+
+func (s *Service) listBinariesB(id string) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetPathParam(ParamID, id).
+		SetURL(ApiApplicationBinaries)
+	return core.NewTryRequest(s.Client, req, "attachments")
+}
+
+// DeleteBinary deletes a binary attachment of an application by binary id. The
+// application id may be a plain id or a resolver string ("name:appName").
+func (s *Service) DeleteBinary(ctx context.Context, id string, binaryID string) op.Result[core.NoContent] {
+	resolvedID, err := s.ResolveID(ctxhelpers.ResolutionContext(ctx), id, nil)
+	if err != nil {
+		if core.IsNotFound(err) {
+			return op.Skipped(core.NoContent{}, "not found")
+		}
+		return op.Failed[core.NoContent](err, false)
+	}
+	return core.ExecuteNoContent(ctx, s.deleteBinaryB(resolvedID, binaryID)).IgnoreNotFound()
+}
+
+func (s *Service) deleteBinaryB(id string, binaryID string) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodDelete).
+		SetPathParam(ParamID, id).
+		SetPathParam("binaryId", binaryID).
+		SetURL(ApiApplicationBinary)
 	return core.NewTryRequest(s.Client, req)
 }
 
