@@ -50,6 +50,9 @@ func NewDeviceWithType(name, deviceType string) ManagedObject {
 	return ManagedObject{jsondoc.Facade{JSONDoc: jsondoc.New(b)}}
 }
 
+// NewAgent creates a new agent managed object. An agent is a device that also
+// carries the com_cumulocity_model_Agent fragment, so both that and c8y_IsDevice
+// are set.
 func NewAgent(name string) ManagedObject {
 	data := map[string]any{
 		"name":                       name,

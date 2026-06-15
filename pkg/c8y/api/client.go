@@ -30,6 +30,7 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/agents"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/alarms"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/applications"
 	appversions "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/applications/versions"
@@ -160,6 +161,7 @@ type Client struct {
 
 	LoginTokens *logintokens.Service
 
+	Agents               *agents.Service
 	Devices              *devices.Service
 	DeviceGroups         *devicegroups.Service
 	ManagedObjects       *managedobjects.Service
@@ -448,6 +450,7 @@ func NewClient(opts ClientOptions) *Client {
 	c.BulkOperations = bulkoperations.NewService(&c.common)
 	c.Events = events.NewService(&c.common, c.ManagedObjects)
 
+	c.Agents = agents.NewService(&c.common)
 	c.Devices = devices.NewService(&c.common)
 	c.DeviceGroups = devicegroups.NewService(&c.common)
 	c.Applications = applications.NewService(&c.common)
