@@ -12,6 +12,13 @@ import (
 
 var ApiTenant = "/tenant/currentTenant"
 
+// ApiSystemVersion is the system option holding the platform (backend) version.
+var ApiSystemVersion = "/tenant/system/options/system/version"
+
+// ApplicationsResultProperty is the gjson path to the application objects
+// embedded in the current-tenant response (applications.references[].application).
+const ApplicationsResultProperty = "applications.references.#.application"
+
 func NewService(s *core.Service) *Service {
 	return &Service{
 		Service: *s,
@@ -40,5 +47,27 @@ func (s *Service) getB(opt GetOptions) *core.TryRequest {
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiTenant)
+	return core.NewTryRequest(s.Client, req)
+}
+
+// ListApplications lists the applications subscribed to the current tenant. The
+// current-tenant endpoint embeds them under applications.references[].application,
+// so the collection is extracted from that same response (it is not separately
+// paginated).
+func (s *Service) ListApplications(ctx context.Context) op.Result[jsonmodels.Application] {
+	return core.ExecuteCollection(ctx, s.getB(GetOptions{}), ApplicationsResultProperty, "", jsonmodels.NewApplication)
+}
+
+// GetVersion returns the platform (backend) version of the current tenant, which
+// the platform exposes as the system option category "system" / key "version".
+func (s *Service) GetVersion(ctx context.Context) op.Result[jsonmodels.SystemOption] {
+	return core.Execute(ctx, s.getVersionB(), jsonmodels.NewSystemOption)
+}
+
+func (s *Service) getVersionB() *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetURL(ApiSystemVersion)
 	return core.NewTryRequest(s.Client, req)
 }
