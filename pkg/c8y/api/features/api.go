@@ -15,6 +15,11 @@ import (
 var ApiFeatures = "/features"
 var ApiFeature = "/features/{key}"
 
+// ApiFeatureByTenant is the per-tenant feature-toggle override endpoint. The
+// platform requires it for mutating a tenant's value (PUT/DELETE); the plain
+// ApiFeature path is read-only for the current tenant.
+var ApiFeatureByTenant = "/features/{key}/by-tenant"
+
 var ParamKey = "key"
 
 func NewService(s *core.Service) *Service {
@@ -71,7 +76,7 @@ func (s *Service) updateB(key string, body any) *core.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamKey, key).
 		SetBody(body).
-		SetURL(ApiFeature)
+		SetURL(ApiFeatureByTenant)
 	return core.NewTryRequest(s.Client, req)
 }
 
@@ -98,6 +103,6 @@ func (s *Service) deleteB(key string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamKey, key).
-		SetURL(ApiFeature)
+		SetURL(ApiFeatureByTenant)
 	return core.NewTryRequest(s.Client, req)
 }
