@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"maps"
 	"mime"
 	"os"
 	"path/filepath"
@@ -16,6 +17,11 @@ type UploadFileOptions struct {
 	Reader      io.Reader
 	Name        string
 	ContentType string
+
+	// Properties are extra fields merged into the multipart "object" metadata
+	// (e.g. custom fragments on a binary). An explicit Name/ContentType takes
+	// precedence over a "name"/"type" supplied here.
+	Properties map[string]any
 }
 
 // Check if a read is defined or not. Either the FilePath or Reader must be set
@@ -50,6 +56,13 @@ func selectFirstNonEmptyValue(contentType ...string) string {
 	return ""
 }
 
+func asString(v any) string {
+	if s, ok := v.(string); ok {
+		return s
+	}
+	return ""
+}
+
 func NewUploadFileOptions(filePath string, contentType ...string) (*UploadFileOptions, error) {
 	opt := &UploadFileOptions{
 		Name: filepath.Base(filePath),
@@ -69,8 +82,12 @@ func NewUploadFileOptions(filePath string, contentType ...string) (*UploadFileOp
 
 func NewMultiPartFileFields(opt UploadFileOptions) []*resty.MultipartField {
 	obj := make(map[string]any)
-	obj["name"] = selectFirstNonEmptyValue(opt.Name, filepath.Base(opt.FilePath))
-	obj["type"] = selectFirstNonEmptyValue(opt.ContentType, mime.TypeByExtension(filepath.Ext(opt.FilePath)), "application/octet-stream")
+	// Caller-supplied custom properties form the base; the explicit name/type
+	// (flags) win, then fall back to a "name"/"type" in the properties, then to
+	// the file name / detected MIME type.
+	maps.Copy(obj, opt.Properties)
+	obj["name"] = selectFirstNonEmptyValue(opt.Name, asString(obj["name"]), filepath.Base(opt.FilePath))
+	obj["type"] = selectFirstNonEmptyValue(opt.ContentType, asString(obj["type"]), mime.TypeByExtension(filepath.Ext(opt.FilePath)), "application/octet-stream")
 	objB, _ := json.Marshal(obj)
 
 	fields := make([]*resty.MultipartField, 0, 2)
