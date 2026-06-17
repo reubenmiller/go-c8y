@@ -156,6 +156,9 @@ type GetOptions struct {
 	WithChildrenCount bool `url:"withChildrenCount,omitempty"`
 	SkipChildrenNames bool `url:"skipChildrenNames,omitempty"`
 	WithLatestValues  bool `url:"withLatestValues,omitempty"`
+	// WithGroups returns the groups the managed object belongs to (sets
+	// assetParents); used by the device-group list/get commands.
+	WithGroups bool `url:"withGroups,omitempty"`
 }
 
 // Create a managed object

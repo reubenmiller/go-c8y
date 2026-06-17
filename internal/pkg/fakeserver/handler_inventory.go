@@ -216,11 +216,41 @@ func (fs *FakeServer) handleChildRelationship(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	// A third path segment (…/{relType}/{child}) targets a single reference.
+	segments := extractPathSegments(r.URL.Path, "/inventory/managedObjects")
+	reqChildID := ""
+	if len(segments) >= 3 {
+		reqChildID = segments[2]
+	}
+
 	switch r.Method {
 	case http.MethodGet:
 		fs.ManagedObjects.mu.RLock()
 		childIDs := relMap[parentID]
 		fs.ManagedObjects.mu.RUnlock()
+
+		// GET …/{relType}/{child}: return the single managedObjectReference.
+		if reqChildID != "" {
+			found := false
+			for _, id := range childIDs {
+				if id == reqChildID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				writeNotFound(w, "inventory/managedObjectReference")
+				return
+			}
+			writeJSON(w, http.StatusOK, marshalJSON(map[string]any{
+				"managedObject": map[string]any{
+					"id":   reqChildID,
+					"self": fs.URL() + "/inventory/managedObjects/" + reqChildID,
+				},
+				"self": fs.URL() + "/inventory/managedObjects/" + parentID + "/" + relType + "/" + reqChildID,
+			}))
+			return
+		}
 
 		var refs []json.RawMessage
 		for _, childID := range childIDs {
@@ -296,21 +326,26 @@ func (fs *FakeServer) handleChildRelationship(w http.ResponseWriter, r *http.Req
 		writeJSON(w, http.StatusCreated, ref)
 
 	case http.MethodDelete:
-		// Unassign: body is a managedObjectReferenceCollection containing
-		// references with managedObject.id values to remove from this parent.
-		body, _ := readBody(r)
-		var envelope struct {
-			References []struct {
-				ManagedObject struct {
-					ID string `json:"id"`
-				} `json:"managedObject"`
-			} `json:"references"`
-		}
-		_ = json.Unmarshal(body, &envelope)
 		toRemove := map[string]struct{}{}
-		for _, ref := range envelope.References {
-			if ref.ManagedObject.ID != "" {
-				toRemove[ref.ManagedObject.ID] = struct{}{}
+		if reqChildID != "" {
+			// Path-based unassign: DELETE …/{relType}/{child}.
+			toRemove[reqChildID] = struct{}{}
+		} else {
+			// Collection unassign: body is a managedObjectReferenceCollection
+			// containing references with managedObject.id values to remove.
+			body, _ := readBody(r)
+			var envelope struct {
+				References []struct {
+					ManagedObject struct {
+						ID string `json:"id"`
+					} `json:"managedObject"`
+				} `json:"references"`
+			}
+			_ = json.Unmarshal(body, &envelope)
+			for _, ref := range envelope.References {
+				if ref.ManagedObject.ID != "" {
+					toRemove[ref.ManagedObject.ID] = struct{}{}
+				}
 			}
 		}
 		fs.ManagedObjects.mu.Lock()

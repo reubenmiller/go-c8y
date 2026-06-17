@@ -19,7 +19,7 @@ var ApiManagedObjectChildAddition = "/inventory/managedObjects/{id}/childAdditio
 const ParamID = "id"
 const ParamChild = "child"
 
-const ResultProperty = "references.#.managedObject"
+const ResultProperty = child.ResultProperty
 
 // Service
 type Service struct{ core.Service }
@@ -62,9 +62,10 @@ func (s *Service) listB(parentID string, opt ListOptions) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req, ResultProperty)
 }
 
-// Get existing child addition from a parent
+// Get existing child addition from a parent. The response is a managedObjectReference;
+// its nested managedObject (the child) is returned.
 func (s *Service) Get(ctx context.Context, parentID string, childID string) op.Result[jsonmodels.ManagedObject] {
-	return core.Execute(ctx, s.getB(parentID, childID), jsonmodels.NewManagedObject)
+	return core.Execute(ctx, s.getB(parentID, childID), child.NewReferencedManagedObject)
 }
 
 func (s *Service) getB(parentID string, childID string) *core.TryRequest {
@@ -111,19 +112,18 @@ func (s *Service) assignB(parentID string, child any) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req)
 }
 
-// Unassign a child addition from a managed object
-// Unassign a child addition from a parent managed object.
-// A 404 response (already unassigned) is treated as skipped (StatusSkipped, Idempotent: true).
-func (s *Service) Unassign(ctx context.Context, parentID string, child any) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.unassignB(parentID, child)).IgnoreNotFound()
+// Unassign removes a single child-addition reference from a parent managed object
+// (DELETE …/childAdditions/{child}). A 404 response (already unassigned) is treated
+// as skipped (StatusSkipped, Idempotent: true).
+func (s *Service) Unassign(ctx context.Context, parentID string, childID string) op.Result[core.NoContent] {
+	return core.ExecuteNoContent(ctx, s.unassignB(parentID, childID)).IgnoreNotFound()
 }
 
-func (s *Service) unassignB(parentID string, child any) *core.TryRequest {
+func (s *Service) unassignB(parentID string, childID string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetContentType(types.MimeTypeManagedObjectReferenceCollection).
-		SetBody(model.ToManagedObjectChildReferences(child)).
 		SetPathParam(ParamID, parentID).
-		SetURL(ApiManagedObjectChildAdditions)
+		SetPathParam(ParamChild, childID).
+		SetURL(ApiManagedObjectChildAddition)
 	return core.NewTryRequest(s.Client, req)
 }

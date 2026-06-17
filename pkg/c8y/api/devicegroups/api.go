@@ -142,17 +142,20 @@ func (s *Service) Delete(ctx context.Context, ref GroupRef, opt DeleteOptions) o
 	return s.managedObjects.Delete(ctx, id, opt)
 }
 
-// Create creates a device group. The c8y_IsDeviceGroup fragment and a default
-// type (c8y_DeviceGroup) are added when the body does not already set them.
-func (s *Service) Create(ctx context.Context, body map[string]any) op.Result[jsonmodels.ManagedObject] {
-	if body == nil {
-		body = map[string]any{}
-	}
-	if _, ok := body[FragmentIsDeviceGroup]; !ok {
-		body[FragmentIsDeviceGroup] = map[string]any{}
-	}
-	if _, ok := body["type"]; !ok {
-		body["type"] = TypeDeviceGroup
+// Create creates a device group. When body is a map[string]any, the
+// c8y_IsDeviceGroup fragment and a default type (c8y_DeviceGroup) are added when
+// it does not already set them; other body types (e.g. a raw json.RawMessage
+// built by a caller's own template) are passed through unchanged, so the caller
+// is responsible for the fragment/type in that case.
+func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.ManagedObject] {
+	if m, ok := body.(map[string]any); ok {
+		if _, ok := m[FragmentIsDeviceGroup]; !ok {
+			m[FragmentIsDeviceGroup] = map[string]any{}
+		}
+		if _, ok := m["type"]; !ok {
+			m["type"] = TypeDeviceGroup
+		}
+		body = m
 	}
 	return s.managedObjects.Create(ctx, body)
 }
