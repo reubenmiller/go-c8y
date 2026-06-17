@@ -38,6 +38,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/binaries"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/bulkoperations"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/configuration"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/databroker"
@@ -171,6 +172,7 @@ type Client struct {
 	Devices              *devices.Service
 	DeviceGroups         *devicegroups.Service
 	DeviceProfiles       *deviceprofiles.Service
+	Configuration        *configuration.Service
 	ManagedObjects       *managedobjects.Service
 	Operations           *operations.Service
 	Tenants              *tenants.Service
@@ -464,6 +466,7 @@ func NewClient(opts ClientOptions) *Client {
 	c.Devices = devices.NewService(&c.common)
 	c.DeviceGroups = devicegroups.NewService(&c.common)
 	c.DeviceProfiles = deviceprofiles.NewService(&c.common)
+	c.Configuration = configuration.NewService(&c.common)
 	c.Applications = applications.NewService(&c.common)
 	c.ApplicationVersions = appversions.NewService(&c.common)
 	c.Microservices = microservices.NewService(&c.common)
