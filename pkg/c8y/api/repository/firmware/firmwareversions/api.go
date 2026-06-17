@@ -118,23 +118,46 @@ type ListOptions struct {
 	Version    string `url:"-"`
 	Query      string `url:"-"`
 
+	// GetOptions controls the managed-object detail returned (withParents,
+	// withChildren, ...). withParents is needed to populate the parent firmware
+	// references read by FirmwareID()/FirmwareName().
+	managedobjects.GetOptions
+
 	// Pagination options
 	pagination.PaginationOptions
 }
 
 // List firmware versions
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.FirmwareVersion] {
-	// Resolve firmware name to ID if needed
-	firmwareResult := s.firmware.Get(ctx, opt.FirmwareID, firmwareitems.GetOptions{})
-	if firmwareResult.Err != nil {
-		return op.Failed[jsonmodels.FirmwareVersion](
-			fmt.Errorf("failed to resolve firmware name: %w", firmwareResult.Err),
-			true,
-		)
+	// Resolve firmware name to ID if needed. A plain numeric id is used directly:
+	// this avoids a redundant GET and, under --dry, keeps the bygroupid filter
+	// correct (the GET would otherwise be intercepted and return an empty id).
+	if !isPlainID(opt.FirmwareID) {
+		firmwareResult := s.firmware.Get(ctx, opt.FirmwareID, firmwareitems.GetOptions{})
+		if firmwareResult.Err != nil {
+			return op.Failed[jsonmodels.FirmwareVersion](
+				fmt.Errorf("failed to resolve firmware name: %w", firmwareResult.Err),
+				true,
+			)
+		}
+		opt.FirmwareID = firmwareResult.Data.ID()
 	}
-	opt.FirmwareID = firmwareResult.Data.ID()
 
 	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewFirmwareVersion)
+}
+
+// isPlainID reports whether s is a non-empty all-digit managed-object id, which
+// can be used directly without a name -> id resolution lookup.
+func isPlainID(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, r := range s {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 func (s *Service) listB(opt ListOptions) *core.TryRequest {
@@ -148,6 +171,7 @@ func (s *Service) listB(opt ListOptions) *core.TryRequest {
 			AddOrderBy("c8y_Firmware.version").
 			AddOrderBy("creationTime").
 			Build(),
+		GetOptions: opt.GetOptions,
 		PaginationOptions: pagination.PaginationOptions{
 			CurrentPage: opt.CurrentPage,
 			PageSize:    opt.PageSize,

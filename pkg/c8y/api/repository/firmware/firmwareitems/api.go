@@ -168,6 +168,14 @@ func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonm
 		ExecuteOrDefer(ctx)
 }
 
+// CreateRaw creates a firmware item (managed object) from a pre-built body,
+// passed through to the API as-is. Use it when the caller assembles the full
+// body itself (e.g. the CLI's --data/--template body building); the typed
+// Create is for the structured Name/Description/DeviceType/File path.
+func (s *Service) CreateRaw(ctx context.Context, body any) op.Result[jsonmodels.Firmware] {
+	return core.Execute(ctx, s.createB(body), jsonmodels.NewFirmware)
+}
+
 // uploadBinaryIfNeeded uploads a binary file if needed, or returns the provided URL
 func (s *Service) uploadBinaryIfNeeded(ctx context.Context, binaryUrl string, opt UploadFileOptions) (string, error) {
 	// If URL is already provided, use it
@@ -211,6 +219,15 @@ func (s *Service) ResolveID(ctx context.Context, identifier string, meta map[str
 type ListOptions struct {
 	Name       string `url:"-"`
 	DeviceType string `url:"-"`
+
+	// Query is an additional raw inventory-query filter expression, ANDed with the
+	// firmware type/name/deviceType filters (e.g. a piped query or extra fields).
+	Query string `url:"-"`
+
+	// GetOptions controls the managed-object detail returned (withChildren,
+	// withParents, ...).
+	managedobjects.GetOptions
+
 	pagination.PaginationOptions
 }
 
@@ -224,14 +241,16 @@ func (s *Service) listB(opt ListOptions) *core.TryRequest {
 		AddOrderBy("name").
 		AddOrderBy("creationTime").
 		AddFilterEqStr("type", FragmentFirmware).
-		AddFilterEqStr("name", opt.Name)
+		AddFilterEqStr("name", opt.Name).
+		AddFilterPart(opt.Query)
 
 	if opt.DeviceType != "" {
 		query.AddFilterEqStr("c8y_Filter.type", opt.DeviceType)
 	}
 
 	listOpts := managedobjects.ListOptions{
-		Query: query.Build(),
+		Query:      query.Build(),
+		GetOptions: opt.GetOptions,
 		PaginationOptions: pagination.PaginationOptions{
 			CurrentPage: opt.CurrentPage,
 			PageSize:    opt.PageSize,
@@ -579,6 +598,16 @@ func (s *Service) UpsertByName(ctx context.Context, opt CreateOptions) op.Result
 }
 
 // Builder methods
+
+func (s *Service) createB(body any) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodPost).
+		SetBody(body).
+		SetContentType(types.MimeTypeManagedObject).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetURL(ApiManagedObjects)
+	return core.NewTryRequest(s.Client, req, "")
+}
 
 func (s *Service) getB(ID string, opt GetOptions) *core.TryRequest {
 	getOpts := managedobjects.GetOptions{
