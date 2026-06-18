@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -137,5 +138,66 @@ func TestGetAvailability(t *testing.T) {
 	}
 	if res.Data.DataStatus() != "AVAILABLE" {
 		t.Errorf("dataStatus = %q, want AVAILABLE", res.Data.DataStatus())
+	}
+}
+
+// TestCount verifies the count endpoint path/method, that the filter options are
+// serialised as query parameters, and that the bare-integer body is parsed.
+func TestCount(t *testing.T) {
+	var path, method, rawQuery string
+	svc, closeFn := testService(func(w http.ResponseWriter, r *http.Request) {
+		path, method, rawQuery = r.URL.Path, r.Method, r.URL.RawQuery
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte("42"))
+	})
+	defer closeFn()
+
+	res := svc.Count(context.Background(), ListOptions{Type: "c8y_Sensor", Owner: "device_01", Text: "abc"})
+	if res.Err != nil {
+		t.Fatalf("Count: %v", res.Err)
+	}
+	if method != http.MethodGet || path != "/inventory/managedObjects/count" {
+		t.Errorf("count = %s %s", method, path)
+	}
+	for _, want := range []string{"type=c8y_Sensor", "owner=device_01", "text=abc"} {
+		if !strings.Contains(rawQuery, want) {
+			t.Errorf("query %q missing %q", rawQuery, want)
+		}
+	}
+	if res.Data != 42 {
+		t.Errorf("count = %d, want 42", res.Data)
+	}
+}
+
+// TestListFilters verifies that the inventory-list-specific query parameters
+// (owner, onlyRoots and the child*Id filters) are serialised.
+func TestListFilters(t *testing.T) {
+	var rawQuery string
+	svc, closeFn := testService(func(w http.ResponseWriter, r *http.Request) {
+		rawQuery = r.URL.RawQuery
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"managedObjects":[],"statistics":{"totalPages":1}}`))
+	})
+	defer closeFn()
+
+	res := svc.List(context.Background(), ListOptions{
+		Owner:           "device_01",
+		OnlyRoots:       true,
+		ChildAdditionID: "11",
+		ChildAssetID:    "22",
+		ChildDeviceID:   "33",
+		Ids:             []string{"41", "43", "68"},
+	})
+	if res.Err != nil {
+		t.Fatalf("List: %v", res.Err)
+	}
+	for _, want := range []string{"owner=device_01", "onlyRoots=true", "childAdditionId=11", "childAssetId=22", "childDeviceId=33"} {
+		if !strings.Contains(rawQuery, want) {
+			t.Errorf("query %q missing %q", rawQuery, want)
+		}
+	}
+	// ids must be comma-separated (?ids=41,43,68), not repeated keys.
+	if q, _ := url.QueryUnescape(rawQuery); !strings.Contains(q, "ids=41,43,68") {
+		t.Errorf("query %q missing comma-joined ids=41,43,68", rawQuery)
 	}
 }

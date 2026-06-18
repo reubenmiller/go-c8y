@@ -3,6 +3,8 @@ package managedobjects
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/binaries"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
@@ -21,6 +23,7 @@ import (
 )
 
 var ApiManagedObjects = "/inventory/managedObjects"
+var ApiManagedObjectsCount = "/inventory/managedObjects/count"
 var ApiManagedObject = "/inventory/managedObjects/{id}"
 var ApiManagedObjectSupportedMeasurements = "/inventory/managedObjects/{id}/supportedMeasurements"
 var ApiManagedObjectSupportedSeries = "/inventory/managedObjects/{id}/supportedSeries"
@@ -127,8 +130,22 @@ type ListOptions struct {
 
 	Text string `url:"text,omitempty"`
 
+	Owner string `url:"owner,omitempty"`
+
+	// OnlyRoots returns only managed objects without a parent.
+	OnlyRoots bool `url:"onlyRoots,omitempty"`
+
+	// ChildAdditionID lists the managed objects that have the given child addition.
+	ChildAdditionID string `url:"childAdditionId,omitempty"`
+
+	// ChildAssetID lists the managed objects that have the given child asset.
+	ChildAssetID string `url:"childAssetId,omitempty"`
+
+	// ChildDeviceID lists the managed objects that have the given child device.
+	ChildDeviceID string `url:"childDeviceId,omitempty"`
+
 	// Read-only collection of managed objects fetched for a given list of ids (placeholder {ids}),for example "?ids=41,43,68".
-	Ids []string `url:"ids,omitempty"`
+	Ids []string `url:"ids,omitempty,comma"`
 
 	Query string `url:"query,omitempty"`
 
@@ -159,6 +176,22 @@ type GetOptions struct {
 	// WithGroups returns the groups the managed object belongs to (sets
 	// assetParents); used by the device-group list/get commands.
 	WithGroups bool `url:"withGroups,omitempty"`
+}
+
+// parseCount parses the bare-integer body returned by the count endpoint.
+func parseCount(b []byte) int64 {
+	n, _ := strconv.ParseInt(strings.TrimSpace(string(b)), 10, 64)
+	return n
+}
+
+// Count the managed objects matching the filter
+func (s *Service) countB(opt ListOptions) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetURL(ApiManagedObjectsCount)
+	return core.NewTryRequest(s.Client, req)
 }
 
 // Create a managed object

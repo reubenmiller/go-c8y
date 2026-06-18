@@ -624,6 +624,13 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
+// Count returns the total number of managed objects matching the given filter
+// (GET /inventory/managedObjects/count). The endpoint answers with a bare
+// integer body, which is parsed into the result.
+func (s *Service) Count(ctx context.Context, opt ListOptions) op.Result[int64] {
+	return core.Execute(ctx, s.countB(opt), parseCount)
+}
+
 // ManagedObjectIterator provides iteration over managed objects
 type ManagedObjectIterator = pagination.Iterator[jsonmodels.ManagedObject]
 

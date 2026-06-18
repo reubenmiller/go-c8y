@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -17,6 +18,12 @@ func (fs *FakeServer) handleManagedObjects(w http.ResponseWriter, r *http.Reques
 	// /inventory/managedObjects (collection)
 	if len(segments) == 0 {
 		fs.handleManagedObjectCollection(w, r)
+		return
+	}
+
+	// /inventory/managedObjects/count
+	if len(segments) == 1 && segments[0] == "count" {
+		fs.handleManagedObjectCount(w, r)
 		return
 	}
 
@@ -51,6 +58,20 @@ func (fs *FakeServer) handleManagedObjects(w http.ResponseWriter, r *http.Reques
 
 	// /inventory/managedObjects/{id}
 	fs.handleManagedObjectSingle(w, r, moID)
+}
+
+// handleManagedObjectCount answers GET /inventory/managedObjects/count with the
+// number of managed objects matching the request filters, as a bare integer body
+// (matching real Cumulocity).
+func (fs *FakeServer) handleManagedObjectCount(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "general/methodNotAllowed", "Method not allowed")
+		return
+	}
+	items := fs.filterManagedObjects(r)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(strconv.Itoa(len(items))))
 }
 
 func (fs *FakeServer) handleManagedObjectCollection(w http.ResponseWriter, r *http.Request) {
