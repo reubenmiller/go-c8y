@@ -2,13 +2,14 @@ package users
 
 import (
 	"context"
+	"net/url"
 	"strings"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/users/currentuser"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/users/groups"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -89,7 +90,6 @@ func NewService(s *core.Service) *Service {
 	return &Service{
 		Service:     *s,
 		CurrentUser: currentuser.NewService(s),
-		Groups:      groups.NewService(s),
 	}
 }
 
@@ -98,7 +98,6 @@ type Service struct {
 	core.Service
 
 	CurrentUser *currentuser.Service
-	Groups      *groups.Service
 }
 
 // ListOptions to filter the users by
@@ -302,6 +301,61 @@ func (s *Service) listGroupsWithUserB(opt ListGroupsOptions) *core.TryRequest {
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiUserGroupsWithUser)
 	return core.NewTryRequest(s.Client, req, ResultProperty)
+}
+
+// UserSelfLink returns the self link for a user reference, suitable for the body
+// of an AssignUser (add-user-to-group) call. A value that already looks like a
+// user self link (it contains the "/users/" segment) is returned unchanged, so a
+// piped user's self passes through; a bare user id/name is turned into its
+// canonical self link using the client base URL and the given tenant. An empty
+// ref (or empty tenant when one is needed) yields "".
+//
+// A user's self link is deterministic from its id (a user id equals its
+// userName) and tenant, so this needs no network round-trip and works under
+// dry-run. The user-name segment is percent-encoded the way Cumulocity stores it
+// (e.g. "@" -> "%40").
+func (s *Service) UserSelfLink(tenant, ref string) string {
+	if ref == "" {
+		return ""
+	}
+	if strings.Contains(ref, "/users/") {
+		return ref
+	}
+	if tenant == "" {
+		return ""
+	}
+	path := strings.ReplaceAll(ApiUsers, "{"+core.PathParamTenantID+"}", tenant)
+	return strings.TrimRight(s.Client.BaseURL(), "/") + path + "/" + url.QueryEscape(ref)
+}
+
+// UserID returns the user id (which equals the user name in Cumulocity) for a
+// user reference, suitable for the {id} path segment of an unassign call. It
+// accepts the forms the CLI may supply: a bare id/name (returned unchanged), a
+// self link (".../users/<id>", reduced to its last segment, percent-decoded), or
+// a user / user-reference document (the embedded user id or name is used). An
+// empty ref yields "". Like UserSelfLink this needs no network round-trip.
+func (s *Service) UserID(ref string) string {
+	ref = strings.TrimSpace(ref)
+	if ref == "" {
+		return ""
+	}
+	if strings.HasPrefix(ref, "{") {
+		doc := jsondoc.New([]byte(ref))
+		for _, p := range []string{"id", "userName", "user.id", "user.userName"} {
+			if v := doc.Get(p).String(); v != "" {
+				return v
+			}
+		}
+		return ref
+	}
+	if i := strings.LastIndex(ref, "/users/"); i >= 0 {
+		seg := strings.Trim(ref[i+len("/users/"):], "/")
+		if dec, err := url.PathUnescape(seg); err == nil {
+			return dec
+		}
+		return seg
+	}
+	return ref
 }
 
 // Logout terminates the current user's session and invalidates platform access tokens.

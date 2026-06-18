@@ -9,8 +9,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/users/currentuser"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/users/groups"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/usergroups/users"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -29,18 +28,17 @@ const ResultProperty = "groups"
 
 func NewService(s *core.Service) *Service {
 	return &Service{
-		Service:     *s,
-		CurrentUser: currentuser.NewService(s),
-		Groups:      groups.NewService(s),
+		Service: *s,
+		Users:   users.NewService(s),
 	}
 }
 
-// Service provides api to manage users
+// Service provides api to manage user groups and their member users.
 type Service struct {
 	core.Service
 
-	CurrentUser *currentuser.Service
-	Groups      *groups.Service
+	// Users manages the users that belong to a group (group membership).
+	Users *users.Service
 }
 
 // ListOptions to filter the groups by

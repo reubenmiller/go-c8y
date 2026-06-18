@@ -8,10 +8,10 @@ import (
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/usergroups"
+	groupusers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/usergroups/users"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/userroles"
 	rolegroups "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/userroles/usergroups"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/users"
-	groupusers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/users/groups"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 )
@@ -235,7 +235,7 @@ func (s *Syncer) ensureUserGroups(ctx context.Context, userID, userSelf string, 
 			groupID = group.Data.ID()
 			groupIDs[groupName] = groupID
 		}
-		result := s.Client.Users.Groups.AssignUser(ctx, groupusers.AssignUserOptions{GroupID: groupID}, map[string]any{
+		result := s.Client.UserGroups.Users.AssignUser(ctx, groupusers.AssignUserOptions{GroupID: groupID}, map[string]any{
 			"user": map[string]any{"self": userSelf},
 		})
 		if result.Err != nil {

@@ -10,11 +10,11 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/usergroups"
+	usersgroups "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/usergroups/users"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/userroles"
 	userrolesgroups "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/userroles/usergroups"
 	userrolesusers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/userroles/users"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/users"
-	usersgroups "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/users/groups"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
@@ -213,9 +213,9 @@ func Test_AddUserToGroup(t *testing.T) {
 	assert.NotEmpty(t, getGroupResult.Data.ID(), "ID should not be empty")
 
 	// Add user to group
-	assignResult := client.Users.Groups.AssignUser(ctx, usersgroups.AssignUserOptions{
-		GroupID: groupID,
-		Tenant:  client.Auth.Tenant,
+	assignResult := client.UserGroups.Users.AssignUser(ctx, usersgroups.AssignUserOptions{
+		GroupID:  groupID,
+		TenantID: client.Auth.Tenant,
 	}, map[string]any{
 		"user": map[string]any{
 			"self": currentUser.Data.Self(),
@@ -227,9 +227,9 @@ func Test_AddUserToGroup(t *testing.T) {
 	assert.NotEmpty(t, assignResult.Data.Self(), "Self link should not be empty")
 
 	// Get the users in the group
-	listUsersResult := client.Users.Groups.ListUsers(ctx, usersgroups.ListUsersOptions{
-		GroupID: groupID,
-		Tenant:  client.Auth.Tenant,
+	listUsersResult := client.UserGroups.Users.List(ctx, usersgroups.ListOptions{
+		GroupID:  groupID,
+		TenantID: client.Auth.Tenant,
 	})
 	require.NoError(t, listUsersResult.Err)
 	assert.Equal(t, 200, listUsersResult.HTTPStatus)
@@ -239,10 +239,10 @@ func Test_AddUserToGroup(t *testing.T) {
 	assert.Greater(t, len(userList), 0, "Should be at least 1 user")
 
 	// Remove user from group
-	unassignResult := client.Users.Groups.UnassignUser(ctx, usersgroups.UnassignUserOptions{
-		UserID:  currentUser.Data.ID(),
-		GroupID: groupID,
-		Tenant:  client.Auth.Tenant,
+	unassignResult := client.UserGroups.Users.UnassignUser(ctx, usersgroups.UnassignUserOptions{
+		UserID:   currentUser.Data.ID(),
+		GroupID:  groupID,
+		TenantID: client.Auth.Tenant,
 	})
 
 	require.NoError(t, unassignResult.Err)
@@ -272,9 +272,9 @@ func Test_GetUsersByGroup(t *testing.T) {
 	groupID := createResult.Data.ID()
 
 	// Add user to temp group
-	assignResult := client.Users.Groups.AssignUser(ctx, usersgroups.AssignUserOptions{
-		GroupID: groupID,
-		Tenant:  client.Auth.Tenant,
+	assignResult := client.UserGroups.Users.AssignUser(ctx, usersgroups.AssignUserOptions{
+		GroupID:  groupID,
+		TenantID: client.Auth.Tenant,
 	}, map[string]any{
 		"user": map[string]any{
 			"self": currentUser.Data.Self(),
@@ -284,9 +284,9 @@ func Test_GetUsersByGroup(t *testing.T) {
 	assert.Equal(t, 201, assignResult.HTTPStatus)
 
 	// Get users in group
-	listUsersResult := client.Users.Groups.ListUsers(ctx, usersgroups.ListUsersOptions{
-		GroupID: groupID,
-		Tenant:  client.Auth.Tenant,
+	listUsersResult := client.UserGroups.Users.List(ctx, usersgroups.ListOptions{
+		GroupID:  groupID,
+		TenantID: client.Auth.Tenant,
 	})
 	require.NoError(t, listUsersResult.Err)
 	assert.Equal(t, 200, listUsersResult.HTTPStatus)
