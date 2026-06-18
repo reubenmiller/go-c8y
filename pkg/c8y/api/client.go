@@ -474,7 +474,7 @@ func NewClient(opts ClientOptions) *Client {
 	c.UIPlugins = plugins.NewService(&c.common)
 	c.UIPluginVersions = versions.NewService(&c.common)
 	c.UIApplicationPlugins = applicationplugins.NewService(&c.common)
-	c.Notification2 = notification2.NewService(&c.common)
+	c.Notification2 = notification2.NewService(&c.common, c.ManagedObjects)
 	// c.Context = (*ContextService)(&c.common)
 	c.RemoteAccess = remoteaccess.NewService(&c.common)
 	c.RetentionRules = retentionrules.NewService(&c.common)

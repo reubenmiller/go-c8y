@@ -10,7 +10,9 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
@@ -33,14 +35,19 @@ var ParamID = "id"
 
 const ResultProperty = "subscriptions"
 
-func NewService(s *core.Service) *Service {
+// NewService creates a new notification2 service with device resolution
+// capabilities, so the subscription source (a managed object / device) can be
+// given as an id, name, external id or query and resolved against the inventory.
+func NewService(common *core.Service, moService *managedobjects.Service) *Service {
 	return &Service{
-		Service: *s,
+		Service:        *common,
+		DeviceResolver: managedobjects.NewDeviceResolver(moService),
 	}
 }
 
 type Service struct {
 	core.Service
+	DeviceResolver *managedobjects.DeviceResolver
 }
 
 type TokenOptions struct {
@@ -137,7 +144,23 @@ func (s *Service) getB(id string) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req)
 }
 
+// resolveSource turns a subscription source reference (id, "name:", "ext:" or
+// "query:") into a managed object id, hitting the inventory only for non-id
+// refs. Resolution runs in a context that ignores dry-run so the resolved id is
+// reflected even when the caller is in --dry mode.
+func (s *Service) resolveSource(ctx context.Context, source string) (string, error) {
+	if source == "" || s.DeviceResolver == nil {
+		return source, nil
+	}
+	return s.DeviceResolver.ResolveID(ctxhelpers.ResolutionContext(ctx), managedobjects.DeviceRef(source), nil)
+}
+
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Notification2Subscription] {
+	resolved, err := s.resolveSource(ctx, opt.Source)
+	if err != nil {
+		return op.Failed[jsonmodels.Notification2Subscription](err, true)
+	}
+	opt.Source = resolved
 	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewNotification2Subscription)
 }
 
@@ -167,6 +190,14 @@ func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonm
 	return core.Execute(ctx, s.createB(opt), jsonmodels.NewNotification2Subscription).IgnoreConflict()
 }
 
+// CreateRaw creates a subscription from a raw body (map / json.RawMessage),
+// preserving the CLI's --data/--template body fidelity. Callers that have
+// already resolved the source id build the body themselves; this is the
+// equivalent of Create for an untyped body.
+func (s *Service) CreateRaw(ctx context.Context, body any) op.Result[jsonmodels.Notification2Subscription] {
+	return core.Execute(ctx, s.createB(body), jsonmodels.NewNotification2Subscription).IgnoreConflict()
+}
+
 func (s *Service) createB(body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
@@ -190,6 +221,11 @@ func (s *Service) deleteB(id string) *core.TryRequest {
 }
 
 func (s *Service) DeleteBySource(ctx context.Context, opt DeleteBySourceOptions) op.Result[core.NoContent] {
+	resolved, err := s.resolveSource(ctx, opt.Source)
+	if err != nil {
+		return op.Failed[core.NoContent](err, true)
+	}
+	opt.Source = resolved
 	return core.ExecuteNoContent(ctx, s.deleteBySourceB(opt))
 }
 
@@ -206,6 +242,14 @@ func (s *Service) CreateToken(ctx context.Context, opt TokenOptions) op.Result[j
 		opt.Subscriber = opt.GetDefaultSubscriber()
 	}
 	return core.Execute(ctx, s.createTokenB(opt), jsonmodels.NewNotification2Token)
+}
+
+// CreateTokenRaw creates a token from a raw body (map / json.RawMessage),
+// preserving the CLI's --data/--template body fidelity and any extra fields the
+// typed TokenOptions does not model (e.g. type/signed/nonPersistent). The
+// default subscriber must already be applied by the caller.
+func (s *Service) CreateTokenRaw(ctx context.Context, body any) op.Result[jsonmodels.Notification2Token] {
+	return core.Execute(ctx, s.createTokenB(body), jsonmodels.NewNotification2Token)
 }
 
 func (s *Service) createTokenB(body any) *core.TryRequest {
