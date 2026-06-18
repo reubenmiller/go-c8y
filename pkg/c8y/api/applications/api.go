@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/applications/currentapplication"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
@@ -45,6 +46,9 @@ const ResultProperty = "applications"
 type Service struct {
 	core.Service
 
+	// Current is the current-application sub-resource (/application/currentApplication)
+	Current *currentapplication.Service
+
 	// Resolver lookup function
 	lookupByName    func(ctx context.Context, name, appType string) (string, map[string]any, error)
 	customResolvers map[string]source.Resolver
@@ -53,6 +57,7 @@ type Service struct {
 func NewService(common *core.Service) *Service {
 	service := &Service{
 		Service:         *common,
+		Current:         currentapplication.NewService(common),
 		customResolvers: make(map[string]source.Resolver),
 	}
 
