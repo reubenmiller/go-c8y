@@ -18,6 +18,7 @@ var (
 	ApiUsers              = "/user/{tenantId}/users"
 	ApiUser               = "/user/{tenantId}/users/{id}"
 	ApiUserTFA            = "/user/{tenantId}/users/{id}/tfa"
+	ApiUserTOTPRevoke     = "/user/{tenantId}/users/{id}/totpSecret/revoke"
 	ApiUserGroupsWithUser = "/user/{tenantId}/users/{id}/groups"
 	ApiUserByName         = "/user/{tenantId}/userByName/{username}"
 	ApiLogout             = "/user/logout"
@@ -277,6 +278,21 @@ func (s *Service) ListGroupsWithUser(ctx context.Context, opt ListGroupsOptions)
 	return core.ExecuteCollection(ctx, s.listGroupsWithUserB(opt), "references.#.group", types.ResponseFieldStatistics, jsonmodels.NewUserGroup)
 }
 
+// ListGroupsWithUserAll returns an iterator that transparently pages through all
+// groups containing the given user.
+func (s *Service) ListGroupsWithUserAll(ctx context.Context, opts ListGroupsOptions) *pagination.Iterator[jsonmodels.UserGroup] {
+	return pagination.Paginate(
+		ctx,
+		opts.PaginationOptions,
+		func(pageOpts pagination.PaginationOptions) op.Result[jsonmodels.UserGroup] {
+			o := opts
+			o.PaginationOptions = pageOpts
+			return s.ListGroupsWithUser(ctx, o)
+		},
+		jsonmodels.NewUserGroup,
+	)
+}
+
 func (s *Service) listGroupsWithUserB(opt ListGroupsOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
@@ -374,5 +390,28 @@ func (s *Service) getTFAB(opt GetTFAOptions) *core.TryRequest {
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
 		SetPathParam(ParamID, string(opt.ID)).
 		SetURL(ApiUserTFA)
+	return core.NewTryRequest(s.Client, req)
+}
+
+type RevokeTOTPSecretOptions struct {
+	ID     UserRef `url:"-"`
+	Tenant string  `url:"-"`
+}
+
+// RevokeTOTPSecret revokes (deletes) a user's TOTP (two-factor authentication)
+// secret, forcing them to set up TFA again on next login. This is used by an
+// administrator when a user loses their TFA configuration or it is compromised.
+// Leave Tenant empty to use the current context tenant. A 204 No Content
+// response indicates success.
+func (s *Service) RevokeTOTPSecret(ctx context.Context, opt RevokeTOTPSecretOptions) op.Result[core.NoContent] {
+	return core.ExecuteNoContent(ctx, s.revokeTOTPSecretB(opt))
+}
+
+func (s *Service) revokeTOTPSecretB(opt RevokeTOTPSecretOptions) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodDelete).
+		SetPathParam(core.PathParamTenantID, opt.Tenant).
+		SetPathParam(ParamID, string(opt.ID)).
+		SetURL(ApiUserTOTPRevoke)
 	return core.NewTryRequest(s.Client, req)
 }
