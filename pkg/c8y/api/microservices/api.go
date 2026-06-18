@@ -9,6 +9,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/microservices/bootstrapuser"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/microservices/currentmicroservice"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/microservices/loggers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/source"
@@ -29,6 +30,7 @@ type Service struct {
 	applicationAPI      applications.Service
 	BootstrapUser       bootstrapuser.Service
 	CurrentMicroservice currentmicroservice.Service
+	Loggers             loggers.Service
 
 	lookupByName        func(ctx context.Context, name string) (string, map[string]any, error)
 	lookupByContextPath func(ctx context.Context, contextPath string) (string, map[string]any, error)
@@ -41,6 +43,7 @@ func NewService(common *core.Service) *Service {
 		applicationAPI:      *applications.NewService(common),
 		BootstrapUser:       *bootstrapuser.NewService(common),
 		CurrentMicroservice: *currentmicroservice.NewService(common),
+		Loggers:             *loggers.NewService(common),
 		customResolvers:     make(map[string]source.Resolver),
 	}
 
@@ -401,6 +404,45 @@ func (s *Service) unsubscribeB(tenantID string, ID string) *core.TryRequest {
 	return core.NewTryRequest(s.Client, req, "")
 }
 
+// Enable (subscribe) a microservice for a tenant by POSTing an application
+// reference body to /tenant/tenants/{tenant}/applications. The body identifies
+// the microservice by id or self link, e.g. {"application":{"id":"<id>"}}; the
+// CLI resolves the microservice reference and sets application.id before calling
+// this. Returns the created application reference. Unlike Subscribe (which
+// plucks the application for the create/update flow), this returns the reference
+// as-is to match the v1 enable command's applicationReference output.
+func (s *Service) Enable(ctx context.Context, tenantID string, body any) op.Result[jsonmodels.ApplicationReference] {
+	return core.Execute(ctx, s.enableB(tenantID, body), jsonmodels.NewApplicationReference, nil)
+}
+
+func (s *Service) enableB(tenantID string, body any) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodPost).
+		SetPathParam(core.PathParamTenantID, tenantID).
+		SetBody(body).
+		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetURL("/tenant/tenants/{tenantId}/applications")
+	return core.NewTryRequest(s.Client, req)
+}
+
+// GetStatus returns the managed object(s) holding a microservice's status,
+// which Cumulocity stores in the inventory under the type c8y_Application_<id>.
+// The id must already be resolved (the CLI resolves a name/contextPath
+// reference first). The collection is plucked into managedObjects items.
+func (s *Service) GetStatus(ctx context.Context, id string) op.Result[jsonmodels.ManagedObject] {
+	return core.ExecuteCollection(ctx, s.getStatusB(id), "managedObjects", types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
+}
+
+func (s *Service) getStatusB(id string) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetQueryParam("type", "c8y_Application_"+id).
+		SetURL("/inventory/managedObjects")
+	return core.NewTryRequest(s.Client, req, "managedObjects")
+}
+
 type UploadFileOptions = applications.UploadFileOptions
 
 // Upload a new microservice binary by ID or resolver string
@@ -421,11 +463,14 @@ func (s *Service) Upload(ctx context.Context, id string, opt UploadFileOptions) 
 }
 
 func (s *Service) uploadB(ID string, opt UploadFileOptions) *core.TryRequest {
-	// Rebuild request since applications B methods are now private
+	// Mirror applications.uploadB: build the multipart "file" (+ optional object
+	// metadata) from the UploadFileOptions so a FilePath-only caller (the CLI
+	// createBinary command) streams the file. The previous SetFileReader form
+	// required an explicit Reader and silently sent nothing for FilePath callers.
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam("id", ID).
-		SetFileReader("file", opt.Name, opt.Reader).
+		SetMultipartFields(core.NewMultiPartFile(opt)...).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL("/application/applications/{id}/binaries")
 	return core.NewTryRequest(s.Client, req, "")
