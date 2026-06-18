@@ -119,23 +119,47 @@ type ListOptions struct {
 	Version    string `url:"-"`
 	Query      string `url:"-"`
 
+	// GetOptions controls the managed-object detail returned (withParents,
+	// withChildren, ...). withParents is needed to populate the parent software
+	// references read by SoftwareName()/SoftwareType().
+	managedobjects.GetOptions
+
 	// Pagination options
 	pagination.PaginationOptions
 }
 
 // List software versions
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.SoftwareVersion] {
-	// Resolve software name to ID if needed
-	softwareResult := s.software.Get(ctx, opt.SoftwareID, softwareitems.GetOptions{})
-	if softwareResult.Err != nil {
-		return op.Failed[jsonmodels.SoftwareVersion](
-			fmt.Errorf("failed to resolve software name: %w", softwareResult.Err),
-			true,
-		)
+	// Resolve a software name to its ID. A plain numeric id is used directly,
+	// and an empty software means "all versions" (no bygroupid scoping): both
+	// skip the redundant GET and, under --dry, keep the bygroupid filter correct
+	// (the GET would otherwise be intercepted and return an empty id).
+	if opt.SoftwareID != "" && !isPlainID(opt.SoftwareID) {
+		softwareResult := s.software.Get(ctx, opt.SoftwareID, softwareitems.GetOptions{})
+		if softwareResult.Err != nil {
+			return op.Failed[jsonmodels.SoftwareVersion](
+				fmt.Errorf("failed to resolve software name: %w", softwareResult.Err),
+				true,
+			)
+		}
+		opt.SoftwareID = softwareResult.Data.ID()
 	}
-	opt.SoftwareID = softwareResult.Data.ID()
 
 	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewSoftwareVersion)
+}
+
+// isPlainID reports whether s is a non-empty all-digit managed-object id, which
+// can be used directly without a name -> id resolution lookup.
+func isPlainID(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, r := range s {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 func (s *Service) listB(opt ListOptions) *core.TryRequest {
@@ -149,6 +173,7 @@ func (s *Service) listB(opt ListOptions) *core.TryRequest {
 			AddOrderBy("c8y_Software.version").
 			AddOrderBy("creationTime").
 			Build(),
+		GetOptions: opt.GetOptions,
 		PaginationOptions: pagination.PaginationOptions{
 			CurrentPage: opt.CurrentPage,
 			PageSize:    opt.PageSize,

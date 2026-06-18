@@ -66,6 +66,15 @@ type ListOptions struct {
 
 	DeviceType string `url:"-"`
 
+	// Query is an additional raw inventory-query filter expression, ANDed with the
+	// software type/name/softwareType/deviceType filters (e.g. a piped query or an
+	// extra description filter).
+	Query string `url:"-"`
+
+	// GetOptions controls the managed-object detail returned (withChildren,
+	// withParents, withGroups, ...).
+	managedobjects.GetOptions
+
 	// Pagination options
 	pagination.PaginationOptions
 }
@@ -85,7 +94,9 @@ func (s *Service) listB(opt ListOptions) *core.TryRequest {
 			AddFilterEqStr("name", opt.Name).
 			AddFilterEqStr("softwareType", opt.SoftwareType).
 			AddFilterEqStr("c8y_Filter.type", opt.DeviceType).
+			AddFilterPart(opt.Query).
 			Build(),
+		GetOptions: opt.GetOptions,
 		PaginationOptions: pagination.PaginationOptions{
 			CurrentPage: opt.CurrentPage,
 			PageSize:    opt.PageSize,
