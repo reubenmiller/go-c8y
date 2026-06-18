@@ -2,6 +2,8 @@ package remoteaccess_configurations
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/source"
@@ -77,6 +79,31 @@ func (s *Service) getB(opt GetOptions) *core.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiConfiguration)
 	return core.NewTryRequest(s.Client, req)
+}
+
+// ResolveID resolves a configuration reference to its id, scoped to a device.
+// A plain id (or an empty reference) passes through unchanged with no lookup; a
+// "name:<name>" reference is matched case-insensitively against the device's
+// configurations (first match wins), mirroring the v1 by-name resolver. The
+// managedObjectID must already be a concrete id.
+func (s *Service) ResolveID(ctx context.Context, managedObjectID, ref string) (string, error) {
+	name, isName := strings.CutPrefix(ref, "name:")
+	if !isName {
+		return ref, nil
+	}
+	res := s.List(ctx, ListOptions{ManagedObjectID: managedObjectID})
+	if res.Err != nil {
+		return "", res.Err
+	}
+	for cfg, err := range res.Items() {
+		if err != nil {
+			return "", err
+		}
+		if strings.EqualFold(cfg.Name(), name) {
+			return cfg.ID(), nil
+		}
+	}
+	return "", fmt.Errorf("remote access configuration not found: name=%s", name)
 }
 
 type CreateOptions struct {
