@@ -68,7 +68,6 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/trustedcertificates"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/ui/applicationplugins"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/ui/plugins"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/ui/plugins/versions"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/usergroups"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/userroles"
 	inventoryroles "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/userroles/inventory"
@@ -182,7 +181,6 @@ type Client struct {
 	Microservices        *microservices.Service
 	Repository           *repository.Service
 	UIPlugins            *plugins.Service
-	UIPluginVersions     *versions.Service
 	UIApplicationPlugins *applicationplugins.Service
 	Identity             *identity.Service
 	TrustedCertificates  *trustedcertificates.Service
@@ -472,7 +470,6 @@ func NewClient(opts ClientOptions) *Client {
 	c.Microservices = microservices.NewService(&c.common)
 	c.Repository = repository.NewService(&c.common)
 	c.UIPlugins = plugins.NewService(&c.common)
-	c.UIPluginVersions = versions.NewService(&c.common)
 	c.UIApplicationPlugins = applicationplugins.NewService(&c.common)
 	c.Notification2 = notification2.NewService(&c.common, c.ManagedObjects)
 	// c.Context = (*ContextService)(&c.common)
