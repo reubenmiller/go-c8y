@@ -175,9 +175,24 @@ func (fs *FakeServer) handleTenantUsers(w http.ResponseWriter, r *http.Request, 
 		if len(segments) >= 4 && segments[3] == "roles" {
 			switch r.Method {
 			case http.MethodGet:
-				items := fs.UserRoles.List()
-				page := Paginate(r, items)
-				writeJSON(w, http.StatusOK, BuildCollectionResponse(r, fs.URL(), "roles", page))
+				// Real C8Y answers the role collection with a roleReferenceCollection
+				// ({ references: [{ role: {...} }] }), not a plain role collection.
+				roles := fs.UserRoles.List()
+				refs := make([]map[string]json.RawMessage, 0, len(roles))
+				for _, role := range roles {
+					refs = append(refs, map[string]json.RawMessage{"role": role})
+				}
+				refsJSON, _ := json.Marshal(refs)
+				resp := marshalJSON(map[string]any{
+					"self": fs.URL() + r.URL.Path,
+					"statistics": map[string]int{
+						"currentPage": 1,
+						"pageSize":    2000,
+						"totalPages":  1,
+					},
+				})
+				resp = mergeFields(resp, map[string]any{"references": json.RawMessage(refsJSON)})
+				writeJSON(w, http.StatusOK, resp)
 			case http.MethodPost:
 				body, _ := readBody(r)
 				// Body: {"role":{"self":"..."}}, find role and return reference

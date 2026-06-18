@@ -6,7 +6,6 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -18,9 +17,10 @@ var ApiUserRole = "/user/{tenantId}/users/{userId}/roles/{roleId}"
 var ParamUserId = "userId"
 var ParamRoleId = "roleId"
 
-// ResultProperty is the JSON path used to extract roles from the role reference collection response.
-// The response format is: { references: [{ role: {...} }] }
-const ResultProperty = "references.#.role"
+// ResultProperty is the JSON path used to extract the role references from the
+// role reference collection response. The response format is:
+// { references: [{ self: ..., role: {...} }] }
+const ResultProperty = "references"
 
 func NewService(s *core.Service) *Service {
 	return &Service{
@@ -28,39 +28,40 @@ func NewService(s *core.Service) *Service {
 	}
 }
 
-// Service provides api to manage user roles
+// Service provides api to manage the roles assigned to a user.
 type Service struct {
 	core.Service
 }
 
-// ListOptions to list roles assigned to a specific user
+// ListOptions to list the role references assigned to a specific user.
 type ListOptions struct {
 	// TenantID is the tenant the user belongs to. Defaults to the current tenant.
 	TenantID string `url:"-"`
-	// UserID is the ID of the user whose roles are listed.
+	// UserID is the ID of the user whose role references are listed.
 	UserID string `url:"-"`
 	pagination.PaginationOptions
 }
 
-// RoleIterator provides iteration over roles assigned to a user
-type RoleIterator = pagination.Iterator[jsonmodels.Role]
+// RoleReferenceIterator provides iteration over the role references assigned to a user.
+type RoleReferenceIterator = pagination.Iterator[jsonmodels.RoleReference]
 
-// List retrieves all roles assigned to a specific user (by a given user ID) in a specific tenant (by a given tenant ID).
-func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Role] {
-	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewRole)
+// List retrieves the role references assigned to a specific user (by a given user ID)
+// in a specific tenant (by a given tenant ID).
+func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.RoleReference] {
+	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewRoleReference)
 }
 
-// ListAll returns an iterator for all roles assigned to a user, automatically paginating.
-func (s *Service) ListAll(ctx context.Context, opts ListOptions) *RoleIterator {
+// ListAll returns an iterator over all role references assigned to a user, automatically paginating.
+func (s *Service) ListAll(ctx context.Context, opts ListOptions) *RoleReferenceIterator {
 	return pagination.Paginate(
 		ctx,
 		opts.PaginationOptions,
-		func(pageOpts pagination.PaginationOptions) op.Result[jsonmodels.Role] {
+		func(pageOpts pagination.PaginationOptions) op.Result[jsonmodels.RoleReference] {
 			o := opts
 			o.PaginationOptions = pageOpts
 			return s.List(ctx, o)
 		},
-		jsonmodels.NewRole,
+		jsonmodels.NewRoleReference,
 	)
 }
 
@@ -80,13 +81,11 @@ type AssignRoleOptions struct {
 	UserID   string `url:"-"`
 }
 
-// AssignRole assigns a role to a user
-func (s *Service) AssignRole(ctx context.Context, opt AssignRoleOptions, body any) op.Result[jsonmodels.Role] {
-	return core.Execute(ctx, s.assignRoleB(opt, body), func(b []byte) jsonmodels.Role {
-		// Extract role from reference wrapper
-		doc := jsondoc.New(b)
-		return jsonmodels.NewRole([]byte(doc.Get("role").Raw))
-	}).IgnoreConflict()
+// AssignRole assigns a role to a user. The body is the role reference document
+// ({ "role": { "self": "<role self link>" } }); the created reference is returned.
+// An already-assigned role (409 Conflict) is reported as a duplicate, not an error.
+func (s *Service) AssignRole(ctx context.Context, opt AssignRoleOptions, body any) op.Result[jsonmodels.RoleReference] {
+	return core.Execute(ctx, s.assignRoleB(opt, body), jsonmodels.NewRoleReference).IgnoreConflict()
 }
 
 func (s *Service) assignRoleB(opt AssignRoleOptions, body any) *core.TryRequest {
@@ -107,7 +106,8 @@ type UnassignRoleOptions struct {
 	RoleID   string `url:"-"`
 }
 
-// Unassign a role from a user
+// UnassignRole removes a role from a user. A missing role reference (404) is
+// reported as skipped, not an error.
 func (s *Service) UnassignRole(ctx context.Context, opt UnassignRoleOptions) op.Result[core.NoContent] {
 	return core.ExecuteNoContent(ctx, s.unassignRoleB(opt)).IgnoreNotFound()
 }

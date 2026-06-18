@@ -460,9 +460,9 @@ func Test_AssignRoleToGroup(t *testing.T) {
 	assert.Equal(t, roles[0].Name(), assignResult.Data.Name())
 
 	// Get roles by group
-	groupRolesResult := client.UserRoles.Groups.ListRoles(ctx, userrolesgroups.ListRolesOptions{
-		UserGroupID: groupID,
-		Tenant:      client.Auth.Tenant,
+	groupRolesResult := client.UserRoles.Groups.List(ctx, userrolesgroups.ListOptions{
+		GroupID:  groupID,
+		TenantID: client.Auth.Tenant,
 		PaginationOptions: pagination.PaginationOptions{
 			PageSize: 2000,
 		},

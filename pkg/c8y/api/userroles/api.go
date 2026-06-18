@@ -2,6 +2,9 @@ package userroles
 
 import (
 	"context"
+	"strings"
+
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
@@ -88,4 +91,48 @@ func (s *Service) getB(opt GetOption) *core.TryRequest {
 		SetPathParam(ParamName, opt.Name).
 		SetURL(ApiRole)
 	return core.NewTryRequest(s.Client, req)
+}
+
+// RoleSelfLink returns the self link for a role reference, suitable for the body
+// of an AssignRole call. A value that already looks like a self link (it contains
+// the "/roles/" segment) is returned unchanged, so a piped role's self passes
+// through; a bare role id/name (e.g. "ROLE_ALARM_READ") is turned into its
+// canonical self link using the client base URL. An empty ref yields "".
+//
+// A role's self link is deterministic from its id (a role id equals its name),
+// so this needs no network round-trip and works under dry-run.
+func (s *Service) RoleSelfLink(ref string) string {
+	if ref == "" {
+		return ""
+	}
+	if strings.Contains(ref, "/roles/") {
+		return ref
+	}
+	return strings.TrimRight(s.Client.BaseURL(), "/") + ApiRoles + "/" + ref
+}
+
+// RoleID returns the role id (which equals the role name in Cumulocity) for a
+// role reference, suitable for the {roleId} path segment of an unassign call. It
+// accepts the forms the CLI may supply: a bare id/name (returned unchanged), a
+// self link (".../roles/ROLE_X", reduced to its last segment), or a role /
+// role-reference document (the embedded role id or name is used). An empty ref
+// yields "". Like RoleSelfLink this needs no network round-trip.
+func (s *Service) RoleID(ref string) string {
+	ref = strings.TrimSpace(ref)
+	if ref == "" {
+		return ""
+	}
+	if strings.HasPrefix(ref, "{") {
+		doc := jsondoc.New([]byte(ref))
+		for _, p := range []string{"id", "name", "role.id", "role.name"} {
+			if v := doc.Get(p).String(); v != "" {
+				return v
+			}
+		}
+		return ref
+	}
+	if i := strings.LastIndex(ref, "/roles/"); i >= 0 {
+		return strings.Trim(ref[i+len("/roles/"):], "/")
+	}
+	return ref
 }

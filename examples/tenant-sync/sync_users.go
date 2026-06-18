@@ -95,8 +95,8 @@ func (s *Syncer) ensureGroupRoles(ctx context.Context, groupID string, created b
 
 	existing := map[string]bool{}
 	if !created {
-		result := s.Client.UserRoles.Groups.ListRoles(ctx, rolegroups.ListRolesOptions{
-			UserGroupID:       groupID,
+		result := s.Client.UserRoles.Groups.List(ctx, rolegroups.ListOptions{
+			GroupID:           groupID,
 			PaginationOptions: pagination.PaginationOptions{PageSize: 2000},
 		})
 		for item, err := range op.Iter2(result) {
