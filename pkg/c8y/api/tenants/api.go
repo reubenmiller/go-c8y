@@ -19,9 +19,11 @@ var ApiTenants = "/tenant/tenants"
 var ApiTenant = "/tenant/tenants/{id}"
 var ApiTenantCurrent = "/tenant/currentTenant"
 var ApiTenantApplications = "/tenant/tenants/{tenantId}/applications"
+var ApiTenantApplication = "/tenant/tenants/{tenantId}/applications/{applicationId}"
 var ApiTenantTFA = "/tenant/tenants/{tenantId}/tfa"
 
 const ParamID = "id"
+const ParamApplicationID = "applicationId"
 
 const ResultProperty = "tenants"
 const ApplicationReferencesResultProperty = "references"
@@ -181,6 +183,46 @@ func (s *Service) listApplicationReferencesB(tenantID string, opt ListApplicatio
 		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiTenantApplications)
 	return core.NewTryRequest(s.Client, req, ApplicationReferencesResultProperty)
+}
+
+// SubscribeApplication subscribes (enables) an application on a tenant by POSTing
+// an application reference body to /tenant/tenants/{tenantId}/applications. The
+// body identifies the application by id or self link, e.g.
+// {"application":{"id":"<id>"}}; the CLI resolves the application reference and
+// sets application.id before calling this. Returns the created application
+// reference as-is, matching the v1 enableApplication command's
+// applicationReference output.
+// Note: Can only be called from the management tenant.
+func (s *Service) SubscribeApplication(ctx context.Context, tenantID string, body any) op.Result[jsonmodels.ApplicationReference] {
+	return core.Execute(ctx, s.subscribeApplicationB(tenantID, body), jsonmodels.NewApplicationReference)
+}
+
+func (s *Service) subscribeApplicationB(tenantID string, body any) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodPost).
+		SetPathParam(core.PathParamTenantID, tenantID).
+		SetBody(body).
+		SetContentType(types.MimeTypeApplicationJSON).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetURL(ApiTenantApplications)
+	return core.NewTryRequest(s.Client, req)
+}
+
+// UnsubscribeApplication unsubscribes (disables) an application from a tenant.
+// The applicationID must already be resolved (the CLI resolves a name reference
+// to an id first). Returns no content; a 404 (not subscribed) is ignored.
+// Note: Can only be called from the management tenant.
+func (s *Service) UnsubscribeApplication(ctx context.Context, tenantID string, applicationID string) op.Result[core.NoContent] {
+	return core.ExecuteNoContent(ctx, s.unsubscribeApplicationB(tenantID, applicationID)).IgnoreNotFound()
+}
+
+func (s *Service) unsubscribeApplicationB(tenantID string, applicationID string) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodDelete).
+		SetPathParam(core.PathParamTenantID, tenantID).
+		SetPathParam(ParamApplicationID, applicationID).
+		SetURL(ApiTenantApplication)
+	return core.NewTryRequest(s.Client, req)
 }
 
 // GetTFA retrieves the two-factor authentication settings of a specific tenant.
