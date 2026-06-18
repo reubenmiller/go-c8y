@@ -37,15 +37,33 @@ type ListOptions struct {
 	pagination.PaginationOptions
 }
 
+// DeviceRequestIterator provides iteration over device registration requests
+type DeviceRequestIterator = pagination.Iterator[jsonmodels.DeviceRequest]
+
 // List returns all device requests
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.DeviceRequest] {
 	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewDeviceRequest)
+}
+
+// ListAll returns an iterator over all device requests, following pagination.
+func (s *Service) ListAll(ctx context.Context, opts ListOptions) *DeviceRequestIterator {
+	return pagination.Paginate(
+		ctx,
+		opts.PaginationOptions,
+		func(pageOpts pagination.PaginationOptions) op.Result[jsonmodels.DeviceRequest] {
+			o := opts
+			o.PaginationOptions = pageOpts
+			return s.List(ctx, o)
+		},
+		jsonmodels.NewDeviceRequest,
+	)
 }
 
 func (s *Service) listB(opt ListOptions) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiDeviceRequests)
 	return core.NewTryRequest(s.Client, req, ResultProperty)
 }
@@ -83,6 +101,12 @@ func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonm
 	return core.Execute(ctx, s.createB(opt), jsonmodels.NewDeviceRequest)
 }
 
+// CreateRaw creates a new device request from a raw body (e.g. the CLI's
+// --data/--template document), bypassing the typed CreateOptions.
+func (s *Service) CreateRaw(ctx context.Context, body any) op.Result[jsonmodels.DeviceRequest] {
+	return core.Execute(ctx, s.createB(body), jsonmodels.NewDeviceRequest)
+}
+
 func (s *Service) createB(body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
@@ -110,6 +134,12 @@ type UpdateOptions struct {
 // Update a specific new device request (by a given ID). You can only update its status
 func (s *Service) Update(ctx context.Context, id string, opt UpdateOptions) op.Result[jsonmodels.DeviceRequest] {
 	return core.Execute(ctx, s.updateB(id, opt), jsonmodels.NewDeviceRequest)
+}
+
+// UpdateRaw updates a device request from a raw body (e.g. the CLI's
+// --data/--template document), bypassing the typed UpdateOptions.
+func (s *Service) UpdateRaw(ctx context.Context, id string, body any) op.Result[jsonmodels.DeviceRequest] {
+	return core.Execute(ctx, s.updateB(id, body), jsonmodels.NewDeviceRequest)
 }
 
 func (s *Service) updateB(id string, body any) *core.TryRequest {
@@ -149,9 +179,27 @@ type CreateCredentialsOptions struct {
 	SecurityToken string `json:"securityToken,omitempty"`
 }
 
-// Create creates a new device request
+// CreateCredentials requests device credentials for a device that does not yet
+// have credentials. It posts to the device-credentials endpoint, which is
+// distinct from the new-device-requests endpoint used by Create.
 func (s *Service) CreateCredentials(ctx context.Context, opt CreateCredentialsOptions) op.Result[jsonmodels.DeviceCredentials] {
-	return core.Execute(ctx, s.createB(opt), jsonmodels.NewDeviceCredentials)
+	return core.Execute(ctx, s.createCredentialsB(opt), jsonmodels.NewDeviceCredentials)
+}
+
+// CreateCredentialsRaw requests device credentials from a raw body (e.g. the
+// CLI's --data/--template document), bypassing the typed CreateCredentialsOptions.
+func (s *Service) CreateCredentialsRaw(ctx context.Context, body any) op.Result[jsonmodels.DeviceCredentials] {
+	return core.Execute(ctx, s.createCredentialsB(body), jsonmodels.NewDeviceCredentials)
+}
+
+func (s *Service) createCredentialsB(body any) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodPost).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetContentType(types.MimeTypeDeviceCredentials).
+		SetBody(body).
+		SetURL(ApiDeviceCredentials)
+	return core.NewTryRequest(s.Client, req)
 }
 
 // PollNewDeviceRequest continuously polls a device request for a specified id at defined intervals. The func will wait until the device request has been set to ACCEPTED.
