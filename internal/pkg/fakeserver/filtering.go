@@ -50,6 +50,9 @@ func FilterItems(r *http.Request, items []json.RawMessage) []json.RawMessage {
 	if v := q.Get("agentId"); v != "" {
 		filters = append(filters, fieldEquals("agentId", v))
 	}
+	if v := q.Get("bulkOperationId"); v != "" {
+		filters = append(filters, fieldEquals("bulkOperationId", v))
+	}
 	if v := q.Get("name"); v != "" {
 		filters = append(filters, fieldEquals("name", v))
 	}

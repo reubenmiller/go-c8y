@@ -161,3 +161,77 @@ func (s *Service) deleteB(ID string) *core.TryRequest {
 		SetURL(ApiBulkOperation)
 	return core.NewTryRequest(s.Client, req)
 }
+
+// --- Operations belonging to a bulk operation -------------------------------
+//
+// A bulk operation fans out into many individual device operations, served by
+// the operations collection (/devicecontrol/operations) filtered by the
+// bulkOperationId query parameter. The helpers below list those child
+// operations straight from the BulkOperations service, so callers don't have to
+// reach for the operations service and remember the filter name.
+
+// ApiOperations is the operations collection endpoint, used to list the
+// individual operations spawned by a bulk operation.
+var ApiOperations = "/devicecontrol/operations"
+
+// OperationsResultProperty is the JSON key that wraps the array of operations
+// in a collection response.
+const OperationsResultProperty = "operations"
+
+// OperationIterator is a lazy iterator over a (potentially multi-page)
+// collection of operations belonging to a bulk operation.
+type OperationIterator = pagination.Iterator[jsonmodels.Operation]
+
+// ListOperationsOptions controls filtering and pagination of the operations
+// that belong to a single bulk operation.
+type ListOperationsOptions struct {
+	// BulkOperationID restricts the results to operations spawned by this bulk
+	// operation. Without it the operations collection is returned unfiltered.
+	BulkOperationID string `url:"bulkOperationId,omitempty"`
+
+	// DateFrom is the start date (or date and time) of the operation.
+	DateFrom time.Time `url:"dateFrom,omitempty,omitzero" layout:"2006-01-02T15:04:05.000Z07:00"`
+
+	// DateTo is the end date (or date and time) of the operation.
+	DateTo time.Time `url:"dateTo,omitempty,omitzero" layout:"2006-01-02T15:04:05.000Z07:00"`
+
+	// Status filters by operation status: one of PENDING, EXECUTING,
+	// SUCCESSFUL or FAILED.
+	Status string `url:"status,omitempty"`
+
+	// Revert sorts operations newest-to-oldest. Only meaningful together with
+	// DateFrom and/or DateTo.
+	Revert bool `url:"revert,omitempty"`
+
+	pagination.PaginationOptions
+}
+
+// ListOperations returns a single page of operations belonging to a bulk
+// operation. Set BulkOperationID on opt to scope the results.
+func (s *Service) ListOperations(ctx context.Context, opt ListOperationsOptions) op.Result[jsonmodels.Operation] {
+	return core.ExecuteCollection(ctx, s.listOperationsB(opt), OperationsResultProperty, types.ResponseFieldStatistics, jsonmodels.NewOperation)
+}
+
+// ListAllOperations returns a lazy iterator that transparently pages through
+// all operations belonging to a bulk operation matching the given options.
+func (s *Service) ListAllOperations(ctx context.Context, opts ListOperationsOptions) *OperationIterator {
+	return pagination.Paginate(
+		ctx,
+		opts.PaginationOptions,
+		func(pageOpts pagination.PaginationOptions) op.Result[jsonmodels.Operation] {
+			o := opts
+			o.PaginationOptions = pageOpts
+			return s.ListOperations(ctx, o)
+		},
+		jsonmodels.NewOperation,
+	)
+}
+
+func (s *Service) listOperationsB(opt any) *core.TryRequest {
+	req := s.Client.R().
+		SetMethod(resty.MethodGet).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetURL(ApiOperations)
+	return core.NewTryRequest(s.Client, req, OperationsResultProperty)
+}
