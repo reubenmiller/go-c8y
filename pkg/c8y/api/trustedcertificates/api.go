@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
@@ -130,6 +132,61 @@ func (s *Service) createMultipleB(opt CreateOptions, body any) *core.TryRequest 
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiTrustedCertificates)
 	return core.NewTryRequest(s.Client, req)
+}
+
+// IsFingerprint reports whether ref looks like a certificate fingerprint: a
+// lowercase hex string longer than 30 characters. This mirrors the v1 CLI
+// heuristic used to decide whether a reference is a fingerprint (used directly)
+// or a name (looked up).
+func IsFingerprint(ref string) bool {
+	if len(ref) <= 30 {
+		return false
+	}
+	for _, c := range ref {
+		if !strings.ContainsRune("0123456789abcdef", c) {
+			return false
+		}
+	}
+	return true
+}
+
+// ResolveID resolves a trusted-certificate reference to its fingerprint within
+// the given tenant. A fingerprint-looking value (or an explicit "id:"/
+// "fingerprint:" reference) passes through unchanged with no lookup; any other
+// value (or a "name:<name>" reference) is matched case-insensitively against the
+// tenant's trusted certificates by name or fingerprint (first match wins),
+// mirroring the v1 by-name resolver. An empty tenant defaults to the current
+// tenant (handled by the client). Resolution runs for real even under dry-run /
+// deferred execution so the rendered request shows the resolved fingerprint.
+func (s *Service) ResolveID(ctx context.Context, tenant, ref string) (string, error) {
+	if ref == "" {
+		return "", fmt.Errorf("empty trusted certificate reference")
+	}
+	if value, ok := strings.CutPrefix(ref, "id:"); ok {
+		return value, nil
+	}
+	if value, ok := strings.CutPrefix(ref, "fingerprint:"); ok {
+		return value, nil
+	}
+	name := ref
+	if value, ok := strings.CutPrefix(ref, "name:"); ok {
+		name = value
+	} else if IsFingerprint(ref) {
+		return ref, nil
+	}
+
+	ctx = contexthelpers.ResolutionContext(ctx)
+	opt := ListOptions{TenantID: tenant}
+	opt.PageSize = 100
+	for cert, err := range s.ListAll(ctx, opt).Items() {
+		if err != nil {
+			return "", err
+		}
+		if strings.EqualFold(cert.Name(), name) || strings.EqualFold(cert.Fingerprint(), name) {
+			return cert.Fingerprint(), nil
+		}
+	}
+	return "", fmt.Errorf("trusted certificate not found: %s", name)
 }
 
 type GetOptions struct {
