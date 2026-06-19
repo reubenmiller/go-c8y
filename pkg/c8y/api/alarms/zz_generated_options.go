@@ -45,7 +45,7 @@ type ListOptions struct {
 	Resolved bool `url:"resolved,omitempty"`
 
 	// The severity of the alarm to search for.
-	Severity []model.AlarmSeverity `url:"severity,omitempty"`
+	Severity []model.AlarmSeverity `url:"severity,comma,omitempty"`
 
 	// Source device to filter alarms by.
 	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
@@ -53,10 +53,10 @@ type ListOptions struct {
 	Source managedobjects.DeviceRef `url:"source,omitempty"`
 
 	// The status of the alarm to search for. Should not be used when `resolved` parameter is provided.
-	Status []model.AlarmStatus `url:"status,omitempty"`
+	Status []model.AlarmStatus `url:"status,comma,omitempty"`
 
 	// The types of alarm to search for.
-	Type []string `url:"type,omitempty"`
+	Type []string `url:"type,comma,omitempty"`
 
 	// When set to `true`, alarms for related source assets, devices and additions will also be included in the response. When this parameter is provided a `source` must be specified.
 	WithSourceChildren bool `url:"withSourceChildren,omitempty"`

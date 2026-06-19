@@ -119,7 +119,7 @@ type FindOptions struct {
 	// Read-only collection of managed objects fetched for a given list of ids (placeholder {ids}),for example "?ids=41,43,68".
 	Ids []string `url:"ids,omitempty"`
 
-	Query string `url:"q,omitempty"`
+	Query string `url:"query,omitempty"`
 
 	managedobjects.GetOptions
 

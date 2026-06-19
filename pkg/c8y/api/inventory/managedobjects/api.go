@@ -328,8 +328,10 @@ type DeleteOptions struct {
 	// When set to true and the managed object is a device or group, all the hierarchy will be deleted
 	Cascade bool `url:"cascade,omitempty"`
 
-	// When set to true all the hierarchy will be deleted without checking the type of managed object. It takes precedence over the parameter cascade
-	ForceCascade bool `url:"forceCascade,omitempty"`
+	// When set to true all the hierarchy will be deleted without checking the type of managed object. It takes precedence over the parameter cascade.
+	// A pointer so an explicit value (including false) is always sent, while a nil leaves the parameter off entirely — callers that drive it from a
+	// flag (default true) send true/false; callers that don't set it (e.g. agents/smartgroups/devicegroups/devices delete) omit it, matching v1.
+	ForceCascade *bool `url:"forceCascade,omitempty"`
 
 	// When set to true and the managed object is a device, it deletes the associated device user (credentials)
 	WithDeviceUser bool `url:"withDeviceUser,omitempty"`

@@ -138,16 +138,20 @@ func isPlainID(s string) bool {
 }
 
 func (s *Service) listB(opt ListOptions) *core.TryRequest {
+	// Filter order matches the v1 query builder: the group/fragment scope
+	// (bygroupid, has(c8y_Patch)) precedes the c8y_Patch.dependency comparison.
+	// AND is commutative so this is purely cosmetic for the request, but the
+	// golden tests assert the exact ordering.
 	query := model.NewInventoryQuery().
 		AddFilterEqStr("type", "c8y_FirmwareBinary").
 		AddFilterEqStr("c8y_Firmware.version", opt.Version).
-		AddFilterEqStr("c8y_Patch.dependency", opt.DependencyVersion).
 		AddFilterEqStr("c8y_Firmware.url", opt.URL).
 		AddFilterPart(opt.Query).
 		ByGroupID(opt.FirmwareID).
+		HasFragment("c8y_Patch").
+		AddFilterEqStr("c8y_Patch.dependency", opt.DependencyVersion).
 		AddOrderBy("c8y_Firmware.version").
-		AddOrderBy("creationTime").
-		HasFragment("c8y_Patch")
+		AddOrderBy("creationTime")
 
 	listOpts := managedobjects.ListOptions{
 		Query:      query.Build(),
@@ -686,7 +690,7 @@ func (s *Service) updateB(ID string, body any) *core.TryRequest {
 
 func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
 	deleteOpts := managedobjects.DeleteOptions{
-		ForceCascade: opt.ForceCascade,
+		ForceCascade: &opt.ForceCascade,
 	}
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).

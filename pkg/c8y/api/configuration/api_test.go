@@ -47,7 +47,7 @@ func TestListScopesToType(t *testing.T) {
 	var gotQuery, gotPath string
 	svc, closeFn := testService(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
-		gotQuery = r.URL.Query().Get("q")
+		gotQuery = r.URL.Query().Get("query")
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"managedObjects":[{"id":"1","type":"c8y_ConfigurationDump"}]}`))
 	})
@@ -74,7 +74,7 @@ func TestGetByNameResolves(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
 		case r.URL.Path == "/inventory/managedObjects" && r.Method == http.MethodGet:
-			lookupQuery = r.URL.Query().Get("q")
+			lookupQuery = r.URL.Query().Get("query")
 			_, _ = w.Write([]byte(`{"managedObjects":[{"id":"42","name":"myconfig","type":"c8y_ConfigurationDump"}]}`))
 		case r.Method == http.MethodGet:
 			getPath = r.URL.Path
@@ -200,7 +200,8 @@ func TestDeleteSendsForceCascade(t *testing.T) {
 	})
 	defer closeFn()
 
-	res := svc.Delete(context.Background(), ByID("99"), DeleteOptions{ForceCascade: true})
+	forceCascade := true
+	res := svc.Delete(context.Background(), ByID("99"), DeleteOptions{ForceCascade: &forceCascade})
 	if res.Err != nil {
 		t.Fatalf("Delete: %v", res.Err)
 	}

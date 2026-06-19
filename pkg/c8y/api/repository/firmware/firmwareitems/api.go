@@ -635,7 +635,7 @@ func (s *Service) updateB(ID string, body any) *core.TryRequest {
 
 func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
 	deleteOpts := managedobjects.DeleteOptions{
-		ForceCascade: opt.ForceCascade,
+		ForceCascade: &opt.ForceCascade,
 	}
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).

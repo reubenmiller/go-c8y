@@ -29,7 +29,9 @@ type ListOptions struct {
 	DateTo time.Time `url:"dateTo,omitempty,omitzero" layout:"2006-01-02T15:04:05.000Z07:00"`
 
 	// If you are using a range query (that is, at least one of the `dateFrom` or `dateTo` parameters is included in the request), then setting `revert=false` will sort the
-	Revert bool `url:"revert,omitempty"`
+	// results oldest first. Emitted without omitempty so an explicit revert=false reaches the server rather than being dropped (it is the server's default sort, so this is
+	// equivalent to omitting it); a plain bool with omitempty cannot distinguish "unset" from "explicitly false".
+	Revert bool `url:"revert"`
 
 	// Source device to filter measurements by.
 	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,

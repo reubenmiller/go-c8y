@@ -63,13 +63,17 @@ func ByID(id string) SmartGroupRef { return SmartGroupRef(id) }
 // ByName creates a reference resolved by smart-group name (wildcards allowed).
 func ByName(name string) SmartGroupRef { return SmartGroupRef("name:" + name) }
 
-// ListOptions filters smart groups. The Query field is the fully-built q
-// expression (e.g. from model.InventoryQuery); restrict it to smart groups with
-// ScopeToSmartGroups when the caller has not already done so.
+// ListOptions filters smart groups. The Query field is the fully-built inventory
+// query expression (e.g. from model.InventoryQuery); restrict it to smart groups
+// with ScopeToSmartGroups when the caller has not already done so.
 type ListOptions struct {
 	Type         string `url:"type,omitempty"`
 	FragmentType string `url:"fragmentType,omitempty"`
-	Query        string `url:"q"`
+	// The inventory query goes in the "query" parameter (the Cumulocity query
+	// language), not "q": the real platform ignores "q" for managed-object
+	// filtering, so a name lookup silently returns nothing. (Some fake servers
+	// accept either, which hid this.)
+	Query string `url:"query"`
 
 	managedobjects.GetOptions
 	pagination.PaginationOptions

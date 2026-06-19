@@ -87,7 +87,7 @@ func ByName(name string) ConfigurationRef { return ConfigurationRef("name:" + na
 type ListOptions struct {
 	Type         string `url:"type,omitempty"`
 	FragmentType string `url:"fragmentType,omitempty"`
-	Query        string `url:"q"`
+	Query        string `url:"query"`
 
 	managedobjects.GetOptions
 	pagination.PaginationOptions

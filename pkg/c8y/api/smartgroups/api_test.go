@@ -49,7 +49,7 @@ func TestGetByNameResolves(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
 		case r.URL.Path == "/inventory/managedObjects" && r.Method == http.MethodGet:
-			lookupQuery = r.URL.Query().Get("q")
+			lookupQuery = r.URL.Query().Get("query")
 			_, _ = w.Write([]byte(`{"managedObjects":[{"id":"42","name":"mygroup","type":"c8y_DynamicGroup"}]}`))
 		case r.Method == http.MethodGet:
 			getPath = r.URL.Path

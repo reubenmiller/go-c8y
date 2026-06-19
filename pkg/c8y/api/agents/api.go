@@ -68,7 +68,7 @@ func ByName(name string) AgentRef { return AgentRef("name:" + name) }
 type ListOptions struct {
 	Type         string `url:"type,omitempty"`
 	FragmentType string `url:"fragmentType,omitempty"`
-	Query        string `url:"q"`
+	Query        string `url:"query"`
 
 	managedobjects.GetOptions
 	pagination.PaginationOptions
