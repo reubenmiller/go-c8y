@@ -6,7 +6,7 @@ require (
 	github.com/google/go-jsonnet v0.21.0
 	github.com/google/go-querystring v1.2.0
 	github.com/gorilla/websocket v1.5.3
-	github.com/labstack/echo/v4 v4.15.1
+	github.com/labstack/echo/v4 v4.15.3
 	github.com/mdp/qrterminal/v3 v3.2.1
 	github.com/obeattie/ohmyglob v0.0.0-20150811221449-290764208a0d
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7
@@ -17,7 +17,7 @@ require (
 	github.com/vbauerster/mpb/v8 v8.12.0
 	go.mozilla.org/pkcs7 v0.9.0
 	go.uber.org/zap v1.27.1
-	golang.org/x/net v0.51.0
+	golang.org/x/net v0.53.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/robfig/cron.v2 v2.0.0-20150107220207-be2e0b0deed5
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
@@ -32,9 +32,9 @@ require (
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
-	github.com/labstack/gommon v0.4.2 // indirect
+	github.com/labstack/gommon v0.5.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
-	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/mattn/go-isatty v0.0.22 // indirect
 	github.com/mattn/go-runewidth v0.0.20 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
@@ -54,10 +54,10 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.48.0 // indirect
-	golang.org/x/sys v0.41.0 // indirect
-	golang.org/x/term v0.40.0 // indirect
-	golang.org/x/text v0.34.0 // indirect
+	golang.org/x/crypto v0.50.0 // indirect
+	golang.org/x/sys v0.43.0 // indirect
+	golang.org/x/term v0.42.0 // indirect
+	golang.org/x/text v0.36.0 // indirect
 	google.golang.org/protobuf v1.36.8 // indirect
 	rsc.io/qr v0.2.0 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
