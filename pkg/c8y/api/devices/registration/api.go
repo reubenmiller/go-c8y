@@ -128,7 +128,7 @@ type UpdateOptions struct {
 	SecurityToken string `json:"securityToken,omitempty"`
 
 	// When creating a new device enrollment request this field is treated as device's one time password (OTP)
-	EnrollmentToken string `json:"type,omitempty"`
+	EnrollmentToken string `json:"enrollmentToken,omitempty"`
 }
 
 // Update a specific new device request (by a given ID). You can only update its status
