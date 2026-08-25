@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -23,8 +24,9 @@ const fingerprintA = "0123456789abcdef0123456789abcdef01234567"
 // property is plucked.
 func TestList(t *testing.T) {
 	var gotPath, gotMethod string
+	var gotQuery url.Values
 	svc, closeFn := testService(func(w http.ResponseWriter, r *http.Request) {
-		gotPath, gotMethod = r.URL.Path, r.Method
+		gotPath, gotMethod, gotQuery = r.URL.Path, r.Method, r.URL.Query()
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"certificates":[{"fingerprint":"` + fingerprintA + `","name":"MyCert"},{"fingerprint":"deadbeef","name":"Other"}]}`))
 	})
@@ -39,6 +41,9 @@ func TestList(t *testing.T) {
 	}
 	if !strings.HasSuffix(gotPath, "/tenant/tenants/t123/trusted-certificates") {
 		t.Errorf("path = %q, want .../tenant/tenants/t123/trusted-certificates", gotPath)
+	}
+	if gotQuery.Has("TenantID") {
+		t.Errorf("query = %q, TenantID must not leak into query parameters", gotQuery.Encode())
 	}
 	count := 0
 	for cert, err := range res.Items() {
@@ -56,8 +61,9 @@ func TestList(t *testing.T) {
 // TestCreate verifies the create endpoint, method and raw body passthrough.
 func TestCreate(t *testing.T) {
 	var gotPath, gotMethod, gotBody string
+	var gotQuery url.Values
 	svc, closeFn := testService(func(w http.ResponseWriter, r *http.Request) {
-		gotPath, gotMethod = r.URL.Path, r.Method
+		gotPath, gotMethod, gotQuery = r.URL.Path, r.Method, r.URL.Query()
 		b, _ := io.ReadAll(r.Body)
 		gotBody = string(b)
 		w.Header().Set("Content-Type", "application/json")
@@ -79,6 +85,37 @@ func TestCreate(t *testing.T) {
 	}
 	if !strings.Contains(gotBody, `"certInPemFormat":"abc"`) || !strings.Contains(gotBody, `"name":"MyCert"`) {
 		t.Errorf("body = %q, missing passthrough fields", gotBody)
+	}
+	if gotQuery.Has("TenantID") {
+		t.Errorf("query = %q, TenantID must not leak into query parameters", gotQuery.Encode())
+	}
+}
+
+// TestCreateWithAddToTrustStore verifies the AddToTrustStore option is sent as
+// the addToTrustStore query parameter (and TenantID stays out of the query).
+func TestCreateWithAddToTrustStore(t *testing.T) {
+	var gotQuery url.Values
+	svc, closeFn := testService(func(w http.ResponseWriter, r *http.Request) {
+		gotQuery = r.URL.Query()
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"fingerprint":"` + fingerprintA + `","name":"MyCert"}`))
+	})
+	defer closeFn()
+
+	addToTrustStore := false
+	res := svc.Create(context.Background(), CreateOptions{
+		TenantID:        "t123",
+		AddToTrustStore: &addToTrustStore,
+	}, map[string]any{"name": "MyCert"})
+	if res.Err != nil {
+		t.Fatalf("Create: %v", res.Err)
+	}
+	if got := gotQuery.Get("addToTrustStore"); got != "false" {
+		t.Errorf("addToTrustStore query param = %q, want \"false\"", got)
+	}
+	if gotQuery.Has("TenantID") {
+		t.Errorf("query = %q, TenantID must not leak into query parameters", gotQuery.Encode())
 	}
 }
 

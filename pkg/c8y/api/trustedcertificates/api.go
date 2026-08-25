@@ -51,7 +51,7 @@ type Service struct {
 
 // ListOptions trusted certificates filter options
 type ListOptions struct {
-	TenantID string
+	TenantID string `url:"-"`
 
 	// When set to true, the tenant certificate authority will be retrieved
 	CertificateAuthority bool `url:"certificateAuthority,omitempty"`
@@ -93,7 +93,7 @@ func (s *Service) listB(opt ListOptions) *core.TryRequest {
 }
 
 type CreateOptions struct {
-	TenantID string
+	TenantID string `url:"-"`
 
 	// If set to true the certificate is added to the truststore
 	// The truststore contains all trusted certificates. A connection to a device is only established if it connects to Cumulocity with a certificate in the truststore.
@@ -111,6 +111,7 @@ func (s *Service) createB(opt CreateOptions, body any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
+		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -127,6 +128,7 @@ func (s *Service) createMultipleB(opt CreateOptions, body any) *core.TryRequest 
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
+		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -190,9 +192,9 @@ func (s *Service) ResolveID(ctx context.Context, tenant, ref string) (string, er
 }
 
 type GetOptions struct {
-	TenantID string
+	TenantID string `url:"-"`
 
-	Fingerprint string
+	Fingerprint string `url:"-"`
 }
 
 // Get a trusted certificate
@@ -211,9 +213,9 @@ func (s *Service) getB(opt GetOptions) *core.TryRequest {
 }
 
 type UpdateOptions struct {
-	TenantID string
+	TenantID string `url:"-"`
 
-	Fingerprint string
+	Fingerprint string `url:"-"`
 }
 
 // Update a trusted certificate
@@ -262,13 +264,13 @@ func (s *Service) deleteB(opt DeleteOptions) *core.TryRequest {
 type ProofOptions struct {
 	Fingerprint string `url:"-"`
 
-	TenantID string
+	TenantID string `url:"-"`
 
 	// Verification code. If left blank then it will be fetched
-	Code string
+	Code string `url:"-"`
 
 	// Path to the private key to use to verify the code
-	PrivateKey string
+	PrivateKey string `url:"-"`
 }
 
 func (s *Service) ProofEndToEnd(ctx context.Context, opt ProofOptions) op.Result[jsonmodels.TrustedCertificate] {
@@ -336,9 +338,9 @@ func (s *Service) proofB(opt ProofOptions, body any) *core.TryRequest {
 }
 
 type CreateVerificationCodeOptions struct {
-	Fingerprint string
+	Fingerprint string `url:"-"`
 
-	TenantID string
+	TenantID string `url:"-"`
 }
 
 // Generate a verification code for the proof of possession operation for the certificate (by a given fingerprint)
@@ -357,9 +359,9 @@ func (s *Service) createVerificationCodeB(opt CreateVerificationCodeOptions) *co
 }
 
 type ConfirmOptions struct {
-	Fingerprint string
+	Fingerprint string `url:"-"`
 
-	TenantID string
+	TenantID string `url:"-"`
 }
 
 // Confirm the proof of possession of an already uploaded certificate (by a given fingerprint) for a specific tenant

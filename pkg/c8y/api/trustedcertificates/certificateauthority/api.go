@@ -36,7 +36,7 @@ type CreateOptions struct{}
 
 // ListOptions trusted certificates filter options
 type GetOptions struct {
-	TenantID string
+	TenantID string `url:"-"`
 }
 
 // Get the certificate authority
@@ -107,7 +107,7 @@ func (s *Service) GetOrCreate(ctx context.Context, opt GetOptions) op.Result[jso
 
 // DeleteOptions options to delete the tenant CA certificate
 type DeleteOptions struct {
-	TenantID string
+	TenantID string `url:"-"`
 }
 
 // Delete removes the tenant's CA certificate from the trusted certificates repository.
