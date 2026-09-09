@@ -175,3 +175,47 @@ func TestPrepareMultipartRequest(t *testing.T) {
 		})
 	}
 }
+
+func TestJoinURLPath(t *testing.T) {
+	testCases := []struct {
+		name string
+		base string
+		path string
+
+		wantPath string
+	}{
+		{
+			name:     "",
+			base:     "/",
+			path:     "/inventory/1234",
+			wantPath: "/inventory/1234",
+		},
+		{
+			name:     "",
+			base:     "/",
+			path:     "inventory/1234",
+			wantPath: "/inventory/1234",
+		},
+		{
+			name:     "",
+			base:     "",
+			path:     "inventory/1234",
+			wantPath: "inventory/1234",
+		},
+		{
+			name:     "with trailing slash",
+			base:     "",
+			path:     "inventory/1234/",
+			wantPath: "inventory/1234/",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			gotPath := JoinURLPath(tc.base, tc.path)
+			if gotPath != tc.wantPath {
+				t.Errorf("path: - got %q, want %q", gotPath, tc.wantPath)
+			}
+		})
+	}
+}
