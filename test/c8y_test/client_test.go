@@ -69,7 +69,7 @@ func Test_SendRequest(t *testing.T) {
 	}
 
 	if currentPath != "/base/path/with%20space" {
-		t.Errorf("Path does not match. %s", currentPath)
+		t.Errorf("Path does not match. got=%q, wanted=%q", currentPath, "/base/path/with%20space")
 	}
 
 	currentQuery, err := options.GetQuery()
@@ -79,6 +79,74 @@ func Test_SendRequest(t *testing.T) {
 
 	if currentQuery != "another=+again+&pageSize=100&query=test+eq+%27me%27" {
 		t.Errorf("Query does not match. %s", currentQuery)
+	}
+}
+
+func Test_SendRequestWithTrailingSlash(t *testing.T) {
+	testCases := []struct {
+		name     string
+		request  c8y.RequestOptions
+		wantPath string
+	}{
+		{
+			"host has trailing slash",
+			c8y.RequestOptions{
+				Host:   "https://c8y.example/base/",
+				Method: "GET",
+				Path:   "/foo/bar/",
+			},
+			"/base/foo/bar/",
+		},
+		{
+			"host and path have trailing slash",
+			c8y.RequestOptions{
+				Host:   "https://c8y.example/",
+				Method: "GET",
+				Path:   "foo/bar/",
+			},
+			"/foo/bar/",
+		},
+		{
+			"relative path are maintained",
+			c8y.RequestOptions{
+				Host:   "https://c8y.example",
+				Method: "GET",
+				Path:   "foo/bar/",
+			},
+			"foo/bar/",
+		},
+		{
+			"relative path is resolved against host that ends with a slash",
+			c8y.RequestOptions{
+				Host:   "https://c8y.example/",
+				Method: "GET",
+				Path:   "foo/bar/",
+			},
+			"/foo/bar/",
+		},
+		{
+			"relative path without trailing slash is resolved",
+			c8y.RequestOptions{
+				Host:   "https://c8y.example",
+				Method: "GET",
+				Path:   "foo/bar",
+			},
+			"foo/bar",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			currentPath, err := tc.request.GetEscapedPath()
+			if err != nil {
+				t.Errorf("Invalid path. want: nil, got: %s", err)
+			}
+
+			if currentPath != tc.wantPath {
+				t.Errorf("Path does not match. got=%q, wanted=%q", currentPath, tc.wantPath)
+			}
+		})
 	}
 }
 

@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/textproto"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -191,4 +192,15 @@ func IsID(v string) bool {
 	isNotDigit := func(c rune) bool { return c < '0' || c > '9' }
 	value := strings.TrimSpace(v)
 	return strings.IndexFunc(value, isNotDigit) <= -1
+}
+
+// JoinURLPath and ignore any errors
+func JoinURLPath(elem ...string) string {
+	p := path.Join(elem...)
+	// path.Join will remove any trailing slashes.
+	// Preserve at least one.
+	if strings.HasSuffix(elem[len(elem)-1], "/") && !strings.HasSuffix(p, "/") {
+		p += "/"
+	}
+	return p
 }

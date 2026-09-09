@@ -13,7 +13,6 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
-	"path"
 	"reflect"
 	"regexp"
 	"sort"
@@ -766,7 +765,7 @@ func (r *RequestOptions) GetPath() (string, error) {
 		return "", err
 	}
 
-	tempURL.Path = path.Join(prefixPath, tempURL.Path)
+	tempURL.Path = JoinURLPath(prefixPath, tempURL.Path)
 	return tempURL.Path, nil
 }
 
@@ -835,7 +834,7 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) (*Resp
 		// TODO: Somehow use the c.NewRequest function as it provides
 		// the authentication required for the request
 		u, _ := url.Parse(c.BaseURL.String())
-		u.Path = path.Join(u.Path, currentPath)
+		u.Path = JoinURLPath(u.Path, currentPath)
 		u.RawQuery = currentQuery
 		req, err = prepareMultipartRequest(options.Method, u.String(), options.FormData)
 		if err != nil {
