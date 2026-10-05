@@ -270,7 +270,11 @@ func TestInventoryService_CreateBinaryWithProgressBar(t *testing.T) {
 	testingutils.Ok(t, err)
 
 	_, resp, err := client.Inventory.CreateBinary(context.Background(), binaryFile, func(r *http.Request) (*http.Request, error) {
-		r.Body = bar.ProxyReader(r.Body)
+		body, err := bar.ProxyReader(r.Body)
+		if err != nil {
+			return r, err
+		}
+		r.Body = body
 		return r, nil
 	})
 	testingutils.Ok(t, err)
