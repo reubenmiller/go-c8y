@@ -204,7 +204,8 @@ func Test_CustomBodyWriter(t *testing.T) {
 			),
 		)
 
-		proxyReader := bar.ProxyReader(response.Body)
+		proxyReader, err := bar.ProxyReader(response.Body)
+		testingutils.Ok(t, err)
 		response.Body = proxyReader
 		return proxyReader
 	}
