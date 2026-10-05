@@ -1,9 +1,9 @@
 module github.com/reubenmiller/example
 
-go 1.25.0
+go 1.26.0
 
 require (
-	github.com/alecthomas/kong v1.14.0
+	github.com/alecthomas/kong v1.16.1
 	github.com/eclipse/paho.golang v0.23.0
 	github.com/reubenmiller/go-c8y v0.0.0-00010101000000-000000000000
 )
@@ -17,15 +17,15 @@ require (
 	github.com/obeattie/ohmyglob v0.0.0-20150811221449-290764208a0d // indirect
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/tidwall/gjson v1.18.0 // indirect
+	github.com/tidwall/gjson v1.20.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
-	go.mozilla.org/pkcs7 v0.9.0 // indirect
+	go.mozilla.org/pkcs7 v0.10.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.27.1 // indirect
-	golang.org/x/net v0.51.0 // indirect
-	golang.org/x/sys v0.41.0 // indirect
-	golang.org/x/term v0.40.0 // indirect
+	go.uber.org/zap v1.28.0 // indirect
+	golang.org/x/net v0.59.0 // indirect
+	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/term v0.46.0 // indirect
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637 // indirect
 	rsc.io/qr v0.2.0 // indirect
 )
