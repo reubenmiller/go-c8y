@@ -44,6 +44,7 @@
         "pkid",
         "ICCID",
         "myapi",
+        "httpx",
         // URLs and query parameters
         "bygroupid",
         "devicecontrol",
@@ -80,6 +81,9 @@
         "pkcs",
         "PKCS",
         "IDTYPE",
+        "Alives",
+        "nolint",
+        "gosec",
         // libraries
         "omitzero",
         "araddon",
@@ -108,5 +112,11 @@
         "vbauerster",
         "wsconnadapter",
         "wsurl",
+        "yamux",
+        "multiformats",
+        "multistream",
+        "Muxer",
+        "upgrader",
+        "Upgrader",
     ],
 }
