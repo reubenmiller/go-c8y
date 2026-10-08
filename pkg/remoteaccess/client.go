@@ -16,6 +16,11 @@ import (
 type RemoteAccessOptions struct {
 	ManagedObjectID string
 	RemoteAccessID  string
+
+	// Multiplex carries all local connections over a single remote access session (yamux),
+	// if the device supports it (e.g. thin-edge.io remote access plugin). Falls back to one
+	// remote access session per connection otherwise.
+	Multiplex bool
 }
 
 func parseListenerAddress(v string) (network string, addr string, err error) {
@@ -39,6 +44,7 @@ type RemoteAccessClient struct {
 	client   *c8y.Client
 	ctx      RemoteAccessOptions
 	listener net.Listener
+	mux      multiplexer
 }
 
 // Create new Remote Access client to allow local clients
@@ -131,11 +137,16 @@ func (c *RemoteAccessClient) Serve() error {
 
 	// Close the listener when the application closes.
 	defer c.listener.Close()
+	defer c.mux.close()
 	for {
 		// Listen for an incoming connection.
 		tcpConn, err := c.listener.Accept()
 		if err != nil {
 			c8y.Logger.Errorf("ACCEPT: %v", err.Error())
+		}
+
+		if c.ctx.Multiplex && c.serveMultiplexed(tcpConn) {
+			continue
 		}
 
 		clientWsConn, remoteURL, err := c.createRemoteAccessConnection()
