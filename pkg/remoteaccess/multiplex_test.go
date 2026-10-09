@@ -25,6 +25,11 @@ type fakeRemoteAccess struct {
 	websockets    atomic.Int32
 	supportsMux   bool
 	echoServerURL string
+
+	// dropNegotiations is the number of multiplexing requests to drop without answering
+	dropNegotiations atomic.Int32
+	// silent never answers multiplexing requests (e.g. a target which waits for more data)
+	silent bool
 }
 
 func newFakeRemoteAccess(t *testing.T, supportsMux bool) *fakeRemoteAccess {
@@ -61,6 +66,14 @@ func (f *fakeRemoteAccess) device(wsConn *websocket.Conn) {
 	first = first[:n]
 
 	if bytes.HasPrefix(first, multistreamHeader) {
+		if f.dropNegotiations.Add(-1) >= 0 {
+			// e.g. the websocket failing before the device answered
+			return
+		}
+		if f.silent {
+			_, _ = io.Copy(io.Discard, conn)
+			return
+		}
 		if !f.supportsMux {
 			// an older plugin forwards the negotiation to the (HTTP) target, which rejects it
 			_, _ = conn.Write([]byte("HTTP/1.1 400 Bad Request\r\n\r\n"))
@@ -85,7 +98,7 @@ func (f *fakeRemoteAccess) device(wsConn *websocket.Conn) {
 				stream.Close()
 				continue
 			}
-			go pipe(target, stream)
+			go pipe(target, stream, multiplexHalfCloseTimeout)
 		}
 	}
 
@@ -136,17 +149,21 @@ func echoServer(t *testing.T) string {
 	return listener.Addr().String()
 }
 
-func startClient(t *testing.T, fake *fakeRemoteAccess, multiplex bool) string {
+func newClient(t *testing.T, fake *fakeRemoteAccess, opts RemoteAccessOptions) *RemoteAccessClient {
 	t.Helper()
 	client := c8y.NewClient(nil, fake.server.URL, "t12345", "user", "password", true)
-	ra := NewRemoteAccessClient(client, RemoteAccessOptions{
-		ManagedObjectID: "1234",
-		RemoteAccessID:  "1",
-		Multiplex:       multiplex,
-	})
+	opts.ManagedObjectID = "1234"
+	opts.RemoteAccessID = "1"
+	ra := NewRemoteAccessClient(client, opts)
 	if err := ra.Listen("127.0.0.1:0"); err != nil {
 		t.Fatal(err)
 	}
+	return ra
+}
+
+func startClient(t *testing.T, fake *fakeRemoteAccess, multiplex bool) string {
+	t.Helper()
+	ra := newClient(t, fake, RemoteAccessOptions{Multiplex: multiplex})
 	go func() { _ = ra.Serve() }()
 	return ra.GetListenerAddress()
 }
@@ -218,5 +235,110 @@ func TestWithoutMultiplexingEachConnectionUsesItsOwnSession(t *testing.T) {
 
 	if got := fake.websockets.Load(); got != 3 {
 		t.Fatalf("expected 3 remote access websockets, got %d", got)
+	}
+}
+
+func TestMultiplexingIsRetriedAfterAFailedNegotiation(t *testing.T) {
+	fake := newFakeRemoteAccess(t, true)
+	fake.dropNegotiations.Store(1)
+	address := startClient(t, fake, true)
+
+	for i := 0; i < 3; i++ {
+		exchange(t, address, fmt.Sprintf("hello %d", i), false)
+	}
+
+	// dropped negotiation, then one websocket for the first connection, then a single multiplexed session
+	if got := fake.websockets.Load(); got != 3 {
+		t.Fatalf("expected 3 remote access websockets, got %d", got)
+	}
+}
+
+func TestMultiplexingNegotiationTimeoutIsConfigurable(t *testing.T) {
+	fake := newFakeRemoteAccess(t, true)
+	fake.silent = true
+	ra := newClient(t, fake, RemoteAccessOptions{Multiplex: true, MultiplexNegotiationTimeout: 100 * time.Millisecond})
+	go func() { _ = ra.Serve() }()
+
+	for i := 0; i < 2; i++ {
+		started := time.Now()
+		exchange(t, ra.GetListenerAddress(), fmt.Sprintf("hello %d", i), false)
+		if elapsed := time.Since(started); elapsed > 2*time.Second {
+			t.Fatalf("exchange took %v, expected the negotiation to time out after 100ms", elapsed)
+		}
+	}
+
+	// a timeout is not retried: one websocket for the negotiation, then one per connection
+	if got := fake.websockets.Load(); got != 3 {
+		t.Fatalf("expected 3 remote access websockets, got %d", got)
+	}
+}
+
+func TestServeReturnsWhenListenerIsClosed(t *testing.T) {
+	fake := newFakeRemoteAccess(t, true)
+	ra := newClient(t, fake, RemoteAccessOptions{Multiplex: true})
+	done := make(chan error, 1)
+	go func() { done <- ra.Serve() }()
+
+	ra.listener.Close()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("serve did not return after the listener was closed")
+	}
+}
+
+func TestPipeClosesLocalConnectionWhichIgnoresTheHalfClose(t *testing.T) {
+	clientSide, serverSide := net.Pipe()
+	client, err := yamux.Client(clientSide, yamuxTestConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Close()
+	server, err := yamux.Server(serverSide, yamuxTestConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer server.Close()
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer listener.Close()
+	// the local client connects and then stays idle, keeping its side open
+	idleClient, err := net.Dial("tcp", listener.Addr().String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer idleClient.Close()
+	localConn, err := listener.Accept()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	stream, err := client.OpenStream()
+	if err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan struct{})
+	go func() {
+		pipe(localConn, stream, 100*time.Millisecond)
+		close(done)
+	}()
+
+	// the remote side finishes
+	remote, err := server.AcceptStream()
+	if err != nil {
+		t.Fatal(err)
+	}
+	remote.Close()
+
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("pipe did not return after the remote side finished")
 	}
 }

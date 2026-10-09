@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/hashicorp/yamux"
@@ -27,8 +28,13 @@ const MultiplexProtocol = "/yamux/1.0.0"
 // ErrMultiplexNotSupported is returned when the device did not acknowledge the multiplexing request
 var ErrMultiplexNotSupported = errors.New("remote access multiplexing is not supported by the device")
 
-// MultiplexNegotiationTimeout is the maximum time to wait for the device to acknowledge multiplexing
-var MultiplexNegotiationTimeout = 5 * time.Second
+// DefaultMultiplexNegotiationTimeout is the maximum time to wait for the device to acknowledge
+// multiplexing, unless RemoteAccessOptions.MultiplexNegotiationTimeout is set
+var DefaultMultiplexNegotiationTimeout = 5 * time.Second
+
+// multiplexHalfCloseTimeout is how long the local side of a stream may keep sending after the
+// remote side has finished, before the local connection is closed
+const multiplexHalfCloseTimeout = 30 * time.Second
 
 // multiplexer manages the multiplexed session of a client. The session is (re)opened on demand.
 type multiplexer struct {
@@ -38,18 +44,28 @@ type multiplexer struct {
 }
 
 // OpenMultiplexedSession opens a remote access websocket and negotiates multiplexing with the device.
-// It returns ErrMultiplexNotSupported if the device does not support it.
+// It returns ErrMultiplexNotSupported if the device answered with anything other than an
+// acknowledgement, or did not answer in time. Other errors (e.g. the websocket failing before the
+// device answered) are returned as is, as they do not tell whether the device supports it.
 func (c *RemoteAccessClient) OpenMultiplexedSession() (*yamux.Session, error) {
 	wsConn, remoteURL, err := c.createRemoteAccessConnection()
 	if err != nil {
 		return nil, err
 	}
-	conn := wsconnadapter.New(wsConn)
+	conn := &countingConn{Conn: wsconnadapter.New(wsConn)}
 
-	_ = conn.SetDeadline(time.Now().Add(MultiplexNegotiationTimeout))
+	timeout := c.ctx.MultiplexNegotiationTimeout
+	if timeout <= 0 {
+		timeout = DefaultMultiplexNegotiationTimeout
+	}
+	_ = conn.SetDeadline(time.Now().Add(timeout))
 	if err := multistream.SelectProtoOrFail(MultiplexProtocol, conn); err != nil {
 		conn.Close()
-		return nil, fmt.Errorf("%w: %v", ErrMultiplexNotSupported, err)
+		var netErr net.Error
+		if conn.received.Load() > 0 || (errors.As(err, &netErr) && netErr.Timeout()) {
+			return nil, fmt.Errorf("%w: %v", ErrMultiplexNotSupported, err)
+		}
+		return nil, fmt.Errorf("multiplexing negotiation failed: %w", err)
 	}
 	_ = conn.SetDeadline(time.Time{})
 
@@ -62,6 +78,18 @@ func (c *RemoteAccessClient) OpenMultiplexedSession() (*yamux.Session, error) {
 	}
 	c8y.Logger.Infof("Multiplexing connections to %v", remoteURL)
 	return session, nil
+}
+
+// countingConn counts the bytes received, to tell whether the device answered at all
+type countingConn struct {
+	net.Conn
+	received atomic.Int64
+}
+
+func (c *countingConn) Read(p []byte) (int, error) {
+	n, err := c.Conn.Read(p)
+	c.received.Add(int64(n))
+	return n, err
 }
 
 // getSession returns the open multiplexed session, opening a new one if required
@@ -110,12 +138,13 @@ func (c *RemoteAccessClient) serveMultiplexed(localConn net.Conn) bool {
 		c8y.Logger.Warnf("Could not open multiplexed stream, using one websocket per connection. %v", err)
 		return false
 	}
-	go pipe(localConn, stream)
+	go pipe(localConn, stream, multiplexHalfCloseTimeout)
 	return true
 }
 
-// pipe copies data in both directions until both sides are done, propagating half-closes
-func pipe(localConn net.Conn, stream *yamux.Stream) {
+// pipe copies data in both directions until both sides are done, propagating half-closes.
+// Once the remote side has finished, the local side has halfCloseTimeout to finish too.
+func pipe(localConn net.Conn, stream *yamux.Stream, halfCloseTimeout time.Duration) {
 	defer localConn.Close()
 	defer stream.Close()
 
@@ -132,6 +161,8 @@ func pipe(localConn net.Conn, stream *yamux.Stream) {
 		_, _ = io.Copy(localConn, stream)
 		if conn, ok := localConn.(interface{ CloseWrite() error }); ok {
 			_ = conn.CloseWrite()
+			// don't wait forever for a local client which ignores the half-close
+			_ = localConn.SetReadDeadline(time.Now().Add(halfCloseTimeout))
 		} else {
 			_ = localConn.Close()
 		}
