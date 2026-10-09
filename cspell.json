@@ -44,6 +44,7 @@
         "pkid",
         "ICCID",
         "myapi",
+        "httpx",
         // URLs and query parameters
         "bygroupid",
         "devicecontrol",
@@ -108,5 +109,11 @@
         "vbauerster",
         "wsconnadapter",
         "wsurl",
+        "yamux",
+        "multiformats",
+        "multistream",
+        "Muxer",
+        "upgrader",
+        "Upgrader",
     ],
 }

@@ -6,8 +6,10 @@ require (
 	github.com/google/go-jsonnet v0.22.0
 	github.com/google/go-querystring v1.2.0
 	github.com/gorilla/websocket v1.5.3
+	github.com/hashicorp/yamux v0.1.2
 	github.com/labstack/echo/v4 v4.16.0
 	github.com/mdp/qrterminal/v3 v3.2.1
+	github.com/multiformats/go-multistream v0.6.1
 	github.com/obeattie/ohmyglob v0.0.0-20150811221449-290764208a0d
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7
 	github.com/pkg/errors v0.9.1
@@ -36,6 +38,7 @@ require (
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.22 // indirect
 	github.com/mattn/go-runewidth v0.0.30 // indirect
+	github.com/multiformats/go-varint v0.0.6 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect

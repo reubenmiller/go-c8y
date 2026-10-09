@@ -31,32 +31,37 @@ func (a *Adapter) Read(b []byte) (int, error) {
 	a.readMutex.Lock()
 	defer a.readMutex.Unlock()
 
-	if a.reader == nil {
-		messageType, reader, err := a.conn.NextReader()
-		if err != nil {
-			return 0, err
+	for {
+		if a.reader == nil {
+			messageType, reader, err := a.conn.NextReader()
+			if err != nil {
+				return 0, err
+			}
+
+			if messageType != websocket.BinaryMessage {
+				return 0, errors.New("unexpected websocket message type")
+			}
+
+			a.reader = reader
 		}
 
-		if messageType != websocket.BinaryMessage {
-			return 0, errors.New("unexpected websocket message type")
-		}
-
-		a.reader = reader
-	}
-
-	bytesRead, err := a.reader.Read(b)
-	if err != nil {
-		a.reader = nil
-
-		// EOF for the current Websocket frame, more will probably come so..
+		bytesRead, err := a.reader.Read(b)
 		if err == io.EOF {
-			// .. we must hide this from the caller since our semantics are a
-			// stream of bytes across many frames
-			err = nil
+			// EOF for the current Websocket frame, more will probably come, so it must be hidden
+			// from the caller since our semantics are a stream of bytes across many frames.
+			// Continue with the next frame rather than returning no data and no error, which
+			// readers treat as a lack of progress.
+			a.reader = nil
+			if bytesRead == 0 && len(b) > 0 {
+				continue
+			}
+			return bytesRead, nil
 		}
+		if err != nil {
+			a.reader = nil
+		}
+		return bytesRead, err
 	}
-
-	return bytesRead, err
 }
 
 func (a *Adapter) Write(b []byte) (int, error) {
