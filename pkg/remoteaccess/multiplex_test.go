@@ -66,43 +66,54 @@ func (f *fakeRemoteAccess) device(wsConn *websocket.Conn) {
 	first = first[:n]
 
 	if bytes.HasPrefix(first, multistreamHeader) {
-		if f.dropNegotiations.Add(-1) >= 0 {
-			// e.g. the websocket failing before the device answered
-			return
-		}
-		if f.silent {
-			_, _ = io.Copy(io.Discard, conn)
-			return
-		}
-		if !f.supportsMux {
-			// an older plugin forwards the negotiation to the (HTTP) target, which rejects it
-			_, _ = conn.Write([]byte("HTTP/1.1 400 Bad Request\r\n\r\n"))
-			return
-		}
+		f.negotiate(conn, first)
+		return
+	}
+	f.passthrough(conn, first)
+}
+
+// negotiate answers a multiplexing request, depending on the configured behavior
+func (f *fakeRemoteAccess) negotiate(conn net.Conn, first []byte) {
+	switch {
+	case f.dropNegotiations.Add(-1) >= 0:
+		// e.g. the websocket failing before the device answered
+	case f.silent:
+		_, _ = io.Copy(io.Discard, conn)
+	case !f.supportsMux:
+		// an older plugin forwards the negotiation to the (HTTP) target, which rejects it
+		_, _ = conn.Write([]byte("HTTP/1.1 400 Bad Request\r\n\r\n"))
+	default:
 		mux := multistream.NewMultistreamMuxer[string]()
 		mux.AddHandler(MultiplexProtocol, nil)
 		if _, _, err := mux.Negotiate(&replayConn{Reader: io.MultiReader(bytes.NewReader(first), conn), Conn: conn}); err != nil {
 			return
 		}
-		session, err := yamux.Server(conn, yamuxTestConfig())
+		f.serveStreams(conn)
+	}
+}
+
+// serveStreams forwards each stream of a yamux session to the target
+func (f *fakeRemoteAccess) serveStreams(conn net.Conn) {
+	session, err := yamux.Server(conn, yamuxTestConfig())
+	if err != nil {
+		return
+	}
+	for {
+		stream, err := session.AcceptStream()
 		if err != nil {
 			return
 		}
-		for {
-			stream, err := session.AcceptStream()
-			if err != nil {
-				return
-			}
-			target, err := net.Dial("tcp", f.echoServerURL)
-			if err != nil {
-				stream.Close()
-				continue
-			}
-			go pipe(target, stream, multiplexHalfCloseTimeout)
+		target, err := net.Dial("tcp", f.echoServerURL)
+		if err != nil {
+			stream.Close()
+			continue
 		}
+		go pipe(target, stream, multiplexHalfCloseTimeout)
 	}
+}
 
-	// passthrough
+// passthrough forwards the connection to the target, starting with the data already read
+func (f *fakeRemoteAccess) passthrough(conn net.Conn, first []byte) {
 	target, err := net.Dial("tcp", f.echoServerURL)
 	if err != nil {
 		return
