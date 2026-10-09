@@ -2,12 +2,14 @@ package remoteaccess
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"net"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
@@ -18,6 +20,18 @@ import (
 type RemoteAccessOptions struct {
 	ManagedObjectID string
 	RemoteAccessID  string
+
+	// Multiplex carries all local connections over a single remote access session (yamux),
+	// if the device supports it (e.g. thin-edge.io remote access plugin). Falls back to one
+	// remote access session per connection otherwise.
+	//
+	// Multiplexing is negotiated in-band, so a device without multiplexing support forwards the
+	// negotiation request (a few bytes of text) to the target once, before falling back.
+	Multiplex bool
+
+	// MultiplexNegotiationTimeout is the maximum time to wait for the device to acknowledge
+	// multiplexing. Defaults to DefaultMultiplexNegotiationTimeout
+	MultiplexNegotiationTimeout time.Duration
 }
 
 func parseListenerAddress(v string) (network string, addr string, err error) {
@@ -41,6 +55,7 @@ type RemoteAccessClient struct {
 	client   *api.Client
 	ctx      RemoteAccessOptions
 	listener net.Listener
+	mux      multiplexer
 }
 
 // Create new Remote Access client to allow local clients
@@ -138,16 +153,28 @@ func (c *RemoteAccessClient) Serve() error {
 
 	// Close the listener when the application closes.
 	defer c.listener.Close()
+	defer c.mux.close()
 	for {
 		// Listen for an incoming connection.
 		tcpConn, err := c.listener.Accept()
 		if err != nil {
+			if errors.Is(err, net.ErrClosed) {
+				return nil
+			}
 			slog.Error("Failed to accept incoming connection (ACCEPT)", "err", err.Error())
+			// avoid a busy loop on persistent errors (e.g. too many open files)
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
+
+		if c.ctx.Multiplex && c.serveMultiplexed(tcpConn) {
+			continue
 		}
 
 		clientWsConn, remoteURL, err := c.createRemoteAccessConnection()
 		if err != nil {
 			slog.Error("Could not create remove access connection", "err", err.Error())
+			tcpConn.Close()
 			return err
 		}
 		// Handle connections in a new goroutine.
