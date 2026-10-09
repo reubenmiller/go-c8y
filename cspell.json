@@ -81,9 +81,6 @@
         "pkcs",
         "PKCS",
         "IDTYPE",
-        "Alives",
-        "nolint",
-        "gosec",
         // libraries
         "omitzero",
         "araddon",
