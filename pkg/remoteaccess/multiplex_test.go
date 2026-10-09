@@ -253,13 +253,28 @@ func TestMultiplexingIsRetriedAfterAFailedNegotiation(t *testing.T) {
 	}
 }
 
+func TestMultiplexingIsDisabledAfterRepeatedNegotiationsWithoutAnswer(t *testing.T) {
+	fake := newFakeRemoteAccess(t, false)
+	fake.dropNegotiations.Store(100)
+	address := startClient(t, fake, true)
+
+	for i := 0; i < multiplexMaxNoAnswers+2; i++ {
+		exchange(t, address, fmt.Sprintf("hello %d", i), false)
+	}
+
+	// one websocket per connection, plus one per negotiation until the device is considered not to support it
+	if got, want := fake.websockets.Load(), int32(2*multiplexMaxNoAnswers+2); got != want {
+		t.Fatalf("expected %d remote access websockets, got %d", want, got)
+	}
+}
+
 func TestMultiplexingNegotiationTimeoutIsConfigurable(t *testing.T) {
 	fake := newFakeRemoteAccess(t, true)
 	fake.silent = true
 	ra := newClient(t, fake, RemoteAccessOptions{Multiplex: true, MultiplexNegotiationTimeout: 100 * time.Millisecond})
 	go func() { _ = ra.Serve() }()
 
-	for i := 0; i < 2; i++ {
+	for i := 0; i < multiplexMaxNoAnswers+1; i++ {
 		started := time.Now()
 		exchange(t, ra.GetListenerAddress(), fmt.Sprintf("hello %d", i), false)
 		if elapsed := time.Since(started); elapsed > 2*time.Second {
@@ -267,9 +282,9 @@ func TestMultiplexingNegotiationTimeoutIsConfigurable(t *testing.T) {
 		}
 	}
 
-	// a timeout is not retried: one websocket for the negotiation, then one per connection
-	if got := fake.websockets.Load(); got != 3 {
-		t.Fatalf("expected 3 remote access websockets, got %d", got)
+	// one websocket per connection, plus one per negotiation until the device is considered not to support it
+	if got, want := fake.websockets.Load(), int32(2*multiplexMaxNoAnswers+1); got != want {
+		t.Fatalf("expected %d remote access websockets, got %d", want, got)
 	}
 }
 

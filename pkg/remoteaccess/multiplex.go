@@ -28,9 +28,18 @@ const MultiplexProtocol = "/yamux/1.0.0"
 // ErrMultiplexNotSupported is returned when the device did not acknowledge the multiplexing request
 var ErrMultiplexNotSupported = errors.New("remote access multiplexing is not supported by the device")
 
+// errMultiplexNoAnswer is returned when the device did not answer the multiplexing request, which
+// does not tell whether the device supports it (e.g. a slow device, or a target which waits for more data)
+var errMultiplexNoAnswer = errors.New("no answer to the remote access multiplexing request")
+
 // DefaultMultiplexNegotiationTimeout is the maximum time to wait for the device to acknowledge
-// multiplexing, unless RemoteAccessOptions.MultiplexNegotiationTimeout is set
-var DefaultMultiplexNegotiationTimeout = 5 * time.Second
+// multiplexing, unless RemoteAccessOptions.MultiplexNegotiationTimeout is set. It includes the time
+// for the device to connect to the remote access session.
+var DefaultMultiplexNegotiationTimeout = 15 * time.Second
+
+// multiplexMaxNoAnswers is the number of consecutive multiplexing requests without an answer after
+// which the device is considered not to support multiplexing
+const multiplexMaxNoAnswers = 3
 
 // multiplexHalfCloseTimeout is how long the local side of a stream may keep sending after the
 // remote side has finished, before the local connection is closed
@@ -41,12 +50,13 @@ type multiplexer struct {
 	mu          sync.Mutex
 	session     *yamux.Session
 	unsupported bool
+	noAnswers   int
 }
 
 // OpenMultiplexedSession opens a remote access websocket and negotiates multiplexing with the device.
 // It returns ErrMultiplexNotSupported if the device answered with anything other than an
-// acknowledgement, or did not answer in time. Other errors (e.g. the websocket failing before the
-// device answered) are returned as is, as they do not tell whether the device supports it.
+// acknowledgement. If the device did not answer (in time), e.g. the websocket was closed before,
+// the error wraps errMultiplexNoAnswer.
 func (c *RemoteAccessClient) OpenMultiplexedSession() (*yamux.Session, error) {
 	wsConn, remoteURL, err := c.createRemoteAccessConnection()
 	if err != nil {
@@ -61,17 +71,16 @@ func (c *RemoteAccessClient) OpenMultiplexedSession() (*yamux.Session, error) {
 	_ = conn.SetDeadline(time.Now().Add(timeout))
 	if err := multistream.SelectProtoOrFail(MultiplexProtocol, conn); err != nil {
 		conn.Close()
-		var netErr net.Error
-		if conn.received.Load() > 0 || (errors.As(err, &netErr) && netErr.Timeout()) {
+		if conn.received.Load() > 0 {
 			return nil, fmt.Errorf("%w: %v", ErrMultiplexNotSupported, err)
 		}
-		return nil, fmt.Errorf("multiplexing negotiation failed: %w", err)
+		return nil, fmt.Errorf("%w: %v", errMultiplexNoAnswer, err)
 	}
 	_ = conn.SetDeadline(time.Time{})
 
 	config := yamux.DefaultConfig()
 	config.LogOutput = io.Discard
-	session, err := yamux.Client(conn, config)
+	session, err := yamux.Client(conn.Conn, config)
 	if err != nil {
 		conn.Close()
 		return nil, err
@@ -103,12 +112,19 @@ func (m *multiplexer) getSession(c *RemoteAccessClient) (*yamux.Session, error) 
 		return m.session, nil
 	}
 	session, err := c.OpenMultiplexedSession()
+	if errors.Is(err, errMultiplexNoAnswer) {
+		m.noAnswers++
+		if m.noAnswers >= multiplexMaxNoAnswers {
+			err = fmt.Errorf("%w: no answer to %d requests: %v", ErrMultiplexNotSupported, m.noAnswers, err)
+		}
+	}
 	if errors.Is(err, ErrMultiplexNotSupported) {
 		m.unsupported = true
 	}
 	if err != nil {
 		return nil, err
 	}
+	m.noAnswers = 0
 	m.session = session
 	return session, nil
 }

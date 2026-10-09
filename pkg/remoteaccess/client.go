@@ -22,6 +22,9 @@ type RemoteAccessOptions struct {
 	// Multiplex carries all local connections over a single remote access session (yamux),
 	// if the device supports it (e.g. thin-edge.io remote access plugin). Falls back to one
 	// remote access session per connection otherwise.
+	//
+	// Multiplexing is negotiated in-band, so a device without multiplexing support forwards the
+	// negotiation request (a few bytes of text) to the target once, before falling back.
 	Multiplex bool
 
 	// MultiplexNegotiationTimeout is the maximum time to wait for the device to acknowledge
@@ -164,6 +167,7 @@ func (c *RemoteAccessClient) Serve() error {
 		clientWsConn, remoteURL, err := c.createRemoteAccessConnection()
 		if err != nil {
 			c8y.Logger.Errorf("DIALER: %v", err.Error())
+			tcpConn.Close()
 			return err
 		}
 		// Handle connections in a new goroutine.
