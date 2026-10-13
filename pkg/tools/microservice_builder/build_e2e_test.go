@@ -27,7 +27,8 @@ func Test_Build_EndToEnd(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	if _, err := InspectEngine(ctx); err != nil {
+	engine, err := InspectEngine(ctx)
+	if err != nil {
 		t.Skipf("docker engine is not available: %v", err)
 	}
 
@@ -129,7 +130,9 @@ func Test_Build_EndToEnd(t *testing.T) {
 	if !hasManifest {
 		t.Error("image.tar is missing manifest.json, expected a docker archive")
 	}
-	if !hasRepositories {
+	// docker >= 29.9 builds natively with the containerd image store, which
+	// produces a compatible tarball without the repositories file
+	if !hasRepositories && !(engine.UsesContainerdImageStore() && engine.ProducesCompatibleImageTarballs()) {
 		t.Error("image.tar is missing the repositories file, expected classic image store output")
 	}
 }

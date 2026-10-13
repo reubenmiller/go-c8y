@@ -9,13 +9,18 @@
 // "docker save" which Cumulocity fails to load. When such an engine is
 // detected, the image is transparently built inside a docker-in-docker
 // container which uses the classic image store and therefore produces a
-// compatible tarball.
+// compatible tarball. Docker engines from 29.9 onwards export compatible
+// tarballs from the containerd image store, so they are used natively.
+//
+// Build attestations (provenance and SBOMs) are disabled when building, and
+// the exported tarball is checked so that they never end up in the archive.
 //
 // All docker interactions go through the docker CLI (no shell scripts), so
 // builds work the same on Linux, macOS and Windows.
 package microservice_builder
 
 import (
+	"archive/tar"
 	"archive/zip"
 	"bytes"
 	"context"
@@ -29,6 +34,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -55,7 +61,31 @@ const (
 	// containerdSnapshotterDriverType is the docker engine driver-type which
 	// produces OCI image tarballs that Cumulocity cannot load
 	containerdSnapshotterDriverType = "io.containerd.snapshotter.v1"
+
+	// minContainerdExportMajor / minContainerdExportMinor is the first docker
+	// engine version (29.9) whose "docker save" produces Cumulocity compatible
+	// tarballs when using the containerd image store
+	minContainerdExportMajor = 29
+	minContainerdExportMinor = 9
+
+	// minSavePlatformMajor is the first docker version (28.0) whose CLI and
+	// engine support "docker save --platform"
+	minSavePlatformMajor = 28
+
+	// attestationReferenceType is the annotation value buildkit uses to mark
+	// attestation manifests (provenance, SBOM) within an image index
+	attestationReferenceType = "attestation-manifest"
 )
+
+// attestationEnv disables buildx's default attestations (provenance). It is
+// set via environment variables rather than "--provenance=false" /
+// "--sbom=false" flags as older buildx versions ignore unknown variables but
+// reject unknown flags. SBOMs are only ever generated when explicitly
+// requested (e.g. "--sbom=true" in the extra build arguments)
+var attestationEnv = []string{
+	"BUILDX_NO_DEFAULT_ATTESTATIONS=1",
+	"BUILDX_METADATA_PROVENANCE=0",
+}
 
 // BuildWith controls which build strategy is used
 type BuildWith int
@@ -187,14 +217,14 @@ func Build(ctx context.Context, opts BuildOptions) (string, error) {
 	buildWith := opts.BuildWith
 	switch {
 	case buildWith == BuildWithAuto:
-		if engine.UsesContainerdImageStore() {
-			slog.Info("Docker engine uses the containerd image store which produces image tarballs that Cumulocity cannot load. Falling back to docker-in-docker", "driver-type", containerdSnapshotterDriverType)
+		if !engine.ProducesCompatibleImageTarballs() {
+			slog.Info("Docker engine uses the containerd image store which produces image tarballs that Cumulocity cannot load (fixed in docker 29.9). Falling back to docker-in-docker", "driver-type", containerdSnapshotterDriverType, "version", engine.ServerVersion)
 			buildWith = BuildWithDockerInDocker
 		} else {
 			buildWith = BuildWithNative
 		}
-	case buildWith == BuildWithNative && engine.UsesContainerdImageStore():
-		slog.Warn("Docker engine uses the containerd image store; the exported image will most likely be rejected by Cumulocity. Use BuildWithAuto or BuildWithDockerInDocker instead", "driver-type", containerdSnapshotterDriverType)
+	case buildWith == BuildWithNative && !engine.ProducesCompatibleImageTarballs():
+		slog.Warn("Docker engine uses the containerd image store (before docker 29.9); the exported image will most likely be rejected by Cumulocity. Use BuildWithAuto or BuildWithDockerInDocker instead", "driver-type", containerdSnapshotterDriverType, "version", engine.ServerVersion)
 	}
 
 	tarball, err := os.CreateTemp("", "c8y-image-*.tar")
@@ -293,7 +323,7 @@ func (o *BuildImageOptions) applyDefaults() {
 // BuildImage builds the image with the host's docker engine and writes the
 // image tarball to opt.ImageOutput. Note: the resulting tarball is only
 // compatible with Cumulocity if the engine does not use the containerd image
-// store (see InspectEngine)
+// store, or is docker 29.9 or newer (see InspectEngine)
 func BuildImage(ctx context.Context, opt BuildImageOptions) error {
 	docker, err := newDockerCLI(opt.Stdout, opt.Stderr)
 	if err != nil {
@@ -331,10 +361,11 @@ func RemoveBuilder(ctx context.Context, containerName string) error {
 
 // EngineInfo is a subset of the information reported by "docker info"
 type EngineInfo struct {
-	Architecture string     `json:"Architecture,omitempty"`
-	OSType       string     `json:"OSType,omitempty"`
-	DriverStatus [][]string `json:"DriverStatus,omitempty"`
-	ServerErrors []string   `json:"ServerErrors,omitempty"`
+	Architecture  string     `json:"Architecture,omitempty"`
+	OSType        string     `json:"OSType,omitempty"`
+	ServerVersion string     `json:"ServerVersion,omitempty"`
+	DriverStatus  [][]string `json:"DriverStatus,omitempty"`
+	ServerErrors  []string   `json:"ServerErrors,omitempty"`
 }
 
 // UsesContainerdImageStore checks if the docker engine uses the containerd
@@ -346,6 +377,17 @@ func (e *EngineInfo) UsesContainerdImageStore() bool {
 		}
 	}
 	return false
+}
+
+// ProducesCompatibleImageTarballs checks if "docker save" on this engine
+// produces image tarballs that Cumulocity can load. This is the case for the
+// classic image store, and for the containerd image store from docker 29.9
+// onwards. Unknown versions are treated as incompatible
+func (e *EngineInfo) ProducesCompatibleImageTarballs() bool {
+	if !e.UsesContainerdImageStore() {
+		return true
+	}
+	return versionAtLeast(e.ServerVersion, minContainerdExportMajor, minContainerdExportMinor)
 }
 
 // InspectEngine queries the docker engine information used to decide which
@@ -384,6 +426,56 @@ func Pack(manifest io.Reader, imageTarball io.Reader, archive io.Writer) error {
 	return zipWriter.Close()
 }
 
+// maxIndexBlobSize limits which tarball entries are inspected as image
+// indexes. Indexes are small json documents, layers are skipped
+const maxIndexBlobSize = 1 << 20
+
+// verifyImageTarball checks that the image tarball does not contain any build
+// attestations (provenance or SBOM manifests), as Cumulocity cannot load
+// images which include them
+func verifyImageTarball(file string) error {
+	f, err := os.Open(file)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	reader := tar.NewReader(f)
+	for {
+		hdr, err := reader.Next()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("could not read image tarball: %w", err)
+		}
+		if hdr.Typeflag != tar.TypeReg || hdr.Size > maxIndexBlobSize {
+			continue
+		}
+		if hdr.Name != "index.json" && !strings.HasPrefix(hdr.Name, "blobs/") {
+			continue
+		}
+		content, err := io.ReadAll(reader)
+		if err != nil {
+			return fmt.Errorf("could not read image tarball: %w", err)
+		}
+		index := struct {
+			Manifests []struct {
+				Annotations map[string]string `json:"annotations"`
+			} `json:"manifests"`
+		}{}
+		if json.Unmarshal(content, &index) != nil {
+			// not json, e.g. a small layer
+			continue
+		}
+		for _, m := range index.Manifests {
+			if m.Annotations["vnd.docker.reference.type"] == attestationReferenceType {
+				return fmt.Errorf("the image contains build attestations (provenance or SBOM) which Cumulocity cannot load. Remove any --attest, --provenance or --sbom options from the build arguments")
+			}
+		}
+	}
+}
+
 //
 // docker CLI plumbing
 //
@@ -409,10 +501,8 @@ func newDockerCLI(stdout, stderr io.Writer) (*dockerCLI, error) {
 }
 
 func (d *dockerCLI) env() []string {
-	return append(os.Environ(),
-		"BUILDX_NO_DEFAULT_ATTESTATIONS=1",
-		"BUILDX_METADATA_PROVENANCE=0",
-	)
+	// later entries take precedence over any user defined values
+	return append(os.Environ(), attestationEnv...)
 }
 
 // run a docker command, streaming its output to the configured writers
@@ -485,7 +575,12 @@ func (d *dockerCLI) buildImageNative(ctx context.Context, engine *EngineInfo, op
 		return err
 	}
 
-	return d.run(ctx, "save", "-o", opt.ImageOutput, opt.Image)
+	saveArgs := append([]string{"save"}, d.savePlatformArgs(ctx, nil, engine.ServerVersion, opt.Platform)...)
+	saveArgs = append(saveArgs, "-o", opt.ImageOutput, opt.Image)
+	if err := d.run(ctx, saveArgs...); err != nil {
+		return err
+	}
+	return verifyImageTarball(opt.ImageOutput)
 }
 
 func (d *dockerCLI) buildImageWithDinD(ctx context.Context, opt BuildImageOptions) error {
@@ -503,7 +598,7 @@ func (d *dockerCLI) buildImageWithDinD(ctx context.Context, opt BuildImageOption
 	if err != nil {
 		return fmt.Errorf("could not query the docker-in-docker engine: %w", err)
 	}
-	if inner.UsesContainerdImageStore() {
+	if !inner.ProducesCompatibleImageTarballs() {
 		return fmt.Errorf("the docker-in-docker container %q uses the containerd image store which produces image tarballs that Cumulocity cannot load. Remove the container (e.g. docker rm --force --volumes %s) and rebuild so it is recreated with the classic image store", name, name)
 	}
 	if opt.DockerInDocker.Remove {
@@ -546,13 +641,11 @@ func (d *dockerCLI) buildImageWithDinD(ctx context.Context, opt BuildImageOption
 		}
 	}
 
-	buildArgs := []string{
-		"exec",
-		"--env", "BUILDX_NO_DEFAULT_ATTESTATIONS=1",
-		"--env", "BUILDX_METADATA_PROVENANCE=0",
-		name,
-		"docker", "buildx", "build", "--load", "--platform", opt.Platform, "-f", dockerFile,
+	buildArgs := []string{"exec"}
+	for _, e := range attestationEnv {
+		buildArgs = append(buildArgs, "--env", e)
 	}
+	buildArgs = append(buildArgs, name, "docker", "buildx", "build", "--load", "--platform", opt.Platform, "-f", dockerFile)
 	buildArgs = append(buildArgs, proxyBuildArgs()...)
 	buildArgs = append(buildArgs, opt.ExtraDockerArgs...)
 	buildArgs = append(buildArgs, "-t", opt.Image, contextDir)
@@ -560,11 +653,17 @@ func (d *dockerCLI) buildImageWithDinD(ctx context.Context, opt BuildImageOption
 		return err
 	}
 
-	if err := d.run(ctx, "exec", name, "docker", "save", "-o", imageTar, opt.Image); err != nil {
+	saveArgs := []string{"exec", name, "docker", "save"}
+	saveArgs = append(saveArgs, d.savePlatformArgs(ctx, []string{"exec", name, "docker"}, inner.ServerVersion, opt.Platform)...)
+	saveArgs = append(saveArgs, "-o", imageTar, opt.Image)
+	if err := d.run(ctx, saveArgs...); err != nil {
 		return err
 	}
 	if err := d.run(ctx, "cp", name+":"+imageTar, opt.ImageOutput); err != nil {
 		return fmt.Errorf("could not copy the image tarball out of the builder: %w", err)
+	}
+	if err := verifyImageTarball(opt.ImageOutput); err != nil {
+		return err
 	}
 
 	// Best effort cleanup of the build inputs, the layer cache stays warm
@@ -572,6 +671,23 @@ func (d *dockerCLI) buildImageWithDinD(ctx context.Context, opt BuildImageOption
 		slog.Warn("Could not clean up the builder's build directory", "dir", buildDir, "err", err)
 	}
 	return nil
+}
+
+// savePlatformArgs returns the "--platform" argument for "docker save" so that
+// only the built platform is exported (which also excludes any attestation
+// manifests). The flag is only supported from docker 28.0 (both the CLI and
+// the engine), so it is omitted for older versions. cmdPrefix targets the
+// docker CLI, e.g. nil for the host or ["exec", name, "docker"] for
+// docker-in-docker
+func (d *dockerCLI) savePlatformArgs(ctx context.Context, cmdPrefix []string, serverVersion string, platform string) []string {
+	if !versionAtLeast(serverVersion, minSavePlatformMajor, 0) {
+		return nil
+	}
+	clientVersion, err := d.capture(ctx, append(append([]string{}, cmdPrefix...), "version", "--format", "{{.Client.Version}}")...)
+	if err != nil || !versionAtLeast(string(clientVersion), minSavePlatformMajor, 0) {
+		return nil
+	}
+	return []string{"--platform", platform}
 }
 
 // ensureDinD makes sure the docker-in-docker container exists, is running and
@@ -686,6 +802,29 @@ func platformArch(platform string) string {
 		return normalizeArch(arch)
 	}
 	return normalizeArch(platform)
+}
+
+var versionPattern = regexp.MustCompile(`^v?(\d+)\.(\d+)`)
+
+// versionAtLeast checks if version (e.g. "29.9.0", "29.10.1-rc.1") is at
+// least major.minor. Unparsable versions return false
+func versionAtLeast(version string, major, minor int) bool {
+	match := versionPattern.FindStringSubmatch(strings.TrimSpace(version))
+	if match == nil {
+		return false
+	}
+	gotMajor, err := strconv.Atoi(match[1])
+	if err != nil {
+		return false
+	}
+	gotMinor, err := strconv.Atoi(match[2])
+	if err != nil {
+		return false
+	}
+	if gotMajor != major {
+		return gotMajor > major
+	}
+	return gotMinor >= minor
 }
 
 var unsafePathChars = regexp.MustCompile(`[^a-zA-Z0-9_.-]+`)

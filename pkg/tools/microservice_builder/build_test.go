@@ -1,9 +1,12 @@
 package microservice_builder
 
 import (
+	"archive/tar"
 	"archive/zip"
 	"bytes"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -38,6 +41,125 @@ func Test_UsesContainerdImageStore(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := tc.engine.UsesContainerdImageStore(); got != tc.want {
 				t.Errorf("UsesContainerdImageStore() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func Test_ProducesCompatibleImageTarballs(t *testing.T) {
+	containerd := [][]string{{"driver-type", "io.containerd.snapshotter.v1"}}
+	testcases := []struct {
+		name   string
+		engine EngineInfo
+		want   bool
+	}{
+		{
+			name:   "classic image store",
+			engine: EngineInfo{ServerVersion: "28.5.1"},
+			want:   true,
+		},
+		{
+			name:   "containerd image store before 29.9",
+			engine: EngineInfo{ServerVersion: "29.8.3", DriverStatus: containerd},
+			want:   false,
+		},
+		{
+			name:   "containerd image store 29.9",
+			engine: EngineInfo{ServerVersion: "29.9.0", DriverStatus: containerd},
+			want:   true,
+		},
+		{
+			name:   "containerd image store newer major",
+			engine: EngineInfo{ServerVersion: "30.0.0", DriverStatus: containerd},
+			want:   true,
+		},
+		{
+			name:   "containerd image store unknown version",
+			engine: EngineInfo{DriverStatus: containerd},
+			want:   false,
+		},
+	}
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.engine.ProducesCompatibleImageTarballs(); got != tc.want {
+				t.Errorf("ProducesCompatibleImageTarballs() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func Test_VersionAtLeast(t *testing.T) {
+	testcases := map[string]bool{
+		"29.9.0":      true,
+		"29.9.0-rc.1": true,
+		"v29.10.1":    true,
+		"29.10":       true,
+		"30.0.0":      true,
+		"29.8.9":      false,
+		"28.12.0":     false,
+		"dev":         false,
+		"":            false,
+		" 29.9.1-ce ": true,
+	}
+	for input, want := range testcases {
+		if got := versionAtLeast(input, 29, 9); got != want {
+			t.Errorf("versionAtLeast(%q, 29, 9) = %v, want %v", input, got, want)
+		}
+	}
+}
+
+func writeTestTarball(t *testing.T, files map[string]string) string {
+	t.Helper()
+	file := filepath.Join(t.TempDir(), "image.tar")
+	f, err := os.Create(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	w := tar.NewWriter(f)
+	for name, content := range files {
+		if err := w.WriteHeader(&tar.Header{Name: name, Mode: 0o644, Size: int64(len(content)), Typeflag: tar.TypeReg}); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := w.Write([]byte(content)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return file
+}
+
+func Test_VerifyImageTarball(t *testing.T) {
+	testcases := []struct {
+		name    string
+		files   map[string]string
+		wantErr bool
+	}{
+		{
+			name: "single image manifest",
+			files: map[string]string{
+				"index.json":       `{"manifests":[{"mediaType":"application/vnd.oci.image.manifest.v1+json","annotations":{"io.containerd.image.name":"docker.io/library/app:latest"}}]}`,
+				"manifest.json":    `[{"Config":"blobs/sha256/abc"}]`,
+				"blobs/sha256/abc": `{"architecture":"amd64"}`,
+				"blobs/sha256/def": "binary layer content",
+			},
+		},
+		{
+			name: "nested index with attestation manifest",
+			files: map[string]string{
+				"index.json":       `{"manifests":[{"mediaType":"application/vnd.oci.image.index.v1+json"}]}`,
+				"blobs/sha256/abc": `{"manifests":[{"platform":{"os":"linux"}},{"annotations":{"vnd.docker.reference.type":"attestation-manifest"},"platform":{"os":"unknown"}}]}`,
+			},
+			wantErr: true,
+		},
+	}
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := verifyImageTarball(writeTestTarball(t, tc.files))
+			if (err != nil) != tc.wantErr {
+				t.Errorf("verifyImageTarball() error = %v, wantErr %v", err, tc.wantErr)
 			}
 		})
 	}
