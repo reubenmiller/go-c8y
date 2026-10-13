@@ -12,6 +12,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/binaries"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_CreateBinary(t *testing.T) {
@@ -39,7 +40,7 @@ func Test_CreateBinary(t *testing.T) {
 
 	// Get but don't read the response
 	binaryFile := client.Binaries.Get(context.Background(), binary.Data.ID())
-	assert.NoError(t, err)
+	require.NoError(t, binaryFile.Err)
 	defer binaryFile.Data.Close()
 	assert.NotEmpty(t, binaryFile.Data.FileName())
 	assert.NotEmpty(t, binaryFile.Data.URL())

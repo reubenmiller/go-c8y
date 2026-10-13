@@ -21,10 +21,16 @@ type BinaryResponse struct {
 }
 
 func (b *BinaryResponse) Reader() io.ReadCloser {
+	if b.Response == nil || b.Response.Body == nil {
+		return http.NoBody
+	}
 	return b.Response.Body
 }
 
 func (b *BinaryResponse) Close() error {
+	if b.Response == nil || b.Response.Body == nil {
+		return nil
+	}
 	return b.Response.Body.Close()
 }
 
@@ -37,13 +43,16 @@ func (b *BinaryResponse) FileName() (v string) {
 
 // URL of the resolved binary
 func (b *BinaryResponse) URL() (v string) {
-	if b.Response.RawResponse != nil && b.Response.RawResponse.Request != nil {
+	if b.Response != nil && b.Response.RawResponse != nil && b.Response.RawResponse.Request != nil {
 		v = b.Response.RawResponse.Request.URL.String()
 	}
 	return
 }
 
 func (b *BinaryResponse) Size() int64 {
+	if b.Response == nil || b.Response.RawResponse == nil {
+		return 0
+	}
 	return contentLength(b.Response.RawResponse)
 }
 
