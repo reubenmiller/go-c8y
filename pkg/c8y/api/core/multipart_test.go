@@ -10,13 +10,26 @@ import (
 func objectField(t *testing.T, opt UploadFileOptions) map[string]any {
 	t.Helper()
 	fields := NewMultiPartFileFields(opt)
-	if len(fields) == 0 || fields[0].Name != "object" {
-		t.Fatalf("expected first field to be the object metadata, got %+v", fields)
+	var raw string
+	found := false
+	for _, f := range fields {
+		if f.Name == "object" {
+			if len(f.Values) > 0 {
+				raw = f.Values[0]
+			} else if f.Reader != nil {
+				buf := make([]byte, 4096)
+				n, _ := f.Reader.Read(buf)
+				raw = string(buf[:n])
+			}
+			found = true
+			break
+		}
 	}
-	buf := make([]byte, 4096)
-	n, _ := fields[0].Reader.Read(buf)
+	if !found {
+		t.Fatalf("expected an object metadata field, got %+v", fields)
+	}
 	obj := map[string]any{}
-	if err := json.Unmarshal(buf[:n], &obj); err != nil {
+	if err := json.Unmarshal([]byte(raw), &obj); err != nil {
 		t.Fatalf("unmarshal object field: %v", err)
 	}
 	return obj
