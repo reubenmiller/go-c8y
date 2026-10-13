@@ -56,7 +56,7 @@ func (e *Evaluator) SetString(name, value string) {
 }
 
 // Evaluate runs the compiled template against doc. The result is jsonnet's
-// serialized output (pretty-printed, with a trailing newline); callers wanting
+// serialised output (pretty-printed, with a trailing newline); callers wanting
 // compact JSON should post-process it. Errors are formatted with the VM's
 // ErrorFormatter (including the stack trace), matching the snippet-based
 // evaluation methods.

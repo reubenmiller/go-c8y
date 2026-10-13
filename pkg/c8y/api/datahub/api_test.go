@@ -165,7 +165,7 @@ func TestGetTenant(t *testing.T) {
 	svc, closeFn := testService(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"status":"SUCCEEDED","data":{"initialized":true,"tenantId":"t123"}}`))
+		_, _ = w.Write([]byte(`{"status":"SUCCEEDED","data":{"initialized":true,"tenantId":"t123"}}`)) //nolint:misspell // platform JSON key
 	})
 	defer closeFn()
 

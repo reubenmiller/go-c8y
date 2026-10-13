@@ -19,7 +19,7 @@ import (
 //
 // following the same tokenization rules as go-c8y-cli: values may be quoted
 // with single or double quotes to prevent numeric/boolean coercion, and an
-// expression with no recognized operator defaults to "contains".
+// expression with no recognised operator defaults to "contains".
 //
 // Supported operators: eq (=, ==), neq (!=, <>), gt (>), gte (>=), lt (<),
 // lte (<=), contains, strictcontains, startswith, endswith, like, notlike,
@@ -368,7 +368,7 @@ func wildcardToRegexp(pattern string) (*regexp.Regexp, error) {
 }
 
 // splitQuoted splits s on sep outside of single/double quoted sections,
-// joining any fields beyond maxSplit back together (same behavior as
+// joining any fields beyond maxSplit back together (same behaviour as
 // go-c8y-cli's splitFilter).
 func splitQuoted(s string, sep rune, maxSplit int) []string {
 	quoted := false

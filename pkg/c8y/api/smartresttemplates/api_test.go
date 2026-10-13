@@ -222,10 +222,10 @@ func TestNormalizeTemplateOrder(t *testing.T) {
 			"responseTemplates": [{"msgId": "dm102"}, {"msgId": "dm101"}]
 		}
 	}`)
-	var normalized map[string]any
-	require.NoError(t, json.Unmarshal(normalizeTemplateOrder(doc), &normalized))
+	var normalised map[string]any
+	require.NoError(t, json.Unmarshal(normalizeTemplateOrder(doc), &normalised))
 
-	items := normalized[FragmentTemplates].(map[string]any)["responseTemplates"].([]any)
+	items := normalised[FragmentTemplates].(map[string]any)["responseTemplates"].([]any)
 	assert.Equal(t, "dm101", items[0].(map[string]any)["msgId"])
 	assert.Equal(t, "dm102", items[1].(map[string]any)["msgId"])
 

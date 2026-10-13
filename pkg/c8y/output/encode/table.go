@@ -27,7 +27,7 @@ type Column struct {
 }
 
 // RowWriter renders resolved table rows. Implementations own the
-// presentation (borders, colors); the Table engine owns column resolution,
+// presentation (borders, colours); the Table engine owns column resolution,
 // width sampling and cell extraction.
 //
 // WriteHeader is called exactly once, before any row. Cells passed to

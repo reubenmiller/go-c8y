@@ -18,7 +18,7 @@ func testService(handler http.HandlerFunc) (*Service, func()) {
 }
 
 // TestList verifies the tenants collection is plucked into items and the
-// company filter is serialized as a query parameter.
+// company filter is serialised as a query parameter.
 func TestList(t *testing.T) {
 	var path, query string
 	svc, closeFn := testService(func(w http.ResponseWriter, r *http.Request) {

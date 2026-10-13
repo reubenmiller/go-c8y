@@ -51,7 +51,7 @@ type selectPattern struct {
 
 // NewSelector compiles selection patterns. Each property may contain
 // multiple comma separated patterns. Invalid patterns are skipped (matching
-// go-c8y-cli's behavior). When no patterns are given, everything is selected
+// go-c8y-cli's behaviour). When no patterns are given, everything is selected
 // ("**").
 func NewSelector(properties ...string) *Selector {
 	patterns := make([]string, 0, len(properties))
@@ -223,7 +223,7 @@ func matchPattern(p selectPattern, sourceKeys []string, src map[string]any, sel 
 	for _, key := range sourceKeys {
 		value := src[key]
 
-		// normalize key, and strip the integer key marker
+		// normalise key, and strip the integer key marker
 		keyl := strings.ReplaceAll(strings.ToLower(key), keyPrefix, "")
 
 		if strings.HasPrefix(keyl, p.glob.String()+".") || (p.glob.MatchString(keyl) && !p.glob.IsNegative()) {

@@ -132,7 +132,7 @@ func Test_Build_EndToEnd(t *testing.T) {
 	}
 	// docker >= 29.9 builds natively with the containerd image store, which
 	// produces a compatible tarball without the repositories file
-	if !hasRepositories && !(engine.UsesContainerdImageStore() && engine.ProducesCompatibleImageTarballs()) {
+	if !hasRepositories && (!engine.UsesContainerdImageStore() || !engine.ProducesCompatibleImageTarballs()) {
 		t.Error("image.tar is missing the repositories file, expected classic image store output")
 	}
 }

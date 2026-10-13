@@ -73,7 +73,7 @@ func (f *fakeRemoteAccess) device(wsConn *websocket.Conn) {
 	f.passthrough(conn, first)
 }
 
-// negotiate answers a multiplexing request, depending on the configured behavior
+// negotiate answers a multiplexing request, depending on the configured behaviour
 func (f *fakeRemoteAccess) negotiate(conn net.Conn, first []byte) {
 	switch {
 	case f.dropNegotiations.Add(-1) >= 0:

@@ -155,11 +155,11 @@ func normalizeTemplateOrder(existing []byte) []byte {
 		})
 		fragment[key] = items
 	}
-	normalized, err := json.Marshal(doc)
+	normalised, err := json.Marshal(doc)
 	if err != nil {
 		return existing
 	}
-	return normalized
+	return normalised
 }
 
 func anyTemplateSortKey(value any) string {

@@ -108,7 +108,7 @@ func literalRunEnd(rest string, i int) int {
 	return i
 }
 
-// collapseGlobstars normalizes separators around globstars: a separator
+// collapseGlobstars normalises separators around globstars: a separator
 // directly after a globstar is consumed, consecutive globstars collapse, and
 // a trailing globstar absorbs the separator before it.
 func collapseGlobstars(tokens []globToken) []globToken {

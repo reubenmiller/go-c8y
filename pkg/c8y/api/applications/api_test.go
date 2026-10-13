@@ -69,8 +69,8 @@ func TestListBinariesResolvesName(t *testing.T) {
 	var binariesPath string
 	svc, closeFn := testService(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		switch {
-		case r.URL.Path == "/application/applications":
+		switch r.URL.Path {
+		case "/application/applications":
 			// name lookup
 			_, _ = w.Write([]byte(`{"applications":[{"id":"42","name":"cockpit"}]}`))
 		default:

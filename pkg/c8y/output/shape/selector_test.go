@@ -118,7 +118,7 @@ func TestSelectorIntegerLikeMapKeys(t *testing.T) {
 func TestSelectorDottedKeys(t *testing.T) {
 	// Keys containing literal dots are not selectable: the flattener escapes
 	// the dots in the key but glob patterns cannot express that escaping.
-	// This matches go-c8y-cli's behavior (the pattern resolves to nothing
+	// This matches go-c8y-cli's behaviour (the pattern resolves to nothing
 	// and is kept as an unmatched column).
 	sel := apply(t, selectorDoc, "my\\.dotted\\.key")
 	assert.JSONEq(t, `{}`, mustJSON(t, sel))
