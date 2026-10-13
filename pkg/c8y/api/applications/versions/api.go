@@ -85,15 +85,21 @@ func (s *Service) ListAll(ctx context.Context, applicationID string, opts ListOp
 	)
 }
 
+// MimeTypeApplicationVersion selects the single-version representation of the
+// versions endpoint. The version/tag query parameters only take effect with
+// this Accept header — with plain application/json the platform ignores them
+// and returns the whole applicationVersions collection.
+const MimeTypeApplicationVersion = "application/vnd.com.nsn.cumulocity.applicationversion+json"
+
 // ListByVersion retrieves a specific version of an application by version string
 func (s *Service) ListByVersion(ctx context.Context, applicationID string, version string) op.Result[jsonmodels.ApplicationVersion] {
-	return core.ExecuteCollection(ctx, s.listByVersionB(applicationID, version), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplicationVersion)
+	return core.Execute(ctx, s.listByVersionB(applicationID, version), jsonmodels.NewApplicationVersion)
 }
 
 func (s *Service) listByVersionB(applicationID string, version string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
-		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetHeader("Accept", MimeTypeApplicationVersion).
 		SetPathParam(ParamID, applicationID).
 		SetQueryParam("version", version).
 		SetURL(ApiVersionByName)
@@ -103,13 +109,13 @@ func (s *Service) listByVersionB(applicationID string, version string) *core.Try
 
 // ListByTag retrieves a specific version of an application by tag
 func (s *Service) ListByTag(ctx context.Context, applicationID string, tag string) op.Result[jsonmodels.ApplicationVersion] {
-	return core.ExecuteCollection(ctx, s.listByTagB(applicationID, tag), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplicationVersion)
+	return core.Execute(ctx, s.listByTagB(applicationID, tag), jsonmodels.NewApplicationVersion)
 }
 
 func (s *Service) listByTagB(applicationID string, tag string) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
-		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetHeader("Accept", MimeTypeApplicationVersion).
 		SetPathParam(ParamID, applicationID).
 		SetQueryParam("tag", tag).
 		SetURL(ApiVersionByName)
