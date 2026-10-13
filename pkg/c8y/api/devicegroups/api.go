@@ -8,6 +8,7 @@ package devicegroups
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/contexthelpers"
@@ -108,9 +109,15 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *ManagedObjectI
 }
 
 func (s *Service) listB(opt ListOptions) *core.TryRequest {
+	params := core.QueryParameters(opt)
+	// Device-group listing always pins withChildren explicitly (v1 behaviour):
+	// the embedded GetOptions tag is omitempty, so a false value would otherwise
+	// be dropped, but the platform defaults withChildren to true for groups, which
+	// is slow. Emit it unconditionally unless the user asked for the children.
+	params.Set("withChildren", strconv.FormatBool(opt.WithChildren))
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(params).
 		SetURL(managedobjects.ApiManagedObjects)
 	return core.NewTryRequest(s.Client, req, managedobjects.ResultProperty)
 }

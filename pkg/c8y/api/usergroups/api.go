@@ -186,7 +186,7 @@ type UpdateOptions struct {
 	Tenant string   `url:"-"`
 	ID     GroupRef `url:"-"`
 
-	ForceLogout bool `url:"forceLogout,omitzero"`
+	ForceLogout bool `url:"forceLogout,omitempty"`
 }
 
 // Update a user group. The id may be a plain group id or a "name:<name>"
@@ -217,7 +217,7 @@ type DeleteOptions struct {
 	Tenant string   `url:"-"`
 	ID     GroupRef `url:"-"`
 
-	ForceLogout bool `url:"forceLogout,omitzero"`
+	ForceLogout bool `url:"forceLogout,omitempty"`
 }
 
 // Delete a user group. The id may be a plain group id or a "name:<name>"

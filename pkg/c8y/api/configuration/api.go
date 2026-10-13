@@ -309,8 +309,13 @@ func withDefaults(body any) any {
 
 // uploadAndSetURL uploads the binary file and writes its self url onto the body,
 // returning the updated body and the uploaded binary's id.
+//
+// The upload runs for real even under dry-run (like a name->id resolution):
+// the configuration object's url must reference an actually uploaded binary
+// for the rendered create/update request to be meaningful — matching the v1
+// CLI, whose upload getter ran before the (dry-runnable) request was built.
 func (s *Service) uploadAndSetURL(ctx context.Context, body any, file UploadFileOptions) (any, string, error) {
-	res := s.binaries.Create(ctx, file)
+	res := s.binaries.Create(contexthelpers.ResolutionContext(ctx), file)
 	if res.IsError() {
 		return body, "", fmt.Errorf("failed to upload binary: %w", res.Err)
 	}
