@@ -327,11 +327,14 @@ func aliasWildcardSuffix(alias, pattern, key, keyl string) (string, bool) {
 // following the selection order.
 func (s *Selection) JSON() ([]byte, error) {
 	output := []byte("{}")
-	var err error
 	for _, k := range s.keys {
 		if v, ok := s.values[k]; ok {
 			k = strings.ReplaceAll(k, keyPrefix, ":")
-			output, err = sjson.SetBytes(output, escapeGJSONPath(k), v)
+			raw, err := marshalNoEscapeHTML(v)
+			if err != nil {
+				return nil, err
+			}
+			output, err = sjson.SetRawBytes(output, escapeGJSONPath(k), raw)
 			if err != nil {
 				return nil, err
 			}
@@ -343,7 +346,21 @@ func (s *Selection) JSON() ([]byte, error) {
 // FlatJSON renders the selection as a flat JSON object of dot-separated
 // keys (alphabetically ordered, like encoding/json map marshalling).
 func (s *Selection) FlatJSON() ([]byte, error) {
-	return json.Marshal(s.values)
+	return marshalNoEscapeHTML(s.values)
+}
+
+// marshalNoEscapeHTML JSON-encodes v with HTML escaping disabled, so a value
+// containing <, > or & (e.g. an HTML snippet in an event text) is written
+// literally rather than as < / > / &. Go's encoding/json escapes
+// these by default; the CLI (like its v1 output) writes them verbatim.
+func marshalNoEscapeHTML(v any) ([]byte, error) {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(v); err != nil {
+		return nil, err
+	}
+	return bytes.TrimRight(buf.Bytes(), "\n"), nil
 }
 
 // CSV renders the selection's values joined by the separator, in selection
@@ -360,7 +377,11 @@ func (s *Selection) CSV(separator string) string {
 			buf.WriteString(separator)
 		}
 		if value, ok := s.values[key]; ok {
-			marshalledValue, err := json.Marshal(value)
+			// Match the JSON/flatten output: write &, <, > literally rather than
+			// as the & / < / > of Go's default HTML escaping, so a
+			// CSV cell holding e.g. a query string "pageSize=20&q=..." is not
+			// mangled.
+			marshalledValue, err := marshalNoEscapeHTML(value)
 			if err != nil {
 				continue
 			}
