@@ -13,6 +13,7 @@ import (
 )
 
 func Test_Applications_ListByUser(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
@@ -26,6 +27,7 @@ func Test_Applications_ListByUser(t *testing.T) {
 }
 
 func Test_Applications_Update(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
@@ -48,6 +50,7 @@ func Test_Applications_Update(t *testing.T) {
 }
 
 func Test_Applications_SubscribeUnsubscribe(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
@@ -69,6 +72,7 @@ func Test_Applications_SubscribeUnsubscribe(t *testing.T) {
 }
 
 func Test_Applications_ByID(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	assert.Equal(t, "12345", client.Applications.ByID("12345"))
 	assert.Equal(t, "name:cockpit", client.Applications.ByName("cockpit", ""))
@@ -76,6 +80,7 @@ func Test_Applications_ByID(t *testing.T) {
 }
 
 func Test_Applications_GetByResolver(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 	// Use name:cockpit which is seeded

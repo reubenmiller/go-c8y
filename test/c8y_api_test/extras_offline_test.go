@@ -21,6 +21,7 @@ import (
 )
 
 func Test_Authentication_DecodeBasicAuth(t *testing.T) {
+	testcore.SkipLive(t)
 	creds, err := authentication.DecodeBasicAuth("dGVuYW50L3VzZXI6cGFzcw==", "https://example.com")
 	require.NoError(t, err)
 	assert.Equal(t, "tenant", creds.Tenant)
@@ -29,6 +30,7 @@ func Test_Authentication_DecodeBasicAuth(t *testing.T) {
 }
 
 func Test_Authentication_ParseLoginType(t *testing.T) {
+	testcore.SkipLive(t)
 	got, err := authentication.ParseLoginType("BASIC")
 	require.NoError(t, err)
 	assert.NotEmpty(t, got)
@@ -38,6 +40,7 @@ func Test_Authentication_ParseLoginType(t *testing.T) {
 }
 
 func Test_Authentication_GetAuthTypes(t *testing.T) {
+	testcore.SkipLive(t)
 	auth := authentication.AuthOptions{
 		Token:    "tok",
 		Username: "u",
@@ -51,6 +54,7 @@ func Test_Authentication_GetAuthTypes(t *testing.T) {
 }
 
 func Test_Alarms_UpsertRaw(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
@@ -68,6 +72,7 @@ func Test_Alarms_UpsertRaw(t *testing.T) {
 }
 
 func Test_Alarms_ListAll(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 	it := client.Alarms.ListAll(ctx, alarms.ListOptions{})
@@ -75,6 +80,7 @@ func Test_Alarms_ListAll(t *testing.T) {
 }
 
 func Test_Alarms_SubscribeOffline(t *testing.T) {
+	testcore.SkipLive(t)
 	if !testcore.IsOffline() {
 		t.Skip("offline-only test")
 	}
@@ -89,6 +95,7 @@ func Test_Alarms_SubscribeOffline(t *testing.T) {
 }
 
 func Test_AuditRecords_ListAll(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 	it := client.AuditRecords.ListAll(ctx, auditrecords.ListOptions{})
@@ -96,6 +103,7 @@ func Test_AuditRecords_ListAll(t *testing.T) {
 }
 
 func Test_Binaries_List(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 	listRes := client.Binaries.List(ctx, binaries.ListOptions{})
@@ -105,6 +113,7 @@ func Test_Binaries_List(t *testing.T) {
 }
 
 func Test_BulkOperations_ListAll(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 	it := client.BulkOperations.ListAll(ctx, bulkoperations.ListOptions{})
@@ -112,6 +121,7 @@ func Test_BulkOperations_ListAll(t *testing.T) {
 }
 
 func Test_TrustedCertificates_ListAll(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 	it := client.TrustedCertificates.ListAll(ctx, trustedcertificates.ListOptions{})
@@ -119,6 +129,7 @@ func Test_TrustedCertificates_ListAll(t *testing.T) {
 }
 
 func Test_Devices_BulkRegistration_GeneratePassword(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	for i := 0; i < 3; i++ {
 		pw, err := client.Devices.Registration.GeneratePassword()
@@ -129,6 +140,7 @@ func Test_Devices_BulkRegistration_GeneratePassword(t *testing.T) {
 }
 
 func Test_TOTP_GenerateSecret(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
@@ -137,6 +149,7 @@ func Test_TOTP_GenerateSecret(t *testing.T) {
 }
 
 func Test_TOTP_VerifyCode(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 	res := client.Users.CurrentUser.TOTP.VerifyCode(ctx, "123456")
@@ -144,6 +157,7 @@ func Test_TOTP_VerifyCode(t *testing.T) {
 }
 
 func Test_TOTP_SetActivity(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 	res := client.Users.CurrentUser.TOTP.SetActivity(ctx, true)
@@ -151,6 +165,7 @@ func Test_TOTP_SetActivity(t *testing.T) {
 }
 
 func Test_ManagedObjects_CreateWithExternalID(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
@@ -166,6 +181,7 @@ func Test_ManagedObjects_CreateWithExternalID(t *testing.T) {
 }
 
 func Test_Alarms_Create_WithResolver(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 

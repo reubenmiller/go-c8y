@@ -14,6 +14,7 @@ import (
 )
 
 func Test_FirmwareItems_CRUD(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
@@ -44,6 +45,7 @@ func Test_FirmwareItems_CRUD(t *testing.T) {
 }
 
 func Test_FirmwareItems_GetOrCreate(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
@@ -66,6 +68,7 @@ func Test_FirmwareItems_GetOrCreate(t *testing.T) {
 }
 
 func Test_FirmwareItems_Ref(t *testing.T) {
+	testcore.SkipLive(t)
 	ref := firmwareitems.NewRef()
 	assert.Equal(t, "12345", ref.ByID("12345"))
 	assert.Equal(t, "name:linux", ref.ByName("linux"))
@@ -73,6 +76,7 @@ func Test_FirmwareItems_Ref(t *testing.T) {
 }
 
 func Test_FirmwareVersions_CRUD(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
@@ -116,6 +120,7 @@ func Test_FirmwareVersions_CRUD(t *testing.T) {
 }
 
 func Test_FirmwarePatches_CRUD(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 

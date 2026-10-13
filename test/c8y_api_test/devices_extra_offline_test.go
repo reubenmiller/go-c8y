@@ -15,6 +15,7 @@ import (
 )
 
 func Test_Devices_CRUD(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
@@ -45,6 +46,7 @@ func Test_Devices_CRUD(t *testing.T) {
 }
 
 func Test_Devices_GetOrCreateByName(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 	res := client.Devices.GetOrCreateByName(ctx, "myNewDev", "myType", map[string]any{"name": "myNewDev", "type": "myType"})
@@ -57,6 +59,7 @@ func Test_Devices_GetOrCreateByName(t *testing.T) {
 }
 
 func Test_Devices_GetOrCreateByFragment(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 	res := client.Devices.GetOrCreateByFragment(ctx, "c8y_Test_Custom", map[string]any{
@@ -67,6 +70,7 @@ func Test_Devices_GetOrCreateByFragment(t *testing.T) {
 }
 
 func Test_Devices_GetOrCreateWith(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 	res := client.Devices.GetOrCreateWith(ctx, map[string]any{
@@ -76,6 +80,7 @@ func Test_Devices_GetOrCreateWith(t *testing.T) {
 }
 
 func Test_ChildDevices_AssignUnassign(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
@@ -104,6 +109,7 @@ func Test_ChildDevices_AssignUnassign(t *testing.T) {
 }
 
 func Test_ChildAssets_AssignUnassign(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
@@ -132,6 +138,7 @@ func Test_ChildAssets_AssignUnassign(t *testing.T) {
 }
 
 func Test_ChildAdditions_AssignUnassign(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 

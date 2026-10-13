@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -258,9 +259,12 @@ func Test_ProxyEnv(t *testing.T) {
 	t.Setenv("HTTP_PROXY", "http://proxy:3128")
 	t.Setenv("HTTPS_PROXY", "")
 	t.Setenv("NO_PROXY", "localhost")
-	t.Setenv("http_proxy", "")
-	t.Setenv("https_proxy", "")
-	t.Setenv("no_proxy", "")
+	if runtime.GOOS != "windows" {
+		// Case-insensitive on Windows: these would clear the values above.
+		t.Setenv("http_proxy", "")
+		t.Setenv("https_proxy", "")
+		t.Setenv("no_proxy", "")
+	}
 
 	env := proxyEnv()
 	want := []string{"HTTP_PROXY=http://proxy:3128", "NO_PROXY=localhost"}

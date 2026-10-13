@@ -28,6 +28,7 @@ func newPluginAndApp(t *testing.T) (string, *bytes.Buffer) {
 }
 
 func Test_ApplicationVersions_FullLifecycle(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
@@ -88,6 +89,7 @@ func Test_ApplicationVersions_FullLifecycle(t *testing.T) {
 }
 
 func Test_ApplicationVersions_CreateFromFile_LocalPath(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
@@ -109,6 +111,7 @@ func Test_ApplicationVersions_CreateFromFile_LocalPath(t *testing.T) {
 }
 
 func Test_ApplicationVersions_CreateFromFile_URL(t *testing.T) {
+	testcore.SkipLive(t)
 	// Spin up a local server that serves a dummy "binary".
 	binary := []byte("PK\x03\x04remote-content")
 	httpSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -133,6 +136,7 @@ func Test_ApplicationVersions_CreateFromFile_URL(t *testing.T) {
 }
 
 func Test_ApplicationVersions_CreateFromFile_MissingFile(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
@@ -149,6 +153,7 @@ func Test_ApplicationVersions_CreateFromFile_MissingFile(t *testing.T) {
 }
 
 func Test_Applications_Upload(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 

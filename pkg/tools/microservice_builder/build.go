@@ -34,6 +34,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -762,8 +763,19 @@ var proxyEnvNames = []string{
 // e.g. ["HTTP_PROXY=http://proxy:3128"]
 func proxyEnv() []string {
 	out := make([]string, 0, len(proxyEnvNames))
+	seen := make(map[string]bool, len(proxyEnvNames))
 	for _, name := range proxyEnvNames {
+		// Windows environment variables are case-insensitive, so http_proxy
+		// and HTTP_PROXY are the same variable: only emit it once.
+		key := name
+		if runtime.GOOS == "windows" {
+			key = strings.ToUpper(name)
+		}
+		if seen[key] {
+			continue
+		}
 		if value := os.Getenv(name); value != "" {
+			seen[key] = true
 			out = append(out, name+"="+value)
 		}
 	}

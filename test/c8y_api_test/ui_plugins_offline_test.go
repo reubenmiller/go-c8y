@@ -15,6 +15,7 @@ import (
 )
 
 func Test_UIPlugins_NewPlugin(t *testing.T) {
+	testcore.SkipLive(t)
 	p := plugins.NewPlugin("myplugin")
 	assert.Equal(t, "myplugin", p.Name)
 	assert.Equal(t, "myplugin-key", p.Key)
@@ -26,6 +27,7 @@ func Test_UIPlugins_NewPlugin(t *testing.T) {
 }
 
 func Test_UIPlugins_ManifestHelpers(t *testing.T) {
+	testcore.SkipLive(t)
 	m := &plugins.Manifest{}
 	m.WithIsPackage(false).WithPackage("pkg")
 	assert.False(t, *m.IsPackage)
@@ -33,11 +35,13 @@ func Test_UIPlugins_ManifestHelpers(t *testing.T) {
 }
 
 func Test_UIPlugins_HasTag(t *testing.T) {
+	testcore.SkipLive(t)
 	assert.True(t, plugins.HasTag([]string{"latest", "tag1"}, "TAG1"))
 	assert.False(t, plugins.HasTag([]string{"latest"}, "missing"))
 }
 
 func Test_UIPlugins_CRUD(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
@@ -70,6 +74,7 @@ func Test_UIPlugins_CRUD(t *testing.T) {
 }
 
 func Test_UIApplicationPlugins_Lifecycle(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
@@ -109,6 +114,7 @@ func Test_UIApplicationPlugins_Lifecycle(t *testing.T) {
 }
 
 func Test_UIApplicationPlugins_NewWrappers(t *testing.T) {
+	testcore.SkipLive(t)
 	ref := applicationplugins.NewPluginReference([]byte(`{"id":"p1","name":"plug","version":"1.0.0"}`))
 	assert.Equal(t, "p1", ref.ID())
 	assert.Equal(t, "plug", ref.Name())

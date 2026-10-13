@@ -11,6 +11,7 @@ import (
 )
 
 func Test_LoginOptions_Lifecycle(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 

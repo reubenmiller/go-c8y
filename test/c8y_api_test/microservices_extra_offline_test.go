@@ -15,6 +15,7 @@ import (
 )
 
 func Test_Microservices_List(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 	result := client.Microservices.List(ctx, microservices.ListOptions{})
@@ -25,6 +26,7 @@ func Test_Microservices_List(t *testing.T) {
 }
 
 func Test_Microservices_FindFirst(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 	res, ok := client.Microservices.FindFirst(ctx, microservices.ListOptions{})
@@ -33,6 +35,7 @@ func Test_Microservices_FindFirst(t *testing.T) {
 }
 
 func Test_Microservices_ByID_ByName_ByContextPath(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	assert.Equal(t, "12345", client.Microservices.ByID("12345"))
 	assert.Equal(t, "name:foo", client.Microservices.ByName("foo"))
@@ -40,6 +43,7 @@ func Test_Microservices_ByID_ByName_ByContextPath(t *testing.T) {
 }
 
 func Test_Microservices_CRUD(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
@@ -75,6 +79,7 @@ func Test_Microservices_CRUD(t *testing.T) {
 }
 
 func Test_Microservices_NewManifest_FromJSON(t *testing.T) {
+	testcore.SkipLive(t)
 	manifest, err := microservices.NewManifest(nil, microservices.FromJSON(strings.NewReader(`{
 		"name":"svc","contextPath":"svc","apiVersion":"v2","isolation":"PER_TENANT"
 	}`)))
@@ -85,6 +90,7 @@ func Test_Microservices_NewManifest_FromJSON(t *testing.T) {
 }
 
 func Test_Microservices_NewOption(t *testing.T) {
+	testcore.SkipLive(t)
 	opt := microservices.NewOption(nil, microservices.WithOverwriteOnUpdate(false), microservices.WithInheritFromOwner(true))
 	require.NotNil(t, opt.OverwriteOnUpdate)
 	require.NotNil(t, opt.InheritFromOwner)
@@ -93,6 +99,7 @@ func Test_Microservices_NewOption(t *testing.T) {
 }
 
 func Test_Microservices_GetBootstrapUserFromEnvironment(t *testing.T) {
+	testcore.SkipLive(t)
 	t.Setenv(microservices.EnvironmentBootstrapTenant, "tABC")
 	t.Setenv(microservices.EnvironmentBootstrapUsername, "u1")
 	t.Setenv(microservices.EnvironmentBootstrapPassword, "p1")
@@ -103,6 +110,7 @@ func Test_Microservices_GetBootstrapUserFromEnvironment(t *testing.T) {
 }
 
 func Test_Microservices_GetServiceUserFromEnvironment(t *testing.T) {
+	testcore.SkipLive(t)
 	t.Setenv(microservices.EnvironmentTenant, "tABC")
 	t.Setenv(microservices.EnvironmentUsername, "u2")
 	t.Setenv(microservices.EnvironmentPassword, "p2")
@@ -113,11 +121,13 @@ func Test_Microservices_GetServiceUserFromEnvironment(t *testing.T) {
 }
 
 func Test_Microservices_GetBootstrapBaseURL(t *testing.T) {
+	testcore.SkipLive(t)
 	t.Setenv(microservices.EnvironmentBaseURL, "https://example.cumulocity.com")
 	assert.Equal(t, "https://example.cumulocity.com", microservices.GetBootstrapBaseURLFromEnvironment())
 }
 
 func Test_Microservices_ByNameFilter(t *testing.T) {
+	testcore.SkipLive(t)
 	pred := microservices.ByName("foo")
 	assert.True(t, pred(modelMicroservice("foo")))
 	assert.False(t, pred(modelMicroservice("bar")))

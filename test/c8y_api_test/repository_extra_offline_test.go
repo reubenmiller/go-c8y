@@ -14,6 +14,7 @@ import (
 )
 
 func Test_Configuration_CRUD(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
@@ -46,6 +47,7 @@ func Test_Configuration_CRUD(t *testing.T) {
 }
 
 func Test_Software_CRUD(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
@@ -78,6 +80,7 @@ func Test_Software_CRUD(t *testing.T) {
 }
 
 func Test_SoftwareVersions_CRUD(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 

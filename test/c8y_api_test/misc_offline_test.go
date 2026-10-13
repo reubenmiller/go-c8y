@@ -12,6 +12,7 @@ import (
 )
 
 func Test_Tenants_CRUD(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
@@ -55,6 +56,7 @@ func Test_Tenants_CRUD(t *testing.T) {
 }
 
 func Test_Devices_Registration_Lifecycle(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
@@ -86,6 +88,7 @@ func Test_Devices_Registration_Lifecycle(t *testing.T) {
 }
 
 func Test_Devices_Registration_GeneratePassword(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	pw, err := client.Devices.Registration.GeneratePassword()
 	require.NoError(t, err)
@@ -93,6 +96,7 @@ func Test_Devices_Registration_GeneratePassword(t *testing.T) {
 }
 
 func Test_Microservices_CurrentMicroservice(t *testing.T) {
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 

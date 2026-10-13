@@ -47,6 +47,16 @@ func SkipOffline(t *testing.T, reason string) {
 	}
 }
 
+// SkipLive skips the test unless running in offline mode. Use this for tests
+// written against the fake server's behaviour, and for any test that would
+// mutate shared tenant state (users, TFA, tenants, ...) on a real server.
+func SkipLive(t *testing.T) {
+	t.Helper()
+	if !IsOffline() {
+		t.Skip("skipping against a live server: offline-only test")
+	}
+}
+
 // SleepIfLive pauses execution only when running against a real server.
 // The fake server processes requests synchronously, so no wait is needed
 // in offline mode.  Use this wherever tests sleep to let the server catch up.
