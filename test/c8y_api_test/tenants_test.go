@@ -48,6 +48,8 @@ func Test_GetTenantTFA(t *testing.T) {
 }
 
 func Test_UpdateTenantTFA(t *testing.T) {
+	// Never risk changing the shared tenant's TFA settings, even via dry run.
+	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 
 	// Use dry run: the PUT is written to the request but never sent to the server
