@@ -18,22 +18,27 @@ func TestResolveListStrategy(t *testing.T) {
 		name  string
 		kind  pagination.StrategyKind
 		query string
+		opts  any
 		want  want
 	}{
-		{"unset (zero value) -> id keyset", "", "", wantID},
-		{"explicit auto -> id keyset", pagination.StrategyAuto, "", wantID},
-		{"auto with conflicting orderby -> offset", pagination.StrategyAuto, "$filter=(type eq 'x') $orderby=name", wantOffset},
-		{"auto with _id orderby -> id keyset", pagination.StrategyAuto, "$orderby=_id asc", wantID},
-		{"explicit offset", pagination.StrategyOffset, "", wantOffset},
-		{"explicit id", pagination.StrategyIDKeyset, "", wantID},
-		{"explicit id with conflicting orderby -> error", pagination.StrategyIDKeyset, "$orderby=name", wantErr},
-		{"time keyset not applicable -> error", pagination.StrategyTimeKeyset, "", wantErr},
-		{"unknown -> error", pagination.StrategyKind("bogus"), "", wantErr},
+		{"unset (zero value) -> id keyset", "", "", nil, wantID},
+		{"explicit auto -> id keyset", pagination.StrategyAuto, "", nil, wantID},
+		{"auto with conflicting orderby -> offset", pagination.StrategyAuto, "$filter=(type eq 'x') $orderby=name", nil, wantOffset},
+		{"auto with _id orderby -> id keyset", pagination.StrategyAuto, "$orderby=_id asc", nil, wantID},
+		{"explicit offset", pagination.StrategyOffset, "", nil, wantOffset},
+		{"explicit id", pagination.StrategyIDKeyset, "", nil, wantID},
+		{"explicit id with conflicting orderby -> error", pagination.StrategyIDKeyset, "$orderby=name", nil, wantErr},
+		{"time keyset not applicable -> error", pagination.StrategyTimeKeyset, "", nil, wantErr},
+		{"unknown -> error", pagination.StrategyKind("bogus"), "", nil, wantErr},
+		{"auto with type filter -> offset", pagination.StrategyAuto, "", ListOptions{Type: "x"}, wantOffset},
+		{"auto with fragmentType filter -> offset", "", "", ListOptions{FragmentType: "c8y_IsDevice"}, wantOffset},
+		{"auto with query-only filter -> id keyset", "", "$filter=(name eq 'x')", ListOptions{Query: "$filter=(name eq 'x')"}, wantID},
+		{"explicit id with type filter -> error", pagination.StrategyIDKeyset, "", ListOptions{Type: "x"}, wantErr},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			s, err := ResolveListStrategy(tc.kind, tc.query)
+			s, err := ResolveListStrategy(tc.kind, tc.query, tc.opts)
 			switch tc.want {
 			case wantErr:
 				if err == nil {

@@ -638,7 +638,7 @@ type ManagedObjectIterator = pagination.Iterator[jsonmodels.ManagedObject]
 // _id keyset optimisation (see ResolveListStrategy); set
 // ListOptions.Strategy to override.
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *ManagedObjectIterator {
-	strategy, err := ResolveListStrategy(opts.Strategy, opts.Query)
+	strategy, err := ResolveListStrategy(opts.Strategy, opts.Query, opts)
 	if err != nil {
 		return pagination.NewErrorIterator[jsonmodels.ManagedObject](err)
 	}

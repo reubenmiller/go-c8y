@@ -44,9 +44,11 @@ func TestIDKeyset_CompleteAndMatchesOffset(t *testing.T) {
 	want := seedManagedObjects(t, srv, typ, 250)
 
 	for _, ps := range []int{1, 7, 100, 2000} {
-		// Default (Auto -> id keyset)
+		// Default (Auto -> id keyset). The filter must be a query: plain
+		// filters (Type, ...) force offset, as the platform ignores them
+		// alongside the keyset query.
 		itKeyset := client.ManagedObjects.ListAll(context.Background(), managedobjects.ListOptions{
-			Type:              typ,
+			Query:             "$filter=(type eq '" + typ + "')",
 			PaginationOptions: pagination.PaginationOptions{PageSize: ps},
 		})
 		keyset := collectIDs(t, itKeyset, func(m jsonmodels.ManagedObject) string { return m.ID() })
@@ -82,7 +84,7 @@ func TestIDKeyset_RequestPattern(t *testing.T) {
 	// id keyset
 	srv.ResetRequests()
 	itKeyset := client.ManagedObjects.ListAll(context.Background(), managedobjects.ListOptions{
-		Type:              typ,
+		Query:             "$filter=(type eq '" + typ + "')",
 		PaginationOptions: pagination.PaginationOptions{PageSize: 10},
 	})
 	_ = collectIDs(t, itKeyset, func(m jsonmodels.ManagedObject) string { return m.ID() })
@@ -134,6 +136,30 @@ func TestIDKeyset_ConflictingOrderByFallsBackToOffset(t *testing.T) {
 	}
 }
 
+// TestIDKeyset_PlainFilterFallsBackToOffset proves Auto uses offset when a plain
+// filter (type, fragmentType, ...) is set: the platform ignores those once a
+// query is present, so the keyset cursor would silently drop the filter.
+func TestIDKeyset_PlainFilterFallsBackToOffset(t *testing.T) {
+	client, srv := testcore.CreateTestClientWithFakeServer(t)
+	requireOffline(t, srv)
+	const typ = "ci_IDKeysetPlain"
+	want := seedManagedObjects(t, srv, typ, 25)
+	for range 5 { // other-typed objects the filter must exclude
+		require.NoError(t, client.ManagedObjects.Create(context.Background(), map[string]any{"type": "ci_IDKeysetOther"}).Err)
+	}
+
+	srv.ResetRequests()
+	it := client.ManagedObjects.ListAll(context.Background(), managedobjects.ListOptions{
+		Type:              typ,
+		PaginationOptions: pagination.PaginationOptions{PageSize: 10},
+	})
+	got := collectIDs(t, it, func(m jsonmodels.ManagedObject) string { return m.ID() })
+	require.NoError(t, checkComplete(got, want), "type filter must be honoured")
+	for _, q := range inventoryQueries(srv.Requests()) {
+		require.NotContains(t, q, "_id gt ", "Auto must fall back to offset with a plain filter: %s", q)
+	}
+}
+
 // TestIDKeyset_ExplicitInapplicableErrors proves an explicit, inapplicable
 // strategy is a hard error surfaced via Iterator.Err() with no items yielded.
 func TestIDKeyset_ExplicitInapplicableErrors(t *testing.T) {
@@ -146,6 +172,10 @@ func TestIDKeyset_ExplicitInapplicableErrors(t *testing.T) {
 		"time keyset on inventory": {
 			Type:              typ,
 			PaginationOptions: pagination.PaginationOptions{Strategy: pagination.StrategyTimeKeyset},
+		},
+		"id keyset with plain filter": {
+			Type:              typ,
+			PaginationOptions: pagination.PaginationOptions{Strategy: pagination.StrategyIDKeyset},
 		},
 		"id keyset with conflicting orderby": {
 			Query:             "$filter=(type eq '" + typ + "') $orderby=name",

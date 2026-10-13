@@ -82,7 +82,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 // ListAll returns an iterator for all devices. By default it uses the _id
 // keyset optimisation; set ListOptions.Strategy to override.
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *ManagedObjectIterator {
-	strategy, err := managedobjects.ResolveListStrategy(opts.Strategy, opts.Query)
+	strategy, err := managedobjects.ResolveListStrategy(opts.Strategy, opts.Query, opts)
 	if err != nil {
 		return pagination.NewErrorIterator[jsonmodels.ManagedObject](err)
 	}

@@ -430,12 +430,21 @@ func (fs *FakeServer) handleMOUser(w http.ResponseWriter, r *http.Request, moID 
 // filterManagedObjects applies inventory-specific query parameter filtering.
 func (fs *FakeServer) filterManagedObjects(r *http.Request) []json.RawMessage {
 	items := fs.ManagedObjects.List()
+	q := r.URL.Query()
+
+	// Like the platform, a query (query or q) replaces the plain filter
+	// parameters (type, fragmentType, ids, ...): they are ignored when present.
+	queryStr := q.Get("query")
+	if queryStr == "" {
+		queryStr = q.Get("q")
+	}
+	if queryStr != "" {
+		items = applyCQLFilter(items, queryStr)
+		return applyCQLOrderBy(items, queryStr)
+	}
 
 	// Standard filters
 	items = FilterItems(r, items)
-
-	// Inventory-specific: query (CQL), ids, text
-	q := r.URL.Query()
 
 	if ids := q.Get("ids"); ids != "" {
 		idSet := make(map[string]struct{})
@@ -449,15 +458,6 @@ func (fs *FakeServer) filterManagedObjects(r *http.Request) []json.RawMessage {
 			}
 		}
 		items = filtered
-	}
-
-	queryStr := q.Get("query")
-	if queryStr == "" {
-		queryStr = q.Get("q")
-	}
-	if queryStr != "" {
-		items = applyCQLFilter(items, queryStr)
-		items = applyCQLOrderBy(items, queryStr)
 	}
 
 	return items
