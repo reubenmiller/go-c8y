@@ -1,0 +1,130 @@
+name: v2
+
+# Verification for the v2 branch. Direct pushes are allowed (no PR requirement),
+# so every push is checked here: static checks + the offline suite against the
+# fake server on all platforms, and the full integration suite against a real
+# Cumulocity tenant.
+on:
+  push:
+    branches: [ v2 ]
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+  pull_request:
+    branches: [ v2 ]
+  workflow_dispatch:
+    inputs:
+      live:
+        description: Run the live tests against the Cumulocity tenant
+        type: boolean
+        default: true
+
+# Supersede in-flight runs for the same ref (the live job additionally
+# serialises across refs, see below).
+concurrency:
+  group: v2-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.11
+
+  # Fails on drift between the vendored OpenAPI spec and the SDK that isn't
+  # declared in docs/c8y-oas.overlay.yml, and on stale generated code.
+  api-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: arduino/setup-task@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check API drift
+        run: task lint-api -- --strict
+      - name: Verify generated code is up to date
+        run: |
+          task generate
+          git diff --exit-code -- 'pkg/c8y/api/spec/*.go' '**/zz_generated_*.go' \
+            || (echo "::error::Generated code is stale. Run 'task generate' and commit." && exit 1)
+
+  # Unit tests + integration suite against the in-process fake server.
+  # No credentials needed, so this also runs for PRs from forks.
+  test-offline:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: arduino/setup-task@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run offline tests
+        run: task test-ci
+
+  # Full integration suite against a real tenant. Skipped for fork PRs (no
+  # secrets) and when manually dispatched with live=false.
+  test-live:
+    if: >-
+      (github.event_name == 'push') ||
+      (github.event_name == 'workflow_dispatch' && inputs.live) ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    # All runs share one tenant, so never let two live jobs (from any ref or
+    # workflow using this group) mutate it at the same time.
+    concurrency:
+      group: c8y-live-tenant
+      cancel-in-progress: false
+    env:
+      TEST_MODE: live
+      C8Y_HOST: ${{ secrets.C8Y_HOST }}
+      C8Y_TENANT: ${{ secrets.C8Y_TENANT }}
+      C8Y_USER: ${{ secrets.C8Y_USER }}
+      C8Y_PASSWORD: ${{ secrets.C8Y_PASSWORD }}
+      # Max timeout for each request (in milliseconds)
+      C8Y_TIMEOUT: 30000
+    steps:
+      - name: Check credentials
+        if: env.C8Y_HOST == ''
+        run: |
+          echo "::error::C8Y_HOST secret is not configured"
+          exit 1
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Run live tests
+        shell: bash
+        run: |
+          set -o pipefail
+          go test -count=1 -timeout 45m ./test/... 2>&1 | tee live-tests.log
+      - name: Run race tests
+        run: go test -race -count=1 -timeout 5m ./test/c8y_api_test -run '^TestRealtimeSubscriptions_Unsubscribe$'
+      - name: Upload test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-tests-log
+          path: live-tests.log
+          if-no-files-found: ignore

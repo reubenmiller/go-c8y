@@ -611,8 +611,12 @@ func TestSendRequest_CustomBodyWriter(t *testing.T) {
 
 			// Wrap the response body with the progress bar proxy reader
 			// Use response.Body (Resty's body) which is the correct body to wrap
+			proxyReader, err := bar.ProxyReader(response.Body)
+			if err != nil {
+				return err
+			}
 			wrappedBody := &completingReader{
-				Reader: bar.ProxyReader(response.Body),
+				Reader: proxyReader,
 				bar:    bar,
 				closer: response.Body,
 			}

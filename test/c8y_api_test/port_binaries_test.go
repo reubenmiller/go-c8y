@@ -126,9 +126,12 @@ func TestInventoryService_CreateBinaryWithProgressBar(t *testing.T) {
 		),
 	)
 
+	proxyReader, err := bar.ProxyReader(file)
+	require.NoError(t, err)
+
 	// Upload the binary
 	binary1 := client.Binaries.Create(context.Background(), core.UploadFileOptions{
-		Reader:   bar.ProxyReader(file),
+		Reader:   proxyReader,
 		FilePath: testfile1,
 	})
 	assert.NoError(t, binary1.Err)

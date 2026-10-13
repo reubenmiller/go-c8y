@@ -68,7 +68,7 @@ tasks:
   test-race:
     desc: Test for race conditions
     cmds:
-      - go test -race -timeout 30s github.com/reubenmiller/go-c8y/v2/test/c8y_test -run "^(TestRealtimeSubscriptions_Unsubscribe)$"
+      - go test -race -timeout 5m github.com/reubenmiller/go-c8y/v2/test/c8y_api_test -run "^(TestRealtimeSubscriptions_Unsubscribe)$"
 
   generate:
     desc: Generate the Layer-0 SDK substrate (paths, enums, per-resource options/models) from the OpenAPI spec

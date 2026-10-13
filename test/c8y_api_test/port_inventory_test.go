@@ -181,7 +181,7 @@ func TestInventoryService_CreateManagedObjectWithBinary(t *testing.T) {
 	assert.NoError(t, binary1.Err)
 	t.Cleanup(func() {
 		client.ManagedObjects.Delete(context.Background(), binary1.Data.ID(), managedobjects.DeleteOptions{
-			ForceCascade: true,
+			ForceCascade: new(true),
 		})
 	})
 
@@ -223,7 +223,7 @@ func TestInventoryService_CreateChildAdditionWithBinary(t *testing.T) {
 	assert.NoError(t, child.Err)
 	t.Cleanup(func() {
 		client.ManagedObjects.Delete(context.Background(), parent.Data.ID(), managedobjects.DeleteOptions{
-			ForceCascade: true,
+			ForceCascade: new(true),
 		})
 	})
 
