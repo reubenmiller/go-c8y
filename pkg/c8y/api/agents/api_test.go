@@ -17,8 +17,8 @@ func TestScopeToAgents(t *testing.T) {
 		filter string
 		want   string
 	}{
-		{"empty", "", "$filter=(has(com_cumulocity_model_Agent))"},
-		{"with filter", "(name eq 'foo')", "$filter=(has(com_cumulocity_model_Agent) and (name eq 'foo'))"},
+		{"empty", "", "$filter=has(com_cumulocity_model_Agent)"},
+		{"with filter", "(name eq 'foo')", "$filter=has(com_cumulocity_model_Agent) and (name eq 'foo')"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -480,12 +480,7 @@ func applyCQLFilter(items []json.RawMessage, query string) []json.RawMessage {
 		if idx := strings.Index(query, " $orderby="); idx >= 0 {
 			query = strings.TrimSpace(query[:idx])
 		}
-		// Remove wrapping parentheses
-		query = strings.TrimSpace(query)
-		if strings.HasPrefix(query, "(") && strings.HasSuffix(query, ")") {
-			query = query[1 : len(query)-1]
-		}
-		return applyCQLFilter(items, strings.TrimSpace(query))
+		return applyCQLFilter(items, stripWrappingParens(strings.TrimSpace(query)))
 	}
 
 	// Strip "order by ..." suffix (case-insensitive)
@@ -496,8 +491,10 @@ func applyCQLFilter(items []json.RawMessage, query string) []json.RawMessage {
 		return items
 	}
 
-	// Handle "expr1 and expr2" (simple AND)
-	if idx := caseInsensitiveIndex(query, " and "); idx >= 0 {
+	// Handle "expr1 and expr2" (simple AND). Split only at parenthesis depth 0 —
+	// "(type eq 'a') and (name eq 'b')" must split between the groups, not
+	// inside one (the shape the go-c8y name resolvers emit).
+	if idx := topLevelIndex(query, " and "); idx >= 0 {
 		left := strings.TrimSpace(query[:idx])
 		right := strings.TrimSpace(query[idx+5:])
 		items = applyCQLFilter(items, left)
@@ -518,9 +515,8 @@ func applyCQLFilter(items []json.RawMessage, query string) []json.RawMessage {
 	}
 
 	// Strip wrapping parentheses (e.g., "(name eq 'foo')")
-	if strings.HasPrefix(query, "(") && strings.HasSuffix(query, ")") {
-		inner := query[1 : len(query)-1]
-		return applyCQLFilter(items, strings.TrimSpace(inner))
+	if stripped := stripWrappingParens(query); stripped != query {
+		return applyCQLFilter(items, stripped)
 	}
 
 	// Handle "field eq 'value'" – supports trailing wildcard (e.g. name eq 'foo*')
@@ -574,6 +570,54 @@ func applyCQLFilter(items []json.RawMessage, query string) []json.RawMessage {
 
 	// Fallback: no filtering
 	return items
+}
+
+// stripWrappingParens removes outer parentheses only when the leading "(" is
+// closed by the final ")" — "(a) and (b)" is left alone (stripping would
+// corrupt it into "a) and (b"), while "((a) and (b))" loses one layer.
+func stripWrappingParens(q string) string {
+	for strings.HasPrefix(q, "(") && strings.HasSuffix(q, ")") && parensCloseAtEnd(q) {
+		q = strings.TrimSpace(q[1 : len(q)-1])
+	}
+	return q
+}
+
+// parensCloseAtEnd reports whether the first "(" of q is matched by q's final
+// character.
+func parensCloseAtEnd(q string) bool {
+	depth := 0
+	for i, r := range q {
+		switch r {
+		case '(':
+			depth++
+		case ')':
+			depth--
+			if depth == 0 {
+				return i == len(q)-1
+			}
+		}
+	}
+	return false
+}
+
+// topLevelIndex finds the first occurrence of substr in s (case-insensitive)
+// at parenthesis depth 0, or -1.
+func topLevelIndex(s, substr string) int {
+	lower := strings.ToLower(s)
+	sub := strings.ToLower(substr)
+	depth := 0
+	for i := 0; i+len(sub) <= len(lower); i++ {
+		switch lower[i] {
+		case '(':
+			depth++
+		case ')':
+			depth--
+		}
+		if depth == 0 && strings.HasPrefix(lower[i:], sub) {
+			return i
+		}
+	}
+	return -1
 }
 
 // matchesComparison evaluates "actual <op> value" using compareValues.
@@ -649,7 +693,3 @@ func getNestedID(doc json.RawMessage) string {
 	return ""
 }
 
-// caseInsensitiveIndex finds the first occurrence of substr in s, case-insensitive.
-func caseInsensitiveIndex(s, substr string) int {
-	return strings.Index(strings.ToLower(s), strings.ToLower(substr))
-}

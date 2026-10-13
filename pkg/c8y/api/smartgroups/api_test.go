@@ -31,8 +31,8 @@ func TestScopeToSmartGroups(t *testing.T) {
 		filter string
 		want   string
 	}{
-		{"", "$filter=(type eq 'c8y_DynamicGroup')"},
-		{"(name eq 'foo')", "$filter=(type eq 'c8y_DynamicGroup' and (name eq 'foo'))"},
+		{"", "$filter=type eq 'c8y_DynamicGroup'"},
+		{"(name eq 'foo')", "$filter=type eq 'c8y_DynamicGroup' and (name eq 'foo')"},
 	}
 	for _, tt := range tests {
 		if got := ScopeToSmartGroups(tt.filter); got != tt.want {

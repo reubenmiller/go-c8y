@@ -15,5 +15,5 @@ func TestQuery(t *testing.T) {
 		AddFilterEqStr("softwareType", "bar").
 		Build()
 
-	assert.Equal(t, "$filter=((type eq 'c8y_Software') and (name eq 'foo') and (softwareType eq 'bar')) $orderby=name,creationTime", q)
+	assert.Equal(t, "$filter=(type eq 'c8y_Software') and (name eq 'foo') and (softwareType eq 'bar') $orderby=name,creationTime", q)
 }

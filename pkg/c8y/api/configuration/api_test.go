@@ -31,8 +31,8 @@ func TestScopeToConfiguration(t *testing.T) {
 		filter string
 		want   string
 	}{
-		{"", "$filter=(type eq 'c8y_ConfigurationDump')"},
-		{"(name eq 'foo')", "$filter=(type eq 'c8y_ConfigurationDump' and (name eq 'foo'))"},
+		{"", "$filter=type eq 'c8y_ConfigurationDump'"},
+		{"(name eq 'foo')", "$filter=type eq 'c8y_ConfigurationDump' and (name eq 'foo')"},
 	}
 	for _, tt := range tests {
 		if got := ScopeToConfiguration(tt.filter); got != tt.want {

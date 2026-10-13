@@ -170,22 +170,32 @@ func extractFilterBody(query string) string {
 	return q
 }
 
+// Build renders the query as "$filter=<parts joined by ' and '> $orderby=<order>",
+// matching the go-c8y-cli v1 query format (pkg/c8yquery): the joined filter is
+// NOT wrapped in an outer pair of parentheses (each comparison part already
+// carries its own parens where needed, e.g. "(name eq 'x')"), and "$filter=" is
+// always emitted — even with no filter parts — so an order-only query is
+// "$filter= $orderby=...". An inverted query negates the whole filter as
+// "not(<parts>)".
 func (b *InventoryQuery) Build() string {
+	// No filter parts and no ordering means no query at all (e.g. a plain
+	// childAdditions list), so emit an empty string rather than a bare
+	// "$filter=" that would add a spurious query parameter.
+	if len(b.Filter) == 0 && len(b.OrderBy) == 0 {
+		return ""
+	}
 	q := &strings.Builder{}
-	if len(b.Filter) > 0 {
-		q.Write([]byte("$filter="))
-		if b.Invert {
-			q.Write([]byte("not"))
-		}
-		q.Write([]byte("("))
+	q.Write([]byte("$filter="))
+	switch {
+	case b.Invert && len(b.Filter) > 0:
+		q.Write([]byte("not("))
 		q.WriteString(strings.Join(b.Filter, " and "))
 		q.Write([]byte(")"))
+	default:
+		q.WriteString(strings.Join(b.Filter, " and "))
 	}
 	if len(b.OrderBy) > 0 {
-		if q.Len() > 0 {
-			q.Write([]byte(" "))
-		}
-		q.Write([]byte("$orderby="))
+		q.Write([]byte(" $orderby="))
 		q.WriteString(strings.Join(b.OrderBy, ","))
 	}
 	return q.String()

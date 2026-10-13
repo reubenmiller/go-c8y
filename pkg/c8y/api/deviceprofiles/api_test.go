@@ -31,8 +31,8 @@ func TestScopeToDeviceProfiles(t *testing.T) {
 		filter string
 		want   string
 	}{
-		{"", "$filter=(type eq 'c8y_Profile')"},
-		{"(name eq 'foo')", "$filter=(type eq 'c8y_Profile' and (name eq 'foo'))"},
+		{"", "$filter=type eq 'c8y_Profile'"},
+		{"(name eq 'foo')", "$filter=type eq 'c8y_Profile' and (name eq 'foo')"},
 	}
 	for _, tt := range tests {
 		if got := ScopeToDeviceProfiles(tt.filter); got != tt.want {
