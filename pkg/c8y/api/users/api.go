@@ -169,6 +169,11 @@ func ByDeviceUser(deviceID string) UserRef { return UserRef("device_" + deviceID
 type GetOptions struct {
 	ID     UserRef `url:"-"`
 	Tenant string  `url:"-"`
+
+	// WithCertificates includes the user's provisioned (trusted) certificates
+	// as provisionedCertificates (serialNumber, notBefore, notAfter).
+	// Note: Cumulocity omits the "enabled" field in this response.
+	WithCertificates bool `url:"withCertificates,omitempty"`
 }
 
 // Get a user
@@ -182,6 +187,7 @@ func (s *Service) getB(opt GetOptions) *core.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
 		SetPathParam(ParamID, string(opt.ID)).
+		SetQueryParamsFromValues(core.QueryParameters(opt)).
 		SetURL(ApiUser)
 	return core.NewTryRequest(s.Client, req)
 }

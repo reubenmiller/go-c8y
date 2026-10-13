@@ -49,9 +49,13 @@ func (s *Service) listUsersB() *core.TryRequest {
 	return core.NewTryRequest(s.Client, req)
 }
 
-// ListSettings returns the current application settings
-func (s *Service) ListSettings(ctx context.Context) op.Result[jsonmodels.MicroserviceSetting] {
-	return core.ExecuteCollection(ctx, s.listSettingsB(), "", "", jsonmodels.NewMicroserviceSetting)
+// ListSettings returns the current application settings.
+//
+// Cumulocity answers with a flat key/value JSON object (for example
+// {"key1":"v1","key2":"v2"}), not a collection, so the result is a single
+// MicroserviceSettings document. Use Map() or Get(key) to read the values.
+func (s *Service) ListSettings(ctx context.Context) op.Result[jsonmodels.MicroserviceSettings] {
+	return core.Execute(ctx, s.listSettingsB(), jsonmodels.NewMicroserviceSettings)
 }
 
 func (s *Service) listSettingsB() *core.TryRequest {

@@ -88,6 +88,39 @@ func TestGet(t *testing.T) {
 	}
 }
 
+func TestGetWithCertificates(t *testing.T) {
+	var gotQuery string
+	svc, closeFn := testService(func(w http.ResponseWriter, r *http.Request) {
+		gotQuery = r.URL.RawQuery
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"id":"device_x","userName":"device_x","provisionedCertificates":[{"serialNumber":"1a2b","notBefore":"2026-01-01T00:00:00.000Z","notAfter":"2027-01-01T00:00:00.000Z"}]}`))
+	})
+	defer closeFn()
+
+	res := svc.Get(context.Background(), GetOptions{ID: ByDeviceUser("x"), Tenant: "t123", WithCertificates: true})
+	if res.Err != nil {
+		t.Fatalf("Get: %v", res.Err)
+	}
+	if gotQuery != "withCertificates=true" {
+		t.Errorf("query = %q, want withCertificates=true", gotQuery)
+	}
+	certs := res.Data.ProvisionedCertificates()
+	if len(certs) != 1 || certs[0].SerialNumber != "1a2b" || certs[0].NotAfter.Year() != 2027 {
+		t.Errorf("certs = %+v", certs)
+	}
+
+	// default: parameter not sent
+	svc2, closeFn2 := testService(func(w http.ResponseWriter, r *http.Request) {
+		gotQuery = r.URL.RawQuery
+		_, _ = w.Write([]byte(`{}`))
+	})
+	defer closeFn2()
+	svc2.Get(context.Background(), GetOptions{ID: ByID("a"), Tenant: "t"})
+	if gotQuery != "" {
+		t.Errorf("query = %q, want empty", gotQuery)
+	}
+}
+
 func TestGetByUsername(t *testing.T) {
 	var gotPath string
 	svc, closeFn := testService(func(w http.ResponseWriter, r *http.Request) {

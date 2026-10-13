@@ -1,6 +1,9 @@
 package jsonmodels
 
-import "github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
+import (
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
+	"github.com/tidwall/gjson"
+)
 
 type MicroserviceUser struct {
 	jsondoc.JSONDoc
@@ -51,4 +54,32 @@ func (s MicroserviceSetting) Editable() bool {
 // InheritFromOwner returns whether the setting inherits from owner
 func (s MicroserviceSetting) InheritFromOwner() bool {
 	return s.Get("inheritFromOwner").Bool()
+}
+
+// MicroserviceSettings is the flat key/value map returned by
+// GET /application/currentApplication/settings, e.g. {"key1":"v1","key2":"v2"}.
+type MicroserviceSettings struct {
+	jsondoc.JSONDoc
+}
+
+func NewMicroserviceSettings(b []byte) MicroserviceSettings {
+	return MicroserviceSettings{jsondoc.New(b)}
+}
+
+// Map returns all settings as a key/value map. Non-string values are
+// returned in their raw JSON form.
+func (s MicroserviceSettings) Map() map[string]string {
+	out := map[string]string{}
+	s.Get().ForEach(func(k, v gjson.Result) bool {
+		out[k.String()] = v.String()
+		return true
+	})
+	return out
+}
+
+// Value returns the value of the given setting and whether it exists.
+// The key is matched literally (it may contain dots).
+func (s MicroserviceSettings) Value(key string) (string, bool) {
+	v, ok := s.Map()[key]
+	return v, ok
 }

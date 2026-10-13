@@ -269,3 +269,75 @@ func TestBootstrapUserGet(t *testing.T) {
 		t.Errorf("path = %q, want .../123/bootstrapUser", path)
 	}
 }
+
+// TestCreateOrUpdate verifies that a missing application is created and an
+// existing one is reused (not re-created), and that the binary is uploaded to
+// the resolved application.
+func TestCreateOrUpdate(t *testing.T) {
+	cases := []struct {
+		name     string
+		listBody string
+		wantID   string
+		wantPOST bool
+	}{
+		{
+			name:     "creates missing application",
+			listBody: `{"applications":[],"statistics":{"currentPage":1,"pageSize":1}}`,
+			wantID:   "77",
+			wantPOST: true,
+		},
+		{
+			name:     "reuses existing application",
+			listBody: `{"applications":[{"id":"5","name":"my-svc","type":"MICROSERVICE"}],"statistics":{"currentPage":1,"pageSize":1}}`,
+			wantID:   "5",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			file := filepath.Join(t.TempDir(), "my-svc.zip")
+			if err := os.WriteFile(file, []byte("PK\x03\x04 dummy zip"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+
+			var created map[string]any
+			var uploadPath string
+			svc, closeFn := testService(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				switch {
+				case r.Method == http.MethodGet && r.URL.Path == "/application/applications":
+					_, _ = w.Write([]byte(tc.listBody))
+				case r.Method == http.MethodGet && r.URL.Path == "/application/applications/5":
+					_, _ = w.Write([]byte(`{"id":"5","name":"my-svc","key":"my-svc"}`))
+				case r.Method == http.MethodPost && r.URL.Path == "/application/applications":
+					_ = json.NewDecoder(r.Body).Decode(&created)
+					w.WriteHeader(http.StatusCreated)
+					_, _ = w.Write([]byte(`{"id":"77","name":"my-svc","key":"my-svc","self":"https://x/application/applications/77"}`))
+				case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/binaries"):
+					uploadPath = r.URL.Path
+					_, _ = w.Write([]byte(`{"id":"bin1"}`))
+				default:
+					t.Errorf("unexpected request %s %s", r.Method, r.URL.Path)
+					w.WriteHeader(http.StatusNotFound)
+				}
+			})
+			defer closeFn()
+
+			app, err := svc.CreateOrUpdate(context.Background(), CreateOptions{File: file, SkipSubscription: true})
+			if err != nil {
+				t.Fatalf("CreateOrUpdate: %v", err)
+			}
+			if app.ID != tc.wantID {
+				t.Errorf("id = %q, want %q", app.ID, tc.wantID)
+			}
+			if wantPath := "/application/applications/" + tc.wantID + "/binaries"; uploadPath != wantPath {
+				t.Errorf("upload path = %q, want %q", uploadPath, wantPath)
+			}
+			if tc.wantPOST && (created["name"] != "my-svc" || created["type"] != "MICROSERVICE") {
+				t.Errorf("created body = %v", created)
+			}
+			if !tc.wantPOST && created != nil {
+				t.Errorf("existing application was re-created: %v", created)
+			}
+		})
+	}
+}

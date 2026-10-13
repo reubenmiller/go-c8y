@@ -60,8 +60,12 @@ type MicroserviceUserCollection struct {
 	Users []MicroserviceUser `json:"users"`
 }
 
+// MicroserviceSetting is a settings entry as declared in a microservice
+// manifest (cumulocity.json).
 type MicroserviceSetting struct {
-	Key              string `json:"key,omitempty"`
+	Key string `json:"key,omitempty"`
+	// DefaultValue must be a non-empty string: Cumulocity rejects the upload
+	// of a manifest whose settings entry has an empty or missing defaultValue.
 	DefaultValue     string `json:"defaultValue,omitempty"`
 	Editable         bool   `json:"editable,omitempty"`
 	InheritFromOwner bool   `json:"inheritFromOwner,omitempty"`
