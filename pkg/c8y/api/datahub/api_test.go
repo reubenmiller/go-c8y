@@ -98,3 +98,114 @@ func TestJobs(t *testing.T) {
 		t.Errorf("results = %d, want 2", n)
 	}
 }
+
+func TestListOffloadingConfigurations(t *testing.T) {
+	var gotPath string
+	var gotQuery map[string][]string
+	svc, closeFn := testService(func(w http.ResponseWriter, r *http.Request) {
+		gotPath, gotQuery = r.URL.Path, r.URL.Query()
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"status":"SUCCEEDED","data":{"offloadingConfigurations":[{"uuid":"a"},{"uuid":"b"}]}}`))
+	})
+	defer closeFn()
+
+	res := svc.ListOffloadingConfigurations(context.Background(), ListOffloadingConfigurationsOptions{Locale: "en", Limit: 10})
+	if res.Err != nil {
+		t.Fatalf("ListOffloadingConfigurations: %v", res.Err)
+	}
+	if gotPath != ApiOffloadingConfigurations {
+		t.Errorf("path = %q, want %q", gotPath, ApiOffloadingConfigurations)
+	}
+	if gotQuery["locale"][0] != "en" || gotQuery["limit"][0] != "10" {
+		t.Errorf("query = %v", gotQuery)
+	}
+	n := 0
+	for item, err := range res.Items() {
+		if err != nil {
+			t.Fatalf("iter: %v", err)
+		}
+		if item.Get("uuid").String() == "" {
+			t.Errorf("item missing uuid: %s", item.Raw())
+		}
+		n++
+	}
+	if n != 2 {
+		t.Errorf("configurations = %d, want 2", n)
+	}
+}
+
+func TestListLatestJobs(t *testing.T) {
+	var gotPath string
+	var gotQuery map[string][]string
+	svc, closeFn := testService(func(w http.ResponseWriter, r *http.Request) {
+		gotPath, gotQuery = r.URL.Path, r.URL.Query()
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"status":"SUCCEEDED","data":[{"jobType":"COMPACTION"}]}`))
+	})
+	defer closeFn()
+
+	res := svc.ListLatestJobs(context.Background(), ListLatestJobsOptions{JobType: "COMPACTION", Offset: 5})
+	if res.Err != nil {
+		t.Fatalf("ListLatestJobs: %v", res.Err)
+	}
+	if gotPath != ApiSchedulerLatestJobs {
+		t.Errorf("path = %q, want %q", gotPath, ApiSchedulerLatestJobs)
+	}
+	if gotQuery["jobType"][0] != "COMPACTION" || gotQuery["offset"][0] != "5" {
+		t.Errorf("query = %v", gotQuery)
+	}
+	// The report is returned as-is (one document).
+	if res.Data.Get("status").String() != "SUCCEEDED" {
+		t.Errorf("report = %s", res.Data.Raw())
+	}
+}
+
+func TestGetTenant(t *testing.T) {
+	var gotPath string
+	svc, closeFn := testService(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"status":"SUCCEEDED","data":{"initialized":true,"tenantId":"t123"}}`))
+	})
+	defer closeFn()
+
+	res := svc.GetTenant(context.Background())
+	if res.Err != nil {
+		t.Fatalf("GetTenant: %v", res.Err)
+	}
+	if gotPath != ApiTenant {
+		t.Errorf("path = %q, want %q", gotPath, ApiTenant)
+	}
+	// The "data" object is unwrapped.
+	if res.Data.Get("tenantId").String() != "t123" || res.Data.Get("status").Exists() {
+		t.Errorf("tenant = %s", res.Data.Raw())
+	}
+}
+
+func TestListUsers(t *testing.T) {
+	var gotPath string
+	svc, closeFn := testService(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"status":"SUCCEEDED","data":{"users":[{"name":"u1"},{"name":"u2"},{"name":"u3"}]}}`))
+	})
+	defer closeFn()
+
+	res := svc.ListUsers(context.Background())
+	if res.Err != nil {
+		t.Fatalf("ListUsers: %v", res.Err)
+	}
+	if gotPath != ApiDremioUsers {
+		t.Errorf("path = %q, want %q", gotPath, ApiDremioUsers)
+	}
+	n := 0
+	for _, err := range res.Items() {
+		if err != nil {
+			t.Fatalf("iter: %v", err)
+		}
+		n++
+	}
+	if n != 3 {
+		t.Errorf("users = %d, want 3", n)
+	}
+}
