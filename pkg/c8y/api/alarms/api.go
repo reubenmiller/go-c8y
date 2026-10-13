@@ -15,6 +15,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
+	"github.com/tidwall/gjson"
 	"resty.dev/v3"
 )
 
@@ -332,7 +333,7 @@ func (s *Service) Upsert(ctx context.Context, opts CreateOptions) op.Result[json
 //
 //	result := client.Alarms.UpsertRaw(ctx, map[string]any{...})
 func (s *Service) UpsertRaw(ctx context.Context, body any) op.Result[jsonmodels.Alarm] {
-	return markUpsertResult(core.Execute(ctx, s.upsertB(body), jsonmodels.NewAlarm))
+	return markUpsertResult(core.Execute(ctx, s.upsertB(body), newUpsertedAlarm))
 }
 
 // upsertWithOptions handles the CreateOptions case with resolver support and property merging
@@ -343,7 +344,7 @@ func (s *Service) upsertWithOptions(ctx context.Context, opts CreateOptions) op.
 	}
 
 	// Upsert the alarm with the merged JSON and add metadata
-	result := markUpsertResult(core.Execute(ctx, s.upsertBWithJSON(finalJSON), jsonmodels.NewAlarm))
+	result := markUpsertResult(core.Execute(ctx, s.upsertBWithJSON(finalJSON), newUpsertedAlarm))
 
 	// Add resolver metadata to result
 	if result.Meta == nil {
@@ -381,6 +382,16 @@ func (s *Service) upsertBWithJSON(bodyJSON []byte) *core.TryRequest {
 // existing alarm was updated. Since the request is a POST, core.Execute reports
 // a 200 as StatusOK; remap it to StatusUpdated and record whether an existing
 // alarm was found via Meta["found"].
+// newUpsertedAlarm parses an upsert response. The platform wraps the alarm as
+// {"alarm": {...}, "previousState": {...}} (alarmupsertresponse), although the
+// OpenAPI spec documents a bare alarm, so accept both.
+func newUpsertedAlarm(b []byte) jsonmodels.Alarm {
+	if alarm := gjson.GetBytes(b, "alarm"); alarm.IsObject() {
+		return jsonmodels.NewAlarm([]byte(alarm.Raw))
+	}
+	return jsonmodels.NewAlarm(b)
+}
+
 func markUpsertResult(result op.Result[jsonmodels.Alarm]) op.Result[jsonmodels.Alarm] {
 	if result.Err != nil {
 		return result

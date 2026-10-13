@@ -22,12 +22,11 @@ func Test_Features_List_DryRun(t *testing.T) {
 	ctx := api.WithDryRun(context.Background(), false)
 
 	result := client.Features.List(ctx)
+	require.NoError(t, result.Err)
 
 	for item := range op.Iter(result) {
 		slog.Info("feature", "key", item.Key(), "phase", item.Phase(), "active", item.Active())
 	}
-
-	assert.NoError(t, result.Err)
 	assert.Equal(t, http.StatusOK, result.HTTPStatus)
 }
 

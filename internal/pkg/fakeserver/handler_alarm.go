@@ -36,15 +36,24 @@ func (fs *FakeServer) handleAlarms(w http.ResponseWriter, r *http.Request) {
 		body = enrichSource(body, fs.URL())
 
 		// Upsert matches on a non-cleared alarm with the same source + type.
+		// Like the platform, the response wraps the alarm together with its
+		// state before the update (null when created).
 		if existingID := fs.findUpsertableAlarm(body); existingID != "" {
+			previous, _ := fs.Alarms.Get(existingID)
 			doc, ok := fs.Alarms.Update(existingID, body)
 			if ok {
-				writeJSON(w, http.StatusOK, doc)
+				writeJSON(w, http.StatusOK, marshalJSON(map[string]any{
+					"alarm":         doc,
+					"previousState": previous,
+				}))
 				return
 			}
 		}
 		_, doc := fs.Alarms.Create(body, fs.URL()+"/alarm/alarms")
-		writeJSON(w, http.StatusCreated, doc)
+		writeJSON(w, http.StatusCreated, marshalJSON(map[string]any{
+			"alarm":         doc,
+			"previousState": nil,
+		}))
 		return
 	}
 
