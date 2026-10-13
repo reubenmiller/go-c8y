@@ -285,3 +285,9 @@ drift:
     - /roles/inventory          # inventory-roles alias path
     - /tenant/statistics/device/ # trailing-slash device statistics variant
     - /user/passwordReset       # password-reset endpoint (not in the core OAS)
+    - /service/datahub/*        # DataHub microservice API (not in the core OAS)
+    - /databroker/*             # data broker connectors (not in the core OAS)
+    - /service/{name}/loggers*  # Spring Boot microservice log levels (per-service, not in the core OAS)
+    - /inventory/managedObjects/count # managed object count (platform endpoint, undocumented in the OAS)
+    - /tenant/system/options/system/version # concrete key of /tenant/system/options/{category}/{key}
+    - /user/{tenantId}/users/{id}/totpSecret/revoke # admin TOTP revoke (platform endpoint, not in the vendored OAS)
