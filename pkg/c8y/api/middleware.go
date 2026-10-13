@@ -193,6 +193,12 @@ func (t *DryRunTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if ctxhelpers.IsNoAuth(ctx) {
 		req.Header.Del("Authorization")
 	}
+	// --noAccept: drop the Accept header so a POST/PUT returns the resource as
+	// stored rather than a forced representation. Stripped here (the transport)
+	// so it applies after all resty middleware has set it.
+	if ctxhelpers.IsNoAccept(ctx) {
+		req.Header.Del("Accept")
+	}
 
 	isDryRun := ctxhelpers.IsDryRun(ctx)
 	isMockResponses := ctxhelpers.IsMockResponses(ctx)

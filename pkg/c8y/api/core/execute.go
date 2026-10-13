@@ -30,7 +30,7 @@ func ExecuteResponseOnly(ctx context.Context, req *TryRequest) (*resty.Response,
 	}
 	// Apply context-driven request options (e.g. processing mode) that live on
 	// the TryRequest wrapper — resty's own SetContext below does not know them.
-	req.ApplyProcessingModeFromContext(ctx)
+	req.ApplyContextRequestOptions(ctx)
 
 	resp, err := coupleAPIErrors(req.Request.
 		SetContext(ctx).
@@ -49,6 +49,7 @@ func Execute[T any](ctx context.Context, req *TryRequest, fromBytes func([]byte)
 		// Build the request to capture all parameters (including resolved IDs)
 		// but don't send it yet
 		dryRunCtx := ctxhelpers.WithDryRun(ctx, true)
+		req.ApplyContextRequestOptions(dryRunCtx)
 		resp, _ := req.Request.SetContext(dryRunCtx).Send()
 
 		var httpReq *http.Request
@@ -151,6 +152,7 @@ func ExecuteCollection[T any](ctx context.Context, req *TryRequest, arrayPath, m
 	if ctxhelpers.IsDeferredExecution(ctx) {
 		// Build the request to capture all parameters
 		dryRunCtx := ctxhelpers.WithDryRun(ctx, true)
+		req.ApplyContextRequestOptions(dryRunCtx)
 		resp, _ := req.Request.SetContext(dryRunCtx).Send()
 
 		var httpReq *http.Request
@@ -266,6 +268,7 @@ func ExecuteBinary(ctx context.Context, req *TryRequest) op.Result[BinaryRespons
 	if ctxhelpers.IsDeferredExecution(ctx) {
 		// Build the request to capture all parameters
 		dryRunCtx := ctxhelpers.WithDryRun(ctx, true)
+		req.ApplyContextRequestOptions(dryRunCtx)
 		resp, _ := req.Request.SetContext(dryRunCtx).SetDoNotParseResponse(true).Send()
 
 		var httpReq *http.Request
@@ -281,6 +284,7 @@ func ExecuteBinary(ctx context.Context, req *TryRequest) op.Result[BinaryRespons
 		})
 	}
 
+	req.ApplyContextRequestOptions(ctx)
 	resp, err := coupleAPIErrors(req.Request.
 		SetContext(ctx).
 		SetDoNotParseResponse(true).
@@ -318,6 +322,7 @@ func ExecuteNoContent(ctx context.Context, req *TryRequest, extraMeta ...map[str
 	if ctxhelpers.IsDeferredExecution(ctx) {
 		// Build the request to capture all parameters
 		dryRunCtx := ctxhelpers.WithDryRun(ctx, true)
+		req.ApplyContextRequestOptions(dryRunCtx)
 		resp, _ := req.Request.SetContext(dryRunCtx).Send()
 
 		var httpReq *http.Request

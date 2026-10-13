@@ -56,8 +56,8 @@ func (r *TryRequest) URL() *url.URL {
 
 func (r *TryRequest) SetContext(ctx context.Context) *TryRequest {
 	r.Request.SetContext(ctx)
-	// Apply processing mode from context if set
-	r.ApplyProcessingModeFromContext(ctx)
+	// Apply context-driven request options (processing mode, custom headers/query)
+	r.ApplyContextRequestOptions(ctx)
 	return r
 }
 
@@ -65,6 +65,24 @@ func (r *TryRequest) SetContext(ctx context.Context) *TryRequest {
 func (r *TryRequest) ApplyProcessingModeFromContext(ctx context.Context) *TryRequest {
 	if mode := ctxhelpers.GetProcessingMode(ctx); mode != "" {
 		r.SetProcessingMode(mode)
+	}
+	return r
+}
+
+// ApplyContextRequestOptions applies every context-driven request option that
+// resty's own SetContext does not know about: the processing mode header and the
+// CLI's global custom headers (--header) and query parameters
+// (--customQueryParam). It must be called before each Send (including the
+// dry-run/deferred paths, which re-set the context on the raw resty request).
+func (r *TryRequest) ApplyContextRequestOptions(ctx context.Context) *TryRequest {
+	r.ApplyProcessingModeFromContext(ctx)
+	for k, v := range ctxhelpers.GetExtraHeaders(ctx) {
+		r.Request.SetHeader(k, v)
+	}
+	for k, values := range ctxhelpers.GetExtraQueryParams(ctx) {
+		for _, v := range values {
+			r.Request.SetQueryParam(k, v)
+		}
 	}
 	return r
 }
