@@ -61,6 +61,10 @@ type overlayOption struct {
 type overlayField struct {
 	Type string `yaml:"type"`
 	Doc  string `yaml:"doc"`
+	// Tag replaces the whole url tag body (e.g. "status,comma,omitempty" to
+	// comma-join an array, or "revert" to always emit a bool). Use for
+	// deliberate encoding divergences the generator cannot infer from the OAS.
+	Tag string `yaml:"tag"`
 }
 
 type overlayModel struct {
@@ -123,6 +127,7 @@ func LoadOverlay(path string) ([]resource, error) {
 				Extra:     oo.ExtraFields,
 				FieldType: map[string]string{},
 				FieldDoc:  map[string]string{},
+				FieldTag:  map[string]string{},
 			}
 			for name, fld := range oo.Fields {
 				if fld.Type != "" {
@@ -130,6 +135,9 @@ func LoadOverlay(path string) ([]resource, error) {
 				}
 				if fld.Doc != "" {
 					spec.FieldDoc[name] = fld.Doc
+				}
+				if fld.Tag != "" {
+					spec.FieldTag[name] = fld.Tag
 				}
 			}
 			r.Options = append(r.Options, spec)

@@ -190,10 +190,10 @@ type ListOperationsOptions struct {
 	BulkOperationID string `url:"bulkOperationId,omitempty"`
 
 	// DateFrom is the start date (or date and time) of the operation.
-	DateFrom time.Time `url:"dateFrom,omitempty,omitzero" layout:"2006-01-02T15:04:05.000Z07:00"`
+	DateFrom time.Time `url:"dateFrom,omitempty,omitzero" layout:"2006-01-02T15:04:05.999999999Z07:00"`
 
 	// DateTo is the end date (or date and time) of the operation.
-	DateTo time.Time `url:"dateTo,omitempty,omitzero" layout:"2006-01-02T15:04:05.000Z07:00"`
+	DateTo time.Time `url:"dateTo,omitempty,omitzero" layout:"2006-01-02T15:04:05.999999999Z07:00"`
 
 	// Status filters by operation status: one of PENDING, EXECUTING,
 	// SUCCESSFUL or FAILED.

@@ -23,16 +23,16 @@ import (
 // strings, resolved by the List method). See docs/API_GEN.md.
 type ListOptions struct {
 	// Start date or date and time of the event's creation (set by the platform during creation).
-	CreatedFrom time.Time `url:"createdFrom,omitempty,omitzero"`
+	CreatedFrom time.Time `url:"createdFrom,omitempty,omitzero" layout:"2006-01-02T15:04:05.999999999Z07:00"`
 
 	// End date or date and time of the event's creation (set by the platform during creation).
-	CreatedTo time.Time `url:"createdTo,omitempty,omitzero"`
+	CreatedTo time.Time `url:"createdTo,omitempty,omitzero" layout:"2006-01-02T15:04:05.999999999Z07:00"`
 
 	// Start date or date and time of the event occurrence (provided by the device).
-	DateFrom time.Time `url:"dateFrom,omitempty,omitzero" layout:"2006-01-02T15:04:05.000Z07:00"`
+	DateFrom time.Time `url:"dateFrom,omitempty,omitzero" layout:"2006-01-02T15:04:05.999999999Z07:00"`
 
 	// End date or date and time of the event occurrence (provided by the device).
-	DateTo time.Time `url:"dateTo,omitempty,omitzero" layout:"2006-01-02T15:04:05.000Z07:00"`
+	DateTo time.Time `url:"dateTo,omitempty,omitzero" layout:"2006-01-02T15:04:05.999999999Z07:00"`
 
 	// A characteristic which identifies a managed object or event, for example, geolocation, electricity sensor, relay state.
 	FragmentType string `url:"fragmentType,omitempty"`
@@ -41,10 +41,10 @@ type ListOptions struct {
 	FragmentValue string `url:"fragmentValue,omitempty"`
 
 	// Start date or date and time of the last update made.
-	LastUpdatedFrom time.Time `url:"lastUpdatedFrom,omitempty,omitzero"`
+	LastUpdatedFrom time.Time `url:"lastUpdatedFrom,omitempty,omitzero" layout:"2006-01-02T15:04:05.999999999Z07:00"`
 
 	// End date or date and time of the last update made.
-	LastUpdatedTo time.Time `url:"lastUpdatedTo,omitempty,omitzero"`
+	LastUpdatedTo time.Time `url:"lastUpdatedTo,omitempty,omitzero" layout:"2006-01-02T15:04:05.999999999Z07:00"`
 
 	// If you are using a range query (that is, at least one of the `dateFrom` or `dateTo` parameters is included in the request), then setting `revert=true` will sort the results by the oldest events first.
 	Revert bool `url:"revert,omitempty"`

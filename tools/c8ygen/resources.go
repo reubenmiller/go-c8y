@@ -39,6 +39,7 @@ type optionSpec struct {
 	Method    string            // HTTP method (GET, PUT, ...)
 	FieldType map[string]string // param name -> Go type override (e.g. "[]model.AlarmStatus")
 	FieldDoc  map[string]string // param name -> doc-comment override
+	FieldTag  map[string]string // param name -> full url tag body override (e.g. "status,comma,omitempty")
 	Embeds    []embedSpec       // structs to embed (e.g. pagination.PaginationOptions)
 	Imports   []string          // extra imports the overrides require
 	Extra     []extraField      // fields NOT in the OAS (server supports them, spec omits them)

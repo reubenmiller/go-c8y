@@ -51,8 +51,17 @@ type optionField struct {
 	Name    string
 	Type    string
 	Tag     string
+	Layout  string // time.Time query-encoding layout tag ("" = none)
 	Comment string
 }
+
+// timeQueryLayout is the layout tag emitted for date-time query parameters.
+// Trailing-zero-stripping nanoseconds (not .000) so a caller-supplied timestamp
+// keeps its full precision (v1 sent RFC3339Nano verbatim) while server-derived
+// keyset cursors (ms precision) round-trip without loss — the time-window
+// pagination strategies rely on the encoded cursor being at least as precise
+// as the platform's millisecond timestamps.
+const timeQueryLayout = "2006-01-02T15:04:05.999999999Z07:00"
 
 // renderOptions builds an option-struct file for a resource package.
 func renderOptions(doc *OAS, source string, r resource) (string, error) {
@@ -101,7 +110,11 @@ func renderOptions(doc *OAS, source string, r resource) (string, error) {
 					fmt.Fprintf(&b, "\t// %s\n", line)
 				}
 			}
-			fmt.Fprintf(&b, "\t%s %s `url:%q`\n", f.Name, f.Type, f.Tag)
+			if f.Layout != "" {
+				fmt.Fprintf(&b, "\t%s %s `url:%q layout:%q`\n", f.Name, f.Type, f.Tag, f.Layout)
+			} else {
+				fmt.Fprintf(&b, "\t%s %s `url:%q`\n", f.Name, f.Type, f.Tag)
+			}
 		}
 		if len(spec.Extra) > 0 {
 			b.WriteString("\n\t// The following fields are not present in the OpenAPI spec\n")
@@ -155,18 +168,25 @@ func optionFields(doc *OAS, spec optionSpec, op opWithParams) ([]optionField, []
 			// Unmappable parameter type without an override: skip.
 			continue
 		}
+		layout := ""
 		if strings.Contains(goType, "time.Time") {
 			imports["time"] = true
+			layout = timeQueryLayout
 		}
 
 		comment := cleanComment(p.Description)
 		if d, has := spec.FieldDoc[p.Name]; has {
 			comment = d
 		}
+		tag := p.Name + urlOpts
+		if t, has := spec.FieldTag[p.Name]; has {
+			tag = t
+		}
 		fields = append(fields, optionField{
 			Name:    pascalAll(p.Name),
 			Type:    goType,
-			Tag:     p.Name + urlOpts,
+			Tag:     tag,
+			Layout:  layout,
 			Comment: comment,
 		})
 	}

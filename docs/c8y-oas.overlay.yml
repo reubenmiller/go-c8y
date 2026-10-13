@@ -44,8 +44,12 @@ resources:
               or cast a string variable with managedobjects.DeviceRef(id).
           status:
             type: "[]model.AlarmStatus"
+            tag: status,comma,omitempty # v1 parity: comma-joined array
           severity:
             type: "[]model.AlarmSeverity"
+            tag: severity,comma,omitempty # v1 parity: comma-joined array
+          type:
+            tag: type,comma,omitempty # v1 parity: comma-joined array
         embeds:
           - import: github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination
             type: pagination.PaginationOptions
@@ -103,6 +107,8 @@ resources:
               Source device to filter measurements by.
               Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
               or cast a string variable with managedobjects.DeviceRef(id).
+          revert:
+            tag: revert # v1 parity: always emitted, even when false
         embeds:
           - import: github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination
             type: pagination.PaginationOptions

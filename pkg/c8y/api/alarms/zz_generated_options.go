@@ -24,22 +24,22 @@ import (
 // strings, resolved by the List method). See docs/API_GEN.md.
 type ListOptions struct {
 	// Start date or date and time of the alarm creation.
-	CreatedFrom time.Time `url:"createdFrom,omitempty,omitzero"`
+	CreatedFrom time.Time `url:"createdFrom,omitempty,omitzero" layout:"2006-01-02T15:04:05.999999999Z07:00"`
 
 	// End date or date and time of the alarm creation.
-	CreatedTo time.Time `url:"createdTo,omitempty,omitzero"`
+	CreatedTo time.Time `url:"createdTo,omitempty,omitzero" layout:"2006-01-02T15:04:05.999999999Z07:00"`
 
 	// Start date or date and time of the alarm occurrence.
-	DateFrom time.Time `url:"dateFrom,omitempty,omitzero" layout:"2006-01-02T15:04:05.000Z07:00"`
+	DateFrom time.Time `url:"dateFrom,omitempty,omitzero" layout:"2006-01-02T15:04:05.999999999Z07:00"`
 
 	// End date or date and time of the alarm occurrence.
-	DateTo time.Time `url:"dateTo,omitempty,omitzero" layout:"2006-01-02T15:04:05.000Z07:00"`
+	DateTo time.Time `url:"dateTo,omitempty,omitzero" layout:"2006-01-02T15:04:05.999999999Z07:00"`
 
 	// Start date or date and time of the last update made.
-	LastUpdatedFrom time.Time `url:"lastUpdatedFrom,omitempty,omitzero"`
+	LastUpdatedFrom time.Time `url:"lastUpdatedFrom,omitempty,omitzero" layout:"2006-01-02T15:04:05.999999999Z07:00"`
 
 	// End date or date and time of the last update made.
-	LastUpdatedTo time.Time `url:"lastUpdatedTo,omitempty,omitzero"`
+	LastUpdatedTo time.Time `url:"lastUpdatedTo,omitempty,omitzero" layout:"2006-01-02T15:04:05.999999999Z07:00"`
 
 	// When set to `true` only alarms with status CLEARED will be fetched, whereas `false` will fetch all alarms with status ACTIVE or ACKNOWLEDGED. Takes precedence over the `status` parameter.
 	Resolved bool `url:"resolved,omitempty"`

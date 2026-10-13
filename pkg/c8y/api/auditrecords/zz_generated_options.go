@@ -21,10 +21,10 @@ type ListOptions struct {
 	Application string `url:"application,omitempty"`
 
 	// Start date or date and time of the audit record (device time).
-	DateFrom time.Time `url:"dateFrom,omitempty,omitzero"`
+	DateFrom time.Time `url:"dateFrom,omitempty,omitzero" layout:"2006-01-02T15:04:05.999999999Z07:00"`
 
 	// End date or date and time of the audit record (device time).
-	DateTo time.Time `url:"dateTo,omitempty,omitzero"`
+	DateTo time.Time `url:"dateTo,omitempty,omitzero" layout:"2006-01-02T15:04:05.999999999Z07:00"`
 
 	// The platform component ID to which the audit is associated.
 	Source string `url:"source,omitempty"`
