@@ -31,7 +31,8 @@ type CreateOptions struct {
 }
 
 func getApplicationDetails(opt CreateOptions) (*model.Microservice, error) {
-	app := model.Microservice{}
+	// Manifest is a pointer: always allocate it so a missing/invalid manifest does not panic
+	app := model.Microservice{Manifest: &model.MicroserviceManifest{}}
 
 	// set default name to the file name
 	fileExt := filepath.Ext(opt.File)
@@ -42,7 +43,7 @@ func getApplicationDetails(opt CreateOptions) (*model.Microservice, error) {
 	if strings.HasSuffix(opt.File, ".zip") {
 		// Try loading manifest file directly from the zip (without unzipping it)
 		slog.Info("Trying to detect manifest from a zip file", "path", opt.File)
-		if err := GetManifestContents(opt.File, &app.Manifest); err != nil {
+		if err := GetManifestContents(opt.File, app.Manifest); err != nil {
 			slog.Warn(fmt.Sprintf("Could not find manifest file. Expected %s to contain %s", opt.File, ManifestFile), "err", err)
 		}
 	} else if opt.File != "" {
@@ -54,7 +55,7 @@ func getApplicationDetails(opt CreateOptions) (*model.Microservice, error) {
 		}
 		byteValue, _ := io.ReadAll(jsonFile)
 
-		if err := json.Unmarshal(byteValue, &app.Manifest); err != nil {
+		if err := json.Unmarshal(byteValue, app.Manifest); err != nil {
 			slog.Warn("invalid manifest file. Only json or zip files are accepted", "err", strings.TrimSpace(err.Error()))
 		}
 	}
@@ -99,6 +100,9 @@ func getApplicationDetails(opt CreateOptions) (*model.Microservice, error) {
 	return &app, nil
 }
 
+// CreateOrUpdate creates the microservice application when none with the same
+// name exists in the current tenant, then uploads the binary (zip files only)
+// or updates the roles from the manifest, and optionally subscribes the tenant.
 func (s *Service) CreateOrUpdate(ctx context.Context, opt CreateOptions) (*model.Microservice, error) {
 	var application *model.Microservice
 	var applicationID string
@@ -127,10 +131,8 @@ func (s *Service) CreateOrUpdate(ctx context.Context, opt CreateOptions) (*model
 		if result.Err != nil {
 			return nil, result.Err
 		}
-		if !found {
-			return nil, core.ErrNotFound("microservice %q not found", applicationName)
-		}
-		if result.Data.Exists("id") {
+		// A missing application is not an error: it is created below
+		if found && result.Data.Exists("id") {
 			applicationID = result.Data.ID()
 		}
 	}
@@ -146,6 +148,7 @@ func (s *Service) CreateOrUpdate(ctx context.Context, opt CreateOptions) (*model
 			ID:   result.Data.ID(),
 			Name: result.Data.Name(),
 			Key:  result.Data.Key(),
+			Self: result.Data.Self(),
 		}
 	} else {
 		// Get existing application
@@ -159,6 +162,7 @@ func (s *Service) CreateOrUpdate(ctx context.Context, opt CreateOptions) (*model
 			ID:   result.Data.ID(),
 			Name: result.Data.Name(),
 			Key:  result.Data.Key(),
+			Self: result.Data.Self(),
 		}
 	}
 

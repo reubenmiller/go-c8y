@@ -269,3 +269,84 @@ func TestBootstrapUserGet(t *testing.T) {
 		t.Errorf("path = %q, want .../123/bootstrapUser", path)
 	}
 }
+
+// TestCreateOrUpdateCreatesMissingApplication verifies that a missing
+// application is created and the binary uploaded to the new application.
+func TestCreateOrUpdateCreatesMissingApplication(t *testing.T) {
+	dir := t.TempDir()
+	file := filepath.Join(dir, "my-svc.zip")
+	if err := os.WriteFile(file, []byte("PK\x03\x04 dummy zip"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	var created map[string]any
+	var uploadPath string
+	svc, closeFn := testService(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/application/applications":
+			_, _ = w.Write([]byte(`{"applications":[],"statistics":{"currentPage":1,"pageSize":1}}`))
+		case r.Method == http.MethodPost && r.URL.Path == "/application/applications":
+			_ = json.NewDecoder(r.Body).Decode(&created)
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"id":"77","name":"my-svc","key":"my-svc","self":"https://x/application/applications/77"}`))
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/binaries"):
+			uploadPath = r.URL.Path
+			_, _ = w.Write([]byte(`{"id":"bin1"}`))
+		default:
+			t.Errorf("unexpected request %s %s", r.Method, r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+	defer closeFn()
+
+	app, err := svc.CreateOrUpdate(context.Background(), CreateOptions{File: file, SkipSubscription: true})
+	if err != nil {
+		t.Fatalf("CreateOrUpdate: %v", err)
+	}
+	if app.ID != "77" {
+		t.Errorf("id = %q, want 77", app.ID)
+	}
+	if created["name"] != "my-svc" || created["type"] != "MICROSERVICE" {
+		t.Errorf("created body = %v", created)
+	}
+	if uploadPath != "/application/applications/77/binaries" {
+		t.Errorf("upload path = %q", uploadPath)
+	}
+}
+
+// TestCreateOrUpdateExistingApplication verifies an existing application is
+// reused (not re-created).
+func TestCreateOrUpdateExistingApplication(t *testing.T) {
+	dir := t.TempDir()
+	file := filepath.Join(dir, "my-svc.zip")
+	if err := os.WriteFile(file, []byte("PK\x03\x04 dummy zip"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	var uploadPath string
+	svc, closeFn := testService(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/application/applications":
+			_, _ = w.Write([]byte(`{"applications":[{"id":"5","name":"my-svc","type":"MICROSERVICE"}],"statistics":{"currentPage":1,"pageSize":1}}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/application/applications/5":
+			_, _ = w.Write([]byte(`{"id":"5","name":"my-svc","key":"my-svc"}`))
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/binaries"):
+			uploadPath = r.URL.Path
+			_, _ = w.Write([]byte(`{"id":"bin1"}`))
+		default:
+			t.Errorf("unexpected request %s %s", r.Method, r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+	defer closeFn()
+
+	app, err := svc.CreateOrUpdate(context.Background(), CreateOptions{File: file, SkipSubscription: true})
+	if err != nil {
+		t.Fatalf("CreateOrUpdate: %v", err)
+	}
+	if app.ID != "5" || uploadPath != "/application/applications/5/binaries" {
+		t.Errorf("id=%q upload=%q", app.ID, uploadPath)
+	}
+}
