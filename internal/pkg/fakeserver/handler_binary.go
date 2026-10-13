@@ -1,7 +1,9 @@
 package fakeserver
 
 import (
+	"encoding/json"
 	"io"
+	"maps"
 	"net/http"
 	"strings"
 )
@@ -88,6 +90,7 @@ func (fs *FakeServer) handleBinaries(w http.ResponseWriter, r *http.Request) {
 		ct := r.Header.Get("Content-Type")
 		var data []byte
 		var filename, fileContentType string
+		var object map[string]any
 
 		if strings.HasPrefix(ct, "multipart/") {
 			err := r.ParseMultipartForm(32 << 20)
@@ -108,6 +111,11 @@ func (fs *FakeServer) handleBinaries(w http.ResponseWriter, r *http.Request) {
 			if fileContentType == "" {
 				fileContentType = "application/octet-stream"
 			}
+			// The "object" part carries the binary's metadata (name, type, ...),
+			// which the platform stores in preference to the file part's values.
+			if raw := r.FormValue("object"); raw != "" {
+				_ = json.Unmarshal([]byte(raw), &object)
+			}
 		} else {
 			var err error
 			data, err = io.ReadAll(r.Body)
@@ -120,13 +128,15 @@ func (fs *FakeServer) handleBinaries(w http.ResponseWriter, r *http.Request) {
 			fileContentType = ct
 		}
 
-		binaryMO := marshalJSON(map[string]any{
-			"name":         filename,
-			"type":         fileContentType,
-			"contentType":  fileContentType,
-			"length":       len(data),
-			"c8y_IsBinary": map[string]any{},
-		})
+		meta := map[string]any{
+			"name":        filename,
+			"type":        fileContentType,
+			"contentType": fileContentType,
+		}
+		maps.Copy(meta, object)
+		meta["length"] = len(data)
+		meta["c8y_IsBinary"] = map[string]any{}
+		binaryMO := marshalJSON(meta)
 
 		id, doc := fs.Binaries.Create(binaryMO, fs.URL()+"/inventory/binaries")
 

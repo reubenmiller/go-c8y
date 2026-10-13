@@ -262,10 +262,11 @@ func PaginateWith[T any, D JSONDocument](
 	pageLimit := pageCap(maxItems, base.PageSize)
 
 	iterator.items = func(yield func(T, error) bool) {
-		if ctxhelpers.IsDryRun(ctx) {
+		if ctxhelpers.IsDryRun(ctx) && !ctxhelpers.IsMockResponses(ctx) {
 			// fetch reports the prepared request to the dry-run handler and returns
 			// an empty 204; surface only a preparation error (e.g. a failed id
-			// resolution), never a document.
+			// resolution), never a document. With mock responses the walk runs as
+			// normal so the mock data is still emitted.
 			if result := fetch(dryRunReq); result.Err != nil {
 				iterator.err = result.Err
 				yield(*new(T), result.Err)
@@ -302,7 +303,7 @@ func PaginateWith[T any, D JSONDocument](
 	// after the page that reaches the cap). Raw pages are always walked
 	// sequentially (no boundary dedup is applied to whole envelopes).
 	iterator.pages = func(yield func(jsondoc.JSONDoc, error) bool) {
-		if ctxhelpers.IsDryRun(ctx) {
+		if ctxhelpers.IsDryRun(ctx) && !ctxhelpers.IsMockResponses(ctx) {
 			// As for items: report the logical request, return no envelope.
 			if result := fetch(dryRunReq); result.Err != nil {
 				iterator.err = result.Err

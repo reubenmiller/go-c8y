@@ -230,8 +230,14 @@ func ExecuteCollection[T any](ctx context.Context, req *TryRequest, arrayPath, m
 
 	result.Meta["currentPage"] = doc.Get("statistics.currentPage").Int()
 	result.Meta["pageSize"] = doc.Get("statistics.pageSize").Int()
-	result.Meta["totalPages"] = doc.Get("statistics.totalPages").Int()
-	result.Meta["totalElements"] = doc.Get("statistics.totalElements").Int()
+	// Totals are only present when requested (withTotalPages/withTotalElements).
+	// Leave them unset otherwise: a zero totalPages would read as "last page".
+	if totalPages := doc.Get("statistics.totalPages"); totalPages.Exists() {
+		result.Meta["totalPages"] = totalPages.Int()
+	}
+	if totalElements := doc.Get("statistics.totalElements"); totalElements.Exists() {
+		result.Meta["totalElements"] = totalElements.Int()
+	}
 
 	// Merge extra metadata
 	if len(extraMeta) > 0 && extraMeta[0] != nil {

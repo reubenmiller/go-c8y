@@ -126,77 +126,51 @@ func fieldContains(path, substr string) func(json.RawMessage) bool {
 	}
 }
 
-// dateAfterOrEqual builds a "doc.time >= dateFrom" predicate. The comparison
-// precision follows the supplied query value: a value without a fractional
-// second is compared at second granularity (matching a second-precision client),
-// a value with sub-second digits is compared at full precision (so a
-// millisecond keyset cursor positions exactly between same-second items).
+// dateAfterOrEqual builds a "doc.time >= dateFrom" predicate. Both sides are
+// compared at millisecond precision, the platform's timestamp resolution, so the
+// query value is treated as an instant regardless of how many fractional digits
+// it carries (the SDK strips trailing zeros, so "…:05Z" means "…:05.000Z").
 func dateAfterOrEqual(raw string) func(json.RawMessage) bool {
-	threshold, prec, ok := parseQueryTime(raw)
+	threshold, ok := parseQueryTime(raw)
 	if !ok {
 		return func(json.RawMessage) bool { return true }
 	}
-	threshold = threshold.Truncate(prec)
 	return func(doc json.RawMessage) bool {
 		t, ok := docTime(doc)
 		if !ok {
 			return true // if we can't parse, include it
 		}
-		return !t.Truncate(prec).Before(threshold)
+		return !t.Truncate(time.Millisecond).Before(threshold)
 	}
 }
 
 // dateBeforeOrEqual builds a "doc.time <= dateTo" predicate with the same
-// precision-adaptive comparison as dateAfterOrEqual.
+// millisecond comparison as dateAfterOrEqual.
 func dateBeforeOrEqual(raw string) func(json.RawMessage) bool {
-	threshold, prec, ok := parseQueryTime(raw)
+	threshold, ok := parseQueryTime(raw)
 	if !ok {
 		return func(json.RawMessage) bool { return true }
 	}
-	threshold = threshold.Truncate(prec)
 	return func(doc json.RawMessage) bool {
 		t, ok := docTime(doc)
 		if !ok {
 			return true
 		}
-		return !t.Truncate(prec).After(threshold)
+		return !t.Truncate(time.Millisecond).After(threshold)
 	}
 }
 
-// parseQueryTime parses an RFC3339(/Nano) timestamp from a query parameter and
-// reports the precision implied by its fractional-second digits: no fraction →
-// seconds, 3 digits → milliseconds (Cumulocity's resolution and what the SDK
-// sends), 9 → nanoseconds, etc. Stored item times are compared truncated to this
-// precision, so a millisecond cursor matches millisecond-stored data exactly
-// instead of being defeated by sub-millisecond noise.
-func parseQueryTime(raw string) (time.Time, time.Duration, bool) {
+// parseQueryTime parses an RFC3339(/Nano) timestamp from a query parameter,
+// truncated to the platform's millisecond resolution.
+func parseQueryTime(raw string) (time.Time, bool) {
 	t, err := time.Parse(time.RFC3339Nano, raw)
 	if err != nil {
 		t, err = time.Parse(time.RFC3339, raw)
 		if err != nil {
-			return time.Time{}, 0, false
+			return time.Time{}, false
 		}
 	}
-	return t, fractionalPrecision(raw), true
-}
-
-// fractionalPrecision returns the time precision implied by the count of
-// fractional-second digits in an RFC3339 value (0 → second, 3 → millisecond,
-// 9 → nanosecond), clamped at nanosecond.
-func fractionalPrecision(raw string) time.Duration {
-	dot := strings.LastIndex(raw, ".")
-	if dot < 0 {
-		return time.Second
-	}
-	n := 0
-	for i := dot + 1; i < len(raw) && raw[i] >= '0' && raw[i] <= '9'; i++ {
-		n++
-	}
-	p := time.Second
-	for i := 0; i < n && p > time.Nanosecond; i++ {
-		p /= 10
-	}
-	return p
+	return t.Truncate(time.Millisecond), true
 }
 
 // docTime returns the document's logical timestamp, preferring the "time" field

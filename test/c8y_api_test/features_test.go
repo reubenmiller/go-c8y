@@ -86,7 +86,7 @@ func Test_Features_Enable_RequestInspection(t *testing.T) {
 	require.True(t, prepared.IsDeferred())
 	require.NotNil(t, prepared.Request)
 	assert.Equal(t, http.MethodPut, prepared.Request.Method)
-	assert.Equal(t, "/features/my-feature", prepared.Request.URL.Path)
+	assert.Equal(t, "/features/my-feature/by-tenant", prepared.Request.URL.Path)
 }
 
 func Test_Features_Disable_RequestInspection(t *testing.T) {
@@ -98,7 +98,7 @@ func Test_Features_Disable_RequestInspection(t *testing.T) {
 	require.True(t, prepared.IsDeferred())
 	require.NotNil(t, prepared.Request)
 	assert.Equal(t, http.MethodPut, prepared.Request.Method)
-	assert.Equal(t, "/features/my-feature", prepared.Request.URL.Path)
+	assert.Equal(t, "/features/my-feature/by-tenant", prepared.Request.URL.Path)
 }
 
 // ---------------------------------------------------------------------------
@@ -124,7 +124,7 @@ func Test_Features_Delete_RequestInspection(t *testing.T) {
 	require.True(t, prepared.IsDeferred())
 	require.NotNil(t, prepared.Request)
 	assert.Equal(t, http.MethodDelete, prepared.Request.Method)
-	assert.Equal(t, "/features/my-feature", prepared.Request.URL.Path)
+	assert.Equal(t, "/features/my-feature/by-tenant", prepared.Request.URL.Path)
 }
 
 // ---------------------------------------------------------------------------

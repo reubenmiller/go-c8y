@@ -138,24 +138,29 @@ func TestOrderTimeItems_RevertOldestFirst(t *testing.T) {
 	}
 }
 
-func TestDateFilter_PrecisionAdaptive(t *testing.T) {
+func TestDateFilter_MillisecondInstant(t *testing.T) {
 	// An item half a second past the boundary second.
 	item := docs(t, map[string]any{"id": "1", "time": "2024-01-01T10:00:00.500Z"})[0]
 
-	// Second-precision dateTo "10:00:00" -> compared at second granularity, so
-	// the .500 item is treated as within the boundary second (included).
-	if !dateBeforeOrEqual("2024-01-01T10:00:00Z")(item) {
-		t.Error("second-precision dateTo should include same-second item")
+	// A dateTo without fractional digits is the instant "10:00:00.000" (the SDK
+	// strips trailing zeros), so the .500 item is after it (excluded). Treating it
+	// as second-precision would stall a keyset cursor on a whole second.
+	if dateBeforeOrEqual("2024-01-01T10:00:00Z")(item) {
+		t.Error("dateTo 10:00:00Z should exclude a .500 item")
 	}
-	// Millisecond-precision dateTo "10:00:00.000" -> compared at full precision,
-	// so the .500 item is after the cursor (excluded). This is what lets a
-	// millisecond keyset cursor position exactly between same-second items.
 	if dateBeforeOrEqual("2024-01-01T10:00:00.000Z")(item) {
-		t.Error("ms-precision dateTo .000 should exclude a .500 item")
+		t.Error("dateTo .000 should exclude a .500 item")
 	}
-	// ms-precision dateTo at exactly .500 includes it (inclusive boundary).
-	if !dateBeforeOrEqual("2024-01-01T10:00:00.500Z")(item) {
-		t.Error("ms-precision dateTo .500 should include the .500 item (inclusive)")
+	// Trailing zeros stripped: ".5" is the same instant as ".500" (inclusive).
+	if !dateBeforeOrEqual("2024-01-01T10:00:00.5Z")(item) {
+		t.Error("dateTo .5 should include the .500 item (inclusive)")
+	}
+	if !dateAfterOrEqual("2024-01-01T10:00:00.5Z")(item) {
+		t.Error("dateFrom .5 should include the .500 item (inclusive)")
+	}
+	// Sub-millisecond digits are below the platform's resolution.
+	if !dateBeforeOrEqual("2024-01-01T10:00:00.500999Z")(item) {
+		t.Error("dateTo .500999 should include the .500 item")
 	}
 }
 

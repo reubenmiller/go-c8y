@@ -346,11 +346,16 @@ func (fs *FakeServer) handleUserGroups(w http.ResponseWriter, r *http.Request, s
 						if getJSONString(doc, "self") == payload.User.Self {
 							uid := getJSONString(doc, "id")
 							fs.GroupMembers[groupID] = append(fs.GroupMembers[groupID], uid)
-							break
+							// Like the platform, respond with the user reference
+							// (its own self link plus the full user).
+							writeJSON(w, http.StatusCreated, mergeFields(marshalJSON(map[string]any{
+								"self": fs.URL() + r.URL.Path + "/" + uid,
+							}), map[string]any{"user": doc}))
+							return
 						}
 					}
 				}
-				writeJSON(w, http.StatusCreated, body)
+				writeError(w, http.StatusNotFound, "security/Not Found", "User not found")
 			default:
 				writeError(w, http.StatusMethodNotAllowed, "general/methodNotAllowed", "Method not allowed")
 			}
