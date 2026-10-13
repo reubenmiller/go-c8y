@@ -23,6 +23,7 @@ import (
 	"os"
 	"reflect"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -494,6 +495,11 @@ func NewClient(opts ClientOptions) *Client {
 	// Priority: explicit TokenSource > credential-backed automatic source > static token.
 	if opts.Auth.TokenSource != nil {
 		c.tokenSource = opts.Auth.TokenSource
+	} else if slices.Contains(opts.Auth.GetAuthTypes(), authentication.AuthTypeBasic) {
+		// The caller pinned basic auth: authenticate every request with the
+		// credentials directly instead of exchanging them for a bearer token
+		// at client construction (a POST /tenant/oauth/token per client, which
+		// basic-auth callers like the CLI neither need nor expect).
 	} else if opts.Auth.Username != "" || (opts.Auth.Certificate != "" && opts.Auth.CertificateKey != "") {
 		c.tokenSource = c.newInternalTokenSource()
 	}
