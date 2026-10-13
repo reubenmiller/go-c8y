@@ -33,6 +33,7 @@ func Test_TenantsStatisticsListSummaryAllTenants(t *testing.T) {
 	usage := client.Tenants.UsageStatistics.ListSummaryAllTenants(context.Background(), usagestatistics.ListSummaryAllTenantsOptions{
 		DateFrom: time.Now().AddDate(-1, 0, 0),
 	})
+	// One summary per subtenant: empty is valid for a tenant without any.
 	assert.NoError(t, usage.Err)
-	assert.Greater(t, usage.Data.Length(), 0)
+	assert.Equal(t, 200, usage.HTTPStatus)
 }

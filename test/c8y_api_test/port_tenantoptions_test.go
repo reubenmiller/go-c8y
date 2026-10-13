@@ -8,7 +8,6 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/internal/pkg/testingutils"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/tenantoptions"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -162,12 +161,17 @@ func Test_GetTenantOptions(t *testing.T) {
 	assert.Equal(t, http.StatusOK, allOptions.HTTPStatus)
 	assert.GreaterOrEqual(t, allOptions.Data.Length(), 2, "Should be at least 2 options")
 
+	// Walk every page: a shared tenant can hold more options than fit on one.
 	filteredOptions := map[string]string{}
-	for opt := range op.Iter(allOptions) {
+	it := client.Tenants.Options.ListAll(context.Background(), tenantoptions.ListOptions{
+		PaginationOptions: pagination.NewPaginationOptions(100),
+	})
+	for opt := range it.Seq() {
 		if opt.Category() == category {
 			filteredOptions[opt.Key()] = opt.Value()
 		}
 	}
+	require.NoError(t, it.Err())
 
 	testingutils.Equals(t, "value1", filteredOptions["prop1"])
 	testingutils.Equals(t, "value2", filteredOptions["prop2"])
