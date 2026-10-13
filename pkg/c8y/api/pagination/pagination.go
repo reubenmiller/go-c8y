@@ -42,6 +42,14 @@ type PaginationOptions struct {
 	// negative value disables it, a positive value sets an explicit depth.
 	// Client-side only.
 	ReadAhead int `url:"-" json:"-"`
+
+	// FullWalk marks a request that walks every page (the CLI's --includeAll). It
+	// only affects the dry-run report: a full walk shows the strategy's decorated
+	// first request (e.g. the id-keyset seed "_id gt '0' $orderby=_id asc")
+	// instead of the pristine base, because that is the request the walk actually
+	// issues first. A normal single-page list keeps the pristine base. Client-side
+	// only; never sent to the server.
+	FullWalk bool `url:"-" json:"-"`
 }
 
 func (o PaginationOptions) IsZero() bool {

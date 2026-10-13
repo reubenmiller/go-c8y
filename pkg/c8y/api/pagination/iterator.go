@@ -5,6 +5,7 @@ import (
 	"iter"
 	"log/slog"
 
+	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 )
@@ -232,6 +233,28 @@ func PaginateWith[T any, D JSONDocument](
 		return nil
 	}
 
+	// The caller's request before pagination normalises it: a dry run renders
+	// this logical request (the one the user built), not the pagination engine's
+	// decorated first page. Capturing it before OptimalPageSize / strategy.First /
+	// withMeta keeps the dry-run/pipeline output free of the keyset seed cursor,
+	// forced totals, currentPage and the pageSize default — matching the historical
+	// (pre-streaming) behaviour the CLI's dry-run tests assert.
+	dryRunBase := base
+
+	// A full walk (--includeAll) issues the strategy's decorated first request,
+	// not the pristine base: show that in the dry run (e.g. the id-keyset seed
+	// "_id gt '0' $orderby=_id asc"). Adopt only the strategy's keyset cursor —
+	// keep the user's logical pageSize/currentPage and never force the
+	// preview-only total counts, so the dry-run report matches the real first
+	// request a single page of the walk would send.
+	dryRunReq := dryRunBase
+	if base.FullWalk {
+		dryRunReq = strategy.First(dryRunBase)
+		dryRunReq.CurrentPage = dryRunBase.CurrentPage
+		dryRunReq.WithTotalPages = dryRunBase.WithTotalPages
+		dryRunReq.WithTotalElements = dryRunBase.WithTotalElements
+	}
+
 	// Set optimal page size once
 	base.PageSize = base.OptimalPageSize()
 	maxItems := base.GetMaxItems()
@@ -239,6 +262,16 @@ func PaginateWith[T any, D JSONDocument](
 	pageLimit := pageCap(maxItems, base.PageSize)
 
 	iterator.items = func(yield func(T, error) bool) {
+		if ctxhelpers.IsDryRun(ctx) {
+			// fetch reports the prepared request to the dry-run handler and returns
+			// an empty 204; surface only a preparation error (e.g. a failed id
+			// resolution), never a document.
+			if result := fetch(dryRunReq); result.Err != nil {
+				iterator.err = result.Err
+				yield(*new(T), result.Err)
+			}
+			return
+		}
 		count := int64(0)
 		walkPages(ctx, base, strategy, fetch, readAhead, pageLimit,
 			func(req PageRequest, result op.Result[D]) bool {
@@ -269,6 +302,14 @@ func PaginateWith[T any, D JSONDocument](
 	// after the page that reaches the cap). Raw pages are always walked
 	// sequentially (no boundary dedup is applied to whole envelopes).
 	iterator.pages = func(yield func(jsondoc.JSONDoc, error) bool) {
+		if ctxhelpers.IsDryRun(ctx) {
+			// As for items: report the logical request, return no envelope.
+			if result := fetch(dryRunReq); result.Err != nil {
+				iterator.err = result.Err
+				yield(jsondoc.Empty(), result.Err)
+			}
+			return
+		}
 		count := int64(0)
 		walkPages(ctx, base, strategy, fetch, readAhead, pageLimit,
 			func(req PageRequest, result op.Result[D]) bool {

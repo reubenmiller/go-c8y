@@ -60,9 +60,14 @@ func Paginate(r *http.Request, items []json.RawMessage) PaginationResult {
 //	{
 //	  "<collectionKey>": [...],
 //	  "self": "...",
-//	  "statistics": { "currentPage": 1, "pageSize": 5, "totalPages": 2, "totalElements": 8 },
-//	  "next": "..."  (when applicable)
+//	  "statistics": { "currentPage": 1, "pageSize": 5 },
+//	  "next": "..."
 //	}
+//
+// totalPages/totalElements appear only when the request asked for them
+// (withTotalPages/withTotalElements), and next is always present — both match
+// the real platform, whose collections omit the (expensive) totals by default
+// and carry a next link even on the last/empty page.
 func BuildCollectionResponse(r *http.Request, baseURL string, collectionKey string, page PaginationResult) json.RawMessage {
 	// Always emit an empty array (not null) for an empty page, matching real
 	// Cumulocity. A nil slice would marshal to null and be mis-parsed as a
@@ -72,10 +77,14 @@ func BuildCollectionResponse(r *http.Request, baseURL string, collectionKey stri
 	}
 
 	stats := map[string]int{
-		"currentPage":   page.CurrentPage,
-		"pageSize":      page.PageSize,
-		"totalPages":    page.TotalPages,
-		"totalElements": page.TotalElements,
+		"currentPage": page.CurrentPage,
+		"pageSize":    page.PageSize,
+	}
+	if r.URL.Query().Get("withTotalPages") == "true" {
+		stats["totalPages"] = page.TotalPages
+	}
+	if r.URL.Query().Get("withTotalElements") == "true" {
+		stats["totalElements"] = page.TotalElements
 	}
 
 	selfURL := baseURL + r.URL.Path + "?pageSize=" + strconv.Itoa(page.PageSize) + "&currentPage=" + strconv.Itoa(page.CurrentPage)
@@ -84,10 +93,7 @@ func BuildCollectionResponse(r *http.Request, baseURL string, collectionKey stri
 		collectionKey: page.Items,
 		"self":        selfURL,
 		"statistics":  stats,
-	}
-
-	if page.CurrentPage < page.TotalPages {
-		envelope["next"] = baseURL + r.URL.Path + "?pageSize=" + strconv.Itoa(page.PageSize) + "&currentPage=" + strconv.Itoa(page.CurrentPage+1)
+		"next":        baseURL + r.URL.Path + "?pageSize=" + strconv.Itoa(page.PageSize) + "&currentPage=" + strconv.Itoa(page.CurrentPage+1),
 	}
 	if page.CurrentPage > 1 {
 		envelope["prev"] = baseURL + r.URL.Path + "?pageSize=" + strconv.Itoa(page.PageSize) + "&currentPage=" + strconv.Itoa(page.CurrentPage-1)

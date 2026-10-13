@@ -27,7 +27,11 @@ func countDocs[D JSONDocument](result op.Result[D]) int {
 	return n
 }
 
-// withMeta sets the metadata flags every page request needs.
+// withMeta sets the metadata flags a parallel page plan needs (totalPages to
+// enumerate the independent pages). Sequential walks deliberately do NOT force
+// them: the strategies advance on the next link / an empty page, and v1 only
+// sent withTotalPages/withTotalElements when the caller asked for them — the
+// totals are an extra cost on the server and leak into raw output.
 func withMeta(req PageRequest) PageRequest {
 	req.WithTotalElements = true
 	req.WithTotalPages = true
@@ -51,7 +55,11 @@ func walkPages[D JSONDocument](
 	pageLimit int,
 	emit func(req PageRequest, result op.Result[D]) bool,
 ) {
-	firstReq := withMeta(strategy.First(base))
+	firstReq := strategy.First(base)
+	if _, ok := strategy.(ParallelStrategy); ok && base.Concurrency > 1 {
+		// Parallel fan-out plans pages from the bootstrap page's totalPages.
+		firstReq = withMeta(firstReq)
+	}
 	first := fetch(firstReq)
 	if !emit(firstReq, first) {
 		return
