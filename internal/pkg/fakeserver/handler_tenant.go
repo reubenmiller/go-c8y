@@ -3,9 +3,11 @@ package fakeserver
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha1"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"net/http"
 	"strings"
@@ -489,9 +491,12 @@ func (fs *FakeServer) handleTrustedCertificates(w http.ResponseWriter, r *http.R
 			}
 			fingerprint := getJSONString(body, "fingerprint")
 			if fingerprint == "" {
-				_, doc := fs.TrustedCerts.Create(body, fs.URL()+"/tenant/tenants/"+tenantID+"/trusted-certificates")
-				writeJSON(w, http.StatusCreated, doc)
-				return
+				// The real platform computes the certificate's SHA-1 fingerprint;
+				// derive a stable one from the uploaded PEM so by-name resolution
+				// (name -> fingerprint -> /trusted-certificates/{fingerprint})
+				// works against the fake too.
+				fingerprint = fmt.Sprintf("%x", sha1.Sum([]byte(getJSONString(body, "certInPemFormat"))))
+				body = mergeFields(body, map[string]any{"fingerprint": fingerprint})
 			}
 			// Use fingerprint as the ID
 			body = mergeFields(body, map[string]any{
