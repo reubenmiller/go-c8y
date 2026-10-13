@@ -74,14 +74,12 @@ func (s *Service) Create(ctx context.Context, firmwareID string, opt CreateOptio
 			"type": "c8y_FirmwareBinary",
 			"c8y_Firmware": map[string]any{
 				"version": opt.Version,
+				"url":     url,
 			},
 			"c8y_Patch": map[string]any{
 				"dependency": opt.DependencyVersion,
 			},
 			"c8y_Global": map[string]any{},
-		}
-		if url != "" {
-			patchBody["c8y_Firmware"].(map[string]any)["url"] = url
 		}
 
 		return core.Execute(execCtx, s.createB(resolvedID, patchBody), jsonmodels.NewFirmwarePatch)
@@ -627,6 +625,13 @@ func extractBinaryID(url string) string {
 func (s *Service) uploadBinaryIfNeeded(ctx context.Context, binaryUrl string, opt core.UploadFileOptions) (string, error) {
 	if binaryUrl != "" {
 		return binaryUrl, nil
+	}
+
+	// No URL and no file: nothing to upload (URL-less patch). An empty
+	// UploadFileOptions would otherwise be sent as an empty-file multipart upload,
+	// which panics the HTTP client under --dry and creates a bogus binary.
+	if opt.IsZero() {
+		return "", nil
 	}
 
 	binaryResult := s.binaries.Create(ctx, opt)

@@ -81,15 +81,16 @@ func (s *Service) Create(ctx context.Context, firmwareID string, opt CreateOptio
 			return op.Failed[jsonmodels.FirmwareVersion](err, true)
 		}
 
-		// Build version body
+		// Build version body. url and c8y_Global are always written (url empty when
+		// neither --url nor --file was given, c8y_Global as the platform marker),
+		// matching the v1 New-FirmwareVersion body.
 		versionBody := map[string]any{
 			"type": "c8y_FirmwareBinary",
 			"c8y_Firmware": map[string]any{
 				"version": opt.Version,
+				"url":     url,
 			},
-		}
-		if url != "" {
-			versionBody["c8y_Firmware"].(map[string]any)["url"] = url
+			"c8y_Global": map[string]any{},
 		}
 		for _, fr := range opt.Annotations {
 			if fr != nil {
@@ -788,6 +789,14 @@ func (s *Service) uploadBinaryIfNeeded(ctx context.Context, binaryUrl string, op
 	// If URL is already provided, use it
 	if binaryUrl != "" {
 		return binaryUrl, nil
+	}
+
+	// No URL and no file: nothing to upload (e.g. a blank/URL-less version). An
+	// empty UploadFileOptions would otherwise be sent as a multipart upload of an
+	// empty file, which panics the HTTP client under --dry and creates a bogus
+	// binary against a real tenant.
+	if opt.IsZero() {
+		return "", nil
 	}
 
 	// Upload the file
