@@ -130,6 +130,14 @@ type CountOptions struct {
 
 	// The types of alarm to search for
 	Type []string `url:"type,omitempty"`
+
+	// When set to true also alarms for related source assets will be included.
+	// When this parameter is provided a source must be specified
+	WithSourceAssets bool `url:"withSourceAssets,omitempty"`
+
+	// When set to true also alarms for related source devices will be included.
+	// When this parameter is provided a source must be specified
+	WithSourceDevices bool `url:"withSourceDevices,omitempty"`
 }
 
 // Get an alarm

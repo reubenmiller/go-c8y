@@ -100,6 +100,28 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *MeasurementIte
 	)
 }
 
+// Export retrieves the measurement collection in an alternative representation
+// (e.g. "text/csv" or "application/vnd.ms-excel") selected via the Accept
+// header. The server streams the whole matching collection as one document, so
+// there is no pagination; the response is returned as a binary payload for the
+// caller to stream. The Source resolver field is resolved like List.
+func (s *Service) Export(ctx context.Context, opt ListOptions, accept string) op.Result[core.BinaryResponse] {
+	if opt.Source != "" && s.DeviceResolver != nil {
+		resolutionCtx := ctxhelpers.ResolutionContext(ctx)
+		resolvedID, err := s.DeviceResolver.ResolveID(resolutionCtx, opt.Source, nil)
+		if err != nil {
+			return op.Failed[core.BinaryResponse](err, true)
+		}
+		opt.Source = managedobjects.DeviceRef(resolvedID)
+	}
+	req := s.Client.R().
+		SetMethod(resty.MethodGet).
+		SetHeader("Accept", accept).
+		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetURL(ApiMeasurements)
+	return core.ExecuteBinary(ctx, core.NewTryRequest(s.Client, req))
+}
+
 func (s *Service) listB(opt any) *core.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
@@ -124,6 +146,12 @@ type DeleteListOptions struct {
 	Type string `url:"type,omitempty"`
 
 	FragmentType string `url:"fragmentType,omitempty"`
+
+	// The specific series to delete measurements for.
+	ValueFragmentSeries string `url:"valueFragmentSeries,omitempty"`
+
+	// A characteristic which identifies the measurements to delete.
+	ValueFragmentType string `url:"valueFragmentType,omitempty"`
 }
 
 // DeleteList removes a collection of measurements
