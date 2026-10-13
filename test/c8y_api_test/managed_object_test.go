@@ -13,6 +13,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_ManagedObjectCreation(t *testing.T) {
@@ -22,12 +23,12 @@ func Test_ManagedObjectCreation(t *testing.T) {
 	result := client.ManagedObjects.Create(context.Background(), map[string]any{
 		"name": testingutils.RandomString(16),
 	})
-	assert.NoError(t, result.Err)
+	require.NoError(t, result.Err)
 	assert.Equal(t, result.Data.Length(), 1)
 
 	// decode to custom model
 	mo, err := jsondoc.Decode[model.ManagedObject](result.Data.JSONDoc)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, mo.ID, result.Data.ID())
 
 	// Delete object
