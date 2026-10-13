@@ -2,7 +2,6 @@ package managedobjects
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -82,7 +81,7 @@ func NewService(s *core.Service) *Service {
 			}, nil
 		}
 
-		return "", nil, fmt.Errorf("managed object not found with name: %s", name)
+		return "", nil, core.ErrNotFound("managed object not found with name: %s", name)
 	}
 
 	service.lookupByQuery = func(ctx context.Context, query string) (string, map[string]any, error) {
@@ -100,7 +99,7 @@ func NewService(s *core.Service) *Service {
 			return obj.ID(), map[string]any{"query": query}, nil
 		}
 
-		return "", nil, fmt.Errorf("managed object not found with query: %s", query)
+		return "", nil, core.ErrNotFound("managed object not found with query: %s", query)
 	}
 
 	return service

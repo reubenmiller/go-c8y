@@ -28,14 +28,25 @@ const (
 
 // Error wraps the Cumulocity Server error with the relevant http.Response
 type Error struct {
-	Response   *http.Response
+	Response   *http.Response `json:"-"`
 	Code       int
 	Type       string
 	Message    string
 	MessageRaw string
 
+	// Err is the original error this wraps (e.g. a transport context deadline),
+	// preserved so errors.Is/As can reach it — the Message string alone loses the
+	// sentinel identity needed to classify timeouts and cancellations.
+	Err error `json:"-"`
+
 	ReceivedAt time.Time
 	Duration   time.Duration
+}
+
+// Unwrap exposes the original wrapped error to errors.Is/errors.As, so callers
+// can detect e.g. context.DeadlineExceeded behind a transport failure.
+func (err Error) Unwrap() error {
+	return err.Err
 }
 
 // APIError is the error-set returned by Cumulocity API when presented with an invalid request
@@ -158,7 +169,7 @@ func NewError(err any) *Error {
 			ReceivedAt: e.ReceivedAt(),
 		}
 	case error:
-		return &Error{Code: ErrorFromError, Message: e.Error()}
+		return &Error{Code: ErrorFromError, Message: e.Error(), Err: e}
 	case string:
 		return &Error{Code: ErrorFromString, Message: e}
 	case fmt.Stringer:
