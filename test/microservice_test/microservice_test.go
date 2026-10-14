@@ -133,7 +133,8 @@ prop2=2
 		break
 	}
 
-	assert.EqualValues(t, 1, configUpdateCounter)
+	assert.EqualValues(t, 1, atomic.LoadInt64(&configUpdateCounter))
+	require.NotNil(t, msConfig, "configuration update hook was not called")
 	assert.Equal(t, "1", msConfig.GetString("prop1"))
 	assert.Equal(t, "2", msConfig.GetString("prop2"))
 }

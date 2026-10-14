@@ -94,6 +94,9 @@ func Test_MicroserviceUpload(t *testing.T) {
 		SkipUpload: false,
 	})
 	assert.NoError(t, err)
+	t.Cleanup(func() {
+		client.Microservices.Delete(context.Background(), client.Microservices.ByName(manifest.Name), microservices.DeleteOptions{Force: true})
+	})
 	assert.Equal(t, manifest.Name, app.Name)
 }
 
