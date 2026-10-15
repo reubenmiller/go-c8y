@@ -138,7 +138,7 @@ func BootstrapApplication(t *testing.T, appName ...string) *microservice.Microse
 
 	slog.Info("Bootstrapping application", "host", host, "tenant", tenant, "username", username)
 
-	client := CreateTestClient(t)
+	client := CreateTestClientBasicAuth(t)
 
 	sweepStaleApplicationsOnce.Do(func() {
 		sweepStaleTestApplications(t, client)

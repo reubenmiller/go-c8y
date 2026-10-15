@@ -116,6 +116,27 @@ func CreateTestClient(t *testing.T) *api.Client {
 	return client
 }
 
+// CreateTestClientBasicAuth creates a test client which authenticates every
+// request with basic auth instead of exchanging the credentials for a bearer
+// token. Use it for tests which create, subscribe or delete microservices, as
+// the platform revokes the user's existing tokens when the roles granted via
+// application subscriptions change.
+func CreateTestClientBasicAuth(t *testing.T) *api.Client {
+	t.Setenv("C8Y_TOKEN", "")
+	setupFakeServer(t)
+	opts := api.ClientOptions{
+		BaseURL: authentication.HostFromEnvironment(),
+		Auth:    authentication.FromEnvironment(),
+	}
+	opts.Auth.AuthType = []authentication.AuthType{authentication.AuthTypeBasic}
+	if rec := setupRecorder(t); rec != nil {
+		opts.Transport = rec
+	}
+	client := api.NewClient(opts)
+	client.HTTPClient.SetRetryCount(1)
+	return client
+}
+
 // CreateTestClientWithFakeServer creates a test client and returns the
 // underlying FakeServer (or nil in non-offline modes) so the test can
 // interact with the fake's WebSocket and store state directly.
