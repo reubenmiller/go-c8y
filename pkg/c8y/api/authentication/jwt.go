@@ -21,13 +21,13 @@ type TokenClaim struct {
 	jwt.RegisteredClaims
 }
 
-// Parse a JWT claims
+// Parse a JWT claims. The payload is unpadded base64url (RFC 7515); padded input is tolerated.
 func ParseToken(tokenString string) (*TokenClaim, error) {
 	parts := strings.Split(tokenString, ".")
 	if len(parts) != 3 {
 		return nil, fmt.Errorf("invalid token. expected 3 fields")
 	}
-	raw, err := base64.RawStdEncoding.DecodeString(parts[1])
+	raw, err := base64.RawURLEncoding.DecodeString(strings.TrimRight(parts[1], "="))
 	if err != nil {
 		return nil, err
 	}

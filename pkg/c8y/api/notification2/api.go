@@ -284,7 +284,7 @@ func (s *Service) ParseToken(tokenString string) (*TokenClaim, error) {
 	if len(parts) != 3 {
 		return nil, fmt.Errorf("invalid token. expected 3 fields")
 	}
-	raw, err := base64.RawStdEncoding.DecodeString(parts[1])
+	raw, err := base64.RawURLEncoding.DecodeString(strings.TrimRight(parts[1], "="))
 	if err != nil {
 		return nil, err
 	}
