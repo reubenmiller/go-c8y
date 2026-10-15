@@ -250,6 +250,11 @@ type ClientOptions struct {
 
 	Agent string
 
+	// SkipTenantLookup skips the GET /tenant/currentTenant call that NewClient
+	// makes when no tenant is given. Path-param APIs that need {tenantId} then
+	// need the tenant set later, e.g. via SetAuth or ResolveTenant.
+	SkipTenantLookup bool
+
 	Transport http.RoundTripper
 
 	// Timeout sets a global HTTP-level timeout for all requests made by this client.
@@ -525,22 +530,33 @@ func NewClient(opts ClientOptions) *Client {
 		c.SetAuth(opts.Auth)
 	}
 
-	// Auto-resolve the tenant ID if it was not provided by the caller.
-	// This makes a single authenticated call to /tenant/currentTenant so that
+	// Auto-resolve the tenant ID if it was not provided by the caller, so that
 	// path-param APIs (e.g. /application/applicationsByTenant/{tenantId}) work
-	// correctly even when C8Y_TENANT is not set in the environment.
-	if c.Auth.Tenant == "" {
-		if result := c.Tenants.Current.Get(context.Background(), currenttenant.GetOptions{}); result.Err == nil {
-			if id := result.Data.Name(); id != "" {
-				c.Auth.Tenant = id
-				c.HTTPClient.SetPathParam(core.PathParamTenantID, id)
-			}
-		} else {
-			slog.Debug("Failed to auto-resolve tenant ID", "err", result.Err)
+	// even when C8Y_TENANT is not set in the environment.
+	if c.Auth.Tenant == "" && !opts.SkipTenantLookup {
+		if err := c.ResolveTenant(context.Background()); err != nil {
+			slog.Debug("Failed to auto-resolve tenant ID", "err", err)
 		}
 	}
 
 	return c
+}
+
+// ResolveTenant looks up the tenant of the current credentials via
+// GET /tenant/currentTenant and stores it as the client's tenant and the
+// {tenantId} path parameter. NewClient calls it when no tenant is given, unless
+// ClientOptions.SkipTenantLookup is set; callers that skipped it can call it
+// later with their own context.
+func (c *Client) ResolveTenant(ctx context.Context) error {
+	result := c.Tenants.Current.Get(ctx, currenttenant.GetOptions{})
+	if result.Err != nil {
+		return result.Err
+	}
+	if id := result.Data.Name(); id != "" {
+		c.Auth.Tenant = id
+		c.HTTPClient.SetPathParam(core.PathParamTenantID, id)
+	}
+	return nil
 }
 
 // SetBaseURL changes the base url used by the REST client

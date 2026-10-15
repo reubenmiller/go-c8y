@@ -11,6 +11,7 @@
 * **Breaking**: `pkg/microservice` no longer depends on the cron library; the `Scheduler` type, `StartOperationPolling` and the `agent.operations.pollRate` property have been removed. The SDK runs no background timers of its own — call `CheckForNewConfiguration()` from your own `time.Ticker` (or a realtime subscription) to react to pending operations
 * Added `authentication.FromLookup`, `authentication.HostFromLookup`, `authentication.LookupFunc` and `authentication.LookupFromMap` to resolve the `C8Y_*` settings from any key/value source (e.g. a credentials file) with the same rules as `FromEnvironment`/`HostFromEnvironment`, which now delegate to them (behaviour unchanged)
 * Added `Client.AuthorizationHeader(ctx)` returning the `Authorization` header value the client would send for a request with that context (context credentials, token source with renewal, then the client credentials as the HTTP client sends them: a token wins over Basic), for requests forwarded without going through the client. `MiddlewareAuthorization` no longer logs the bearer token
+* Added `ClientOptions.SkipTenantLookup` to skip the `/tenant/currentTenant` call `NewClient` makes when no tenant is given (for clients built only to produce credentials or headers), and `Client.ResolveTenant(ctx)` to run that lookup later with the caller's context
 
 ## Released
 
