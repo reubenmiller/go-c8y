@@ -25,27 +25,36 @@ func Test_AuthorizationHeader_MatchesRequestsSentByClient(t *testing.T) {
 		Password: "bootpass",
 		AuthType: []authentication.AuthType{authentication.AuthTypeBasic},
 	}
-	serviceUser := WithServiceUser(context.Background(), model.ServiceUser{
-		Tenant: "t200", Username: "service_app", Password: "servicepass",
-	})
-	tokenCtx := WithAuth(context.Background(), authentication.AuthOptions{Tenant: "t300", Token: "ctx-token"})
+	// Each case decorates the subtest's context (nil: the plain context), so no context is stored in the table.
+	serviceUser := func(ctx context.Context) context.Context {
+		return WithServiceUser(ctx, model.ServiceUser{Tenant: "t200", Username: "service_app", Password: "servicepass"})
+	}
+	tokenAuth := func(ctx context.Context) context.Context {
+		return WithAuth(ctx, authentication.AuthOptions{Tenant: "t300", Token: "ctx-token"})
+	}
+	skipExchange := func(ctx context.Context) context.Context {
+		return ctxhelpers.WithSkipContextTokenExchange(serviceUser(ctx))
+	}
+	emptyAuth := func(ctx context.Context) context.Context {
+		return WithAuth(ctx, authentication.AuthOptions{})
+	}
 
 	tests := []struct {
 		name     string
 		auth     authentication.AuthOptions
 		exchange bool
-		ctx      context.Context
+		withCtx  func(context.Context) context.Context
 		want     string
 	}{
-		{"basic", basicOpts, false, context.Background(), basicAuth("t100/bootstrap", "bootpass")},
-		{"static token", authentication.AuthOptions{Token: "static-token"}, false, context.Background(), "Bearer static-token"},
+		{"basic", basicOpts, false, nil, basicAuth("t100/bootstrap", "bootpass")},
+		{"static token", authentication.AuthOptions{Token: "static-token"}, false, nil, "Bearer static-token"},
 		{"token preferred over basic when unset", authentication.AuthOptions{Tenant: "t1", Username: "u", Password: "p", Token: "tok",
-			AuthType: []authentication.AuthType{authentication.AuthTypeUnset}}, false, context.Background(), "Bearer tok"},
+			AuthType: []authentication.AuthType{authentication.AuthTypeUnset}}, false, nil, "Bearer tok"},
 		{"context service user overrides client", basicOpts, false, serviceUser, basicAuth("t200/service_app", "servicepass")},
-		{"context token overrides client", basicOpts, false, tokenCtx, "Bearer ctx-token"},
+		{"context token overrides client", basicOpts, false, tokenAuth, "Bearer ctx-token"},
 		{"context exchange", basicOpts, true, serviceUser, "Bearer exchanged-token-1"},
-		{"context exchange skipped", basicOpts, true, ctxhelpers.WithSkipContextTokenExchange(serviceUser), basicAuth("t200/service_app", "servicepass")},
-		{"empty context auth falls back to client", basicOpts, false, WithAuth(context.Background(), authentication.AuthOptions{}), basicAuth("t100/bootstrap", "bootpass")},
+		{"context exchange skipped", basicOpts, true, skipExchange, basicAuth("t200/service_app", "servicepass")},
+		{"empty context auth falls back to client", basicOpts, false, emptyAuth, basicAuth("t100/bootstrap", "bootpass")},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -53,12 +62,16 @@ func Test_AuthorizationHeader_MatchesRequestsSentByClient(t *testing.T) {
 			defer rs.server.Close()
 			client := NewClient(ClientOptions{BaseURL: rs.server.URL, Auth: tt.auth, ContextTokenExchange: tt.exchange})
 
-			got, err := client.AuthorizationHeader(tt.ctx)
+			ctx := t.Context()
+			if tt.withCtx != nil {
+				ctx = tt.withCtx(ctx)
+			}
+			got, err := client.AuthorizationHeader(ctx)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 
 			// The header must be the one the client really sends
-			require.NoError(t, client.Devices.List(tt.ctx, devices.ListOptions{}).Err)
+			require.NoError(t, client.Devices.List(ctx, devices.ListOptions{}).Err)
 			assert.Equal(t, got, rs.last(t).Authorization)
 		})
 	}
