@@ -4,9 +4,13 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/alarms"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
@@ -72,4 +76,58 @@ func Test_NewClientFromEnvironment(t *testing.T) {
 		expectedPath := testcase.path + "inventory/managedObjects"
 		assert.Equal(t, expectedPath, resp.Request.RawRequest.URL.Path)
 	}
+}
+
+// newTenantServer returns a test server that counts /tenant/currentTenant calls.
+func newTenantServer(t *testing.T, status int) (*httptest.Server, *atomic.Int32) {
+	t.Helper()
+	var calls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/tenant/currentTenant" {
+			http.NotFound(w, r)
+			return
+		}
+		calls.Add(1)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(status)
+		_, _ = w.Write([]byte(`{"name":"t123"}`))
+	}))
+	t.Cleanup(srv.Close)
+	return srv, &calls
+}
+
+func tenantTestOptions(baseURL string, skip bool) ClientOptions {
+	return ClientOptions{
+		BaseURL:          baseURL,
+		SkipTenantLookup: skip,
+		Auth: authentication.AuthOptions{
+			Token: "static-token",
+		},
+	}
+}
+
+func Test_NewClient_TenantLookup(t *testing.T) {
+	srv, calls := newTenantServer(t, http.StatusOK)
+	client := NewClient(tenantTestOptions(srv.URL, false))
+	assert.Equal(t, int32(1), calls.Load())
+	assert.Equal(t, "t123", client.Auth.Tenant)
+}
+
+func Test_NewClient_SkipTenantLookup(t *testing.T) {
+	srv, calls := newTenantServer(t, http.StatusOK)
+	client := NewClient(tenantTestOptions(srv.URL, true))
+	assert.Equal(t, int32(0), calls.Load())
+	assert.Empty(t, client.Auth.Tenant)
+
+	require.NoError(t, client.ResolveTenant(context.Background()))
+	assert.Equal(t, int32(1), calls.Load())
+	assert.Equal(t, "t123", client.Auth.Tenant)
+	assert.Equal(t, "t123", client.HTTPClient.PathParams()[core.PathParamTenantID])
+}
+
+func Test_ResolveTenant_Error(t *testing.T) {
+	srv, _ := newTenantServer(t, http.StatusUnauthorized)
+	client := NewClient(tenantTestOptions(srv.URL, true))
+	assert.Error(t, client.ResolveTenant(context.Background()))
+	assert.Empty(t, client.Auth.Tenant)
 }

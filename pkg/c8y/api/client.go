@@ -250,6 +250,11 @@ type ClientOptions struct {
 
 	Agent string
 
+	// SkipTenantLookup skips the GET /tenant/currentTenant call that NewClient
+	// makes when no tenant is given. Path-param APIs that need {tenantId} then
+	// need the tenant set later, e.g. via SetAuth or ResolveTenant.
+	SkipTenantLookup bool
+
 	Transport http.RoundTripper
 
 	// Timeout sets a global HTTP-level timeout for all requests made by this client.
@@ -336,11 +341,9 @@ func setTLSConfig(transport http.RoundTripper, insecureSkipVerify bool) error {
 	return fmt.Errorf("transport does not support TLS configuration")
 }
 
-// NewClient returns a new Cumulocity API client. If a nil httpClient is
-// provided, http.DefaultClient will be used. To use API methods which require
-// authentication, provide an http.Client that will perform the authentication
-// for you (such as that provided by the golang.org/x/oauth2 library).
-func NewClient(opts ClientOptions) *Client {
+// newRestyClient creates the resty client with the default retry, error and
+// circuit breaker settings, and applies the timeout and base URL from opts.
+func newRestyClient(opts ClientOptions, targetBaseURL *url.URL) *resty.Client {
 	circuitBreaker := resty.NewCircuitBreakerWithCount(10, 5, 15*time.Second)
 
 	rclient := resty.New().
@@ -354,98 +357,76 @@ func NewClient(opts ClientOptions) *Client {
 		rclient.SetTimeout(opts.Timeout)
 	}
 
-	targetBaseURL, _ := url.Parse(FormatBaseURL(opts.BaseURL))
 	if targetBaseURL != nil {
 		rclient.SetBaseURL(targetBaseURL.String())
 	}
+	return rclient
+}
 
-	// Configure base transport with TLS settings
-	var baseTransport http.RoundTripper
-	if opts.Transport != nil {
-		// User provided a custom transport, use it as the base
-		baseTransport = opts.Transport
-
-		// Try to set TLS config on the base transport if it supports it
-		if err := setTLSConfig(baseTransport, opts.InsecureSkipVerify); err != nil {
-			slog.Debug("Could not set TLS config on custom transport", "err", err)
-		}
-	} else {
-		// No custom transport, create a default one with TLS config
-		defaultTransport := http.DefaultTransport.(*http.Transport).Clone()
-		tlsCfg := &tls.Config{
-			InsecureSkipVerify: opts.InsecureSkipVerify,
-		}
-		// Attach client certificates directly to the transport for mTLS (e.g.
-		// device certificate auth on port 8443). SetCertificateChainHeaderIfRequired
-		// configures resty's own internal TLS state, but the SetTransport call below
-		// replaces the transport entirely and loses those settings. We must therefore
-		// also set the certificates on the transport we are about to install.
-		if opts.Auth.Certificate != "" && opts.Auth.CertificateKey != "" {
-			var cert tls.Certificate
-			var certErr error
-			if _, statErr := os.Stat(opts.Auth.CertificateKey); statErr == nil {
-				cert, certErr = tls.LoadX509KeyPair(opts.Auth.Certificate, opts.Auth.CertificateKey)
-			} else {
-				cert, certErr = tls.X509KeyPair([]byte(opts.Auth.Certificate), []byte(opts.Auth.CertificateKey))
-			}
-			if certErr == nil {
-				tlsCfg.Certificates = []tls.Certificate{cert}
-			} else {
-				slog.Debug("Failed to load client certificate onto transport", "err", certErr)
-			}
-		}
-		defaultTransport.TLSClientConfig = tlsCfg
-		baseTransport = defaultTransport
+// loadClientKeyPair loads a client certificate from either file paths or PEM
+// encoded content (the key being a file path when it exists on disk).
+func loadClientKeyPair(certificate, key string) (tls.Certificate, error) {
+	if _, statErr := os.Stat(key); statErr == nil {
+		return tls.LoadX509KeyPair(certificate, key)
 	}
+	return tls.X509KeyPair([]byte(certificate), []byte(key))
+}
 
-	// Wrap the base transport with DryRunTransport to support context-based dry run
-	rclient.SetTransport(&DryRunTransport{
-		Transport: baseTransport,
-	})
-
-	if opts.UseKeyRing {
-		if tok, err := keyring.Get(KeyringName(targetBaseURL, opts.Auth.Tenant), opts.Auth.Username); err == nil {
-			if tok != "" {
-				slog.Warn("loading token from keyring")
-				opts.Auth.Token = tok
-			}
+// newDefaultTransport clones the default transport and configures its TLS
+// settings, including client certificates for mTLS when supplied.
+func newDefaultTransport(opts ClientOptions) *http.Transport {
+	defaultTransport := http.DefaultTransport.(*http.Transport).Clone()
+	tlsCfg := &tls.Config{
+		InsecureSkipVerify: opts.InsecureSkipVerify,
+	}
+	// Attach client certificates directly to the transport for mTLS (e.g.
+	// device certificate auth on port 8443). SetCertificateChainHeaderIfRequired
+	// configures resty's own internal TLS state, but the SetTransport call
+	// replaces the transport entirely and loses those settings. We must therefore
+	// also set the certificates on the transport we are about to install.
+	if opts.Auth.Certificate != "" && opts.Auth.CertificateKey != "" {
+		cert, certErr := loadClientKeyPair(opts.Auth.Certificate, opts.Auth.CertificateKey)
+		if certErr == nil {
+			tlsCfg.Certificates = []tls.Certificate{cert}
 		} else {
-			slog.Warn("Failed to load token from keyring", "err", err)
+			slog.Debug("Failed to load client certificate onto transport", "err", certErr)
 		}
 	}
+	defaultTransport.TLSClientConfig = tlsCfg
+	return defaultTransport
+}
 
-	userAgent := defaultUserAgent
-	if opts.Agent != "" {
-		userAgent = opts.Agent
+// newBaseTransport returns the base transport: the user supplied one (with TLS
+// settings applied when supported) or a default transport with TLS config.
+func newBaseTransport(opts ClientOptions) http.RoundTripper {
+	if opts.Transport == nil {
+		// No custom transport, create a default one with TLS config
+		return newDefaultTransport(opts)
 	}
-	rclient.AddRequestMiddleware(MiddlewareAddUserAgent(userAgent, "go-client"))
-	rclient.AddRequestMiddleware(MiddlewareAddHost("domain"))
-	rclient.AddRequestMiddleware(MiddlewareRemoveEmptyTenantID())
-	rclient.SetPathParam(core.PathParamTenantID, opts.Auth.Tenant)
-	// rclient.AddRequestMiddleware(MiddlewareAuthorization(opts.Auth))
-
-	c := &Client{
-		HTTPClient:          rclient,
-		BaseURL:             targetBaseURL,
-		UserAgent:           userAgent,
-		UseTenantInUsername: true,
-		Auth:                opts.Auth,
-
-		debugEnabled:  opts.Debug,
-		showSensitive: opts.ShowSensitive,
-		UseKeyRing:    opts.UseKeyRing,
+	// User provided a custom transport, use it as the base.
+	// Try to set TLS config on the base transport if it supports it
+	if err := setTLSConfig(opts.Transport, opts.InsecureSkipVerify); err != nil {
+		slog.Debug("Could not set TLS config on custom transport", "err", err)
 	}
-	c.contextTokenExchange.Store(opts.ContextTokenExchange)
-	c.common.Client = rclient
-	c.common.MTLSPort = opts.MTLSPort
-	c.common.CertChainHeader = buildCertChainHeader(opts.Auth)
-	c.common.RealtimeClient = realtime.NewClient(nil, realtime.ClientOptions{
-		Host:     targetBaseURL.String(),
-		Tenant:   c.Auth.Tenant,
-		Username: c.Auth.Username,
-		Password: c.Auth.Password,
-		Token:    c.Auth.Token,
-	})
+	return opts.Transport
+}
+
+// loadKeyringToken replaces the static token in auth with the one stored in the
+// system keyring, if present.
+func loadKeyringToken(auth *authentication.AuthOptions, targetBaseURL *url.URL) {
+	tok, err := keyring.Get(KeyringName(targetBaseURL, auth.Tenant), auth.Username)
+	if err != nil {
+		slog.Warn("Failed to load token from keyring", "err", err)
+		return
+	}
+	if tok != "" {
+		slog.Warn("loading token from keyring")
+		auth.Token = tok
+	}
+}
+
+// initServices creates all of the API services.
+func (c *Client) initServices() {
 	c.AuditRecords = auditrecords.NewService(&c.common)
 	c.TrustedCertificates = trustedcertificates.NewService(&c.common)
 	c.Binaries = binaries.NewService(&c.common)
@@ -488,59 +469,134 @@ func NewClient(opts ClientOptions) *Client {
 	c.Features = features.NewService(&c.common)
 	c.LoginOptions = loginoptions.NewService(&c.common)
 	c.LoginTokens = logintokens.NewService(&c.common)
+}
 
-	c.AddMiddleware()
-
-	// Determine the token source.
-	// Priority: explicit TokenSource > credential-backed automatic source > static token.
-	if opts.Auth.TokenSource != nil {
-		c.tokenSource = opts.Auth.TokenSource
-	} else if slices.Contains(opts.Auth.GetAuthTypes(), authentication.AuthTypeBasic) {
+// initTokenSource determines the token source.
+// Priority: explicit TokenSource > credential-backed automatic source > static token.
+func (c *Client) initTokenSource(auth authentication.AuthOptions) {
+	if auth.TokenSource != nil {
+		c.tokenSource = auth.TokenSource
+		return
+	}
+	if slices.Contains(auth.GetAuthTypes(), authentication.AuthTypeBasic) {
 		// The caller pinned basic auth: authenticate every request with the
 		// credentials directly instead of exchanging them for a bearer token
 		// at client construction (a POST /tenant/oauth/token per client, which
 		// basic-auth callers like the CLI neither need nor expect).
-	} else if opts.Auth.Username != "" || (opts.Auth.Certificate != "" && opts.Auth.CertificateKey != "") {
+		return
+	}
+	if auth.Username != "" || (auth.Certificate != "" && auth.CertificateKey != "") {
 		c.tokenSource = c.newInternalTokenSource()
 	}
+}
 
-	// Bootstrap: prime the token source / set initial auth.
-	// Using a token source: fetch once to populate the cache and set Auth.Token.
-	// No token source (static token): set auth directly as before.
-	if c.tokenSource != nil {
-		if tok, err := c.tokenSource.Token(); err == nil && tok != nil {
-			c.SetToken(tok.AccessToken)
-			c.SetAuth(c.Auth)
-		} else {
-			// Either an error (e.g. bad credentials) or nil token (e.g. username
-			// present but password empty — no credentials to exchange). In both
-			// cases fall back to whatever static auth was supplied (e.g. a raw
-			// bearer token).
-			if err != nil {
-				slog.Debug("Failed to get initial token from token source", "err", err)
-			}
-			c.SetAuth(opts.Auth)
-		}
-	} else {
-		c.SetAuth(opts.Auth)
+// bootstrapAuth primes the token source / sets the initial auth.
+// Using a token source: fetch once to populate the cache and set Auth.Token.
+// No token source (static token): set auth directly as before.
+func (c *Client) bootstrapAuth(auth authentication.AuthOptions) {
+	if c.tokenSource == nil {
+		c.SetAuth(auth)
+		return
+	}
+	tok, err := c.tokenSource.Token()
+	if err == nil && tok != nil {
+		c.SetToken(tok.AccessToken)
+		c.SetAuth(c.Auth)
+		return
+	}
+	// Either an error (e.g. bad credentials) or nil token (e.g. username
+	// present but password empty — no credentials to exchange). In both
+	// cases fall back to whatever static auth was supplied (e.g. a raw
+	// bearer token).
+	if err != nil {
+		slog.Debug("Failed to get initial token from token source", "err", err)
+	}
+	c.SetAuth(auth)
+}
+
+// NewClient returns a new Cumulocity API client. If a nil httpClient is
+// provided, http.DefaultClient will be used. To use API methods which require
+// authentication, provide an http.Client that will perform the authentication
+// for you (such as that provided by the golang.org/x/oauth2 library).
+func NewClient(opts ClientOptions) *Client {
+	targetBaseURL, _ := url.Parse(FormatBaseURL(opts.BaseURL))
+	rclient := newRestyClient(opts, targetBaseURL)
+
+	// Wrap the base transport with DryRunTransport to support context-based dry run
+	rclient.SetTransport(&DryRunTransport{
+		Transport: newBaseTransport(opts),
+	})
+
+	if opts.UseKeyRing {
+		loadKeyringToken(&opts.Auth, targetBaseURL)
 	}
 
-	// Auto-resolve the tenant ID if it was not provided by the caller.
-	// This makes a single authenticated call to /tenant/currentTenant so that
+	userAgent := defaultUserAgent
+	if opts.Agent != "" {
+		userAgent = opts.Agent
+	}
+	rclient.AddRequestMiddleware(MiddlewareAddUserAgent(userAgent, "go-client"))
+	rclient.AddRequestMiddleware(MiddlewareAddHost("domain"))
+	rclient.AddRequestMiddleware(MiddlewareRemoveEmptyTenantID())
+	rclient.SetPathParam(core.PathParamTenantID, opts.Auth.Tenant)
+	// rclient.AddRequestMiddleware(MiddlewareAuthorization(opts.Auth))
+
+	c := &Client{
+		HTTPClient:          rclient,
+		BaseURL:             targetBaseURL,
+		UserAgent:           userAgent,
+		UseTenantInUsername: true,
+		Auth:                opts.Auth,
+
+		debugEnabled:  opts.Debug,
+		showSensitive: opts.ShowSensitive,
+		UseKeyRing:    opts.UseKeyRing,
+	}
+	c.contextTokenExchange.Store(opts.ContextTokenExchange)
+	c.common.Client = rclient
+	c.common.MTLSPort = opts.MTLSPort
+	c.common.CertChainHeader = buildCertChainHeader(opts.Auth)
+	c.common.RealtimeClient = realtime.NewClient(nil, realtime.ClientOptions{
+		Host:     targetBaseURL.String(),
+		Tenant:   c.Auth.Tenant,
+		Username: c.Auth.Username,
+		Password: c.Auth.Password,
+		Token:    c.Auth.Token,
+	})
+	c.initServices()
+
+	c.AddMiddleware()
+
+	c.initTokenSource(opts.Auth)
+	c.bootstrapAuth(opts.Auth)
+
+	// Auto-resolve the tenant ID if it was not provided by the caller, so that
 	// path-param APIs (e.g. /application/applicationsByTenant/{tenantId}) work
-	// correctly even when C8Y_TENANT is not set in the environment.
-	if c.Auth.Tenant == "" {
-		if result := c.Tenants.Current.Get(context.Background(), currenttenant.GetOptions{}); result.Err == nil {
-			if id := result.Data.Name(); id != "" {
-				c.Auth.Tenant = id
-				c.HTTPClient.SetPathParam(core.PathParamTenantID, id)
-			}
-		} else {
-			slog.Debug("Failed to auto-resolve tenant ID", "err", result.Err)
+	// even when C8Y_TENANT is not set in the environment.
+	if c.Auth.Tenant == "" && !opts.SkipTenantLookup {
+		if err := c.ResolveTenant(context.Background()); err != nil {
+			slog.Debug("Failed to auto-resolve tenant ID", "err", err)
 		}
 	}
 
 	return c
+}
+
+// ResolveTenant looks up the tenant of the current credentials via
+// GET /tenant/currentTenant and stores it as the client's tenant and the
+// {tenantId} path parameter. NewClient calls it when no tenant is given, unless
+// ClientOptions.SkipTenantLookup is set; callers that skipped it can call it
+// later with their own context.
+func (c *Client) ResolveTenant(ctx context.Context) error {
+	result := c.Tenants.Current.Get(ctx, currenttenant.GetOptions{})
+	if result.Err != nil {
+		return result.Err
+	}
+	if id := result.Data.Name(); id != "" {
+		c.Auth.Tenant = id
+		c.HTTPClient.SetPathParam(core.PathParamTenantID, id)
+	}
+	return nil
 }
 
 // SetBaseURL changes the base url used by the REST client
