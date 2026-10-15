@@ -478,7 +478,10 @@ func bearerAuthorization(token string) string {
 //     cached and renewed by the source when it expires, so a long-lived caller
 //     can call AuthorizationHeader for each forwarded request. An error from the
 //     source is returned.
-//  4. The client's static credentials (Client.Auth), chosen by AuthType.
+//  4. The client's static credentials (Client.Auth) as SetAuth gives them to the
+//     HTTP client: the token when one is set (it overrides Basic on the wire),
+//     otherwise Basic from username and password. AuthType does not select
+//     between them here, as it does not for a request.
 //
 // Renewal is limited to what the token source does (renew on expiry). The
 // client's retry-on-401 logic only runs for requests the client sends itself, so
@@ -501,7 +504,19 @@ func (c *Client) AuthorizationHeader(ctx context.Context) (string, error) {
 	c.clientMu.Lock()
 	auth := c.Auth
 	c.clientMu.Unlock()
-	return authorizationFromOptions(auth), nil
+	return staticAuthorization(auth), nil
+}
+
+// staticAuthorization is the header the HTTP client sends for credentials set
+// with SetAuth: resty sets Basic first and the token afterwards, so a token wins.
+func staticAuthorization(auth authentication.AuthOptions) string {
+	if auth.Token != "" {
+		return bearerAuthorization(auth.Token)
+	}
+	if auth.Username != "" && auth.Password != "" {
+		return basicAuthorization(authentication.JoinTenantUser(auth.Tenant, auth.Username), auth.Password)
+	}
+	return ""
 }
 
 // contextAuthorization mirrors MiddlewareContextAuthorization for credentials

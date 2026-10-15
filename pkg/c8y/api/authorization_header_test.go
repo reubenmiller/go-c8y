@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -148,35 +149,43 @@ func Test_AuthorizationHeader_TokenSourceError(t *testing.T) {
 	assert.Empty(t, got)
 }
 
-// Test_AuthorizationHeader_AgreesWithMiddlewareAuthorization guards against the
-// two drifting apart for the client-level credentials.
-func Test_AuthorizationHeader_AgreesWithMiddlewareAuthorization(t *testing.T) {
+// Test_AuthorizationHeader_MatchesWire checks the client-level credentials
+// against the header the HTTP client really sends after SetAuth, including a
+// token set next to pinned Basic credentials (resty sends the token).
+func Test_AuthorizationHeader_MatchesWire(t *testing.T) {
+	var got string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got = r.Header.Get(HeaderAuthorization)
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+	basicOnly := []authentication.AuthType{authentication.AuthTypeBasic}
 	tests := []struct {
 		name string
 		auth authentication.AuthOptions
 	}{
 		{"none", authentication.AuthOptions{}},
-		{"basic", authentication.AuthOptions{Tenant: "t1", Username: "u", Password: "p", AuthType: []authentication.AuthType{authentication.AuthTypeBasic}}},
-		{"basic without password", authentication.AuthOptions{Username: "u", AuthType: []authentication.AuthType{authentication.AuthTypeBasic}}},
-		{"bearer", authentication.AuthOptions{Token: "tok", AuthType: []authentication.AuthType{authentication.AuthTypeBearer}}},
-		{"bearer without token", authentication.AuthOptions{Username: "u", Password: "p", AuthType: []authentication.AuthType{authentication.AuthTypeBearer}}},
-		{"unset prefers token", authentication.AuthOptions{Tenant: "t1", Username: "u", Password: "p", Token: "tok"}},
-		{"unset basic only", authentication.AuthOptions{Username: "u", Password: "p"}},
-		{"auth type none", authentication.AuthOptions{Token: "tok", AuthType: []authentication.AuthType{authentication.AuthTypeNone}}},
-		{"bearer then basic", authentication.AuthOptions{Username: "u", Password: "p",
-			AuthType: []authentication.AuthType{authentication.AuthTypeBearer, authentication.AuthTypeBasic}}},
+		{"basic", authentication.AuthOptions{Tenant: "t1", Username: "u", Password: "p", AuthType: basicOnly}},
+		{"basic without password", authentication.AuthOptions{Username: "u", AuthType: basicOnly}},
+		{"token", authentication.AuthOptions{Token: "tok", AuthType: []authentication.AuthType{authentication.AuthTypeBearer}}},
+		{"token and basic, unset", authentication.AuthOptions{Tenant: "t1", Username: "u", Password: "p", Token: "tok"}},
+		{"token and basic, pinned basic", authentication.AuthOptions{Tenant: "t1", Username: "u", Password: "p", Token: "tok", AuthType: basicOnly}},
+		{"basic only, unset", authentication.AuthOptions{Username: "u", Password: "p"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			client := NewClient(ClientOptions{BaseURL: "http://localhost:1"})
 			client.Auth = tt.auth
-
-			req := resty.New().R()
-			require.NoError(t, MiddlewareAuthorization(tt.auth)(nil, req))
-
-			got, err := client.AuthorizationHeader(context.Background())
+			rc := resty.New()
+			defer rc.Close()
+			SetAuth(rc, tt.auth)
+			got = ""
+			_, err := rc.R().Get(srv.URL)
 			require.NoError(t, err)
-			assert.Equal(t, req.Header.Get(HeaderAuthorization), got)
+
+			header, err := client.AuthorizationHeader(t.Context())
+			require.NoError(t, err)
+			assert.Equal(t, got, header)
 		})
 	}
 }
