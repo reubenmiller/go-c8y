@@ -175,3 +175,110 @@ func Test_ForEachTenant(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, []string{"t100", "t200"}, tenants)
 }
+
+func newCookieRequest(t *testing.T, method, token, xsrfCookie, xsrfHeader string) *http.Request {
+	t.Helper()
+	r := httptest.NewRequest(method, "/devices", nil)
+	if token != "" {
+		r.AddCookie(&http.Cookie{Name: CookieAuthorization, Value: token})
+	}
+	if xsrfCookie != "" {
+		r.AddCookie(&http.Cookie{Name: CookieXSRFToken, Value: xsrfCookie})
+	}
+	if xsrfHeader != "" {
+		r.Header.Set(HeaderXSRFToken, xsrfHeader)
+	}
+	return r
+}
+
+func Test_AuthFromRequest_CookieOnly(t *testing.T) {
+	token := makeUnsignedJWT(t, map[string]any{"ten": "t300", "sub": "jane"})
+	r := newCookieRequest(t, http.MethodGet, token, "x1", "x1")
+
+	auth, ok := AuthFromRequest(r)
+	require.True(t, ok)
+	assert.Equal(t, "t300", auth.Tenant)
+	assert.Equal(t, token, auth.Token)
+	assert.Equal(t, "t300", TenantFromRequest(r))
+	assert.Equal(t, "x1", XSRFTokenFromRequest(r))
+}
+
+func Test_AuthFromRequest_HeaderBeatsCookie(t *testing.T) {
+	cookieToken := makeUnsignedJWT(t, map[string]any{"ten": "cookie"})
+	headerToken := makeUnsignedJWT(t, map[string]any{"ten": "header"})
+
+	r := newCookieRequest(t, http.MethodGet, cookieToken, "", "")
+	r.Header.Set("Authorization", "Bearer "+headerToken)
+	auth, ok := AuthFromRequest(r)
+	require.True(t, ok)
+	assert.Equal(t, "header", auth.Tenant)
+
+	r = newCookieRequest(t, http.MethodGet, cookieToken, "", "")
+	r.SetBasicAuth("t100/jane", "pw")
+	auth, ok = AuthFromRequest(r)
+	require.True(t, ok)
+	assert.Equal(t, "t100", auth.Tenant)
+	assert.Equal(t, "pw", auth.Password)
+}
+
+func Test_TenantContext_CookieXSRF(t *testing.T) {
+	token := makeUnsignedJWT(t, map[string]any{"ten": "t300"})
+	ms := &Microservice{}
+
+	run := func(opts TenantContextOptions, r *http.Request) (int, string, string) {
+		var tenant, xsrf string
+		h := ms.TenantContext(opts)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			tenant = TenantFromContext(r.Context())
+			xsrf = XSRFTokenFromContext(r.Context())
+			w.WriteHeader(http.StatusOK)
+		}))
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, r)
+		return w.Code, tenant, xsrf
+	}
+
+	t.Run("GET without XSRF allowed", func(t *testing.T) {
+		code, tenant, _ := run(TenantContextOptions{}, newCookieRequest(t, http.MethodGet, token, "", ""))
+		assert.Equal(t, http.StatusOK, code)
+		assert.Equal(t, "t300", tenant)
+	})
+	for _, m := range []string{http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete} {
+		t.Run(m+" matching XSRF passes", func(t *testing.T) {
+			code, tenant, xsrf := run(TenantContextOptions{}, newCookieRequest(t, m, token, "abc", "abc"))
+			assert.Equal(t, http.StatusOK, code)
+			assert.Equal(t, "t300", tenant)
+			assert.Equal(t, "abc", xsrf)
+		})
+		t.Run(m+" missing XSRF header forbidden", func(t *testing.T) {
+			code, _, _ := run(TenantContextOptions{}, newCookieRequest(t, m, token, "abc", ""))
+			assert.Equal(t, http.StatusForbidden, code)
+		})
+	}
+	t.Run("mismatch forbidden", func(t *testing.T) {
+		code, _, _ := run(TenantContextOptions{}, newCookieRequest(t, http.MethodPost, token, "abc", "abd"))
+		assert.Equal(t, http.StatusForbidden, code)
+	})
+	t.Run("missing cookie forbidden", func(t *testing.T) {
+		code, _, _ := run(TenantContextOptions{}, newCookieRequest(t, http.MethodPost, token, "", "abc"))
+		assert.Equal(t, http.StatusForbidden, code)
+	})
+	t.Run("check disabled", func(t *testing.T) {
+		code, _, _ := run(TenantContextOptions{DisableXSRFCheck: true}, newCookieRequest(t, http.MethodPost, token, "", ""))
+		assert.Equal(t, http.StatusOK, code)
+	})
+	t.Run("header auth is not checked", func(t *testing.T) {
+		r := httptest.NewRequest(http.MethodPost, "/devices", nil)
+		r.Header.Set("Authorization", "Bearer "+token)
+		code, _, _ := run(TenantContextOptions{}, r)
+		assert.Equal(t, http.StatusOK, code)
+	})
+	t.Run("custom OnError receives ErrInvalidXSRFToken", func(t *testing.T) {
+		var got error
+		code, _, _ := run(TenantContextOptions{OnError: func(w http.ResponseWriter, _ *http.Request, err error) {
+			got = err
+			w.WriteHeader(http.StatusTeapot)
+		}}, newCookieRequest(t, http.MethodPost, token, "", ""))
+		assert.Equal(t, http.StatusTeapot, code)
+		assert.ErrorIs(t, got, ErrInvalidXSRFToken)
+	})
+}
