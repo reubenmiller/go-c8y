@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"log/slog"
@@ -397,45 +398,142 @@ func MiddlewareAddCookies(cookies []*http.Cookie) resty.RequestMiddleware {
 
 var HeaderAuthorization = "Authorization"
 
+// MiddlewareAuthorization sets the Authorization header from the given
+// credentials unless the request already has one. The header value is chosen by
+// authorizationFromOptions, which Client.AuthorizationHeader shares.
 func MiddlewareAuthorization(auth authentication.AuthOptions) resty.RequestMiddleware {
 	return func(c *resty.Client, r *resty.Request) error {
 		// Don't override the authorization header if already set
 		if v := r.Header.Get(HeaderAuthorization); v != "" {
 			return nil
 		}
-		for _, authType := range auth.GetAuthTypes() {
-			switch authType {
-			case authentication.AuthTypeBasic:
-				user := authentication.JoinTenantUser(auth.Tenant, auth.Username)
-				if user != "" && auth.Password != "" {
-					r.SetBasicAuth(user, auth.Password)
-					return nil
-				}
-			case authentication.AuthTypeBearer:
-				if auth.Token != "" {
-					r.Header.Set(HeaderAuthorization, fmt.Sprintf("Bearer %s", auth.Token))
-					slog.Info("Auth", "value", r.Header.Get(HeaderAuthorization))
-
-					return nil
-				}
-			case authentication.AuthTypeUnset:
-				if auth.Token != "" {
-					r.Header.Set(HeaderAuthorization, fmt.Sprintf("Bearer %s", auth.Token))
-					slog.Info("Auth", "value", r.Header.Get(HeaderAuthorization))
-					return nil
-				}
-				user := authentication.JoinTenantUser(auth.Tenant, auth.Username)
-				if user != "" && auth.Password != "" {
-					r.SetBasicAuth(user, auth.Password)
-					return nil
-				}
-			case authentication.AuthTypeNone:
-				return nil
-			}
+		if v := authorizationFromOptions(auth); v != "" {
+			r.Header.Set(HeaderAuthorization, v)
 		}
-
 		return nil
 	}
+}
+
+// authorizationFromOptions returns the Authorization header value for the given
+// credentials, honouring AuthOptions.AuthType: the first auth type that yields
+// usable credentials wins. With no auth type set a token takes priority over
+// basic credentials. It returns "" when there are no usable credentials.
+func authorizationFromOptions(auth authentication.AuthOptions) string {
+	basic := func() string {
+		user := authentication.JoinTenantUser(auth.Tenant, auth.Username)
+		if user == "" || auth.Password == "" {
+			return ""
+		}
+		return basicAuthorization(user, auth.Password)
+	}
+	bearer := func() string {
+		if auth.Token == "" {
+			return ""
+		}
+		return bearerAuthorization(auth.Token)
+	}
+	for _, authType := range auth.GetAuthTypes() {
+		var v string
+		switch authType {
+		case authentication.AuthTypeBasic:
+			v = basic()
+		case authentication.AuthTypeBearer:
+			v = bearer()
+		case authentication.AuthTypeUnset:
+			if v = bearer(); v == "" {
+				v = basic()
+			}
+		case authentication.AuthTypeNone:
+			return ""
+		}
+		if v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
+func basicAuthorization(user, password string) string {
+	return "Basic " + base64.StdEncoding.EncodeToString([]byte(user+":"+password))
+}
+
+func bearerAuthorization(token string) string {
+	return "Bearer " + token
+}
+
+// AuthorizationHeader returns the Authorization header value the client would
+// send for a request made with ctx, or "" (and no error) when the client has no
+// credentials for it. Use it for requests which are forwarded without going
+// through the client, e.g. by a reverse proxy.
+//
+// The same precedence as a normal request applies:
+//
+//  1. Requests marked as unauthenticated (contexthelpers.WithNoAuth) return "".
+//  2. Per-request credentials in ctx (api.WithAuth, api.WithServiceUser): a token
+//     is sent as Bearer; username/password are sent as Basic, or exchanged for a
+//     cached bearer token when context token exchange is enabled
+//     (see SetContextTokenExchange), falling back to Basic.
+//  3. The client's token source (credential-backed automatic source, device
+//     certificate login, or an explicit AuthOptions.TokenSource). The token is
+//     cached and renewed by the source when it expires, so a long-lived caller
+//     can call AuthorizationHeader for each forwarded request. An error from the
+//     source is returned.
+//  4. The client's static credentials (Client.Auth), chosen by AuthType.
+//
+// Renewal is limited to what the token source does (renew on expiry). The
+// client's retry-on-401 logic only runs for requests the client sends itself, so
+// a caller forwarding requests must call Login again if the server rejects the
+// token before it expires.
+func (c *Client) AuthorizationHeader(ctx context.Context) (string, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if ctxhelpers.IsNoAuth(ctx) {
+		return "", nil
+	}
+	if auth, ok := authentication.AuthFromContext(ctx); ok {
+		if v := c.contextAuthorization(ctx, auth); v != "" {
+			return v, nil
+		}
+	} else if v, err := c.tokenSourceAuthorization(ctx); err != nil || v != "" {
+		return v, err
+	}
+	c.clientMu.Lock()
+	auth := c.Auth
+	c.clientMu.Unlock()
+	return authorizationFromOptions(auth), nil
+}
+
+// contextAuthorization mirrors MiddlewareContextAuthorization for credentials
+// carried in the context.
+func (c *Client) contextAuthorization(ctx context.Context, auth authentication.AuthOptions) string {
+	if auth.Token != "" {
+		return bearerAuthorization(auth.Token)
+	}
+	if auth.Username == "" || auth.Password == "" {
+		return ""
+	}
+	if !ctxhelpers.IsSkipContextTokenExchange(ctx) {
+		if token := c.contextTokenFor(auth); token != "" {
+			return bearerAuthorization(token)
+		}
+	}
+	return basicAuthorization(authentication.JoinTenantUser(auth.Tenant, auth.Username), auth.Password)
+}
+
+// tokenSourceAuthorization mirrors TokenSourceMiddleware.
+func (c *Client) tokenSourceAuthorization(ctx context.Context) (string, error) {
+	if c.tokenSource == nil || ctxhelpers.IsSkipTokenSource(ctx) || ctxhelpers.IsDryRun(ctx) {
+		return "", nil
+	}
+	tok, err := c.tokenSource.Token()
+	if err != nil {
+		return "", fmt.Errorf("token source: %w", err)
+	}
+	if tok == nil || tok.AccessToken == "" {
+		return "", nil
+	}
+	return bearerAuthorization(tok.AccessToken), nil
 }
 
 func MiddlewareRemoveEmptyTenantID() resty.RequestMiddleware {
