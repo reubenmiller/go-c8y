@@ -7,7 +7,7 @@ require (
 	github.com/google/go-querystring v1.2.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/hashicorp/yamux v0.1.2
-	github.com/labstack/echo/v4 v4.16.0
+	github.com/labstack/echo/v4 v4.16.3
 	github.com/mdp/qrterminal/v3 v3.2.1
 	github.com/multiformats/go-multistream v0.6.1
 	github.com/obeattie/ohmyglob v0.0.0-20150811221449-290764208a0d
@@ -19,7 +19,7 @@ require (
 	github.com/vbauerster/mpb/v8 v8.16.2
 	go.mozilla.org/pkcs7 v0.10.0
 	go.uber.org/zap v1.28.0
-	golang.org/x/net v0.59.0
+	golang.org/x/net v0.60.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/robfig/cron.v2 v2.0.0-20150107220207-be2e0b0deed5
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
