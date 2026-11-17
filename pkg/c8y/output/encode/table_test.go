@@ -243,3 +243,78 @@ func TestTableMultilineValuesSanitized(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, buf.String(), "line1 line2")
 }
+
+func TestTableColumnWidthRules(t *testing.T) {
+	body := `[
+		{"id": "1", "status": "OK", "description": "a very long description which goes on and on", "lastUpdated": "now", "name": "abc"},
+		{"id": "22", "status": "OK", "description": "short", "lastUpdated": "now", "name": "abcdefghijklmnop"}
+	]`
+	rules := map[string]encode.ColumnWidthRule{
+		"id":          {Width: 12},   // fixed width wider than content
+		"description": {Width: 15},   // fixed width narrower than content
+		"status":      {MinWidth: 8}, // minimum reserves space
+		"name":        {MaxWidth: 6}, // maximum caps sampled width
+		"lastUpdated": {Width: 5},    // never narrower than the header
+	}
+	rw := &recordingRowWriter{}
+	err := output.Render(context.Background(),
+		output.FromBytes([]byte(body), ""),
+		encode.NewTableWithWriter(rw, encode.TableOptions{
+			Columns:        []string{"id", "status", "description", "lastUpdated", "name"},
+			MaxColumnWidth: 30,
+			ColumnPadding:  2,
+			ColumnWidth: func(name string) encode.ColumnWidthRule {
+				return rules[name]
+			},
+		}))
+	require.NoError(t, err)
+
+	widths := map[string]int{}
+	for _, col := range rw.columns {
+		widths[col.Name] = col.Width
+	}
+	assert.Equal(t, map[string]int{
+		"id":          12,
+		"status":      8,
+		"description": 15,
+		"lastUpdated": len("lastUpdated"),
+		"name":        6,
+	}, widths)
+}
+
+func TestTableColumnWidthRuleZeroKeepsDefaults(t *testing.T) {
+	body := `[{"id": "1", "name": "device-1"}]`
+	render := func(opts encode.TableOptions) []encode.Column {
+		rw := &recordingRowWriter{}
+		err := output.Render(context.Background(),
+			output.FromBytes([]byte(body), ""),
+			encode.NewTableWithWriter(rw, opts))
+		require.NoError(t, err)
+		return rw.columns
+	}
+	base := encode.TableOptions{Columns: []string{"id", "name"}, ColumnPadding: 3, MinColumnWidth: 4}
+	withHook := base
+	withHook.ColumnWidth = func(string) encode.ColumnWidthRule { return encode.ColumnWidthRule{} }
+	assert.Equal(t, render(base), render(withHook))
+}
+
+func TestTableColumnWidthRuleMaxOverridesGlobalMin(t *testing.T) {
+	body := `[{"id": "1", "tags": "alpha, beta, gamma"}]`
+	rw := &recordingRowWriter{}
+	err := output.Render(context.Background(),
+		output.FromBytes([]byte(body), ""),
+		encode.NewTableWithWriter(rw, encode.TableOptions{
+			Columns:        []string{"id", "tags"},
+			MinColumnWidth: 8,
+			ColumnPadding:  4,
+			ColumnWidth: func(name string) encode.ColumnWidthRule {
+				if name == "tags" {
+					return encode.ColumnWidthRule{MaxWidth: 6}
+				}
+				return encode.ColumnWidthRule{}
+			},
+		}))
+	require.NoError(t, err)
+	assert.Equal(t, 12, rw.columns[0].Width, "global min + padding still applies to other columns")
+	assert.Equal(t, 6, rw.columns[1].Width, "per-column max wins over the global min")
+}
