@@ -26,6 +26,24 @@ type Column struct {
 	Align Align
 }
 
+// ColumnWidthRule constrains the width of a single column. All values are
+// the rendered column width in characters (column padding is not added);
+// zero means unset. A column is never narrower than its header.
+type ColumnWidthRule struct {
+	// Width is a fixed column width. It takes precedence over MinWidth
+	// and MaxWidth, and over the sampled cell widths.
+	Width int
+	// MinWidth is the minimum column width.
+	MinWidth int
+	// MaxWidth is the maximum column width.
+	MaxWidth int
+}
+
+// IsZero reports whether the rule leaves the column width unconstrained.
+func (r ColumnWidthRule) IsZero() bool {
+	return r.Width <= 0 && r.MinWidth <= 0 && r.MaxWidth <= 0
+}
+
 // RowWriter renders resolved table rows. Implementations own the
 // presentation (borders, colours); the Table engine owns column resolution,
 // width sampling and cell extraction.
@@ -75,6 +93,12 @@ type TableOptions struct {
 	// not fit are dropped (the last kept column may be shrunk to the
 	// remaining space). Zero means unlimited.
 	MaxTableWidth int
+	// ColumnWidth optionally returns width constraints for an individual
+	// column, overriding MinColumnWidth, MinEmptyColumnWidth,
+	// MaxColumnWidth and ColumnPadding for that column. It is called once
+	// per resolved column name; a nil func or a zero ColumnWidthRule keeps
+	// the default behaviour.
+	ColumnWidth func(name string) ColumnWidthRule
 	// Formatter extracts and formats cell values. The default reads the
 	// column path, aligning numbers right and everything else left.
 	Formatter CellFormatter
@@ -196,19 +220,41 @@ func (e *Table) resolveColumns(names []string, rows [][]sampledCell) []Column {
 	used := 0
 	columns := make([]Column, 0, len(names))
 	for i, name := range names {
-		cellWidth, hasValue, align := e.measureColumn(rows, i)
+		var rule ColumnWidthRule
+		if e.opts.ColumnWidth != nil {
+			rule = e.opts.ColumnWidth(name)
+		}
+		cellWidth, hasValue, align := e.measureColumn(rows, i, rule)
 
 		minWidth := e.opts.MinColumnWidth
 		if !hasValue && e.opts.MinEmptyColumnWidth > 0 {
 			minWidth = e.opts.MinEmptyColumnWidth
 		}
 
-		paddedWidth := cellWidth + e.opts.ColumnPadding
-		if paddedWidth > e.opts.MaxColumnWidth {
-			paddedWidth = e.opts.MaxColumnWidth
+		var colWidth int
+		switch {
+		case rule.Width > 0:
+			colWidth = max(rule.Width, displayWidth(name))
+		case !rule.IsZero():
+			upper := e.opts.MaxColumnWidth
+			if rule.MaxWidth > 0 {
+				upper = rule.MaxWidth
+			}
+			lower := minWidth + e.opts.ColumnPadding
+			if rule.MinWidth > 0 {
+				lower = rule.MinWidth
+			} else if rule.MaxWidth > 0 {
+				// an explicit maximum wins over the global minimum
+				lower = min(lower, rule.MaxWidth)
+			}
+			colWidth = max(min(cellWidth+e.opts.ColumnPadding, upper), lower, displayWidth(name))
+		default:
+			paddedWidth := cellWidth + e.opts.ColumnPadding
+			if paddedWidth > e.opts.MaxColumnWidth {
+				paddedWidth = e.opts.MaxColumnWidth
+			}
+			colWidth = max(paddedWidth, minWidth+e.opts.ColumnPadding, displayWidth(name))
 		}
-
-		colWidth := max(paddedWidth, minWidth+e.opts.ColumnPadding, displayWidth(name))
 
 		if e.opts.MaxTableWidth > 0 && used+colWidth+separatorOverhead > e.opts.MaxTableWidth {
 			leftOver := e.opts.MaxTableWidth - used - separatorOverhead - tableEndBuffer
@@ -226,7 +272,13 @@ func (e *Table) resolveColumns(names []string, rows [][]sampledCell) []Column {
 // measureColumn returns the widest display value of a column across the
 // sampled rows, whether any row has a value, and the alignment of the first
 // non-empty cell.
-func (e *Table) measureColumn(rows [][]sampledCell, i int) (cellWidth int, hasValue bool, align Align) {
+func (e *Table) measureColumn(rows [][]sampledCell, i int, rule ColumnWidthRule) (cellWidth int, hasValue bool, align Align) {
+	measureWidth := e.opts.MaxColumnWidth
+	if rule.Width > 0 {
+		measureWidth = rule.Width
+	} else if rule.MaxWidth > 0 {
+		measureWidth = rule.MaxWidth
+	}
 	align = AlignLeft
 	alignSet := false
 	for _, row := range rows {
@@ -238,7 +290,7 @@ func (e *Table) measureColumn(rows [][]sampledCell, i int) (cellWidth int, hasVa
 				alignSet = true
 			}
 		}
-		if w := displayWidth(e.transform(cell, e.opts.MaxColumnWidth)); w > cellWidth {
+		if w := displayWidth(e.transform(cell, measureWidth)); w > cellWidth {
 			cellWidth = w
 		}
 	}
