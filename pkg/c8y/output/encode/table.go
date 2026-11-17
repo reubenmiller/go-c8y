@@ -97,7 +97,7 @@ type TableOptions struct {
 	// column, overriding MinColumnWidth, MinEmptyColumnWidth,
 	// MaxColumnWidth and ColumnPadding for that column. It is called once
 	// per resolved column name; a nil func or a zero ColumnWidthRule keeps
-	// the default behavior.
+	// the default behaviour.
 	ColumnWidth func(name string) ColumnWidthRule
 	// Formatter extracts and formats cell values. The default reads the
 	// column path, aligning numbers right and everything else left.
