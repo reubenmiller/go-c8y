@@ -10,20 +10,6 @@ linters:
   disable:
     - errcheck
   settings:
-    staticcheck:
-      # Default checks, minus SA4023. staticcheck's nilness analysis (used by
-      # SA4023) panics on Go 1.27 generic methods ("index out of range" on
-      # jsonmodels_test), which fails the whole lint run. Re-enable SA4023
-      # once staticcheck supports generic methods.
-      checks:
-        - all
-        - -ST1000
-        - -ST1003
-        - -ST1016
-        - -ST1020
-        - -ST1021
-        - -ST1022
-        - -SA4023
     govet:
       disable:
         - fieldalignment
