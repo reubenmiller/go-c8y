@@ -10,6 +10,8 @@ import (
 )
 
 // SubscribeToOperations subscribes to operations added to the microservice's agent managed object. onMessageFunc is called on every operation
+//
+// Deprecated: Use SubscribeNotifications (Notification 2.0).
 func (m *Microservice) SubscribeToOperations(user model.ServiceUser, onMessageFunc func(*realtime.Message)) error {
 	return m.SubscribeToNotifications(
 		user,
@@ -19,6 +21,11 @@ func (m *Microservice) SubscribeToOperations(user model.ServiceUser, onMessageFu
 }
 
 // SubscribeToNotifications subscribes to c8y notifications on the Microservice's agent managed object
+// over the legacy CometD realtime API. The reader goroutine stops when the
+// realtime client closes the subscription channel.
+//
+// Deprecated: Use SubscribeNotifications (Notification 2.0), which is
+// tenant-aware and stops when its context is cancelled.
 func (m *Microservice) SubscribeToNotifications(user model.ServiceUser, realtimeChannel string, onMessageFunc func(*realtime.Message)) error {
 	realtimeClient, err := m.NewRealtimeClient(user)
 
@@ -33,12 +40,10 @@ func (m *Microservice) SubscribeToNotifications(user model.ServiceUser, realtime
 
 	err = <-realtimeClient.Subscribe(context.Background(), realtimeChannel, ch)
 
+	// The realtime client owns ch and closes it when the subscription ends,
+	// which stops this goroutine.
 	go func() {
-		defer func() {
-			close(ch)
-		}()
-		for {
-			msg := <-ch
+		for msg := range ch {
 			if onMessageFunc != nil {
 				onMessageFunc(msg)
 			}

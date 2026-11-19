@@ -31,9 +31,12 @@ func NewHub() *Hub {
 	}
 }
 
-func (h *Hub) Run() {
+// Run dispatches messages until done is closed.
+func (h *Hub) Run(done <-chan struct{}) {
 	for {
 		select {
+		case <-done:
+			return
 		case client := <-h.register:
 			h.clients[client] = true
 		case subscription := <-h.unregister:
@@ -49,7 +52,11 @@ func (h *Hub) Run() {
 				matchesAction := client.Action == "" || client.Action != "" && (client.Action == ActionWildcard || strings.Contains(message.Action, client.Action))
 
 				if matchesPattern && matchesAction {
-					client.Out <- message
+					select {
+					case client.Out <- message:
+					case <-done:
+						return
+					}
 				}
 			}
 		}

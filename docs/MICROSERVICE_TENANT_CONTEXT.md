@@ -181,6 +181,40 @@ verified tenant. `ms.RequireRoles("ROLE_X", ...)` answers `403` unless the
 caller has all roles; it validates the caller itself when the surrounding
 middleware uses `ValidateNone`.
 
+### 2b. Tenant lifecycle
+
+| Java SDK | go-c8y v2 |
+|---|---|
+| `MicroserviceSubscriptionAddedEvent` / `RemovedEvent` | `ms.WatchSubscriptions(ctx, WatchOptions{OnTenantAdded, OnTenantRemoved, OnCredentialsChanged})` |
+| `runForEachTenant` | `ms.ForEachTenant(ctx, fn)`; pass `pipeline.Options{Workers: n}` to run tenants concurrently |
+| `MicroserviceSettingsService.get` (10 min cache) | `ms.Settings(ctx)`, cached per tenant for `ms.SettingsTTL` (default 10 minutes) |
+| Notification 2.0 per tenant | `ms.SubscribeNotifications(ctx, tenant, opts, handler)` |
+
+`WatchSubscriptions` polls `/application/currentApplication/subscriptions`
+(default every 30 seconds) until its context is cancelled. On the first poll it
+reports every subscribed tenant as added. It keeps `ServiceUsers` current;
+while it runs, `GetServiceUser` no longer refreshes on a cache miss, so an
+unsubscribed tenant stays unknown. Callbacks run one at a time in tenant order:
+start goroutines for long work. Each replica watches independently.
+
+`SubscribeNotifications` creates the subscription and token as the tenant's
+service user, acknowledges each message after the handler returns `nil`,
+reconnects with a fresh token after a connection loss, and stops all of its
+goroutines when the context is cancelled. Start it in `OnTenantAdded` with a
+per-tenant context and cancel that context in `OnTenantRemoved` (see
+`examples/microservice/notification2-microservice`).
+
+Isolation and headers:
+
+- With `C8Y_MICROSERVICE_ISOLATION=PER_TENANT`, the service user comes from
+  `C8Y_TENANT`, `C8Y_USER` and `C8Y_PASSWORD`; the subscriptions endpoint is
+  not called.
+- When `APPLICATION_KEY` is set, every request carries
+  `X-Cumulocity-Application-Key`.
+- A `401` on a service-user request triggers a background refresh of the
+  service users (at most once every 10 seconds), for example after a service
+  user was recreated.
+
 ### 3. Simplifying pkg/microservice
 
 * **echo removed from the module.** The health/env/logfile endpoints are now
