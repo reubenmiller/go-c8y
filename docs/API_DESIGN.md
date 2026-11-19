@@ -579,6 +579,20 @@ if api.ErrHasStatus(result.Err, 404) {
 }
 ```
 
+### Deleting resources that do not exist
+
+Deletes are idempotent: deleting a resource that is already gone is not an error. The result has `Err == nil`, `Status == op.StatusSkipped`, and `HTTPStatus == 404`. Delete-by-name and delete-by-external-ID behave the same way when the lookup finds nothing. Other errors, such as `401`, `403`, or `5xx`, are still returned.
+
+```go
+result := client.ManagedObjects.Delete(ctx, id, managedobjects.DeleteOptions{})
+if result.Err != nil {
+    return result.Err // the delete failed
+}
+if result.Status == op.StatusSkipped {
+    // the managed object did not exist
+}
+```
+
 ### Error Information
 
 Results provide comprehensive error context:

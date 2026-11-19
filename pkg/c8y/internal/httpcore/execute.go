@@ -193,13 +193,15 @@ func ExecuteNoContent(ctx context.Context, req *TryRequest, extraMeta ...map[str
 	httpReq := dryRunRequest(ctx, resp)
 
 	if err != nil {
-		// Unlike the other executors, the HTTP status is only taken from the
-		// response (which is nil on error), so callers' IgnoreNotFound() does
-		// not apply to the request's own 404. Kept as is: changing it would
-		// change Delete semantics (tracked as a follow-up).
-		result := failed[core.NoContent](err, true)
+		// The response is nil on an HTTP error, so take the status from the
+		// error. Without it, IgnoreNotFound() and IsNotFound() on a Delete
+		// result would never see the request's own 404.
+		result := failed[core.NoContent](err, true).WithHTTPStatus(getStatusCodeFromError(err))
 		if resp != nil {
-			result = result.WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
+			result = result.WithDuration(resp.Duration())
+			if code := resp.StatusCode(); code != 0 {
+				result = result.WithHTTPStatus(code)
+			}
 		}
 		return result.WithRequest(httpReq)
 	}
