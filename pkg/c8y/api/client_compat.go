@@ -274,7 +274,7 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) *Reque
 	}
 
 	if options.DoNotParseResponse {
-		req.SetDoNotParseResponse(true)
+		req.SetResponseDoNotParse(true)
 	}
 
 	// Prepare request hook
