@@ -95,6 +95,7 @@ v2 is a new module, `github.com/reubenmiller/go-c8y/v2`. Entries marked **Breaki
 
 * Vendored the latest core OpenAPI spec. Added `Tenants.RestrictedRoles`, `SmartRestTemplates.BindExternalID`, `TrustedCertificates.CreateBulk`, `UnassignMany` on `ChildDevices`/`ChildAssets`/`ChildAdditions`, `TOTP.GetActivity`, and `Applications.DownloadBinary`.
 * Fixed `Applications.ListByOwner`, which called `/application/applicationsByTenant/{tenantId}` instead of `/application/applicationsByOwner/{tenantId}`.
+* Fixed `zipUtilities.UnzipFile`, which extracted every entry except the given `names`; it now extracts only the named entries (case-insensitive), and everything when `names` is empty.
 
 ### Tooling and documentation
 

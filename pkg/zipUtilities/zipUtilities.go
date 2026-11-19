@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -102,6 +103,9 @@ func zipIt(source, target string, excludeRoot bool) error {
 	return err
 }
 
+// UnzipFile extracts the zip file src into dest and returns the paths of the
+// extracted files and folders. When names is not empty, only the entries whose
+// name matches one of names (case-insensitive) are extracted.
 func UnzipFile(src string, dest string, names []string) ([]string, error) {
 	var filenames []string
 
@@ -113,19 +117,11 @@ func UnzipFile(src string, dest string, names []string) ([]string, error) {
 
 	for _, f := range r.File {
 
-		// Only unzip names files (if given), otherwise unzip everything
-		if len(names) > 0 {
-			found := true
-			for _, iName := range names {
-				if strings.EqualFold(iName, f.Name) {
-					found = false
-					break
-				}
-			}
-			if !found {
-				// Skip file
-				continue
-			}
+		// Only unzip the named files (if given, case-insensitive), otherwise unzip everything
+		if len(names) > 0 && !slices.ContainsFunc(names, func(name string) bool {
+			return strings.EqualFold(name, f.Name)
+		}) {
+			continue
 		}
 
 		// Store filename/path for returning and using later on
