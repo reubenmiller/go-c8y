@@ -121,11 +121,25 @@ if err != nil {
     return err
 }
 
-// Functional composition
-result2 := op.MapResult(result, func(op jsonmodels.Operation) string {
-    return op.ID()
+// Functional composition (generic methods, Go 1.27+)
+ids := result.Map(func(o jsonmodels.Operation) string {
+    return o.ID()
 })
+
+// Decode into your own types
+type MyDevice struct {
+    ID   string `json:"id"`
+    Name string `json:"name"`
+}
+device, err := client.ManagedObjects.Get(ctx, id, managedobjects.GetOptions{}).Decode[MyDevice]()
+for d, err := range client.ManagedObjects.ListAll(ctx, opts).As[MyDevice]() { /* ... */ }
+level, err := mo.GetAs[int]("c8y_Battery.level")
+pos, err := mo.Fragment[model.Position]()
 ```
+
+Generic methods exist only on value types (`op.Result`, `pagination.Iterator`,
+`jsondoc.JSONDoc` and every `jsonmodels` type). Service methods stay
+non-generic so services can be wrapped in your own interfaces for mocking.
 
 ## JSON Models
 

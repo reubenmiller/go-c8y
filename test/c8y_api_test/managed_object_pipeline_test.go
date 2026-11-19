@@ -164,7 +164,7 @@ func Test_ManagedObjectPipelineWithMapResult(t *testing.T) {
 		result := client.ManagedObjects.Get(ctx, id, managedobjects.GetOptions{})
 
 		// Transform Result[ManagedObject] to Result[string]
-		idResult := op.MapResult(result, func(mo jsonmodels.ManagedObject) string {
+		idResult := result.Map(func(mo jsonmodels.ManagedObject) string {
 			return mo.ID()
 		})
 

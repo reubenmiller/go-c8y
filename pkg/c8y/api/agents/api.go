@@ -199,7 +199,7 @@ func (s *Service) lookupByQuery(ctx context.Context, query, label string, meta m
 	if result.Err != nil {
 		return "", result.Err
 	}
-	for item := range op.Iter(result) {
+	for item := range result.Seq() {
 		if meta != nil {
 			meta["id"] = item.ID()
 			meta["name"] = item.Name()

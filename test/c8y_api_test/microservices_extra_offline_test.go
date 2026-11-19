@@ -8,7 +8,6 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/internal/pkg/testingutils"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/microservices"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -20,7 +19,7 @@ func Test_Microservices_List(t *testing.T) {
 	ctx := context.Background()
 	result := client.Microservices.List(ctx, microservices.ListOptions{})
 	require.NoError(t, result.Err)
-	items, err := op.ToSliceR(result)
+	items, err := result.Collect()
 	require.NoError(t, err)
 	assert.GreaterOrEqual(t, len(items), 1)
 }

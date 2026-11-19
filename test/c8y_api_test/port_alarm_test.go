@@ -165,7 +165,7 @@ func TestAlarmService_GetAlarmCollection(t *testing.T) {
 	assert.Equal(t, 3, alarmCollection.Data.Length())
 
 	// Convert Result to slice for easier testing
-	alarmList, err := op.ToSliceR(alarmCollection)
+	alarmList, err := alarmCollection.Collect()
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(alarmList))
 
@@ -186,7 +186,7 @@ func TestAlarmService_GetAlarmCollection(t *testing.T) {
 	assert.Equal(t, http.StatusOK, alarmCollection.HTTPStatus)
 	assert.Equal(t, 1, alarmCollection.Data.Length())
 
-	alarmList2, err := op.ToSliceR(alarmCollection)
+	alarmList2, err := alarmCollection.Collect()
 	assert.NoError(t, err)
 	assert.Equal(t, alarm2.Data.ID(), alarmList2[0].ID())
 }
@@ -260,7 +260,7 @@ func TestAlarmService_BulkUpdateAlarms(t *testing.T) {
 	assert.Equal(t, http.StatusOK, alarmCollection.HTTPStatus)
 	assert.Equal(t, 3, alarmCollection.Data.Length())
 
-	alarmList, err := op.ToSliceR(alarmCollection)
+	alarmList, err := alarmCollection.Collect()
 	assert.NoError(t, err)
 
 	// should be in reverse order

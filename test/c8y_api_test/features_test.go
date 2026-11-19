@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,7 +23,7 @@ func Test_Features_List_DryRun(t *testing.T) {
 	result := client.Features.List(ctx)
 	require.NoError(t, result.Err)
 
-	for item := range op.Iter(result) {
+	for item := range result.Seq() {
 		slog.Info("feature", "key", item.Key(), "phase", item.Phase(), "active", item.Active())
 	}
 	assert.Equal(t, http.StatusOK, result.HTTPStatus)

@@ -194,7 +194,7 @@ func (s *Syncer) listTrustedCertificates(ctx context.Context) (map[string]jsonmo
 	result := s.Client.TrustedCertificates.List(ctx, trustedcertificates.ListOptions{
 		PaginationOptions: pagination.PaginationOptions{PageSize: 2000},
 	})
-	for cert, err := range op.Iter2(result) {
+	for cert, err := range result.Items() {
 		if err != nil {
 			return nil, err
 		}

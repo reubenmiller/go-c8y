@@ -188,8 +188,8 @@ func Throttle[T any](items iter.Seq2[T, error], interval time.Duration) iter.Seq
 //
 // Use Concat when you want deterministic ordering by source:
 //
-//	ops1 := op.Iter(client.Operations.ListAll(ctx, operations.ListOptions{Status: "PENDING"}))
-//	ops2 := op.Iter(client.Operations.ListAll(ctx, operations.ListOptions{Status: "EXECUTING"}))
+//	ops1 := client.Operations.ListAll(ctx, operations.ListOptions{Status: "PENDING"}).Seq()
+//	ops2 := client.Operations.ListAll(ctx, operations.ListOptions{Status: "EXECUTING"}).Seq()
 //	allOps := pipeline.Concat(ops1, ops2)  // All PENDING first, then all EXECUTING
 //	err := pipeline.ForEach(ctx, allOps, pipeline.Options{}, updateFn)
 //
@@ -212,8 +212,8 @@ func Concat[T any](sequences ...iter.Seq2[T, error]) iter.Seq2[T, error] {
 //
 // This gives you interleaved, non-deterministic ordering based on API response times:
 //
-//	ops1 := op.Iter(client.Operations.ListAll(ctx, operations.ListOptions{Status: "PENDING"}))
-//	ops2 := op.Iter(client.Operations.ListAll(ctx, operations.ListOptions{Status: "EXECUTING"}))
+//	ops1 := client.Operations.ListAll(ctx, operations.ListOptions{Status: "PENDING"}).Seq()
+//	ops2 := client.Operations.ListAll(ctx, operations.ListOptions{Status: "EXECUTING"}).Seq()
 //	allOps := pipeline.Merge(ops1, ops2)  // Items interleaved as they arrive
 //	err := pipeline.ForEach(ctx, allOps, pipeline.Options{}, updateFn)
 //
@@ -287,9 +287,9 @@ func Merge[T any](sequences ...iter.Seq2[T, error]) iter.Seq2[T, error] {
 //	devices := client.Devices.ListAll(ctx, opts).Items()
 //	throttled := pipeline.Throttle(devices, 500 * time.Millisecond)
 //	pendingOps := pipeline.Expand(throttled, func(d jsonmodels.ManagedObject) iter.Seq2[jsonmodels.Operation, error] {
-//	    return op.Iter(client.Operations.ListAll(ctx, operations.ListOptions{
+//	    return client.Operations.ListAll(ctx, operations.ListOptions{
 //	        DeviceID: d.ID(), Status: "PENDING",
-//	    }))
+//	    }).Seq()
 //	})
 //	err := pipeline.ForEach(ctx, pendingOps, pipeline.Options{Workers: 5}, updateFn)
 func Expand[T, U any](items iter.Seq2[T, error], fn func(T) iter.Seq2[U, error]) iter.Seq2[U, error] {

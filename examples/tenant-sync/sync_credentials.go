@@ -13,7 +13,6 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/microservices"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"gopkg.in/yaml.v3"
 )
 
@@ -142,7 +141,7 @@ func (s *Syncer) resolveServiceUserCredentials(ctx context.Context, targets []Ta
 		if result.Err != nil {
 			return fmt.Errorf("failed to list service users of credentials application %q: %w", name, result.Err)
 		}
-		for user, err := range op.Iter2(result) {
+		for user, err := range result.Items() {
 			if err != nil {
 				return fmt.Errorf("failed to read service users of credentials application %q: %w", name, err)
 			}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -20,7 +19,7 @@ func Test_GetFeatures(t *testing.T) {
 	require.NoError(t, result.Err)
 	assert.Equal(t, 200, result.HTTPStatus)
 
-	features, err := op.ToSliceR(result)
+	features, err := result.Collect()
 	require.NoError(t, err)
 	assert.Greater(t, len(features), 0, "Feature array should not be empty")
 

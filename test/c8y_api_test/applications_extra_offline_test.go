@@ -6,7 +6,6 @@ import (
 
 	"github.com/reubenmiller/go-c8y/v2/internal/pkg/testingutils"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/applications"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,7 +21,7 @@ func Test_Applications_ListByUser(t *testing.T) {
 	})
 	require.NoError(t, result.Err)
 	assert.Equal(t, 200, result.HTTPStatus)
-	_, err := op.ToSliceR(result)
+	_, err := result.Collect()
 	require.NoError(t, err)
 }
 

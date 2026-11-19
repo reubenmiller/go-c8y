@@ -120,14 +120,6 @@ func (d JSONDoc) IterBytes() iter.Seq[types.ByteProvider] {
 	}
 }
 
-func Decode[T any](d JSONDoc) (*T, error) {
-	var out T
-	if err := json.Unmarshal(d.raw, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
 // DecodeIter transforms an iterator of types that embed JSONDoc by JSON unmarshaling to type T.
 // Items that fail to unmarshal are skipped.
 // Works with both iter.Seq[JSONDoc] and iter.Seq[jsonmodels.X] (any type embedding JSONDoc).
@@ -137,7 +129,7 @@ func Decode[T any](d JSONDoc) (*T, error) {
 func DecodeIter[T any, F Unwrapper](seq iter.Seq[F]) iter.Seq[*T] {
 	return func(yield func(*T) bool) {
 		for doc := range seq {
-			v, err := Decode[T](doc.GetJSONDoc())
+			v, err := decodePtr[T](doc.GetJSONDoc())
 			if err != nil {
 				continue
 			}
@@ -156,7 +148,7 @@ func DecodeIter[T any, F Unwrapper](seq iter.Seq[F]) iter.Seq[*T] {
 func DecodeIterErr[T any, F Unwrapper](seq iter.Seq[F]) iter.Seq2[*T, error] {
 	return func(yield func(*T, error) bool) {
 		for doc := range seq {
-			v, err := Decode[T](doc.GetJSONDoc())
+			v, err := decodePtr[T](doc.GetJSONDoc())
 			if !yield(v, err) {
 				return
 			}
@@ -179,7 +171,7 @@ func DecodeSeq2[T any, F Unwrapper](seq iter.Seq2[F, error]) iter.Seq2[*T, error
 				continue
 			}
 			// Decode and yield (may have decoding error)
-			v, err := Decode[T](doc.GetJSONDoc())
+			v, err := decodePtr[T](doc.GetJSONDoc())
 			if !yield(v, err) {
 				return
 			}
@@ -262,4 +254,13 @@ type Facade struct {
 // GetJSONDoc returns the embedded JSONDoc. This allows Facade types to satisfy the Unwrapper interface.
 func (f Facade) GetJSONDoc() JSONDoc {
 	return f.JSONDoc
+}
+
+// decodePtr decodes d into a new T.
+func decodePtr[T any](d JSONDoc) (*T, error) {
+	var out T
+	if err := json.Unmarshal(d.raw, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
 }

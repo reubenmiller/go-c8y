@@ -6,7 +6,6 @@ import (
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/remoteaccess/remoteaccess_configurations"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 )
@@ -69,7 +68,7 @@ func Test_RemoteAccess(t *testing.T) {
 
 	assert.NoError(t, listResult.Err)
 	assert.GreaterOrEqual(t, listResult.Data.Length(), 1)
-	for item := range op.Iter(listResult) {
+	for item := range listResult.Seq() {
 		assert.NotEmpty(t, item.Hostname())
 	}
 

@@ -13,7 +13,6 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects/childadditions"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -33,7 +32,7 @@ func TestInventoryService_GetDevices(t *testing.T) {
 	assert.NoError(t, result.Err)
 	assert.Equal(t, http.StatusOK, result.HTTPStatus)
 
-	devices, err := op.ToSliceR(result)
+	devices, err := result.Collect()
 	assert.NoError(t, err)
 	assert.GreaterOrEqual(t, len(devices), pageSize, "Should have at least %d device(s)", pageSize)
 
@@ -151,7 +150,7 @@ func TestInventoryService_GetChildAdditions(t *testing.T) {
 	assert.NoError(t, items.Err)
 	assert.Equal(t, http.StatusOK, items.HTTPStatus)
 
-	children, err := op.ToSliceR(items)
+	children, err := items.Collect()
 	assert.NoError(t, err)
 	require.Len(t, children, 1)
 	assert.Equal(t, child01.Data.ID(), children[0].ID())

@@ -9,7 +9,6 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/currenttenant"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/usagestatistics"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -48,7 +47,7 @@ func Test_GetTenantStatistics(t *testing.T) {
 	require.NoError(t, result.Err)
 	assert.Equal(t, 200, result.HTTPStatus)
 
-	statistics, err := op.ToSliceR(result)
+	statistics, err := result.Collect()
 	require.NoError(t, err)
 	assert.LessOrEqual(t, len(statistics), 10, "At most 10 days should be returned")
 	assert.Greater(t, len(statistics), 0, "At least 1 day should be returned")
@@ -71,7 +70,7 @@ func Test_GetAllTenantsStatisticsSummary(t *testing.T) {
 	require.NoError(t, result.Err)
 	assert.Equal(t, 200, result.HTTPStatus)
 
-	summaries, err := op.ToSliceR(result)
+	summaries, err := result.Collect()
 	require.NoError(t, err)
 	assert.Greater(t, len(summaries), 0, "At least 1 summary should be returned")
 	assert.Greater(t, summaries[0].Get("deviceCount").Int(), int64(0), "Device count should be greater than 0")
@@ -99,7 +98,7 @@ func Test_GetTenantsWithNoSubtenants(t *testing.T) {
 	require.NoError(t, result.Err)
 	assert.Equal(t, 200, result.HTTPStatus)
 
-	tenantList, err := op.ToSliceR(result)
+	tenantList, err := result.Collect()
 	require.NoError(t, err)
 	assert.GreaterOrEqual(t, len(tenantList), 0, "Should be an array")
 }
@@ -173,7 +172,7 @@ func Test_GetApplicationReferences(t *testing.T) {
 	require.NoError(t, result.Err)
 	assert.Equal(t, 200, result.HTTPStatus)
 
-	references, err := op.ToSliceR(result)
+	references, err := result.Collect()
 	require.NoError(t, err)
 	assert.Greater(t, len(references), 0, "Should have at least 1 application reference")
 }
@@ -187,7 +186,7 @@ func Test_GetTenantLoginOptions(t *testing.T) {
 	require.NoError(t, result.Err)
 	assert.Equal(t, 200, result.HTTPStatus)
 
-	options, err := op.ToSliceR(result)
+	options, err := result.Collect()
 	require.NoError(t, err)
 	assert.Greater(t, len(options), 0, "Should have at least 1 login option")
 }

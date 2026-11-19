@@ -27,7 +27,7 @@ func Test_ManagedObjectCreation(t *testing.T) {
 	assert.Equal(t, result.Data.Length(), 1)
 
 	// decode to custom model
-	mo, err := jsondoc.Decode[model.ManagedObject](result.Data.JSONDoc)
+	mo, err := result.Data.Decode[model.ManagedObject]()
 	require.NoError(t, err)
 	assert.Equal(t, mo.ID, result.Data.ID())
 

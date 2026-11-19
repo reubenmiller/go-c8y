@@ -19,7 +19,6 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 )
 
 type CustomField struct {
@@ -66,7 +65,7 @@ func main() {
 	slog.Info("Response", "status", measurementsResult.HTTPStatus, "duration", measurementsResult.Duration)
 
 	// Generic iteration - access only common fields
-	for measurement := range op.Iter(measurementsResult) {
+	for measurement := range measurementsResult.Seq() {
 		slog.Info("Measurement found", "id", measurement.ID(), "type", measurement.Type())
 	}
 

@@ -2,14 +2,14 @@ package model
 
 import (
 	"encoding/json"
-	"errors"
 
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
 	"github.com/reubenmiller/go-c8y/v2/pkg/jsonUtilities"
 )
 
 // ErrFragmentNotFound is returned by the read-side fragment helpers when the requested
 // fragment key is absent from the document.
-var ErrFragmentNotFound = errors.New("fragment not found")
+var ErrFragmentNotFound = jsondoc.ErrKeyNotFound
 
 // Fragment is a self-describing custom fragment: a value that knows the top-level JSON
 // key it serialises under. Any user-defined type can implement it to gain typed,

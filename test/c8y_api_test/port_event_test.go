@@ -13,7 +13,6 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 )
@@ -65,7 +64,7 @@ func TestPortEventService_GetEvents(t *testing.T) {
 	result := client.Events.List(ctx, events.ListOptions{
 		Source: managedobjects.DeviceRef(device.ID()),
 	})
-	eventList, err := op.ToSliceR(result)
+	eventList, err := result.Collect()
 	assert.NoError(t, err)
 	assert.GreaterOrEqual(t, len(eventList), 3, "Should have at least 3 events")
 
@@ -76,7 +75,7 @@ func TestPortEventService_GetEvents(t *testing.T) {
 			PageSize: 2,
 		},
 	})
-	page1, err := op.ToSliceR(result2)
+	page1, err := result2.Collect()
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(page1), "First page should have exactly 2 events")
 }
@@ -162,7 +161,7 @@ func TestPortEventService_DeleteEvents(t *testing.T) {
 	result := client.Events.List(ctx, events.ListOptions{
 		Source: managedobjects.DeviceRef(device.ID()),
 	})
-	allEvents, err := op.ToSliceR(result)
+	allEvents, err := result.Collect()
 	assert.NoError(t, err)
 	assert.Equal(t, 4, len(allEvents))
 
@@ -178,7 +177,7 @@ func TestPortEventService_DeleteEvents(t *testing.T) {
 		result2 := client.Events.List(ctx, events.ListOptions{
 			Source: managedobjects.DeviceRef(device.ID()),
 		})
-		evts, err := op.ToSliceR(result2)
+		evts, err := result2.Collect()
 		return err == nil && len(evts) == 1 && evts[0].Type() == eventType2
 	}, 5*time.Second, 200*time.Millisecond, "Expected exactly 1 event of type %q to remain after deleting %q events", eventType2, eventType1)
 }

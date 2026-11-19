@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
 )
 
@@ -40,7 +39,7 @@ func TestList(t *testing.T) {
 	if !strings.HasSuffix(gotPath, "/user/t1/groups/42/roles") {
 		t.Errorf("path = %q, want .../user/t1/groups/42/roles", gotPath)
 	}
-	refs, err := op.ToSliceR(result)
+	refs, err := result.Collect()
 	if err != nil {
 		t.Fatalf("ToSliceR: %v", err)
 	}

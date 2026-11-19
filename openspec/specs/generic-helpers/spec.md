@@ -1,5 +1,8 @@
-## ADDED Requirements
+# generic-helpers Specification
 
+## Purpose
+Defines the generic convenience API on results, iterators and JSON documents (Go 1.27 generic methods), and the rule that service methods stay non-generic so services remain mockable.
+## Requirements
 ### Requirement: Result transformation methods
 `op.Result[T]` SHALL provide `Map[R any](fn func(T) R) Result[R]` and `FlatMap[R any](fn func(T) Result[R]) Result[R]`. Both SHALL keep the original error, status, and HTTP metadata when the result is an error, without calling `fn`.
 
@@ -12,7 +15,7 @@
 - **THEN** `r.Map(fn)` does not call `fn` and returns a result with the same error
 
 ### Requirement: Typed decoding
-`op.Result[T]` SHALL provide `Decode[U any]() (U, error)` and `IterAs[U any]() iter.Seq2[U, error]`. `jsondoc.JSONDoc` SHALL provide `Decode[U any]() (U, error)`, `GetAs[U any](key string) (U, error)`, and `Fragment[U interface{ FragmentKey() string }]() (U, error)`, available on every `jsonmodels` type through embedding. The constraint is written structurally so `jsondoc` does not import `model`; every `model.Fragment` satisfies it.
+`op.Result[T]` SHALL provide `Decode[U any]() (U, error)`, `IterAs[U any]() iter.Seq2[U, error]`, `Collect() ([]T, error)`, and `Seq() iter.Seq[T]` (the non-panicking replacement for `op.Iter`). `jsondoc.JSONDoc` SHALL provide `Decode[U any]() (U, error)`, `GetAs[U any](key string) (U, error)`, and `Fragment[U interface{ FragmentKey() string }]() (U, error)`, available on every `jsonmodels` type through embedding. The constraint is written structurally so `jsondoc` does not import `model`; every `model.Fragment` satisfies it.
 
 #### Scenario: Decode a managed object into a user struct
 - **WHEN** `client.ManagedObjects.Get(ctx, id, opts).Decode[MyDevice]()` is called
@@ -61,3 +64,4 @@ Exported methods on service types under `pkg/c8y/api/*` SHALL NOT have type para
 #### Scenario: Older toolchain
 - **WHEN** a user builds the module with Go 1.26 and `GOTOOLCHAIN=local`
 - **THEN** the build fails with Go's standard "go.mod requires go >= 1.27" error
+

@@ -7,7 +7,6 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/retentionrules"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 )
 
 // SyncRetentionRules ensures retention rules exist with the desired maximum
@@ -74,7 +73,7 @@ func (s *Syncer) listRetentionRules(ctx context.Context) (map[string]jsonmodels.
 	result := s.Client.RetentionRules.List(ctx, retentionrules.ListOptions{
 		PaginationOptions: pagination.PaginationOptions{PageSize: 2000},
 	})
-	for rule, err := range op.Iter2(result) {
+	for rule, err := range result.Items() {
 		if err != nil {
 			return nil, err
 		}

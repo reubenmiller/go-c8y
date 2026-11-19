@@ -9,7 +9,6 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
 	appversions "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/applications/versions"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/ui/plugins"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -55,7 +54,7 @@ func Test_ApplicationVersions_GetVersions(t *testing.T) {
 	require.NoError(t, result.Err)
 	assert.Equal(t, 200, result.HTTPStatus)
 
-	versions, err := op.ToSliceR(result)
+	versions, err := result.Collect()
 	require.NoError(t, err)
 	assert.NotEmpty(t, versions, "At least one application version should be found")
 	assert.Equal(t, "1.0.0", versions[0].Version())
@@ -75,7 +74,7 @@ func Test_ApplicationVersions_GetVersionByTag(t *testing.T) {
 
 	require.NoError(t, result.Err)
 
-	versions, err := op.ToSliceR(result)
+	versions, err := result.Collect()
 	require.NoError(t, err)
 
 	assert.Equal(t, 200, result.HTTPStatus)
@@ -100,7 +99,7 @@ func Test_ApplicationVersions_GetVersionByName(t *testing.T) {
 	require.NoError(t, result.Err)
 	assert.Equal(t, 200, result.HTTPStatus)
 
-	versions, err := op.ToSliceR(result)
+	versions, err := result.Collect()
 	require.NoError(t, err)
 	require.Len(t, versions, 1)
 	assert.Equal(t, "1.0.2", versions[0].Version())

@@ -24,7 +24,6 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/loginoptions"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/logintokens"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	oauth2_api "github.com/reubenmiller/go-c8y/v2/pkg/oauth/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/oauth/device"
 	"github.com/tidwall/gjson"
@@ -116,7 +115,7 @@ func (c *Client) HasExternalAuthProvider(ctx context.Context) (loginOption *json
 		return nil, found, options.Err
 	}
 
-	for option := range op.Iter(options) {
+	for option := range options.Seq() {
 		if strings.EqualFold(option.Type(), authentication.LoginTypeOAuth2) {
 			loginOption = &option
 			found = true

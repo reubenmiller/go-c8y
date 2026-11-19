@@ -9,7 +9,6 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/measurements"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -84,7 +83,7 @@ func Test_GetMeasurements(t *testing.T) {
 	require.NoError(t, result.Err)
 	assert.Equal(t, 200, result.HTTPStatus)
 
-	measurementList, err := op.ToSliceR(result)
+	measurementList, err := result.Collect()
 	assert.NoError(t, err)
 
 	// Check that we have at least one measurement

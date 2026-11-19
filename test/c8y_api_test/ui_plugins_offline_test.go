@@ -8,7 +8,6 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/applications"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/ui/applicationplugins"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/ui/plugins"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -57,7 +56,7 @@ func Test_UIPlugins_CRUD(t *testing.T) {
 
 	listRes := client.UIPlugins.List(ctx, plugins.ListOptions{})
 	require.NoError(t, listRes.Err)
-	_, err := op.ToSliceR(listRes)
+	_, err := listRes.Collect()
 	require.NoError(t, err)
 
 	itAll := client.UIPlugins.ListAll(ctx, plugins.ListOptions{})
