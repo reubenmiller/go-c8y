@@ -196,6 +196,10 @@ type Microservice struct {
 	RealtimeClientCache *RealtimeClientCache
 
 	mu sync.RWMutex // protects ServiceUsers
+
+	// callerCache caches validated callers (see TenantContextOptions.Validation).
+	callerCache     *callerCache
+	callerCacheOnce sync.Once
 }
 
 // RefreshServiceUsers fetches the current list of subscribed service users from
