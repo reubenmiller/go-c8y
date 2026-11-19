@@ -17,3 +17,6 @@ var MimeTypeNewDeviceRequest = "application/vnd.com.nsn.cumulocity.newdevicerequ
 var MimeTypeDeviceCredentials = "application/vnd.com.nsn.cumulocity.devicecredentials+json"
 
 var MimeTypeUserReference = "application/vnd.com.nsn.cumulocity.userreference+json"
+
+// MimeTypePEMFile is the media type of a PEM encoded certificate or chain.
+var MimeTypePEMFile = "application/x-pem-file"

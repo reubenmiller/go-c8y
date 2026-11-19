@@ -56,14 +56,14 @@ The cached token source SHALL refresh certificate tokens with the same transport
 - **THEN** the SDK performs a new exchange with the same transport before sending the request
 
 ### Requirement: Certificate opt-in helpers
-The SDK SHALL provide `CurrentUser.SetRequiredAuthType(ctx, authType)`, `CurrentApplication.SetAuthType(ctx, authType)`, `Applications.ResetAuthType(ctx, id)`, and `jsonmodels.User.RequiredAuthType()`, where `authType` is `NONE` or `CERTIFICATES`.
+The SDK SHALL provide `Users.CurrentUser.SetRequiredAuthType(ctx, authType)`, `Applications.Current.SetAuthType(ctx, authType)`, `Applications.ResetAuthType(ctx, id)`, and `jsonmodels.User.RequiredAuthType()`, where `authType` is `NONE` or `CERTIFICATES`.
 
 #### Scenario: Regular user opts in
-- **WHEN** `CurrentUser.SetRequiredAuthType(ctx, "CERTIFICATES")` is called
+- **WHEN** `Users.CurrentUser.SetRequiredAuthType(ctx, "CERTIFICATES")` is called
 - **THEN** the SDK sends `PUT /user/currentUser` with `{"requiredAuthType":"CERTIFICATES"}`
 
 #### Scenario: Service user opts in
-- **WHEN** `CurrentApplication.SetAuthType(ctx, "CERTIFICATES")` is called
+- **WHEN** `Applications.Current.SetAuthType(ctx, "CERTIFICATES")` is called
 - **THEN** the SDK sends `PUT /application/currentApplication/authType` with `{"requiredAuthType":"CERTIFICATES"}`
 
 #### Scenario: Admin resets a service user
@@ -71,11 +71,15 @@ The SDK SHALL provide `CurrentUser.SetRequiredAuthType(ctx, authType)`, `Current
 - **THEN** the SDK sends `PUT /application/applications/42/authType` with `{"requiredAuthType":"NONE"}`
 
 ### Requirement: Lockout-safe opt-in
-`EnableCertificateAuth(ctx, cert, key)` SHALL perform a successful certificate exchange before setting `requiredAuthType` to `CERTIFICATES`, and SHALL NOT change `requiredAuthType` if the exchange fails.
+`Client.EnableCertificateAuth(ctx, opts)` SHALL, before setting `requiredAuthType` to `CERTIFICATES`, check locally that the key is RSA, matches the certificate, and that the certificate is currently valid, and SHALL verify the chain with `POST /tenant/trusted-certificates/verify-cert-chain` (unless `SkipChainVerification` is set). It SHALL NOT change `requiredAuthType` when a check fails. After opting in it SHALL confirm with a certificate exchange; if that fails, the error SHALL name the recovery path. (The platform only issues certificate tokens to accounts that already opted in, so an exchange cannot be the first check.)
 
-#### Scenario: Exchange fails
-- **WHEN** `EnableCertificateAuth` is called with a certificate the tenant does not trust
-- **THEN** it returns the exchange error and no `PUT` request is sent
+#### Scenario: Untrusted chain
+- **WHEN** `EnableCertificateAuth` is called and the tenant does not trust the certificate chain
+- **THEN** it returns an error matching `ErrCertificateNotTrusted` and no `PUT` request is sent
+
+#### Scenario: Success
+- **WHEN** the chain is trusted and the exchange succeeds after the opt-in
+- **THEN** the requests are, in order, the chain verification, the `PUT` of `requiredAuthType`, and the certificate exchange, and the client uses the certificate token
 
 ### Requirement: Certificate tokens for service users
 `ClientOptions` SHALL accept an optional `ContextCertificateSource func(tenant string) (tls.Certificate, error)`, used when `ContextTokenExchange` is enabled. When it returns a certificate for a tenant, per-tenant tokens SHALL be obtained with the certificate exchange instead of the service user's password.

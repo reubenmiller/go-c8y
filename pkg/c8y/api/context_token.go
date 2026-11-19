@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -119,6 +120,22 @@ func (c *Client) fetchTokenFor(auth authentication.AuthOptions) (*authentication
 	// A fresh context (no per-request credentials, token source skipped) so the
 	// login call cannot recurse into the context-auth or token-source middleware.
 	ctx := ctxhelpers.WithSkipTokenSource(context.Background())
+
+	// Certificate-based service users (requiredAuthType CERTIFICATES).
+	if c.contextCertificateSource != nil {
+		cert, err := c.contextCertificateSource(auth.Tenant)
+		if err != nil {
+			return nil, fmt.Errorf("certificate for tenant %s: %w", auth.Tenant, err)
+		}
+		if len(cert.Certificate) > 0 {
+			raw, expiry, err := c.exchangeCertificate(ctx, auth.Tenant, cert, nil)
+			if err != nil {
+				return nil, err
+			}
+			return &authentication.Token{AccessToken: raw, Expiry: expiry}, nil
+		}
+	}
+
 	tok := c.LoginTokens.Create(ctx, logintokens.CreateTokenOptions{
 		Tenant:    auth.Tenant,
 		Username:  auth.Username,

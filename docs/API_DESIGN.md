@@ -677,6 +677,55 @@ _, err := client.LoginWithOptions(ctx, api.LoginOptions{
 See [examples/cli-login-preference/main.go](../examples/cli-login-preference/main.go) for a
 complete, runnable demonstration of all login methods and callbacks.
 
+### Certificate Login
+
+`LoginMethodCertificate` exchanges a client certificate for an access token.
+The transport depends on the private key, because the platform returns the
+HTTPS token encrypted to the certificate's public key, which it can only do
+securely for RSA keys:
+
+| Key | Transport (default `CertificateTransportAuto`) |
+|---|---|
+| RSA | HTTPS: `POST /tenant/oauth/certificate` on the standard port; the JWE token (`RSA-OAEP-256` / `A256GCM`) is decrypted with the private key |
+| EC, Ed25519 | mTLS: `POST /devicecontrol/deviceAccessToken` on `ClientOptions.MTLSPort` (default 8443) |
+
+`Auto` never falls back from one transport to the other. Set
+`AuthOptions.CertificateTransport` to `CertificateTransportHTTPS` or
+`CertificateTransportMTLS` to force one; forcing HTTPS with a non-RSA key fails
+before sending anything. If mTLS fails because port 8443 is blocked, the error
+says so.
+
+```go
+client := api.NewClient(api.ClientOptions{
+    BaseURL: "https://example.cumulocity.com",
+    Auth: authentication.AuthOptions{
+        Tenant:         "t12345",            // required for the HTTPS exchange
+        Certificate:    "user.crt",          // file path or PEM (leaf or chain)
+        CertificateKey: "user.key",
+    },
+})
+_, err := client.LoginWithOptions(ctx, api.LoginOptions{
+    Method:   authentication.LoginMethodCertificate,
+    TOTPCode: promptForTOTP, // only needed when TFA is active for the user
+})
+```
+
+The HTTPS exchange only works for accounts that opted in to certificate
+authentication (`requiredAuthType` `CERTIFICATES`); device users need no
+opt-in. `client.EnableCertificateAuth(ctx, api.EnableCertificateAuthOptions{})`
+opts the current user (or, with `Target: api.CertificateAuthServiceUser`, a
+microservice's service user) in. Because the platform cannot issue a
+certificate token before the opt-in, it first checks the key and certificate
+locally and verifies the chain against the tenant's trusted certificates. After
+the switch, password logins stop working. To undo it: the "forgot password"
+email flow for users, `Applications.ResetAuthType` by a tenant administrator for
+service users.
+
+For multi-tenant microservices whose service users use certificates, set
+`ClientOptions.ContextCertificateSource` together with `ContextTokenExchange`:
+per-tenant tokens then come from the certificate exchange instead of the
+password.
+
 ## Migration from v1
 
 ### Key Differences

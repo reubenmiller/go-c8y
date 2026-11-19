@@ -69,3 +69,9 @@ func (u User) ProvisionedCertificates() []ProvisionedCertificate {
 	}
 	return out
 }
+
+// RequiredAuthType returns the authentication method required for the
+// account: "NONE" or "CERTIFICATES". Only returned for the current user.
+func (u User) RequiredAuthType() string {
+	return u.Get("requiredAuthType").String()
+}
