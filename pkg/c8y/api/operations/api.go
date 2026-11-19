@@ -181,12 +181,12 @@ func (s *Service) Create(ctx context.Context, opts CreateOptions) op.Result[json
 }
 
 // CreateRaw creates an operation from a pre-built body, passed through to the API as-is,
-// except that a device reference at "deviceId" that is not an id (e.g. "dev01",
+// except that a device reference at "deviceId" or "agentId" that is not an id (e.g. "dev01",
 // "name:dev01", "ext:c8y_Serial:ABC") is resolved to the device id first.
 //
 //	result := client.Operations.CreateRaw(ctx, map[string]any{...})
 func (s *Service) CreateRaw(ctx context.Context, body any) op.Result[jsonmodels.Operation] {
-	body, err := s.DeviceResolver.ResolveBodyRefs(ctx, body, "deviceId")
+	body, err := s.DeviceResolver.ResolveBodyRefs(ctx, body, "deviceId", "agentId")
 	if err != nil {
 		return op.Failed[jsonmodels.Operation](err, false)
 	}
