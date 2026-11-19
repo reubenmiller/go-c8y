@@ -1,0 +1,51 @@
+schema: spec-driven
+
+context: |
+  Project: go-c8y v2, an unofficial Go SDK for the Cumulocity REST API.
+  Module path: github.com/reubenmiller/go-c8y/v2. Work targets the `v2` branch; changes merge through PRs.
+
+  Tech stack:
+  - Go 1.26 (go.mod). Go 1.27 features (generic methods) need an explicit decision, see adopt-generic-methods.
+  - HTTP: resty.dev/v3 (release candidate). Must not leak into new public API.
+  - Concurrency helpers: github.com/destel/rill, internal use only.
+  - Spec: docs/c8y-oas.yml (vendored Cumulocity core OpenAPI), docs/c8y-oas.overlay.yml (SDK overlay and drift waivers).
+
+  Architecture and conventions:
+  - Services live in pkg/c8y/api/<resource>, embed core.Service, and expose List/Get/Create/Update/Delete plus ListAll iterators.
+  - Every operation returns op.Result[T]; errors are core.Error (use errors.As); outcomes use op.Status.
+  - Options structs are named <Operation>Options; query params use `url` tags; pagination embeds pagination.PaginationOptions.
+  - Request-scoped behavior (auth, tenant, dry run, processing mode) is carried on context.Context.
+  - Generated code (zz_generated_*.go) comes from tools/c8ygen; edit the spec or overlay, not the generated files.
+  - pkg/microservice is framework-agnostic: plain net/http handlers and middleware.
+
+  Testing:
+  - Unit tests: go test ./pkg/...
+  - Offline integration tests against the fake server: TEST_MODE=offline go test ./test/c8y_api_test/...
+  - API drift gate: task lint-api (go run ./tools/c8ygen lint --strict in CI).
+
+  Source of these changes: docs/V2_STABILIZATION_REVIEW.md (review of origin/v2 at 37d0690, 2026-11-19).
+
+  Roadmap (do in this order; items 1 to 4 change exported API and must land before tagging v2.0.0):
+  1. decouple-http-client-contracts
+  2. consolidate-context-helpers
+  3. add-batch-outcomes
+  4. add-certificate-token-login
+  5. validate-microservice-callers (security fix; can run in parallel with 1 to 4)
+  6. cover-latest-core-spec
+  7. add-microservice-tenant-lifecycle
+  8. adopt-generic-methods (decide before tagging; implementation can follow in v2.x)
+  9. prepare-v2-release (last)
+
+rules:
+  proposal:
+    - Reference the matching section of docs/V2_STABILIZATION_REVIEW.md.
+    - Mark any change to exported Go API as **BREAKING** and say whether it must land before v2.0.0.
+  specs:
+    - Name Go identifiers exactly as they will appear in the public API.
+    - Write scenarios that can be checked by an offline test (fake server or unit test) unless a live tenant is truly required.
+  design:
+    - Prefer extending existing concepts (op.Result, op.Status, core.Error, context helpers, pipeline.Options) over new ones.
+    - New dependencies need a stated reason; prefer the standard library.
+  tasks:
+    - Include a task to update godoc and docs/ for any changed public API.
+    - Include offline tests for each spec scenario.
