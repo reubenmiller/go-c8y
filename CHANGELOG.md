@@ -97,6 +97,7 @@ v2 is a new module, `github.com/reubenmiller/go-c8y/v2`. Entries marked **Breaki
 * Added `Applications.DeployHosted`, which creates or updates a hosted web application from a folder (zipped with `pkg/zipUtilities`) or a `.zip` file, uploads the binary, and activates it. The name, key, and context path default to the `cumulocity.json` manifest, then to the file or folder name. `Owner` limits the lookup to applications owned by one tenant, `SkipUpload` and `SkipActivation` skip those steps, and `KeepBinaries` deletes the oldest binaries beyond that number (never the active or newly uploaded one). Also added `applications.ReadHostedManifest`. The fake server now stores application binaries (list, download, and delete) and filters applications by `owner`.
 * Fixed `zipUtilities.ZipDirectoryContents`, `ZipDirectory`, and `ZipFile`: zip entry names now always use forward slashes (previously backslashes on Windows) and never start with "/", and errors from reading the source are returned instead of being ignored.
 * Fixed `Applications.ListByOwner`, which called `/application/applicationsByTenant/{tenantId}` instead of `/application/applicationsByOwner/{tenantId}`.
+* Fixed `zipUtilities.UnzipFile`, which extracted every entry except the given `names`; it now extracts only the named entries (case-insensitive), and everything when `names` is empty.
 
 ### Tooling and documentation
 
