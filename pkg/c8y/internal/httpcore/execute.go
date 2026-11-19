@@ -2,7 +2,7 @@ package httpcore
 
 import (
 	"context"
-	"errors"
+	"maps"
 	"net/http"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
@@ -45,103 +45,34 @@ func ExecuteResponseOnly(ctx context.Context, req *TryRequest) (*resty.Response,
 }
 
 func Execute[T any](ctx context.Context, req *TryRequest, fromBytes func([]byte) T, extraMeta ...map[string]any) op.Result[T] {
-	// Check if execution should be deferred
+	meta := firstMeta(extraMeta)
 	if ctxhelpers.IsDeferredExecution(ctx) {
-		// Build the request to capture all parameters (including resolved IDs)
-		// but don't send it yet
-		dryRunCtx := ctxhelpers.WithDryRun(ctx, true)
-		req.ApplyContextRequestOptions(dryRunCtx)
-		resp, _ := req.Request.SetContext(dryRunCtx).Send()
-
-		var httpReq *http.Request
-		if resp != nil {
-			httpReq = resp.Request.RawRequest
-		}
-
-		// Return a result with the executor function
-		result := op.Result[T]{
-			Request: httpReq,
-		}
-
-		// Merge extra metadata into the deferred result so it's available for inspection
-		if len(extraMeta) > 0 && extraMeta[0] != nil {
-			if result.Meta == nil {
-				result.Meta = make(map[string]any)
-			}
-			for k, v := range extraMeta[0] {
-				result.Meta[k] = v
-			}
-		}
-
-		return result.WithExecutor(func(execCtx context.Context) op.Result[T] {
+		return deferred(ctx, req, false, meta, func(execCtx context.Context) op.Result[T] {
 			return Execute(execCtx, req, fromBytes, extraMeta...)
 		})
 	}
 
 	resp, err := ExecuteResponseOnly(ctx, req)
-
-	// Only capture request in dry run mode for inspection
-	var httpReq *http.Request
-	if resp != nil && ctxhelpers.IsDryRun(ctx) {
-		httpReq = resp.Request.RawRequest
-	}
+	httpReq := dryRunRequest(ctx, resp)
 
 	if err != nil {
-		result := op.Failed[T](err, true)
-		if resp != nil {
-			result = result.WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
-		} else {
-			// Extract HTTP status from error if response is nil
-			var apiErr *core.Error
-			if errors.As(err, &apiErr) && apiErr.Code >= 100 && apiErr.Code < 600 {
-				result = result.WithHTTPStatus(apiErr.Code)
-				if apiErr.Duration > 0 {
-					result = result.WithDuration(apiErr.Duration)
-				}
-			}
-		}
-		// Merge extra metadata
-		if len(extraMeta) > 0 && extraMeta[0] != nil {
-			if result.Meta == nil {
-				result.Meta = make(map[string]any)
-			}
-			for k, v := range extraMeta[0] {
-				result.Meta[k] = v
-			}
-		}
+		result := failedWithStatus[T](err, resp)
+		mergeMeta(&result, meta)
 		return result.WithRequest(httpReq)
 	}
 
 	var result op.Result[T]
-	if resp.StatusCode() == http.StatusCreated {
-		result = op.Created(fromBytes(resp.Bytes())).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
-	} else if resp.StatusCode() == http.StatusOK && (req.Request.Method == http.MethodPut || req.Request.Method == http.MethodPatch) {
-		result = op.Updated(fromBytes(resp.Bytes())).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
-	} else {
-		result = op.OK(fromBytes(resp.Bytes())).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
+	switch {
+	case resp.StatusCode() == http.StatusCreated:
+		result = op.Created(fromBytes(resp.Bytes()))
+	case resp.StatusCode() == http.StatusOK && (req.Request.Method == http.MethodPut || req.Request.Method == http.MethodPatch):
+		result = op.Updated(fromBytes(resp.Bytes()))
+	default:
+		result = op.OK(fromBytes(resp.Bytes()))
 	}
-
-	// Add cache headers to metadata for visibility
-	if xCache := resp.Header().Get("X-Cache"); xCache != "" {
-		result.Meta["x-cache"] = xCache
-	}
-	if fromCache := resp.Header().Get("X-From-Cache"); fromCache != "" {
-		result.Meta["x-from-cache"] = fromCache
-	}
-	if age := resp.Header().Get("Age"); age != "" {
-		result.Meta["age"] = age
-	}
-
-	// Merge extra metadata
-	if len(extraMeta) > 0 && extraMeta[0] != nil {
-		if result.Meta == nil {
-			result.Meta = make(map[string]any)
-		}
-		for k, v := range extraMeta[0] {
-			result.Meta[k] = v
-		}
-	}
-
+	result = result.WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
+	addCacheMeta(&result, resp)
+	mergeMeta(&result, meta)
 	return result
 }
 
@@ -149,61 +80,17 @@ func Execute[T any](ctx context.Context, req *TryRequest, fromBytes func([]byte)
 // arrayPath is the JSON path to the array (e.g., "managedObjects")
 // metaPath is the JSON path to pagination metadata (e.g., "statistics")
 func ExecuteCollection[T any](ctx context.Context, req *TryRequest, arrayPath, metaPath string, fromBytes func([]byte) T, extraMeta ...map[string]any) op.Result[T] {
-	// Check if execution should be deferred
 	if ctxhelpers.IsDeferredExecution(ctx) {
-		// Build the request to capture all parameters
-		dryRunCtx := ctxhelpers.WithDryRun(ctx, true)
-		req.ApplyContextRequestOptions(dryRunCtx)
-		resp, _ := req.Request.SetContext(dryRunCtx).Send()
-
-		var httpReq *http.Request
-		if resp != nil {
-			httpReq = resp.Request.RawRequest
-		}
-
-		// Return a result with the executor function
-		result := op.Result[T]{
-			Request: httpReq,
-		}
-
-		// Merge extra metadata into the deferred result so it's available for inspection
-		if len(extraMeta) > 0 && extraMeta[0] != nil {
-			if result.Meta == nil {
-				result.Meta = make(map[string]any)
-			}
-			for k, v := range extraMeta[0] {
-				result.Meta[k] = v
-			}
-		}
-
-		return result.WithExecutor(func(execCtx context.Context) op.Result[T] {
+		return deferred(ctx, req, false, firstMeta(extraMeta), func(execCtx context.Context) op.Result[T] {
 			return ExecuteCollection(execCtx, req, arrayPath, metaPath, fromBytes, extraMeta...)
 		})
 	}
 
 	resp, err := ExecuteResponseOnly(ctx, req)
-
-	// Only capture request in dry run mode for inspection
-	var httpReq *http.Request
-	if resp != nil && ctxhelpers.IsDryRun(ctx) {
-		httpReq = resp.Request.RawRequest
-	}
+	httpReq := dryRunRequest(ctx, resp)
 
 	if err != nil {
-		result := op.Failed[T](err, true)
-		if resp != nil {
-			result = result.WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
-		} else {
-			// Extract HTTP status from error if response is nil
-			var apiErr *core.Error
-			if errors.As(err, &apiErr) && apiErr.Code >= 100 && apiErr.Code < 600 {
-				result = result.WithHTTPStatus(apiErr.Code)
-				if apiErr.Duration > 0 {
-					result = result.WithDuration(apiErr.Duration)
-				}
-			}
-		}
-		return result.WithRequest(httpReq)
+		return failedWithStatus[T](err, resp).WithRequest(httpReq)
 	}
 
 	// TODO: how to do this more efficiently
@@ -240,12 +127,7 @@ func ExecuteCollection[T any](ctx context.Context, req *TryRequest, arrayPath, m
 		result.Meta["totalElements"] = totalElements.Int()
 	}
 
-	// Merge extra metadata
-	if len(extraMeta) > 0 && extraMeta[0] != nil {
-		for k, v := range extraMeta[0] {
-			result.Meta[k] = v
-		}
-	}
+	mergeMeta(&result, firstMeta(extraMeta))
 
 	result.HTTPStatus = resp.StatusCode()
 	result.RequestID = resp.Header().Get("X-Request-ID")
@@ -255,38 +137,14 @@ func ExecuteCollection[T any](ctx context.Context, req *TryRequest, arrayPath, m
 	// doc.Raw() shares the buffer already parsed above, so this is zero-copy.
 	result.Response = doc.Raw()
 
-	// Add cache headers to metadata
-	if xCache := resp.Header().Get("X-Cache"); xCache != "" {
-		result.Meta["x-cache"] = xCache
-	}
-	if fromCache := resp.Header().Get("X-From-Cache"); fromCache != "" {
-		result.Meta["x-from-cache"] = fromCache
-	}
-	if age := resp.Header().Get("Age"); age != "" {
-		result.Meta["age"] = age
-	}
-
+	addCacheMeta(&result, resp)
 	return result
 }
 
 // Execute a request which expects a binary response which allows the user to read the body
 func ExecuteBinary(ctx context.Context, req *TryRequest) op.Result[core.BinaryResponse] {
-	// Check if execution should be deferred
 	if ctxhelpers.IsDeferredExecution(ctx) {
-		// Build the request to capture all parameters
-		dryRunCtx := ctxhelpers.WithDryRun(ctx, true)
-		req.ApplyContextRequestOptions(dryRunCtx)
-		resp, _ := req.Request.SetContext(dryRunCtx).SetResponseDoNotParse(true).Send()
-
-		var httpReq *http.Request
-		if resp != nil {
-			httpReq = resp.Request.RawRequest
-		}
-
-		// Return a result with the executor function
-		return op.Result[core.BinaryResponse]{
-			Request: httpReq,
-		}.WithExecutor(func(execCtx context.Context) op.Result[core.BinaryResponse] {
+		return deferred(ctx, req, true, nil, func(execCtx context.Context) op.Result[core.BinaryResponse] {
 			return ExecuteBinary(execCtx, req)
 		})
 	}
@@ -303,11 +161,7 @@ func ExecuteBinary(ctx context.Context, req *TryRequest) op.Result[core.BinaryRe
 
 	bin := NewBinaryResponse(resp)
 
-	// Only capture request in dry run mode for inspection
-	var httpReq *http.Request
-	if resp != nil && ctxhelpers.IsDryRun(ctx) {
-		httpReq = resp.Request.RawRequest
-	}
+	httpReq := dryRunRequest(ctx, resp)
 
 	if resp.StatusCode() == http.StatusCreated {
 		return op.Created(*bin).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
@@ -323,58 +177,26 @@ func ExecuteBinary(ctx context.Context, req *TryRequest) op.Result[core.BinaryRe
 
 // Execute a request that doesn't any result only if there was an error or not
 func ExecuteNoContent(ctx context.Context, req *TryRequest, extraMeta ...map[string]any) op.Result[core.NoContent] {
-	// Check if execution should be deferred
 	if ctxhelpers.IsDeferredExecution(ctx) {
-		// Build the request to capture all parameters
-		dryRunCtx := ctxhelpers.WithDryRun(ctx, true)
-		req.ApplyContextRequestOptions(dryRunCtx)
-		resp, _ := req.Request.SetContext(dryRunCtx).Send()
-
-		var httpReq *http.Request
-		if resp != nil {
-			httpReq = resp.Request.RawRequest
-		}
-
-		// Return a result with the executor function
-		result := op.Result[core.NoContent]{
-			Request: httpReq,
-		}
-
-		// Merge extra metadata into the deferred result so it's available for inspection
-		if len(extraMeta) > 0 && extraMeta[0] != nil {
-			if result.Meta == nil {
-				result.Meta = make(map[string]any)
-			}
-			for k, v := range extraMeta[0] {
-				result.Meta[k] = v
-			}
-		}
-
-		return result.WithExecutor(func(execCtx context.Context) op.Result[core.NoContent] {
+		return deferred(ctx, req, false, firstMeta(extraMeta), func(execCtx context.Context) op.Result[core.NoContent] {
 			return ExecuteNoContent(execCtx, req, extraMeta...)
 		})
 	}
 
 	resp, err := ExecuteResponseOnly(ctx, req)
 
-	meta := map[string]any{}
-	meta["url"] = req.URL().String()
-	meta["path"] = req.URL().Path
-
-	// Merge extra metadata
-	if len(extraMeta) > 0 && extraMeta[0] != nil {
-		for k, v := range extraMeta[0] {
-			meta[k] = v
-		}
+	meta := map[string]any{
+		"url":  req.URL().String(),
+		"path": req.URL().Path,
 	}
-
-	// Only capture request in dry run mode for inspection
-	var httpReq *http.Request
-	if resp != nil && ctxhelpers.IsDryRun(ctx) {
-		httpReq = resp.Request.RawRequest
-	}
+	maps.Copy(meta, firstMeta(extraMeta))
+	httpReq := dryRunRequest(ctx, resp)
 
 	if err != nil {
+		// Unlike the other executors, the HTTP status is only taken from the
+		// response (which is nil on error), so callers' IgnoreNotFound() does
+		// not apply to the request's own 404. Kept as is: changing it would
+		// change Delete semantics (tracked as a follow-up).
 		result := op.Failed[core.NoContent](err, true)
 		if resp != nil {
 			result = result.WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
