@@ -1,7 +1,7 @@
 ## 1. Decision
 
-- [ ] 1.1 Decide: adopt before v2.0.0 (Go 1.27 minimum, remove duplicates) or in v2.x (keep functions); record the outcome in design.md
-- [ ] 1.2 If adopting before v2.0.0: raise `go.mod` and all example modules to `go 1.27`; update the CI Go version matrix
+- [x] 1.1 Decide: adopt before v2.0.0 (Go 1.27 minimum, remove duplicates); recorded in design.md (2026-11-19)
+- [ ] 1.2 Raise `go.mod` and all example modules to `go 1.27` (CI reads the version from `go.mod` through `go-version-file`, so no workflow change is needed)
 
 ## 2. Methods
 
@@ -13,7 +13,7 @@
 ## 3. Duplicates and rule enforcement
 
 - [ ] 3.1 Replace internal and example uses of the old free functions with the methods
-- [ ] 3.2 Remove the old free functions (only if adopting before v2.0.0)
+- [ ] 3.2 Remove the old free functions
 - [ ] 3.3 Add a CI check that exported service methods have no type parameters
 
 ## 4. Documentation

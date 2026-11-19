@@ -4,7 +4,7 @@ Everything exported at v2.0.0 must be supported for the whole major version, and
 
 ## What Changes
 
-- Rewrite the README for v2: module path, quick start with `api.NewClient`, minimum Go version, stability promise, and links to the design docs.
+- Rewrite the README for v2: module path, quick start with `api.NewClient`, minimum Go version (1.27), stability promise, and links to the design docs.
 - Fix import paths in all docs to include `/v2`.
 - **BREAKING** Decide the status of `pkg/c8y/*.go` (cache, context, middleware, proxyreader, response, utils) and `api/client_compat.go` (`SendRequest`, `RequestResult`): document each as supported v2 API, or move it to `internal`.
 - Document how `applications.ListByName`, `ListByTenant`, `ListByOwner`, and `ListByUser` differ from `List` with the matching filter, and that `Tenant` on tenant-scoped options defaults to the client tenant.

@@ -5,7 +5,7 @@ context: |
   Module path: github.com/reubenmiller/go-c8y/v2. Work targets the `v2` branch; changes merge through PRs.
 
   Tech stack:
-  - Go 1.26 (go.mod). Go 1.27 features (generic methods) need an explicit decision, see adopt-generic-methods.
+  - Go 1.26 today (go.mod); v2.0.0 will require Go 1.27 for generic methods (decided 2026-11-19, see adopt-generic-methods).
   - HTTP: resty.dev/v3 (release candidate). Must not leak into new public API.
   - Concurrency helpers: github.com/destel/rill, internal use only.
   - Spec: docs/c8y-oas.yml (vendored Cumulocity core OpenAPI), docs/c8y-oas.overlay.yml (SDK overlay and drift waivers).
@@ -25,7 +25,7 @@ context: |
 
   Source of these changes: docs/V2_STABILIZATION_REVIEW.md (review of origin/v2 at 37d0690, 2026-11-19).
 
-  Roadmap (do in this order; items 1 to 4 change exported API and must land before tagging v2.0.0):
+  Roadmap (do in this order; items 1 to 4 and 8 change exported API and must land before tagging v2.0.0):
   1. decouple-http-client-contracts
   2. consolidate-context-helpers
   3. add-batch-outcomes
@@ -33,7 +33,7 @@ context: |
   5. validate-microservice-callers (security fix; can run in parallel with 1 to 4)
   6. cover-latest-core-spec
   7. add-microservice-tenant-lifecycle
-  8. adopt-generic-methods (decide before tagging; implementation can follow in v2.x)
+  8. adopt-generic-methods (decided: adopt before v2.0.0; raises the minimum Go version to 1.27)
   9. prepare-v2-release (last)
 
 rules:

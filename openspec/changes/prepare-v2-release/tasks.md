@@ -1,6 +1,6 @@
 ## 1. Documentation
 
-- [ ] 1.1 Rewrite `README.md` for v2 (install, quick start, minimum Go version, stability promise, links to design docs)
+- [ ] 1.1 Rewrite `README.md` for v2 (install, quick start, minimum Go version 1.27, stability promise, links to design docs)
 - [ ] 1.2 Fix `/v2` import paths in `docs/V2.md` and `docs/DEFERRED_EXECUTION.md`
 - [ ] 1.3 Document the difference between `applications.List` filters and the `ListBy*` methods
 - [ ] 1.4 Document that `Tenant` on tenant-scoped options defaults to the client tenant and can be overridden with `api.WithTenant`
@@ -19,7 +19,7 @@
 
 ## 4. Release
 
-- [ ] 4.1 Confirm the must-land changes are merged and the adopt-generic-methods decision is recorded
+- [ ] 4.1 Confirm the must-land changes are merged, including adopt-generic-methods
 - [ ] 4.2 Vendor the core spec again; `c8ygen lint --strict` passes
 - [ ] 4.3 Group the CHANGELOG by area with migration tables for every breaking change
 - [ ] 4.4 Tag `v2.0.0`

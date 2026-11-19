@@ -15,7 +15,7 @@ Every Go code block in `README.md` and `docs/*.md` that starts with `package mai
 - **THEN** the build succeeds
 
 ### Requirement: README describes v2
-The README SHALL show the v2 install command, a quick start using `api.NewClient` or `api.NewClientFromEnvironment`, the minimum Go version, and the v2 API stability promise.
+The README SHALL show the v2 install command, a quick start using `api.NewClient` or `api.NewClientFromEnvironment`, the minimum Go version (1.27), and the v2 API stability promise.
 
 #### Scenario: Stability statement
 - **WHEN** a user reads the README
@@ -40,7 +40,7 @@ CI SHALL run an API compatibility check on every PR to `v2` against the latest `
 - **THEN** the compatibility job passes
 
 ### Requirement: Release checklist
-`v2.0.0` SHALL be tagged only after: the changes decouple-http-client-contracts, consolidate-context-helpers, add-batch-outcomes, add-certificate-token-login, and validate-microservice-callers are merged; the adopt-generic-methods decision is recorded; the core spec has been vendored within 30 days of tagging with `c8ygen lint --strict` passing; and the CHANGELOG lists every breaking change with its migration.
+`v2.0.0` SHALL be tagged only after: the changes decouple-http-client-contracts, consolidate-context-helpers, add-batch-outcomes, add-certificate-token-login, validate-microservice-callers, and adopt-generic-methods are merged; the core spec has been vendored within 30 days of tagging with `c8ygen lint --strict` passing; and the CHANGELOG lists every breaking change with its migration.
 
 #### Scenario: Checklist incomplete
 - **WHEN** add-batch-outcomes is not merged

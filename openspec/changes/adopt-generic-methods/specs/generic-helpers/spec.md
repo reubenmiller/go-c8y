@@ -38,7 +38,7 @@
 - **THEN** it yields 10 names
 
 ### Requirement: No duplicate free functions
-When this change lands before v2.0.0, the free functions replaced by methods (`op.MapResult`, `op.FlatMap`, `op.IterAs`, `op.IterAsErr`, `op.Iter`, `op.Iter2`, `op.ToSliceR`, `op.CollectR`, `jsondoc.Decode`, `jsonmodels.GetAs`, `jsonmodels.GetFragment`) SHALL be removed.
+The free functions replaced by methods (`op.MapResult`, `op.FlatMap`, `op.IterAs`, `op.IterAsErr`, `op.Iter`, `op.Iter2`, `op.ToSliceR`, `op.CollectR`, `jsondoc.Decode`, `jsonmodels.GetAs`, `jsonmodels.GetFragment`) SHALL be removed before v2.0.0.
 
 #### Scenario: Removed function
 - **WHEN** code calls `op.MapResult(r, fn)` against the v2.0.0 release
@@ -56,7 +56,7 @@ Exported methods on service types under `pkg/c8y/api/*` SHALL NOT have type para
 - **THEN** it finds no method with type parameters
 
 ### Requirement: Minimum Go version
-When this change lands, `go.mod` SHALL declare `go 1.27` or later, and the README SHALL state the minimum Go version.
+`go.mod` SHALL declare `go 1.27` or later, and the README SHALL state the minimum Go version.
 
 #### Scenario: Older toolchain
 - **WHEN** a user builds the module with Go 1.26 and `GOTOOLCHAIN=local`

@@ -26,16 +26,20 @@ Verified by compiling test programs (Go 1.26.3 locally, Go 1.27.0 through toolch
 
 **Structural constraint for fragments.** `JSONDoc.Fragment[U interface{ FragmentKey() string }]` instead of `U model.Fragment`, so `jsondoc` (which today depends only on `types`) does not start importing `model`, `authentication`, and `certutil`.
 
-**Remove duplicates if adopted before v2.0.0.** If the decision is to tag on Go 1.26, the methods are added later as aliases and the functions stay.
+**Remove the duplicates.** Adopted before v2.0.0 (decision recorded below), so v2.0.0 ships only the method forms and the free functions are removed.
 
 **Go version policy.** Go supports the two most recent major releases. Go 1.26 stays supported until Go 1.28 is released, so requiring 1.27 excludes users still on 1.26 until then.
 
 ## Risks / Trade-offs
 
-- [Users on Go 1.26 cannot upgrade go-c8y] → Decide based on the expected v2.0.0 date relative to the Go 1.28 release; document the minimum version in the README.
+- [Users on Go 1.26 cannot use go-c8y v2] → Accepted. State Go 1.27 as the minimum in the README and the v2.0.0 release notes. Go 1.26 leaves support when Go 1.28 is released.
 - [Runtime decode errors instead of compile errors] → Typical `Result[T]` values in the SDK all hold `jsonmodels` types, which implement `Unwrapper`; test each service's result type once.
 - [go-c8y-cli migration] → Mechanical replacement; provide a table of old function → new method.
 
+## Adoption decision
+
+**2026-11-19: adopt before v2.0.0.** The minimum Go version becomes 1.27, and the duplicate free functions are removed, so v2.0.0 has one way of doing each thing. Rejected alternative: tag v2.0.0 on Go 1.26 and add the methods in v2.x, which would keep both the functions and the methods for the whole major version.
+
 ## Open Questions
 
-- Adopt before v2.0.0 (Go 1.27 minimum) or after (v2.x, keep functions)? Owner decision.
+- None. The adoption decision is recorded above.
