@@ -13,6 +13,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/source"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/pkg/matcher"
@@ -32,16 +33,15 @@ const ApplicationTagLatest = "latest"
 const ApplicationTypeHosted = "HOSTED"
 
 type Service struct {
-	core.Service
-
+	svc httpcore.Service
 	// Resolver lookup function (name -> id), scoped to UI plugins
 	lookupByName    func(ctx context.Context, name string) (string, map[string]any, error)
 	customResolvers map[string]source.Resolver
 }
 
-func NewService(s *core.Service) *Service {
+func NewService(s *httpcore.Service) *Service {
 	service := &Service{
-		Service:         *s,
+		svc:             *s,
 		customResolvers: make(map[string]source.Resolver),
 	}
 
@@ -229,7 +229,7 @@ func HasTag(tags []string, tag string) bool {
 // List returns UI plugins with version support
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.UIPlugin] {
 	opt.HasVersions = true
-	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewUIPlugin)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewUIPlugin)
 }
 
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *PluginIterator {
@@ -246,13 +246,13 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *PluginIterator
 	)
 }
 
-func (s *Service) listB(opt ListOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiPlugins)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // Get retrieves a UI plugin by ID or resolver string
@@ -265,31 +265,31 @@ func (s *Service) Get(ctx context.Context, id string) op.Result[jsonmodels.UIPlu
 	if err != nil {
 		return op.Failed[jsonmodels.UIPlugin](err, false)
 	}
-	return core.Execute(ctx, s.getB(resolvedID), jsonmodels.NewUIPlugin, meta)
+	return httpcore.Execute(ctx, s.getB(resolvedID), jsonmodels.NewUIPlugin, meta)
 }
 
-func (s *Service) getB(id string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getB(id string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, id).
 		SetURL(ApiPlugin)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Create creates a new UI plugin
 func (s *Service) Create(ctx context.Context, plugin *Plugin) op.Result[jsonmodels.UIPlugin] {
-	return core.Execute(ctx, s.createB(plugin), jsonmodels.NewUIPlugin)
+	return httpcore.Execute(ctx, s.createB(plugin), jsonmodels.NewUIPlugin)
 }
 
-func (s *Service) createB(body *Plugin) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) createB(body *Plugin) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiPlugins)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Update updates a UI plugin's properties by ID or resolver string.
@@ -301,18 +301,18 @@ func (s *Service) Update(ctx context.Context, id string, body any) op.Result[jso
 	if err != nil {
 		return op.Failed[jsonmodels.UIPlugin](err, false)
 	}
-	return core.Execute(ctx, s.updateB(resolvedID, body), jsonmodels.NewUIPlugin, meta)
+	return httpcore.Execute(ctx, s.updateB(resolvedID, body), jsonmodels.NewUIPlugin, meta)
 }
 
-func (s *Service) updateB(id string, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) updateB(id string, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, id).
 		SetBody(body).
 		SetURL(ApiPlugin)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Delete deletes a UI plugin by ID or resolver string
@@ -325,20 +325,20 @@ func (s *Service) Delete(ctx context.Context, id string) op.Result[core.NoConten
 		}
 		return op.Failed[core.NoContent](err, false)
 	}
-	return core.ExecuteNoContent(ctx, s.deleteB(resolvedID), meta).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.deleteB(resolvedID), meta).IgnoreNotFound()
 }
 
-func (s *Service) deleteB(id string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) deleteB(id string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamID, id).
 		SetURL(ApiPlugin)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Activate sets a specific version as the active version for a plugin
 func (s *Service) Activate(ctx context.Context, appID string, binaryID string) op.Result[jsonmodels.UIPlugin] {
-	return core.Execute(ctx, s.updateB(appID, &Plugin{ActiveVersionID: binaryID}), jsonmodels.NewUIPlugin)
+	return httpcore.Execute(ctx, s.updateB(appID, &Plugin{ActiveVersionID: binaryID}), jsonmodels.NewUIPlugin)
 }
 
 // nameResolver looks up a UI plugin by name (or contextPath)

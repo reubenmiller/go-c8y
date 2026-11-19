@@ -15,6 +15,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/notification2"
@@ -38,15 +39,15 @@ const ResultProperty = "subscriptions"
 // NewService creates a new notification2 service with device resolution
 // capabilities, so the subscription source (a managed object / device) can be
 // given as an id, name, external id or query and resolved against the inventory.
-func NewService(common *core.Service, moService *managedobjects.Service) *Service {
+func NewService(common *httpcore.Service, moService *managedobjects.Service) *Service {
 	return &Service{
-		Service:        *common,
+		svc:            *common,
 		DeviceResolver: managedobjects.NewDeviceResolver(moService),
 	}
 }
 
 type Service struct {
-	core.Service
+	svc            httpcore.Service
 	DeviceResolver *managedobjects.DeviceResolver
 }
 
@@ -132,16 +133,16 @@ type ClientOptions struct {
 type SubscriptionIterator = pagination.Iterator[jsonmodels.Notification2Subscription]
 
 func (s *Service) Get(ctx context.Context, id string) op.Result[jsonmodels.Notification2Subscription] {
-	return core.Execute(ctx, s.getB(id), jsonmodels.NewNotification2Subscription)
+	return httpcore.Execute(ctx, s.getB(id), jsonmodels.NewNotification2Subscription)
 }
 
-func (s *Service) getB(id string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getB(id string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, id).
 		SetURL(ApiSubscription)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // resolveSource turns a subscription source reference (id, "name:", "ext:" or
@@ -161,7 +162,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 		return op.Failed[jsonmodels.Notification2Subscription](err, true)
 	}
 	opt.Source = resolved
-	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewNotification2Subscription)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewNotification2Subscription)
 }
 
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *SubscriptionIterator {
@@ -177,17 +178,17 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *SubscriptionIt
 	)
 }
 
-func (s *Service) listB(opt ListOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiSubscriptions)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.Notification2Subscription] {
-	return core.Execute(ctx, s.createB(opt), jsonmodels.NewNotification2Subscription).IgnoreConflict()
+	return httpcore.Execute(ctx, s.createB(opt), jsonmodels.NewNotification2Subscription).IgnoreConflict()
 }
 
 // CreateRaw creates a subscription from a raw body (map / json.RawMessage),
@@ -195,29 +196,29 @@ func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonm
 // already resolved the source id build the body themselves; this is the
 // equivalent of Create for an untyped body.
 func (s *Service) CreateRaw(ctx context.Context, body any) op.Result[jsonmodels.Notification2Subscription] {
-	return core.Execute(ctx, s.createB(body), jsonmodels.NewNotification2Subscription).IgnoreConflict()
+	return httpcore.Execute(ctx, s.createB(body), jsonmodels.NewNotification2Subscription).IgnoreConflict()
 }
 
-func (s *Service) createB(body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) createB(body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiSubscriptions)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 func (s *Service) Delete(ctx context.Context, id string) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteB(id)).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.deleteB(id)).IgnoreNotFound()
 }
 
-func (s *Service) deleteB(id string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) deleteB(id string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamID, id).
 		SetURL(ApiSubscription)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 func (s *Service) DeleteBySource(ctx context.Context, opt DeleteBySourceOptions) op.Result[core.NoContent] {
@@ -226,22 +227,22 @@ func (s *Service) DeleteBySource(ctx context.Context, opt DeleteBySourceOptions)
 		return op.Failed[core.NoContent](err, true)
 	}
 	opt.Source = resolved
-	return core.ExecuteNoContent(ctx, s.deleteBySourceB(opt))
+	return httpcore.ExecuteNoContent(ctx, s.deleteBySourceB(opt))
 }
 
-func (s *Service) deleteBySourceB(opt DeleteBySourceOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) deleteBySourceB(opt DeleteBySourceOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiSubscriptions)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 func (s *Service) CreateToken(ctx context.Context, opt TokenOptions) op.Result[jsonmodels.Notification2Token] {
 	if opt.Subscriber == "" {
 		opt.Subscriber = opt.GetDefaultSubscriber()
 	}
-	return core.Execute(ctx, s.createTokenB(opt), jsonmodels.NewNotification2Token)
+	return httpcore.Execute(ctx, s.createTokenB(opt), jsonmodels.NewNotification2Token)
 }
 
 // CreateTokenRaw creates a token from a raw body (map / json.RawMessage),
@@ -249,34 +250,34 @@ func (s *Service) CreateToken(ctx context.Context, opt TokenOptions) op.Result[j
 // typed TokenOptions does not model (e.g. type/signed/nonPersistent). The
 // default subscriber must already be applied by the caller.
 func (s *Service) CreateTokenRaw(ctx context.Context, body any) op.Result[jsonmodels.Notification2Token] {
-	return core.Execute(ctx, s.createTokenB(body), jsonmodels.NewNotification2Token)
+	return httpcore.Execute(ctx, s.createTokenB(body), jsonmodels.NewNotification2Token)
 }
 
-func (s *Service) createTokenB(body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) createTokenB(body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiToken)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 func (s *Service) UnsubscribeSubscriber(ctx context.Context, token string) op.Result[UnsubscribeResponse] {
-	return core.Execute(ctx, s.unsubscribeSubscriberB(token), func(data []byte) UnsubscribeResponse {
+	return httpcore.Execute(ctx, s.unsubscribeSubscriberB(token), func(data []byte) UnsubscribeResponse {
 		var result UnsubscribeResponse
 		json.Unmarshal(data, &result)
 		return result
 	})
 }
 
-func (s *Service) unsubscribeSubscriberB(token string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) unsubscribeSubscriberB(token string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParam("token", token).
 		SetURL(ApiUnsubscribe)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 func (s *Service) ParseToken(tokenString string) (*TokenClaim, error) {
@@ -373,7 +374,7 @@ func (s *Service) CreateClient(ctx context.Context, opt ClientOptions) (*notific
 		return nil, err
 	}
 
-	client := notification2.NewNotification2Client(s.Client.BaseURL(), nil, notification2.Subscription{
+	client := notification2.NewNotification2Client(s.svc.Client.BaseURL(), nil, notification2.Subscription{
 		TokenRenewal: func(v string) (string, error) {
 			return s.RenewToken(ctx, ClientOptions{
 				Token: v,

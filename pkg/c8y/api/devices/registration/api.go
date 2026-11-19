@@ -9,6 +9,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/pkg/password"
@@ -26,9 +27,9 @@ var ParamID = "id"
 const ResultProperty = "newDeviceRequests"
 
 // Service provides api to get/set/delete device requests in Cumulocity
-type Service struct{ core.Service }
+type Service struct{ httpcore.Service }
 
-func NewService(common *core.Service) *Service {
+func NewService(common *httpcore.Service) *Service {
 	return &Service{Service: *common}
 }
 
@@ -42,7 +43,7 @@ type DeviceRequestIterator = pagination.Iterator[jsonmodels.DeviceRequest]
 
 // List returns all device requests
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.DeviceRequest] {
-	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewDeviceRequest)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewDeviceRequest)
 }
 
 // ListAll returns an iterator over all device requests, following pagination.
@@ -59,27 +60,27 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *DeviceRequestI
 	)
 }
 
-func (s *Service) listB(opt ListOptions) *core.TryRequest {
+func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiDeviceRequests)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.Client, req, ResultProperty)
 }
 
 // Get retrieves a device request
 func (s *Service) Get(ctx context.Context, id string) op.Result[jsonmodels.DeviceRequest] {
-	return core.Execute(ctx, s.getB(id), jsonmodels.NewDeviceRequest)
+	return httpcore.Execute(ctx, s.getB(id), jsonmodels.NewDeviceRequest)
 }
 
-func (s *Service) getB(id string) *core.TryRequest {
+func (s *Service) getB(id string) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, id).
 		SetURL(ApiDeviceRequest)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }
 
 type CreateOptions struct {
@@ -98,23 +99,23 @@ type CreateOptions struct {
 
 // Create creates a new device request
 func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.DeviceRequest] {
-	return core.Execute(ctx, s.createB(opt), jsonmodels.NewDeviceRequest)
+	return httpcore.Execute(ctx, s.createB(opt), jsonmodels.NewDeviceRequest)
 }
 
 // CreateRaw creates a new device request from a raw body (e.g. the CLI's
 // --data/--template document), bypassing the typed CreateOptions.
 func (s *Service) CreateRaw(ctx context.Context, body any) op.Result[jsonmodels.DeviceRequest] {
-	return core.Execute(ctx, s.createB(body), jsonmodels.NewDeviceRequest)
+	return httpcore.Execute(ctx, s.createB(body), jsonmodels.NewDeviceRequest)
 }
 
-func (s *Service) createB(body any) *core.TryRequest {
+func (s *Service) createB(body any) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeNewDeviceRequest).
 		SetBody(body).
 		SetURL(ApiDeviceRequests)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }
 
 type UpdateOptions struct {
@@ -133,16 +134,16 @@ type UpdateOptions struct {
 
 // Update a specific new device request (by a given ID). You can only update its status
 func (s *Service) Update(ctx context.Context, id string, opt UpdateOptions) op.Result[jsonmodels.DeviceRequest] {
-	return core.Execute(ctx, s.updateB(id, opt), jsonmodels.NewDeviceRequest)
+	return httpcore.Execute(ctx, s.updateB(id, opt), jsonmodels.NewDeviceRequest)
 }
 
 // UpdateRaw updates a device request from a raw body (e.g. the CLI's
 // --data/--template document), bypassing the typed UpdateOptions.
 func (s *Service) UpdateRaw(ctx context.Context, id string, body any) op.Result[jsonmodels.DeviceRequest] {
-	return core.Execute(ctx, s.updateB(id, body), jsonmodels.NewDeviceRequest)
+	return httpcore.Execute(ctx, s.updateB(id, body), jsonmodels.NewDeviceRequest)
 }
 
-func (s *Service) updateB(id string, body any) *core.TryRequest {
+func (s *Service) updateB(id string, body any) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamID, id).
@@ -150,20 +151,20 @@ func (s *Service) updateB(id string, body any) *core.TryRequest {
 		SetContentType(types.MimeTypeNewDeviceRequest).
 		SetBody(body).
 		SetURL(ApiDeviceRequest)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }
 
 // Delete removes a device request
 func (s *Service) Delete(ctx context.Context, id string) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteB(id)).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.deleteB(id)).IgnoreNotFound()
 }
 
-func (s *Service) deleteB(id string) *core.TryRequest {
+func (s *Service) deleteB(id string) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamID, id).
 		SetURL(ApiDeviceRequest)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }
 
 /*
@@ -183,23 +184,23 @@ type CreateCredentialsOptions struct {
 // have credentials. It posts to the device-credentials endpoint, which is
 // distinct from the new-device-requests endpoint used by Create.
 func (s *Service) CreateCredentials(ctx context.Context, opt CreateCredentialsOptions) op.Result[jsonmodels.DeviceCredentials] {
-	return core.Execute(ctx, s.createCredentialsB(opt), jsonmodels.NewDeviceCredentials)
+	return httpcore.Execute(ctx, s.createCredentialsB(opt), jsonmodels.NewDeviceCredentials)
 }
 
 // CreateCredentialsRaw requests device credentials from a raw body (e.g. the
 // CLI's --data/--template document), bypassing the typed CreateCredentialsOptions.
 func (s *Service) CreateCredentialsRaw(ctx context.Context, body any) op.Result[jsonmodels.DeviceCredentials] {
-	return core.Execute(ctx, s.createCredentialsB(body), jsonmodels.NewDeviceCredentials)
+	return httpcore.Execute(ctx, s.createCredentialsB(body), jsonmodels.NewDeviceCredentials)
 }
 
-func (s *Service) createCredentialsB(body any) *core.TryRequest {
+func (s *Service) createCredentialsB(body any) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeDeviceCredentials).
 		SetBody(body).
 		SetURL(ApiDeviceCredentials)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }
 
 // PollNewDeviceRequest continuously polls a device request for a specified id at defined intervals. The func will wait until the device request has been set to ACCEPTED.
@@ -249,16 +250,16 @@ type UploadFileOptions = core.UploadFileOptions
  */
 // CreateBulk allows multiple devices to be registered in one request
 func (s *Service) CreateBulk(ctx context.Context, opt UploadFileOptions) op.Result[jsonmodels.BulkNewDeviceRequests] {
-	return core.Execute(ctx, s.createBulkB(opt), jsonmodels.NewBulkNewDeviceRequests)
+	return httpcore.Execute(ctx, s.createBulkB(opt), jsonmodels.NewBulkNewDeviceRequests)
 }
 
-func (s *Service) createBulkB(opt UploadFileOptions) *core.TryRequest {
+func (s *Service) createBulkB(opt UploadFileOptions) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
-		SetMultipartFields(core.NewMultiPartFileFields(opt)...).
+		SetMultipartFields(httpcore.NewMultiPartFileFields(opt)...).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiBulkDeviceRequests)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }
 
 // GeneratePassword generates a device password with the recommended password length by default

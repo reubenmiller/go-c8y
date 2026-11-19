@@ -5,6 +5,7 @@ import (
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -15,40 +16,40 @@ var ApiEventBinary = "/event/events/{id}/binaries"
 var ParamID = "id"
 
 // Service provides api to get/set/delete audit entries in Cumulocity
-type Service struct{ core.Service }
+type Service struct{ httpcore.Service }
 
-func NewService(common *core.Service) *Service {
+func NewService(common *httpcore.Service) *Service {
 	return &Service{Service: *common}
 }
 
 // Get an event binary
 func (s *Service) Get(ctx context.Context, eventID string) op.Result[core.BinaryResponse] {
-	return core.ExecuteBinary(ctx, s.getB(eventID))
+	return httpcore.ExecuteBinary(ctx, s.getB(eventID))
 }
 
-func (s *Service) getB(eventID string) *core.TryRequest {
+func (s *Service) getB(eventID string) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamID, eventID).
 		SetURL(ApiEventBinary)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }
 
 type UploadFileOptions = core.UploadFileOptions
 
 // Upload a binary file to an event
 func (s *Service) Create(ctx context.Context, eventID string, opt UploadFileOptions) op.Result[jsonmodels.EventBinary] {
-	return core.Execute(ctx, s.createB(eventID, opt), jsonmodels.NewEventBinary)
+	return httpcore.Execute(ctx, s.createB(eventID, opt), jsonmodels.NewEventBinary)
 }
 
-func (s *Service) createB(eventID string, opt UploadFileOptions) *core.TryRequest {
+func (s *Service) createB(eventID string, opt UploadFileOptions) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
-		SetMultipartFields(core.NewMultiPartFileFields(opt)...).
+		SetMultipartFields(httpcore.NewMultiPartFileFields(opt)...).
 		SetPathParam(ParamID, eventID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiEventBinary)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }
 
 // Create or replace an event binary
@@ -58,7 +59,7 @@ func (s *Service) createB(eventID string, opt UploadFileOptions) *core.TryReques
 // If the existing binary is only replaced, then some meta information might not be updated
 func (s *Service) Upsert(ctx context.Context, eventID string, opt UploadFileOptions) op.Result[jsonmodels.EventBinary] {
 	// slog.Debug("Replacing existing event binary", "eventID", eventID)
-	result := core.Execute(ctx, s.createB(eventID, opt), jsonmodels.NewEventBinary)
+	result := httpcore.Execute(ctx, s.createB(eventID, opt), jsonmodels.NewEventBinary)
 	if result.Err == nil {
 		return result
 	}
@@ -66,15 +67,15 @@ func (s *Service) Upsert(ctx context.Context, eventID string, opt UploadFileOpti
 	if !core.ErrHasStatus(result.Err, 409) {
 		return result
 	}
-	return core.Execute(ctx, s.updateB(eventID, opt), jsonmodels.NewEventBinary)
+	return httpcore.Execute(ctx, s.updateB(eventID, opt), jsonmodels.NewEventBinary)
 }
 
 // Update an event binary
 func (s *Service) Update(ctx context.Context, eventID string, opt UploadFileOptions) op.Result[jsonmodels.EventBinary] {
-	return core.Execute(ctx, s.updateB(eventID, opt), jsonmodels.NewEventBinary)
+	return httpcore.Execute(ctx, s.updateB(eventID, opt), jsonmodels.NewEventBinary)
 }
 
-func (s *Service) updateB(eventID string, opt UploadFileOptions) *core.TryRequest {
+func (s *Service) updateB(eventID string, opt UploadFileOptions) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamID, eventID).
@@ -82,18 +83,18 @@ func (s *Service) updateB(eventID string, opt UploadFileOptions) *core.TryReques
 		SetContentType(types.MimeTypeApplicationOctetStream).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiEventBinary)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }
 
 // Delete an event binary
 func (s *Service) Delete(ctx context.Context, eventID string) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteB(eventID)).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.deleteB(eventID)).IgnoreNotFound()
 }
 
-func (s *Service) deleteB(eventID string) *core.TryRequest {
+func (s *Service) deleteB(eventID string) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamID, eventID).
 		SetURL(ApiEventBinary)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }

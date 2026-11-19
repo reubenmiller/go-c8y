@@ -3,8 +3,8 @@ package bootstrapuser
 import (
 	"context"
 
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -18,22 +18,22 @@ var ParamID = "id"
 
 // Service to manage binaries
 // Managed objects can perform operations to store, retrieve and delete binaries. One binary can store only one file. Together with the binary, a managed object is created which acts as a metadata information for the binary.
-type Service struct{ core.Service }
+type Service struct{ httpcore.Service }
 
-func NewService(common *core.Service) *Service {
+func NewService(common *httpcore.Service) *Service {
 	return &Service{Service: *common}
 }
 
 // Get an microservice bootstrap user
 func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.BootstrapUser] {
-	return core.Execute(ctx, s.getB(ID), jsonmodels.NewBootstrapUser)
+	return httpcore.Execute(ctx, s.getB(ID), jsonmodels.NewBootstrapUser)
 }
 
-func (s *Service) getB(ID string) *core.TryRequest {
+func (s *Service) getB(ID string) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, ID).
 		SetURL(ApiApplicationBootstrapUser)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }

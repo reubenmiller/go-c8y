@@ -11,6 +11,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/source"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/pkg/matcher"
@@ -44,8 +45,7 @@ const ResultProperty = "applications"
 
 // Service to manage applications
 type Service struct {
-	core.Service
-
+	svc httpcore.Service
 	// Current is the current-application sub-resource (/application/currentApplication)
 	Current *currentapplication.Service
 
@@ -54,9 +54,9 @@ type Service struct {
 	customResolvers map[string]source.Resolver
 }
 
-func NewService(common *core.Service) *Service {
+func NewService(common *httpcore.Service) *Service {
 	service := &Service{
-		Service:         *common,
+		svc:             *common,
 		Current:         currentapplication.NewService(common),
 		customResolvers: make(map[string]source.Resolver),
 	}
@@ -135,7 +135,7 @@ type ApplicationIterator = pagination.Iterator[jsonmodels.Application]
 
 // List all applications on your tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Application] {
-	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
 }
 
 // ListAll returns an iterator for all applications
@@ -152,13 +152,13 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *ApplicationIte
 	)
 }
 
-func (s *Service) listB(opt ListOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiApplications)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 type ListByNameOptions struct {
@@ -171,17 +171,17 @@ type ListByNameOptions struct {
 
 // List applications by name
 func (s *Service) ListByName(ctx context.Context, opt ListByNameOptions) op.Result[jsonmodels.Application] {
-	return core.ExecuteCollection(ctx, s.listByNameB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
+	return httpcore.ExecuteCollection(ctx, s.listByNameB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
 }
 
-func (s *Service) listByNameB(opt ListByNameOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listByNameB(opt ListByNameOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamName, opt.Name).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiApplicationByName)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 type ListByTenantOptions struct {
@@ -194,17 +194,17 @@ type ListByTenantOptions struct {
 
 // List applications by name
 func (s *Service) ListByTenant(ctx context.Context, opt ListByTenantOptions) op.Result[jsonmodels.Application] {
-	return core.ExecuteCollection(ctx, s.listByTenantB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
+	return httpcore.ExecuteCollection(ctx, s.listByTenantB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
 }
 
-func (s *Service) listByTenantB(opt ListByTenantOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listByTenantB(opt ListByTenantOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiApplicationByTenantID)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 type ListByOwnerOptions struct {
@@ -217,17 +217,17 @@ type ListByOwnerOptions struct {
 
 // Retrieve all applications owned by a particular tenant (by a given tenant ID)
 func (s *Service) ListByOwner(ctx context.Context, opt ListByOwnerOptions) op.Result[jsonmodels.Application] {
-	return core.ExecuteCollection(ctx, s.listByOwnerB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
+	return httpcore.ExecuteCollection(ctx, s.listByOwnerB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
 }
 
-func (s *Service) listByOwnerB(opt ListByOwnerOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listByOwnerB(opt ListByOwnerOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiApplicationByOwner)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 type ListByUserOptions struct {
@@ -240,17 +240,17 @@ type ListByUserOptions struct {
 
 // Retrieve all applications for a particular user (by a given username)
 func (s *Service) ListByUser(ctx context.Context, opt ListByUserOptions) op.Result[jsonmodels.Application] {
-	return core.ExecuteCollection(ctx, s.listByUserB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
+	return httpcore.ExecuteCollection(ctx, s.listByUserB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
 }
 
-func (s *Service) listByUserB(opt ListByUserOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listByUserB(opt ListByUserOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamUsername, opt.Username).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiApplicationByUser)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // Get an application by ID or resolver string
@@ -270,31 +270,31 @@ func (s *Service) Get(ctx context.Context, id string) op.Result[jsonmodels.Appli
 		return op.Failed[jsonmodels.Application](err, false)
 	}
 
-	return core.Execute(ctx, s.getB(resolvedID), jsonmodels.NewApplication, meta)
+	return httpcore.Execute(ctx, s.getB(resolvedID), jsonmodels.NewApplication, meta)
 }
 
-func (s *Service) getB(id string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getB(id string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, id).
 		SetURL(ApiApplication)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Create an application
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Application] {
-	return core.Execute(ctx, s.createB(body), jsonmodels.NewApplication, nil)
+	return httpcore.Execute(ctx, s.createB(body), jsonmodels.NewApplication, nil)
 }
 
-func (s *Service) createB(body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) createB(body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiApplications)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Update an application by ID or resolver string
@@ -311,18 +311,18 @@ func (s *Service) Update(ctx context.Context, id string, body any) op.Result[jso
 		return op.Failed[jsonmodels.Application](err, false)
 	}
 
-	return core.Execute(ctx, s.updateB(resolvedID, body), jsonmodels.NewApplication, meta)
+	return httpcore.Execute(ctx, s.updateB(resolvedID, body), jsonmodels.NewApplication, meta)
 }
 
-func (s *Service) updateB(ID string, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) updateB(ID string, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamID, ID).
 		SetBody(body).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiApplication)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 type DeleteOptions struct {
@@ -347,16 +347,16 @@ func (s *Service) Delete(ctx context.Context, id string, opt DeleteOptions) op.R
 		return op.Failed[core.NoContent](err, false)
 	}
 
-	return core.ExecuteNoContent(ctx, s.deleteB(resolvedID, opt), meta).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.deleteB(resolvedID, opt), meta).IgnoreNotFound()
 }
 
-func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) deleteB(ID string, opt DeleteOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamID, ID).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiApplication)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 type CopyOptions struct {
@@ -381,32 +381,32 @@ func (s *Service) Copy(ctx context.Context, id string, opt CopyOptions) op.Resul
 		return op.Failed[jsonmodels.Application](err, false)
 	}
 
-	return core.Execute(ctx, s.copyB(resolvedID, opt), jsonmodels.NewApplication, meta)
+	return httpcore.Execute(ctx, s.copyB(resolvedID, opt), jsonmodels.NewApplication, meta)
 }
 
-func (s *Service) copyB(ID string, opt CopyOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) copyB(ID string, opt CopyOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, ID).
 		SetURL(ApiApplicationClone)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Subscribe an application to a tenant.
 // A 409 response (already subscribed) is treated as a duplicate (StatusDuplicate, Idempotent: true).
 func (s *Service) Subscribe(ctx context.Context, tenantID string, selfLink string) op.Result[jsonmodels.Application] {
-	return core.Execute(ctx, s.subscribeB(tenantID, selfLink), jsonmodels.NewApplication, nil).IgnoreConflict()
+	return httpcore.Execute(ctx, s.subscribeB(tenantID, selfLink), jsonmodels.NewApplication, nil).IgnoreConflict()
 }
 
-func (s *Service) subscribeB(tenantID string, selfURL string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) subscribeB(tenantID string, selfURL string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(core.PathParamTenantID, tenantID).
 		SetBody(model.NewApplicationReference(selfURL)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiTenantApplications)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Unsubscribe an application from a tenant by ID or resolver string
@@ -426,16 +426,16 @@ func (s *Service) Unsubscribe(ctx context.Context, tenantID string, id string) o
 		return op.Failed[core.NoContent](err, false)
 	}
 
-	return core.ExecuteNoContent(ctx, s.unsubscribeB(tenantID, resolvedID), meta).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.unsubscribeB(tenantID, resolvedID), meta).IgnoreNotFound()
 }
 
-func (s *Service) unsubscribeB(tenantID string, ID string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) unsubscribeB(tenantID string, ID string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(core.PathParamTenantID, tenantID).
 		SetPathParam(ParamID, ID).
 		SetURL(ApiTenantApplication)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 type UploadFileOptions = core.UploadFileOptions
@@ -454,17 +454,17 @@ func (s *Service) Upload(ctx context.Context, id string, opt UploadFileOptions) 
 		return op.Failed[jsonmodels.Application](err, false)
 	}
 
-	return core.Execute(ctx, s.uploadB(resolvedID, opt), jsonmodels.NewApplication, meta)
+	return httpcore.Execute(ctx, s.uploadB(resolvedID, opt), jsonmodels.NewApplication, meta)
 }
 
-func (s *Service) uploadB(ID string, opt UploadFileOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) uploadB(ID string, opt UploadFileOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(ParamID, ID).
-		SetMultipartFields(core.NewMultiPartFile(opt)...).
+		SetMultipartFields(httpcore.NewMultiPartFile(opt)...).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiApplicationBinaries)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // ListBinaries lists the binary attachments of an application. The id may be a
@@ -475,16 +475,16 @@ func (s *Service) ListBinaries(ctx context.Context, id string) op.Result[jsonmod
 	if err != nil {
 		return op.Failed[jsonmodels.ApplicationBinary](err, false)
 	}
-	return core.ExecuteCollection(ctx, s.listBinariesB(resolvedID), "attachments", types.ResponseFieldStatistics, jsonmodels.NewApplicationBinary)
+	return httpcore.ExecuteCollection(ctx, s.listBinariesB(resolvedID), "attachments", types.ResponseFieldStatistics, jsonmodels.NewApplicationBinary)
 }
 
-func (s *Service) listBinariesB(id string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listBinariesB(id string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, id).
 		SetURL(ApiApplicationBinaries)
-	return core.NewTryRequest(s.Client, req, "attachments")
+	return httpcore.NewTryRequest(s.svc.Client, req, "attachments")
 }
 
 // DeleteBinary deletes a binary attachment of an application by binary id. The
@@ -497,16 +497,16 @@ func (s *Service) DeleteBinary(ctx context.Context, id string, binaryID string) 
 		}
 		return op.Failed[core.NoContent](err, false)
 	}
-	return core.ExecuteNoContent(ctx, s.deleteBinaryB(resolvedID, binaryID)).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.deleteBinaryB(resolvedID, binaryID)).IgnoreNotFound()
 }
 
-func (s *Service) deleteBinaryB(id string, binaryID string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) deleteBinaryB(id string, binaryID string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamID, id).
 		SetPathParam("binaryId", binaryID).
 		SetURL(ApiApplicationBinary)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Application Resolution Convenience Methods

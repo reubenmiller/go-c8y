@@ -3,8 +3,8 @@ package currenttenant
 import (
 	"context"
 
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -19,16 +19,16 @@ var ApiSystemVersion = "/tenant/system/options/system/version"
 // embedded in the current-tenant response (applications.references[].application).
 const ApplicationsResultProperty = "applications.references.#.application"
 
-func NewService(s *core.Service) *Service {
+func NewService(s *httpcore.Service) *Service {
 	return &Service{
-		Service: *s,
+		svc: *s,
 	}
 }
 
 // Service inventory api to interact with the current tenant
-// type Service core.Service
+// type Service httpcore.Service
 type Service struct {
-	core.Service
+	svc httpcore.Service
 }
 
 type GetOptions struct {
@@ -38,16 +38,16 @@ type GetOptions struct {
 
 // Get current tenant
 func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.CurrentTenant] {
-	return core.Execute(ctx, s.getB(opt), jsonmodels.NewCurrentTenant)
+	return httpcore.Execute(ctx, s.getB(opt), jsonmodels.NewCurrentTenant)
 }
 
-func (s *Service) getB(opt GetOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getB(opt GetOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiTenant)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // ListApplications lists the applications subscribed to the current tenant. The
@@ -55,19 +55,19 @@ func (s *Service) getB(opt GetOptions) *core.TryRequest {
 // so the collection is extracted from that same response (it is not separately
 // paginated).
 func (s *Service) ListApplications(ctx context.Context) op.Result[jsonmodels.Application] {
-	return core.ExecuteCollection(ctx, s.getB(GetOptions{}), ApplicationsResultProperty, "", jsonmodels.NewApplication)
+	return httpcore.ExecuteCollection(ctx, s.getB(GetOptions{}), ApplicationsResultProperty, "", jsonmodels.NewApplication)
 }
 
 // GetVersion returns the platform (backend) version of the current tenant, which
 // the platform exposes as the system option category "system" / key "version".
 func (s *Service) GetVersion(ctx context.Context) op.Result[jsonmodels.SystemOption] {
-	return core.Execute(ctx, s.getVersionB(), jsonmodels.NewSystemOption)
+	return httpcore.Execute(ctx, s.getVersionB(), jsonmodels.NewSystemOption)
 }
 
-func (s *Service) getVersionB() *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getVersionB() *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiSystemVersion)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }

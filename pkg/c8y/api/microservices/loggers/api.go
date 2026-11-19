@@ -7,8 +7,8 @@ package loggers
 import (
 	"context"
 
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -31,9 +31,9 @@ const (
 )
 
 // Service manages microservice log levels.
-type Service struct{ core.Service }
+type Service struct{ httpcore.Service }
 
-func NewService(common *core.Service) *Service {
+func NewService(common *httpcore.Service) *Service {
 	return &Service{Service: *common}
 }
 
@@ -41,32 +41,32 @@ func NewService(common *core.Service) *Service {
 // with {levels, loggers, groups}; the "loggers" map is plucked and rendered
 // as-is (it is keyed by logger name, not an array).
 func (s *Service) List(ctx context.Context, name string) op.Result[jsonmodels.MicroserviceLogger] {
-	return core.ExecuteCollection(ctx, s.listB(name), ResultProperty, "", jsonmodels.NewMicroserviceLogger)
+	return httpcore.ExecuteCollection(ctx, s.listB(name), ResultProperty, "", jsonmodels.NewMicroserviceLogger)
 }
 
-func (s *Service) listB(name string) *core.TryRequest {
+func (s *Service) listB(name string) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamName, name).
 		SetURL(ApiLoggers)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.Client, req, ResultProperty)
 }
 
 // Get returns the configured/effective log level of a single logger (a
 // qualified package or class name).
 func (s *Service) Get(ctx context.Context, name string, loggerName string) op.Result[jsonmodels.MicroserviceLogger] {
-	return core.Execute(ctx, s.getB(name, loggerName), jsonmodels.NewMicroserviceLogger)
+	return httpcore.Execute(ctx, s.getB(name, loggerName), jsonmodels.NewMicroserviceLogger)
 }
 
-func (s *Service) getB(name string, loggerName string) *core.TryRequest {
+func (s *Service) getB(name string, loggerName string) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamName, name).
 		SetPathParam(ParamLoggerName, loggerName).
 		SetURL(ApiLogger)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }
 
 // Set configures the log level of a logger by POSTing the given body (e.g.
@@ -74,10 +74,10 @@ func (s *Service) getB(name string, loggerName string) *core.TryRequest {
 // logger to its default level (the CLI delete command). The endpoint returns no
 // body on success.
 func (s *Service) Set(ctx context.Context, name string, loggerName string, body any) op.Result[jsonmodels.MicroserviceLogger] {
-	return core.Execute(ctx, s.setB(name, loggerName, body), jsonmodels.NewMicroserviceLogger)
+	return httpcore.Execute(ctx, s.setB(name, loggerName, body), jsonmodels.NewMicroserviceLogger)
 }
 
-func (s *Service) setB(name string, loggerName string, body any) *core.TryRequest {
+func (s *Service) setB(name string, loggerName string, body any) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetBody(body).
@@ -86,5 +86,5 @@ func (s *Service) setB(name string, loggerName string, body any) *core.TryReques
 		SetPathParam(ParamName, name).
 		SetPathParam(ParamLoggerName, loggerName).
 		SetURL(ApiLogger)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }

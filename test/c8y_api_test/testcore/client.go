@@ -15,13 +15,11 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/internal/pkg/testingutils"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/stretchr/testify/require"
-	"resty.dev/v3"
 )
 
 // TestMode returns the current test mode: "offline" (default), "live", or "record".
@@ -112,7 +110,7 @@ func CreateTestClient(t *testing.T) *api.Client {
 		opts.Transport = rec
 	}
 	client := api.NewClientFromEnvironment(opts)
-	client.HTTPClient.SetRetryCount(1)
+	client.Resty().SetRetryCount(1)
 	return client
 }
 
@@ -133,7 +131,7 @@ func CreateTestClientBasicAuth(t *testing.T) *api.Client {
 		opts.Transport = rec
 	}
 	client := api.NewClient(opts)
-	client.HTTPClient.SetRetryCount(1)
+	client.Resty().SetRetryCount(1)
 	return client
 }
 
@@ -148,7 +146,7 @@ func CreateTestClientWithFakeServer(t *testing.T) (*api.Client, *fakeserver.Fake
 		opts.Transport = rec
 	}
 	client := api.NewClientFromEnvironment(opts)
-	client.HTTPClient.SetRetryCount(1)
+	client.Resty().SetRetryCount(1)
 	return client, srv
 }
 
@@ -183,12 +181,6 @@ func CreateTestClientWithToken(t *testing.T) *api.Client {
 		opts.Transport = rec
 	}
 	return api.NewClientFromEnvironment(opts)
-}
-
-func NewService() *core.Service {
-	return &core.Service{
-		Client: resty.New().SetBaseURL("https://example.cumulocity.com"),
-	}
 }
 
 func CreateManagedObject(t *testing.T, client *api.Client) op.Result[jsonmodels.ManagedObject] {

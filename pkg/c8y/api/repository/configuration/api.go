@@ -12,6 +12,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -24,9 +25,9 @@ const ParamID = "id"
 const ResultProperty = "managedObjects"
 const FragmentConfiguration = "c8y_ConfigurationDump"
 
-func NewService(s *core.Service) *Service {
+func NewService(s *httpcore.Service) *Service {
 	service := &Service{
-		Service:        *s,
+		svc:            *s,
 		managedObjects: managedobjects.NewService(s),
 		binaries:       binaries.NewService(s),
 	}
@@ -36,7 +37,7 @@ func NewService(s *core.Service) *Service {
 
 // Service api to interact with configuration items
 type Service struct {
-	core.Service
+	svc            httpcore.Service
 	managedObjects *managedobjects.Service
 	binaries       *binaries.Service
 	Resolver       *Resolver
@@ -216,10 +217,10 @@ type ListOptions struct {
 
 // List configurations
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Configuration] {
-	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewConfiguration)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewConfiguration)
 }
 
-func (s *Service) listB(opt ListOptions) *core.TryRequest {
+func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 	listOpts := managedobjects.ListOptions{
 		Query: model.NewInventoryQuery().
 			AddOrderBy("name").
@@ -234,12 +235,12 @@ func (s *Service) listB(opt ListOptions) *core.TryRequest {
 			PageSize:    opt.PageSize,
 		},
 	}
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetQueryParamsFromValues(core.QueryParameters(listOpts)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(listOpts)).
 		SetURL(managedobjects.ApiManagedObjects)
-	return core.NewTryRequest(s.Client, req, managedobjects.ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, managedobjects.ResultProperty)
 }
 
 // ConfigurationIterator provides iteration over configuration items
@@ -446,7 +447,7 @@ func (s *Service) Get(ctx context.Context, ID string, opt GetOptions) op.Result[
 	}
 	meta["id"] = id
 
-	return core.Execute(ctx, s.getB(id, opt), jsonmodels.NewConfiguration, meta)
+	return httpcore.Execute(ctx, s.getB(id, opt), jsonmodels.NewConfiguration, meta)
 }
 
 // Update a configuration
@@ -464,7 +465,7 @@ func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jso
 	}
 	meta["id"] = id
 
-	return core.Execute(ctx, s.updateB(id, body), jsonmodels.NewConfiguration, meta)
+	return httpcore.Execute(ctx, s.updateB(id, body), jsonmodels.NewConfiguration, meta)
 }
 
 // Delete a configuration
@@ -485,7 +486,7 @@ func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.R
 	}
 	meta["id"] = id
 
-	return core.ExecuteNoContent(ctx, s.deleteB(id, opt), meta).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.deleteB(id, opt), meta).IgnoreNotFound()
 }
 
 // GetOrCreate searches by name and optional configuration type, creating if not found
@@ -602,38 +603,38 @@ func (s *Service) UpsertByName(ctx context.Context, opt CreateOptions) op.Result
 
 // Builder methods
 
-func (s *Service) getB(ID string, opt GetOptions) *core.TryRequest {
+func (s *Service) getB(ID string, opt GetOptions) *httpcore.TryRequest {
 	getOpts := managedobjects.GetOptions{
 		WithParents: opt.WithParents,
 	}
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam("id", ID).
-		SetQueryParamsFromValues(core.QueryParameters(getOpts)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(getOpts)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObject)
-	return core.NewTryRequest(s.Client, req, "")
+	return httpcore.NewTryRequest(s.svc.Client, req, "")
 }
 
-func (s *Service) updateB(ID string, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) updateB(ID string, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam("id", ID).
 		SetBody(body).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObject)
-	return core.NewTryRequest(s.Client, req, "")
+	return httpcore.NewTryRequest(s.svc.Client, req, "")
 }
 
-func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
+func (s *Service) deleteB(ID string, opt DeleteOptions) *httpcore.TryRequest {
 	deleteOpts := managedobjects.DeleteOptions{
 		ForceCascade: &opt.ForceCascade,
 	}
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam("id", ID).
-		SetQueryParamsFromValues(core.QueryParameters(deleteOpts)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(deleteOpts)).
 		SetURL(ApiManagedObject)
-	return core.NewTryRequest(s.Client, req, "")
+	return httpcore.NewTryRequest(s.svc.Client, req, "")
 }

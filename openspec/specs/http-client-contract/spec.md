@@ -1,5 +1,8 @@
-## ADDED Requirements
+# http-client-contract Specification
 
+## Purpose
+Defines the public HTTP extension points of the SDK (RoundTripper middleware, request and response hooks, raw responses, and the Resty() escape hatch) and guarantees that the public API uses only standard library and SDK-owned types, so resty upgrades cannot break users.
+## Requirements
 ### Requirement: Public API uses no HTTP library types
 The SDK SHALL NOT expose resty types in any exported function signature, struct field, method, or promoted field of an embedded type, with the single exception of `(*api.Client).Resty()`.
 
@@ -61,10 +64,10 @@ The middleware that `NewClient` installs itself, and the unused middleware helpe
 - **THEN** the caller still receives the full response body
 
 ### Requirement: Raw responses are SDK-owned
-Functions that return a raw HTTP response (`core.ExecuteResponseOnly`, `api.RequestResult`) SHALL return SDK-owned copies of the response body and the sent request, so their contents do not change after the call returns.
+Public functions that return a raw HTTP response (`api.Client.SendRequest`, through `api.RequestResult`) SHALL return SDK-owned copies of the response body and the sent request, so their contents do not change after the call returns. Lower-level helpers that return resty responses (`ExecuteResponseOnly`) SHALL be internal.
 
 #### Scenario: Request body stays stable after later requests
-- **WHEN** a caller keeps the request returned by `core.ExecuteResponseOnly` and the client then sends 100 more requests with different bodies
+- **WHEN** a caller keeps `RequestResult.Response.Request` from `SendRequest` and the client then sends 100 more requests with different bodies
 - **THEN** reading the kept request's body returns the original body
 
 ### Requirement: Service types do not expose core internals
@@ -73,3 +76,4 @@ Exported service types SHALL NOT embed `core.Service`; the HTTP client and servi
 #### Scenario: No promoted client field
 - **WHEN** user code tries to access `client.Alarms.Client`
 - **THEN** the code does not compile
+

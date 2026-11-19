@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"mime"
+	"net/http"
 	"net/url"
 	"strings"
 	"testing"
@@ -17,7 +18,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/vbauerster/mpb/v8"
 	"github.com/vbauerster/mpb/v8/decor"
-	"resty.dev/v3"
 )
 
 // completingReader wraps a reader and completes the progress bar when EOF is reached
@@ -76,7 +76,7 @@ func TestSendRequest_QueryString(t *testing.T) {
 	// Verify we can parse JSON response
 	managedObjects := result.JSON("managedObjects")
 	assert.True(t, managedObjects.Exists())
-	queryParams := result.Response.Request.QueryParams.Encode()
+	queryParams := result.Response.Request.URL.Query().Encode()
 	assert.Contains(t, queryParams, "type=c8y_Device")
 	assert.Contains(t, queryParams, "pageSize=5")
 }
@@ -100,7 +100,7 @@ func TestSendRequest_QueryStruct(t *testing.T) {
 
 	assert.NoError(t, result.Error)
 	assert.False(t, result.IsError())
-	queryParams := result.Response.Request.QueryParams.Encode()
+	queryParams := result.Response.Request.URL.Query().Encode()
 	assert.Contains(t, queryParams, "type=c8y_Device")
 	assert.Contains(t, queryParams, "pageSize=10")
 }
@@ -120,7 +120,7 @@ func TestSendRequest_QueryURLValues(t *testing.T) {
 
 	assert.NoError(t, result.Error)
 	assert.False(t, result.IsError())
-	queryParams := result.Response.Request.QueryParams.Encode()
+	queryParams := result.Response.Request.URL.Query().Encode()
 	assert.Contains(t, queryParams, "type=c8y_Device")
 	assert.Contains(t, queryParams, "pageSize=10")
 }
@@ -137,7 +137,7 @@ func TestSendRequest_InlineQueryParams(t *testing.T) {
 
 	assert.NoError(t, result.Error)
 	assert.False(t, result.IsError())
-	queryParams := result.Response.Request.QueryParams.Encode()
+	queryParams := result.Response.Request.URL.Query().Encode()
 	assert.Contains(t, queryParams, "type=c8y_Device")
 	assert.Contains(t, queryParams, "pageSize=10")
 }
@@ -395,7 +395,7 @@ func TestSendRequest_PathAndQueryEncoding(t *testing.T) {
 	assert.Equal(t, 200, result.StatusCode(), "Should return 200 OK in dry run")
 
 	// Verify query parameters were properly merged and encoded
-	queryParams := result.Response.Request.QueryParams
+	queryParams := result.Response.Request.URL.Query()
 	assert.NotEmpty(t, queryParams)
 
 	// Both inline path query params and additional Query params should be present
@@ -417,11 +417,11 @@ func Test_ParseRequestWithSpaces(t *testing.T) {
 	})
 
 	// path
-	escapedPath := result.Response.Request.RawRequest.URL.EscapedPath()
+	escapedPath := result.Response.Request.URL.EscapedPath()
 	assert.Equal(t, "/base/path/with%20space", escapedPath)
 
 	// query parameters
-	queryParams := result.Response.Request.QueryParams
+	queryParams := result.Response.Request.URL.Query()
 	encodedQueryParams := queryParams.Encode()
 	encodedQueryParamsParts := strings.Split(encodedQueryParams, "&")
 	assert.Contains(t, encodedQueryParamsParts, "query=test+eq+%27me%27")
@@ -499,9 +499,9 @@ func TestSendRequest_CustomBodyWrapper_Simple(t *testing.T) {
 		Path:   "/inventory/managedObjects",
 		Accept: types.MimeTypeApplicationJSON,
 		DryRun: &dryRun,
-		OnResponse: func(response *resty.Response) error {
+		OnResponse: func(response *http.Response) error {
 			wrapperCalled = true
-			t.Logf("OnResponse called, ContentLength: %d", response.RawResponse.ContentLength)
+			t.Logf("OnResponse called, ContentLength: %d", response.ContentLength)
 
 			// Wrap the response body with a counting reader
 			// Use response.Body (Resty's body) for consistency
@@ -509,7 +509,6 @@ func TestSendRequest_CustomBodyWrapper_Simple(t *testing.T) {
 				Reader: response.Body,
 			}
 			response.Body = counter
-			response.RawResponse.Body = counter
 
 			return nil
 		},
@@ -579,11 +578,11 @@ func TestSendRequest_CustomBodyWriter(t *testing.T) {
 		Accept: types.MimeTypeApplicationJSON,
 		DryRun: &dryRun,
 		// OnResponse is called BEFORE the body is read, allowing us to wrap it
-		OnResponse: func(response *resty.Response) error {
+		OnResponse: func(response *http.Response) error {
 			wrapperCalled = true
 
 			basename := "download"
-			_, params, err := mime.ParseMediaType(response.Header().Get("Content-Disposition"))
+			_, params, err := mime.ParseMediaType(response.Header.Get("Content-Disposition"))
 			if err == nil {
 				if filename, ok := params["filename"]; ok {
 					basename = filename
@@ -593,8 +592,8 @@ func TestSendRequest_CustomBodyWriter(t *testing.T) {
 			// Note: ContentLength is set to -1 if the response is chunked/compressed
 			// For unknown sizes, set total to 0 and let it auto-complete on EOF
 			barTotal := int64(0)
-			if response.RawResponse.ContentLength > 0 {
-				barTotal = response.RawResponse.ContentLength
+			if response.ContentLength > 0 {
+				barTotal = response.ContentLength
 			}
 
 			bar = progress.AddBar(barTotal,

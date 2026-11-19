@@ -29,6 +29,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -53,14 +54,14 @@ var (
 // in a collection response.
 const ResultProperty = "inventoryAssignments"
 
-// NewService creates a new Service backed by the provided core.Service.
-func NewService(s *core.Service) *Service {
-	return &Service{Service: *s}
+// NewService creates a new Service backed by the provided httpcore.Service.
+func NewService(s *httpcore.Service) *Service {
+	return &Service{svc: *s}
 }
 
 // Service provides access to the Cumulocity Device Permissions API.
 type Service struct {
-	core.Service
+	svc httpcore.Service
 }
 
 // ---------------------------------------------------------------------------
@@ -114,16 +115,16 @@ type GetInventoryRoleAssignmentOptions struct {
 // Endpoint: GET /user/devicePermissions/{id}
 // OAS response schema: DevicePermissionOwners
 func (s *Service) GetDevicePermissions(ctx context.Context, opt GetDevicePermissionsOptions) op.Result[jsonmodels.DevicePermissionOwners] {
-	return core.Execute(ctx, s.getDevicePermissionsB(opt), jsonmodels.NewDevicePermissionOwners)
+	return httpcore.Execute(ctx, s.getDevicePermissionsB(opt), jsonmodels.NewDevicePermissionOwners)
 }
 
-func (s *Service) getDevicePermissionsB(opt GetDevicePermissionsOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getDevicePermissionsB(opt GetDevicePermissionsOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, opt.ManagedObjectID).
 		SetURL(ApiDevicePermissions)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // UpdateDevicePermissions updates the device-level permissions for users and
@@ -151,17 +152,17 @@ func (s *Service) getDevicePermissionsB(opt GetDevicePermissionsOptions) *core.T
 //
 // The PUT returns HTTP 200 with no response body.
 func (s *Service) UpdateDevicePermissions(ctx context.Context, opt GetDevicePermissionsOptions, body any) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.updateDevicePermissionsB(opt, body))
+	return httpcore.ExecuteNoContent(ctx, s.updateDevicePermissionsB(opt, body))
 }
 
-func (s *Service) updateDevicePermissionsB(opt GetDevicePermissionsOptions, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) updateDevicePermissionsB(opt GetDevicePermissionsOptions, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, opt.ManagedObjectID).
 		SetBody(body).
 		SetURL(ApiDevicePermissions)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // ---------------------------------------------------------------------------
@@ -171,7 +172,7 @@ func (s *Service) updateDevicePermissionsB(opt GetDevicePermissionsOptions, body
 // ListInventoryRoleAssignments retrieves a single page of inventory-role
 // assignments for the specified user.
 func (s *Service) ListInventoryRoleAssignments(ctx context.Context, opt ListInventoryRoleAssignmentOptions) op.Result[jsonmodels.InventoryRoleAssignment] {
-	return core.ExecuteCollection(ctx, s.listInventoryRoleAssignmentsB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewInventoryRoleAssignment)
+	return httpcore.ExecuteCollection(ctx, s.listInventoryRoleAssignmentsB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewInventoryRoleAssignment)
 }
 
 // ListAllInventoryRoleAssignments returns a lazy iterator that transparently
@@ -189,15 +190,15 @@ func (s *Service) ListAllInventoryRoleAssignments(ctx context.Context, opts List
 	)
 }
 
-func (s *Service) listInventoryRoleAssignmentsB(opt ListInventoryRoleAssignmentOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listInventoryRoleAssignmentsB(opt ListInventoryRoleAssignmentOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamUserID, opt.UserID).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiInventoryRoleAssignments)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // AssignInventoryRole assigns one or more inventory roles to a user for a
@@ -211,11 +212,11 @@ func (s *Service) listInventoryRoleAssignmentsB(opt ListInventoryRoleAssignmentO
 //	  "roles": []map[string]any{{"id": 1}},
 //	}
 func (s *Service) AssignInventoryRole(ctx context.Context, opt UserScopedOptions, body any) op.Result[jsonmodels.InventoryRoleAssignment] {
-	return core.Execute(ctx, s.assignInventoryRoleB(opt, body), jsonmodels.NewInventoryRoleAssignment).IgnoreConflict()
+	return httpcore.Execute(ctx, s.assignInventoryRoleB(opt, body), jsonmodels.NewInventoryRoleAssignment).IgnoreConflict()
 }
 
-func (s *Service) assignInventoryRoleB(opt UserScopedOptions, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) assignInventoryRoleB(opt UserScopedOptions, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
@@ -223,7 +224,7 @@ func (s *Service) assignInventoryRoleB(opt UserScopedOptions, body any) *core.Tr
 		SetPathParam(ParamUserID, opt.UserID).
 		SetBody(body).
 		SetURL(ApiInventoryRoleAssignments)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // ---------------------------------------------------------------------------
@@ -232,28 +233,28 @@ func (s *Service) assignInventoryRoleB(opt UserScopedOptions, body any) *core.Tr
 
 // GetInventoryRoleAssignment retrieves a single inventory-role assignment.
 func (s *Service) GetInventoryRoleAssignment(ctx context.Context, opt GetInventoryRoleAssignmentOptions) op.Result[jsonmodels.InventoryRoleAssignment] {
-	return core.Execute(ctx, s.getInventoryRoleAssignmentB(opt), jsonmodels.NewInventoryRoleAssignment)
+	return httpcore.Execute(ctx, s.getInventoryRoleAssignmentB(opt), jsonmodels.NewInventoryRoleAssignment)
 }
 
-func (s *Service) getInventoryRoleAssignmentB(opt GetInventoryRoleAssignmentOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getInventoryRoleAssignmentB(opt GetInventoryRoleAssignmentOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamUserID, opt.UserID).
 		SetPathParam(ParamID, strconv.FormatInt(opt.ID, 10)).
 		SetURL(ApiInventoryRoleAssignment)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // UpdateInventoryRoleAssignment modifies an existing inventory-role assignment.
 // The body has the same shape as AssignInventoryRole.
 func (s *Service) UpdateInventoryRoleAssignment(ctx context.Context, opt GetInventoryRoleAssignmentOptions, body any) op.Result[jsonmodels.InventoryRoleAssignment] {
-	return core.Execute(ctx, s.updateInventoryRoleAssignmentB(opt, body), jsonmodels.NewInventoryRoleAssignment)
+	return httpcore.Execute(ctx, s.updateInventoryRoleAssignmentB(opt, body), jsonmodels.NewInventoryRoleAssignment)
 }
 
-func (s *Service) updateInventoryRoleAssignmentB(opt GetInventoryRoleAssignmentOptions, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) updateInventoryRoleAssignmentB(opt GetInventoryRoleAssignmentOptions, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
@@ -262,20 +263,20 @@ func (s *Service) updateInventoryRoleAssignmentB(opt GetInventoryRoleAssignmentO
 		SetPathParam(ParamID, strconv.FormatInt(opt.ID, 10)).
 		SetBody(body).
 		SetURL(ApiInventoryRoleAssignment)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // DeleteInventoryRoleAssignment removes an inventory-role assignment.
 func (s *Service) DeleteInventoryRoleAssignment(ctx context.Context, opt GetInventoryRoleAssignmentOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteInventoryRoleAssignmentB(opt)).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.deleteInventoryRoleAssignmentB(opt)).IgnoreNotFound()
 }
 
-func (s *Service) deleteInventoryRoleAssignmentB(opt GetInventoryRoleAssignmentOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) deleteInventoryRoleAssignmentB(opt GetInventoryRoleAssignmentOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamUserID, opt.UserID).
 		SetPathParam(ParamID, strconv.FormatInt(opt.ID, 10)).
 		SetURL(ApiInventoryRoleAssignment)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }

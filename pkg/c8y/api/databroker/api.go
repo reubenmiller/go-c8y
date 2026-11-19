@@ -4,9 +4,9 @@ package databroker
 import (
 	"context"
 
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -21,12 +21,12 @@ const ResultProperty = "connectors"
 
 // Service interacts with data-broker connectors.
 type Service struct {
-	core.Service
+	svc httpcore.Service
 }
 
 // NewService creates a data-broker service.
-func NewService(s *core.Service) *Service {
-	return &Service{Service: *s}
+func NewService(s *httpcore.Service) *Service {
+	return &Service{svc: *s}
 }
 
 // ConnectorIterator iterates data-broker connectors.
@@ -39,7 +39,7 @@ type ListOptions struct {
 
 // List returns a page of data-broker connectors.
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.DatabrokerConnector] {
-	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewDatabrokerConnector)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewDatabrokerConnector)
 }
 
 // ListAll returns an iterator over all data-broker connectors.
@@ -56,41 +56,41 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *ConnectorItera
 	)
 }
 
-func (s *Service) listB(opt ListOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiConnectors)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // Get returns a data-broker connector by id.
 func (s *Service) Get(ctx context.Context, id string) op.Result[jsonmodels.DatabrokerConnector] {
-	return core.Execute(ctx, s.getB(id), jsonmodels.NewDatabrokerConnector)
+	return httpcore.Execute(ctx, s.getB(id), jsonmodels.NewDatabrokerConnector)
 }
 
-func (s *Service) getB(id string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getB(id string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamID, id).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiConnector)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Update updates a data-broker connector by id (e.g. its status).
 func (s *Service) Update(ctx context.Context, id string, body any) op.Result[jsonmodels.DatabrokerConnector] {
-	return core.Execute(ctx, s.updateB(id, body), jsonmodels.NewDatabrokerConnector)
+	return httpcore.Execute(ctx, s.updateB(id, body), jsonmodels.NewDatabrokerConnector)
 }
 
-func (s *Service) updateB(id string, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) updateB(id string, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamID, id).
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiConnector)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }

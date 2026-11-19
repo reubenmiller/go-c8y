@@ -3,9 +3,9 @@ package managedobjects
 import (
 	"fmt"
 
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 )
 
 // ResolveListStrategy picks the pagination strategy for an inventory-style list
@@ -63,7 +63,7 @@ func hasPlainFilters(opts any) bool {
 	if opts == nil {
 		return false
 	}
-	params := core.QueryParameters(opts)
+	params := httpcore.QueryParameters(opts)
 	for _, name := range plainFilterParams {
 		if params.Get(name) != "" {
 			return true

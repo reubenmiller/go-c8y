@@ -6,6 +6,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -20,9 +21,9 @@ const ResultProperty = "managedObjects"
 
 // Service to manage binaries
 // Managed objects can perform operations to store, retrieve and delete binaries. One binary can store only one file. Together with the binary, a managed object is created which acts as a metadata information for the binary.
-type Service struct{ core.Service }
+type Service struct{ httpcore.Service }
 
-func NewService(common *core.Service) *Service {
+func NewService(common *httpcore.Service) *Service {
 	return &Service{Service: *common}
 }
 
@@ -35,7 +36,7 @@ type BinaryIterator = pagination.Iterator[jsonmodels.Binary]
 
 // List binaries
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Binary] {
-	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewBinary)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewBinary)
 }
 
 // ListAll returns an iterator for all binaries
@@ -52,49 +53,49 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *BinaryIterator
 	)
 }
 
-func (s *Service) listB(opt ListOptions) *core.TryRequest {
+func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiBinaries)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.Client, req, ResultProperty)
 }
 
 // Get a binary
 func (s *Service) Get(ctx context.Context, ID string) op.Result[core.BinaryResponse] {
-	return core.ExecuteBinary(ctx, s.getB(ID))
+	return httpcore.ExecuteBinary(ctx, s.getB(ID))
 }
 
-func (s *Service) getB(ID string) *core.TryRequest {
+func (s *Service) getB(ID string) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamID, ID).
 		SetURL(ApiBinary)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }
 
 type UploadFileOptions = core.UploadFileOptions
 
 // Create/Upload a binary
 func (s *Service) Create(ctx context.Context, opt UploadFileOptions) op.Result[jsonmodels.Binary] {
-	return core.Execute(ctx, s.createB(opt), jsonmodels.NewBinary)
+	return httpcore.Execute(ctx, s.createB(opt), jsonmodels.NewBinary)
 }
 
-func (s *Service) createB(opt UploadFileOptions) *core.TryRequest {
+func (s *Service) createB(opt UploadFileOptions) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
-		SetMultipartFields(core.NewMultiPartFileFields(opt)...).
+		SetMultipartFields(httpcore.NewMultiPartFileFields(opt)...).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiBinaries)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }
 
 // Update/replace a binary
 func (s *Service) Update(ctx context.Context, ID string, opt UploadFileOptions) op.Result[jsonmodels.Binary] {
-	return core.Execute(ctx, s.updateB(ID, opt), jsonmodels.NewBinary)
+	return httpcore.Execute(ctx, s.updateB(ID, opt), jsonmodels.NewBinary)
 }
 
-func (s *Service) updateB(eventID string, opt UploadFileOptions) *core.TryRequest {
+func (s *Service) updateB(eventID string, opt UploadFileOptions) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamID, eventID).
@@ -102,18 +103,18 @@ func (s *Service) updateB(eventID string, opt UploadFileOptions) *core.TryReques
 		SetContentType(types.MimeTypeApplicationOctetStream).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiBinary)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }
 
 // Delete a binary
 func (s *Service) Delete(ctx context.Context, ID string) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteB(ID)).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.deleteB(ID)).IgnoreNotFound()
 }
 
-func (s *Service) deleteB(ID string) *core.TryRequest {
+func (s *Service) deleteB(ID string) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamID, ID).
 		SetURL(ApiBinary)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }

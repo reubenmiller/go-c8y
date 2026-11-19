@@ -1,4 +1,4 @@
-package core
+package httpcore
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
@@ -91,7 +92,7 @@ func Execute[T any](ctx context.Context, req *TryRequest, fromBytes func([]byte)
 			result = result.WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
 		} else {
 			// Extract HTTP status from error if response is nil
-			var apiErr *Error
+			var apiErr *core.Error
 			if errors.As(err, &apiErr) && apiErr.Code >= 100 && apiErr.Code < 600 {
 				result = result.WithHTTPStatus(apiErr.Code)
 				if apiErr.Duration > 0 {
@@ -194,7 +195,7 @@ func ExecuteCollection[T any](ctx context.Context, req *TryRequest, arrayPath, m
 			result = result.WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
 		} else {
 			// Extract HTTP status from error if response is nil
-			var apiErr *Error
+			var apiErr *core.Error
 			if errors.As(err, &apiErr) && apiErr.Code >= 100 && apiErr.Code < 600 {
 				result = result.WithHTTPStatus(apiErr.Code)
 				if apiErr.Duration > 0 {
@@ -269,7 +270,7 @@ func ExecuteCollection[T any](ctx context.Context, req *TryRequest, arrayPath, m
 }
 
 // Execute a request which expects a binary response which allows the user to read the body
-func ExecuteBinary(ctx context.Context, req *TryRequest) op.Result[BinaryResponse] {
+func ExecuteBinary(ctx context.Context, req *TryRequest) op.Result[core.BinaryResponse] {
 	// Check if execution should be deferred
 	if ctxhelpers.IsDeferredExecution(ctx) {
 		// Build the request to capture all parameters
@@ -283,9 +284,9 @@ func ExecuteBinary(ctx context.Context, req *TryRequest) op.Result[BinaryRespons
 		}
 
 		// Return a result with the executor function
-		return op.Result[BinaryResponse]{
+		return op.Result[core.BinaryResponse]{
 			Request: httpReq,
-		}.WithExecutor(func(execCtx context.Context) op.Result[BinaryResponse] {
+		}.WithExecutor(func(execCtx context.Context) op.Result[core.BinaryResponse] {
 			return ExecuteBinary(execCtx, req)
 		})
 	}
@@ -297,7 +298,7 @@ func ExecuteBinary(ctx context.Context, req *TryRequest) op.Result[BinaryRespons
 		Send())
 
 	if err != nil {
-		return op.Failed[BinaryResponse](err, false).WithHTTPStatus(getStatusCodeFromError(err))
+		return op.Failed[core.BinaryResponse](err, false).WithHTTPStatus(getStatusCodeFromError(err))
 	}
 
 	bin := NewBinaryResponse(resp)
@@ -320,10 +321,8 @@ func ExecuteBinary(ctx context.Context, req *TryRequest) op.Result[BinaryRespons
 	return op.OK(*bin).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
 }
 
-type NoContent []byte
-
 // Execute a request that doesn't any result only if there was an error or not
-func ExecuteNoContent(ctx context.Context, req *TryRequest, extraMeta ...map[string]any) op.Result[NoContent] {
+func ExecuteNoContent(ctx context.Context, req *TryRequest, extraMeta ...map[string]any) op.Result[core.NoContent] {
 	// Check if execution should be deferred
 	if ctxhelpers.IsDeferredExecution(ctx) {
 		// Build the request to capture all parameters
@@ -337,7 +336,7 @@ func ExecuteNoContent(ctx context.Context, req *TryRequest, extraMeta ...map[str
 		}
 
 		// Return a result with the executor function
-		result := op.Result[NoContent]{
+		result := op.Result[core.NoContent]{
 			Request: httpReq,
 		}
 
@@ -351,7 +350,7 @@ func ExecuteNoContent(ctx context.Context, req *TryRequest, extraMeta ...map[str
 			}
 		}
 
-		return result.WithExecutor(func(execCtx context.Context) op.Result[NoContent] {
+		return result.WithExecutor(func(execCtx context.Context) op.Result[core.NoContent] {
 			return ExecuteNoContent(execCtx, req, extraMeta...)
 		})
 	}
@@ -376,13 +375,13 @@ func ExecuteNoContent(ctx context.Context, req *TryRequest, extraMeta ...map[str
 	}
 
 	if err != nil {
-		result := op.Failed[NoContent](err, true)
+		result := op.Failed[core.NoContent](err, true)
 		if resp != nil {
 			result = result.WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
 		}
 		return result.WithRequest(httpReq)
 	}
-	var empty NoContent
+	var empty core.NoContent
 	if resp.StatusCode() == http.StatusNoContent {
 		return op.NoContent(empty, meta).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
 	}

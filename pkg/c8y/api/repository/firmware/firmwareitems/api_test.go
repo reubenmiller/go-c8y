@@ -9,13 +9,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"resty.dev/v3"
 )
 
 func testService(handler http.HandlerFunc) (*Service, func()) {
 	ts := httptest.NewServer(handler)
-	return NewService(&core.Service{Client: resty.New().SetBaseURL(ts.URL)}), ts.Close
+	return NewService(&httpcore.Service{Client: resty.New().SetBaseURL(ts.URL)}), ts.Close
 }
 
 // TestCreateRawPassesBodyThrough verifies CreateRaw POSTs the pre-built body to

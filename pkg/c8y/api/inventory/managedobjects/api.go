@@ -16,6 +16,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/realtime"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/source"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -33,9 +34,9 @@ const ParamID = "id"
 
 const ResultProperty = "managedObjects"
 
-func NewService(s *core.Service) *Service {
+func NewService(s *httpcore.Service) *Service {
 	service := &Service{
-		Service:         *s,
+		svc:             *s,
 		identityService: identity.NewService(s),
 		binariesService: binaries.NewService(s),
 		ChildAdditions:  childadditions.NewService(s),
@@ -107,7 +108,7 @@ func NewService(s *core.Service) *Service {
 
 // Service inventory api to interact with managed objects
 type Service struct {
-	core.Service
+	svc             httpcore.Service
 	identityService *identity.Service
 	binariesService *binaries.Service
 	ChildAdditions  *childadditions.Service
@@ -157,13 +158,13 @@ type ListOptions struct {
 }
 
 // List managed objects
-func (s *Service) listB(opt ListOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiManagedObjects)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 type GetOptions struct {
@@ -184,142 +185,142 @@ func parseCount(b []byte) int64 {
 }
 
 // Count the managed objects matching the filter
-func (s *Service) countB(opt ListOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) countB(opt ListOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiManagedObjectsCount)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Create a managed object
-func (s *Service) createB(body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) createB(body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObjects)
-	return core.NewTryRequest(s.Client, req, "")
+	return httpcore.NewTryRequest(s.svc.Client, req, "")
 }
 
-func (s *Service) createBulkB(managedObjects []any) *core.TryRequest {
+func (s *Service) createBulkB(managedObjects []any) *httpcore.TryRequest {
 	body := make(map[string]any, 0)
 	body[ResultProperty] = managedObjects
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeManagedObjectCollection).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObjects)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // Get a managed object
-func (s *Service) getB(ID string, opt GetOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getB(ID string, opt GetOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamID, ID).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObject)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Update a managed object
-func (s *Service) updateB(ID string, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) updateB(ID string, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamID, ID).
 		SetBody(body).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObject)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
-func (s *Service) updateBulkB(managedObjects []any) *core.TryRequest {
+func (s *Service) updateBulkB(managedObjects []any) *httpcore.TryRequest {
 	body := make(map[string]any, 0)
 	body[ResultProperty] = managedObjects
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeManagedObjectCollection).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObjects)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // List of supported measurement types for a given managed object
 func (s *Service) ListSupportedMeasurements(ctx context.Context, ID string) op.Result[jsonmodels.SupportedMeasurements] {
-	return core.Execute(ctx, s.listSupportedMeasurementsB(ID), jsonmodels.NewSupportedMeasurements)
+	return httpcore.Execute(ctx, s.listSupportedMeasurementsB(ID), jsonmodels.NewSupportedMeasurements)
 }
 
-func (s *Service) listSupportedMeasurementsB(ID string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listSupportedMeasurementsB(ID string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamID, ID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObjectSupportedMeasurements)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // List of supported measurement series for a given managed object
 func (s *Service) ListSupportedSeries(ctx context.Context, ID string) op.Result[jsonmodels.SupportedSeries] {
-	return core.Execute(ctx, s.listSupportedSeriesB(ID), jsonmodels.NewSupportedSeries)
+	return httpcore.Execute(ctx, s.listSupportedSeriesB(ID), jsonmodels.NewSupportedSeries)
 }
-func (s *Service) listSupportedSeriesB(ID string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listSupportedSeriesB(ID string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamID, ID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObjectSupportedSeries)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // GetAvailability retrieves the date when a managed object last sent a message to Cumulocity.
 func (s *Service) GetAvailability(ctx context.Context, ID string) op.Result[jsonmodels.ManagedObjectAvailability] {
-	return core.Execute(ctx, s.getAvailabilityB(ID), jsonmodels.NewManagedObjectAvailability)
+	return httpcore.Execute(ctx, s.getAvailabilityB(ID), jsonmodels.NewManagedObjectAvailability)
 }
 
-func (s *Service) getAvailabilityB(ID string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getAvailabilityB(ID string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamID, ID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObjectAvailability)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // GetUser retrieves the device owner's username and enabled state for a managed object.
 func (s *Service) GetUser(ctx context.Context, ID string) op.Result[jsonmodels.ManagedObjectUser] {
-	return core.Execute(ctx, s.getUserB(ID), jsonmodels.NewManagedObjectUser)
+	return httpcore.Execute(ctx, s.getUserB(ID), jsonmodels.NewManagedObjectUser)
 }
 
-func (s *Service) getUserB(ID string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getUserB(ID string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamID, ID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObjectUser)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // UpdateUser updates the device owner's enabled state for a managed object.
 func (s *Service) UpdateUser(ctx context.Context, ID string, body any) op.Result[jsonmodels.ManagedObjectUser] {
-	return core.Execute(ctx, s.updateUserB(ID, body), jsonmodels.NewManagedObjectUser)
+	return httpcore.Execute(ctx, s.updateUserB(ID, body), jsonmodels.NewManagedObjectUser)
 }
 
-func (s *Service) updateUserB(ID string, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) updateUserB(ID string, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamID, ID).
 		SetBody(body).
 		SetHeader("Content-Type", "application/vnd.com.nsn.cumulocity.managedobjectuser+json").
 		SetHeader("Accept", "application/vnd.com.nsn.cumulocity.managedobjectuser+json").
 		SetURL(ApiManagedObjectUser)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // DeleteOptions options to delete a managed object
@@ -337,13 +338,13 @@ type DeleteOptions struct {
 }
 
 // Delete a managed object
-func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) deleteB(ID string, opt DeleteOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamID, ID).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiManagedObject)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // ResolveID resolves an ID string that may contain a resolver scheme.
@@ -454,14 +455,14 @@ type ManagedObjectStream = realtime.Stream[realtime.StreamData[jsonmodels.Manage
 //	    return err
 //	}
 func (s *Service) SubscribeStream(ctx context.Context, ID string) op.Result[*ManagedObjectStream] {
-	err := s.RealtimeClient.Connect()
+	err := s.svc.RealtimeClient.Connect()
 	if err != nil {
 		return op.Failed[*ManagedObjectStream](err, false)
 	}
 
 	messages := make(chan *realtime.Message, 10)
 	pattern := realtime.ManagedObjects(ID)
-	errorChan := s.RealtimeClient.Subscribe(ctx, pattern, messages)
+	errorChan := s.svc.RealtimeClient.Subscribe(ctx, pattern, messages)
 	stream := realtime.NewStream(ctx, messages, errorChan, func(msg *realtime.Message) realtime.StreamData[jsonmodels.ManagedObject] {
 		return realtime.StreamData[jsonmodels.ManagedObject]{
 			Action:  msg.Payload.RealtimeAction,
@@ -470,7 +471,7 @@ func (s *Service) SubscribeStream(ctx context.Context, ID string) op.Result[*Man
 		}
 	}, func() {
 		// Cleanup: unsubscribe from the realtime channel
-		s.RealtimeClient.Unsubscribe(pattern)
+		s.svc.RealtimeClient.Unsubscribe(pattern)
 	})
 
 	return op.OK(stream)

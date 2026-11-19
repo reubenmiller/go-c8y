@@ -8,6 +8,7 @@ import (
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -24,47 +25,47 @@ const (
 const ResultProperty = "inventoryAccessMappings"
 
 // Service provides access to a login option's inventory access mappings.
-type Service struct{ core.Service }
+type Service struct{ httpcore.Service }
 
-func NewService(s *core.Service) *Service {
+func NewService(s *httpcore.Service) *Service {
 	return &Service{Service: *s}
 }
 
 // List returns all inventory access mappings for a login option (identified by type or id).
 func (s *Service) List(ctx context.Context, typeOrID string) op.Result[jsonmodels.InventoryAccessMapping] {
-	return core.ExecuteCollection(ctx, s.listB(typeOrID), ResultProperty, "", jsonmodels.NewInventoryAccessMapping)
+	return httpcore.ExecuteCollection(ctx, s.listB(typeOrID), ResultProperty, "", jsonmodels.NewInventoryAccessMapping)
 }
 
-func (s *Service) listB(typeOrID string) *core.TryRequest {
+func (s *Service) listB(typeOrID string) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamTypeOrID, typeOrID).
 		SetURL(ApiInventoryAccessMappings)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.Client, req, ResultProperty)
 }
 
 // Get retrieves a single inventory access mapping by id.
 func (s *Service) Get(ctx context.Context, typeOrID, id string) op.Result[jsonmodels.InventoryAccessMapping] {
-	return core.Execute(ctx, s.getB(typeOrID, id), jsonmodels.NewInventoryAccessMapping)
+	return httpcore.Execute(ctx, s.getB(typeOrID, id), jsonmodels.NewInventoryAccessMapping)
 }
 
-func (s *Service) getB(typeOrID, id string) *core.TryRequest {
+func (s *Service) getB(typeOrID, id string) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamTypeOrID, typeOrID).
 		SetPathParam(ParamID, id).
 		SetURL(ApiInventoryAccessMapping)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }
 
 // Create adds a new inventory access mapping to a login option.
 func (s *Service) Create(ctx context.Context, typeOrID string, body any) op.Result[jsonmodels.InventoryAccessMapping] {
-	return core.Execute(ctx, s.createB(typeOrID, body), jsonmodels.NewInventoryAccessMapping)
+	return httpcore.Execute(ctx, s.createB(typeOrID, body), jsonmodels.NewInventoryAccessMapping)
 }
 
-func (s *Service) createB(typeOrID string, body any) *core.TryRequest {
+func (s *Service) createB(typeOrID string, body any) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -72,15 +73,15 @@ func (s *Service) createB(typeOrID string, body any) *core.TryRequest {
 		SetPathParam(ParamTypeOrID, typeOrID).
 		SetBody(body).
 		SetURL(ApiInventoryAccessMappings)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }
 
 // Update modifies an existing inventory access mapping.
 func (s *Service) Update(ctx context.Context, typeOrID, id string, body any) op.Result[jsonmodels.InventoryAccessMapping] {
-	return core.Execute(ctx, s.updateB(typeOrID, id, body), jsonmodels.NewInventoryAccessMapping)
+	return httpcore.Execute(ctx, s.updateB(typeOrID, id, body), jsonmodels.NewInventoryAccessMapping)
 }
 
-func (s *Service) updateB(typeOrID, id string, body any) *core.TryRequest {
+func (s *Service) updateB(typeOrID, id string, body any) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -89,19 +90,19 @@ func (s *Service) updateB(typeOrID, id string, body any) *core.TryRequest {
 		SetPathParam(ParamID, id).
 		SetBody(body).
 		SetURL(ApiInventoryAccessMapping)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }
 
 // Delete removes an inventory access mapping.
 func (s *Service) Delete(ctx context.Context, typeOrID, id string) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteB(typeOrID, id))
+	return httpcore.ExecuteNoContent(ctx, s.deleteB(typeOrID, id))
 }
 
-func (s *Service) deleteB(typeOrID, id string) *core.TryRequest {
+func (s *Service) deleteB(typeOrID, id string) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamTypeOrID, typeOrID).
 		SetPathParam(ParamID, id).
 		SetURL(ApiInventoryAccessMapping)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/realtime"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/tidwall/gjson"
@@ -34,14 +35,14 @@ const ResultProperty = "alarms"
 
 // Service provides api to get/set/delete alarms in Cumulocity
 type Service struct {
-	core.Service
+	svc            httpcore.Service
 	DeviceResolver *managedobjects.DeviceResolver
 }
 
 // NewService creates a new alarms service with device resolution capabilities
-func NewService(common *core.Service, moService *managedobjects.Service) *Service {
+func NewService(common *httpcore.Service, moService *managedobjects.Service) *Service {
 	return &Service{
-		Service:        *common,
+		svc:            *common,
 		DeviceResolver: managedobjects.NewDeviceResolver(moService),
 	}
 }
@@ -69,7 +70,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 		opt.Source = managedobjects.DeviceRef(resolvedID)
 	}
 
-	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewAlarm)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewAlarm)
 }
 
 // ListAll returns an iterator for all alarms. By default it uses the time-window
@@ -97,13 +98,13 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *AlarmIterator 
 	)
 }
 
-func (s *Service) listB(opt any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listB(opt any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiAlarms)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // CountOptions to use when counting the active alarms
@@ -143,16 +144,16 @@ type CountOptions struct {
 
 // Get an alarm
 func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Alarm] {
-	return core.Execute(ctx, s.getB(ID), jsonmodels.NewAlarm)
+	return httpcore.Execute(ctx, s.getB(ID), jsonmodels.NewAlarm)
 }
 
-func (s *Service) getB(ID string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getB(ID string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, ID).
 		SetURL(ApiAlarm)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // CreateOptions for creating an alarm with resolver support
@@ -203,7 +204,7 @@ func (s *Service) Create(ctx context.Context, opts CreateOptions) op.Result[json
 //
 //	result := client.Alarms.CreateRaw(ctx, map[string]any{...})
 func (s *Service) CreateRaw(ctx context.Context, body any) op.Result[jsonmodels.Alarm] {
-	return core.Execute(ctx, s.createB(body), jsonmodels.NewAlarm)
+	return httpcore.Execute(ctx, s.createB(body), jsonmodels.NewAlarm)
 }
 
 // createWithOptions handles the CreateOptions case with resolver support and property merging
@@ -214,7 +215,7 @@ func (s *Service) createWithOptions(ctx context.Context, opts CreateOptions) op.
 	}
 
 	// Create the alarm with the merged JSON and add metadata
-	result := core.Execute(ctx, s.createBWithJSON(finalJSON), jsonmodels.NewAlarm)
+	result := httpcore.Execute(ctx, s.createBWithJSON(finalJSON), jsonmodels.NewAlarm)
 
 	// Add resolver metadata to result
 	if result.Meta == nil {
@@ -287,24 +288,24 @@ func (s *Service) buildAlarmBody(ctx context.Context, opts CreateOptions) ([]byt
 	return baseJSON, meta, nil
 }
 
-func (s *Service) createB(body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) createB(body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiAlarms)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
-func (s *Service) createBWithJSON(bodyJSON []byte) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) createBWithJSON(bodyJSON []byte) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetBody(bodyJSON).
 		SetURL(ApiAlarms)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Upsert creates or updates an alarm.
@@ -333,7 +334,7 @@ func (s *Service) Upsert(ctx context.Context, opts CreateOptions) op.Result[json
 //
 //	result := client.Alarms.UpsertRaw(ctx, map[string]any{...})
 func (s *Service) UpsertRaw(ctx context.Context, body any) op.Result[jsonmodels.Alarm] {
-	return markUpsertResult(core.Execute(ctx, s.upsertB(body), newUpsertedAlarm))
+	return markUpsertResult(httpcore.Execute(ctx, s.upsertB(body), newUpsertedAlarm))
 }
 
 // upsertWithOptions handles the CreateOptions case with resolver support and property merging
@@ -344,7 +345,7 @@ func (s *Service) upsertWithOptions(ctx context.Context, opts CreateOptions) op.
 	}
 
 	// Upsert the alarm with the merged JSON and add metadata
-	result := markUpsertResult(core.Execute(ctx, s.upsertBWithJSON(finalJSON), newUpsertedAlarm))
+	result := markUpsertResult(httpcore.Execute(ctx, s.upsertBWithJSON(finalJSON), newUpsertedAlarm))
 
 	// Add resolver metadata to result
 	if result.Meta == nil {
@@ -357,29 +358,29 @@ func (s *Service) upsertWithOptions(ctx context.Context, opts CreateOptions) op.
 	return result
 }
 
-func (s *Service) upsertB(body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) upsertB(body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiAlarmsUpsert)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
-func (s *Service) upsertBWithJSON(bodyJSON []byte) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) upsertBWithJSON(bodyJSON []byte) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetBody(bodyJSON).
 		SetURL(ApiAlarmsUpsert)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // markUpsertResult annotates an upsert response based on its HTTP status code.
 // The upsert endpoint returns 201 when a new alarm was created and 200 when an
-// existing alarm was updated. Since the request is a POST, core.Execute reports
+// existing alarm was updated. Since the request is a POST, httpcore.Execute reports
 // a 200 as StatusOK; remap it to StatusUpdated and record whether an existing
 // alarm was found via Meta["found"].
 // newUpsertedAlarm parses an upsert response. The platform wraps the alarm as
@@ -412,18 +413,18 @@ func markUpsertResult(result op.Result[jsonmodels.Alarm]) op.Result[jsonmodels.A
 
 // Update an alarm
 func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.Alarm] {
-	return core.Execute(ctx, s.updateB(ID, body), jsonmodels.NewAlarm)
+	return httpcore.Execute(ctx, s.updateB(ID, body), jsonmodels.NewAlarm)
 }
 
-func (s *Service) updateB(ID string, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) updateB(ID string, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamID, ID).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiAlarm)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // UpdateOptions option when bulk updating alarms
@@ -496,18 +497,18 @@ func (s *Service) UpdateList(ctx context.Context, opt BulkUpdateOptions, body an
 		opt.Source = managedobjects.DeviceRef(resolvedID)
 	}
 
-	return core.Execute(ctx, s.updateListB(opt, body), jsonmodels.NewAlarm)
+	return httpcore.Execute(ctx, s.updateListB(opt, body), jsonmodels.NewAlarm)
 }
 
-func (s *Service) updateListB(opt BulkUpdateOptions, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) updateListB(opt BulkUpdateOptions, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiAlarms)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // DeleteListOptions option when deleting a collection of alarms
@@ -577,25 +578,25 @@ func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Resu
 		opt.Source = managedobjects.DeviceRef(resolvedID)
 	}
 
-	return core.ExecuteNoContent(ctx, s.deleteListB(opt))
+	return httpcore.ExecuteNoContent(ctx, s.deleteListB(opt))
 }
 
-func (s *Service) deleteListB(opt DeleteListOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) deleteListB(opt DeleteListOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiAlarms)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Subscribe subscribes to realtime alarms and sends raw messages to the provided channel.
 // The subscription automatically unsubscribes when the context is cancelled or times out.
 func (s *Service) Subscribe(ctx context.Context, ID string, out chan<- *realtime.Message) op.Result[chan error] {
-	err := s.RealtimeClient.Connect()
+	err := s.svc.RealtimeClient.Connect()
 	if err != nil {
 		return op.Failed[chan error](err, false)
 	}
-	return op.OK(s.RealtimeClient.Subscribe(ctx, realtime.Alarms(ID), out))
+	return op.OK(s.svc.RealtimeClient.Subscribe(ctx, realtime.Alarms(ID), out))
 }
 
 // AlarmStream provides an iterator for realtime alarm subscriptions
@@ -638,14 +639,14 @@ type AlarmStream = realtime.Stream[realtime.StreamData[jsonmodels.Alarm]]
 //	    return err
 //	}
 func (s *Service) SubscribeStream(ctx context.Context, ID string) op.Result[*AlarmStream] {
-	err := s.RealtimeClient.Connect()
+	err := s.svc.RealtimeClient.Connect()
 	if err != nil {
 		return op.Failed[*AlarmStream](err, false)
 	}
 
 	messages := make(chan *realtime.Message, 10)
 	pattern := realtime.Alarms(ID)
-	errorChan := s.RealtimeClient.Subscribe(ctx, pattern, messages)
+	errorChan := s.svc.RealtimeClient.Subscribe(ctx, pattern, messages)
 	stream := realtime.NewStream(ctx, messages, errorChan, func(msg *realtime.Message) realtime.StreamData[jsonmodels.Alarm] {
 		return realtime.StreamData[jsonmodels.Alarm]{
 			Action:  msg.Payload.RealtimeAction,
@@ -654,7 +655,7 @@ func (s *Service) SubscribeStream(ctx context.Context, ID string) op.Result[*Ala
 		}
 	}, func() {
 		// Cleanup: unsubscribe from the realtime channel
-		s.RealtimeClient.Unsubscribe(pattern)
+		s.svc.RealtimeClient.Unsubscribe(pattern)
 	})
 
 	return op.OK(stream)

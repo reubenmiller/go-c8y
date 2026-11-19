@@ -8,6 +8,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/loginoptions/inventoryaccessmappings"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -22,9 +23,9 @@ var ParamTypeOrID = "typeOrId"
 
 const ResultProperty = "loginOptions"
 
-func NewService(s *core.Service) *Service {
+func NewService(s *httpcore.Service) *Service {
 	return &Service{
-		Service:                 *s,
+		svc:                     *s,
 		AccessMappings:          accessmappings.NewService(s),
 		InventoryAccessMappings: inventoryaccessmappings.NewService(s),
 	}
@@ -33,8 +34,7 @@ func NewService(s *core.Service) *Service {
 // Service provides api to get/set/delete login options in Cumulocity, plus their access
 // mappings, inventory access mappings, and access restriction.
 type Service struct {
-	core.Service
-
+	svc httpcore.Service
 	// AccessMappings manages a login option's access mappings (applications/groups).
 	AccessMappings *accessmappings.Service
 	// InventoryAccessMappings manages a login option's inventory-role access mappings.
@@ -49,18 +49,18 @@ type RestrictOptions struct {
 
 // Restrict updates the access restriction of a login option (identified by type or id).
 func (s *Service) Restrict(ctx context.Context, typeOrID string, opt RestrictOptions) op.Result[jsonmodels.LoginOption] {
-	return core.Execute(ctx, s.restrictB(typeOrID, opt), jsonmodels.NewLoginOption)
+	return httpcore.Execute(ctx, s.restrictB(typeOrID, opt), jsonmodels.NewLoginOption)
 }
 
-func (s *Service) restrictB(typeOrID string, opt RestrictOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) restrictB(typeOrID string, opt RestrictOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetPathParam(ParamTypeOrID, typeOrID).
 		SetBody(opt).
 		SetURL(ApiLoginOptionRestrict)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // ListOptions is generated from the OpenAPI spec — see zz_generated_options.go.
@@ -71,7 +71,7 @@ type LoginOptionIterator = pagination.Iterator[jsonmodels.LoginOption]
 
 // Retrieve all login options available in the tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.LoginOption] {
-	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewLoginOption)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewLoginOption)
 }
 
 // ListAll returns an iterator for all login options
@@ -88,85 +88,85 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *LoginOptionIte
 	)
 }
 
-func (s *Service) listB(opt any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listB(opt any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiLoginOptions)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // Retrieve all login options available in the tenant without using credentials
 func (s *Service) ListNoAuth(ctx context.Context, opt ListOptions) op.Result[jsonmodels.LoginOption] {
-	return core.ExecuteCollection(ctx, s.listNoAuthB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewLoginOption)
+	return httpcore.ExecuteCollection(ctx, s.listNoAuthB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewLoginOption)
 }
 
-func (s *Service) listNoAuthB(opt any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listNoAuthB(opt any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiLoginOptions)
-	return core.NewTryRequest(s.Client, req, ResultProperty).WithNoAuth()
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty).WithNoAuth()
 }
 
 // Get login option
 func (s *Service) Get(ctx context.Context, typeOrID string) op.Result[jsonmodels.LoginOption] {
-	return core.Execute(ctx, s.getB(typeOrID), jsonmodels.NewLoginOption)
+	return httpcore.Execute(ctx, s.getB(typeOrID), jsonmodels.NewLoginOption)
 }
 
-func (s *Service) getB(typeOrID string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getB(typeOrID string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, typeOrID).
 		SetURL(ApiLoginOption)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Create a login option
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.LoginOption] {
-	return core.Execute(ctx, s.createB(body), jsonmodels.NewLoginOption)
+	return httpcore.Execute(ctx, s.createB(body), jsonmodels.NewLoginOption)
 }
 
-func (s *Service) createB(body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) createB(body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiLoginOptions)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Update a login option
 func (s *Service) Update(ctx context.Context, typeOrID string, body any) op.Result[jsonmodels.LoginOption] {
-	return core.Execute(ctx, s.updateB(typeOrID, body), jsonmodels.NewLoginOption)
+	return httpcore.Execute(ctx, s.updateB(typeOrID, body), jsonmodels.NewLoginOption)
 }
 
-func (s *Service) updateB(typeOrID string, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) updateB(typeOrID string, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, typeOrID).
 		SetBody(body).
 		SetURL(ApiLoginOption)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Delete a specific login option in the tenant by a given type or ID
 func (s *Service) Delete(ctx context.Context, typeOrID string) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteB(typeOrID)).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.deleteB(typeOrID)).IgnoreNotFound()
 }
 
-func (s *Service) deleteB(typeOrID string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) deleteB(typeOrID string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamID, typeOrID).
 		SetURL(ApiLoginOption)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 type UpdateAccessOptions struct {
@@ -184,18 +184,18 @@ type LoginOptionTenantAccess struct {
 
 // Update the tenant's access to the authentication configuration.
 func (s *Service) UpdateAccess(ctx context.Context, opt UpdateAccessOptions, body LoginOptionTenantAccess) op.Result[jsonmodels.LoginOption] {
-	return core.Execute(ctx, s.updateAccessB(opt, body), jsonmodels.NewLoginOption)
+	return httpcore.Execute(ctx, s.updateAccessB(opt, body), jsonmodels.NewLoginOption)
 }
 
-func (s *Service) updateAccessB(opt UpdateAccessOptions, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) updateAccessB(opt UpdateAccessOptions, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, opt.TypeOrId).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, opt.TypeOrId).
 		SetBody(body).
 		SetURL(ApiLoginOption)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }

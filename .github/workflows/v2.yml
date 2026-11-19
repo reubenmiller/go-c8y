@@ -56,6 +56,8 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Check API drift
         run: task lint-api -- --strict
+      - name: Check public API surface
+        run: task check-api-surface
       - name: Verify generated code is up to date
         run: |
           task generate

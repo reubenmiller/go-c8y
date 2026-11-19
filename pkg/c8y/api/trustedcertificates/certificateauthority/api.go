@@ -6,6 +6,7 @@ import (
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -20,16 +21,16 @@ const ParamFingerprint = "fingerprint"
 
 const ResultProperty = "certificates"
 
-func NewService(s *core.Service) *Service {
+func NewService(s *httpcore.Service) *Service {
 	return &Service{
-		Service: *s,
+		svc: *s,
 	}
 }
 
 // Service inventory api to interact with the current tenant
-// type Service core.Service
+// type Service httpcore.Service
 type Service struct {
-	core.Service
+	svc httpcore.Service
 }
 
 type CreateOptions struct{}
@@ -41,7 +42,7 @@ type GetOptions struct {
 
 // Get the certificate authority
 func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.TrustedCertificate] {
-	result := core.ExecuteCollection(ctx, s.getB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTrustedCertificate)
+	result := httpcore.ExecuteCollection(ctx, s.getB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTrustedCertificate)
 	if result.Err != nil {
 		return result
 	}
@@ -71,28 +72,28 @@ func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.
 	}
 }
 
-func (s *Service) getB(opt GetOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getB(opt GetOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetQueryParam("certificateAuthority", "true").
 		SetURL(ApiTrustedCertificates)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // Create certificate authority.
 // A 409 response (already exists) is treated as a duplicate (StatusDuplicate, Idempotent: true).
 func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.TrustedCertificate] {
-	return core.Execute(ctx, s.createB(opt), jsonmodels.NewTrustedCertificate).IgnoreConflict()
+	return httpcore.Execute(ctx, s.createB(opt), jsonmodels.NewTrustedCertificate).IgnoreConflict()
 }
 
-func (s *Service) createB(opt CreateOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) createB(opt CreateOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiCertificateAuthority)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Get or create a certificate authority
@@ -136,29 +137,29 @@ func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.
 		}
 	}
 	// Step 2: delete by fingerprint
-	return core.ExecuteNoContent(ctx, s.deleteB(opt, cert.Data.Fingerprint())).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.deleteB(opt, cert.Data.Fingerprint())).IgnoreNotFound()
 }
 
-func (s *Service) deleteB(opt DeleteOptions, fingerprint string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) deleteB(opt DeleteOptions, fingerprint string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamFingerprint, fingerprint).
 		SetURL(ApiTrustedCertificate)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 type RenewOptions struct{}
 
 // Renew certificate authority
 func (s *Service) Renew(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.TrustedCertificate] {
-	return core.Execute(ctx, s.renewB(opt), jsonmodels.NewTrustedCertificate)
+	return httpcore.Execute(ctx, s.renewB(opt), jsonmodels.NewTrustedCertificate)
 }
 
-func (s *Service) renewB(opt CreateOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) renewB(opt CreateOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiCertificateAuthorityRenew)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }

@@ -1,8 +1,8 @@
 package identity
 
 import (
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"resty.dev/v3"
 )
 
@@ -19,9 +19,9 @@ var DefaultType = "c8y_Global"
 const ResultProperty = "externalIds"
 
 // Service provides api to get/set/delete external identities in Cumulocity
-type Service struct{ core.Service }
+type Service struct{ httpcore.Service }
 
-func NewService(common *core.Service) *Service {
+func NewService(common *httpcore.Service) *Service {
 	return &Service{Service: *common}
 }
 
@@ -48,16 +48,16 @@ func (i *IdentityOptions) GetType() string {
 	return string(i.Type)
 }
 
-func (s *Service) listB(id string) *core.TryRequest {
+func (s *Service) listB(id string) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, id).
 		SetURL(ApiIdentities)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.Client, req, ResultProperty)
 }
 
-func (s *Service) getB(opts IdentityOptions) *core.TryRequest {
+func (s *Service) getB(opts IdentityOptions) *httpcore.TryRequest {
 	opts.withDefaults()
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
@@ -65,10 +65,10 @@ func (s *Service) getB(opts IdentityOptions) *core.TryRequest {
 		SetPathParam(ParamExternalID, opts.ExternalID).
 		SetPathParam(ParamType, opts.Type).
 		SetURL(ApiIdentity)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }
 
-func (s *Service) createB(id string, opts IdentityOptions) *core.TryRequest {
+func (s *Service) createB(id string, opts IdentityOptions) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(ParamID, id).
@@ -76,7 +76,7 @@ func (s *Service) createB(id string, opts IdentityOptions) *core.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(opts.withDefaults()).
 		SetURL(ApiIdentities)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }
 
 // SearchOptions is the request body for a bulk external-ID search (POST /identity/search).
@@ -85,22 +85,22 @@ type SearchOptions struct {
 	ExternalIds []IdentityOptions `json:"externalIds"`
 }
 
-func (s *Service) searchB(opts SearchOptions) *core.TryRequest {
+func (s *Service) searchB(opts SearchOptions) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(opts).
 		SetURL(ApiSearch)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.Client, req, ResultProperty)
 }
 
-func (s *Service) deleteB(opts IdentityOptions) *core.TryRequest {
+func (s *Service) deleteB(opts IdentityOptions) *httpcore.TryRequest {
 	opts.withDefaults()
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamType, opts.Type).
 		SetPathParam(ParamExternalID, opts.ExternalID).
 		SetURL(ApiIdentity)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }

@@ -12,16 +12,17 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pipeline"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 )
 
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.ManagedObject] {
-	return core.Execute(ctx, s.createB(body), jsonmodels.NewManagedObject)
+	return httpcore.Execute(ctx, s.createB(body), jsonmodels.NewManagedObject)
 }
 
 func (s *Service) CreateBulk(ctx context.Context, managedObjects []any) op.Result[jsonmodels.ManagedObject] {
-	return core.ExecuteCollection(ctx, s.createBulkB(managedObjects), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
+	return httpcore.ExecuteCollection(ctx, s.createBulkB(managedObjects), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
 // CreateWithBinaryOptions options for creating a managed object with an associated binary file
@@ -164,7 +165,7 @@ func (s *Service) Get(ctx context.Context, ID string, opt GetOptions) op.Result[
 		return op.Failed[jsonmodels.ManagedObject](err, false)
 	}
 
-	return core.Execute(ctx, s.getB(resolvedID, opt), jsonmodels.NewManagedObject, meta)
+	return httpcore.Execute(ctx, s.getB(resolvedID, opt), jsonmodels.NewManagedObject, meta)
 }
 
 func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.ManagedObject] {
@@ -179,11 +180,11 @@ func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jso
 		return op.Failed[jsonmodels.ManagedObject](err, false)
 	}
 
-	return core.Execute(ctx, s.updateB(resolvedID, body), jsonmodels.NewManagedObject, meta)
+	return httpcore.Execute(ctx, s.updateB(resolvedID, body), jsonmodels.NewManagedObject, meta)
 }
 
 func (s *Service) UpdateBulk(ctx context.Context, managedObjects []any) op.Result[jsonmodels.ManagedObject] {
-	return core.ExecuteCollection(ctx, s.updateBulkB(managedObjects), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
+	return httpcore.ExecuteCollection(ctx, s.updateBulkB(managedObjects), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
 // DefaultBulkBatchSize is the Cumulocity API limit for bulk managed object requests.
@@ -233,7 +234,7 @@ func (s *Service) updateBulkSeq(ctx context.Context, items iter.Seq2[any, error]
 				return
 			default:
 			}
-			result := core.ExecuteCollection(
+			result := httpcore.ExecuteCollection(
 				ctx,
 				s.updateBulkB(batch),
 				ResultProperty,
@@ -276,7 +277,7 @@ func (s *Service) createBulkSeq(ctx context.Context, items iter.Seq2[any, error]
 				return
 			default:
 			}
-			result := core.ExecuteCollection(
+			result := httpcore.ExecuteCollection(
 				ctx,
 				s.createBulkB(batch),
 				ResultProperty,
@@ -311,7 +312,7 @@ func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.R
 		return op.Failed[core.NoContent](err, false)
 	}
 
-	return core.ExecuteNoContent(ctx, s.deleteB(resolvedID, opt), meta).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.deleteB(resolvedID, opt), meta).IgnoreNotFound()
 }
 
 // GetOrCreateByName searches by name and optionally type, creating if not found
@@ -621,14 +622,14 @@ func (s *Service) executeGetOrCreateByExternalID(
 }
 
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.ManagedObject] {
-	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
 // Count returns the total number of managed objects matching the given filter
 // (GET /inventory/managedObjects/count). The endpoint answers with a bare
 // integer body, which is parsed into the result.
 func (s *Service) Count(ctx context.Context, opt ListOptions) op.Result[int64] {
-	return core.Execute(ctx, s.countB(opt), parseCount)
+	return httpcore.Execute(ctx, s.countB(opt), parseCount)
 }
 
 // ManagedObjectIterator provides iteration over managed objects

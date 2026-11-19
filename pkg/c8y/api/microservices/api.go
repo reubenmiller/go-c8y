@@ -14,6 +14,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/source"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
@@ -26,7 +27,7 @@ const ResultProperty = "applications"
 // Service to manage binaries
 // Managed objects can perform operations to store, retrieve and delete binaries. One binary can store only one file. Together with the binary, a managed object is created which acts as a metadata information for the binary.
 type Service struct {
-	core.Service
+	svc                 httpcore.Service
 	applicationAPI      applications.Service
 	BootstrapUser       bootstrapuser.Service
 	CurrentMicroservice currentmicroservice.Service
@@ -37,9 +38,9 @@ type Service struct {
 	customResolvers     map[string]source.Resolver
 }
 
-func NewService(common *core.Service) *Service {
+func NewService(common *httpcore.Service) *Service {
 	service := &Service{
-		Service:             *common,
+		svc:                 *common,
 		applicationAPI:      *applications.NewService(common),
 		BootstrapUser:       *bootstrapuser.NewService(common),
 		CurrentMicroservice: *currentmicroservice.NewService(common),
@@ -164,7 +165,7 @@ func (s *Service) FindFirst(ctx context.Context, opt ListOptions) (op.Result[jso
 
 // List all microservices on your tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Microservice] {
-	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewMicroservice)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewMicroservice)
 }
 
 // ListAll returns an iterator for all microservices
@@ -233,14 +234,14 @@ func (s *Service) RegisterResolver(scheme string, resolver source.Resolver) {
 	s.customResolvers[scheme] = resolver
 }
 
-func (s *Service) listB(opt ListOptions) *core.TryRequest {
+func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 	// Build request directly since applications B methods are now private
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetQueryParamsFromValues(core.QueryParameters(opt.options())).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt.options())).
 		SetURL(applications.ApiApplications)
-	return core.NewTryRequest(s.Client, req, applications.ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, applications.ResultProperty)
 }
 
 // Get a microservice by ID or resolver string
@@ -260,33 +261,33 @@ func (s *Service) Get(ctx context.Context, id string) op.Result[jsonmodels.Micro
 		return op.Failed[jsonmodels.Microservice](err, false)
 	}
 
-	return core.Execute(ctx, s.getB(resolvedID), jsonmodels.NewMicroservice, meta)
+	return httpcore.Execute(ctx, s.getB(resolvedID), jsonmodels.NewMicroservice, meta)
 }
 
-func (s *Service) getB(ID string) *core.TryRequest {
+func (s *Service) getB(ID string) *httpcore.TryRequest {
 	// Rebuild request since applications B methods are now private
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam("id", ID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(applications.ApiApplication)
-	return core.NewTryRequest(s.Client, req, "")
+	return httpcore.NewTryRequest(s.svc.Client, req, "")
 }
 
 // Create a microservice
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Microservice] {
-	return core.Execute(ctx, s.createB(body), jsonmodels.NewMicroservice, nil)
+	return httpcore.Execute(ctx, s.createB(body), jsonmodels.NewMicroservice, nil)
 }
 
-func (s *Service) createB(body any) *core.TryRequest {
+func (s *Service) createB(body any) *httpcore.TryRequest {
 	// Rebuild request since applications B methods are now private
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(applications.ApiApplications)
-	return core.NewTryRequest(s.Client, req, "")
+	return httpcore.NewTryRequest(s.svc.Client, req, "")
 }
 
 // Update a microservice by ID or resolver string
@@ -303,19 +304,19 @@ func (s *Service) Update(ctx context.Context, id string, body any) op.Result[jso
 		return op.Failed[jsonmodels.Microservice](err, false)
 	}
 
-	return core.Execute(ctx, s.updateB(resolvedID, body), jsonmodels.NewMicroservice, meta)
+	return httpcore.Execute(ctx, s.updateB(resolvedID, body), jsonmodels.NewMicroservice, meta)
 }
 
-func (s *Service) updateB(ID string, body any) *core.TryRequest {
+func (s *Service) updateB(ID string, body any) *httpcore.TryRequest {
 	// Rebuild request since applications B methods are now private
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam("id", ID).
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(applications.ApiApplication)
-	return core.NewTryRequest(s.Client, req, "")
+	return httpcore.NewTryRequest(s.svc.Client, req, "")
 }
 
 type DeleteOptions = applications.DeleteOptions
@@ -338,39 +339,39 @@ func (s *Service) Delete(ctx context.Context, id string, opt DeleteOptions) op.R
 		return op.Failed[core.NoContent](err, false)
 	}
 
-	return core.ExecuteNoContent(ctx, s.deleteB(resolvedID, opt), meta).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.deleteB(resolvedID, opt), meta).IgnoreNotFound()
 }
 
-func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
+func (s *Service) deleteB(ID string, opt DeleteOptions) *httpcore.TryRequest {
 	// Rebuild request since applications B methods are now private
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam("id", ID).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(applications.ApiApplication)
-	return core.NewTryRequest(s.Client, req, "")
+	return httpcore.NewTryRequest(s.svc.Client, req, "")
 }
 
 // Subscribe a microservice to a tenant.
 // A 409 response (already subscribed) is treated as a duplicate (StatusDuplicate, Idempotent: true).
 func (s *Service) Subscribe(ctx context.Context, tenantID string, selfURL string) op.Result[jsonmodels.Microservice] {
-	return core.Execute(ctx, s.subscribeB(tenantID, selfURL), func(b []byte) jsonmodels.Microservice {
+	return httpcore.Execute(ctx, s.subscribeB(tenantID, selfURL), func(b []byte) jsonmodels.Microservice {
 		// Extract application from MicroserviceReference wrapper
 		doc := jsondoc.New(b)
 		return jsonmodels.NewMicroservice([]byte(doc.Get("application").Raw))
 	}).IgnoreConflict()
 }
 
-func (s *Service) subscribeB(tenantID string, selfURL string) *core.TryRequest {
+func (s *Service) subscribeB(tenantID string, selfURL string) *httpcore.TryRequest {
 	// Rebuild request since applications B methods are now private
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam("tenantId", tenantID).
 		SetBody(map[string]any{"application": map[string]any{"self": selfURL}}).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL("/tenant/tenants/{tenantId}/applications")
-	return core.NewTryRequest(s.Client, req, "")
+	return httpcore.NewTryRequest(s.svc.Client, req, "")
 }
 
 // Unsubscribe a microservice from a tenant by ID or resolver string.
@@ -391,17 +392,17 @@ func (s *Service) Unsubscribe(ctx context.Context, tenantID string, id string) o
 		return op.Failed[core.NoContent](err, false)
 	}
 
-	return core.ExecuteNoContent(ctx, s.unsubscribeB(tenantID, resolvedID), meta).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.unsubscribeB(tenantID, resolvedID), meta).IgnoreNotFound()
 }
 
-func (s *Service) unsubscribeB(tenantID string, ID string) *core.TryRequest {
+func (s *Service) unsubscribeB(tenantID string, ID string) *httpcore.TryRequest {
 	// Rebuild request since applications B methods are now private
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(core.PathParamTenantID, tenantID).
 		SetPathParam("id", ID).
 		SetURL("/tenant/tenants/{tenantId}/applications/{id}")
-	return core.NewTryRequest(s.Client, req, "")
+	return httpcore.NewTryRequest(s.svc.Client, req, "")
 }
 
 // Enable (subscribe) a microservice for a tenant by POSTing an application
@@ -412,18 +413,18 @@ func (s *Service) unsubscribeB(tenantID string, ID string) *core.TryRequest {
 // plucks the application for the create/update flow), this returns the reference
 // as-is to match the v1 enable command's applicationReference output.
 func (s *Service) Enable(ctx context.Context, tenantID string, body any) op.Result[jsonmodels.ApplicationReference] {
-	return core.Execute(ctx, s.enableB(tenantID, body), jsonmodels.NewApplicationReference, nil)
+	return httpcore.Execute(ctx, s.enableB(tenantID, body), jsonmodels.NewApplicationReference, nil)
 }
 
-func (s *Service) enableB(tenantID string, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) enableB(tenantID string, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(core.PathParamTenantID, tenantID).
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL("/tenant/tenants/{tenantId}/applications")
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // GetStatus returns the managed object(s) holding a microservice's status,
@@ -431,16 +432,16 @@ func (s *Service) enableB(tenantID string, body any) *core.TryRequest {
 // The id must already be resolved (the CLI resolves a name/contextPath
 // reference first). The collection is plucked into managedObjects items.
 func (s *Service) GetStatus(ctx context.Context, id string) op.Result[jsonmodels.ManagedObject] {
-	return core.ExecuteCollection(ctx, s.getStatusB(id), "managedObjects", types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
+	return httpcore.ExecuteCollection(ctx, s.getStatusB(id), "managedObjects", types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
-func (s *Service) getStatusB(id string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getStatusB(id string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParam("type", "c8y_Application_"+id).
 		SetURL("/inventory/managedObjects")
-	return core.NewTryRequest(s.Client, req, "managedObjects")
+	return httpcore.NewTryRequest(s.svc.Client, req, "managedObjects")
 }
 
 type UploadFileOptions = applications.UploadFileOptions
@@ -459,19 +460,19 @@ func (s *Service) Upload(ctx context.Context, id string, opt UploadFileOptions) 
 		return op.Failed[jsonmodels.MicroserviceBinary](err, false)
 	}
 
-	return core.Execute(ctx, s.uploadB(resolvedID, opt), jsonmodels.NewMicroserviceBinary, meta)
+	return httpcore.Execute(ctx, s.uploadB(resolvedID, opt), jsonmodels.NewMicroserviceBinary, meta)
 }
 
-func (s *Service) uploadB(ID string, opt UploadFileOptions) *core.TryRequest {
+func (s *Service) uploadB(ID string, opt UploadFileOptions) *httpcore.TryRequest {
 	// Mirror applications.uploadB: build the multipart "file" (+ optional object
 	// metadata) from the UploadFileOptions so a FilePath-only caller (the CLI
 	// createBinary command) streams the file. The previous SetFileReader form
 	// required an explicit Reader and silently sent nothing for FilePath callers.
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam("id", ID).
-		SetMultipartFields(core.NewMultiPartFile(opt)...).
+		SetMultipartFields(httpcore.NewMultiPartFile(opt)...).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL("/application/applications/{id}/binaries")
-	return core.NewTryRequest(s.Client, req, "")
+	return httpcore.NewTryRequest(s.svc.Client, req, "")
 }

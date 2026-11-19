@@ -18,6 +18,7 @@ import (
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/pkg/certutil"
 	"github.com/reubenmiller/go-c8y/v2/pkg/password"
@@ -29,9 +30,9 @@ var ApiEnroll = ".well-known/est/simpleenroll"
 var ApiReEnroll = ".well-known/est/simplereenroll"
 
 // Service provides device enrollment functionality to enroll new devices and receive device certificates
-type Service struct{ core.Service }
+type Service struct{ httpcore.Service }
 
-func NewService(s *core.Service) *Service {
+func NewService(s *httpcore.Service) *Service {
 	return &Service{Service: *s}
 }
 
@@ -55,7 +56,7 @@ func (s *Service) Enroll(ctx context.Context, opt EnrollOptions) op.Result[X509C
 		SetBody(base64.StdEncoding.EncodeToString(opt.CSR.Raw)).
 		SetURL(ApiEnroll)
 
-	b := core.NewTryRequest(s.Client, req).
+	b := httpcore.NewTryRequest(s.Client, req).
 		SetBasicAuth(opt.ExternalID, opt.OneTimePassword)
 	return executeWithCertParse(ctx, b)
 }
@@ -82,7 +83,7 @@ func (s *Service) ReEnroll(ctx context.Context, opt ReEnrollOptions) op.Result[X
 		SetBody(base64.StdEncoding.EncodeToString(opt.CSR.Raw)).
 		SetURL(ApiReEnroll)
 
-	b := core.NewTryRequest(s.Client, req)
+	b := httpcore.NewTryRequest(s.Client, req)
 	if opt.Token != "" {
 		b.SetToken(opt.Token)
 	}
@@ -110,8 +111,8 @@ func (s *Service) GenerateOneTimePassword(opts ...password.PasswordOption) (stri
 }
 
 // executeWithCertParse executes a request and parses the PKCS7/PEM certificate response
-func executeWithCertParse(ctx context.Context, req *core.TryRequest) op.Result[X509Certificate] {
-	resp, err := core.ExecuteResponseOnly(ctx, req)
+func executeWithCertParse(ctx context.Context, req *httpcore.TryRequest) op.Result[X509Certificate] {
+	resp, err := httpcore.ExecuteResponseOnly(ctx, req)
 
 	// Only capture request in dry run mode for inspection
 	var httpReq *http.Request

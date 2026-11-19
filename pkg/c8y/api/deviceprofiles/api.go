@@ -16,6 +16,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -41,15 +42,14 @@ type (
 
 // Service interacts with device profiles.
 type Service struct {
-	core.Service
-
+	svc            httpcore.Service
 	managedObjects *managedobjects.Service
 }
 
 // NewService creates a device-profiles service.
-func NewService(s *core.Service) *Service {
+func NewService(s *httpcore.Service) *Service {
 	return &Service{
-		Service:        *s,
+		svc:            *s,
 		managedObjects: managedobjects.NewService(s),
 	}
 }
@@ -82,7 +82,7 @@ type ListOptions struct {
 // ScopeToDeviceProfiles are responsible for restricting results to device
 // profiles.
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.ManagedObject] {
-	return core.ExecuteCollection(ctx, s.listB(opt), managedobjects.ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), managedobjects.ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
 // ListAll returns an iterator over every device profile matching opts. By
@@ -109,12 +109,12 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *ManagedObjectI
 	)
 }
 
-func (s *Service) listB(opt ListOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(managedobjects.ApiManagedObjects)
-	return core.NewTryRequest(s.Client, req, managedobjects.ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, managedobjects.ResultProperty)
 }
 
 // Get returns a device profile by reference (id, name:, or query:).

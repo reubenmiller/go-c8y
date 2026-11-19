@@ -22,6 +22,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -41,9 +42,9 @@ const FragmentTemplates = "com_cumulocity_model_smartrest_csv_CsvSmartRestTempla
 // template collections, mirroring the external identity
 const FragmentExternalID = "__externalId"
 
-func NewService(s *core.Service) *Service {
+func NewService(s *httpcore.Service) *Service {
 	return &Service{
-		Service:        *s,
+		svc:            *s,
 		managedObjects: managedobjects.NewService(s),
 		identity:       identity.NewService(s),
 	}
@@ -51,7 +52,7 @@ func NewService(s *core.Service) *Service {
 
 // Service provides api to manage SmartREST 2.0 template collections
 type Service struct {
-	core.Service
+	svc            httpcore.Service
 	managedObjects *managedobjects.Service
 	identity       *identity.Service
 }
@@ -176,7 +177,7 @@ type ListOptions struct {
 
 // List the SmartREST 2.0 template collections in the tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.SmartRestTemplateCollection] {
-	return core.ExecuteCollection(ctx, s.listB(opt), managedobjects.ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewSmartRestTemplateCollection)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), managedobjects.ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewSmartRestTemplateCollection)
 }
 
 // SmartRestTemplateCollectionIterator provides iteration over template collections
@@ -196,7 +197,7 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *SmartRestTempl
 	)
 }
 
-func (s *Service) listB(opt ListOptions) *core.TryRequest {
+func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 	listOpts := managedobjects.ListOptions{
 		Query: model.NewInventoryQuery().
 			AddOrderBy("name").
@@ -204,12 +205,12 @@ func (s *Service) listB(opt ListOptions) *core.TryRequest {
 			Build(),
 		PaginationOptions: opt.PaginationOptions,
 	}
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetQueryParamsFromValues(core.QueryParameters(listOpts)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(listOpts)).
 		SetURL(managedobjects.ApiManagedObjects)
-	return core.NewTryRequest(s.Client, req, managedobjects.ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, managedobjects.ResultProperty)
 }
 
 // Get retrieves a template collection by name, resolved via its external identity

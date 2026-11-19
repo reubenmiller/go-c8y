@@ -8,6 +8,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/source"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -20,9 +21,9 @@ var ParamID = "id"
 var ParamManagedObjectID = "managedObjectID"
 
 // Service provides api to managed Cloud Remote Access configurations
-type Service struct{ core.Service }
+type Service struct{ httpcore.Service }
 
-func NewService(common *core.Service) *Service {
+func NewService(common *httpcore.Service) *Service {
 	return &Service{Service: *common}
 }
 
@@ -49,16 +50,16 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 	if err := opt.Resolve(ctx); err != nil {
 		return op.Failed[jsonmodels.RemoteAccessConfiguration](err, true)
 	}
-	return core.ExecuteCollection(ctx, s.listB(opt), "", "", jsonmodels.NewRemoteAccessConfiguration)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), "", "", jsonmodels.NewRemoteAccessConfiguration)
 }
 
-func (s *Service) listB(opt ListOptions) *core.TryRequest {
+func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamManagedObjectID, opt.ManagedObjectID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiConfigurations)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }
 
 type GetOptions struct {
@@ -68,17 +69,17 @@ type GetOptions struct {
 
 // Get remote access configuration
 func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.RemoteAccessConfiguration] {
-	return core.Execute(ctx, s.getB(opt), jsonmodels.NewRemoteAccessConfiguration)
+	return httpcore.Execute(ctx, s.getB(opt), jsonmodels.NewRemoteAccessConfiguration)
 }
 
-func (s *Service) getB(opt GetOptions) *core.TryRequest {
+func (s *Service) getB(opt GetOptions) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamManagedObjectID, opt.ManagedObjectID).
 		SetPathParam(ParamID, opt.ConfigurationID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiConfiguration)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }
 
 // ResolveID resolves a configuration reference to its id, scoped to a device.
@@ -113,10 +114,10 @@ type CreateOptions struct {
 
 // Create remote access configuration
 func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.RemoteAccessConfiguration] {
-	return core.Execute(ctx, s.createB(opt, opt.Body), jsonmodels.NewRemoteAccessConfiguration)
+	return httpcore.Execute(ctx, s.createB(opt, opt.Body), jsonmodels.NewRemoteAccessConfiguration)
 }
 
-func (s *Service) createB(opt CreateOptions, body any) *core.TryRequest {
+func (s *Service) createB(opt CreateOptions, body any) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(ParamManagedObjectID, opt.ManagedObjectID).
@@ -124,7 +125,7 @@ func (s *Service) createB(opt CreateOptions, body any) *core.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiConfigurations)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }
 
 type UpdateOptions struct {
@@ -135,10 +136,10 @@ type UpdateOptions struct {
 
 // Update remote access configuration
 func (s *Service) Update(ctx context.Context, opt UpdateOptions) op.Result[jsonmodels.RemoteAccessConfiguration] {
-	return core.Execute(ctx, s.updateB(opt), jsonmodels.NewRemoteAccessConfiguration)
+	return httpcore.Execute(ctx, s.updateB(opt), jsonmodels.NewRemoteAccessConfiguration)
 }
 
-func (s *Service) updateB(opt UpdateOptions) *core.TryRequest {
+func (s *Service) updateB(opt UpdateOptions) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamManagedObjectID, opt.ManagedObjectID).
@@ -147,7 +148,7 @@ func (s *Service) updateB(opt UpdateOptions) *core.TryRequest {
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiConfiguration)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }
 
 type DeleteOptions struct {
@@ -157,14 +158,14 @@ type DeleteOptions struct {
 
 // Delete remote access configuration
 func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteB(opt)).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.deleteB(opt)).IgnoreNotFound()
 }
 
-func (s *Service) deleteB(opt DeleteOptions) *core.TryRequest {
+func (s *Service) deleteB(opt DeleteOptions) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamManagedObjectID, opt.ManagedObjectID).
 		SetPathParam(ParamID, opt.ConfigurationID).
 		SetURL(ApiConfiguration)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }

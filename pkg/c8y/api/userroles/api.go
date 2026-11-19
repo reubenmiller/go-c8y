@@ -4,9 +4,9 @@ import (
 	"context"
 	"strings"
 
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
 
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/userroles/usergroups"
@@ -23,18 +23,17 @@ var ParamName = "name"
 
 const ResultProperty = "roles"
 
-func NewService(s *core.Service) *Service {
+func NewService(s *httpcore.Service) *Service {
 	return &Service{
-		Service: *s,
-		Groups:  usergroups.NewService(s),
-		Users:   users.NewService(s),
+		svc:    *s,
+		Groups: usergroups.NewService(s),
+		Users:  users.NewService(s),
 	}
 }
 
 // Service provides api to manage user roles
 type Service struct {
-	core.Service
-
+	svc    httpcore.Service
 	Groups *usergroups.Service
 	Users  *users.Service
 }
@@ -49,7 +48,7 @@ type RoleIterator = pagination.Iterator[jsonmodels.Role]
 
 // Retrieve all user roles in the tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Role] {
-	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewRole)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewRole)
 }
 
 // ListAll returns an iterator for all user roles
@@ -66,13 +65,13 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *RoleIterator {
 	)
 }
 
-func (s *Service) listB(opt ListOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiRoles)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 type GetOption struct {
@@ -81,16 +80,16 @@ type GetOption struct {
 
 // Get a user role
 func (s *Service) Get(ctx context.Context, opt GetOption) op.Result[jsonmodels.Role] {
-	return core.Execute(ctx, s.getB(opt), jsonmodels.NewRole)
+	return httpcore.Execute(ctx, s.getB(opt), jsonmodels.NewRole)
 }
 
-func (s *Service) getB(opt GetOption) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getB(opt GetOption) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamName, opt.Name).
 		SetURL(ApiRole)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // RoleSelfLink returns the self link for a role reference, suitable for the body
@@ -108,7 +107,7 @@ func (s *Service) RoleSelfLink(ref string) string {
 	if strings.Contains(ref, "/roles/") {
 		return ref
 	}
-	return strings.TrimRight(s.Client.BaseURL(), "/") + ApiRoles + "/" + ref
+	return strings.TrimRight(s.svc.Client.BaseURL(), "/") + ApiRoles + "/" + ref
 }
 
 // RoleID returns the role id (which equals the role name in Cumulocity) for a

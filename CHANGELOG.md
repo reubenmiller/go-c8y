@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+* **Breaking**: resty types are no longer part of the public API, so resty upgrades cannot break go-c8y users. Migration:
+
+  | Before | After |
+  |---|---|
+  | `client.HTTPClient` | `client.Resty()` (escape hatch, not covered by the v2 compatibility guarantee) |
+  | `client.HTTPClient.AddResponseMiddleware(api.MiddlewareCountByMethodAndPath(stats))` | `client.Use(api.CountByMethodAndPath(stats))` or `ClientOptions.Middleware` |
+  | `api.MiddlewareCountRequests(&n)` | `api.CountRequests(&n)` |
+  | Custom resty middleware | `api.Middleware` (`func(next http.RoundTripper) http.RoundTripper`), via `ClientOptions.Middleware` or `client.Use` |
+  | `RequestOptions.PrepareRequest func(*resty.Request)` | `RequestOptions.PrepareRequest func(*http.Request) error` |
+  | `RequestOptions.OnResponse func(*resty.Response) error` | `RequestOptions.OnResponse func(*http.Response) error` |
+  | `RequestResult.Response *resty.Response` | `RequestResult.Response *http.Response` (its `Request` is an SDK-owned copy) |
+  | `core.BinaryResponse.Response *resty.Response` | `*http.Response`; new `BinaryResponse.StatusCode()` |
+  | `api.MiddlewareAddUserAgent`, `MiddlewareAddHost`, `MiddlewareRemoveEmptyTenantID`, `MiddlewareContextAuthorization`, `TokenSourceMiddleware`, `TokenRenewalRetry`, `SetAuth`, `NoAcceptHeader` | Internal; `NewClient` installs them. Set the user agent with `ClientOptions.Agent` |
+  | `api.MiddlewareAddCookies`, `MiddlewareAuthorization`, `TokenRenewalRetryMiddleware`, `api.Service`, `api.ExecuteNoContent`, `api.ExecuteResponseOnly`, `api.UnmarshalJSON` | Removed (unused) |
+  | `core.Service`, `core.TryRequest`, `core.NewTryRequest`, `core.Execute*`, `core.QueryParameters`, `core.NewMultiPartFile*`, `core.NewBinaryResponse`, `core.Result`, `core.Response` | Internal (`pkg/c8y/internal/httpcore`) |
+  | `Client.AddMiddleware()` | Internal; it ran once from `NewClient` |
+* **Breaking**: services no longer embed the HTTP client, so `client.Alarms.Client` and similar fields are gone.
+* Added `api.Middleware`, `api.RoundTripperFunc`, `ClientOptions.Middleware`, `Client.Use`, and `task check-api-surface` (run in CI) to keep resty types out of the public API.
 * **Breaking**: request-scoped options now have one public home, package `api`. `pkg/c8y/api/context` is removed and `pkg/c8y/api/contexthelpers` moved to `pkg/c8y/internal/contexthelpers`. New in `api`: `WithProcessingMode` (plus `Persistent`, `Transient`, `Quiescent`, `CEP` variants), `ProcessingMode`, `WithExtraHeaders`, `ExtraHeaders`, `WithExtraQueryParams`, `ExtraQueryParams`, `WithNoAccept`, `WithNoAuth`, `WithDryRunHandler`, and `TenantFromContext`. Migration:
 
   | Before | After |

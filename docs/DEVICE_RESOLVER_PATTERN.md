@@ -45,14 +45,14 @@ All services support these resolver formats for device references:
 ```go
 // Service struct
 type Service struct {
-    core.Service
+    svc httpcore.Service
     DeviceResolver *managedobjects.DeviceResolver
 }
 
 // NewService with device resolver
-func NewService(common *core.Service, moService *managedobjects.Service) *Service {
+func NewService(common *httpcore.Service, moService *managedobjects.Service) *Service {
     return &Service{
-        Service:        *common,
+        svc:        *common,
         DeviceResolver: managedobjects.NewDeviceResolver(moService),
     }
 }
@@ -86,14 +86,14 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[T] {
 ```go
 // Service struct - add DeviceResolver
 type Service struct {
-    core.Service
+    svc httpcore.Service
     DeviceResolver *managedobjects.DeviceResolver
 }
 
 // Update NewService
-func NewService(common *core.Service, moService *managedobjects.Service) *Service {
+func NewService(common *httpcore.Service, moService *managedobjects.Service) *Service {
     return &Service{
-        Service:        *common,
+        svc:        *common,
         DeviceResolver: managedobjects.NewDeviceResolver(moService),
     }
 }
@@ -113,14 +113,14 @@ type ListOptions struct {
 ```go
 // Service struct - add DeviceResolver
 type Service struct {
-    core.Service
+    svc httpcore.Service
     DeviceResolver *managedobjects.DeviceResolver
 }
 
 // Update NewService
-func NewService(common *core.Service, moService *managedobjects.Service) *Service {
+func NewService(common *httpcore.Service, moService *managedobjects.Service) *Service {
     return &Service{
-        Service:        *common,
+        svc:        *common,
         DeviceResolver: managedobjects.NewDeviceResolver(moService),
     }
 }
@@ -140,14 +140,14 @@ type ListOptions struct {
 ```go
 // Service struct - add DeviceResolver  
 type Service struct {
-    core.Service
+    svc httpcore.Service
     DeviceResolver *managedobjects.DeviceResolver
 }
 
 // Update NewService
-func NewService(common *core.Service, moService *managedobjects.Service) *Service {
+func NewService(common *httpcore.Service, moService *managedobjects.Service) *Service {
     return &Service{
-        Service:        *common,
+        svc:        *common,
         DeviceResolver: managedobjects.NewDeviceResolver(moService),
     }
 }

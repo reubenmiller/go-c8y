@@ -178,7 +178,7 @@ func Test_AuthorizationHeader_MatchesWire(t *testing.T) {
 			client.Auth = tt.auth
 			rc := resty.New()
 			defer rc.Close()
-			SetAuth(rc, tt.auth)
+			setAuth(rc, tt.auth)
 			got = ""
 			_, err := rc.R().Get(srv.URL)
 			require.NoError(t, err)

@@ -447,7 +447,7 @@ func Test_DryRun_CreateBulkStream_MultiBatch(t *testing.T) {
 
 	// Count actual HTTP requests via middleware — dry run ones are NOT counted.
 	stats := api.NewStatsMap()
-	client.HTTPClient.AddResponseMiddleware(api.MiddlewareCountByMethodAndPath(stats))
+	client.Use(api.CountByMethodAndPath(stats))
 
 	ctx := api.WithDryRun(context.Background(), true)
 

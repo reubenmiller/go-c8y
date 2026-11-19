@@ -3,9 +3,9 @@ package auditrecords
 import (
 	"context"
 
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -19,9 +19,9 @@ var ParamID = "id"
 const ResultProperty = "auditRecords"
 
 // Service provides api to get/set/delete audit entries in Cumulocity
-type Service struct{ core.Service }
+type Service struct{ httpcore.Service }
 
-func NewService(common *core.Service) *Service {
+func NewService(common *httpcore.Service) *Service {
 	return &Service{Service: *common}
 }
 
@@ -34,7 +34,7 @@ type AuditRecordIterator = pagination.Iterator[jsonmodels.AuditRecord]
 
 // List the audit records
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.AuditRecord] {
-	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewAuditRecord)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewAuditRecord)
 }
 
 // ListAll returns an iterator for all audit records
@@ -51,40 +51,40 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *AuditRecordIte
 	)
 }
 
-func (s *Service) listB(opt any) *core.TryRequest {
+func (s *Service) listB(opt any) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiAuditRecords)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.Client, req, ResultProperty)
 }
 
 // Get an audit record
 func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.AuditRecord] {
-	return core.Execute(ctx, s.getB(ID), jsonmodels.NewAuditRecord)
+	return httpcore.Execute(ctx, s.getB(ID), jsonmodels.NewAuditRecord)
 }
 
-func (s *Service) getB(ID string) *core.TryRequest {
+func (s *Service) getB(ID string) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamID, ID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiAuditRecord)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }
 
 // Create an audit record
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.AuditRecord] {
-	return core.Execute(ctx, s.createB(body), jsonmodels.NewAuditRecord)
+	return httpcore.Execute(ctx, s.createB(body), jsonmodels.NewAuditRecord)
 }
 
-func (s *Service) createB(body any) *core.TryRequest {
+func (s *Service) createB(body any) *httpcore.TryRequest {
 	req := s.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiAuditRecords)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.Client, req)
 }

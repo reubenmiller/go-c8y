@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"reflect"
 	"regexp"
@@ -65,55 +64,6 @@ func (r APIError) Error() string {
 		parts = append(parts, r.Info)
 	}
 	return strings.Join(parts, " ")
-}
-
-func coupleAPIErrors(r *resty.Response, err error) (*resty.Response, error) {
-	if err != nil {
-		// an error was raised in go code, no need to check the resty Response
-		return nil, NewError(err)
-	}
-
-	if r.IsStatusSuccess() {
-		return r, nil
-	}
-
-	// Check that response is of the correct content-type before unmarshalling
-	// expectedContentType := r.Request.Header.Get("Accept")
-	responseContentType := r.Header().Get("Content-Type")
-
-	// If the upstream Cumulocity API server being fronted fails to respond to the request,
-	// the http server will respond with a default "Bad Gateway" page with Content-Type
-	// "text/html".
-	if r.StatusCode() == http.StatusBadGateway && responseContentType == "text/html" {
-		return nil, Error{Code: http.StatusBadGateway, Message: http.StatusText(http.StatusBadGateway)}
-	}
-
-	if !r.IsRead {
-		// Manually parse the response to analyse the error message
-		defer r.Body.Close()
-		buf, err := io.ReadAll(r.Body)
-		if err != nil {
-			return nil, NewError(err)
-		}
-
-		var apiError APIError
-		if err := json.Unmarshal(buf, &apiError); err != nil {
-			return nil, NewError(err)
-		}
-
-		return nil, &Error{
-			Code: r.StatusCode(),
-
-			Type:       apiError.ErrorType,
-			Message:    apiError.Error(),
-			MessageRaw: string(buf),
-			Response:   r.RawResponse,
-			Duration:   r.Duration(),
-			ReceivedAt: r.ReceivedAt(),
-		}
-	}
-
-	return nil, NewError(r)
 }
 
 // NewError creates a Cumulocity Server.Error with a Code identifying the source err type,
@@ -253,16 +203,4 @@ func ErrTokenRevoked(err any) bool {
 		}
 	}
 	return false
-}
-
-// getStatusCodeFromError extracts the HTTP status code from an error if it's an *Error type
-func getStatusCodeFromError(err error) int {
-	if err == nil {
-		return 0
-	}
-	var e *Error
-	if errors.As(err, &e) {
-		return e.StatusCode()
-	}
-	return 0
 }

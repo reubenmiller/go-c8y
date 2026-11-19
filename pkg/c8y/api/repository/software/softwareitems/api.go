@@ -11,6 +11,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -26,9 +27,9 @@ const ResultProperty = "managedObjects"
 const FragmentSoftware = "c8y_Software"
 const FragmentSoftwareBinary = "c8y_SoftwareBinary"
 
-func NewService(s *core.Service) *Service {
+func NewService(s *httpcore.Service) *Service {
 	service := &Service{
-		Service:        *s,
+		svc:            *s,
 		managedObjects: managedobjects.NewService(s),
 	}
 	service.Resolver = NewResolver(service)
@@ -37,14 +38,14 @@ func NewService(s *core.Service) *Service {
 
 // Service api to interact with software items
 type Service struct {
-	core.Service
+	svc            httpcore.Service
 	managedObjects *managedobjects.Service
 	Resolver       *Resolver
 }
 
 // Create a software item
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Software] {
-	return core.Execute(ctx, s.createB(body), jsonmodels.NewSoftware)
+	return httpcore.Execute(ctx, s.createB(body), jsonmodels.NewSoftware)
 }
 
 // ResolveID resolves a software identifier to an ID using the resolver
@@ -81,10 +82,10 @@ type ListOptions struct {
 
 // List software
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Software] {
-	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewSoftware)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewSoftware)
 }
 
-func (s *Service) listB(opt ListOptions) *core.TryRequest {
+func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 	// Build request directly since managedObjects.listB is now private
 	listOpts := managedobjects.ListOptions{
 		Query: model.NewInventoryQuery().
@@ -103,12 +104,12 @@ func (s *Service) listB(opt ListOptions) *core.TryRequest {
 		},
 	}
 	// Build the request directly
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetQueryParamsFromValues(core.QueryParameters(listOpts)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(listOpts)).
 		SetURL(managedobjects.ApiManagedObjects)
-	return core.NewTryRequest(s.Client, req, managedobjects.ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, managedobjects.ResultProperty)
 }
 
 // SoftwareIterator provides iteration over software items
@@ -349,7 +350,7 @@ func (s *Service) Get(ctx context.Context, ID string, opt GetOptions) op.Result[
 	}
 	meta["id"] = id
 
-	return core.Execute(ctx, s.getB(id, opt), jsonmodels.NewSoftware, meta)
+	return httpcore.Execute(ctx, s.getB(id, opt), jsonmodels.NewSoftware, meta)
 }
 
 // Update a software item
@@ -372,7 +373,7 @@ func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jso
 	}
 	meta["id"] = id
 
-	return core.Execute(ctx, s.updateB(id, body), jsonmodels.NewSoftware, meta)
+	return httpcore.Execute(ctx, s.updateB(id, body), jsonmodels.NewSoftware, meta)
 }
 
 // Delete a software item
@@ -398,7 +399,7 @@ func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.R
 	}
 	meta["id"] = id
 
-	return core.ExecuteNoContent(ctx, s.deleteB(id, opt), meta).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.deleteB(id, opt), meta).IgnoreNotFound()
 }
 
 // GetOrCreateByName searches by name and optional software type, creating if not found
@@ -592,43 +593,43 @@ func (s *Service) upsertWithQuery(ctx context.Context, query string, body any, a
 
 // Builder methods for backwards compatibility and flexibility
 
-func (s *Service) createB(body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) createB(body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetBody(body).
 		SetContentType(types.MimeTypeManagedObject).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObjects)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
-func (s *Service) getB(ID string, opt GetOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getB(ID string, opt GetOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamID, ID).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObject)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
-func (s *Service) updateB(ID string, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) updateB(ID string, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamID, ID).
 		SetBody(body).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObject)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
-func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) deleteB(ID string, opt DeleteOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamID, ID).
 		SetQueryParam("forceCascade", fmt.Sprintf("%v", !opt.SkipCascade)).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiManagedObject)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }

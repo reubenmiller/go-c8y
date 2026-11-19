@@ -6,6 +6,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -21,11 +22,11 @@ var (
 var ParamID = "id"
 
 type Service struct {
-	core.Service
+	svc httpcore.Service
 }
 
-func NewService(s *core.Service) *Service {
-	return &Service{Service: *s}
+func NewService(s *httpcore.Service) *Service {
+	return &Service{svc: *s}
 }
 
 // PluginReference represents a reference to an installed plugin
@@ -87,32 +88,32 @@ type PluginReferenceIterator = pagination.Iterator[PluginReferenceResult]
 
 // getApplication fetches the current application object
 func (s *Service) getApplication(ctx context.Context, applicationID string) op.Result[ApplicationWithPlugins] {
-	return core.Execute(ctx, s.getApplicationB(applicationID), NewApplicationWithPlugins)
+	return httpcore.Execute(ctx, s.getApplicationB(applicationID), NewApplicationWithPlugins)
 }
 
-func (s *Service) getApplicationB(applicationID string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getApplicationB(applicationID string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, applicationID).
 		SetURL(ApiApplication)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // updateApplication updates the application with new data
 func (s *Service) updateApplication(ctx context.Context, applicationID string, body map[string]any) op.Result[ApplicationWithPlugins] {
-	return core.Execute(ctx, s.updateApplicationB(applicationID, body), NewApplicationWithPlugins)
+	return httpcore.Execute(ctx, s.updateApplicationB(applicationID, body), NewApplicationWithPlugins)
 }
 
-func (s *Service) updateApplicationB(applicationID string, body map[string]any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) updateApplicationB(applicationID string, body map[string]any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, applicationID).
 		SetBody(body).
 		SetURL(ApiApplication)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // List retrieves all plugins installed in an application

@@ -6,8 +6,8 @@ import (
 	"context"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -37,13 +37,13 @@ type TOTPChallenge struct {
 type TOTPCodeFunc func(ctx context.Context, challenge TOTPChallenge) (string, error)
 
 // NewService creates a new TOTP service.
-func NewService(s *core.Service) *Service {
-	return &Service{Service: *s}
+func NewService(s *httpcore.Service) *Service {
+	return &Service{svc: *s}
 }
 
 // Service provides operations for managing TOTP two-factor authentication.
 type Service struct {
-	core.Service
+	svc httpcore.Service
 }
 
 // GenerateSecret requests a new TOTP secret for the current user.
@@ -51,15 +51,15 @@ type Service struct {
 // Cumulocity requires basic authentication for this endpoint; a bearer token
 // is not accepted. Pass the user's tenant, username and password in auth.
 func (s *Service) GenerateSecret(ctx context.Context) op.Result[jsonmodels.TOTPSecret] {
-	return core.Execute(ctx, s.generateSecretB(), jsonmodels.NewTOTPSecret)
+	return httpcore.Execute(ctx, s.generateSecretB(), jsonmodels.NewTOTPSecret)
 }
 
-func (s *Service) generateSecretB() *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) generateSecretB() *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiTOTPSecret)
-	return core.NewTryRequest(s.Client, req).
+	return httpcore.NewTryRequest(s.svc.Client, req).
 		WithAuthType(authentication.AuthTypeBasic)
 }
 
@@ -68,17 +68,17 @@ func (s *Service) generateSecretB() *core.TryRequest {
 // This is called after GenerateSecret to confirm the user has successfully
 // enrolled their authenticator app before activating TOTP.
 func (s *Service) VerifyCode(ctx context.Context, code string) op.Result[jsonmodels.TOTPSecret] {
-	return core.Execute(ctx, s.verifyCodeB(code), jsonmodels.NewTOTPSecret)
+	return httpcore.Execute(ctx, s.verifyCodeB(code), jsonmodels.NewTOTPSecret)
 }
 
-func (s *Service) verifyCodeB(code string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) verifyCodeB(code string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetBody(map[string]any{"code": code}).
 		SetURL(ApiTOTPSecretVerify)
-	return core.NewTryRequest(s.Client, req).WithAuthType(authentication.AuthTypeBasic)
+	return httpcore.NewTryRequest(s.svc.Client, req).WithAuthType(authentication.AuthTypeBasic)
 }
 
 // SetActivity activates or deactivates TOTP for the current user.
@@ -87,15 +87,15 @@ func (s *Service) verifyCodeB(code string) *core.TryRequest {
 // isActive=false to disable it. Like GenerateSecret, this endpoint requires
 // basic authentication.
 func (s *Service) SetActivity(ctx context.Context, isActive bool) op.Result[jsonmodels.TOTPSecret] {
-	return core.Execute(ctx, s.setActivityB(isActive), jsonmodels.NewTOTPSecret)
+	return httpcore.Execute(ctx, s.setActivityB(isActive), jsonmodels.NewTOTPSecret)
 }
 
-func (s *Service) setActivityB(isActive bool) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) setActivityB(isActive bool) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetBody(map[string]any{"isActive": isActive}).
 		SetURL(ApiTOTPSecretActivity)
-	return core.NewTryRequest(s.Client, req).WithAuthType(authentication.AuthTypeBasic)
+	return httpcore.NewTryRequest(s.svc.Client, req).WithAuthType(authentication.AuthTypeBasic)
 }

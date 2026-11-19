@@ -1,35 +1,11 @@
 package api
 
 import (
-	"context"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
-	"resty.dev/v3"
 )
-
-// Remove Accept Header
-func NoAcceptHeader(r *resty.Request) *resty.Request {
-	r.Header.Del("Accept")
-	return r
-}
-
-func ExecuteNoContent(ctx context.Context, req *core.TryRequest) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, req)
-}
-
-func ExecuteResponseOnly(ctx context.Context, req *core.TryRequest) (*resty.Response, error) {
-	return core.ExecuteResponseOnly(ctx, req)
-}
-
-func UnmarshalJSON(req *core.Response, data any) error {
-	dec := json.NewDecoder(req.Response.Body)
-	dec.UseNumber()
-	return dec.Decode(&data)
-}
 
 func ErrHasStatus(err error, code ...int) bool {
 	return core.ErrHasStatus(err, code...)

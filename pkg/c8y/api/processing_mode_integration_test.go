@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	contexthelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/stretchr/testify/assert"
 	"resty.dev/v3"
 )
@@ -51,7 +51,7 @@ func TestProcessingModeIntegration(t *testing.T) {
 
 			// Create a request
 			req := client.R().SetURL("https://example.c8y.com/inventory/managedObjects")
-			tryReq := core.NewTryRequest(client, req)
+			tryReq := httpcore.NewTryRequest(client, req)
 
 			// Apply context which should set the processing mode header
 			tryReq.SetContext(ctx)
@@ -70,7 +70,7 @@ func TestProcessingModeNotSetIntegration(t *testing.T) {
 	ctx = contexthelpers.WithDryRun(ctx, true)
 
 	req := client.R().SetURL("https://example.c8y.com/inventory/managedObjects")
-	tryReq := core.NewTryRequest(client, req)
+	tryReq := httpcore.NewTryRequest(client, req)
 
 	tryReq.SetContext(ctx)
 

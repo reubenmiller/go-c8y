@@ -7,13 +7,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"resty.dev/v3"
 )
 
 func testService(handler http.HandlerFunc) (*Service, func()) {
 	ts := httptest.NewServer(handler)
-	return NewService(&core.Service{Client: resty.New().SetBaseURL(ts.URL)}), ts.Close
+	return NewService(&httpcore.Service{Client: resty.New().SetBaseURL(ts.URL)}), ts.Close
 }
 
 // TestRoleSelfLink verifies a bare role name is turned into its canonical self
@@ -23,7 +23,7 @@ func TestRoleSelfLink(t *testing.T) {
 	svc, closeFn := testService(func(w http.ResponseWriter, r *http.Request) {})
 	defer closeFn()
 
-	base := svc.Client.BaseURL()
+	base := svc.svc.Client.BaseURL()
 
 	if got := svc.RoleSelfLink("ROLE_ALARM_READ"); got != base+"/user/roles/ROLE_ALARM_READ" {
 		t.Errorf("RoleSelfLink(name) = %q, want %q", got, base+"/user/roles/ROLE_ALARM_READ")

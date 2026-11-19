@@ -8,18 +8,20 @@ import (
 	"path"
 	"strconv"
 	"strings"
-
-	"resty.dev/v3"
 )
 
 var (
 	hdrContentDisposition = http.CanonicalHeaderKey("Content-Disposition")
 )
 
+// BinaryResponse is the response of a request that downloads a binary. The
+// body is not read by the SDK: read it with Reader and close it with Close.
 type BinaryResponse struct {
-	Response *resty.Response
+	// Response is the HTTP response. Its Body is the unread binary content.
+	Response *http.Response
 }
 
+// Reader returns the unread response body.
 func (b *BinaryResponse) Reader() io.ReadCloser {
 	if b.Response == nil || b.Response.Body == nil {
 		return http.NoBody
@@ -27,6 +29,7 @@ func (b *BinaryResponse) Reader() io.ReadCloser {
 	return b.Response.Body
 }
 
+// Close closes the response body.
 func (b *BinaryResponse) Close() error {
 	if b.Response == nil || b.Response.Body == nil {
 		return nil
@@ -34,33 +37,37 @@ func (b *BinaryResponse) Close() error {
 	return b.Response.Body.Close()
 }
 
+// FileName returns the file name from the Content-Disposition header, or from
+// the request URL when the header is missing.
 func (b *BinaryResponse) FileName() (v string) {
 	if b.Response != nil {
-		v = binaryName(b.Response.RawResponse)
+		v = binaryName(b.Response)
 	}
 	return
 }
 
-// URL of the resolved binary
+// URL returns the URL that the binary was downloaded from.
 func (b *BinaryResponse) URL() (v string) {
-	if b.Response != nil && b.Response.RawResponse != nil && b.Response.RawResponse.Request != nil {
-		v = b.Response.RawResponse.Request.URL.String()
+	if b.Response != nil && b.Response.Request != nil && b.Response.Request.URL != nil {
+		v = b.Response.Request.URL.String()
 	}
 	return
 }
 
+// Size returns the Content-Length of the response, or 0 when unknown.
 func (b *BinaryResponse) Size() int64 {
-	if b.Response == nil || b.Response.RawResponse == nil {
+	if b.Response == nil {
 		return 0
 	}
-	return contentLength(b.Response.RawResponse)
+	return contentLength(b.Response)
 }
 
-func NewBinaryResponse(r *resty.Response) *BinaryResponse {
-	resp := &BinaryResponse{
-		Response: r,
+// StatusCode returns the HTTP status code of the response.
+func (b *BinaryResponse) StatusCode() int {
+	if b.Response == nil {
+		return 0
 	}
-	return resp
+	return b.Response.StatusCode
 }
 
 func isStringEmpty(str string) bool {

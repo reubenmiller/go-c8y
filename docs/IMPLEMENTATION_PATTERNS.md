@@ -237,7 +237,7 @@ func UpsertBatch[T any](
 ```go
 // Event binary upsert - try create, fallback to update on 409
 func (s *Service) Upsert(ctx context.Context, eventID string, opt UploadFileOptions) op.Result[jsonmodels.EventBinary] {
-    result := core.Execute(ctx, s.createB(eventID, opt), jsonmodels.NewEventBinary)
+    result := httpcore.Execute(ctx, s.createB(eventID, opt), jsonmodels.NewEventBinary)
     if result.Err == nil {
         return result
     }
@@ -246,7 +246,7 @@ func (s *Service) Upsert(ctx context.Context, eventID string, opt UploadFileOpti
     if !core.ErrHasStatus(result.Err, 409) {
         return result
     }
-    return core.Execute(ctx, s.updateB(eventID, opt), jsonmodels.NewEventBinary)
+    return httpcore.Execute(ctx, s.updateB(eventID, opt), jsonmodels.NewEventBinary)
 }
 ```
 
@@ -449,25 +449,27 @@ DeleteList → deleteListB
 … and so on for domain-specific variants
 ```
 
-The `B` method constructs and returns a `*core.TryRequest` — it does **no I/O**.  The public method then passes that request to the appropriate executor:
+> **Where the request machinery lives.** `httpcore` (`pkg/c8y/internal/httpcore`) holds `Service`, `TryRequest`, and the `Execute*` functions. It is internal so resty types never reach the public API. Services keep it in an unexported field (`svc httpcore.Service`), not by embedding, because embedding would promote its `Client` field into every service's public API. Public types that users see (`core.Error`, `core.NoContent`, `core.BinaryResponse`, `core.UploadFileOptions`) stay in `pkg/c8y/api/core`.
+
+The `B` method constructs and returns a `*httpcore.TryRequest` — it does **no I/O**.  The public method then passes that request to the appropriate executor:
 
 ```go
 // Public method — context, resolution, execution
 func (s *Service) Get(ctx context.Context, id string) op.Result[jsonmodels.Alarm] {
-    return core.Execute(ctx, s.getB(id), jsonmodels.NewAlarm)
+    return httpcore.Execute(ctx, s.getB(id), jsonmodels.NewAlarm)
 }
 
 // B method — pure request construction, no I/O
-func (s *Service) getB(id string) *core.TryRequest {
-    req := s.Client.R().
+func (s *Service) getB(id string) *httpcore.TryRequest {
+    req := s.svc.Client.R().
         SetMethod(resty.MethodGet).
         SetPathParam(ParamId, id).
         SetURL(ApiAlarm)
-    return core.NewTryRequest(s.Client, req)
+    return httpcore.NewTryRequest(s.svc.Client, req)
 }
 ```
 
-This split makes deferred execution, dry-run inspection, and testing straightforward: `core.Execute` can decide whether to actually send the request (live mode), record it (deferred mode), or return a mock response (test mode) without the request-building logic needing to know.
+This split makes deferred execution, dry-run inspection, and testing straightforward: `httpcore.Execute` can decide whether to actually send the request (live mode), record it (deferred mode), or return a mock response (test mode) without the request-building logic needing to know.
 
 ---
 
@@ -477,7 +479,7 @@ Services provide high-level methods that use these patterns:
 
 ```go
 type Service struct {
-    core.Service
+    svc httpcore.Service
     DeviceResolver *managedobjects.DeviceResolver
 }
 
@@ -568,7 +570,7 @@ func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[T] {
         "type": "c8y_ConfigurationDump",
         "name": opt.Name,
     }
-    return core.Execute(ctx, s.createB(body), NewModel)
+    return httpcore.Execute(ctx, s.createB(body), NewModel)
 }
 ```
 

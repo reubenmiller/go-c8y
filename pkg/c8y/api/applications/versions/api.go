@@ -13,6 +13,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -31,11 +32,11 @@ const ResultProperty = "applicationVersions"
 
 // Service for managing application versions
 type Service struct {
-	core.Service
+	svc httpcore.Service
 }
 
-func NewService(s *core.Service) *Service {
-	return &Service{Service: *s}
+func NewService(s *httpcore.Service) *Service {
+	return &Service{svc: *s}
 }
 
 // ListOptions contains options for listing versions
@@ -57,18 +58,18 @@ type VersionIterator = pagination.Iterator[jsonmodels.ApplicationVersion]
 
 // List retrieves all versions for a specific application
 func (s *Service) List(ctx context.Context, applicationID string, opt ListOptions) op.Result[jsonmodels.ApplicationVersion] {
-	return core.ExecuteCollection(ctx, s.listB(applicationID, opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplicationVersion)
+	return httpcore.ExecuteCollection(ctx, s.listB(applicationID, opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplicationVersion)
 }
 
-func (s *Service) listB(applicationID string, opt ListOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listB(applicationID string, opt ListOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetPathParam(ParamID, applicationID).
 		SetURL(ApiVersions)
 
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // ListAll returns an iterator for all versions
@@ -93,42 +94,42 @@ const MimeTypeApplicationVersion = "application/vnd.com.nsn.cumulocity.applicati
 
 // ListByVersion retrieves a specific version of an application by version string
 func (s *Service) ListByVersion(ctx context.Context, applicationID string, version string) op.Result[jsonmodels.ApplicationVersion] {
-	return core.Execute(ctx, s.listByVersionB(applicationID, version), jsonmodels.NewApplicationVersion)
+	return httpcore.Execute(ctx, s.listByVersionB(applicationID, version), jsonmodels.NewApplicationVersion)
 }
 
-func (s *Service) listByVersionB(applicationID string, version string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listByVersionB(applicationID string, version string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", MimeTypeApplicationVersion).
 		SetPathParam(ParamID, applicationID).
 		SetQueryParam("version", version).
 		SetURL(ApiVersionByName)
 
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // ListByTag retrieves a specific version of an application by tag
 func (s *Service) ListByTag(ctx context.Context, applicationID string, tag string) op.Result[jsonmodels.ApplicationVersion] {
-	return core.Execute(ctx, s.listByTagB(applicationID, tag), jsonmodels.NewApplicationVersion)
+	return httpcore.Execute(ctx, s.listByTagB(applicationID, tag), jsonmodels.NewApplicationVersion)
 }
 
-func (s *Service) listByTagB(applicationID string, tag string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listByTagB(applicationID string, tag string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", MimeTypeApplicationVersion).
 		SetPathParam(ParamID, applicationID).
 		SetQueryParam("tag", tag).
 		SetURL(ApiVersionByName)
 
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Create creates a new version of an application
 func (s *Service) Create(ctx context.Context, applicationID string, opts CreateOptions) op.Result[jsonmodels.ApplicationVersion] {
-	return core.Execute(ctx, s.createB(applicationID, opts), jsonmodels.NewApplicationVersion)
+	return httpcore.Execute(ctx, s.createB(applicationID, opts), jsonmodels.NewApplicationVersion)
 }
 
-func (s *Service) createB(applicationID string, opts CreateOptions) *core.TryRequest {
+func (s *Service) createB(applicationID string, opts CreateOptions) *httpcore.TryRequest {
 	filename := opts.File.FilePath
 	if filename == "" {
 		filename = "application.zip"
@@ -136,7 +137,7 @@ func (s *Service) createB(applicationID string, opts CreateOptions) *core.TryReq
 
 	applicationVersion, _ := json.Marshal(opts)
 
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, applicationID).
@@ -144,7 +145,7 @@ func (s *Service) createB(applicationID string, opts CreateOptions) *core.TryReq
 		SetMultipartField("applicationVersion", "", types.MimeTypeApplicationJSON, bytes.NewReader(applicationVersion)).
 		SetURL(ApiVersions)
 
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // CreateFromFile creates a new version from a file path or URL
@@ -223,15 +224,15 @@ func (s *Service) CreateFromFile(ctx context.Context, applicationID string, file
 
 // Update updates the tags for a specific application version
 func (s *Service) Update(ctx context.Context, applicationID string, version string, tags []string) op.Result[jsonmodels.ApplicationVersion] {
-	return core.Execute(ctx, s.updateB(applicationID, version, tags), jsonmodels.NewApplicationVersion)
+	return httpcore.Execute(ctx, s.updateB(applicationID, version, tags), jsonmodels.NewApplicationVersion)
 }
 
-func (s *Service) updateB(applicationID string, version string, tags []string) *core.TryRequest {
+func (s *Service) updateB(applicationID string, version string, tags []string) *httpcore.TryRequest {
 	body := map[string]any{
 		"tags": tags,
 	}
 
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeApplicationJSON).
@@ -240,37 +241,37 @@ func (s *Service) updateB(applicationID string, version string, tags []string) *
 		SetBody(body).
 		SetURL(ApiVersionByID)
 
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // DeleteByVersion removes a specific version of an application by version string
 func (s *Service) DeleteByVersion(ctx context.Context, applicationID string, version string) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteByVersionB(applicationID, version)).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.deleteByVersionB(applicationID, version)).IgnoreNotFound()
 }
 
-func (s *Service) deleteByVersionB(applicationID string, version string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) deleteByVersionB(applicationID string, version string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamID, applicationID).
 		SetQueryParam("version", version).
 		SetURL(ApiVersionByName)
 
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // DeleteByTag removes a specific version of an application by tag
 func (s *Service) DeleteByTag(ctx context.Context, applicationID string, tag string) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteByTagB(applicationID, tag)).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.deleteByTagB(applicationID, tag)).IgnoreNotFound()
 }
 
-func (s *Service) deleteByTagB(applicationID string, tag string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) deleteByTagB(applicationID string, tag string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamID, applicationID).
 		SetQueryParam("tag", tag).
 		SetURL(ApiVersionByName)
 
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // isURL checks if a string is a URL

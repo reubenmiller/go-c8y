@@ -48,7 +48,7 @@ Implementation notes:
 
 * `authentication.WithAuth` / `authentication.AuthFromContext` store and read
   the per-request `AuthOptions` (typed, unexported context key).
-* A new client middleware (`MiddlewareContextAuthorization`, registered in
+* A new client middleware (internal, registered in
   `NewClient`) applies context credentials with priority over both the
   client-level credentials and the token source. Token selection follows the
   client's own precedence: `Token` (Bearer) first, then `Username`/`Password`

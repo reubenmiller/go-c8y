@@ -37,7 +37,11 @@ The first two groups become unexported and stay resty middleware internally. Sev
 
 **Stop embedding `core.Service`.** Exported service types hold `svc *core.Service` in an unexported field. Alternative: move `core` to `internal/`. Rejected because promoted fields from an embedded internal type are still accessible to users, so moving alone does not hide them.
 
-**SDK-owned raw response type.** `core.ExecuteResponseOnly` returns `*core.RawResponse` (status, headers, body bytes, duration, and the `*http.Request` copy). The body and request are copied into SDK-owned memory, which also removes the pooled-buffer exposure found in PR #180.
+**Request machinery is internal (as implemented).** `Service`, `TryRequest`, `Execute*`, `ExecuteResponseOnly`, the multipart builders, and resty error coupling moved to `pkg/c8y/internal/httpcore`. No public raw-response or multipart type was needed, which keeps the public API smaller than first planned. `RequestResult.Response` is an `*http.Response` whose `Request` is a copy captured in `DryRunTransport` (body included), which removes the pooled-buffer exposure found in PR #180.
+
+**User middleware sits inside `DryRunTransport`.** Chain: `DryRunTransport` → user middleware → base transport. Dry-run and mock requests are answered before user middleware, so counters skip them without extra checks, and `DryRunTransport` keeps its type for the TLS lookups that switch on it. A `middlewareTransport` wrapper keeps the base transport's TLS config reachable.
+
+**`PrepareRequest` runs in the transport.** It is carried on the context and called at the top of `DryRunTransport.RoundTrip`, on the final `*http.Request`, once per attempt. An error aborts the attempt before anything is sent.
 
 ## Risks / Trade-offs
 

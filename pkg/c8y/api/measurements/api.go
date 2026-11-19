@@ -12,6 +12,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/realtime"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -27,14 +28,14 @@ const ResultProperty = "measurements"
 
 // Measurement service
 type Service struct {
-	core.Service
+	svc            httpcore.Service
 	DeviceResolver *managedobjects.DeviceResolver
 }
 
 // NewService creates a new measurement service with device resolution capabilities
-func NewService(common *core.Service, moService *managedobjects.Service) *Service {
+func NewService(common *httpcore.Service, moService *managedobjects.Service) *Service {
 	return &Service{
-		Service:        *common,
+		svc:            *common,
 		DeviceResolver: managedobjects.NewDeviceResolver(moService),
 	}
 }
@@ -63,7 +64,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 		opt.Source = managedobjects.DeviceRef(resolvedID)
 	}
 
-	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewMeasurement)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewMeasurement)
 }
 
 // ListAll returns an iterator for all measurements. By default it uses the
@@ -114,21 +115,21 @@ func (s *Service) Export(ctx context.Context, opt ListOptions, accept string) op
 		}
 		opt.Source = managedobjects.DeviceRef(resolvedID)
 	}
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", accept).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiMeasurements)
-	return core.ExecuteBinary(ctx, core.NewTryRequest(s.Client, req))
+	return httpcore.ExecuteBinary(ctx, httpcore.NewTryRequest(s.svc.Client, req))
 }
 
-func (s *Service) listB(opt any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listB(opt any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiMeasurements)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // DeleteListOptions to control which measurements are to be deleted
@@ -167,42 +168,42 @@ func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Resu
 		opt.Source = managedobjects.DeviceRef(resolvedID)
 	}
 
-	return core.ExecuteNoContent(ctx, s.deleteListB(opt))
+	return httpcore.ExecuteNoContent(ctx, s.deleteListB(opt))
 }
 
-func (s *Service) deleteListB(opt DeleteListOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) deleteListB(opt DeleteListOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiMeasurements)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Get a measurement by ID
 func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Measurement] {
-	return core.Execute(ctx, s.getB(ID), jsonmodels.NewMeasurement)
+	return httpcore.Execute(ctx, s.getB(ID), jsonmodels.NewMeasurement)
 }
 
-func (s *Service) getB(ID string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getB(ID string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, ID).
 		SetURL(ApiMeasurement)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Delete removes a single measurement by ID
 func (s *Service) Delete(ctx context.Context, ID string) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteB(ID)).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.deleteB(ID)).IgnoreNotFound()
 }
 
-func (s *Service) deleteB(ID string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) deleteB(ID string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamID, ID).
 		SetURL(ApiMeasurement)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // CreateOptions for creating a measurement with resolver support
@@ -247,7 +248,7 @@ func (s *Service) Create(ctx context.Context, opts CreateOptions) op.Result[json
 //
 //	result := client.Measurements.CreateRaw(ctx, map[string]any{...})
 func (s *Service) CreateRaw(ctx context.Context, body any) op.Result[jsonmodels.Measurement] {
-	return core.Execute(ctx, s.createB(body), jsonmodels.NewMeasurement)
+	return httpcore.Execute(ctx, s.createB(body), jsonmodels.NewMeasurement)
 }
 
 // createWithOptions handles the CreateOptions case with resolver support and property merging
@@ -296,7 +297,7 @@ func (s *Service) createWithOptions(ctx context.Context, opts CreateOptions) op.
 	}
 
 	// Create the measurement with the merged JSON and add metadata
-	result := core.Execute(ctx, s.createBWithJSON(finalJSON), jsonmodels.NewMeasurement)
+	result := httpcore.Execute(ctx, s.createBWithJSON(finalJSON), jsonmodels.NewMeasurement)
 
 	// Add resolver metadata to result
 	if result.Meta == nil {
@@ -309,39 +310,39 @@ func (s *Service) createWithOptions(ctx context.Context, opts CreateOptions) op.
 	return result
 }
 
-func (s *Service) createB(body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) createB(body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiMeasurements)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
-func (s *Service) createBWithJSON(bodyJSON []byte) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) createBWithJSON(bodyJSON []byte) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(bodyJSON).
 		SetURL(ApiMeasurements)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // CreateList creates multiple measurements to the platform
 func (s *Service) CreateList(ctx context.Context, body any) op.Result[jsonmodels.Measurement] {
-	return core.ExecuteCollection(ctx, s.createListB(body), ResultProperty, "", jsonmodels.NewMeasurement)
+	return httpcore.ExecuteCollection(ctx, s.createListB(body), ResultProperty, "", jsonmodels.NewMeasurement)
 }
 
-func (s *Service) createListB(body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) createListB(body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetContentType(types.MimeTypeCumulocityMeasurementCollection).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiMeasurements)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // ListSeriesOptions todo
@@ -400,7 +401,7 @@ func (s *Service) ListSeries(ctx context.Context, opt ListSeriesOptions) op.Resu
 	}
 
 	// Execute request and add device info to result
-	result := core.Execute(ctx, s.listSeriesB(opt), jsonmodels.NewMeasurementSeries)
+	result := httpcore.Execute(ctx, s.listSeriesB(opt), jsonmodels.NewMeasurementSeries)
 	if result.Err == nil {
 		// Populate device info in the measurement series
 		result.Data.DeviceID = deviceID
@@ -409,13 +410,13 @@ func (s *Service) ListSeries(ctx context.Context, opt ListSeriesOptions) op.Resu
 	return result
 }
 
-func (s *Service) listSeriesB(opt ListSeriesOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listSeriesB(opt ListSeriesOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiMeasurementsSeries)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // MeasurementStream provides an iterator for realtime measurement subscriptions
@@ -458,14 +459,14 @@ type MeasurementStream = realtime.Stream[realtime.StreamData[jsonmodels.Measurem
 //	    return err
 //	}
 func (s *Service) SubscribeStream(ctx context.Context, ID string) op.Result[*MeasurementStream] {
-	err := s.RealtimeClient.Connect()
+	err := s.svc.RealtimeClient.Connect()
 	if err != nil {
 		return op.Failed[*MeasurementStream](err, false)
 	}
 
 	messages := make(chan *realtime.Message, 10)
 	pattern := realtime.Measurements(ID)
-	errorChan := s.RealtimeClient.Subscribe(ctx, pattern, messages)
+	errorChan := s.svc.RealtimeClient.Subscribe(ctx, pattern, messages)
 	stream := realtime.NewStream(ctx, messages, errorChan, func(msg *realtime.Message) realtime.StreamData[jsonmodels.Measurement] {
 		return realtime.StreamData[jsonmodels.Measurement]{
 			Action:  msg.Payload.RealtimeAction,
@@ -474,7 +475,7 @@ func (s *Service) SubscribeStream(ctx context.Context, ID string) op.Result[*Mea
 		}
 	}, func() {
 		// Cleanup: unsubscribe from the realtime channel
-		s.RealtimeClient.Unsubscribe(pattern)
+		s.svc.RealtimeClient.Unsubscribe(pattern)
 	})
 
 	return op.OK(stream)

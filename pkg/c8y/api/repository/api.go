@@ -1,15 +1,15 @@
 package repository
 
 import (
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/repository/configuration"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/repository/firmware"
 	software "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/repository/software"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 )
 
-func NewService(s *core.Service) *Service {
+func NewService(s *httpcore.Service) *Service {
 	return &Service{
-		Service:       *s,
+		svc:           *s,
 		Software:      software.NewService(s),
 		Firmware:      firmware.NewService(s),
 		Configuration: configuration.NewService(s),
@@ -18,8 +18,7 @@ func NewService(s *core.Service) *Service {
 
 // Service api to interact with repository items
 type Service struct {
-	core.Service
-
+	svc           httpcore.Service
 	Software      *software.Service
 	Firmware      *firmware.Service
 	Configuration *configuration.Service

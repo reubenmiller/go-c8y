@@ -10,6 +10,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/tenantoptions"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/usagestatistics"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -28,9 +29,9 @@ const ParamApplicationID = "applicationId"
 const ResultProperty = "tenants"
 const ApplicationReferencesResultProperty = "references"
 
-func NewService(s *core.Service) *Service {
+func NewService(s *httpcore.Service) *Service {
 	return &Service{
-		Service:         *s,
+		svc:             *s,
 		UsageStatistics: usagestatistics.NewService(s),
 		Current:         currenttenant.NewService(s),
 		Options:         tenantoptions.NewService(s),
@@ -39,9 +40,9 @@ func NewService(s *core.Service) *Service {
 }
 
 // Service inventory api to interact with managed objects
-// type Service core.Service
+// type Service httpcore.Service
 type Service struct {
-	core.Service
+	svc             httpcore.Service
 	UsageStatistics *usagestatistics.Service
 	Current         *currenttenant.Service
 	Options         *tenantoptions.Service
@@ -55,7 +56,7 @@ type TenantIterator = pagination.Iterator[jsonmodels.Tenant]
 
 // List tenants
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Tenant] {
-	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTenant)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTenant)
 }
 
 // ListAll returns an iterator for all tenants
@@ -72,58 +73,58 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *TenantIterator
 	)
 }
 
-func (s *Service) listB(opt ListOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiTenants)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // Create a tenant
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Tenant] {
-	return core.Execute(ctx, s.createB(body), jsonmodels.NewTenant)
+	return httpcore.Execute(ctx, s.createB(body), jsonmodels.NewTenant)
 }
 
-func (s *Service) createB(body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) createB(body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetBody(body).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiTenants)
-	return core.NewTryRequest(s.Client, req, "")
+	return httpcore.NewTryRequest(s.svc.Client, req, "")
 }
 
 // Get a tenant
 func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Tenant] {
-	return core.Execute(ctx, s.getB(ID), jsonmodels.NewTenant)
+	return httpcore.Execute(ctx, s.getB(ID), jsonmodels.NewTenant)
 }
 
-func (s *Service) getB(ID string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getB(ID string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamID, ID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiTenant)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Update a tenant
 func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.Tenant] {
-	return core.Execute(ctx, s.updateB(ID, body), jsonmodels.NewTenant)
+	return httpcore.Execute(ctx, s.updateB(ID, body), jsonmodels.NewTenant)
 }
 
-func (s *Service) updateB(ID string, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) updateB(ID string, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamID, ID).
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiTenant)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // DeleteOptions options to delete a tenant
@@ -134,16 +135,16 @@ type DeleteOptions struct{}
 // Important: Deleting a subtenant cannot be reverted. For security reasons, it is therefore only available in the management tenant. You cannot delete tenants from any tenant but the management tenant.
 // Administrators in Enterprise Tenants are only allowed to suspend active subtenants, but not to delete them.
 func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteB(ID, opt)).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.deleteB(ID, opt)).IgnoreNotFound()
 }
 
-func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) deleteB(ID string, opt DeleteOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamID, ID).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiTenant)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // ListApplicationReferencesOptions options for listing application references
@@ -158,7 +159,7 @@ type ApplicationReferenceIterator = pagination.Iterator[jsonmodels.ApplicationRe
 // ListApplicationReferences retrieves all applications subscribed or owned by a specific tenant
 // Note: Can only be called from the management tenant
 func (s *Service) ListApplicationReferences(ctx context.Context, tenantID string, opt ListApplicationReferencesOptions) op.Result[jsonmodels.ApplicationReference] {
-	return core.ExecuteCollection(ctx, s.listApplicationReferencesB(tenantID, opt), ApplicationReferencesResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplicationReference)
+	return httpcore.ExecuteCollection(ctx, s.listApplicationReferencesB(tenantID, opt), ApplicationReferencesResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplicationReference)
 }
 
 // ListAllApplicationReferences returns an iterator for all application references
@@ -175,14 +176,14 @@ func (s *Service) ListAllApplicationReferences(ctx context.Context, tenantID str
 	)
 }
 
-func (s *Service) listApplicationReferencesB(tenantID string, opt ListApplicationReferencesOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listApplicationReferencesB(tenantID string, opt ListApplicationReferencesOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, tenantID).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiTenantApplications)
-	return core.NewTryRequest(s.Client, req, ApplicationReferencesResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ApplicationReferencesResultProperty)
 }
 
 // SubscribeApplication subscribes (enables) an application on a tenant by POSTing
@@ -194,18 +195,18 @@ func (s *Service) listApplicationReferencesB(tenantID string, opt ListApplicatio
 // applicationReference output.
 // Note: Can only be called from the management tenant.
 func (s *Service) SubscribeApplication(ctx context.Context, tenantID string, body any) op.Result[jsonmodels.ApplicationReference] {
-	return core.Execute(ctx, s.subscribeApplicationB(tenantID, body), jsonmodels.NewApplicationReference)
+	return httpcore.Execute(ctx, s.subscribeApplicationB(tenantID, body), jsonmodels.NewApplicationReference)
 }
 
-func (s *Service) subscribeApplicationB(tenantID string, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) subscribeApplicationB(tenantID string, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(core.PathParamTenantID, tenantID).
 		SetBody(body).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiTenantApplications)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // UnsubscribeApplication unsubscribes (disables) an application from a tenant.
@@ -213,47 +214,47 @@ func (s *Service) subscribeApplicationB(tenantID string, body any) *core.TryRequ
 // to an id first). Returns no content; a 404 (not subscribed) is ignored.
 // Note: Can only be called from the management tenant.
 func (s *Service) UnsubscribeApplication(ctx context.Context, tenantID string, applicationID string) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.unsubscribeApplicationB(tenantID, applicationID)).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.unsubscribeApplicationB(tenantID, applicationID)).IgnoreNotFound()
 }
 
-func (s *Service) unsubscribeApplicationB(tenantID string, applicationID string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) unsubscribeApplicationB(tenantID string, applicationID string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(core.PathParamTenantID, tenantID).
 		SetPathParam(ParamApplicationID, applicationID).
 		SetURL(ApiTenantApplication)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // GetTFA retrieves the two-factor authentication settings of a specific tenant.
 // Pass an empty tenantID to use the current context tenant.
 func (s *Service) GetTFA(ctx context.Context, tenantID string) op.Result[jsonmodels.TenantTFA] {
-	return core.Execute(ctx, s.getTFAB(tenantID), jsonmodels.NewTenantTFA)
+	return httpcore.Execute(ctx, s.getTFAB(tenantID), jsonmodels.NewTenantTFA)
 }
 
-func (s *Service) getTFAB(tenantID string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getTFAB(tenantID string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(core.PathParamTenantID, tenantID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiTenantTFA)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // UpdateTFA updates the two-factor authentication settings of a specific tenant.
 // Pass an empty tenantID to use the current context tenant.
 // The body should contain a "strategy" field with a value of "SMS" or "TOTP".
 func (s *Service) UpdateTFA(ctx context.Context, tenantID string, body any) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.updateTFAB(tenantID, body))
+	return httpcore.ExecuteNoContent(ctx, s.updateTFAB(tenantID, body))
 }
 
-func (s *Service) updateTFAB(tenantID string, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) updateTFAB(tenantID string, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(core.PathParamTenantID, tenantID).
 		SetBody(body).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiTenantTFA)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/trustedcertificates/certificaterevocationlist"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/pkg/certutil"
@@ -32,19 +33,18 @@ const ParamFingerprint = "fingerprint"
 
 const ResultProperty = "certificates"
 
-func NewService(s *core.Service) *Service {
+func NewService(s *httpcore.Service) *Service {
 	return &Service{
-		Service:              *s,
+		svc:                  *s,
 		CertificateAuthority: certificateauthority.NewService(s),
 		RevocationList:       certificaterevocationlist.NewService(s),
 	}
 }
 
 // Service api to interact with the trusted certificates
-// type Service core.Service
+// type Service httpcore.Service
 type Service struct {
-	core.Service
-
+	svc                  httpcore.Service
 	CertificateAuthority *certificateauthority.Service
 	RevocationList       *certificaterevocationlist.Service
 }
@@ -65,7 +65,7 @@ type TrustedCertificateIterator = pagination.Iterator[jsonmodels.TrustedCertific
 
 // List trusted certificates
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.TrustedCertificate] {
-	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTrustedCertificate)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTrustedCertificate)
 }
 
 // ListAll returns an iterator for all trusted certificates
@@ -82,14 +82,14 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *TrustedCertifi
 	)
 }
 
-func (s *Service) listB(opt ListOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiTrustedCertificates)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 type CreateOptions struct {
@@ -104,36 +104,36 @@ type CreateOptions struct {
 // Create a trusted certificate.
 // A 409 response (certificate already trusted) is treated as a duplicate (StatusDuplicate, Idempotent: true).
 func (s *Service) Create(ctx context.Context, opt CreateOptions, body any) op.Result[jsonmodels.TrustedCertificate] {
-	return core.Execute(ctx, s.createB(opt, body), jsonmodels.NewTrustedCertificate).IgnoreConflict()
+	return httpcore.Execute(ctx, s.createB(opt, body), jsonmodels.NewTrustedCertificate).IgnoreConflict()
 }
 
-func (s *Service) createB(opt CreateOptions, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) createB(opt CreateOptions, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiTrustedCertificates)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Create multiple trusted certificate
 func (s *Service) CreateMultiple(ctx context.Context, opt CreateOptions, body any) op.Result[jsonmodels.TrustedCertificate] {
-	return core.ExecuteCollection(ctx, s.createMultipleB(opt, body), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTrustedCertificate)
+	return httpcore.ExecuteCollection(ctx, s.createMultipleB(opt, body), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTrustedCertificate)
 }
 
-func (s *Service) createMultipleB(opt CreateOptions, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) createMultipleB(opt CreateOptions, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiTrustedCertificates)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // IsFingerprint reports whether ref looks like a certificate fingerprint: a
@@ -199,17 +199,17 @@ type GetOptions struct {
 
 // Get a trusted certificate
 func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.TrustedCertificate] {
-	return core.Execute(ctx, s.getB(opt), jsonmodels.NewTrustedCertificate)
+	return httpcore.Execute(ctx, s.getB(opt), jsonmodels.NewTrustedCertificate)
 }
 
-func (s *Service) getB(opt GetOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getB(opt GetOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamFingerprint, opt.Fingerprint).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiTrustedCertificate)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 type UpdateOptions struct {
@@ -220,11 +220,11 @@ type UpdateOptions struct {
 
 // Update a trusted certificate
 func (s *Service) Update(ctx context.Context, opt UpdateOptions, body any) op.Result[jsonmodels.TrustedCertificate] {
-	return core.Execute(ctx, s.updateB(opt, body), jsonmodels.NewTrustedCertificate)
+	return httpcore.Execute(ctx, s.updateB(opt, body), jsonmodels.NewTrustedCertificate)
 }
 
-func (s *Service) updateB(opt UpdateOptions, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) updateB(opt UpdateOptions, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamFingerprint, opt.Fingerprint).
@@ -232,7 +232,7 @@ func (s *Service) updateB(opt UpdateOptions, body any) *core.TryRequest {
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiTrustedCertificate)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // DeleteOptions options to delete a tenant
@@ -244,17 +244,17 @@ type DeleteOptions struct {
 
 // Delete a trusted certificate
 func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteB(opt)).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.deleteB(opt)).IgnoreNotFound()
 }
 
-func (s *Service) deleteB(opt DeleteOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) deleteB(opt DeleteOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamFingerprint, opt.Fingerprint).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiTrustedCertificate)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 /*
@@ -322,11 +322,11 @@ func (s *Service) Proof(ctx context.Context, opt ProofOptions) op.Result[jsonmod
 	body := &model.ProofOfPossession{
 		ProofOfPossessionSignedVerificationCode: opt.Code,
 	}
-	return core.Execute(ctx, s.proofB(opt, body), jsonmodels.NewTrustedCertificate)
+	return httpcore.Execute(ctx, s.proofB(opt, body), jsonmodels.NewTrustedCertificate)
 }
 
-func (s *Service) proofB(opt ProofOptions, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) proofB(opt ProofOptions, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamFingerprint, opt.Fingerprint).
@@ -334,7 +334,7 @@ func (s *Service) proofB(opt ProofOptions, body any) *core.TryRequest {
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiProofOfPossession)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 type CreateVerificationCodeOptions struct {
@@ -345,17 +345,17 @@ type CreateVerificationCodeOptions struct {
 
 // Generate a verification code for the proof of possession operation for the certificate (by a given fingerprint)
 func (s *Service) CreateVerificationCode(ctx context.Context, opt CreateVerificationCodeOptions) op.Result[jsonmodels.TrustedCertificate] {
-	return core.Execute(ctx, s.createVerificationCodeB(opt), jsonmodels.NewTrustedCertificate)
+	return httpcore.Execute(ctx, s.createVerificationCodeB(opt), jsonmodels.NewTrustedCertificate)
 }
 
-func (s *Service) createVerificationCodeB(opt CreateVerificationCodeOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) createVerificationCodeB(opt CreateVerificationCodeOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamFingerprint, opt.Fingerprint).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiGenerateVerificationCode)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 type ConfirmOptions struct {
@@ -367,15 +367,15 @@ type ConfirmOptions struct {
 // Confirm the proof of possession of an already uploaded certificate (by a given fingerprint) for a specific tenant
 // TODO: This api calls always returns a 403 error
 func (s *Service) Confirm(ctx context.Context, opt ConfirmOptions) op.Result[jsonmodels.TrustedCertificate] {
-	return core.Execute(ctx, s.confirmB(opt), jsonmodels.NewTrustedCertificate)
+	return httpcore.Execute(ctx, s.confirmB(opt), jsonmodels.NewTrustedCertificate)
 }
 
-func (s *Service) confirmB(opt ConfirmOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) confirmB(opt ConfirmOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamFingerprint, opt.Fingerprint).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiProofOfPossessionConfirm)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }

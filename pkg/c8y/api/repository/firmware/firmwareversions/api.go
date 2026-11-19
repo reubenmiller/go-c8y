@@ -14,6 +14,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/repository/firmware/firmwareitems"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -29,9 +30,9 @@ const ResultProperty = "managedObjects"
 const FragmentFirmware = "c8y_Firmware"
 const FragmentFirmwareBinary = "c8y_FirmwareBinary"
 
-func NewService(s *core.Service) *Service {
+func NewService(s *httpcore.Service) *Service {
 	service := &Service{
-		Service:        *s,
+		svc:            *s,
 		firmware:       firmwareitems.NewService(s),
 		managedObjects: managedobjects.NewService(s),
 		binaries:       binaries.NewService(s),
@@ -42,7 +43,7 @@ func NewService(s *core.Service) *Service {
 
 // Service api to interact with firmware versions
 type Service struct {
-	core.Service
+	svc            httpcore.Service
 	firmware       *firmwareitems.Service
 	managedObjects *managedobjects.Service
 	binaries       *binaries.Service
@@ -98,7 +99,7 @@ func (s *Service) Create(ctx context.Context, firmwareID string, opt CreateOptio
 			}
 		}
 
-		return core.Execute(execCtx, s.createB(resolvedID, versionBody), jsonmodels.NewFirmwareVersion)
+		return httpcore.Execute(execCtx, s.createB(resolvedID, versionBody), jsonmodels.NewFirmwareVersion)
 	}).WithMeta("operation", "create").
 		ExecuteOrDefer(ctx)
 }
@@ -144,7 +145,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 		opt.FirmwareID = firmwareResult.Data.ID()
 	}
 
-	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewFirmwareVersion)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewFirmwareVersion)
 }
 
 // isPlainID reports whether s is a non-empty all-digit managed-object id, which
@@ -161,7 +162,7 @@ func isPlainID(s string) bool {
 	return true
 }
 
-func (s *Service) listB(opt ListOptions) *core.TryRequest {
+func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 	// Build request directly since managedObjects.listB is now private
 	listOpts := managedobjects.ListOptions{
 		Query: model.NewInventoryQuery().
@@ -178,12 +179,12 @@ func (s *Service) listB(opt ListOptions) *core.TryRequest {
 			PageSize:    opt.PageSize,
 		},
 	}
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetQueryParamsFromValues(core.QueryParameters(listOpts)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(listOpts)).
 		SetURL(managedobjects.ApiManagedObjects)
-	return core.NewTryRequest(s.Client, req, managedobjects.ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, managedobjects.ResultProperty)
 }
 
 // FirmwareVersionIterator provides iteration over firmware versions
@@ -400,7 +401,7 @@ func (s *Service) Get(ctx context.Context, ID string, opt GetOptions) op.Result[
 	}
 	meta["id"] = id
 
-	return core.Execute(ctx, s.getB(id, opt), jsonmodels.NewFirmwareVersion, meta)
+	return httpcore.Execute(ctx, s.getB(id, opt), jsonmodels.NewFirmwareVersion, meta)
 }
 
 // Update a firmware version
@@ -422,7 +423,7 @@ func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jso
 	}
 	meta["id"] = id
 
-	return core.Execute(ctx, s.updateB(id, body), jsonmodels.NewFirmwareVersion, meta)
+	return httpcore.Execute(ctx, s.updateB(id, body), jsonmodels.NewFirmwareVersion, meta)
 }
 
 // Delete a firmware version
@@ -447,7 +448,7 @@ func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.R
 	}
 	meta["id"] = id
 
-	return core.ExecuteNoContent(ctx, s.deleteB(id, opt), meta).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.deleteB(id, opt), meta).IgnoreNotFound()
 }
 
 type UploadFileOptions = core.UploadFileOptions
@@ -831,53 +832,53 @@ func (s *Service) deleteBinaryFromURL(ctx context.Context, url string) {
 
 // Builder methods
 
-func (s *Service) createB(firmwareID string, body any) *core.TryRequest {
+func (s *Service) createB(firmwareID string, body any) *httpcore.TryRequest {
 	// Build request directly since childAdditions.createB is now private
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam("id", firmwareID).
 		SetBody(body).
 		SetContentType(types.MimeTypeManagedObject).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL("/inventory/managedObjects/{id}/childAdditions")
-	return core.NewTryRequest(s.Client, req, "")
+	return httpcore.NewTryRequest(s.svc.Client, req, "")
 }
 
-func (s *Service) getB(ID string, opt GetOptions) *core.TryRequest {
+func (s *Service) getB(ID string, opt GetOptions) *httpcore.TryRequest {
 	// Build request directly since managedObjects.getB is now private
 	getOpts := managedobjects.GetOptions{
 		WithParents: opt.WithParents,
 	}
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam("id", ID).
-		SetQueryParamsFromValues(core.QueryParameters(getOpts)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(getOpts)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(managedobjects.ApiManagedObject)
-	return core.NewTryRequest(s.Client, req, "")
+	return httpcore.NewTryRequest(s.svc.Client, req, "")
 }
 
-func (s *Service) updateB(ID string, body any) *core.TryRequest {
+func (s *Service) updateB(ID string, body any) *httpcore.TryRequest {
 	// Build request directly since managedObjects.updateB is now private
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam("id", ID).
 		SetBody(body).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(managedobjects.ApiManagedObject)
-	return core.NewTryRequest(s.Client, req, "")
+	return httpcore.NewTryRequest(s.svc.Client, req, "")
 }
 
-func (s *Service) deleteB(ID string, opt DeleteOptions) *core.TryRequest {
+func (s *Service) deleteB(ID string, opt DeleteOptions) *httpcore.TryRequest {
 	// Build request directly since managedObjects.deleteB is now private
 	deleteOpts := managedobjects.DeleteOptions{
 		ForceCascade: &opt.ForceCascade,
 	}
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam("id", ID).
-		SetQueryParamsFromValues(core.QueryParameters(deleteOpts)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(deleteOpts)).
 		SetURL(managedobjects.ApiManagedObject)
-	return core.NewTryRequest(s.Client, req, "")
+	return httpcore.NewTryRequest(s.svc.Client, req, "")
 }

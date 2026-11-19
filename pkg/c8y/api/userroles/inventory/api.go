@@ -18,6 +18,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -37,16 +38,16 @@ var ParamID = "id"
 const ResultProperty = "roles"
 
 // NewService creates a new InventoryRoles service backed by the provided
-// core.Service (HTTP client + tenant configuration).
-func NewService(s *core.Service) *Service {
+// httpcore.Service (HTTP client + tenant configuration).
+func NewService(s *httpcore.Service) *Service {
 	return &Service{
-		Service: *s,
+		svc: *s,
 	}
 }
 
 // Service provides access to the Cumulocity Inventory Roles API.
 type Service struct {
-	core.Service
+	svc httpcore.Service
 }
 
 // ListOptions controls pagination of an inventory-role list request.
@@ -60,7 +61,7 @@ type InventoryRoleIterator = pagination.Iterator[jsonmodels.InventoryRole]
 
 // List returns a single page of inventory roles.
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.InventoryRole] {
-	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewInventoryRole)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewInventoryRole)
 }
 
 // ListAll returns a lazy iterator that transparently pages through all
@@ -78,27 +79,27 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *InventoryRoleI
 	)
 }
 
-func (s *Service) listB(opt any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listB(opt any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiInventoryRoles)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // Get retrieves a single inventory role by its numeric ID.
 func (s *Service) Get(ctx context.Context, id int64) op.Result[jsonmodels.InventoryRole] {
-	return core.Execute(ctx, s.getB(id), jsonmodels.NewInventoryRole)
+	return httpcore.Execute(ctx, s.getB(id), jsonmodels.NewInventoryRole)
 }
 
-func (s *Service) getB(id int64) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getB(id int64) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, strconv.FormatInt(id, 10)).
 		SetURL(ApiInventoryRole)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Create submits a new inventory role. The body must contain at minimum a
@@ -106,46 +107,46 @@ func (s *Service) getB(id int64) *core.TryRequest {
 //
 // Any serialisable value (struct, map[string]any, etc.) is accepted.
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.InventoryRole] {
-	return core.Execute(ctx, s.createB(body), jsonmodels.NewInventoryRole)
+	return httpcore.Execute(ctx, s.createB(body), jsonmodels.NewInventoryRole)
 }
 
-func (s *Service) createB(body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) createB(body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiInventoryRoles)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Update modifies an existing inventory role. Updatable fields include
 // name, description and permissions.
 func (s *Service) Update(ctx context.Context, id int64, body any) op.Result[jsonmodels.InventoryRole] {
-	return core.Execute(ctx, s.updateB(id, body), jsonmodels.NewInventoryRole)
+	return httpcore.Execute(ctx, s.updateB(id, body), jsonmodels.NewInventoryRole)
 }
 
-func (s *Service) updateB(id int64, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) updateB(id int64, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, strconv.FormatInt(id, 10)).
 		SetBody(body).
 		SetURL(ApiInventoryRole)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Delete removes an inventory role by its numeric ID. A 204 No Content
 // response indicates success.
 func (s *Service) Delete(ctx context.Context, id int64) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteB(id)).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.deleteB(id)).IgnoreNotFound()
 }
 
-func (s *Service) deleteB(id int64) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) deleteB(id int64) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamID, strconv.FormatInt(id, 10)).
 		SetURL(ApiInventoryRole)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }

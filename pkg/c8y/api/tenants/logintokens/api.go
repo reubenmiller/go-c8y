@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -19,15 +19,15 @@ var ParamID = "id"
 
 const ResultProperty = "events"
 
-func NewService(s *core.Service) *Service {
+func NewService(s *httpcore.Service) *Service {
 	return &Service{
-		Service: *s,
+		svc: *s,
 	}
 }
 
 // Service provides api to get/set/delete events in Cumulocity
 type Service struct {
-	core.Service
+	svc httpcore.Service
 }
 
 type CreateTokenOptions struct {
@@ -61,19 +61,19 @@ type CreateTokenOptions struct {
 
 // Obtain an OAI-Secure access token
 func (s *Service) Create(ctx context.Context, opt CreateTokenOptions) op.Result[jsonmodels.OAIToken] {
-	return core.Execute(ctx, s.createB(opt), jsonmodels.NewOAIToken)
+	return httpcore.Execute(ctx, s.createB(opt), jsonmodels.NewOAIToken)
 }
 
 // Obtain an OAI-Secure access token
-func (s *Service) createB(opt CreateTokenOptions) *core.TryRequest {
+func (s *Service) createB(opt CreateTokenOptions) *httpcore.TryRequest {
 	params := map[string]string{}
 	if opt.Tenant != "" {
 		params["tenant_id"] = opt.Tenant
 	}
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetQueryParams(params).
-		SetFormDataFromValues(core.QueryParameters(opt)).
+		SetFormDataFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiOAuthToken).
 		SetRetryCount(1).
@@ -97,7 +97,7 @@ func (s *Service) createB(opt CreateTokenOptions) *core.TryRequest {
 
 	// The response might not have the Content-Type set
 	req.SetResponseForceContentType(types.MimeTypeApplicationJSON)
-	return core.NewTryRequest(s.Client, req).WithNoAuth()
+	return httpcore.NewTryRequest(s.svc.Client, req).WithNoAuth()
 }
 
 var (
@@ -107,25 +107,25 @@ var (
 
 // Obtain an OAI-Secure and XSRF tokens in cookies
 func (s *Service) CreateCookies(ctx context.Context, opt CreateTokenOptions) error {
-	resp, err := core.ExecuteResponseOnly(ctx, s.createCookiesB(opt))
+	resp, err := httpcore.ExecuteResponseOnly(ctx, s.createCookiesB(opt))
 	if err != nil {
 		return err
 	}
-	s.Client.SetCookies(resp.Cookies())
+	s.svc.Client.SetCookies(resp.Cookies())
 	return nil
 }
 
 // Obtain an OAI-Secure and XSRF tokens in cookies
-func (s *Service) createCookiesB(opt CreateTokenOptions) *core.TryRequest {
+func (s *Service) createCookiesB(opt CreateTokenOptions) *httpcore.TryRequest {
 	params := map[string]string{}
 	if opt.Tenant != "" {
 		params["tenant_id"] = opt.Tenant
 	}
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetQueryParams(params).
-		SetFormDataFromValues(core.QueryParameters(opt)).
+		SetFormDataFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiOAuth)
-	return core.NewTryRequest(s.Client, req).WithNoAuth()
+	return httpcore.NewTryRequest(s.svc.Client, req).WithNoAuth()
 }

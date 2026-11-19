@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -24,18 +24,18 @@ import (
 //     if the immediate issuer of the client's certificate is not uploaded as a trusted certificate on the platform.
 //     If the immediate issuer is already uploaded and trusted, the header can be omitted)
 func (s *Service) CreateAccessToken(ctx context.Context) op.Result[jsonmodels.DeviceAccessToken] {
-	return core.Execute(ctx, s.createAccessTokenB(), jsonmodels.NewDeviceAccessToken)
+	return httpcore.Execute(ctx, s.createAccessTokenB(), jsonmodels.NewDeviceAccessToken)
 }
 
-func (s *Service) createAccessTokenB() *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) createAccessTokenB() *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(mtlsEndpoint(s.MTLSPort, s.Client.BaseURL(), ApiDeviceControlAccessToken))
-	if s.CertChainHeader != "" {
-		req.SetHeader(types.HeaderSSLCertificateChain, s.CertChainHeader)
+		SetURL(mtlsEndpoint(s.svc.MTLSPort, s.svc.Client.BaseURL(), ApiDeviceControlAccessToken))
+	if s.svc.CertChainHeader != "" {
+		req.SetHeader(types.HeaderSSLCertificateChain, s.svc.CertChainHeader)
 	}
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // mtlsEndpoint returns the host address for the mtls endpoint that can be used for x509 client based authentication.
