@@ -344,7 +344,7 @@ func setTLSConfig(transport http.RoundTripper, insecureSkipVerify bool) error {
 // newRestyClient creates the resty client with the default retry, error and
 // circuit breaker settings, and applies the timeout and base URL from opts.
 func newRestyClient(opts ClientOptions, targetBaseURL *url.URL) *resty.Client {
-	circuitBreaker := resty.NewCircuitBreakerWithCount(10, 5, 15*time.Second)
+	circuitBreaker := resty.NewCircuitBreakerCount(10, 5, 15*time.Second)
 
 	rclient := resty.New().
 		SetRetryCount(3).

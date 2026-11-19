@@ -80,7 +80,7 @@ func (s *Service) createB(opt CreateTokenOptions) *core.TryRequest {
 		SetRetryDelayStrategy(func(r *resty.Response, err error) (time.Duration, error) {
 			return 100 * time.Millisecond, nil
 		}).
-		SetAllowNonIdempotentRetry(true).
+		SetRetryAllowNonIdempotent(true).
 		AddRetryConditions(func(r *resty.Response, err error) bool {
 			// FIXME: retry as sometimes the server's first response to the authorization provider
 			// can fail, but subsequent requests are ok
@@ -96,7 +96,7 @@ func (s *Service) createB(opt CreateTokenOptions) *core.TryRequest {
 	}
 
 	// The response might not have the Content-Type set
-	req.ForceResponseContentType = types.MimeTypeApplicationJSON
+	req.SetResponseForceContentType(types.MimeTypeApplicationJSON)
 	return core.NewTryRequest(s.Client, req).WithNoAuth()
 }
 

@@ -162,12 +162,12 @@ func (r *TryRequest) SetResponseBodyUnlimitedReads(v bool) *TryRequest {
 }
 
 func (r *TryRequest) SetOutputFileName(file string) *TryRequest {
-	r.Request.SetOutputFileName(file)
+	r.Request.SetResponseSaveFileName(file)
 	return r
 }
 
 func (r *TryRequest) SetSaveResponse(v bool) *TryRequest {
-	r.Request.SetSaveResponse(v)
+	r.Request.SetResponseSaveToFile(v)
 	return r
 }
 

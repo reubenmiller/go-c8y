@@ -22,6 +22,36 @@ import (
 	"resty.dev/v3"
 )
 
+// snapshotRequestBody reads req.Body into a new byte slice and replaces the
+// body with a reader over that copy, so the request stays readable after the
+// HTTP client has released its own body buffer. It returns nil for requests
+// without a body.
+func snapshotRequestBody(req *http.Request) ([]byte, error) {
+	if req.Body == nil || req.Body == http.NoBody {
+		return nil, nil
+	}
+	body, err := io.ReadAll(req.Body)
+	_ = req.Body.Close()
+	if err != nil {
+		return nil, fmt.Errorf("read request body: %w", err)
+	}
+	setRequestBody(req, body)
+	return body, nil
+}
+
+// setRequestBody points req.Body and req.GetBody at body. It does nothing for
+// requests without a body.
+func setRequestBody(req *http.Request, body []byte) {
+	if body == nil {
+		return
+	}
+	req.Body = io.NopCloser(bytes.NewReader(body))
+	req.GetBody = func() (io.ReadCloser, error) {
+		return io.NopCloser(bytes.NewReader(body)), nil
+	}
+	req.ContentLength = int64(len(body))
+}
+
 // StatsMap tracks counts by HTTP method and path (thread-safe)
 type StatsMap struct {
 	mu    sync.Mutex
@@ -209,11 +239,21 @@ func (t *DryRunTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		return t.Transport.RoundTrip(req)
 	}
 
+	// The request is not sent, but callers inspect it afterwards through
+	// op.Result.Request. Copy the body now: the HTTP client may reuse the
+	// buffer behind req.Body once this round trip returns.
+	reqBody, err := snapshotRequestBody(req)
+	if err != nil {
+		return nil, err
+	}
+
 	// If dry run is enabled, hand the request to a registered handler (e.g. a
 	// CLI renderer), falling back to a slog line.
 	if isDryRun {
 		if handler := ctxhelpers.DryRunHandler(ctx); handler != nil {
 			handler(req)
+			// The handler may have read the body; rewind it for later inspection.
+			setRequestBody(req, reqBody)
 		} else {
 			headers := req.Header
 			if ctxhelpers.ShouldRedactHeaders(ctx) {

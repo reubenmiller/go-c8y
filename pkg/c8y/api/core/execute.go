@@ -275,7 +275,7 @@ func ExecuteBinary(ctx context.Context, req *TryRequest) op.Result[BinaryRespons
 		// Build the request to capture all parameters
 		dryRunCtx := ctxhelpers.WithDryRun(ctx, true)
 		req.ApplyContextRequestOptions(dryRunCtx)
-		resp, _ := req.Request.SetContext(dryRunCtx).SetDoNotParseResponse(true).Send()
+		resp, _ := req.Request.SetContext(dryRunCtx).SetResponseDoNotParse(true).Send()
 
 		var httpReq *http.Request
 		if resp != nil {
@@ -293,7 +293,7 @@ func ExecuteBinary(ctx context.Context, req *TryRequest) op.Result[BinaryRespons
 	req.ApplyContextRequestOptions(ctx)
 	resp, err := coupleAPIErrors(req.Request.
 		SetContext(ctx).
-		SetDoNotParseResponse(true).
+		SetResponseDoNotParse(true).
 		Send())
 
 	if err != nil {
