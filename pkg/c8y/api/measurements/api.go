@@ -70,6 +70,14 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 // ListAll returns an iterator for all measurements. By default it uses the
 // time-window keyset optimisation; set ListOptions.Strategy to override.
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *MeasurementIterator {
+	// Resolve references once for the whole walk, not once per page.
+	if opts.Source != "" && s.DeviceResolver != nil {
+		resolvedID, err := s.DeviceResolver.ResolveID(ctxhelpers.ResolutionContext(ctx), opts.Source, nil)
+		if err != nil {
+			return pagination.NewErrorIterator[jsonmodels.Measurement](err)
+		}
+		opts.Source = managedobjects.DeviceRef(resolvedID)
+	}
 	strategy, err := pagination.ResolveTimeStrategy(opts.Strategy)
 	if err != nil {
 		return pagination.NewErrorIterator[jsonmodels.Measurement](err)
@@ -244,10 +252,16 @@ func (s *Service) Create(ctx context.Context, opts CreateOptions) op.Result[json
 	return s.createWithOptions(ctx, opts)
 }
 
-// CreateRaw posts a measurement from a pre-built body, passed through to the API as-is.
+// CreateRaw posts a measurement from a pre-built body, passed through to the API as-is,
+// except that a device reference at "source.id" that is not an id (e.g. "dev01",
+// "name:dev01", "ext:c8y_Serial:ABC") is resolved to the device id first.
 //
 //	result := client.Measurements.CreateRaw(ctx, map[string]any{...})
 func (s *Service) CreateRaw(ctx context.Context, body any) op.Result[jsonmodels.Measurement] {
+	body, err := s.DeviceResolver.ResolveBodyRefs(ctx, body, "source.id")
+	if err != nil {
+		return op.Failed[jsonmodels.Measurement](err, false)
+	}
 	return httpcore.Execute(ctx, s.createB(body), jsonmodels.NewMeasurement)
 }
 

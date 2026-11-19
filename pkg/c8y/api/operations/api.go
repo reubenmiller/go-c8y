@@ -81,6 +81,21 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 // time-window keyset optimisation (cursoring on creationTime); set
 // ListOptions.Strategy to override.
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *OperationIterator {
+	// Resolve references once for the whole walk, not once per page.
+	if opts.DeviceID != "" && s.DeviceResolver != nil {
+		resolvedID, err := s.DeviceResolver.ResolveID(ctxhelpers.ResolutionContext(ctx), opts.DeviceID, nil)
+		if err != nil {
+			return pagination.NewErrorIterator[jsonmodels.Operation](err)
+		}
+		opts.DeviceID = managedobjects.DeviceRef(resolvedID)
+	}
+	if opts.AgentID != "" && s.DeviceResolver != nil {
+		resolvedID, err := s.DeviceResolver.ResolveID(ctxhelpers.ResolutionContext(ctx), opts.AgentID, nil)
+		if err != nil {
+			return pagination.NewErrorIterator[jsonmodels.Operation](err)
+		}
+		opts.AgentID = managedobjects.DeviceRef(resolvedID)
+	}
 	strategy, err := pagination.ResolveTimeStrategy(opts.Strategy)
 	if err != nil {
 		return pagination.NewErrorIterator[jsonmodels.Operation](err)
@@ -165,10 +180,16 @@ func (s *Service) Create(ctx context.Context, opts CreateOptions) op.Result[json
 	return s.createWithOptions(ctx, opts)
 }
 
-// CreateRaw creates an operation from a pre-built body, passed through to the API as-is.
+// CreateRaw creates an operation from a pre-built body, passed through to the API as-is,
+// except that a device reference at "deviceId" that is not an id (e.g. "dev01",
+// "name:dev01", "ext:c8y_Serial:ABC") is resolved to the device id first.
 //
 //	result := client.Operations.CreateRaw(ctx, map[string]any{...})
 func (s *Service) CreateRaw(ctx context.Context, body any) op.Result[jsonmodels.Operation] {
+	body, err := s.DeviceResolver.ResolveBodyRefs(ctx, body, "deviceId")
+	if err != nil {
+		return op.Failed[jsonmodels.Operation](err, false)
+	}
 	return httpcore.Execute(ctx, s.createB(body), jsonmodels.NewOperation)
 }
 
