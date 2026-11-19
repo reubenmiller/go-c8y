@@ -40,6 +40,10 @@
 - [Extra load for services with very many distinct callers] → `ValidateNone` opt-out, `Validator` hook for shared caches (for example Redis across replicas).
 - [Behavior change for existing `UseServiceUser` users] → Call it out in the CHANGELOG with the opt-out.
 
+## Default decision
+
+**2026-11-19: keep the proposed default.** `ValidateDefault` is `ValidateCached` in service-user mode and `ValidateNone` in user scope. `ValidateNone` stays available as the opt-out in service-user mode.
+
 ## Open Questions
 
 - None at this stage.

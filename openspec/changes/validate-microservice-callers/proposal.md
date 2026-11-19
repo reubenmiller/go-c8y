@@ -10,6 +10,8 @@
 - The validated caller (`CallerInfo`: tenant, user name, effective roles) is stored in the request context. `TenantFromContext` returns the verified tenant when validation ran.
 - New `RequireRoles(roles ...string)` middleware, which always validates the routes it wraps.
 
+Default confirmed by the owner (2026-11-19).
+
 Security fix. Can land independently of the other changes, and before v2.0.0.
 
 ## Capabilities
