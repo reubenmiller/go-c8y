@@ -6,13 +6,12 @@ import (
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 )
 
 func TestGetAs(t *testing.T) {
 	doc := jsondoc.New([]byte(`{"type":"x","c8y_Position":{"lat":51.5,"lng":-0.1,"alt":10}}`))
 
-	pos, err := jsonmodels.GetAs[model.Position](doc, "c8y_Position")
+	pos, err := doc.GetAs[model.Position]("c8y_Position")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -23,7 +22,7 @@ func TestGetAs(t *testing.T) {
 
 func TestGetAsMissing(t *testing.T) {
 	doc := jsondoc.New([]byte(`{"type":"x"}`))
-	_, err := jsonmodels.GetAs[model.Position](doc, "c8y_Position")
+	_, err := doc.GetAs[model.Position]("c8y_Position")
 	if !errors.Is(err, model.ErrFragmentNotFound) {
 		t.Errorf("expected ErrFragmentNotFound, got %v", err)
 	}
@@ -31,7 +30,7 @@ func TestGetAsMissing(t *testing.T) {
 
 func TestGetFragmentUsesOwnKey(t *testing.T) {
 	doc := jsondoc.New([]byte(`{"c8y_Hardware":{"serialNumber":"SN-1","model":"m"}}`))
-	hw, err := jsonmodels.GetFragment[model.Hardware](doc)
+	hw, err := doc.Fragment[model.Hardware]()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -49,7 +48,7 @@ func TestWriteReadSymmetry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	pos, err := jsonmodels.GetFragment[model.Position](jsondoc.New(body))
+	pos, err := jsondoc.New(body).Fragment[model.Position]()
 	if err != nil {
 		t.Fatal(err)
 	}

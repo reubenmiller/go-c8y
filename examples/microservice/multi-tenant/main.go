@@ -23,7 +23,6 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/devices"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/pkg/microservice"
 )
 
@@ -58,7 +57,7 @@ func main() {
 		}
 
 		names := []string{}
-		for item, err := range op.Iter2(result) {
+		for item, err := range result.Items() {
 			if err != nil {
 				continue
 			}

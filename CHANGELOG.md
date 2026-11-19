@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+* **Breaking**: go-c8y v2 requires Go 1.27. Generic helpers are now methods (Go 1.27 generic methods), and the free functions they replace are removed:
+
+  | Before | After |
+  |---|---|
+  | `op.MapResult(r, fn)` / `op.FlatMap(r, fn)` | `r.Map(fn)` / `r.FlatMap(fn)` |
+  | `op.Iter2(r)` | `r.Items()` |
+  | `op.Iter(r)` (panicked on errors) | `r.Seq()` (stops at the first error) |
+  | `op.ToSliceR(r)` / `op.CollectR(r)` | `r.Collect()` |
+  | `op.IterAs[U](r)` / `op.IterAsErr[U](r)` | `r.IterAs[U]()` (yields errors) |
+  | `jsondoc.Decode[T](d)` (returned `*T`) | `d.Decode[T]()` (returns `T`) |
+  | `jsonmodels.GetAs[T](mo, key)` | `mo.GetAs[T](key)` |
+  | `jsonmodels.GetFragment[T](mo)` | `mo.Fragment[T]()` |
+* Added `r.Decode[U]()` on results, and `Map` and `As[U]()` on `pagination.Iterator`. `model.ErrFragmentNotFound` is now the same value as `jsondoc.ErrKeyNotFound`.
 * Added `Microservice.WatchSubscriptions` (tenant added, removed and credentials-changed callbacks), `Microservice.Settings` (per-tenant settings with a 10-minute cache, `SettingsTTL`), and `Microservice.SubscribeNotifications` (Notification 2.0 per tenant with acknowledgements, reconnect, and clean shutdown).
 * `Microservice.ForEachTenant` accepts optional `pipeline.Options` to process tenants concurrently; without options it behaves as before.
 * `PER_TENANT` isolation (`C8Y_MICROSERVICE_ISOLATION`) uses `C8Y_TENANT`/`C8Y_USER`/`C8Y_PASSWORD`; `APPLICATION_KEY` adds `X-Cumulocity-Application-Key`; a `401` on a service-user request refreshes the service users.

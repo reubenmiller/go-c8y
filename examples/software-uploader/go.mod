@@ -1,6 +1,6 @@
 module github.com/reubenmiller/go-c8y/v2/examples/software-uploader
 
-go 1.26.0
+go 1.27.0
 
 replace github.com/reubenmiller/go-c8y/v2 => ../..
 

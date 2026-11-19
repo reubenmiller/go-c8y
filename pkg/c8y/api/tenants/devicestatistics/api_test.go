@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
 )
 
@@ -41,7 +40,7 @@ func TestListDaily(t *testing.T) {
 		t.Errorf("deviceId query = %q, want 500", deviceID)
 	}
 	var ids []string
-	for item := range op.Iter(res) {
+	for item := range res.Seq() {
 		ids = append(ids, item.DeviceID())
 	}
 	if strings.Join(ids, ",") != "10,11" {
@@ -72,7 +71,7 @@ func TestListMonthly(t *testing.T) {
 		t.Errorf("monthly query = %q, want no deviceId filter", rawQuery)
 	}
 	count := 0
-	for range op.Iter(res) {
+	for range res.Seq() {
 		count++
 	}
 	if count != 1 {

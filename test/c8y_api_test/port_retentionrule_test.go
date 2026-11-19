@@ -6,7 +6,6 @@ import (
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/retentionrules"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -45,7 +44,7 @@ func Test_CRUD_RetentionRule(t *testing.T) {
 	require.NoError(t, listResult.Err)
 	assert.Equal(t, 200, listResult.HTTPStatus)
 
-	rules, err := op.ToSliceR(listResult)
+	rules, err := listResult.Collect()
 	require.NoError(t, err)
 	assert.Greater(t, len(rules), 0, "Should have at least 1 data retention rule")
 

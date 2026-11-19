@@ -7,7 +7,6 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/internal/pkg/testingutils"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/applications"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,7 +25,7 @@ func Test_GetApplications(t *testing.T) {
 	require.NoError(t, result.Err)
 	assert.Equal(t, 200, result.HTTPStatus)
 
-	apps, err := op.ToSliceR(result)
+	apps, err := result.Collect()
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, len(apps), 1, "At least one application should be found")
 	assert.NotEmpty(t, apps[0].Name(), "Application should have a name")
@@ -45,7 +44,7 @@ func Test_GetApplicationsByName(t *testing.T) {
 	require.NoError(t, result.Err)
 	assert.Equal(t, 200, result.HTTPStatus)
 
-	apps, err := op.ToSliceR(result)
+	apps, err := result.Collect()
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, len(apps), 1, "Should find at least one application")
 
@@ -63,7 +62,7 @@ func Test_GetApplicationsByOwner(t *testing.T) {
 	require.NoError(t, result.Err)
 	assert.Equal(t, 200, result.HTTPStatus)
 
-	apps, err := op.ToSliceR(result)
+	apps, err := result.Collect()
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, len(apps), 0, "Should return applications")
 }
@@ -79,7 +78,7 @@ func Test_GetApplicationsByTenant(t *testing.T) {
 	require.NoError(t, result.Err)
 	assert.Equal(t, 200, result.HTTPStatus)
 
-	apps, err := op.ToSliceR(result)
+	apps, err := result.Collect()
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, len(apps), 1, "Should find at least one application")
 	assert.NotEmpty(t, apps[0].Name(), "Application should have a name")
@@ -97,7 +96,7 @@ func Test_GetApplication(t *testing.T) {
 	})
 	require.NoError(t, listResult.Err)
 
-	apps, err := op.ToSliceR(listResult)
+	apps, err := listResult.Collect()
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, len(apps), 1, "Should return at least 1 application")
 
@@ -131,7 +130,7 @@ func Test_CRUD_Application(t *testing.T) {
 		},
 	})
 	if existingApps.Err == nil {
-		if apps, err := op.ToSliceR(existingApps); err == nil {
+		if apps, err := existingApps.Collect(); err == nil {
 			for _, app := range apps {
 				client.Applications.Delete(ctx, app.ID(), applications.DeleteOptions{})
 			}
@@ -146,7 +145,7 @@ func Test_CRUD_Application(t *testing.T) {
 		},
 	})
 	if existingClonedApps.Err == nil {
-		if apps, err := op.ToSliceR(existingClonedApps); err == nil {
+		if apps, err := existingClonedApps.Collect(); err == nil {
 			for _, app := range apps {
 				client.Applications.Delete(ctx, app.ID(), applications.DeleteOptions{})
 			}

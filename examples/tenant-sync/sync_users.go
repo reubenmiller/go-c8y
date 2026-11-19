@@ -99,7 +99,7 @@ func (s *Syncer) ensureGroupRoles(ctx context.Context, groupID string, created b
 			GroupID:           groupID,
 			PaginationOptions: pagination.PaginationOptions{PageSize: 2000},
 		})
-		for item, err := range op.Iter2(result) {
+		for item, err := range result.Items() {
 			if err != nil {
 				return nil, fmt.Errorf("list roles: %w", err)
 			}
@@ -213,7 +213,7 @@ func (s *Syncer) ensureUserGroups(ctx context.Context, userID, userSelf string, 
 			UserID:            userID,
 			PaginationOptions: pagination.PaginationOptions{PageSize: 2000},
 		})
-		for item, err := range op.Iter2(result) {
+		for item, err := range result.Items() {
 			if err != nil {
 				return nil, fmt.Errorf("list group memberships: %w", err)
 			}

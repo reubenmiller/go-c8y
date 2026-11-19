@@ -15,7 +15,6 @@ import (
 	userrolesgroups "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/userroles/usergroups"
 	userrolesusers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/userroles/users"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/users"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,7 +31,7 @@ func Test_GetUsers(t *testing.T) {
 	require.NoError(t, result.Err)
 	assert.Equal(t, 200, result.HTTPStatus)
 
-	userList, err := op.ToSliceR(result)
+	userList, err := result.Collect()
 	require.NoError(t, err)
 	assert.Greater(t, len(userList), 0, "At least 1 user should be present")
 }
@@ -234,7 +233,7 @@ func Test_AddUserToGroup(t *testing.T) {
 	require.NoError(t, listUsersResult.Err)
 	assert.Equal(t, 200, listUsersResult.HTTPStatus)
 
-	userList, err := op.ToSliceR(listUsersResult)
+	userList, err := listUsersResult.Collect()
 	require.NoError(t, err)
 	assert.Greater(t, len(userList), 0, "Should be at least 1 user")
 
@@ -291,7 +290,7 @@ func Test_GetUsersByGroup(t *testing.T) {
 	require.NoError(t, listUsersResult.Err)
 	assert.Equal(t, 200, listUsersResult.HTTPStatus)
 
-	userList, err := op.ToSliceR(listUsersResult)
+	userList, err := listUsersResult.Collect()
 	require.NoError(t, err)
 	assert.Greater(t, len(userList), 0, "Should be at least one user")
 	assert.Equal(t, currentUser.Data.UserName(), userList[0].UserName())
@@ -328,7 +327,7 @@ func Test_GetGroups(t *testing.T) {
 	require.NoError(t, result.Err)
 	assert.Equal(t, 200, result.HTTPStatus)
 
-	groupList, err := op.ToSliceR(result)
+	groupList, err := result.Collect()
 	require.NoError(t, err)
 	assert.Greater(t, len(groupList), 0, "Should have at least 1 group")
 	assert.NotEmpty(t, groupList[0].Name(), "Group name should not be empty")
@@ -346,7 +345,7 @@ func Test_GetGroupsByUser(t *testing.T) {
 	require.NoError(t, result.Err)
 	assert.Equal(t, 200, result.HTTPStatus)
 
-	groupList, err := op.ToSliceR(result)
+	groupList, err := result.Collect()
 	require.NoError(t, err)
 	assert.Greater(t, len(groupList), 0, "Should have at least 1 group")
 	assert.NotEmpty(t, groupList[0].Name(), "Group name should not be empty")
@@ -361,7 +360,7 @@ func Test_GetRoles(t *testing.T) {
 	require.NoError(t, result.Err)
 	assert.Equal(t, 200, result.HTTPStatus)
 
-	roleList, err := op.ToSliceR(result)
+	roleList, err := result.Collect()
 	require.NoError(t, err)
 	assert.Greater(t, len(roleList), 0, "Should return at least 1 role")
 	assert.NotEmpty(t, roleList[0].Name(), "Name should not be empty")
@@ -376,7 +375,7 @@ func Test_AssignRoleToUser(t *testing.T) {
 	rolesResult := client.UserRoles.List(ctx, userroles.ListOptions{})
 	require.NoError(t, rolesResult.Err)
 
-	roles, err := op.ToSliceR(rolesResult)
+	roles, err := rolesResult.Collect()
 	require.NoError(t, err)
 	require.Greater(t, len(roles), 0, "Should have at least 1 role")
 
@@ -401,7 +400,7 @@ func Test_AssignRoleToUser(t *testing.T) {
 	require.NoError(t, groupsResult.Err)
 	assert.Equal(t, 200, groupsResult.HTTPStatus)
 	assert.GreaterOrEqual(t, groupsResult.Data.Length(), 1)
-	for item := range op.Iter(groupsResult) {
+	for item := range groupsResult.Seq() {
 		val := item.ID()
 		require.NotEmpty(t, val)
 	}
@@ -423,7 +422,7 @@ func Test_AssignRoleToGroup(t *testing.T) {
 	rolesResult := client.UserRoles.List(ctx, userroles.ListOptions{})
 	require.NoError(t, rolesResult.Err)
 
-	roles, err := op.ToSliceR(rolesResult)
+	roles, err := rolesResult.Collect()
 	require.NoError(t, err)
 	require.Greater(t, len(roles), 0, "Should have at least 1 role")
 
@@ -470,7 +469,7 @@ func Test_AssignRoleToGroup(t *testing.T) {
 	require.NoError(t, groupRolesResult.Err)
 	assert.Equal(t, 200, groupRolesResult.HTTPStatus)
 
-	groupRoles, err := op.ToSliceR(groupRolesResult)
+	groupRoles, err := groupRolesResult.Collect()
 	require.NoError(t, err)
 	assert.Greater(t, len(groupRoles), 0, "Should have at least 1 role")
 

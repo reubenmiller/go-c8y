@@ -341,7 +341,7 @@ func mergeFields(dst, src reflect.Value) {
 				mergeFields(dstField, srcField)
 			}
 		}
-	case reflect.Ptr:
+	case reflect.Pointer:
 		if !src.IsNil() {
 			if dst.IsNil() {
 				dst.Set(reflect.New(src.Elem().Type()))
@@ -371,7 +371,7 @@ func mergeFields(dst, src reflect.Value) {
 // isZero checks if a value is the zero value for its type
 func isZero(v reflect.Value) bool {
 	switch v.Kind() {
-	case reflect.Ptr, reflect.Interface, reflect.Slice, reflect.Map, reflect.Chan, reflect.Func:
+	case reflect.Pointer, reflect.Interface, reflect.Slice, reflect.Map, reflect.Chan, reflect.Func:
 		return v.IsNil()
 	default:
 		return v.Interface() == reflect.Zero(v.Type()).Interface()

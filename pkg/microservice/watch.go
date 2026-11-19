@@ -10,7 +10,6 @@ import (
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 )
 
 // DefaultWatchInterval is how often WatchSubscriptions polls by default.
@@ -138,7 +137,7 @@ func (m *Microservice) fetchServiceUsers(ctx context.Context) ([]model.ServiceUs
 		return nil, result.Err
 	}
 	var users []model.ServiceUser
-	for item, err := range op.Iter2(result) {
+	for item, err := range result.Items() {
 		if err != nil {
 			slog.Warn("Error reading service user", "err", err)
 			continue

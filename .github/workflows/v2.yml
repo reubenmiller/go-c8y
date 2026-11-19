@@ -40,7 +40,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v8
         with:
-          version: v2.11
+          version: v2.15
 
   # Fails on drift between the vendored OpenAPI spec and the SDK that isn't
   # declared in docs/c8y-oas.overlay.yml, and on stale generated code.

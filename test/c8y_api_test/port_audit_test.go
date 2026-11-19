@@ -9,7 +9,6 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/internal/pkg/testingutils"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/auditrecords"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -85,7 +84,7 @@ func Test_GetAuditRecords(t *testing.T) {
 	require.NoError(t, result.Err)
 	assert.Equal(t, 200, result.HTTPStatus)
 
-	records, err := op.ToSliceR(result)
+	records, err := result.Collect()
 	require.NoError(t, err)
 	assert.Equal(t, 3, len(records), "Should have 3 audit records of type1")
 
@@ -98,7 +97,7 @@ func Test_GetAuditRecords(t *testing.T) {
 	require.NoError(t, result2.Err)
 	assert.Equal(t, 200, result2.HTTPStatus)
 
-	records2, err := op.ToSliceR(result2)
+	records2, err := result2.Collect()
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(records2), "Should have 1 audit record of type2")
 }

@@ -74,7 +74,7 @@ func NewService(s *httpcore.Service) *Service {
 			return "", nil, result.Err
 		}
 
-		for item := range op.Iter(result) {
+		for item := range result.Seq() {
 			return item.ID(), map[string]any{
 				"id":    item.ID(),
 				"name":  item.Name(),

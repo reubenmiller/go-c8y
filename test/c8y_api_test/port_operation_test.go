@@ -7,7 +7,6 @@ import (
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/operations"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -44,7 +43,7 @@ func Test_CreateOperation(t *testing.T) {
 	assert.Equal(t, 200, listResult.HTTPStatus)
 
 	// Convert to slice to check count
-	opsList, err := op.ToSliceR(listResult)
+	opsList, err := listResult.Collect()
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, len(opsList), 1, "Should have at least one operation")
 
@@ -129,7 +128,7 @@ func Test_DeleteOperations(t *testing.T) {
 	require.NoError(t, listResult.Err)
 	assert.Equal(t, 200, listResult.HTTPStatus)
 
-	opsList, err := op.ToSliceR(listResult)
+	opsList, err := listResult.Collect()
 	require.NoError(t, err)
 	assert.Equal(t, 3, len(opsList), "Should have exactly 3 operations")
 
@@ -150,7 +149,7 @@ func Test_DeleteOperations(t *testing.T) {
 	require.NoError(t, listResultAfter.Err)
 	assert.Equal(t, 200, listResultAfter.HTTPStatus)
 
-	opsListAfter, err := op.ToSliceR(listResultAfter)
+	opsListAfter, err := listResultAfter.Collect()
 	require.NoError(t, err)
 	assert.Equal(t, 0, len(opsListAfter), "Should have 0 operations after deletion")
 }

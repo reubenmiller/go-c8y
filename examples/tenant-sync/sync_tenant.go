@@ -154,7 +154,7 @@ func (s *Syncer) featureOverride(ctx context.Context, key, tenantID string) (act
 		states = make(map[string]bool)
 		result := s.Client.Features.Tenants.List(ctx, key)
 		if result.Err == nil {
-			for item, err := range op.Iter2(result) {
+			for item, err := range result.Items() {
 				if err != nil {
 					break
 				}

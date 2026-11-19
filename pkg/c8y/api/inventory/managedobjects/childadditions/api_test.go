@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
 )
 
@@ -38,7 +37,7 @@ func TestListPlucksReferences(t *testing.T) {
 		t.Errorf("list path = %q", path)
 	}
 	var ids []string
-	for item := range op.Iter(res) {
+	for item := range res.Seq() {
 		ids = append(ids, item.ID())
 	}
 	if strings.Join(ids, ",") != "11,12" {

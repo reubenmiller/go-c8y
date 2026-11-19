@@ -261,7 +261,7 @@ func (m *Microservice) CheckForNewConfiguration() {
 		return
 	}
 
-	for item := range op.Iter2(result) {
+	for item := range result.Items() {
 
 		//
 		// Update Configuration Operation
