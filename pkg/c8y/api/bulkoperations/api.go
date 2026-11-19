@@ -12,10 +12,15 @@ package bulkoperations
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
+
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/devicegroups"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/source"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
@@ -39,14 +44,13 @@ const ResultProperty = "bulkOperations"
 // NewService creates a new BulkOperations service backed by the provided
 // httpcore.Service (HTTP client + tenant configuration).
 func NewService(s *httpcore.Service) *Service {
-	return &Service{
-		svc: *s,
-	}
+	return &Service{svc: *s, groups: devicegroups.NewService(s)}
 }
 
 // Service provides access to the Cumulocity Bulk Operations API.
 type Service struct {
-	svc httpcore.Service
+	svc    httpcore.Service
+	groups *devicegroups.Service
 }
 
 // ListOptions controls filtering and pagination of a bulk-operation list request.
@@ -117,9 +121,22 @@ func (s *Service) getB(ID string) *httpcore.TryRequest {
 // Create submits a new bulk operation. The body must contain at minimum
 // groupId, startDate, creationRamp and operationPrototype.
 //
-// Any serialisable value (struct, map[string]any, etc.) is accepted.
+// Any serialisable value (struct, map[string]any, etc.) is accepted. A
+// device-group reference at "groupId" that is not an id (e.g. "My Group",
+// "name:My Group") is resolved to the group id first.
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.BulkOperation] {
+	body, err := source.ResolveBodyRefs(ctx, body, s.resolveGroup, "groupId")
+	if err != nil {
+		return op.Failed[jsonmodels.BulkOperation](err, false)
+	}
 	return httpcore.Execute(ctx, s.createB(body), jsonmodels.NewBulkOperation)
+}
+
+func (s *Service) resolveGroup(ctx context.Context, ref string) (string, error) {
+	if s.groups == nil {
+		return "", fmt.Errorf("device groups service not configured")
+	}
+	return s.groups.ResolveID(ctxhelpers.ResolutionContext(ctx), ref, nil)
 }
 
 func (s *Service) createB(body any) *httpcore.TryRequest {

@@ -61,3 +61,29 @@ func Test_ListAll_ResolvesSourceOnce(t *testing.T) {
 func eventsListOptions(source string) events.ListOptions {
 	return events.ListOptions{Source: managedobjects.DeviceRef(source)}
 }
+
+func Test_RawBodies_ResolveReferences(t *testing.T) {
+	cases := map[string]func(c *Client) error{
+		"bulk operation groupId": func(c *Client) error {
+			return c.BulkOperations.Create(context.Background(), json.RawMessage(`{"groupId":"My Group"}`)).Err
+		},
+		"device request groupId": func(c *Client) error {
+			return c.Devices.Registration.CreateRaw(context.Background(), json.RawMessage(`{"id":"abc","groupId":"name:My Group"}`)).Err
+		},
+		"subscription source.id": func(c *Client) error {
+			return c.Notification2.CreateRaw(context.Background(), json.RawMessage(`{"source":{"id":"dev01"}}`)).Err
+		},
+		"operation update agentId": func(c *Client) error {
+			return c.Operations.Update(context.Background(), "1", json.RawMessage(`{"agentId":"dev01"}`)).Err
+		},
+	}
+	for name, call := range cases {
+		t.Run(name, func(t *testing.T) {
+			srv := newApprovalServer(t)
+			_ = call(srv.client()) // the response shape is irrelevant here
+			sent := srv.sent()
+			require.NotEmpty(t, sent)
+			assert.True(t, strings.HasPrefix(sent[0], "GET /inventory/managedObjects"), "first request must be the lookup, got %v", sent)
+		})
+	}
+}

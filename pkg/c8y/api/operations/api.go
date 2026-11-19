@@ -269,8 +269,13 @@ func (s *Service) createBWithJSON(bodyJSON []byte) *httpcore.TryRequest {
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
-// Update an operation
+// Update an operation. A device reference at "deviceId" or "agentId" in the
+// body that is not an id (e.g. "dev01", "name:dev01") is resolved first.
 func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.Operation] {
+	body, err := s.DeviceResolver.ResolveBodyRefs(ctx, body, "deviceId", "agentId")
+	if err != nil {
+		return op.Failed[jsonmodels.Operation](err, false)
+	}
 	return httpcore.Execute(ctx, s.updateB(ID, body), jsonmodels.NewOperation)
 }
 

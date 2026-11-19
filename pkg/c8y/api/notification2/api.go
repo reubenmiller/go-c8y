@@ -192,10 +192,14 @@ func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonm
 }
 
 // CreateRaw creates a subscription from a raw body (map / json.RawMessage),
-// preserving the CLI's --data/--template body fidelity. Callers that have
-// already resolved the source id build the body themselves; this is the
-// equivalent of Create for an untyped body.
+// preserving the CLI's --data/--template body fidelity. A device reference at
+// "source.id" that is not an id (e.g. "dev01", "name:dev01") is resolved to
+// the device id first; this is the equivalent of Create for an untyped body.
 func (s *Service) CreateRaw(ctx context.Context, body any) op.Result[jsonmodels.Notification2Subscription] {
+	body, err := s.DeviceResolver.ResolveBodyRefs(ctx, body, "source.id")
+	if err != nil {
+		return op.Failed[jsonmodels.Notification2Subscription](err, false)
+	}
 	return httpcore.Execute(ctx, s.createB(body), jsonmodels.NewNotification2Subscription).IgnoreConflict()
 }
 

@@ -6,8 +6,12 @@ import (
 	"log/slog"
 	"time"
 
+	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
+
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/devicegroups"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/source"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
@@ -27,10 +31,13 @@ var ParamID = "id"
 const ResultProperty = "newDeviceRequests"
 
 // Service provides api to get/set/delete device requests in Cumulocity
-type Service struct{ svc httpcore.Service }
+type Service struct {
+	svc    httpcore.Service
+	groups *devicegroups.Service
+}
 
 func NewService(common *httpcore.Service) *Service {
-	return &Service{svc: *common}
+	return &Service{svc: *common, groups: devicegroups.NewService(common)}
 }
 
 // ListOptions to list the device requests
@@ -103,8 +110,16 @@ func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonm
 }
 
 // CreateRaw creates a new device request from a raw body (e.g. the CLI's
-// --data/--template document), bypassing the typed CreateOptions.
+// --data/--template document), bypassing the typed CreateOptions. A
+// device-group reference at "groupId" that is not an id (e.g. "My Group") is
+// resolved to the group id first.
 func (s *Service) CreateRaw(ctx context.Context, body any) op.Result[jsonmodels.DeviceRequest] {
+	body, err := source.ResolveBodyRefs(ctx, body, func(ctx context.Context, ref string) (string, error) {
+		return s.groups.ResolveID(ctxhelpers.ResolutionContext(ctx), ref, nil)
+	}, "groupId")
+	if err != nil {
+		return op.Failed[jsonmodels.DeviceRequest](err, false)
+	}
 	return httpcore.Execute(ctx, s.createB(body), jsonmodels.NewDeviceRequest)
 }
 
