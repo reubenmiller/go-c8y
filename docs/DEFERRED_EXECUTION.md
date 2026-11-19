@@ -119,8 +119,8 @@ import (
     "os"
     "strings"
 
-    "github.com/reubenmiller/go-c8y/pkg/c8y/api"
-    "github.com/reubenmiller/go-c8y/pkg/c8y/api/inventory/managedobjects"
+    "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
+    "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects"
 )
 
 func deleteWithConfirmation(client *api.Client, deviceID string) error {
@@ -140,10 +140,10 @@ func deleteWithConfirmation(client *api.Client, deviceID string) error {
     fmt.Printf("  Device ID: %s\n", deviceID)
 
     // Optionally fetch device info for confirmation
-    device, err := client.ManagedObjects.Get(context.Background(), deviceID, managedobjects.GetOptions{})
-    if err == nil {
-        fmt.Printf("  Device Name: %s\n", device.Data.Name)
-        fmt.Printf("  Device Type: %s\n", device.Data.Type)
+    device := client.ManagedObjects.Get(context.Background(), deviceID, managedobjects.GetOptions{})
+    if device.Err == nil {
+        fmt.Printf("  Device Name: %s\n", device.Data.Name())
+        fmt.Printf("  Device Type: %s\n", device.Data.Type())
     }
 
     // Prompt for confirmation
@@ -167,6 +167,14 @@ func deleteWithConfirmation(client *api.Client, deviceID string) error {
 
     fmt.Println("Device deleted successfully")
     return nil
+}
+
+func main() {
+    client := api.NewClientFromEnvironment(api.ClientOptions{})
+    if err := deleteWithConfirmation(client, os.Args[1]); err != nil {
+        fmt.Fprintln(os.Stderr, err)
+        os.Exit(1)
+    }
 }
 ```
 

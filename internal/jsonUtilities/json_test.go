@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/v2/pkg/jsonUtilities"
+	"github.com/reubenmiller/go-c8y/v2/internal/jsonUtilities"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -1,150 +1,100 @@
 # go-c8y
 
-Unofficial Go client for [Cumulocity IoT](https://cumulocity.com/api/core/).
+Unofficial Go client for the [Cumulocity](https://cumulocity.com/api/core/) REST API.
 
-[![tests](https://github.com/reubenmiller/go-c8y/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/reubenmiller/go-c8y/actions/workflows/main.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/reubenmiller/go-c8y)](https://goreportcard.com/report/github.com/reubenmiller/go-c8y)
-[![Documentation c8y](https://godoc.org/github.com/reubenmiller/go-c8y/pkg/c8y?status.svg)](https://godoc.org/github.com/reubenmiller/go-c8y/pkg/c8y)
-[![Documentation microservice ](https://godoc.org/github.com/reubenmiller/go-c8y/pkg/microservice?status.svg)](https://godoc.org/github.com/reubenmiller/go-c8y/pkg/microservice)
+[![tests](https://github.com/reubenmiller/go-c8y/actions/workflows/v2.yml/badge.svg?branch=v2)](https://github.com/reubenmiller/go-c8y/actions/workflows/v2.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/reubenmiller/go-c8y/v2.svg)](https://pkg.go.dev/github.com/reubenmiller/go-c8y/v2/pkg/c8y/api)
 
-## v2 API (New!)
+## Requirements
 
-🎉 **The v2 API is under active development!** It features a modern, type-safe design with Go generics, rich result metadata, and flexible JSON handling.
+- Go 1.27 or later. The SDK uses generic methods, which Go 1.27 introduced.
 
-**📖 [Read the complete v2 API Design Documentation](./docs/API_DESIGN.md)**
+## Install
 
-### Quick v2 Example
+```sh
+go get github.com/reubenmiller/go-c8y/v2
+```
+
+## Quick start
+
+Set the connection details as environment variables:
+
+```sh
+export C8Y_HOST=https://example.cumulocity.com
+export C8Y_TENANT=t12345
+export C8Y_USER=username
+export C8Y_PASSWORD=password
+```
+
+Then list the major alarms:
 
 ```go
 package main
 
 import (
-    "context"
-    "fmt"
-    "github.com/reubenmiller/go-c8y/pkg/c8y/api"
-    "github.com/reubenmiller/go-c8y/pkg/c8y/api/operations"
+	"context"
+	"fmt"
+	"os"
+
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/alarms"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 )
 
 func main() {
-    // Create client
-    client := api.NewClient(baseURL, username, password)
-    ctx := context.Background()
-    
-    // List operations with smart device resolution
-    result := client.Operations.List(ctx, operations.ListOptions{
-        DeviceID: "name:my-device",  // Automatically resolved to ID
-        Status:   "PENDING",
-    })
-    
-    // Rich result handling
-    if result.Err != nil {
-        panic(result.Err)
-    }
-    
-    // Iterate over operations
-    for _, op := range result.Data.Items() {
-        fmt.Printf("%s: %s\n", op.ID(), op.Status())
-    }
+	// Reads C8Y_HOST, C8Y_TENANT, C8Y_USER, C8Y_PASSWORD (or C8Y_TOKEN)
+	client := api.NewClientFromEnvironment(api.ClientOptions{})
+
+	result := client.Alarms.List(context.Background(), alarms.ListOptions{
+		Severity: []model.AlarmSeverity{model.AlarmSeverityMajor},
+	})
+	if result.Err != nil {
+		fmt.Fprintln(os.Stderr, "could not list alarms:", result.Err)
+		os.Exit(1)
+	}
+
+	for alarm, err := range result.Items() {
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		fmt.Println(alarm.Get("id").String(), alarm.Get("text").String())
+	}
 }
 ```
 
-### v2 Key Features
+Every call returns an `op.Result[T]` with the data, the error, the HTTP status, and request metadata such as duration and retry attempts.
 
-- **Rich Result Type** - Every operation returns metadata: status, HTTP details, duration, retry info
-- **Flexible JSON Handling** - JSONDoc models with both structured and raw access
-- **Context-Driven Behavior** - Dry run, deferred execution, and more via context
-- **Smart Resolvers** - Reference devices by name, external ID, or query
-- **Powerful Pagination** - Simple collections or iterators for large datasets
+## Features
 
-### v2 Documentation
+- Typed services for the Cumulocity core API, checked against the published OpenAPI spec in CI
+- `op.Result[T]` results with metadata, pagination, and iterators
+- JSON documents with both typed accessors and raw access
+- Device resolvers: refer to a device by ID, name, external ID, or query
+- Bulk managed object create and update, with partial-failure reporting and recovery
+- Certificate login (RSA over HTTPS, or mTLS on port 8443) and enabling certificate authentication for users
+- Multi-tenant microservices: subscription watching, per-tenant settings, Notification 2.0, and caller validation
+- Context options for dry run, deferred execution, extra headers, and tenant selection
+- HTTP middleware hooks and a file-backed response cache
 
-- **[API_DESIGN.md](./docs/API_DESIGN.md)** - Complete API architecture and usage patterns
-- **[V2.md](./docs/V2.md)** - Feature overview and implementation status
-- **[IMPLEMENTATION_PATTERNS.md](./docs/IMPLEMENTATION_PATTERNS.md)** - Internal patterns (pipelines, upsert, retry)
-- **[DEFERRED_EXECUTION.md](./docs/DEFERRED_EXECUTION.md)** - User confirmation prompts pattern
-- **[DEVICE_RESOLVER_PATTERN.md](./docs/DEVICE_RESOLVER_PATTERN.md)** - Device resolution architecture
-- **[REQUEST_INSPECTION.md](./docs/REQUEST_INSPECTION.md)** - Request debugging and security
+## API stability
 
----
+v2 follows [semantic versioning](https://semver.org). From `v2.0.0` on, exported identifiers in this module are not removed or changed incompatibly within the v2 major version. Packages under `internal/` are not part of the API. CI runs an API compatibility check against the latest v2 tag on every pull request.
 
-## v1 API (Current Stable)
+Releases before `v2.0.0` (pseudo-versions and pre-releases) may still change.
 
-## v1 Caveats
+The v1 module (`github.com/reubenmiller/go-c8y`, `v0.x` tags) is a separate module. See the [CHANGELOG](./CHANGELOG.md) for migration notes.
 
-We encourage you to try the package in your projects, just keep these caveats in mind, please:
+## Documentation
 
-* **This is a work in progress.** Not all of the Cumulocity IoT REST API is covered, and the HTTP client is very simple. In the future the HTTP Client will be improved to support retries on failures, client side rate limiting, prometheus api metrics, mqtt client.
-
-* **There are no guarantees on API stability.** The general mechanics of the golang API are still being worked out. The balance between helpers and clarity is still being found. Given limited access to all available Cumulocity IoT versions, compatibility to all Cumulocity IoT versions is not guaranteed, however since Cumulocity IoT takes an additive approach to new features, it is more likely that the new features will be missing rather than existing API breaking (excluding deprecated features)
-
-## v1 Usage
-
-1. Add the package to your project using `go get`:
-
-    ```sh
-    go get -u github.com/reubenmiller/go-c8y
-    ```
-
-1. Create a `main.go` file with the following
-
-    ```golang
-    package main
-
-    import (
-        "context"
-        "log/slog"
-
-        "github.com/reubenmiller/go-c8y/pkg/c8y"
-    )
-
-    func main() {
-        // Create the client from the following environment variables
-        // C8Y_HOST, C8Y_TENANT, C8Y_USER, C8Y_PASSWORD
-        client := c8y.NewClientFromEnvironment(nil, false)
-
-        // Get list of alarms with MAJOR Severity
-        alarmCollection, _, err := client.Alarm.GetAlarms(
-            context.Background(),
-            &c8y.AlarmCollectionOptions{
-                Severity: "MAJOR",
-            },
-        )
-
-        // Always check for errors
-        if err != nil {
-            slog.Error("Could not retrieve alarms", "err", err)
-            panic(err)
-        }
-
-        slog.Info("Found alarms", "total", len(alarmCollection.Alarms))
-    }
-    ```
-
-2. Set the credentials via environment variables
-
-    **Windows (PowerShell)**
-
-    ```sh
-    $env:C8Y_HOST = "https://cumulocity.com"
-    $env:C8Y_TENANT = "mycompany"
-    $env:C8Y_USER = "username"
-    $env:C8Y_PASSWORD = "password"
-    ```
-
-    **Linux/MacOS**
-
-    ```sh
-    export C8Y_HOST=https://cumulocity.com
-    export C8Y_TENANT=mycompany
-    export C8Y_USER=username
-    export C8Y_PASSWORD=password
-    ```
-
-3. Run the application
-
-    ```sh
-    go run main.go
-    ```
+- [API_DESIGN.md](./docs/API_DESIGN.md): API architecture and usage patterns
+- [V2.md](./docs/V2.md): feature overview
+- [MICROSERVICE_TENANT_CONTEXT.md](./docs/MICROSERVICE_TENANT_CONTEXT.md): multi-tenant microservices
+- [DEFERRED_EXECUTION.md](./docs/DEFERRED_EXECUTION.md): confirmation prompts before a request runs
+- [DEVICE_RESOLVER_PATTERN.md](./docs/DEVICE_RESOLVER_PATTERN.md): device resolution
+- [REQUEST_INSPECTION.md](./docs/REQUEST_INSPECTION.md): request debugging and redaction
+- [IMPLEMENTATION_PATTERNS.md](./docs/IMPLEMENTATION_PATTERNS.md): pipelines, upsert, and retry
+- [OFFLINE_TESTING.md](./docs/OFFLINE_TESTING.md): testing against the fake server
 
 ## Examples
 
