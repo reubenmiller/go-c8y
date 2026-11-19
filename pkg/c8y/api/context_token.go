@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
-	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/logintokens"
+	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 )
 
 // contextTokenRetryCooldown is how long the client waits before re-attempting

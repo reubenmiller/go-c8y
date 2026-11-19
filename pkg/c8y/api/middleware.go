@@ -15,10 +15,9 @@ import (
 	"sync/atomic"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
-	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/mock"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
+	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 	"resty.dev/v3"
 )
 
@@ -130,80 +129,6 @@ func MiddlewareCountRequests(counter *int64) resty.RequestMiddleware {
 		atomic.AddInt64(counter, 1)
 		return nil
 	}
-}
-
-// WithDryRun returns a context with dry run enabled
-// Dry run mode logs requests for inspection/validation without sending them
-func WithDryRun(ctx context.Context, enabled bool) context.Context {
-	return ctxhelpers.WithDryRun(ctx, enabled)
-}
-
-// IsDryRun checks if dry run is enabled in the context
-func IsDryRun(ctx context.Context) bool {
-	return ctxhelpers.IsDryRun(ctx)
-}
-
-// WithMockResponses returns a context with mock responses enabled
-// When enabled, HTTP requests will return mock data from embedded JSON files
-// instead of making real API calls. Useful for unit testing without network dependencies.
-// Can be combined with WithDryRun for logging + mock data, or used independently.
-func WithMockResponses(ctx context.Context, enabled bool) context.Context {
-	return ctxhelpers.WithMockResponses(ctx, enabled)
-}
-
-// IsMockResponses checks if mock responses are enabled in the context
-func IsMockResponses(ctx context.Context) bool {
-	return ctxhelpers.IsMockResponses(ctx)
-}
-
-// WithRedactHeaders returns a context with header redaction control
-// By default, headers are redacted for security. Set to false to disable redaction for debugging.
-// Example: ctx = api.WithRedactHeaders(ctx, false) // Disable redaction for debugging
-func WithRedactHeaders(ctx context.Context, redact bool) context.Context {
-	return ctxhelpers.WithRedactHeaders(ctx, redact)
-}
-
-// ShouldRedactHeaders checks if header redaction is enabled in the context
-// Returns true by default (secure by default)
-func ShouldRedactHeaders(ctx context.Context) bool {
-	return ctxhelpers.ShouldRedactHeaders(ctx)
-}
-
-// WithDeferredExecution returns a context with deferred execution enabled
-// When enabled, operations will prepare the request (including parameter resolution)
-// but won't execute the HTTP call until Result.Execute() is called.
-// This is useful for confirmation prompts before destructive operations.
-func WithDeferredExecution(ctx context.Context, enabled bool) context.Context {
-	return ctxhelpers.WithDeferredExecution(ctx, enabled)
-}
-
-// IsDeferredExecution checks if deferred execution is enabled in the context
-func IsDeferredExecution(ctx context.Context) bool {
-	return ctxhelpers.IsDeferredExecution(ctx)
-}
-
-// WithAuth returns a context that carries per-request credentials. API calls made
-// with the returned context use these credentials instead of the client-level
-// credentials, so one client can act on behalf of multiple tenants.
-func WithAuth(ctx context.Context, auth authentication.AuthOptions) context.Context {
-	return authentication.WithAuth(ctx, auth)
-}
-
-// WithServiceUser returns a context that carries the given service user's
-// credentials. API calls made with the returned context execute as that
-// tenant's service user (the typical pattern in MULTI_TENANT microservices).
-func WithServiceUser(ctx context.Context, user model.ServiceUser) context.Context {
-	return authentication.WithAuth(ctx, authentication.AuthOptions{
-		Tenant:   user.Tenant,
-		Username: user.Username,
-		Password: user.Password,
-	})
-}
-
-// WithTenant returns a context that overrides the {tenantId} path parameter for
-// tenant-scoped endpoints without changing which credentials are used.
-func WithTenant(ctx context.Context, tenant string) context.Context {
-	return ctxhelpers.WithTenant(ctx, tenant)
 }
 
 // DryRunTransport wraps an http.RoundTripper and intercepts requests when dry run is enabled
@@ -603,14 +528,6 @@ func MiddlewareRemoveEmptyTenantID() resty.RequestMiddleware {
 		// Allow overriding using context (see WithTenant)
 		if tenant, ok := ctxhelpers.TenantFromContext(r.Context()); ok && tenant != "" {
 			r.SetPathParam(core.PathParamTenantID, tenant)
-		}
-
-		// Deprecated: support the legacy untyped "tenant" context key
-		switch v := r.Context().Value("tenant").(type) {
-		case string:
-			if v != "" {
-				r.SetPathParam(core.PathParamTenantID, v)
-			}
 		}
 		return nil
 	}

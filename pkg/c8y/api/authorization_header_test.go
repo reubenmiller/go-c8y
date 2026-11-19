@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
-	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/devices"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
+	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"resty.dev/v3"

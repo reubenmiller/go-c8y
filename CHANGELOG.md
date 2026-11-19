@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+* **Breaking**: request-scoped options now have one public home, package `api`. `pkg/c8y/api/context` is removed and `pkg/c8y/api/contexthelpers` moved to `pkg/c8y/internal/contexthelpers`. New in `api`: `WithProcessingMode` (plus `Persistent`, `Transient`, `Quiescent`, `CEP` variants), `ProcessingMode`, `WithExtraHeaders`, `ExtraHeaders`, `WithExtraQueryParams`, `ExtraQueryParams`, `WithNoAccept`, `WithNoAuth`, `WithDryRunHandler`, and `TenantFromContext`. Migration:
+
+  | Before | After |
+  |---|---|
+  | `c8yctx.WithProcessingMode…(ctx)` (`api/context`) | `api.WithProcessingMode…(ctx)` |
+  | `contexthelpers.With…(ctx, …)` | `api.With…(ctx, …)` |
+  | `contexthelpers.GetProcessingMode(ctx)` | `api.ProcessingMode(ctx)` |
+  | `contexthelpers.GetExtraHeaders(ctx)` / `GetExtraQueryParams(ctx)` | `api.ExtraHeaders(ctx)` / `api.ExtraQueryParams(ctx)` |
+* **Breaking**: the tenant path parameter is no longer read from the untyped context key `"tenant"`. Use `api.WithTenant(ctx, tenant)`.
 * Added context-scoped credentials to the core API client: `api.WithAuth`, `api.WithServiceUser` and `api.WithTenant` allow any request made with a shared client to execute on behalf of a specific tenant (see `docs/MICROSERVICE_TENANT_CONTEXT.md`)
 * Added `Microservice.TenantContext()`, a framework-agnostic `net/http` middleware that binds the caller's tenant credentials to the request context (parity with the Java SDK's per-request security context), with optional service-user (tenant) scope via `TenantContextOptions{UseServiceUser: true}`
 * Added `Microservice.ForEachTenant()` and `Microservice.WithServiceUser()` helpers for running code within a tenant's context (parity with the Java SDK's `runForEachTenant`/`runForTenant`)

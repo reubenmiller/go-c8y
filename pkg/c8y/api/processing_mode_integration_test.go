@@ -1,12 +1,12 @@
-package context
+package api
 
 import (
 	"context"
 	"testing"
 
-	contexthelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	contexthelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 	"github.com/stretchr/testify/assert"
 	"resty.dev/v3"
 )

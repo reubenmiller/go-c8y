@@ -7,9 +7,9 @@ import (
 
 	"github.com/google/go-querystring/query"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
-	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/realtime"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 	"resty.dev/v3"
 )
 
