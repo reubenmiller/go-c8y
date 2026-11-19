@@ -3,8 +3,8 @@ package model
 import (
 	"encoding/json"
 
+	"github.com/reubenmiller/go-c8y/v2/internal/jsonUtilities"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
-	"github.com/reubenmiller/go-c8y/v2/pkg/jsonUtilities"
 )
 
 // ErrFragmentNotFound is returned by the read-side fragment helpers when the requested

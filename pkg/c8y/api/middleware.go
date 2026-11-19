@@ -15,8 +15,8 @@ import (
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/mock"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/mock"
 	"resty.dev/v3"
 )
 

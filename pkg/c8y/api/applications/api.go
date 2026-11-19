@@ -169,7 +169,9 @@ type ListByNameOptions struct {
 	pagination.PaginationOptions
 }
 
-// List applications by name
+// ListByName lists the applications with the given name
+// (GET /application/applicationsByName/{name}). Use [Service.List] to combine
+// the name with other filters.
 func (s *Service) ListByName(ctx context.Context, opt ListByNameOptions) op.Result[jsonmodels.Application] {
 	return httpcore.ExecuteCollection(ctx, s.listByNameB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
 }
@@ -192,7 +194,8 @@ type ListByTenantOptions struct {
 	pagination.PaginationOptions
 }
 
-// List applications by name
+// ListByTenant lists the applications that a tenant owns or is subscribed to
+// (GET /application/applicationsByTenant/{tenantId}).
 func (s *Service) ListByTenant(ctx context.Context, opt ListByTenantOptions) op.Result[jsonmodels.Application] {
 	return httpcore.ExecuteCollection(ctx, s.listByTenantB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
 }
