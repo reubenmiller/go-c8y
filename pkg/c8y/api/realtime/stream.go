@@ -83,6 +83,7 @@ type Stream[T any] struct {
 	transform     func(*Message) T
 	ackConsumed   bool
 	cleanupCalled bool
+	opts          StreamOptions
 }
 
 // NewStream creates a new typed stream from a realtime subscription.

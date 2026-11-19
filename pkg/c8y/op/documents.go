@@ -39,6 +39,13 @@ func (r Result[T]) Documents() iter.Seq2[jsondoc.JSONDoc, error] {
 		switch data := any(r.Data).(type) {
 		case nil:
 			return
+		case DocumentSource:
+			// e.g. a realtime stream: the result holds the source of documents
+			for doc, err := range data.Documents() {
+				if !yield(doc, err) {
+					return
+				}
+			}
 		case jsondoc.Unwrapper:
 			doc := data.GetJSONDoc()
 			if len(doc.Raw()) == 0 {
