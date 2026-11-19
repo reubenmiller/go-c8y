@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"log/slog"
 	"math"
@@ -79,7 +80,15 @@ type Notification2Client struct {
 
 	hub  *Hub
 	send chan []byte
+
+	// done is closed by Close and stops the hub, the write handler, the
+	// worker and any reconnect loop.
+	done      chan struct{}
+	closeOnce sync.Once
 }
+
+// ErrClientClosed is returned when sending on a closed client.
+var ErrClientClosed = errors.New("notification2: client is closed")
 
 type Subscription struct {
 	Consumer string `json:"consumer,omitempty"`
@@ -150,11 +159,12 @@ func NewNotification2Client(host string, wsDialer *websocket.Dialer, subscriptio
 		ConnectionOptions: options,
 
 		send: make(chan []byte),
+		done: make(chan struct{}),
 
 		hub: NewHub(),
 	}
 
-	go client.hub.Run()
+	go client.hub.Run(client.done)
 	go client.writeHandler()
 	return client
 }
@@ -199,8 +209,29 @@ func (c *Notification2Client) IsConnected() bool {
 	return isConnected
 }
 
-// Close the connection
+// Close closes the connection and stops all of the client's goroutines,
+// including reconnect attempts. It is safe to call more than once.
 func (c *Notification2Client) Close() error {
+	c.closeOnce.Do(func() {
+		close(c.done)
+	})
+	c.stopWorker()
+	return nil
+}
+
+// isClosed reports whether Close was called.
+func (c *Notification2Client) isClosed() bool {
+	select {
+	case <-c.done:
+		return true
+	default:
+		return false
+	}
+}
+
+// stopWorker closes the websocket and stops the read worker, keeping the
+// client usable for a reconnect.
+func (c *Notification2Client) stopWorker() {
 	if err := c.disconnect(); err != nil {
 		slog.Warn("Failed to disconnect", "err", err)
 	}
@@ -216,7 +247,6 @@ func (c *Notification2Client) Close() error {
 		c.workerDone = nil
 	}
 	c.mtx.Unlock()
-	return nil
 }
 
 func (c *Notification2Client) disconnect() error {
@@ -253,14 +283,18 @@ func (c *Notification2Client) createWebsocket() (*websocket.Conn, error) {
 }
 
 func (c *Notification2Client) reconnect() error {
-	c.Close()
+	c.stopWorker()
 
 	connected := false
 	interval := MinimumRetryInterval
 
 	for !connected {
 		slog.Warn(fmt.Sprintf("Retrying in %ds", interval))
-		<-time.After(time.Duration(interval) * time.Second)
+		select {
+		case <-c.done:
+			return ErrClientClosed
+		case <-time.After(time.Duration(interval) * time.Second):
+		}
 		err := c.connect()
 
 		if err != nil {
@@ -350,12 +384,11 @@ func parseMessage(raw []byte) *Message {
 func (c *Notification2Client) writeHandler() {
 	ticker := time.NewTicker(c.ConnectionOptions.GetPingDuration())
 
-	defer func() {
-		ticker.Stop()
-		close(c.send)
-	}()
+	defer ticker.Stop()
 	for {
 		select {
+		case <-c.done:
+			return
 		case message, ok := <-c.send:
 			if !ok {
 				// The send channel has been closed
@@ -390,17 +423,24 @@ func (c *Notification2Client) writeHandler() {
 func (c *Notification2Client) Register(pattern string, out chan<- Message) {
 	slog.Debug(fmt.Sprintf("Subscribing to %s", pattern))
 
-	c.hub.register <- &ClientSubscription{
+	select {
+	case c.hub.register <- &ClientSubscription{
 		Pattern:  pattern,
 		Out:      out,
 		Disabled: false,
+	}:
+	case <-c.done:
 	}
 }
 
 func (c *Notification2Client) SendMessageAck(messageIdentifier string) error {
 	slog.Debug("Sending message ack", "identifier", messageIdentifier)
-	c.send <- []byte(messageIdentifier)
-	return nil
+	select {
+	case c.send <- []byte(messageIdentifier):
+		return nil
+	case <-c.done:
+		return ErrClientClosed
+	}
 }
 
 func (c *Notification2Client) worker() {
@@ -430,7 +470,9 @@ func (c *Notification2Client) worker() {
 				} else {
 					slog.Info("websocket error", "err", err)
 				}
-				go c.reconnect()
+				if !c.isClosed() {
+					go c.reconnect()
+				}
 				break
 			}
 
@@ -442,7 +484,11 @@ func (c *Notification2Client) worker() {
 				slog.Debug("message", "description", message.Description)
 				slog.Debug("message", "action", message.Action)
 				slog.Debug("message", "payload", message.Payload)
-				c.hub.broadcast <- *message
+				select {
+				case c.hub.broadcast <- *message:
+				case <-c.done:
+					return
+				}
 
 			case websocket.CloseMessage:
 				slog.Warn("Received close", "message", rawMessage)
@@ -463,6 +509,10 @@ func (c *Notification2Client) worker() {
 // Unsubscribe unsubscribe to a given pattern
 func (c *Notification2Client) Unsubscribe() error {
 	slog.Info("unsubscribing")
-	c.send <- []byte("unsubscribe_subscriber")
-	return nil
+	select {
+	case c.send <- []byte("unsubscribe_subscriber"):
+		return nil
+	case <-c.done:
+		return ErrClientClosed
+	}
 }

@@ -46,11 +46,11 @@
 - **THEN** the fake server receives one settings request
 
 ### Requirement: Per-tenant Notification 2.0 subscription
-`Microservice.SubscribeNotifications(ctx, tenant, opts, handler)` SHALL create the Notification 2.0 subscription and token as the tenant's service user, deliver messages to `handler`, reconnect after connection loss, and return when `ctx` is cancelled, leaving no goroutines running.
+`Microservice.SubscribeNotifications(ctx, tenant, opts, handler)` SHALL create the Notification 2.0 subscription and token as the tenant's service user, deliver messages to `handler`, acknowledge each message after `handler` returns nil, reconnect after connection loss, and return when `ctx` is cancelled, leaving no goroutines running.
 
 #### Scenario: Messages delivered
 - **WHEN** the fake notification server sends 3 messages for tenant `t1`
-- **THEN** `handler` receives the 3 messages in order
+- **THEN** `handler` receives the 3 messages in order and the 3 messages are acknowledged
 
 #### Scenario: Reconnect
 - **WHEN** the WebSocket connection drops
@@ -77,3 +77,10 @@ When `C8Y_MICROSERVICE_ISOLATION` is `PER_TENANT`, `Bootstrap` SHALL use `C8Y_TE
 #### Scenario: Application key header
 - **WHEN** `APPLICATION_KEY=abc` is set
 - **THEN** requests from the microservice client carry `X-Cumulocity-Application-Key: abc`
+
+### Requirement: Notification 2.0 stream delivers messages
+`Notification2.SubscribeStream` SHALL deliver the messages the client receives, and closing the stream SHALL stop the client's goroutines.
+
+#### Scenario: Stream receives a message
+- **WHEN** the fake notification server pushes one message after `SubscribeStream` connected
+- **THEN** the stream yields that message

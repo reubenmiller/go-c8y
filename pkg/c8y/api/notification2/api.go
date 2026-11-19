@@ -408,13 +408,29 @@ func (s *Service) SubscribeStream(ctx context.Context, opt ClientOptions) op.Res
 		return op.Failed[*MessageStream](err, false)
 	}
 
+	// The client delivers messages to ch; forward them to the stream until
+	// the stream is closed or ctx is done.
+	streamCtx, stopForwarding := context.WithCancel(ctx)
 	messages := make(chan *notification2.Message, 10)
-
 	ch := make(chan notification2.Message)
 	client.Register("*", ch)
+	go func() {
+		defer close(messages)
+		for {
+			select {
+			case <-streamCtx.Done():
+				return
+			case msg := <-ch:
+				select {
+				case messages <- &msg:
+				case <-streamCtx.Done():
+					return
+				}
+			}
+		}
+	}()
 
-	// errorChan := client.sub.Subscribe(ctx, pattern, messages)
-	stream := notification2.NewStream(ctx, client, messages, func(msg *notification2.Message) notification2.StreamData[jsondoc.JSONDoc] {
+	stream := notification2.NewStream(streamCtx, client, messages, func(msg *notification2.Message) notification2.StreamData[jsondoc.JSONDoc] {
 		return notification2.StreamData[jsondoc.JSONDoc]{
 			Action:      msg.Action,
 			Identifier:  msg.Identifier,
@@ -422,10 +438,13 @@ func (s *Service) SubscribeStream(ctx context.Context, opt ClientOptions) op.Res
 			Data:        jsondoc.New(msg.Payload),
 		}
 	}, func() {
-		// Cleanup: unsubscribe from the realtime channel
+		stopForwarding()
+		// Unsubscribe from the realtime channel, then stop the client's
+		// goroutines.
 		if err := client.Unsubscribe(); err != nil {
 			slog.Warn("Failed to unsubscribe", "err", err)
 		}
+		_ = client.Close()
 	})
 
 	return op.OK(stream)

@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
@@ -15,9 +17,9 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/microservices"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pipeline"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/realtime"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 )
 
 // Options contains the additional microservice options
@@ -64,6 +66,7 @@ func New(opts Options) *Microservice {
 		bootstrapOpts.Transport = opts.HTTPClient.Transport
 	}
 	ms.Client = NewBootstrapClient(bootstrapOpts)
+	ms.installClientMiddleware()
 
 	return ms
 }
@@ -130,11 +133,13 @@ func NewMicroservice(host string, clientOpts ...func(*api.ClientOptions)) *Micro
 	}
 	client := NewBootstrapClient(opts)
 
-	return &Microservice{
+	ms := &Microservice{
 		Client:              client,
 		Config:              NewConfiguration(),
 		RealtimeClientCache: NewRealtimeClientCache(host),
 	}
+	ms.installClientMiddleware()
+	return ms
 }
 
 // NewBootstrapClient returns an *api.Client pre-configured for use inside a
@@ -200,6 +205,19 @@ type Microservice struct {
 	// callerCache caches validated callers (see TenantContextOptions.Validation).
 	callerCache     *callerCache
 	callerCacheOnce sync.Once
+
+	// SettingsTTL is how long Settings caches each tenant's settings.
+	// Default DefaultSettingsTTL (10 minutes).
+	SettingsTTL time.Duration
+
+	// settingsCache maps tenant -> settingsEntry.
+	settingsCache sync.Map
+
+	// watching is true while WatchSubscriptions runs.
+	watching atomic.Bool
+
+	// lastRefresh rate-limits refreshes triggered by 401 responses (unix nanos).
+	lastRefresh atomic.Int64
 }
 
 // RefreshServiceUsers fetches the current list of subscribed service users from
@@ -207,22 +225,9 @@ type Microservice struct {
 // Existing cached per-tenant clients are invalidated and will be recreated
 // on the next call to TenantClient().
 func (m *Microservice) RefreshServiceUsers(ctx context.Context) error {
-	result := m.Client.Microservices.CurrentMicroservice.ListUsers(ctx)
-	if result.Err != nil {
-		return result.Err
-	}
-
-	var users []model.ServiceUser
-	for item, err := range op.Iter2(result) {
-		if err != nil {
-			slog.Warn("Error reading service user", "err", err)
-			continue
-		}
-		users = append(users, model.ServiceUser{
-			Tenant:   item.Tenant(),
-			Username: item.Username(),
-			Password: item.Password(),
-		})
+	users, err := m.fetchServiceUsers(ctx)
+	if err != nil {
+		return err
 	}
 
 	m.mu.Lock()
@@ -287,8 +292,9 @@ func (m *Microservice) GetServiceUser(tenant string) (model.ServiceUser, bool) {
 		return user, true
 	}
 	// Tenant not in cache – refresh once and retry (e.g. the tenant subscribed
-	// after the service users were last loaded).
-	if m.Client == nil {
+	// after the service users were last loaded). While WatchSubscriptions runs
+	// it keeps the cache current, so a miss means the tenant is not subscribed.
+	if m.Client == nil || m.watching.Load() {
 		return model.ServiceUser{}, false
 	}
 	slog.Debug("Service user not found in cache, refreshing subscriptions", "tenant", tenant)
@@ -326,8 +332,9 @@ func (m *Microservice) SetServiceUsers(users []model.ServiceUser) {
 // made with it executes as that tenant (equivalent to the Java SDK's
 // MicroserviceSubscriptionsService.runForEachTenant).
 //
-// The iteration stops at the first error returned by fn or when ctx is
-// cancelled.
+// Without opts it runs one tenant at a time and returns the first error from
+// fn. Pass pipeline.Options to run tenants concurrently (Workers) and control
+// error handling (MaxErrors, ErrorThreshold, OnError).
 //
 // Example – periodically count devices per tenant:
 //
@@ -335,12 +342,19 @@ func (m *Microservice) SetServiceUsers(users []model.ServiceUser) {
 //		result := ms.Client.Devices.List(ctx, devices.ListOptions{})
 //		return result.Err
 //	})
-func (m *Microservice) ForEachTenant(ctx context.Context, fn func(ctx context.Context, user model.ServiceUser) error) error {
+func (m *Microservice) ForEachTenant(ctx context.Context, fn func(ctx context.Context, user model.ServiceUser) error, opts ...pipeline.Options) error {
 	m.mu.RLock()
 	users := make([]model.ServiceUser, len(m.ServiceUsers))
 	copy(users, m.ServiceUsers)
 	m.mu.RUnlock()
 
+	if len(opts) > 0 {
+		return pipeline.ForEach(ctx, pipeline.FromSlice(users), opts[0], func(ctx context.Context, user model.ServiceUser) error {
+			return fn(api.WithServiceUser(ctx, user), user)
+		})
+	}
+
+	// Default: one tenant at a time, stop at the first error.
 	for _, user := range users {
 		if err := ctx.Err(); err != nil {
 			return err

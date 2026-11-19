@@ -1,78 +1,94 @@
+// Command notification2-microservice is a MULTI_TENANT microservice that
+// consumes Notification 2.0 messages for every subscribed tenant.
+//
+// WatchSubscriptions reports tenants as they subscribe and unsubscribe. For
+// each tenant it starts SubscribeNotifications (running as the tenant's
+// service user) and cancels it when the tenant unsubscribes.
 package main
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	api_notification2 "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/notification2"
+	"github.com/reubenmiller/go-c8y/v2/pkg/microservice"
 )
 
-func health(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, `{"status":"UP"}`)
-}
-
-func handleRequests() {
-	http.HandleFunc("/health", health)
-	slog.Error(http.ListenAndServe(":80", nil).Error())
-	os.Exit(1)
-}
-
-func subscribeToNotifications(ctx context.Context, subscription string, consumer string) {
-	c8yClient := api.NewClient(api.ClientOptions{
-		BaseURL: authentication.HostFromEnvironment(),
-		Auth:    authentication.FromEnvironment(),
-	})
-
-	defaultSubscriber := os.Getenv("APPLICATION_NAME")
-	if defaultSubscriber == "" {
-		defaultSubscriber = "myevent-worker"
-	}
-
-	consumer = c8yClient.Notification2.NormalizedConsumer(consumer)
-
-	ctx, stop := signal.NotifyContext(ctx, os.Interrupt)
+func main() {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	result := c8yClient.Notification2.SubscribeStream(ctx, api_notification2.ClientOptions{
-		Consumer: consumer,
+	ms := microservice.New(microservice.Options{})
+	if err := ms.Bootstrap(ctx); err != nil {
+		slog.Error("Failed to bootstrap microservice", "err", err)
+		os.Exit(1)
+	}
+
+	subscriber := os.Getenv("APPLICATION_NAME")
+	if subscriber == "" {
+		subscriber = "myevent-worker"
+	}
+	options := api_notification2.ClientOptions{
+		Consumer: ms.Client.Notification2.NormalizedConsumer("c1"),
 		Options: api_notification2.TokenOptions{
 			ExpiresInMinutes:  1440,
-			Subscriber:        consumer,
-			DefaultSubscriber: defaultSubscriber,
-			Subscription:      subscription,
-			Shared:            false,
+			Subscriber:        ms.Client.Notification2.NormalizedConsumer(subscriber),
+			DefaultSubscriber: subscriber,
+			Subscription:      "CustomEvents",
 		},
-	})
-
-	if result.Err != nil {
-		slog.Error("Error while creating notification subscription", "error", result.Err)
-		panic(result.Err)
 	}
 
-	stream := result.Data
+	// One consumer per tenant, cancelled when the tenant unsubscribes.
+	var mu sync.Mutex
+	consumers := map[string]context.CancelFunc{}
 
-	slog.Info("Listening to messages")
-	for msg, err := range stream.Items() {
+	go func() {
+		err := ms.WatchSubscriptions(ctx, microservice.WatchOptions{
+			OnTenantAdded: func(_ context.Context, user model.ServiceUser) error {
+				tenantCtx, cancel := context.WithCancel(ctx)
+				mu.Lock()
+				consumers[user.Tenant] = cancel
+				mu.Unlock()
+				go func() {
+					_ = ms.SubscribeNotifications(tenantCtx, user.Tenant, options,
+						func(_ context.Context, msg microservice.NotificationMessage) error {
+							slog.Info("Received message", "tenant", user.Tenant, "action", msg.Action, "description", msg.Description)
+							return nil
+						})
+				}()
+				slog.Info("Started notifications", "tenant", user.Tenant)
+				return nil
+			},
+			OnTenantRemoved: func(_ context.Context, tenant string) error {
+				mu.Lock()
+				if cancel, ok := consumers[tenant]; ok {
+					cancel()
+					delete(consumers, tenant)
+				}
+				mu.Unlock()
+				slog.Info("Stopped notifications", "tenant", tenant)
+				return nil
+			},
+		})
 		if err != nil {
-			slog.Error("received error", "err", err)
-			break
+			slog.Error("Subscription watch stopped", "err", err)
 		}
-		slog.Info("received message.", "action", msg.Action, "description", msg.Description, "identifier", msg.Identifier, "payload", msg.Data.Bytes())
-		if err := stream.AcknowledgeMessage(msg.Identifier); err != nil {
-			slog.Warn("Failed to send message ack", "err", err)
-		}
-	}
-}
+	}()
 
-func main() {
-	slog.SetLogLoggerLevel(slog.LevelDebug)
-	consumer := "c1"
-	go subscribeToNotifications(context.Background(), "CustomEvents", consumer)
-	handleRequests()
+	mux := http.NewServeMux()
+	ms.RegisterHealthEndpoints(mux)
+	server := &http.Server{Addr: ":80", Handler: mux}
+	go func() {
+		<-ctx.Done()
+		_ = server.Close()
+	}()
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		slog.Error("HTTP server failed", "err", err)
+		os.Exit(1)
+	}
 }

@@ -151,7 +151,7 @@ func TestMicroservice_SubscribeToNotifications(t *testing.T) {
 	err = app.RegisterMicroserviceAgent()
 	assert.NoError(t, err)
 
-	err = app.SubscribeToNotifications(
+	err = app.SubscribeToNotifications( //nolint:staticcheck // tests the deprecated CometD helper
 		app.WithServiceUserCredentials(),
 		realtime.Events(app.AgentID),
 		func(msg *realtime.Message) {
@@ -161,7 +161,7 @@ func TestMicroservice_SubscribeToNotifications(t *testing.T) {
 	)
 	assert.NoError(t, err)
 
-	err = app.SubscribeToNotifications(
+	err = app.SubscribeToNotifications( //nolint:staticcheck // tests the deprecated CometD helper
 		app.WithServiceUserCredentials(),
 		realtime.Operations(app.AgentID),
 		func(msg *realtime.Message) {
