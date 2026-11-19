@@ -241,7 +241,7 @@ These change exported API, so they are cheapest to fix now.
 
    **Plan:**
    1. ~~Upgrade to `v3.0.0-rc.4`~~ Done: the SDK now tracks the release candidate rather than an old beta snapshot.
-      - Remaining risk: `op.Result.Request` still exposes resty's `RawRequest` for real (non-dry-run) requests. After the call, its `GetBody` can return bytes from a reused pooled buffer. Either set `Result.Request` only in dry-run mode, as `docs/REQUEST_INSPECTION.md` already says it is, or give it an SDK-owned copy.
+      - `op.Result.Request` is set only in dry-run and deferred mode, and both go through `DryRunTransport`, so it is covered by the body copy. The remaining exposure is anything that returns resty's own response: `core.ExecuteResponseOnly` and `RequestResult.Response`. A caller who reads `resp.Request.RawRequest` after the call can still get bytes from a reused pooled buffer. Step 2 removes that exposure.
    2. Make the public contracts SDK-owned and based on the standard library, so later resty changes stay internal:
       - Middleware: `type Middleware func(next http.RoundTripper) http.RoundTripper`. Wrapping a `RoundTripper` is the standard way to extend Go HTTP clients, it works with any HTTP library, and users already know it. Convert the built-in `Middleware*` functions to it, or keep them unexported.
       - Hooks: `PrepareRequest func(*http.Request) error`, `OnResponse func(*http.Response) error`, `RequestResult.Response *http.Response`.
