@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
 )
@@ -141,6 +142,9 @@ func TenantFromRequest(r *http.Request) string {
 // TenantContext middleware (or by api.WithAuth / api.WithServiceUser), or an
 // empty string when the context carries no tenant-scoped credentials.
 func TenantFromContext(ctx context.Context) string {
+	if caller, ok := CallerFromContext(ctx); ok && caller.Tenant != "" {
+		return caller.Tenant
+	}
 	if auth, ok := authentication.AuthFromContext(ctx); ok {
 		return auth.Tenant
 	}
@@ -169,6 +173,23 @@ type TenantContextOptions struct {
 	// Authorization header are never checked, as browsers do not add that
 	// header automatically.
 	DisableXSRFCheck bool
+
+	// Validation selects whether the caller's credentials are checked with the
+	// platform (GET /user/currentUser, cached). The default validates only
+	// when UseServiceUser is true, because in that mode the caller's
+	// credentials are never sent to the platform. Use ValidateNone to trust
+	// the platform proxy and avoid the extra call.
+	Validation CredentialValidation
+
+	// ValidationTTL is how long a successful validation is cached per
+	// credential. Default DefaultValidationTTL (5 minutes); never longer than
+	// the bearer token's expiry. Failed validations are cached for 10 seconds;
+	// platform outages are not cached.
+	ValidationTTL time.Duration
+
+	// Validator replaces the built-in /user/currentUser check, for example to
+	// use a cache shared between replicas. Results are still cached.
+	Validator Validator
 
 	// OnError is called when the request carries no usable credentials
 	// (ErrMissingCredentials), when the XSRF check fails (ErrInvalidXSRFToken)
@@ -218,6 +239,19 @@ func (m *Microservice) TenantContext(opts ...TenantContextOptions) func(http.Han
 				return
 			}
 
+			var caller *CallerInfo
+			if options.validation() == ValidateCached {
+				ci, err := m.validateCaller(r, auth, fromCookie, options)
+				if err != nil {
+					onError(w, r, err)
+					return
+				}
+				caller = &ci
+				if ci.Tenant != "" {
+					auth.Tenant = ci.Tenant
+				}
+			}
+
 			if options.UseServiceUser {
 				user, found := m.GetServiceUser(auth.Tenant)
 				if !found {
@@ -232,6 +266,9 @@ func (m *Microservice) TenantContext(opts ...TenantContextOptions) func(http.Han
 			}
 
 			ctx := authentication.WithAuth(r.Context(), auth)
+			if caller != nil {
+				ctx = context.WithValue(ctx, callerContextKey{}, *caller)
+			}
 			if fromCookie {
 				if xsrf := XSRFTokenFromRequest(r); xsrf != "" {
 					ctx = context.WithValue(ctx, xsrfContextKey{}, xsrf)
@@ -244,7 +281,12 @@ func (m *Microservice) TenantContext(opts ...TenantContextOptions) func(http.Han
 
 func unauthorizedHandler(w http.ResponseWriter, _ *http.Request, err error) {
 	w.Header().Set("Content-Type", "application/json")
-	if errors.Is(err, ErrInvalidXSRFToken) {
+	if errors.Is(err, ErrValidationUnavailable) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		fmt.Fprintf(w, `{"error":"general/serviceUnavailable","message":%q}`, err.Error())
+		return
+	}
+	if errors.Is(err, ErrInvalidXSRFToken) || errors.Is(err, ErrMissingRole) {
 		w.WriteHeader(http.StatusForbidden)
 		fmt.Fprintf(w, `{"error":"security/Forbidden","message":%q}`, err.Error()) //nolint:misspell
 		return

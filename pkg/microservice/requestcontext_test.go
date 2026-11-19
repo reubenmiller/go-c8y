@@ -102,7 +102,7 @@ func Test_TenantContext_UseServiceUser(t *testing.T) {
 	})
 
 	var gotAuth authentication.AuthOptions
-	handler := ms.TenantContext(TenantContextOptions{UseServiceUser: true})(
+	handler := ms.TenantContext(TenantContextOptions{UseServiceUser: true, Validation: ValidateNone})(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			gotAuth, _ = authentication.AuthFromContext(r.Context())
 			w.WriteHeader(http.StatusOK)
@@ -142,6 +142,7 @@ func Test_TenantContext_UnauthorizedWhenTenantNotSubscribed(t *testing.T) {
 	var gotErr error
 	handler := ms.TenantContext(TenantContextOptions{
 		UseServiceUser: true,
+		Validation:     ValidateNone,
 		OnError: func(w http.ResponseWriter, r *http.Request, err error) {
 			gotErr = err
 			w.WriteHeader(http.StatusForbidden)

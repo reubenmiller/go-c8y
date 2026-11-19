@@ -72,6 +72,18 @@ func main() {
 		})
 	})))
 
+	// Admin-only endpoint running as the tenant's service user. In service-user
+	// mode the caller's credentials are validated (cached) by default, and
+	// RequireRoles checks the caller's roles from that validation.
+	serviceScope := ms.TenantContext(microservice.TenantContextOptions{UseServiceUser: true})
+	mux.Handle("POST /maintenance", serviceScope(ms.RequireRoles("ROLE_INVENTORY_ADMIN")(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			caller, _ := microservice.CallerFromContext(r.Context())
+			slog.Info("Maintenance requested", "tenant", microservice.TenantFromContext(r.Context()), "by", caller.UserName)
+			w.WriteHeader(http.StatusAccepted)
+		}),
+	)))
+
 	// Background job: report the device count of every subscribed tenant.
 	go func() {
 		ticker := time.NewTicker(5 * time.Minute)

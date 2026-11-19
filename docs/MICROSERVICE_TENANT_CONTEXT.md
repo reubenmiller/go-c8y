@@ -144,6 +144,43 @@ cancellation and deadlines propagate), unlike the older `ServiceUserContext`
 which always started from `context.Background()`. `ServiceUserContext` is kept
 and now delegates to it.
 
+### 2a. Validating callers
+
+`AuthFromRequest` only parses the incoming credentials. It does not check
+them. With `UseServiceUser: true` the caller's credentials are never sent to
+the platform, so without a check anyone who can reach the container port could
+act as any subscribed tenant's service user (for example with
+`Authorization: Basic base64("t123/x:y")`).
+
+`TenantContextOptions.Validation` controls the check:
+
+| Mode | Behavior |
+|---|---|
+| `ValidateDefault` | `ValidateCached` when `UseServiceUser` is true, otherwise `ValidateNone` |
+| `ValidateCached` | `GET /user/currentUser` with the caller's credentials, cached |
+| `ValidateNone` | No extra call; trusts the platform proxy |
+
+In user scope (the default) the downstream call already runs with the caller's
+credentials, so the platform rejects bad ones without a separate check.
+
+The cache keeps the platform load low:
+
+- One `/user/currentUser` call per distinct credential per `ValidationTTL`
+  (default 5 minutes), never past the bearer token's `exp`. Concurrent first
+  requests share one call.
+- Keys are SHA-256 hashes of the credential; raw credentials are not stored.
+- Rejected credentials are cached for 10 seconds; platform outages (`5xx`,
+  timeouts) are not cached and answer `503`.
+- The cache holds at most 10,000 entries (LRU).
+- `Validator` replaces the built-in check, for example with a cache shared
+  between replicas.
+
+A validated request carries `CallerInfo` (tenant, user name, effective roles),
+available with `CallerFromContext`. `TenantFromContext` then returns the
+verified tenant. `ms.RequireRoles("ROLE_X", ...)` answers `403` unless the
+caller has all roles; it validates the caller itself when the surrounding
+middleware uses `ValidateNone`.
+
 ### 3. Simplifying pkg/microservice
 
 * **echo removed from the module.** The health/env/logfile endpoints are now

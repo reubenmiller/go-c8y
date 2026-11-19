@@ -22,6 +22,7 @@ require (
 	github.com/vbauerster/mpb/v8 v8.16.2
 	github.com/zalando/go-keyring v0.2.8
 	golang.org/x/net v0.59.0
+	golang.org/x/sync v0.23.0
 	gopkg.in/yaml.v3 v3.0.1
 	resty.dev/v3 v3.0.0-rc.4
 )
