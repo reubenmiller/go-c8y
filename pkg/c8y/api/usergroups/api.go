@@ -10,6 +10,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/usergroups/users"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -26,17 +27,16 @@ var ParamGroupName = "groupName"
 
 const ResultProperty = "groups"
 
-func NewService(s *core.Service) *Service {
+func NewService(s *httpcore.Service) *Service {
 	return &Service{
-		Service: *s,
-		Users:   users.NewService(s),
+		svc:   *s,
+		Users: users.NewService(s),
 	}
 }
 
 // Service provides api to manage user groups and their member users.
 type Service struct {
-	core.Service
-
+	svc httpcore.Service
 	// Users manages the users that belong to a group (group membership).
 	Users *users.Service
 }
@@ -54,7 +54,7 @@ type UserGroupIterator = pagination.Iterator[jsonmodels.UserGroup]
 
 // Retrieve all groups in the tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.UserGroup] {
-	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewUserGroup)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewUserGroup)
 }
 
 // ListAll returns an iterator for all user groups
@@ -71,14 +71,14 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *UserGroupItera
 	)
 }
 
-func (s *Service) listB(opt ListOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiGroups)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // GroupRef is a typed reference to a user group. Construct it using ByID or
@@ -134,17 +134,17 @@ func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.
 		return op.Failed[jsonmodels.UserGroup](err, false)
 	}
 	opt.ID = GroupRef(id)
-	return core.Execute(ctx, s.getB(opt), jsonmodels.NewUserGroup)
+	return httpcore.Execute(ctx, s.getB(opt), jsonmodels.NewUserGroup)
 }
 
-func (s *Service) getB(target GetOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getB(target GetOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, target.Tenant).
 		SetPathParam(ParamID, string(target.ID)).
 		SetURL(ApiGroup)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 type GetByNameOptions struct {
@@ -154,32 +154,32 @@ type GetByNameOptions struct {
 
 // Get a group by name
 func (s *Service) GetByName(ctx context.Context, opt GetByNameOptions) op.Result[jsonmodels.UserGroup] {
-	return core.Execute(ctx, s.getByNameB(opt), jsonmodels.NewUserGroup)
+	return httpcore.Execute(ctx, s.getByNameB(opt), jsonmodels.NewUserGroup)
 }
 
-func (s *Service) getByNameB(opt GetByNameOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getByNameB(opt GetByNameOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
 		SetPathParam(ParamGroupName, opt.GroupName).
 		SetURL(ApiGroupByName)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Create a user group
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.UserGroup] {
-	return core.Execute(ctx, s.createB(body), jsonmodels.NewUserGroup)
+	return httpcore.Execute(ctx, s.createB(body), jsonmodels.NewUserGroup)
 }
 
-func (s *Service) createB(body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) createB(body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiGroups)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 type UpdateOptions struct {
@@ -197,20 +197,20 @@ func (s *Service) Update(ctx context.Context, opt UpdateOptions, body any) op.Re
 		return op.Failed[jsonmodels.UserGroup](err, false)
 	}
 	opt.ID = GroupRef(id)
-	return core.Execute(ctx, s.updateB(opt, body), jsonmodels.NewUserGroup)
+	return httpcore.Execute(ctx, s.updateB(opt, body), jsonmodels.NewUserGroup)
 }
 
-func (s *Service) updateB(opt UpdateOptions, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) updateB(opt UpdateOptions, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
 		SetPathParam(ParamID, string(opt.ID)).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetBody(body).
 		SetURL(ApiGroup)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 type DeleteOptions struct {
@@ -228,17 +228,17 @@ func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.
 		return op.Failed[core.NoContent](err, false)
 	}
 	opt.ID = GroupRef(id)
-	return core.ExecuteNoContent(ctx, s.deleteB(opt)).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.deleteB(opt)).IgnoreNotFound()
 }
 
-func (s *Service) deleteB(opt DeleteOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) deleteB(opt DeleteOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
 		SetPathParam(ParamID, string(opt.ID)).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiGroup)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // ListByUserOptions to filter the user groups which contain a given user
@@ -253,16 +253,16 @@ type ListByUserOptions struct {
 
 // List groups that contain a given user in the tenant
 func (s *Service) ListByUser(ctx context.Context, opt ListByUserOptions) op.Result[jsonmodels.UserGroup] {
-	return core.ExecuteCollection(ctx, s.listByUserB(opt), "references.#.group", types.ResponseFieldStatistics, jsonmodels.NewUserGroup)
+	return httpcore.ExecuteCollection(ctx, s.listByUserB(opt), "references.#.group", types.ResponseFieldStatistics, jsonmodels.NewUserGroup)
 }
 
-func (s *Service) listByUserB(opt ListByUserOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listByUserB(opt ListByUserOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
 		SetPathParam(ParamID, opt.UserID).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiGroupsWithUser)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }

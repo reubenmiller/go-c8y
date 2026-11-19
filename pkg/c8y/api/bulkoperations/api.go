@@ -17,6 +17,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -36,16 +37,16 @@ var ParamID = "id"
 const ResultProperty = "bulkOperations"
 
 // NewService creates a new BulkOperations service backed by the provided
-// core.Service (HTTP client + tenant configuration).
-func NewService(s *core.Service) *Service {
+// httpcore.Service (HTTP client + tenant configuration).
+func NewService(s *httpcore.Service) *Service {
 	return &Service{
-		Service: *s,
+		svc: *s,
 	}
 }
 
 // Service provides access to the Cumulocity Bulk Operations API.
 type Service struct {
-	core.Service
+	svc httpcore.Service
 }
 
 // ListOptions controls filtering and pagination of a bulk-operation list request.
@@ -72,7 +73,7 @@ type BulkOperationIterator = pagination.Iterator[jsonmodels.BulkOperation]
 
 // List returns a single page of bulk operations.
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.BulkOperation] {
-	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewBulkOperation)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewBulkOperation)
 }
 
 // ListAll returns a lazy iterator that transparently pages through all
@@ -90,27 +91,27 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *BulkOperationI
 	)
 }
 
-func (s *Service) listB(opt any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listB(opt any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiBulkOperations)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // Get retrieves a single bulk operation by its ID.
 func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.BulkOperation] {
-	return core.Execute(ctx, s.getB(ID), jsonmodels.NewBulkOperation)
+	return httpcore.Execute(ctx, s.getB(ID), jsonmodels.NewBulkOperation)
 }
 
-func (s *Service) getB(ID string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getB(ID string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, ID).
 		SetURL(ApiBulkOperation)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Create submits a new bulk operation. The body must contain at minimum
@@ -118,48 +119,48 @@ func (s *Service) getB(ID string) *core.TryRequest {
 //
 // Any serialisable value (struct, map[string]any, etc.) is accepted.
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.BulkOperation] {
-	return core.Execute(ctx, s.createB(body), jsonmodels.NewBulkOperation)
+	return httpcore.Execute(ctx, s.createB(body), jsonmodels.NewBulkOperation)
 }
 
-func (s *Service) createB(body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) createB(body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiBulkOperations)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Update modifies an existing bulk operation. Updatable fields include
 // status, startDate, creationRamp and operationPrototype.
 func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.BulkOperation] {
-	return core.Execute(ctx, s.updateB(ID, body), jsonmodels.NewBulkOperation)
+	return httpcore.Execute(ctx, s.updateB(ID, body), jsonmodels.NewBulkOperation)
 }
 
-func (s *Service) updateB(ID string, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) updateB(ID string, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, ID).
 		SetBody(body).
 		SetURL(ApiBulkOperation)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Delete removes a bulk operation by its ID. A 204 No Content response
 // indicates success.
 func (s *Service) Delete(ctx context.Context, ID string) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteB(ID)).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.deleteB(ID)).IgnoreNotFound()
 }
 
-func (s *Service) deleteB(ID string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) deleteB(ID string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamID, ID).
 		SetURL(ApiBulkOperation)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // --- Operations belonging to a bulk operation -------------------------------
@@ -209,7 +210,7 @@ type ListOperationsOptions struct {
 // ListOperations returns a single page of operations belonging to a bulk
 // operation. Set BulkOperationID on opt to scope the results.
 func (s *Service) ListOperations(ctx context.Context, opt ListOperationsOptions) op.Result[jsonmodels.Operation] {
-	return core.ExecuteCollection(ctx, s.listOperationsB(opt), OperationsResultProperty, types.ResponseFieldStatistics, jsonmodels.NewOperation)
+	return httpcore.ExecuteCollection(ctx, s.listOperationsB(opt), OperationsResultProperty, types.ResponseFieldStatistics, jsonmodels.NewOperation)
 }
 
 // ListAllOperations returns a lazy iterator that transparently pages through
@@ -227,11 +228,11 @@ func (s *Service) ListAllOperations(ctx context.Context, opts ListOperationsOpti
 	)
 }
 
-func (s *Service) listOperationsB(opt any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listOperationsB(opt any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiOperations)
-	return core.NewTryRequest(s.Client, req, OperationsResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, OperationsResultProperty)
 }

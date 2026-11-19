@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -22,10 +22,10 @@ const ParamChild = "child"
 const ResultProperty = "usageStatistics"
 
 // Service
-type Service struct{ core.Service }
+type Service struct{ svc httpcore.Service }
 
-func NewService(common *core.Service) *Service {
-	return &Service{Service: *common}
+func NewService(common *httpcore.Service) *Service {
+	return &Service{svc: *common}
 }
 
 // ListOptions
@@ -43,7 +43,7 @@ type TenantUsageStatisticsIterator = pagination.Iterator[jsonmodels.TenantUsageS
 
 // List tenant statistics
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.TenantUsageStatistics] {
-	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTenantUsageStatistics)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTenantUsageStatistics)
 }
 
 // ListAll returns an iterator for all tenant usage statistics
@@ -60,12 +60,12 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *TenantUsageSta
 	)
 }
 
-func (s *Service) listB(opt ListOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiTenantStatistics)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // ListSummaryOptions
@@ -79,15 +79,15 @@ type ListSummaryOptions struct {
 
 // List tenant statistics
 func (s *Service) ListSummary(ctx context.Context, opt ListSummaryOptions) op.Result[jsonmodels.TenantUsageStatistics] {
-	return core.Execute(ctx, s.listSummaryB(opt), jsonmodels.NewTenantUsageStatistics)
+	return httpcore.Execute(ctx, s.listSummaryB(opt), jsonmodels.NewTenantUsageStatistics)
 }
 
-func (s *Service) listSummaryB(opt ListSummaryOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listSummaryB(opt ListSummaryOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiTenantStatisticsSummary)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // ListSummaryAllTenantsOptions
@@ -99,13 +99,13 @@ type ListSummaryAllTenantsOptions struct {
 
 // // List usage statistics of all tenants
 func (s *Service) ListSummaryAllTenants(ctx context.Context, opt ListSummaryAllTenantsOptions) op.Result[jsonmodels.TenantUsageStatisticsSummary] {
-	return core.ExecuteCollection(ctx, s.listSummaryAllTenantsB(opt), "", "", jsonmodels.NewTenantUsageStatisticsSummary)
+	return httpcore.ExecuteCollection(ctx, s.listSummaryAllTenantsB(opt), "", "", jsonmodels.NewTenantUsageStatisticsSummary)
 }
 
-func (s *Service) listSummaryAllTenantsB(opt ListSummaryAllTenantsOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listSummaryAllTenantsB(opt ListSummaryAllTenantsOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiTenantStatisticsAllTenantsSummary)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }

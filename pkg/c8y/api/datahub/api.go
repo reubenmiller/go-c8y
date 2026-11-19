@@ -6,9 +6,9 @@ package datahub
 import (
 	"context"
 
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/datahub/jobs"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/tidwall/gjson"
@@ -25,28 +25,27 @@ const ResultProperty = "rows"
 
 // Service interacts with DataHub.
 type Service struct {
-	core.Service
-
+	svc httpcore.Service
 	// Jobs manages Dremio query jobs.
 	Jobs *jobs.Service
 }
 
 // NewService creates a DataHub service.
-func NewService(s *core.Service) *Service {
+func NewService(s *httpcore.Service) *Service {
 	return &Service{
-		Service: *s,
-		Jobs:    jobs.NewService(s),
+		svc:  *s,
+		Jobs: jobs.NewService(s),
 	}
 }
 
 // Query runs a SQL query against the high-performance API and returns the result
 // rows. version selects the API version (e.g. "v1"); body carries sql/limit/format.
 func (s *Service) Query(ctx context.Context, version string, body any) op.Result[jsonmodels.DataHubResult] {
-	return core.ExecuteCollection(ctx, s.queryB(version, body), ResultProperty, "", jsonmodels.NewDataHubResult)
+	return httpcore.ExecuteCollection(ctx, s.queryB(version, body), ResultProperty, "", jsonmodels.NewDataHubResult)
 }
 
-func (s *Service) queryB(version string, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) queryB(version string, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
@@ -55,7 +54,7 @@ func (s *Service) queryB(version string, body any) *core.TryRequest {
 	if version != "" {
 		req.SetQueryParam("version", version)
 	}
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // ListOffloadingConfigurationsOptions filters the offloading-configuration
@@ -74,12 +73,12 @@ type ListOffloadingConfigurationsOptions struct {
 // ListOffloadingConfigurations returns the DataHub offloading configurations
 // (the "data.offloadingConfigurations" array of the management API response).
 func (s *Service) ListOffloadingConfigurations(ctx context.Context, opt ListOffloadingConfigurationsOptions) op.Result[jsonmodels.DataHubOffloadingConfiguration] {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiOffloadingConfigurations)
-	return core.ExecuteCollection(ctx, core.NewTryRequest(s.Client, req, "data.offloadingConfigurations"), "data.offloadingConfigurations", "", jsonmodels.NewDataHubOffloadingConfiguration)
+	return httpcore.ExecuteCollection(ctx, httpcore.NewTryRequest(s.svc.Client, req, "data.offloadingConfigurations"), "data.offloadingConfigurations", "", jsonmodels.NewDataHubOffloadingConfiguration)
 }
 
 // ListLatestJobsOptions filters the scheduler's latest-jobs report.
@@ -101,12 +100,12 @@ type ListLatestJobsOptions struct {
 // is a single report document (not a paginated collection) and is returned
 // as-is.
 func (s *Service) ListLatestJobs(ctx context.Context, opt ListLatestJobsOptions) op.Result[jsonmodels.DataHubSchedulerJobs] {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiSchedulerLatestJobs)
-	return core.Execute(ctx, core.NewTryRequest(s.Client, req), jsonmodels.NewDataHubSchedulerJobs)
+	return httpcore.Execute(ctx, httpcore.NewTryRequest(s.svc.Client, req), jsonmodels.NewDataHubSchedulerJobs)
 }
 
 // GetTenant returns the DataHub tenant configuration — the "data" object of
@@ -114,11 +113,11 @@ func (s *Service) ListLatestJobs(ctx context.Context, opt ListLatestJobsOptions)
 // collectionProperty unwrapping. The raw envelope stays available on
 // Result.Response.
 func (s *Service) GetTenant(ctx context.Context) op.Result[jsonmodels.DataHubTenant] {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiTenant)
-	return core.Execute(ctx, core.NewTryRequest(s.Client, req), func(b []byte) jsonmodels.DataHubTenant {
+	return httpcore.Execute(ctx, httpcore.NewTryRequest(s.svc.Client, req), func(b []byte) jsonmodels.DataHubTenant {
 		if v := gjson.GetBytes(b, "data"); v.Exists() {
 			return jsonmodels.NewDataHubTenant([]byte(v.Raw))
 		}
@@ -129,9 +128,9 @@ func (s *Service) GetTenant(ctx context.Context) op.Result[jsonmodels.DataHubTen
 // ListUsers returns the DataHub (Dremio) users (the "data.users" array of the
 // management API response).
 func (s *Service) ListUsers(ctx context.Context) op.Result[jsonmodels.DataHubUser] {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiDremioUsers)
-	return core.ExecuteCollection(ctx, core.NewTryRequest(s.Client, req, "data.users"), "data.users", "", jsonmodels.NewDataHubUser)
+	return httpcore.ExecuteCollection(ctx, httpcore.NewTryRequest(s.svc.Client, req, "data.users"), "data.users", "", jsonmodels.NewDataHubUser)
 }

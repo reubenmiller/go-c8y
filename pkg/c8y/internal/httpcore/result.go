@@ -1,4 +1,4 @@
-package core
+package httpcore
 
 import (
 	"encoding/json"

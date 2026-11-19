@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -93,7 +93,7 @@ func newTestServer(existing map[string]any) *testServer {
 }
 
 func (ts *testServer) service() *Service {
-	return NewService(&core.Service{
+	return NewService(&httpcore.Service{
 		Client: resty.New().SetBaseURL(ts.server.URL),
 	})
 }

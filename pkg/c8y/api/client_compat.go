@@ -1,15 +1,18 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"strings"
 
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/tidwall/gjson"
 	"resty.dev/v3"
 )
@@ -63,26 +66,35 @@ type RequestOptions struct {
 	// map[fieldName]io.Reader
 	FormData map[string]io.Reader
 
-	// PrepareRequest allows modifying the resty request before sending
-	// This gives access to the full resty API for advanced customization
-	PrepareRequest func(*resty.Request)
+	// PrepareRequest is called with the final *http.Request just before it is
+	// sent, so it can change headers, the URL or the body. It runs once per
+	// attempt (again on retries) and also for dry-run requests. Returning an
+	// error aborts the request.
+	PrepareRequest func(*http.Request) error
 
-	OnResponse func(response *resty.Response) error
+	// OnResponse is called with the response before SendRequest returns. With
+	// DoNotParseResponse, Body is the unread stream and the hook may replace
+	// it (for example to track progress). Otherwise Body is a copy of the
+	// cached body, so reading it does not affect RequestResult.Body. An error
+	// is returned as RequestResult.Error.
+	OnResponse func(response *http.Response) error
 
 	DoNotParseResponse bool
 }
 
-// RequestResult wraps resty.Response with convenience methods
-// for working with Cumulocity IoT API responses.
+// RequestResult is the result of SendRequest. Response and its Request are
+// SDK-owned copies: they stay valid after the client sends more requests.
 type RequestResult struct {
-	Response   *resty.Response
+	// Response is the HTTP response. Its Request field is a copy of the request
+	// that was sent, including its body.
+	Response   *http.Response
 	Error      error
 	cachedBody []byte
 }
 
 // IsError returns true if the request failed
 func (r *RequestResult) IsError() bool {
-	return r.Error != nil || (r.Response != nil && r.Response.IsStatusFailure())
+	return r.Error != nil || (r.Response != nil && r.Response.StatusCode > 399)
 }
 
 // StatusCode returns the HTTP status code
@@ -90,7 +102,7 @@ func (r *RequestResult) StatusCode() int {
 	if r.Response == nil {
 		return 0
 	}
-	return r.Response.StatusCode()
+	return r.Response.StatusCode
 }
 
 // Body returns the response body as bytes.
@@ -131,7 +143,7 @@ func (r *RequestResult) Header(key string) string {
 	if r.Response == nil {
 		return ""
 	}
-	return r.Response.Header().Get(key)
+	return r.Response.Header.Get(key)
 }
 
 // SendRequest creates and sends a custom HTTP request.
@@ -178,7 +190,12 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) *Reque
 	if options.DryRun != nil {
 		ctxRequest = WithDryRun(ctxRequest, *options.DryRun)
 	}
-	req := c.HTTPClient.R().
+	if options.PrepareRequest != nil {
+		ctxRequest = ctxhelpers.WithRequestHook(ctxRequest, options.PrepareRequest)
+	}
+	capture := &ctxhelpers.RequestCapture{}
+	ctxRequest = ctxhelpers.WithRequestCapture(ctxRequest, capture)
+	req := c.httpClient.R().
 		SetContext(ctxRequest).
 		SetMethod(options.Method)
 
@@ -215,7 +232,7 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) *Reque
 			req.SetQueryParamsFromValues(q)
 		default:
 			// Assume struct with url tags
-			req.SetQueryParamsFromValues(core.QueryParameters(q))
+			req.SetQueryParamsFromValues(httpcore.QueryParameters(q))
 		}
 	}
 
@@ -277,11 +294,6 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) *Reque
 		req.SetResponseDoNotParse(true)
 	}
 
-	// Prepare request hook
-	if options.PrepareRequest != nil {
-		options.PrepareRequest(req)
-	}
-
 	// Send request (use full URL if host override was set)
 	var resp *resty.Response
 	var err error
@@ -292,32 +304,42 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) *Reque
 		resp, err = req.Send()
 	}
 
-	result := &RequestResult{
-		Response: resp,
-		Error:    err,
-	}
-
-	// Call OnResponse callback IMMEDIATELY after receiving response, before any other processing
-	// This must happen before we check DoNotParseResponse or errors
-	// to allow the user to wrap the raw response body
-	if options.OnResponse != nil && resp != nil && err == nil {
-		if onResponseErr := options.OnResponse(result.Response); onResponseErr != nil {
-			result.Error = onResponseErr
-			return result
-		}
-	}
-
-	if err != nil || options.DoNotParseResponse {
+	result := &RequestResult{Error: err}
+	if resp == nil || resp.RawResponse == nil {
 		return result
 	}
 
-	// Cache the body immediately so it can be read multiple times
-	if resp != nil && resp.Body != nil {
+	httpResp := *resp.RawResponse
+	httpResp.Request = capture.Request()
+	result.Response = &httpResp
+
+	if err != nil || options.DoNotParseResponse {
+		// The caller reads the unread stream from Response.Body.
+		httpResp.Body = resp.Body
+		if options.OnResponse != nil && err == nil {
+			if onResponseErr := options.OnResponse(&httpResp); onResponseErr != nil {
+				result.Error = onResponseErr
+			}
+		}
+		return result
+	}
+
+	// Cache the body so it can be read multiple times.
+	if resp.Body != nil {
 		body, readErr := io.ReadAll(resp.Body)
 		if readErr == nil {
 			result.cachedBody = body
 		}
 		resp.Body.Close()
+	}
+	httpResp.Body = io.NopCloser(bytes.NewReader(result.cachedBody))
+
+	if options.OnResponse != nil {
+		hookResp := httpResp
+		hookResp.Body = io.NopCloser(bytes.NewReader(result.cachedBody))
+		if onResponseErr := options.OnResponse(&hookResp); onResponseErr != nil {
+			result.Error = onResponseErr
+		}
 	}
 
 	return result

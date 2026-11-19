@@ -6,6 +6,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -22,15 +23,15 @@ var ParamRoleId = "roleId"
 // { references: [{ self: ..., role: {...} }] }
 const ResultProperty = "references"
 
-func NewService(s *core.Service) *Service {
+func NewService(s *httpcore.Service) *Service {
 	return &Service{
-		Service: *s,
+		svc: *s,
 	}
 }
 
 // Service provides api to manage the roles assigned to a user.
 type Service struct {
-	core.Service
+	svc httpcore.Service
 }
 
 // ListOptions to list the role references assigned to a specific user.
@@ -48,7 +49,7 @@ type RoleReferenceIterator = pagination.Iterator[jsonmodels.RoleReference]
 // List retrieves the role references assigned to a specific user (by a given user ID)
 // in a specific tenant (by a given tenant ID).
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.RoleReference] {
-	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewRoleReference)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewRoleReference)
 }
 
 // ListAll returns an iterator over all role references assigned to a user, automatically paginating.
@@ -65,15 +66,15 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *RoleReferenceI
 	)
 }
 
-func (s *Service) listB(opt ListOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamUserId, opt.UserID).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiUserRoles)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 type AssignRoleOptions struct {
@@ -85,11 +86,11 @@ type AssignRoleOptions struct {
 // ({ "role": { "self": "<role self link>" } }); the created reference is returned.
 // An already-assigned role (409 Conflict) is reported as a duplicate, not an error.
 func (s *Service) AssignRole(ctx context.Context, opt AssignRoleOptions, body any) op.Result[jsonmodels.RoleReference] {
-	return core.Execute(ctx, s.assignRoleB(opt, body), jsonmodels.NewRoleReference).IgnoreConflict()
+	return httpcore.Execute(ctx, s.assignRoleB(opt, body), jsonmodels.NewRoleReference).IgnoreConflict()
 }
 
-func (s *Service) assignRoleB(opt AssignRoleOptions, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) assignRoleB(opt AssignRoleOptions, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
@@ -97,7 +98,7 @@ func (s *Service) assignRoleB(opt AssignRoleOptions, body any) *core.TryRequest 
 		SetPathParam(ParamUserId, opt.UserID).
 		SetBody(body).
 		SetURL(ApiUserRoles)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 type UnassignRoleOptions struct {
@@ -109,15 +110,15 @@ type UnassignRoleOptions struct {
 // UnassignRole removes a role from a user. A missing role reference (404) is
 // reported as skipped, not an error.
 func (s *Service) UnassignRole(ctx context.Context, opt UnassignRoleOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.unassignRoleB(opt)).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.unassignRoleB(opt)).IgnoreNotFound()
 }
 
-func (s *Service) unassignRoleB(opt UnassignRoleOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) unassignRoleB(opt UnassignRoleOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetPathParam(ParamUserId, opt.UserID).
 		SetPathParam(ParamRoleId, opt.RoleID).
 		SetURL(ApiUserRole)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }

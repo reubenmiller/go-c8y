@@ -13,6 +13,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/realtime"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -25,9 +26,9 @@ var ParamID = "id"
 
 const ResultProperty = "events"
 
-func NewService(s *core.Service, moService *managedobjects.Service) *Service {
+func NewService(s *httpcore.Service, moService *managedobjects.Service) *Service {
 	return &Service{
-		Service:        *s,
+		svc:            *s,
 		Binaries:       eventbinaries.NewService(s),
 		DeviceResolver: managedobjects.NewDeviceResolver(moService),
 	}
@@ -35,7 +36,7 @@ func NewService(s *core.Service, moService *managedobjects.Service) *Service {
 
 // Service provides api to get/set/delete events in Cumulocity
 type Service struct {
-	core.Service
+	svc            httpcore.Service
 	Binaries       *eventbinaries.Service
 	DeviceResolver *managedobjects.DeviceResolver
 }
@@ -63,7 +64,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 		opt.Source = managedobjects.DeviceRef(resolvedID)
 	}
 
-	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewEvent)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewEvent)
 }
 
 // ListAll returns an iterator for all events. By default it uses the time-window
@@ -100,27 +101,27 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *EventIterator 
 	)
 }
 
-func (s *Service) listB(opt any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listB(opt any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiEvents)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // Get an event
 func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Event] {
-	return core.Execute(ctx, s.getB(ID), jsonmodels.NewEvent)
+	return httpcore.Execute(ctx, s.getB(ID), jsonmodels.NewEvent)
 }
 
-func (s *Service) getB(ID string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getB(ID string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, ID).
 		SetURL(ApiEvent)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // CreateOptions for creating an event with resolver support
@@ -163,7 +164,7 @@ func (s *Service) Create(ctx context.Context, opts CreateOptions) op.Result[json
 //
 //	result := client.Events.CreateRaw(ctx, map[string]any{...})
 func (s *Service) CreateRaw(ctx context.Context, body any) op.Result[jsonmodels.Event] {
-	return core.Execute(ctx, s.createB(body), jsonmodels.NewEvent)
+	return httpcore.Execute(ctx, s.createB(body), jsonmodels.NewEvent)
 }
 
 // createWithOptions handles the CreateOptions case with resolver support and property merging
@@ -215,7 +216,7 @@ func (s *Service) createWithOptions(ctx context.Context, opts CreateOptions) op.
 	}
 
 	// Create the event with the merged JSON and add metadata
-	result := core.Execute(ctx, s.createBWithJSON(finalJSON), jsonmodels.NewEvent)
+	result := httpcore.Execute(ctx, s.createBWithJSON(finalJSON), jsonmodels.NewEvent)
 
 	// Add resolver metadata to result
 	if result.Meta == nil {
@@ -228,53 +229,53 @@ func (s *Service) createWithOptions(ctx context.Context, opts CreateOptions) op.
 	return result
 }
 
-func (s *Service) createB(body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) createB(body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiEvents)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
-func (s *Service) createBWithJSON(bodyJSON []byte) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) createBWithJSON(bodyJSON []byte) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetBody(bodyJSON).
 		SetURL(ApiEvents)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Update an event
 func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.Event] {
-	return core.Execute(ctx, s.updateB(ID, body), jsonmodels.NewEvent)
+	return httpcore.Execute(ctx, s.updateB(ID, body), jsonmodels.NewEvent)
 }
 
-func (s *Service) updateB(ID string, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) updateB(ID string, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamID, ID).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiEvent)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Delete removes an event by its ID
 func (s *Service) Delete(ctx context.Context, ID string) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteB(ID)).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.deleteB(ID)).IgnoreNotFound()
 }
 
-func (s *Service) deleteB(ID string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) deleteB(ID string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamID, ID).
 		SetURL(ApiEvent)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // DeleteListOptions option when deleting a collection of events
@@ -323,15 +324,15 @@ func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Resu
 		opt.Source = managedobjects.DeviceRef(resolvedID)
 	}
 
-	return core.ExecuteNoContent(ctx, s.deleteListB(opt))
+	return httpcore.ExecuteNoContent(ctx, s.deleteListB(opt))
 }
 
-func (s *Service) deleteListB(opt DeleteListOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) deleteListB(opt DeleteListOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiEvents)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // EventStream provides an iterator for realtime event subscriptions
@@ -374,14 +375,14 @@ type EventStream = realtime.Stream[realtime.StreamData[jsonmodels.Event]]
 //	    return err
 //	}
 func (s *Service) SubscribeStream(ctx context.Context, ID string) op.Result[*EventStream] {
-	err := s.RealtimeClient.Connect()
+	err := s.svc.RealtimeClient.Connect()
 	if err != nil {
 		return op.Failed[*EventStream](err, false)
 	}
 
 	messages := make(chan *realtime.Message, 10)
 	pattern := realtime.Events(ID)
-	errorChan := s.RealtimeClient.Subscribe(ctx, pattern, messages)
+	errorChan := s.svc.RealtimeClient.Subscribe(ctx, pattern, messages)
 	stream := realtime.NewStream(ctx, messages, errorChan, func(msg *realtime.Message) realtime.StreamData[jsonmodels.Event] {
 		return realtime.StreamData[jsonmodels.Event]{
 			Action:  msg.Payload.RealtimeAction,
@@ -390,7 +391,7 @@ func (s *Service) SubscribeStream(ctx context.Context, ID string) op.Result[*Eve
 		}
 	}, func() {
 		// Cleanup: unsubscribe from the realtime channel
-		s.RealtimeClient.Unsubscribe(pattern)
+		s.svc.RealtimeClient.Unsubscribe(pattern)
 	})
 
 	return op.OK(stream)

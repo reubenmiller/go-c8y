@@ -8,15 +8,15 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"resty.dev/v3"
 )
 
 func newTestService() *Service {
-	return NewService(&core.Service{
+	return NewService(&httpcore.Service{
 		Client: resty.New().SetBaseURL("https://example.cumulocity.com"),
 	})
 }
@@ -24,7 +24,7 @@ func newTestService() *Service {
 // testServerService spins up an httptest server and returns a Service pointed at it.
 func testServerService(handler http.HandlerFunc) (*Service, func()) {
 	ts := httptest.NewServer(handler)
-	return NewService(&core.Service{Client: resty.New().SetBaseURL(ts.URL)}), ts.Close
+	return NewService(&httpcore.Service{Client: resty.New().SetBaseURL(ts.URL)}), ts.Close
 }
 
 func TestListB(t *testing.T) {

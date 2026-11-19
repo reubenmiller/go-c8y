@@ -75,6 +75,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/users/currentuser/totp"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/users/devicepermissions"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/certutil"
 	"github.com/zalando/go-keyring"
 	"resty.dev/v3"
@@ -101,14 +102,15 @@ type DefaultRequestOptions struct {
 	// DryRunHandler func(options *RequestOptions, req *http.Request)
 }
 
-type Service struct {
-	Client *resty.Client
-}
-
 // A Client manages communication with the Cumulocity API.
 type Client struct {
 	clientMu   sync.Mutex    // clientMu protects the client during calls that modify the CheckRedirect func.
-	HTTPClient *resty.Client // HTTP client used to communicate with the API.
+	httpClient *resty.Client // HTTP client used to communicate with the API. See Resty().
+
+	// Transport chain: dryRunTransport -> middleware -> baseTransport.
+	dryRunTransport *DryRunTransport
+	baseTransport   http.RoundTripper
+	middleware      []Middleware
 
 	RealtimeClient *realtime.Client
 
@@ -151,7 +153,7 @@ type Client struct {
 
 	UseTenantInUsername bool
 
-	common core.Service // Reuse a single struct instead of allocating one for each service on the heap.
+	common httpcore.Service // Reuse a single struct instead of allocating one for each service on the heap.
 
 	// Services used for talking to different parts of the Cumulocity API.
 	// Context              *ContextService
@@ -256,6 +258,11 @@ type ClientOptions struct {
 	SkipTenantLookup bool
 
 	Transport http.RoundTripper
+
+	// Middleware wraps the transport for every request the client sends; the
+	// first entry sees the request first. See Middleware. More can be added
+	// later with Client.Use.
+	Middleware []Middleware
 
 	// Timeout sets a global HTTP-level timeout for all requests made by this client.
 	// A value of zero means no timeout. Per-request timeouts can still be applied
@@ -522,10 +529,13 @@ func NewClient(opts ClientOptions) *Client {
 	targetBaseURL, _ := url.Parse(FormatBaseURL(opts.BaseURL))
 	rclient := newRestyClient(opts, targetBaseURL)
 
-	// Wrap the base transport with DryRunTransport to support context-based dry run
-	rclient.SetTransport(&DryRunTransport{
-		Transport: newBaseTransport(opts),
-	})
+	// Transport chain: DryRunTransport (answers dry-run and mock requests) ->
+	// user middleware -> base transport.
+	baseTransport := newBaseTransport(opts)
+	dryRunTransport := &DryRunTransport{
+		Transport: chainMiddleware(baseTransport, opts.Middleware),
+	}
+	rclient.SetTransport(dryRunTransport)
 
 	if opts.UseKeyRing {
 		loadKeyringToken(&opts.Auth, targetBaseURL)
@@ -535,14 +545,16 @@ func NewClient(opts ClientOptions) *Client {
 	if opts.Agent != "" {
 		userAgent = opts.Agent
 	}
-	rclient.AddRequestMiddleware(MiddlewareAddUserAgent(userAgent, "go-client"))
-	rclient.AddRequestMiddleware(MiddlewareAddHost("domain"))
-	rclient.AddRequestMiddleware(MiddlewareRemoveEmptyTenantID())
+	rclient.AddRequestMiddleware(middlewareAddUserAgent(userAgent, "go-client"))
+	rclient.AddRequestMiddleware(middlewareAddHost("domain"))
+	rclient.AddRequestMiddleware(middlewareRemoveEmptyTenantID())
 	rclient.SetPathParam(core.PathParamTenantID, opts.Auth.Tenant)
-	// rclient.AddRequestMiddleware(MiddlewareAuthorization(opts.Auth))
 
 	c := &Client{
-		HTTPClient:          rclient,
+		httpClient:          rclient,
+		dryRunTransport:     dryRunTransport,
+		baseTransport:       baseTransport,
+		middleware:          append([]Middleware(nil), opts.Middleware...),
 		BaseURL:             targetBaseURL,
 		UserAgent:           userAgent,
 		UseTenantInUsername: true,
@@ -565,7 +577,7 @@ func NewClient(opts ClientOptions) *Client {
 	})
 	c.initServices()
 
-	c.AddMiddleware()
+	c.registerMiddleware()
 
 	c.initTokenSource(opts.Auth)
 	c.bootstrapAuth(opts.Auth)
@@ -594,31 +606,31 @@ func (c *Client) ResolveTenant(ctx context.Context) error {
 	}
 	if id := result.Data.Name(); id != "" {
 		c.Auth.Tenant = id
-		c.HTTPClient.SetPathParam(core.PathParamTenantID, id)
+		c.httpClient.SetPathParam(core.PathParamTenantID, id)
 	}
 	return nil
 }
 
 // SetBaseURL changes the base url used by the REST client
-func (c *Client) AddMiddleware() error {
-	// TokenSourceMiddleware injects per-request auth from the active token source.
+func (c *Client) registerMiddleware() error {
+	// tokenSourceMiddleware injects per-request auth from the active token source.
 	// It runs before the global resty auth and overrides it, so callers always get
 	// a fresh (non-expired) token without touching global client state.
-	c.HTTPClient.AddRequestMiddleware(TokenSourceMiddleware(func() authentication.TokenSource {
+	c.httpClient.AddRequestMiddleware(tokenSourceMiddleware(func() authentication.TokenSource {
 		return c.tokenSource
 	}))
-	c.HTTPClient.AddRetryConditions(TokenRenewalRetry(c))
+	c.httpClient.AddRetryConditions(tokenRenewalRetry(c))
 
 	// Apply per-request credentials carried in the context (see WithAuth /
 	// WithServiceUser). Registered after the token source middleware so that
 	// context credentials always take priority over client-level credentials.
-	c.HTTPClient.AddRequestMiddleware(MiddlewareContextAuthorization(c))
+	c.httpClient.AddRequestMiddleware(middlewareContextAuthorization(c))
 
 	// Register a pre-prepare request middleware to capture multipart field content
 	// for debug logging. It must run before PrepareRequestMiddleware (which starts
 	// the streaming goroutine), so AddRequestMiddleware is used — it inserts before
 	// the last slot, which is always PrepareRequestMiddleware.
-	c.HTTPClient.AddRequestMiddleware(func(rc *resty.Client, req *resty.Request) error {
+	c.httpClient.AddRequestMiddleware(func(rc *resty.Client, req *resty.Request) error {
 		if !c.debugEnabled {
 			return nil
 		}
@@ -628,7 +640,7 @@ func (c *Client) AddMiddleware() error {
 
 	// Register a single debug middleware that reads the runtime debugEnabled flag.
 	// This avoids the problem of middleware accumulating each time SetDebug is called.
-	c.HTTPClient.AddResponseMiddleware(func(rc *resty.Client, resp *resty.Response) error {
+	c.httpClient.AddResponseMiddleware(func(rc *resty.Client, resp *resty.Response) error {
 		if !c.debugEnabled {
 			return nil
 		}
@@ -656,7 +668,7 @@ func (c *Client) SetAuth(opt authentication.AuthOptions) {
 }
 
 func (c *Client) updateClientAuth() {
-	SetAuth(c.HTTPClient, c.Auth)
+	setAuth(c.httpClient, c.Auth)
 }
 
 func (c *Client) SetToken(v string) {
@@ -1906,7 +1918,7 @@ func (c *Client) HideSensitiveInformationIfActive(message string) string {
 	return message
 }
 
-func TokenRenewalRetry(c *Client) func(res *resty.Response, err error) bool {
+func tokenRenewalRetry(c *Client) func(res *resty.Response, err error) bool {
 	return func(res *resty.Response, err error) bool {
 		// Network errors (no response) are always retryable
 		if err != nil && res == nil {
@@ -1979,13 +1991,6 @@ func TokenRenewalRetry(c *Client) func(res *resty.Response, err error) bool {
 		return statusCode == 429 || (statusCode >= 500 && statusCode < 600)
 	}
 
-}
-
-func TokenRenewalRetryMiddleware(c *Client) resty.ResponseMiddleware {
-	return func(c *resty.Client, r *resty.Response) error {
-		slog.Warn("")
-		return nil
-	}
 }
 
 func KeyringName(host *url.URL, tenant string) string {

@@ -385,13 +385,13 @@ All services follow a consistent structure:
 
 ```go
 type Service struct {
-    core.Service                             // Base service with HTTP client
+    svc httpcore.Service              // HTTP client (internal, not exported)
     DeviceResolver *managedobjects.DeviceResolver  // For device reference resolution (where applicable)
 }
 
-func NewService(common *core.Service, moService *managedobjects.Service) *Service {
+func NewService(common *httpcore.Service, moService *managedobjects.Service) *Service {
     return &Service{
-        Service:        *common,
+        svc:        *common,
         DeviceResolver: managedobjects.NewDeviceResolver(moService),
     }
 }
@@ -469,17 +469,25 @@ case op.StatusFailed:
 
 ### Custom Request Modification
 
-Services allow request customization:
+Per-request headers and query parameters are set on the context:
 
 ```go
-result := client.ManagedObjects.Get(ctx, "12345", managedobjects.GetOptions{
-    RequestModifier: func(r *resty.Request) *resty.Request {
-        return r.
-            SetHeader("X-Custom-Header", "value").
-            SetQueryParam("withChildren", "true")
-    },
+ctx = api.WithExtraHeaders(ctx, map[string]string{"X-Custom-Header": "value"})
+ctx = api.WithExtraQueryParams(ctx, url.Values{"withChildren": []string{"true"}})
+result := client.ManagedObjects.Get(ctx, "12345", managedobjects.GetOptions{})
+```
+
+To change every request a client sends, use `api.Middleware`, a standard
+`http.RoundTripper` wrapper:
+
+```go
+client := api.NewClient(api.ClientOptions{
+    Middleware: []api.Middleware{api.CountRequests(&requests)},
 })
 ```
+
+`client.Resty()` returns the underlying resty client for cases these cannot
+cover. It is not covered by the v2 compatibility guarantee.
 
 ### Retry and Idempotency
 

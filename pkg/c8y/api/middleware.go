@@ -12,7 +12,6 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"sync/atomic"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
@@ -92,45 +91,6 @@ func (s *StatsMap) All() map[string]map[string]int64 {
 	return out
 }
 
-// MiddlewareCountByMethodAndPath returns a resty.ResponseMiddleware that increments stats by HTTP method and path.
-// Pass a pointer to a StatsMap to collect stats during execution.
-// Uses ResponseMiddleware to capture the actual URL after path parameters are substituted.
-// Note: Does not count dry run or mock responses, as they are not actually sent to the server.
-func MiddlewareCountByMethodAndPath(stats *StatsMap) resty.ResponseMiddleware {
-	return func(_ *resty.Client, r *resty.Response) error {
-		// Skip counting if this was a dry run or mock response (not actually sent to server)
-		if r.Request != nil && r.Request.RawRequest != nil {
-			ctx := r.Request.RawRequest.Context()
-			if ctxhelpers.IsDryRun(ctx) || ctxhelpers.IsMockResponses(ctx) {
-				return nil
-			}
-		}
-
-		path := ""
-		method := ""
-
-		// Get the actual request that was sent
-		if r.Request != nil && r.Request.RawRequest != nil && r.Request.RawRequest.URL != nil {
-			path = r.Request.RawRequest.URL.Path
-			method = r.Request.Method
-		}
-
-		if path != "" && method != "" {
-			stats.Inc(method, path)
-		}
-		return nil
-	}
-}
-
-// MiddlewareCountRequests returns a resty.RequestMiddleware that increments the given counter for each HTTP request sent.
-// Useful for gathering API call statistics in tests, benchmarks, or debugging.
-func MiddlewareCountRequests(counter *int64) resty.RequestMiddleware {
-	return func(_ *resty.Client, _ *resty.Request) error {
-		atomic.AddInt64(counter, 1)
-		return nil
-	}
-}
-
 // DryRunTransport wraps an http.RoundTripper and intercepts requests when dry run is enabled
 type DryRunTransport struct {
 	Transport http.RoundTripper
@@ -154,6 +114,30 @@ func (t *DryRunTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	// so it applies after all resty middleware has set it.
 	if ctxhelpers.IsNoAccept(ctx) {
 		req.Header.Del("Accept")
+	}
+
+	// RequestOptions.PrepareRequest: runs here, on the final *http.Request,
+	// before the dry-run decision so dry-run output shows its changes.
+	if hook := ctxhelpers.RequestHook(ctx); hook != nil {
+		if err := hook(req); err != nil {
+			return nil, fmt.Errorf("prepare request: %w", err)
+		}
+	}
+
+	// Keep an SDK-owned copy of the request (including its body) for callers
+	// that inspect it after the call, e.g. RequestResult.Response.Request.
+	if capture := ctxhelpers.GetRequestCapture(ctx); capture != nil {
+		body, err := snapshotRequestBody(req)
+		if err != nil {
+			return nil, err
+		}
+		captured := req.Clone(context.Background())
+		setRequestBody(captured, body)
+		if body == nil {
+			captured.Body = nil
+			captured.GetBody = nil
+		}
+		capture.Set(captured)
 	}
 
 	isDryRun := ctxhelpers.IsDryRun(ctx)
@@ -331,7 +315,7 @@ func hasResourceID(path string) bool {
 	return false
 }
 
-func MiddlewareAddUserAgent(application string, userAgent string) resty.RequestMiddleware {
+func middlewareAddUserAgent(application string, userAgent string) resty.RequestMiddleware {
 	return func(c *resty.Client, r *resty.Request) error {
 		r.SetHeader("User-Agent", userAgent)
 		r.SetHeader("X-APPLICATION", application)
@@ -339,7 +323,7 @@ func MiddlewareAddUserAgent(application string, userAgent string) resty.RequestM
 	}
 }
 
-func MiddlewareAddHost(domain string) resty.RequestMiddleware {
+func middlewareAddHost(domain string) resty.RequestMiddleware {
 	return func(c *resty.Client, r *resty.Request) error {
 		if domain != "" && r.RawRequest != nil && domain != r.RawRequest.URL.Host {
 			r.RawRequest.Host = domain
@@ -348,75 +332,7 @@ func MiddlewareAddHost(domain string) resty.RequestMiddleware {
 	}
 }
 
-func MiddlewareAddCookies(cookies []*http.Cookie) resty.RequestMiddleware {
-	return func(c *resty.Client, r *resty.Request) error {
-		for _, cookie := range cookies {
-			if cookie.Name == "XSRF-TOKEN" {
-				r.SetHeader("X-"+cookie.Name, cookie.Value)
-			} else {
-				r.SetCookie(cookie)
-			}
-		}
-		return nil
-	}
-}
-
 var HeaderAuthorization = "Authorization"
-
-// MiddlewareAuthorization sets the Authorization header from the given
-// credentials unless the request already has one. The header value is chosen by
-// authorizationFromOptions, which Client.AuthorizationHeader shares.
-func MiddlewareAuthorization(auth authentication.AuthOptions) resty.RequestMiddleware {
-	return func(c *resty.Client, r *resty.Request) error {
-		// Don't override the authorization header if already set
-		if v := r.Header.Get(HeaderAuthorization); v != "" {
-			return nil
-		}
-		if v := authorizationFromOptions(auth); v != "" {
-			r.Header.Set(HeaderAuthorization, v)
-		}
-		return nil
-	}
-}
-
-// authorizationFromOptions returns the Authorization header value for the given
-// credentials, honouring AuthOptions.AuthType: the first auth type that yields
-// usable credentials wins. With no auth type set a token takes priority over
-// basic credentials. It returns "" when there are no usable credentials.
-func authorizationFromOptions(auth authentication.AuthOptions) string {
-	basic := func() string {
-		user := authentication.JoinTenantUser(auth.Tenant, auth.Username)
-		if user == "" || auth.Password == "" {
-			return ""
-		}
-		return basicAuthorization(user, auth.Password)
-	}
-	bearer := func() string {
-		if auth.Token == "" {
-			return ""
-		}
-		return bearerAuthorization(auth.Token)
-	}
-	for _, authType := range auth.GetAuthTypes() {
-		var v string
-		switch authType {
-		case authentication.AuthTypeBasic:
-			v = basic()
-		case authentication.AuthTypeBearer:
-			v = bearer()
-		case authentication.AuthTypeUnset:
-			if v = bearer(); v == "" {
-				v = basic()
-			}
-		case authentication.AuthTypeNone:
-			return ""
-		}
-		if v != "" {
-			return v
-		}
-	}
-	return ""
-}
 
 func basicAuthorization(user, password string) string {
 	return "Basic " + base64.StdEncoding.EncodeToString([]byte(user+":"+password))
@@ -484,7 +400,7 @@ func staticAuthorization(auth authentication.AuthOptions) string {
 	return ""
 }
 
-// contextAuthorization mirrors MiddlewareContextAuthorization for credentials
+// contextAuthorization mirrors middlewareContextAuthorization for credentials
 // carried in the context.
 func (c *Client) contextAuthorization(ctx context.Context, auth authentication.AuthOptions) string {
 	if auth.Token != "" {
@@ -501,7 +417,7 @@ func (c *Client) contextAuthorization(ctx context.Context, auth authentication.A
 	return basicAuthorization(authentication.JoinTenantUser(auth.Tenant, auth.Username), auth.Password)
 }
 
-// tokenSourceAuthorization mirrors TokenSourceMiddleware.
+// tokenSourceAuthorization mirrors tokenSourceMiddleware.
 func (c *Client) tokenSourceAuthorization(ctx context.Context) (string, error) {
 	if c.tokenSource == nil || ctxhelpers.IsSkipTokenSource(ctx) || ctxhelpers.IsDryRun(ctx) {
 		return "", nil
@@ -516,7 +432,7 @@ func (c *Client) tokenSourceAuthorization(ctx context.Context) (string, error) {
 	return bearerAuthorization(tok.AccessToken), nil
 }
 
-func MiddlewareRemoveEmptyTenantID() resty.RequestMiddleware {
+func middlewareRemoveEmptyTenantID() resty.RequestMiddleware {
 	return func(c *resty.Client, r *resty.Request) error {
 		// Set tenant id based on the context
 		if currentValue, ok := r.PathParams[core.PathParamTenantID]; ok && currentValue == "" {
@@ -533,7 +449,7 @@ func MiddlewareRemoveEmptyTenantID() resty.RequestMiddleware {
 	}
 }
 
-// MiddlewareContextAuthorization applies per-request credentials carried in the
+// middlewareContextAuthorization applies per-request credentials carried in the
 // request context (see WithAuth / authentication.WithAuth). When credentials are
 // present in the context they take priority over the client-level credentials
 // and token source, allowing a single shared client to act on behalf of multiple
@@ -543,7 +459,7 @@ func MiddlewareRemoveEmptyTenantID() resty.RequestMiddleware {
 // Client.SetContextTokenExchange), basic credentials are exchanged for a cached
 // OAI-Secure bearer token, falling back to basic auth when the exchange is not
 // possible.
-func MiddlewareContextAuthorization(c *Client) resty.RequestMiddleware {
+func middlewareContextAuthorization(c *Client) resty.RequestMiddleware {
 	return func(_ *resty.Client, r *resty.Request) error {
 		auth, ok := authentication.AuthFromContext(r.Context())
 		if !ok {
@@ -576,7 +492,7 @@ func MiddlewareContextAuthorization(c *Client) resty.RequestMiddleware {
 	}
 }
 
-func SetAuth(c *resty.Client, auth authentication.AuthOptions) {
+func setAuth(c *resty.Client, auth authentication.AuthOptions) {
 	if auth.CertificateKey != "" && auth.Certificate != "" {
 		if _, err := os.Stat(auth.CertificateKey); err == nil {
 			c.SetCertificateFromFile(auth.Certificate, auth.CertificateKey)
@@ -592,13 +508,13 @@ func SetAuth(c *resty.Client, auth authentication.AuthOptions) {
 	}
 }
 
-// TokenSourceMiddleware returns a resty.RequestMiddleware that injects a bearer token
+// tokenSourceMiddleware returns a resty.RequestMiddleware that injects a bearer token
 // from the TokenSource returned by getSource before every outgoing request.
 //
 // Requests carrying a WithSkipTokenSource context value are left untouched so that
 // internal credential-fetch calls (e.g. username/password login) do not
 // recursively trigger token renewal.
-func TokenSourceMiddleware(getSource func() authentication.TokenSource) resty.RequestMiddleware {
+func tokenSourceMiddleware(getSource func() authentication.TokenSource) resty.RequestMiddleware {
 	return func(_ *resty.Client, req *resty.Request) error {
 		src := getSource()
 		if src == nil {

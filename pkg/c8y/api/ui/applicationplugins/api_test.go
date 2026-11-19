@@ -3,14 +3,14 @@ package applicationplugins
 import (
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/stretchr/testify/assert"
 	"resty.dev/v3"
 )
 
 func newTestService() *Service {
-	return NewService(&core.Service{
+	return NewService(&httpcore.Service{
 		Client: resty.New().SetBaseURL("https://example.cumulocity.com"),
 	})
 }

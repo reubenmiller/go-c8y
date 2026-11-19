@@ -122,7 +122,7 @@ func Test_NewClient_SkipTenantLookup(t *testing.T) {
 	require.NoError(t, client.ResolveTenant(context.Background()))
 	assert.Equal(t, int32(1), calls.Load())
 	assert.Equal(t, "t123", client.Auth.Tenant)
-	assert.Equal(t, "t123", client.HTTPClient.PathParams()[core.PathParamTenantID])
+	assert.Equal(t, "t123", client.httpClient.PathParams()[core.PathParamTenantID])
 }
 
 func Test_ResolveTenant_Error(t *testing.T) {

@@ -8,6 +8,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -22,10 +23,10 @@ const ParamChild = "child"
 const ResultProperty = child.ResultProperty
 
 // Service
-type Service struct{ core.Service }
+type Service struct{ svc httpcore.Service }
 
-func NewService(common *core.Service) *Service {
-	return &Service{Service: *common}
+func NewService(common *httpcore.Service) *Service {
+	return &Service{svc: *common}
 }
 
 type ListOptions child.ListOptions
@@ -35,7 +36,7 @@ type ManagedObjectIterator = pagination.Iterator[jsonmodels.ManagedObject]
 
 // List child assets of a parent
 func (s *Service) List(ctx context.Context, parentID string, opt ListOptions) op.Result[jsonmodels.ManagedObject] {
-	return core.ExecuteCollection(ctx, s.listB(parentID, opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
+	return httpcore.ExecuteCollection(ctx, s.listB(parentID, opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
 // ListAll returns an iterator for all child assets
@@ -52,78 +53,78 @@ func (s *Service) ListAll(ctx context.Context, parentID string, opts ListOptions
 	)
 }
 
-func (s *Service) listB(parentID string, opt ListOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listB(parentID string, opt ListOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, parentID).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiManagedObjectChildAssets)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // Get existing child asset from a parent. The response is a managedObjectReference;
 // its nested managedObject (the child) is returned.
 func (s *Service) Get(ctx context.Context, parentID string, childID string) op.Result[jsonmodels.ManagedObject] {
-	return core.Execute(ctx, s.getB(parentID, childID), child.NewReferencedManagedObject)
+	return httpcore.Execute(ctx, s.getB(parentID, childID), child.NewReferencedManagedObject)
 }
 
-func (s *Service) getB(parentID string, childID string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getB(parentID string, childID string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamID, parentID).
 		SetPathParam(ParamChild, childID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObjectChildAsset)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Create a new child asset and assign it to an existing managed object
 func (s *Service) Create(ctx context.Context, parentID string, body any) op.Result[jsonmodels.ManagedObject] {
-	return core.Execute(ctx, s.createB(parentID, body), jsonmodels.NewManagedObject)
+	return httpcore.Execute(ctx, s.createB(parentID, body), jsonmodels.NewManagedObject)
 }
 
-func (s *Service) createB(parentID string, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) createB(parentID string, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(ParamID, parentID).
 		SetContentType(types.MimeTypeManagedObject).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiManagedObjectChildAssets)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Assign an existing child asset to a managed object
 // Assign a child asset to a parent managed object.
 // A 409 response (already assigned) is treated as a duplicate (StatusDuplicate, Idempotent: true).
 func (s *Service) Assign(ctx context.Context, parentID string, child any) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.assignB(parentID, child)).IgnoreConflict()
+	return httpcore.ExecuteNoContent(ctx, s.assignB(parentID, child)).IgnoreConflict()
 }
 
-func (s *Service) assignB(parentID string, child any) *core.TryRequest {
+func (s *Service) assignB(parentID string, child any) *httpcore.TryRequest {
 	contentType, body := model.FromManagedObjectChildReferences(child)
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetContentType(contentType).
 		SetBody(body).
 		SetPathParam(ParamID, parentID).
 		SetURL(ApiManagedObjectChildAssets)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Unassign removes a single child-asset reference from a parent managed object
 // (DELETE …/childAssets/{child}). A 404 response (already unassigned) is treated
 // as skipped (StatusSkipped, Idempotent: true).
 func (s *Service) Unassign(ctx context.Context, parentID string, childID string) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.unassignB(parentID, childID)).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.unassignB(parentID, childID)).IgnoreNotFound()
 }
 
-func (s *Service) unassignB(parentID string, childID string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) unassignB(parentID string, childID string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamID, parentID).
 		SetPathParam(ParamChild, childID).
 		SetURL(ApiManagedObjectChildAsset)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }

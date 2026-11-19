@@ -12,6 +12,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/realtime"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -26,14 +27,14 @@ const ResultProperty = "operations"
 
 // Service provides api to get/set/delete operations
 type Service struct {
-	core.Service
+	svc            httpcore.Service
 	DeviceResolver *managedobjects.DeviceResolver
 }
 
 // NewService creates a new operations service with device resolution capabilities
-func NewService(common *core.Service, moService *managedobjects.Service) *Service {
+func NewService(common *httpcore.Service, moService *managedobjects.Service) *Service {
 	return &Service{
-		Service:        *common,
+		svc:            *common,
 		DeviceResolver: managedobjects.NewDeviceResolver(moService),
 	}
 }
@@ -72,7 +73,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 		opt.AgentID = managedobjects.DeviceRef(resolvedID)
 	}
 
-	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewOperation)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewOperation)
 }
 
 // ListAll returns an iterator for all operations
@@ -111,27 +112,27 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *OperationItera
 	)
 }
 
-func (s *Service) listB(opt any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listB(opt any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiOperations)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // Get an operation
 func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Operation] {
-	return core.Execute(ctx, s.getB(ID), jsonmodels.NewOperation)
+	return httpcore.Execute(ctx, s.getB(ID), jsonmodels.NewOperation)
 }
 
-func (s *Service) getB(ID string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getB(ID string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, ID).
 		SetURL(ApiOperation)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // CreateOptions for creating an operation with resolver support
@@ -168,7 +169,7 @@ func (s *Service) Create(ctx context.Context, opts CreateOptions) op.Result[json
 //
 //	result := client.Operations.CreateRaw(ctx, map[string]any{...})
 func (s *Service) CreateRaw(ctx context.Context, body any) op.Result[jsonmodels.Operation] {
-	return core.Execute(ctx, s.createB(body), jsonmodels.NewOperation)
+	return httpcore.Execute(ctx, s.createB(body), jsonmodels.NewOperation)
 }
 
 // createWithOptions handles the CreateOptions case with resolver support and property merging
@@ -214,7 +215,7 @@ func (s *Service) createWithOptions(ctx context.Context, opts CreateOptions) op.
 	}
 
 	// Create the operation with the merged JSON and add metadata
-	result := core.Execute(ctx, s.createBWithJSON(finalJSON), jsonmodels.NewOperation)
+	result := httpcore.Execute(ctx, s.createBWithJSON(finalJSON), jsonmodels.NewOperation)
 
 	// Add resolver metadata to result
 	if result.Meta == nil {
@@ -227,40 +228,40 @@ func (s *Service) createWithOptions(ctx context.Context, opts CreateOptions) op.
 	return result
 }
 
-func (s *Service) createB(body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) createB(body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiOperations)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
-func (s *Service) createBWithJSON(bodyJSON []byte) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) createBWithJSON(bodyJSON []byte) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(bodyJSON).
 		SetURL(ApiOperations)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Update an operation
 func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.Operation] {
-	return core.Execute(ctx, s.updateB(ID, body), jsonmodels.NewOperation)
+	return httpcore.Execute(ctx, s.updateB(ID, body), jsonmodels.NewOperation)
 }
 
-func (s *Service) updateB(ID string, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) updateB(ID string, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamID, ID).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiOperation)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Delete a list of operations
@@ -309,15 +310,15 @@ func (s *Service) DeleteList(ctx context.Context, opt DeleteListOptions) op.Resu
 		opt.AgentID = managedobjects.DeviceRef(resolvedID)
 	}
 
-	return core.ExecuteNoContent(ctx, s.deleteListB(opt))
+	return httpcore.ExecuteNoContent(ctx, s.deleteListB(opt))
 }
 
-func (s *Service) deleteListB(opt DeleteListOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) deleteListB(opt DeleteListOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiOperations)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // OperationStream provides an iterator for realtime operation subscriptions
@@ -360,14 +361,14 @@ type OperationStream = realtime.Stream[realtime.StreamData[jsonmodels.Operation]
 //	    return err
 //	}
 func (s *Service) SubscribeStream(ctx context.Context, ID string) op.Result[*OperationStream] {
-	err := s.RealtimeClient.Connect()
+	err := s.svc.RealtimeClient.Connect()
 	if err != nil {
 		return op.Failed[*OperationStream](err, false)
 	}
 
 	messages := make(chan *realtime.Message, 10)
 	pattern := realtime.Operations(ID)
-	errorChan := s.RealtimeClient.Subscribe(ctx, pattern, messages)
+	errorChan := s.svc.RealtimeClient.Subscribe(ctx, pattern, messages)
 	stream := realtime.NewStream(ctx, messages, errorChan, func(msg *realtime.Message) realtime.StreamData[jsonmodels.Operation] {
 		return realtime.StreamData[jsonmodels.Operation]{
 			Action:  msg.Payload.RealtimeAction,
@@ -376,7 +377,7 @@ func (s *Service) SubscribeStream(ctx context.Context, ID string) op.Result[*Ope
 		}
 	}, func() {
 		// Cleanup: unsubscribe from the realtime channel
-		s.RealtimeClient.Unsubscribe(pattern)
+		s.svc.RealtimeClient.Unsubscribe(pattern)
 	})
 
 	return op.OK(stream)

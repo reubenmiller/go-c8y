@@ -1,13 +1,15 @@
-package core
+package httpcore
 
 import (
 	"encoding/json"
 	"testing"
+
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 )
 
 // objectField extracts the JSON "object" multipart field built by
 // NewMultiPartFileFields.
-func objectField(t *testing.T, opt UploadFileOptions) map[string]any {
+func objectField(t *testing.T, opt core.UploadFileOptions) map[string]any {
 	t.Helper()
 	fields := NewMultiPartFileFields(opt)
 	var raw string
@@ -37,7 +39,7 @@ func objectField(t *testing.T, opt UploadFileOptions) map[string]any {
 
 func TestNewMultiPartFileFieldsProperties(t *testing.T) {
 	// Custom properties are merged into the object metadata.
-	obj := objectField(t, UploadFileOptions{
+	obj := objectField(t, core.UploadFileOptions{
 		FilePath: "report.pdf",
 		Properties: map[string]any{
 			"c8y_Global": map[string]any{},
@@ -53,7 +55,7 @@ func TestNewMultiPartFileFieldsProperties(t *testing.T) {
 	}
 
 	// An explicit Name wins over a "name" in properties.
-	obj = objectField(t, UploadFileOptions{
+	obj = objectField(t, core.UploadFileOptions{
 		FilePath:   "report.pdf",
 		Name:       "explicit",
 		Properties: map[string]any{"name": "from-properties"},
@@ -63,7 +65,7 @@ func TestNewMultiPartFileFieldsProperties(t *testing.T) {
 	}
 
 	// No properties: behaves as before (name falls back to the file base name).
-	obj = objectField(t, UploadFileOptions{FilePath: "dir/report.pdf"})
+	obj = objectField(t, core.UploadFileOptions{FilePath: "dir/report.pdf"})
 	if obj["name"] != "report.pdf" {
 		t.Errorf("name = %v, want report.pdf", obj["name"])
 	}

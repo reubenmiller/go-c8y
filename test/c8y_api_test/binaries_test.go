@@ -51,6 +51,6 @@ func Test_CreateBinary(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NoError(t, err)
-	assert.Equal(t, binaryFile.Data.Response.StatusCode(), 200)
+	assert.Equal(t, binaryFile.Data.StatusCode(), 200)
 	assert.Equal(t, buf.String(), "foo")
 }

@@ -3,9 +3,9 @@ package systemoptions
 import (
 	"context"
 
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -19,16 +19,16 @@ const ParamCategory = "category"
 
 const ResultProperty = "options"
 
-func NewService(s *core.Service) *Service {
+func NewService(s *httpcore.Service) *Service {
 	return &Service{
-		Service: *s,
+		svc: *s,
 	}
 }
 
 // Service api to interact with system options
-// type Service core.Service
+// type Service httpcore.Service
 type Service struct {
-	core.Service
+	svc httpcore.Service
 }
 
 // ListOptions system options filter
@@ -42,7 +42,7 @@ type SystemOptionIterator = pagination.Iterator[jsonmodels.SystemOption]
 
 // List system options
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.SystemOption] {
-	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewSystemOption)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewSystemOption)
 }
 
 // ListAll returns an iterator for all system options
@@ -59,13 +59,13 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *SystemOptionIt
 	)
 }
 
-func (s *Service) listB(opt ListOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiSystemOptions)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 type GetOption struct {
@@ -75,15 +75,15 @@ type GetOption struct {
 
 // Get a system option
 func (s *Service) Get(ctx context.Context, opt GetOption) op.Result[jsonmodels.SystemOption] {
-	return core.Execute(ctx, s.getB(opt), jsonmodels.NewSystemOption)
+	return httpcore.Execute(ctx, s.getB(opt), jsonmodels.NewSystemOption)
 }
 
-func (s *Service) getB(opt GetOption) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getB(opt GetOption) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamCategory, opt.Category).
 		SetPathParam(ParamKey, opt.Key).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiSystemOption)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }

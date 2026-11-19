@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"resty.dev/v3"
 )
 
@@ -18,7 +18,7 @@ func TestListSettingsFlatMap(t *testing.T) {
 		_, _ = w.Write([]byte(`{"key1":"v1","a.b":"v2"}`))
 	}))
 	defer ts.Close()
-	svc := NewService(&core.Service{Client: resty.New().SetBaseURL(ts.URL)})
+	svc := NewService(&httpcore.Service{Client: resty.New().SetBaseURL(ts.URL)})
 
 	res := svc.ListSettings(context.Background())
 	if res.Err != nil {

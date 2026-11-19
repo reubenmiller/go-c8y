@@ -142,7 +142,7 @@ func Test_Enrollment_Register(t *testing.T) {
 	// Create client which uses the device certificate
 	// It should automatically request a token to use for API calls
 	deviceClient := api.NewClient(api.ClientOptions{
-		BaseURL:       client.HTTPClient.BaseURL(),
+		BaseURL:       client.Resty().BaseURL(),
 		Debug:         true,
 		ShowSensitive: true,
 		Auth: authentication.AuthOptions{
@@ -173,7 +173,7 @@ func Test_Enrollment_Register(t *testing.T) {
 
 	// Open another client using the newly issued certificate
 	deviceClient2 := api.NewClient(api.ClientOptions{
-		BaseURL: client.HTTPClient.BaseURL(),
+		BaseURL: client.Resty().BaseURL(),
 		Auth: authentication.AuthOptions{
 			CertificateKey: string(keyPem),
 			Certificate:    string(secondCertPEM),

@@ -9,6 +9,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/users/currentuser"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
@@ -86,17 +87,16 @@ func CalculatePasswordStrength(password string) PasswordStrength {
 
 const ResultProperty = "users"
 
-func NewService(s *core.Service) *Service {
+func NewService(s *httpcore.Service) *Service {
 	return &Service{
-		Service:     *s,
+		svc:         *s,
 		CurrentUser: currentuser.NewService(s),
 	}
 }
 
 // Service provides api to manage users
 type Service struct {
-	core.Service
-
+	svc         httpcore.Service
 	CurrentUser *currentuser.Service
 }
 
@@ -126,7 +126,7 @@ type UserIterator = pagination.Iterator[jsonmodels.User]
 
 // Retrieve all users in the tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.User] {
-	return core.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewUser)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewUser)
 }
 
 // ListAll returns an iterator for all users
@@ -143,14 +143,14 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *UserIterator {
 	)
 }
 
-func (s *Service) listB(opt ListOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiUsers)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // UserRef is a typed reference to a user. Construct it using ByID, ByDeviceUser, or cast a
@@ -178,18 +178,18 @@ type GetOptions struct {
 
 // Get a user
 func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.User] {
-	return core.Execute(ctx, s.getB(opt), jsonmodels.NewUser)
+	return httpcore.Execute(ctx, s.getB(opt), jsonmodels.NewUser)
 }
 
-func (s *Service) getB(opt GetOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getB(opt GetOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
 		SetPathParam(ParamID, string(opt.ID)).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiUser)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 type GetByUsernameOptions struct {
@@ -199,32 +199,32 @@ type GetByUsernameOptions struct {
 
 // Get a user by username
 func (s *Service) GetByUsername(ctx context.Context, opt GetByUsernameOptions) op.Result[jsonmodels.User] {
-	return core.Execute(ctx, s.getByUsernameB(opt), jsonmodels.NewUser)
+	return httpcore.Execute(ctx, s.getByUsernameB(opt), jsonmodels.NewUser)
 }
 
-func (s *Service) getByUsernameB(opt GetByUsernameOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getByUsernameB(opt GetByUsernameOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
 		SetPathParam(ParamUsername, opt.Username).
 		SetURL(ApiUserByName)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Create a user
 func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.User] {
-	return core.Execute(ctx, s.createB(body), jsonmodels.NewUser)
+	return httpcore.Execute(ctx, s.createB(body), jsonmodels.NewUser)
 }
 
-func (s *Service) createB(body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) createB(body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiUsers)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 type UpdateOptions struct {
@@ -234,11 +234,11 @@ type UpdateOptions struct {
 
 // Update a user
 func (s *Service) Update(ctx context.Context, opt UpdateOptions, body any) op.Result[jsonmodels.User] {
-	return core.Execute(ctx, s.updateB(opt, body), jsonmodels.NewUser)
+	return httpcore.Execute(ctx, s.updateB(opt, body), jsonmodels.NewUser)
 }
 
-func (s *Service) updateB(opt UpdateOptions, body any) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) updateB(opt UpdateOptions, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
@@ -246,7 +246,7 @@ func (s *Service) updateB(opt UpdateOptions, body any) *core.TryRequest {
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
 		SetBody(body).
 		SetURL(ApiUser)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 type DeleteOptions struct {
@@ -256,16 +256,16 @@ type DeleteOptions struct {
 
 // Delete a user
 func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.deleteB(opt)).IgnoreNotFound()
+	return httpcore.ExecuteNoContent(ctx, s.deleteB(opt)).IgnoreNotFound()
 }
 
-func (s *Service) deleteB(opt DeleteOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) deleteB(opt DeleteOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamID, string(opt.ID)).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
 		SetURL(ApiUser)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // ListGroupsOptions to filter the user groups which contain a given user
@@ -280,7 +280,7 @@ type ListGroupsOptions struct {
 
 // List groups that contain a given user in the tenant
 func (s *Service) ListGroupsWithUser(ctx context.Context, opt ListGroupsOptions) op.Result[jsonmodels.UserGroup] {
-	return core.ExecuteCollection(ctx, s.listGroupsWithUserB(opt), "references.#.group", types.ResponseFieldStatistics, jsonmodels.NewUserGroup)
+	return httpcore.ExecuteCollection(ctx, s.listGroupsWithUserB(opt), "references.#.group", types.ResponseFieldStatistics, jsonmodels.NewUserGroup)
 }
 
 // ListGroupsWithUserAll returns an iterator that transparently pages through all
@@ -298,15 +298,15 @@ func (s *Service) ListGroupsWithUserAll(ctx context.Context, opts ListGroupsOpti
 	)
 }
 
-func (s *Service) listGroupsWithUserB(opt ListGroupsOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listGroupsWithUserB(opt ListGroupsOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
 		SetPathParam(ParamID, opt.UserID).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiUserGroupsWithUser)
-	return core.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // UserSelfLink returns the self link for a user reference, suitable for the body
@@ -331,7 +331,7 @@ func (s *Service) UserSelfLink(tenant, ref string) string {
 		return ""
 	}
 	path := strings.ReplaceAll(ApiUsers, "{"+core.PathParamTenantID+"}", tenant)
-	return strings.TrimRight(s.Client.BaseURL(), "/") + path + "/" + url.QueryEscape(ref)
+	return strings.TrimRight(s.svc.Client.BaseURL(), "/") + path + "/" + url.QueryEscape(ref)
 }
 
 // UserID returns the user id (which equals the user name in Cumulocity) for a
@@ -367,28 +367,28 @@ func (s *Service) UserID(ref string) string {
 // Logout terminates the current user's session and invalidates platform access tokens.
 // Requires an active cookie-based or OAI-Secure session.
 func (s *Service) Logout(ctx context.Context) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.logoutB())
+	return httpcore.ExecuteNoContent(ctx, s.logoutB())
 }
 
-func (s *Service) logoutB() *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) logoutB() *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetURL(ApiLogout)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // LogoutAllUsers terminates all token-based sessions for every user in the given tenant.
 // Requires ROLE_USER_MANAGEMENT_ADMIN and must be the current tenant.
 func (s *Service) LogoutAllUsers(ctx context.Context, tenantID string) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.logoutAllUsersB(tenantID))
+	return httpcore.ExecuteNoContent(ctx, s.logoutAllUsersB(tenantID))
 }
 
-func (s *Service) logoutAllUsersB(tenantID string) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) logoutAllUsersB(tenantID string) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(core.PathParamTenantID, tenantID).
 		SetURL(ApiLogoutAllUsers)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // ResetPasswordOptions contains the data needed for a token-based forced
@@ -419,17 +419,17 @@ type ResetPasswordOptions struct {
 // "passwordresettoken" response header, signalling that the user must change
 // their password before they can proceed.
 func (s *Service) ResetPassword(ctx context.Context, opt ResetPasswordOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.resetPasswordB(opt))
+	return httpcore.ExecuteNoContent(ctx, s.resetPasswordB(opt))
 }
 
-func (s *Service) resetPasswordB(opt ResetPasswordOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) resetPasswordB(opt ResetPasswordOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetBody(opt).
 		SetURL(ApiPasswordReset)
-	return core.NewTryRequest(s.Client, req).WithNoAuth()
+	return httpcore.NewTryRequest(s.svc.Client, req).WithNoAuth()
 }
 
 type GetTFAOptions struct {
@@ -440,17 +440,17 @@ type GetTFAOptions struct {
 // GetTFA retrieves the two-factor authentication settings for a specific user.
 // Leave Tenant empty to use the current context tenant.
 func (s *Service) GetTFA(ctx context.Context, opt GetTFAOptions) op.Result[jsonmodels.UserTFA] {
-	return core.Execute(ctx, s.getTFAB(opt), jsonmodels.NewUserTFA)
+	return httpcore.Execute(ctx, s.getTFAB(opt), jsonmodels.NewUserTFA)
 }
 
-func (s *Service) getTFAB(opt GetTFAOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) getTFAB(opt GetTFAOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
 		SetPathParam(ParamID, string(opt.ID)).
 		SetURL(ApiUserTFA)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 type RevokeTOTPSecretOptions struct {
@@ -464,14 +464,14 @@ type RevokeTOTPSecretOptions struct {
 // Leave Tenant empty to use the current context tenant. A 204 No Content
 // response indicates success.
 func (s *Service) RevokeTOTPSecret(ctx context.Context, opt RevokeTOTPSecretOptions) op.Result[core.NoContent] {
-	return core.ExecuteNoContent(ctx, s.revokeTOTPSecretB(opt))
+	return httpcore.ExecuteNoContent(ctx, s.revokeTOTPSecretB(opt))
 }
 
-func (s *Service) revokeTOTPSecretB(opt RevokeTOTPSecretOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) revokeTOTPSecretB(opt RevokeTOTPSecretOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
 		SetPathParam(ParamID, string(opt.ID)).
 		SetURL(ApiUserTOTPRevoke)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }

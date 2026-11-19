@@ -13,6 +13,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -24,10 +25,10 @@ const ParamID = "id"
 
 const ResultProperty = managedobjects.ResultProperty
 
-func NewService(s *core.Service) *Service {
+func NewService(s *httpcore.Service) *Service {
 	mos := managedobjects.NewService(s)
 	return &Service{
-		Service:        *s,
+		svc:            *s,
 		Enrollment:     enrollment.NewService(s),
 		Registration:   registration.NewService(s),
 		ChildAdditions: mos.ChildAdditions,
@@ -38,10 +39,9 @@ func NewService(s *core.Service) *Service {
 }
 
 // Service inventory api to interact with managed objects
-// type Service core.Service
+// type Service httpcore.Service
 type Service struct {
-	core.Service
-
+	svc            httpcore.Service
 	Enrollment     *enrollment.Service
 	Registration   *registration.Service
 	ChildAdditions *childadditions.Service
@@ -76,7 +76,7 @@ type ManagedObjectIterator = pagination.Iterator[jsonmodels.ManagedObject]
 
 // List managed objects
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.ManagedObject] {
-	return core.ExecuteCollection(ctx, s.listB(opt), managedobjects.ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), managedobjects.ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
 // ListAll returns an iterator for all devices. By default it uses the _id
@@ -102,12 +102,12 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *ManagedObjectI
 	)
 }
 
-func (s *Service) listB(opt ListOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(managedobjects.ApiManagedObjects)
-	return core.NewTryRequest(s.Client, req, managedobjects.ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, managedobjects.ResultProperty)
 }
 
 // FindOptions filter devices
@@ -129,15 +129,15 @@ type FindOptions struct {
 
 // Find managed objects
 func (s *Service) Find(ctx context.Context, opt FindOptions) op.Result[jsonmodels.ManagedObject] {
-	return core.ExecuteCollection(ctx, s.findB(opt), managedobjects.ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
+	return httpcore.ExecuteCollection(ctx, s.findB(opt), managedobjects.ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
-func (s *Service) findB(opt FindOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) findB(opt FindOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(managedobjects.ApiManagedObjects)
-	return core.NewTryRequest(s.Client, req, managedobjects.ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, managedobjects.ResultProperty)
 }
 
 // CreateDevice creates a new device with the given name.

@@ -18,6 +18,7 @@ import (
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/pkg/certutil"
 	"github.com/reubenmiller/go-c8y/v2/pkg/password"
@@ -29,10 +30,10 @@ var ApiEnroll = ".well-known/est/simpleenroll"
 var ApiReEnroll = ".well-known/est/simplereenroll"
 
 // Service provides device enrollment functionality to enroll new devices and receive device certificates
-type Service struct{ core.Service }
+type Service struct{ svc httpcore.Service }
 
-func NewService(s *core.Service) *Service {
-	return &Service{Service: *s}
+func NewService(s *httpcore.Service) *Service {
+	return &Service{svc: *s}
 }
 
 // EnrollOptions options for enrolling a device
@@ -48,14 +49,14 @@ func (s *Service) Enroll(ctx context.Context, opt EnrollOptions) op.Result[X509C
 		return op.Failed[X509Certificate](fmt.Errorf("certificate signing request is required"), false)
 	}
 
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Content-Transfer-Encoding", "base64").
 		SetContentType("application/pkcs10").
 		SetBody(base64.StdEncoding.EncodeToString(opt.CSR.Raw)).
 		SetURL(ApiEnroll)
 
-	b := core.NewTryRequest(s.Client, req).
+	b := httpcore.NewTryRequest(s.svc.Client, req).
 		SetBasicAuth(opt.ExternalID, opt.OneTimePassword)
 	return executeWithCertParse(ctx, b)
 }
@@ -75,14 +76,14 @@ func (s *Service) ReEnroll(ctx context.Context, opt ReEnrollOptions) op.Result[X
 		return op.Failed[X509Certificate](fmt.Errorf("certificate signing request is required"), false)
 	}
 
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Content-Transfer-Encoding", "base64").
 		SetContentType("application/pkcs10").
 		SetBody(base64.StdEncoding.EncodeToString(opt.CSR.Raw)).
 		SetURL(ApiReEnroll)
 
-	b := core.NewTryRequest(s.Client, req)
+	b := httpcore.NewTryRequest(s.svc.Client, req)
 	if opt.Token != "" {
 		b.SetToken(opt.Token)
 	}
@@ -110,8 +111,8 @@ func (s *Service) GenerateOneTimePassword(opts ...password.PasswordOption) (stri
 }
 
 // executeWithCertParse executes a request and parses the PKCS7/PEM certificate response
-func executeWithCertParse(ctx context.Context, req *core.TryRequest) op.Result[X509Certificate] {
-	resp, err := core.ExecuteResponseOnly(ctx, req)
+func executeWithCertParse(ctx context.Context, req *httpcore.TryRequest) op.Result[X509Certificate] {
+	resp, err := httpcore.ExecuteResponseOnly(ctx, req)
 
 	// Only capture request in dry run mode for inspection
 	var httpReq *http.Request
@@ -276,7 +277,7 @@ var DeviceRegistrationHeader string
 func (s *Service) EnrollmentURL(externalID string, oneTimePassword string) string {
 	return fmt.Sprintf(
 		"%s/apps/devicemanagement/index.html#/deviceregistration?externalId=%s&one-time-password=%s",
-		strings.TrimRight(s.Client.BaseURL(), "/"),
+		strings.TrimRight(s.svc.Client.BaseURL(), "/"),
 		externalID,
 		oneTimePassword,
 	)
@@ -315,7 +316,7 @@ func (s *Service) printEnrollmentLog(externalID string, oneTimePassword string, 
 		Divider         string
 	}{
 		Title:           DeviceRegistrationHeader,
-		BaseURL:         s.Client.BaseURL(),
+		BaseURL:         s.svc.Client.BaseURL(),
 		Url:             fullURL,
 		ExternalID:      externalID,
 		OneTimePassword: oneTimePassword,

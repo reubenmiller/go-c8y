@@ -17,6 +17,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -42,15 +43,14 @@ type (
 
 // Service interacts with device groups.
 type Service struct {
-	core.Service
-
+	svc            httpcore.Service
 	managedObjects *managedobjects.Service
 }
 
 // NewService creates a device-groups service.
-func NewService(s *core.Service) *Service {
+func NewService(s *httpcore.Service) *Service {
 	return &Service{
-		Service:        *s,
+		svc:            *s,
 		managedObjects: managedobjects.NewService(s),
 	}
 }
@@ -82,7 +82,7 @@ type ListOptions struct {
 // query is passed through as-is, like devices.List); the resolver and
 // ScopeToGroups are responsible for restricting results to device groups.
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.ManagedObject] {
-	return core.ExecuteCollection(ctx, s.listB(opt), managedobjects.ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), managedobjects.ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
 // ListAll returns an iterator over every device group matching opts. By default
@@ -108,18 +108,18 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *ManagedObjectI
 	)
 }
 
-func (s *Service) listB(opt ListOptions) *core.TryRequest {
-	params := core.QueryParameters(opt)
+func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
+	params := httpcore.QueryParameters(opt)
 	// Device-group listing always pins withChildren explicitly (v1 behaviour):
 	// the embedded GetOptions tag is omitempty, so a false value would otherwise
 	// be dropped, but the platform defaults withChildren to true for groups, which
 	// is slow. Emit it unconditionally unless the user asked for the children.
 	params.Set("withChildren", strconv.FormatBool(opt.WithChildren))
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(params).
 		SetURL(managedobjects.ApiManagedObjects)
-	return core.NewTryRequest(s.Client, req, managedobjects.ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, managedobjects.ResultProperty)
 }
 
 // Get returns a device group by reference (id, name:, or query:).

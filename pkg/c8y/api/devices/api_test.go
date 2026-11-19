@@ -3,14 +3,14 @@ package devices
 import (
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/stretchr/testify/assert"
 	"resty.dev/v3"
 )
 
 func newTestService() *Service {
-	return NewService(&core.Service{
+	return NewService(&httpcore.Service{
 		Client: resty.New().SetBaseURL("https://example.cumulocity.com"),
 	})
 }
@@ -18,7 +18,7 @@ func newTestService() *Service {
 func TestCreateTokenB(t *testing.T) {
 	t.Skip("Create a temp cert key pair")
 	s := newTestService()
-	s.Client.SetCertificateFromFile("todo.crt", "todo.key")
+	s.svc.Client.SetCertificateFromFile("todo.crt", "todo.key")
 	req := s.createAccessTokenB()
 
 	certChain := req.Request.Header.Get(types.HeaderSSLCertificateChain)

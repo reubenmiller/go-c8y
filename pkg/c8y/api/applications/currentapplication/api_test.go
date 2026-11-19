@@ -8,13 +8,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"resty.dev/v3"
 )
 
 func testService(handler http.HandlerFunc) (*Service, func()) {
 	ts := httptest.NewServer(handler)
-	svc := NewService(&core.Service{
+	svc := NewService(&httpcore.Service{
 		Client: resty.New().SetBaseURL(ts.URL),
 	})
 	return svc, ts.Close

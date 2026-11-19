@@ -3,10 +3,10 @@ package alarms
 import (
 	"context"
 
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/tidwall/gjson"
 	"resty.dev/v3"
@@ -25,16 +25,16 @@ func (s *Service) Count(ctx context.Context, opt CountOptions) op.Result[int64] 
 		opt.Source = managedobjects.DeviceRef(resolvedID)
 	}
 
-	return core.Execute(ctx, s.countB(opt), func(b []byte) int64 {
+	return httpcore.Execute(ctx, s.countB(opt), func(b []byte) int64 {
 		return gjson.ParseBytes(b).Int()
 	})
 }
 
-func (s *Service) countB(opt CountOptions) *core.TryRequest {
-	req := s.Client.R().
+func (s *Service) countB(opt CountOptions) *httpcore.TryRequest {
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetQueryParamsFromValues(core.QueryParameters(opt)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeTextPlain).
 		SetURL(ApiAlarmsCount)
-	return core.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }

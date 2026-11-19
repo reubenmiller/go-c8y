@@ -34,7 +34,7 @@ func main() {
 
 	// Add API call statistics middleware
 	stats := api.NewStatsMap()
-	client.HTTPClient.AddResponseMiddleware(api.MiddlewareCountByMethodAndPath(stats))
+	client.Use(api.CountByMethodAndPath(stats))
 
 	ctx := context.Background()
 
