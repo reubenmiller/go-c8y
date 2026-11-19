@@ -93,8 +93,10 @@ func (fs *FakeServer) handleManagedObjectCollection(w http.ResponseWriter, r *ht
 			writeError(w, http.StatusBadRequest, "general/badRequest", err.Error())
 			return
 		}
-		body = setDefaultField(body, "owner", "admin")
-		_, doc := fs.ManagedObjects.Create(body, fs.URL()+"/inventory/managedObjects")
+		doc, ok := fs.createManagedObject(w, body)
+		if !ok {
+			return
+		}
 		writeJSON(w, http.StatusCreated, doc)
 
 	case http.MethodPut:
@@ -120,10 +122,15 @@ func (fs *FakeServer) handleBulkCreateManagedObjects(w http.ResponseWriter, r *h
 		writeError(w, http.StatusBadRequest, "general/badRequest", err.Error())
 		return
 	}
+	if !fs.validateBulkCreate(w, envelope.ManagedObjects) {
+		return
+	}
 	var created []json.RawMessage
 	for _, item := range envelope.ManagedObjects {
-		item = setDefaultField(item, "owner", "admin")
-		_, doc := fs.ManagedObjects.Create(item, fs.URL()+"/inventory/managedObjects")
+		doc, ok := fs.createManagedObject(w, item)
+		if !ok {
+			return
+		}
 		created = append(created, doc)
 	}
 	if created == nil {
@@ -145,6 +152,9 @@ func (fs *FakeServer) handleBulkUpdateManagedObjects(w http.ResponseWriter, r *h
 	}
 	if err := json.Unmarshal(body, &envelope); err != nil {
 		writeError(w, http.StatusBadRequest, "general/badRequest", err.Error())
+		return
+	}
+	if !fs.validateBulkUpdate(w, envelope.ManagedObjects) {
 		return
 	}
 	var updated []json.RawMessage

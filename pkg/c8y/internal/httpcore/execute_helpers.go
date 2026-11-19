@@ -62,7 +62,7 @@ func mergeMeta[T any](result *op.Result[T], meta map[string]any) {
 // failedWithStatus builds a failed result with the HTTP status and duration
 // taken from the response, or from the error when there is no response.
 func failedWithStatus[T any](err error, resp *resty.Response) op.Result[T] {
-	result := op.Failed[T](err, true)
+	result := failed[T](err, true)
 	if resp != nil {
 		return result.WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
 	}
