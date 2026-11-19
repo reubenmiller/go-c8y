@@ -36,6 +36,7 @@ type FakeServer struct {
 	Binaries                   *Store
 	Applications               *Store
 	AppVersions                *Store
+	AppBinaries                *Store // hosted application binaries (attachments)
 	Users                      *Store
 	UserGroups                 *Store
 	UserRoles                  *Store
@@ -66,6 +67,8 @@ type FakeServer struct {
 
 	// Binary data store: binaryID → binary bytes
 	BinaryData map[string][]byte
+	// binaryMu guards BinaryData for the application binary handlers
+	binaryMu sync.Mutex
 
 	// Group membership: groupID → list of userIDs
 	GroupMembers map[string][]string
@@ -156,6 +159,7 @@ func newUnstarted() *FakeServer {
 		Binaries:                   NewStore(),
 		Applications:               NewStore(),
 		AppVersions:                NewStore(),
+		AppBinaries:                NewStore(),
 		Users:                      NewStore(),
 		UserGroups:                 NewStore(),
 		UserRoles:                  NewStore(),
