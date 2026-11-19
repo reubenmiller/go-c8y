@@ -19,7 +19,7 @@
 
 ## 4. Release
 
-- [ ] 4.1 Confirm the must-land changes are merged, including adopt-generic-methods (adopt-generic-methods is in PR #191)
+- [x] 4.1 Confirm the must-land changes are merged, including adopt-generic-methods
 - [x] 4.2 Vendor the core spec again; `c8ygen lint --strict` passes
 - [x] 4.3 Group the CHANGELOG by area with migration tables for every breaking change
 - [ ] 4.4 Tag `v2.0.0` (maintainer decision; archive this change after tagging)
