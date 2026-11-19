@@ -165,6 +165,19 @@ func cmdLint(args []string) error {
 		return err
 	}
 	PrintLintReport(res)
+	unreasoned, err := CheckWaiverReasons(*overlay)
+	if err != nil {
+		return err
+	}
+	if len(unreasoned) > 0 {
+		fmt.Printf("Drift waivers without a reason (add an inline \"# reason\" or a comment heading the group):\n")
+		for _, u := range unreasoned {
+			fmt.Printf("  ! %s\n", u)
+		}
+		if *strict {
+			return fmt.Errorf("%d drift waiver(s) without a reason in %s", len(unreasoned), *overlay)
+		}
+	}
 	if *strict && res.HasDrift() {
 		return fmt.Errorf("undeclared drift detected (%d missing, %d extra); implement it, or declare it under drift: in %s",
 			len(res.MissingInSDK), len(res.ExtraInSDK), *overlay)

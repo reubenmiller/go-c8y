@@ -32,6 +32,8 @@ const (
 	ApplicationApplications = "/application/applications"
 	// ApplicationApplicationsID — GET PUT DELETE
 	ApplicationApplicationsID = "/application/applications/{id}"
+	// ApplicationApplicationsIDAuthType — PUT
+	ApplicationApplicationsIDAuthType = "/application/applications/{id}/authType"
 	// ApplicationApplicationsIDBinaries — GET POST
 	ApplicationApplicationsIDBinaries = "/application/applications/{id}/binaries"
 	// ApplicationApplicationsIDBinariesBinaryID — GET DELETE
@@ -56,6 +58,8 @@ const (
 	ApplicationApplicationsByUserUsername = "/application/applicationsByUser/{username}"
 	// ApplicationCurrentApplication — GET PUT
 	ApplicationCurrentApplication = "/application/currentApplication"
+	// ApplicationCurrentApplicationAuthType — PUT
+	ApplicationCurrentApplicationAuthType = "/application/currentApplication/authType"
 	// ApplicationCurrentApplicationSettings — GET
 	ApplicationCurrentApplicationSettings = "/application/currentApplication/settings"
 	// ApplicationCurrentApplicationSubscriptions — GET
@@ -144,6 +148,8 @@ const (
 	InventoryManagedObjectsIDSupportedSeries = "/inventory/managedObjects/{id}/supportedSeries"
 	// InventoryManagedObjectsIDUser — GET PUT
 	InventoryManagedObjectsIDUser = "/inventory/managedObjects/{id}/user"
+	// InventoryTemplatesGlobalIDGlobalIDExternalID — POST
+	InventoryTemplatesGlobalIDGlobalIDExternalID = "/inventory/templates/globalId/{globalId}/externalId"
 	// Measurement — GET
 	Measurement = "/measurement"
 	// MeasurementMeasurements — GET POST DELETE
@@ -190,6 +196,8 @@ const (
 	TenantLoginOptionsTypeOrIDRestrict = "/tenant/loginOptions/{typeOrId}/restrict"
 	// TenantOAuth — POST
 	TenantOAuth = "/tenant/oauth"
+	// TenantOAuthCertificate — POST
+	TenantOAuthCertificate = "/tenant/oauth/certificate"
 	// TenantOAuthToken — POST
 	TenantOAuthToken = "/tenant/oauth/token"
 	// TenantOptions — GET POST
@@ -226,6 +234,10 @@ const (
 	TenantTenantsTenantID = "/tenant/tenants/{tenantId}"
 	// TenantTenantsTenantIDApplications — GET POST
 	TenantTenantsTenantIDApplications = "/tenant/tenants/{tenantId}/applications"
+	// TenantTenantsTenantIDApplicationsRestrictedRoles — GET PUT
+	TenantTenantsTenantIDApplicationsRestrictedRoles = "/tenant/tenants/{tenantId}/applications/restricted-roles"
+	// TenantTenantsTenantIDApplicationsRestrictedRolesRoleID — POST DELETE
+	TenantTenantsTenantIDApplicationsRestrictedRolesRoleID = "/tenant/tenants/{tenantId}/applications/restricted-roles/{roleId}"
 	// TenantTenantsTenantIDApplicationsApplicationID — DELETE
 	TenantTenantsTenantIDApplicationsApplicationID = "/tenant/tenants/{tenantId}/applications/{applicationId}"
 	// TenantTenantsTenantIDTFA — GET PUT
@@ -242,7 +254,7 @@ const (
 	TenantTenantsTenantIDTrustedCertificatesBulk = "/tenant/tenants/{tenantId}/trusted-certificates/bulk"
 	// TenantTenantsTenantIDTrustedCertificatesFingerprint — GET PUT DELETE
 	TenantTenantsTenantIDTrustedCertificatesFingerprint = "/tenant/tenants/{tenantId}/trusted-certificates/{fingerprint}"
-	// TenantTrustedCertificatesSettingsCRL — GET PUT
+	// TenantTrustedCertificatesSettingsCRL — GET PUT POST
 	TenantTrustedCertificatesSettingsCRL = "/tenant/trusted-certificates/settings/crl"
 	// TenantTrustedCertificatesVerifyCertChain — POST
 	TenantTrustedCertificatesVerifyCertChain = "/tenant/trusted-certificates/verify-cert-chain"

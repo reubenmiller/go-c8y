@@ -23,10 +23,10 @@ For the vendored core spec, every operation (method + path) SHALL either be impl
 - **THEN** `c8ygen lint` does not report that operation, but still reports a missing `GET` on the same path
 
 ### Requirement: Restricted roles
-The SDK SHALL provide `Tenants.RestrictedRoles` with `List(ctx, opts)`, `Replace(ctx, opts, roles []string)`, `Add(ctx, opts, role string)`, and `Remove(ctx, opts, role string)`, where the tenant in `opts` defaults to the client tenant.
+The SDK SHALL provide `Tenants.RestrictedRoles` with `List(ctx, opts) op.Result[[]string]`, `Replace(ctx, opts, roles []string)`, `Add(ctx, opts, role string)`, and `Remove(ctx, opts, role string)`, where `opts` is `restrictedroles.Options` and its tenant defaults to the client tenant.
 
 #### Scenario: List
-- **WHEN** `Tenants.RestrictedRoles.List(ctx, restrictedroles.ListOptions{})` is called on a client for tenant `t1`
+- **WHEN** `Tenants.RestrictedRoles.List(ctx, restrictedroles.Options{})` is called on a client for tenant `t1`
 - **THEN** the SDK sends `GET /tenant/tenants/t1/applications/restricted-roles` and returns the role names
 
 #### Scenario: Replace
@@ -54,3 +54,21 @@ The SDK SHALL provide `TrustedCertificates.CreateBulk` for `POST /tenant/tenants
 #### Scenario: Chain check
 - **WHEN** `VerifyChain` is called with a certificate chain
 - **THEN** the SDK sends `POST /tenant/trusted-certificates/verify-cert-chain` and returns the platform's validation result
+
+### Requirement: Operations found by method-level drift
+The SDK SHALL implement the operations that method-level drift detection found missing on paths it already used: removing several children at once (`ChildDevices`, `ChildAssets`, `ChildAdditions` `.UnassignMany`, `DELETE` with a reference collection body), reading the TOTP activity (`Users.CurrentUser.TOTP.GetActivity`), and downloading an application binary (`Applications.DownloadBinary`).
+
+#### Scenario: Remove several child devices
+- **WHEN** `ChildDevices.UnassignMany(ctx, "1", "2", "3")` is called
+- **THEN** the SDK sends `DELETE /inventory/managedObjects/1/childDevices` with a body referencing managed objects `2` and `3`
+
+#### Scenario: TOTP activity
+- **WHEN** `TOTP.GetActivity(ctx)` is called and the platform answers `{"isActive":true}`
+- **THEN** the result's `IsActive()` is true
+
+### Requirement: Applications by owner use the owner endpoint
+`Applications.ListByOwner` SHALL call `GET /application/applicationsByOwner/{tenantId}`.
+
+#### Scenario: List by owner
+- **WHEN** `ListByOwner` is called with tenant `t100`
+- **THEN** the SDK sends `GET /application/applicationsByOwner/t100`

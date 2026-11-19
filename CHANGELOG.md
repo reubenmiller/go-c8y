@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+* Vendored the latest core OpenAPI spec. Added `Tenants.RestrictedRoles`, `SmartRestTemplates.BindExternalID`, `TrustedCertificates.CreateBulk`, `UnassignMany` on `ChildDevices`/`ChildAssets`/`ChildAdditions`, `TOTP.GetActivity`, and `Applications.DownloadBinary`.
+* Fixed `Applications.ListByOwner`, which called `/application/applicationsByTenant/{tenantId}` instead of `/application/applicationsByOwner/{tenantId}`.
+* `c8ygen lint` now compares operations (method + path) and requires a reason for every drift waiver; waivers can name a method (`POST /path`).
 * **Security, breaking (behavior)**: `Microservice.TenantContext` with `UseServiceUser: true` now validates the caller's credentials with `GET /user/currentUser` before acting as the tenant's service user (cached per credential). Previously any request naming a subscribed tenant got service-user access. Set `TenantContextOptions{Validation: microservice.ValidateNone}` to trust the platform proxy instead. New: `ValidationTTL`, `Validator`, `CallerInfo`, `CallerFromContext`, `RequireRoles`.
 * Added certificate login over HTTPS (`POST /tenant/oauth/certificate`) for RSA keys, including JWE token decryption, TFA, and token refresh. `LoginMethodCertificate` now picks the transport from the key type through `AuthOptions.CertificateTransport` (`Auto`, `HTTPS`, `MTLS`): RSA keys use HTTPS, EC and Ed25519 keys keep using mTLS on port 8443, with no fallback between them. **Breaking (behavior)**: RSA client certificates now use the HTTPS exchange instead of mTLS by default; set `CertificateTransportMTLS` to keep the previous behavior.
 * Added certificate opt-in helpers: `CurrentUser.SetRequiredAuthType`, `Applications.Current.SetAuthType`, `Applications.ResetAuthType`, `User.RequiredAuthType()`, and `Client.EnableCertificateAuth`, which checks the certificate before opting in.

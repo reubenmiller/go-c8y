@@ -26,7 +26,7 @@ var (
 	ApiApplicationClone      = "/application/applications/{id}/clone"
 	ApiApplicationByName     = "/application/applicationsByName/{name}"
 	ApiApplicationByTenantID = "/application/applicationsByTenant/{tenantId}"
-	ApiApplicationByOwner    = "/application/applicationsByTenant/{tenantId}"
+	ApiApplicationByOwner    = "/application/applicationsByOwner/{tenantId}"
 	ApiApplicationByUser     = "/application/applicationsByUser/{username}"
 	ApiTenantApplications    = "/tenant/tenants/{tenantId}/applications"
 	ApiTenantApplication     = "/tenant/tenants/{tenantId}/applications/{id}"
