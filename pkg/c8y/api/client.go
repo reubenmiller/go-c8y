@@ -146,6 +146,9 @@ type Client struct {
 	// token exchange (key: "{tenant}/{username}", value: *contextTokenEntry).
 	contextTokens sync.Map
 
+	// contextCertificateSource, see ClientOptions.ContextCertificateSource.
+	contextCertificateSource func(tenant string) (tls.Certificate, error)
+
 	UseKeyRing bool
 
 	// Cumulocity Version
@@ -278,6 +281,13 @@ type ClientOptions struct {
 	// (api.WithAuth / api.WithServiceUser) for OAI-Secure bearer tokens, cached
 	// per tenant/user. See Client.SetContextTokenExchange for details.
 	ContextTokenExchange bool
+
+	// ContextCertificateSource, when set, provides a client certificate per
+	// tenant for ContextTokenExchange. When it returns a certificate (RSA key),
+	// per-tenant tokens are obtained with the certificate exchange
+	// (POST /tenant/oauth/certificate) instead of the password. Return an
+	// empty tls.Certificate to use the password for that tenant.
+	ContextCertificateSource func(tenant string) (tls.Certificate, error)
 }
 
 func (c *Client) Realtime() *realtime.Client {
@@ -565,6 +575,7 @@ func NewClient(opts ClientOptions) *Client {
 		UseKeyRing:    opts.UseKeyRing,
 	}
 	c.contextTokenExchange.Store(opts.ContextTokenExchange)
+	c.contextCertificateSource = opts.ContextCertificateSource
 	c.common.Client = rclient
 	c.common.MTLSPort = opts.MTLSPort
 	c.common.CertChainHeader = buildCertChainHeader(opts.Auth)
@@ -1278,8 +1289,8 @@ func sanitiseHeaders(headers http.Header) http.Header {
 
 func (c *Client) Login(ctx context.Context) (token string, err error) {
 	if len(c.Auth.Certificate) > 0 && len(c.Auth.CertificateKey) > 0 {
-		// User certificate
-		token, err = c.loginDeviceCertificate(ctx)
+		// Client certificate (HTTPS exchange or mTLS, see AuthOptions.CertificateTransport)
+		token, _, err = c.certificateLogin(ctx, nil)
 	} else if len(c.Auth.Username) > 0 && len(c.Auth.Password) > 0 {
 		// Internal SSO
 		token, err = c.loginInternalSSO(ctx)
@@ -1533,12 +1544,11 @@ func (c *Client) loginWithMethod(ctx context.Context, m authentication.LoginMeth
 		return c.loginInternalSSOWithTFA(ctx, opts)
 
 	case authentication.LoginMethodCertificate:
-		tok, err := c.loginDeviceCertificate(ctx)
+		tok, _, err := c.certificateLogin(ctx, &opts)
 		if err != nil {
 			return "", err
 		}
-		c.SetToken(tok)
-		c.SetAuth(c.Auth)
+		c.seedTokenSource(tok)
 		return tok, nil
 
 	case authentication.LoginMethodOAuth2DeviceFlow:
@@ -1772,14 +1782,6 @@ func (c *Client) loginInternalSSO(ctx context.Context) (string, error) {
 	return tok.Data.AccessToken(), nil
 }
 
-func (c *Client) loginDeviceCertificate(ctx context.Context) (string, error) {
-	tok := c.Devices.CreateAccessToken(ctx)
-	if tok.IsError() {
-		return "", tok.Err
-	}
-	return tok.Data.AccessToken(), nil
-}
-
 // fetchToken requests a fresh bearer token using the configured credentials.
 // It does NOT update Client.Auth or the global resty auth state — the caller is
 // responsible for that. ctx should carry WithSkipTokenSource so the login
@@ -1788,7 +1790,12 @@ func (c *Client) fetchToken(ctx context.Context) (*authentication.Token, error) 
 	var raw string
 	var err error
 	if len(c.Auth.Certificate) > 0 && len(c.Auth.CertificateKey) > 0 {
-		raw, err = c.loginDeviceCertificate(ctx)
+		var expiry time.Time
+		raw, expiry, err = c.certificateLogin(ctx, nil)
+		if err != nil {
+			return nil, err
+		}
+		return &authentication.Token{AccessToken: raw, Expiry: expiry}, nil
 	} else if len(c.Auth.Username) > 0 && len(c.Auth.Password) > 0 {
 		raw, err = c.loginInternalSSO(ctx)
 	} else {

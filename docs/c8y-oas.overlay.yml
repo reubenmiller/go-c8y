@@ -291,3 +291,8 @@ drift:
     - /inventory/managedObjects/count # managed object count (platform endpoint, undocumented in the OAS)
     - /tenant/system/options/system/version # concrete key of /tenant/system/options/{category}/{key}
     - /user/{tenantId}/users/{id}/totpSecret/revoke # admin TOTP revoke (platform endpoint, not in the vendored OAS)
+    # In the latest core OAS but not yet in the vendored copy; remove when
+    # cover-latest-core-spec vendors the new spec.
+    - /tenant/oauth/certificate                       # certificate token exchange
+    - /application/currentApplication/authType        # service user certificate opt-in
+    - /application/applications/{id}/authType         # admin reset of a service user's auth type

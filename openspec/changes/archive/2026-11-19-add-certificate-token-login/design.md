@@ -28,7 +28,7 @@
 
 **TFA through existing callbacks.** The HTTPS exchange reuses `LoginOptions.TOTPSecret`, `TOTPCode`, and `SMSCode`. Device users are never asked for a second factor.
 
-**Lockout-safe opt-in helper.** `EnableCertificateAuth(ctx, cert, key)` first performs a certificate exchange; it sets `requiredAuthType` only if the exchange succeeds. The low-level setters stay available with godoc warnings.
+**Lockout-safe opt-in helper (revised during implementation).** The platform returns `401` from the exchange for any account that has not opted in yet, so an exchange cannot be the first check. `Client.EnableCertificateAuth` instead checks the key and certificate locally, verifies the chain with `verify-cert-chain` (needs tenant management read rights or a service user; `SkipChainVerification` skips it), then opts in, then confirms with an exchange and switches the client to the certificate token. If the confirmation fails, the error names the recovery path. The low-level setters stay available with godoc warnings.
 
 **Service users.** `ClientOptions` gets an optional `ContextCertificateSource func(tenant string) (tls.Certificate, error)`, used by `ContextTokenExchange`. When it returns a certificate, the exchange uses it instead of the service user's password. Service-user certificates should be RSA, because microservice containers often cannot reach port 8443.
 

@@ -21,6 +21,11 @@ type AuthOptions struct {
 	// Certificate public file path or contents
 	Certificate string
 
+	// CertificateTransport selects how Certificate is exchanged for a token:
+	// HTTPS for RSA keys, mTLS (port 8443) for others, by default. See
+	// CertificateTransport.
+	CertificateTransport CertificateTransport
+
 	// Auth preference (to control which credentials are used when more than 1 value is provided)
 	AuthType []AuthType
 

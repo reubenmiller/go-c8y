@@ -25,6 +25,9 @@ func (fs *FakeServer) handleTenants(w http.ResponseWriter, r *http.Request) {
 	case strings.HasPrefix(path, "/tenant/loginOptions"):
 		fs.handleLoginOptions(w, r)
 
+	case strings.HasPrefix(path, "/tenant/oauth/certificate"):
+		fs.handleCertificateToken(w, r)
+
 	case strings.HasPrefix(path, "/tenant/oauth"):
 		fs.handleOAuth(w, r)
 
