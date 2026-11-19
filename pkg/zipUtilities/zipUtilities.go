@@ -39,7 +39,7 @@ func zipIt(source, target string, excludeRoot bool) error {
 
 	info, err := os.Stat(source)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	var baseDir string
@@ -52,7 +52,7 @@ func zipIt(source, target string, excludeRoot bool) error {
 		}
 	}
 
-	filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -74,6 +74,10 @@ func zipIt(source, target string, excludeRoot bool) error {
 				header.Name = filepath.Join(baseDir, strings.TrimPrefix(path, source))
 			}
 		}
+
+		// Zip entry names always use forward slashes and are relative
+		// (APPNOTE 4.4.17), also on Windows
+		header.Name = strings.TrimPrefix(filepath.ToSlash(header.Name), "/")
 
 		if info.IsDir() {
 			header.Name += "/"

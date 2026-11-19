@@ -2,9 +2,23 @@ package fakeserver
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
+	"strconv"
 	"strings"
+	"time"
 )
+
+// filterByOwnerTenant keeps the applications owned by the given tenant.
+func filterByOwnerTenant(items []json.RawMessage, tenant string) []json.RawMessage {
+	out := []json.RawMessage{}
+	for _, item := range items {
+		if getJSONPath(item, "owner.tenant.id") == tenant {
+			out = append(out, item)
+		}
+	}
+	return out
+}
 
 // handleApplications routes /application/ requests.
 func (fs *FakeServer) handleApplications(w http.ResponseWriter, r *http.Request) {
@@ -53,6 +67,9 @@ func (fs *FakeServer) handleApplications(w http.ResponseWriter, r *http.Request)
 		switch r.Method {
 		case http.MethodGet:
 			items := FilterItems(r, fs.Applications.List())
+			if owner := r.URL.Query().Get("owner"); owner != "" {
+				items = filterByOwnerTenant(items, owner)
+			}
 			page := Paginate(r, items)
 			writeJSON(w, http.StatusOK, BuildCollectionResponse(r, fs.URL(), "applications", page))
 
@@ -86,7 +103,7 @@ func (fs *FakeServer) handleApplications(w http.ResponseWriter, r *http.Request)
 
 	// /application/applications/{id}/binaries
 	if len(segments) >= 2 && segments[1] == "binaries" {
-		fs.handleAppBinaries(w, r, appID)
+		fs.handleAppBinaries(w, r, appID, segments[2:])
 		return
 	}
 
@@ -335,17 +352,85 @@ func readApplicationVersionBody(r *http.Request) json.RawMessage {
 	return json.RawMessage(`{}`)
 }
 
-func (fs *FakeServer) handleAppBinaries(w http.ResponseWriter, r *http.Request, appID string) {
+// handleAppBinaries handles /application/applications/{id}/binaries[/{binaryId}].
+// Uploaded binaries are stored in fs.AppBinaries (metadata, with
+// "applicationId" and "created") and fs.BinaryData (contents).
+func (fs *FakeServer) handleAppBinaries(w http.ResponseWriter, r *http.Request, appID string, remaining []string) {
 	if _, ok := fs.Applications.Get(appID); !ok {
 		writeNotFound(w, "application")
 		return
 	}
 
+	if len(remaining) > 0 {
+		binaryID := remaining[0]
+		doc, ok := fs.AppBinaries.Get(binaryID)
+		if !ok || getJSONString(doc, "applicationId") != appID {
+			writeNotFound(w, "application/binary")
+			return
+		}
+		switch r.Method {
+		case http.MethodGet:
+			fs.binaryMu.Lock()
+			data := fs.BinaryData[binaryID]
+			fs.binaryMu.Unlock()
+			w.Header().Set("Content-Type", "application/octet-stream")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(data)
+		case http.MethodDelete:
+			fs.AppBinaries.Delete(binaryID)
+			fs.binaryMu.Lock()
+			delete(fs.BinaryData, binaryID)
+			fs.binaryMu.Unlock()
+			writeNoContent(w)
+		default:
+			writeError(w, http.StatusMethodNotAllowed, "general/methodNotAllowed", "Method not allowed")
+		}
+		return
+	}
+
 	switch r.Method {
+	case http.MethodGet:
+		attachments := []json.RawMessage{}
+		for _, doc := range fs.AppBinaries.List() {
+			if getJSONString(doc, "applicationId") == appID {
+				attachments = append(attachments, doc)
+			}
+		}
+		writeJSON(w, http.StatusOK, marshalJSON(map[string]any{"attachments": attachments}))
+
 	case http.MethodPost:
-		// Accept any binary upload — just acknowledge
-		body, _ := readBody(r)
-		_, doc := fs.Binaries.Create(body, fs.URL()+"/inventory/binaries")
+		name := "upload"
+		var data []byte
+		if strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/") {
+			if err := r.ParseMultipartForm(32 << 20); err != nil {
+				writeError(w, http.StatusBadRequest, "general/badRequest", err.Error())
+				return
+			}
+			file, header, err := r.FormFile("file")
+			if err != nil {
+				writeError(w, http.StatusBadRequest, "general/badRequest", "Missing file in multipart form")
+				return
+			}
+			defer file.Close()
+			data, _ = io.ReadAll(file)
+			name = header.Filename
+		} else {
+			data, _ = readBody(r)
+		}
+
+		// The platform returns the binary (attachment) metadata, whose id is
+		// used to activate the binary via the application's activeVersionId.
+		meta := marshalJSON(map[string]any{
+			"name":          name,
+			"contentType":   "application/zip",
+			"length":        strconv.Itoa(len(data)),
+			"applicationId": appID,
+			"created":       time.Now().UTC().Format(time.RFC3339Nano),
+		})
+		id, doc := fs.AppBinaries.Create(meta, fs.URL()+"/application/applications/"+appID+"/binaries")
+		fs.binaryMu.Lock()
+		fs.BinaryData[id] = data
+		fs.binaryMu.Unlock()
 		writeJSON(w, http.StatusCreated, doc)
 
 	default:
