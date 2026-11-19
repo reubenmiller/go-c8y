@@ -1,5 +1,8 @@
-## ADDED Requirements
+# managed-object-bulk Specification
 
+## Purpose
+Defines bulk create and update of managed objects: size limits, external IDs on create, recovery of partial writes, stream positions, and atomic get-or-create by external ID.
+## Requirements
 ### Requirement: Bulk size limit
 `ManagedObjects.CreateBulk` and `ManagedObjects.UpdateBulk` SHALL reject a slice with more than 50 items before sending any request, with an error that states the limit.
 
@@ -23,11 +26,11 @@ The SDK SHALL provide `managedobjects.ExternalID{Type, ExternalID string}` and `
 - **THEN** no request is sent and the error names both positions
 
 ### Requirement: Recover a partial bulk create
-`ManagedObjects.RecoverCreateBulk(ctx, items, err)` SHALL, for an error with `Applied == BatchAppliedPartial`: find created objects with `fragmentType=<Marker>`, create only the items whose positions were not found, remove the marker fragment from all objects, and return all objects in the original request order.
+`ManagedObjects.RecoverCreateBulk(ctx, items, err)` SHALL, for an error with `Applied == BatchAppliedPartial`: find created objects with `fragmentType=<Marker>`, create only the items whose positions were not found, remove the marker fragment from the objects that carry it, and return all objects in the original request order.
 
 #### Scenario: Two of five items were created
 - **WHEN** a 5-item bulk create fails with a marker and objects for positions 0 and 1 exist with that marker
-- **THEN** `RecoverCreateBulk` creates only positions 2 to 4, removes the marker from all 5 objects, and returns 5 objects in request order
+- **THEN** `RecoverCreateBulk` creates only positions 2 to 4, removes the marker from the 2 objects that carry it, and returns 5 objects in request order
 
 #### Scenario: Lookup fails
 - **WHEN** the marker lookup returns `503` twice and then succeeds
@@ -49,7 +52,7 @@ The SDK SHALL provide `managedobjects.ExternalID{Type, ExternalID string}` and `
 - **THEN** the stream yields every object of the second batch once and continues with the third batch
 
 ### Requirement: Atomic get-or-create by external ID
-`GetOrCreateByExternalID` SHALL create a missing object and its external ID in one request using `externalIds`. On `409`, it SHALL return the existing object bound to that external ID with `Status == op.StatusOK`.
+`GetOrCreateByExternalID` SHALL create a missing object and its external ID in one request using `externalIds`. On `409`, it SHALL return the existing object bound to that external ID with `Status == op.StatusDuplicate` (the existing contract for a conflict).
 
 #### Scenario: Object does not exist
 - **WHEN** the external ID lookup returns `404`
@@ -62,3 +65,4 @@ The SDK SHALL provide `managedobjects.ExternalID{Type, ExternalID string}` and `
 #### Scenario: Older platform without externalIds support
 - **WHEN** the platform rejects the `externalIds` field
 - **THEN** the SDK falls back to create, then assign identity, then delete on conflict
+

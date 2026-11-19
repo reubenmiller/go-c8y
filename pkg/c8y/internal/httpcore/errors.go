@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
 )
 
@@ -44,7 +45,7 @@ func coupleAPIErrors(r *resty.Response, err error) (*resty.Response, error) {
 			return nil, core.NewError(err)
 		}
 
-		return nil, &core.Error{
+		httpErr := &core.Error{
 			Code: r.StatusCode(),
 
 			Type:       apiError.ErrorType,
@@ -54,9 +55,19 @@ func coupleAPIErrors(r *resty.Response, err error) (*resty.Response, error) {
 			Duration:   r.Duration(),
 			ReceivedAt: r.ReceivedAt(),
 		}
+		if be := core.NewBatchError(httpErr, apiError.BulkRequest); be != nil {
+			return nil, be
+		}
+		return nil, httpErr
 	}
 
-	return nil, core.NewError(r)
+	httpErr := core.NewError(r)
+	if apiError, ok := r.ResultError().(*core.APIError); ok && apiError != nil {
+		if be := core.NewBatchError(httpErr, apiError.BulkRequest); be != nil {
+			return nil, be
+		}
+	}
+	return nil, httpErr
 }
 
 // getStatusCodeFromError extracts the HTTP status code from an error if it's an *Error type
@@ -69,4 +80,19 @@ func getStatusCodeFromError(err error) int {
 		return e.StatusCode()
 	}
 	return 0
+}
+
+// failed builds a failed result. Batch errors (see core.BatchError) are never
+// retryable, because the platform says to never resend a failed bulk request,
+// and get op.StatusPartial when part of the request was written.
+func failed[T any](err error, retryable bool) op.Result[T] {
+	var be *core.BatchError
+	if errors.As(err, &be) {
+		result := op.Failed[T](err, false)
+		if be.Applied == core.BatchAppliedPartial {
+			result.Status = op.StatusPartial
+		}
+		return result
+	}
+	return op.Failed[T](err, retryable)
 }

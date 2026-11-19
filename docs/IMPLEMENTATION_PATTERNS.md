@@ -753,3 +753,38 @@ type MicroserviceService struct {
 - **[DEFERRED_EXECUTION.md](./DEFERRED_EXECUTION.md)** - Deferred execution for user confirmations
 - **[DEVICE_RESOLVER_PATTERN.md](./DEVICE_RESOLVER_PATTERN.md)** - Device resolution architecture
 - **[REQUEST_INSPECTION.md](./REQUEST_INSPECTION.md)** - Request debugging and security
+
+## Bulk requests and partial failures
+
+Requests that carry several items (bulk create and update of managed objects,
+`Measurements.CreateList`) report which item failed. The SDK returns a
+`*core.BatchError` for them, whatever the endpoint:
+
+```go
+items := []any{
+    managedobjects.WithExternalIDs(map[string]any{"name": "dev1"},
+        managedobjects.ExternalID{Type: "c8y_Serial", ExternalID: "SN1"}),
+    map[string]any{"name": "dev2"},
+}
+result := client.ManagedObjects.CreateBulk(ctx, items)
+
+var be *core.BatchError
+switch {
+case result.Err == nil:
+    // all created, in request order
+case errors.As(result.Err, &be) && be.Applied == core.BatchAppliedPartial:
+    // Part of the request was written (result.Status == op.StatusPartial).
+    // Never resend the same request: recover it instead.
+    created, err := client.ManagedObjects.RecoverCreateBulk(ctx, items, be)
+    _ = created
+    _ = err
+case errors.As(result.Err, &be):
+    // Nothing (BatchAppliedNone) or an unknown part (BatchAppliedUnknown)
+    // was written; be.Index names the failing item.
+}
+```
+
+`CreateBulkStream` with `BulkStreamOptions{RecoverPartial: true}` does the
+recovery automatically. Errors yielded by the streams carry `Offset`, so
+`be.Offset + be.Index` is the position of the failing item in the whole input.
+

@@ -23,6 +23,7 @@ const (
 	StatusDuplicate Status = "Duplicate" // Resource already exists (conflict)
 	StatusNoMatch   Status = "NoMatch"   // No matches found
 	StatusFailed    Status = "Failed"    // Operation failed
+	StatusPartial   Status = "Partial"   // Part of a batch request was written before it failed (see core.BatchError)
 )
 
 // Result wraps operation results with comprehensive metadata.

@@ -2,8 +2,11 @@ package managedobjects
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"iter"
+	"net/http"
+	"strings"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/identity"
@@ -21,7 +24,19 @@ func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Man
 	return httpcore.Execute(ctx, s.createB(body), jsonmodels.NewManagedObject)
 }
 
+// CreateBulk creates up to DefaultBulkBatchSize (50) managed objects in one
+// request. Use WithExternalIDs to bind external IDs in the same request; an
+// external ID may occur only once per request. Invalid input fails before
+// anything is sent.
+//
+// If the request fails after part of it was written, the error is a
+// *core.BatchError with Applied == core.BatchAppliedPartial and the result
+// status is op.StatusPartial. Never resend the same request then: use
+// RecoverCreateBulk.
 func (s *Service) CreateBulk(ctx context.Context, managedObjects []any) op.Result[jsonmodels.ManagedObject] {
+	if err := validateBulkItems(managedObjects, true); err != nil {
+		return op.Failed[jsonmodels.ManagedObject](err, false)
+	}
 	return httpcore.ExecuteCollection(ctx, s.createBulkB(managedObjects), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
@@ -183,7 +198,16 @@ func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jso
 	return httpcore.Execute(ctx, s.updateB(resolvedID, body), jsonmodels.NewManagedObject, meta)
 }
 
+// UpdateBulk updates up to DefaultBulkBatchSize (50) managed objects by ID in
+// one request. Each ID may occur only once. External IDs cannot be changed
+// here; use the Identity API. Invalid input fails before anything is sent.
+//
+// A validation failure is a *core.BatchError naming the failing item; nothing
+// was updated then.
 func (s *Service) UpdateBulk(ctx context.Context, managedObjects []any) op.Result[jsonmodels.ManagedObject] {
+	if err := validateBulkItems(managedObjects, false); err != nil {
+		return op.Failed[jsonmodels.ManagedObject](err, false)
+	}
 	return httpcore.ExecuteCollection(ctx, s.updateBulkB(managedObjects), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
@@ -196,6 +220,11 @@ type BulkStreamOptions struct {
 	// Defaults to DefaultBulkBatchSize (50) when 0 or not set.
 	// Values above DefaultBulkBatchSize are silently capped to DefaultBulkBatchSize.
 	BatchSize int
+
+	// RecoverPartial makes CreateBulkStream recover a request that failed after
+	// part of it was written (see RecoverCreateBulk) and continue with the next
+	// request, instead of stopping. Ignored by UpdateBulkStream.
+	RecoverPartial bool
 }
 
 func (o BulkStreamOptions) batchSize() int {
@@ -215,14 +244,19 @@ func (o BulkStreamOptions) EffectiveBatchSize() int {
 // *ManagedObjectIterator that streams all updated objects back. Batching up to
 // DefaultBulkBatchSize items per request is handled transparently.
 //
-// For timeout-based flushing of sparse/real-time inputs, compose the input with
-// rill.Batch before passing it here (rill is already in go.mod).
+// When a request fails, the yielded error is a *core.BatchError (when the
+// platform names the failing item) whose Offset + Index is the position of the
+// failing item in items.
+//
+// For timeout-based flushing of sparse or real-time inputs, compose the input
+// with pipeline.Batch before passing it here.
 func (s *Service) UpdateBulkStream(ctx context.Context, items iter.Seq2[any, error], opts BulkStreamOptions) *ManagedObjectIterator {
 	return pagination.NewIterator(s.updateBulkSeq(ctx, items, opts))
 }
 
 func (s *Service) updateBulkSeq(ctx context.Context, items iter.Seq2[any, error], opts BulkStreamOptions) iter.Seq2[jsonmodels.ManagedObject, error] {
 	return func(yield func(jsonmodels.ManagedObject, error) bool) {
+		offset := 0
 		for batch, err := range pipeline.Batch(items, opts.batchSize()) {
 			if err != nil {
 				yield(*new(jsonmodels.ManagedObject), err)
@@ -242,9 +276,10 @@ func (s *Service) updateBulkSeq(ctx context.Context, items iter.Seq2[any, error]
 				jsonmodels.NewManagedObject,
 			)
 			if result.Err != nil {
-				yield(*new(jsonmodels.ManagedObject), result.Err)
+				yield(*new(jsonmodels.ManagedObject), withBatchOffset(result.Err, offset))
 				return
 			}
+			offset += len(batch)
 			for doc := range result.Data.Iter() {
 				if !yield(jsonmodels.NewManagedObject(doc.Bytes()), nil) {
 					return
@@ -258,14 +293,19 @@ func (s *Service) updateBulkSeq(ctx context.Context, items iter.Seq2[any, error]
 // *ManagedObjectIterator that streams all created objects back. Batching up to
 // DefaultBulkBatchSize items per request is handled transparently.
 //
-// For timeout-based flushing of sparse/real-time inputs, compose the input with
-// rill.Batch before passing it here (rill is already in go.mod).
+// When a request fails, the yielded error is a *core.BatchError (when the
+// platform names the failing item) whose Offset + Index is the position of the
+// failing item in items.
+//
+// For timeout-based flushing of sparse or real-time inputs, compose the input
+// with pipeline.Batch before passing it here.
 func (s *Service) CreateBulkStream(ctx context.Context, items iter.Seq2[any, error], opts BulkStreamOptions) *ManagedObjectIterator {
 	return pagination.NewIterator(s.createBulkSeq(ctx, items, opts))
 }
 
 func (s *Service) createBulkSeq(ctx context.Context, items iter.Seq2[any, error], opts BulkStreamOptions) iter.Seq2[jsonmodels.ManagedObject, error] {
 	return func(yield func(jsonmodels.ManagedObject, error) bool) {
+		offset := 0
 		for batch, err := range pipeline.Batch(items, opts.batchSize()) {
 			if err != nil {
 				yield(*new(jsonmodels.ManagedObject), err)
@@ -285,9 +325,25 @@ func (s *Service) createBulkSeq(ctx context.Context, items iter.Seq2[any, error]
 				jsonmodels.NewManagedObject,
 			)
 			if result.Err != nil {
-				yield(*new(jsonmodels.ManagedObject), result.Err)
+				var be *core.BatchError
+				if opts.RecoverPartial && errors.As(result.Err, &be) && be.Applied == core.BatchAppliedPartial {
+					recovered, recoverErr := s.RecoverCreateBulk(ctx, batch, be)
+					if recoverErr != nil && recovered == nil {
+						yield(*new(jsonmodels.ManagedObject), withBatchOffset(fmt.Errorf("%w (recovery failed: %v)", result.Err, recoverErr), offset))
+						return
+					}
+					for _, mo := range recovered {
+						if !yield(mo, nil) {
+							return
+						}
+					}
+					offset += len(batch)
+					continue
+				}
+				yield(*new(jsonmodels.ManagedObject), withBatchOffset(result.Err, offset))
 				return
 			}
+			offset += len(batch)
 			for doc := range result.Data.Iter() {
 				if !yield(jsonmodels.NewManagedObject(doc.Bytes()), nil) {
 					return
@@ -410,10 +466,14 @@ type GetOrCreateByExternalIDOptions struct {
 // Flow:
 //  1. Try to get managed object by external identity
 //  2. If found, return it with Status=OK and Meta["found"]=true
-//  3. If not found:
-//     - Create the managed object
-//     - Assign the external identity
-//     - Return with Status=Created and Meta["found"]=false
+//  3. If not found, create the managed object with the external ID in one
+//     request (externalIds on create) and return Status=Created,
+//     Meta["found"]=false.
+//  4. If another client bound the external ID first (409), return its managed
+//     object with Status=Duplicate. Nothing is created or deleted.
+//
+// On older platforms that reject externalIds on create, it falls back to
+// creating the managed object and then assigning the identity.
 //
 // Example:
 //
@@ -442,6 +502,13 @@ type externalIDState struct {
 	found         bool
 	created       bool
 	duplicate     bool
+
+	// identityAssigned is true when the create request bound the external ID
+	// itself (externalIds on create), so no separate identity request is needed.
+	identityAssigned bool
+	// orphanDeleted is true when the fallback path deleted a managed object it
+	// created because another client bound the external ID first.
+	orphanDeleted bool
 
 	// Error tracking
 	err        error
@@ -513,22 +580,45 @@ func (s *Service) executeGetOrCreateByExternalID(
 			return st, st.err
 		}
 
-		createResult := st.service.Create(ctx, st.body)
-		if createResult.Err != nil {
-			st.err = createResult.Err
+		// Create the managed object and bind the external ID in one request.
+		createResult := st.service.Create(ctx, WithExternalIDs(st.body, ExternalID{
+			Type:       st.externalIDType,
+			ExternalID: st.externalID,
+		}))
+		if createResult.Err == nil {
+			st.managedObject = createResult.Data
+			st.created = true
+			st.identityAssigned = true
 			st.httpStatus = createResult.HTTPStatus
-			return st, createResult.Err
+			return st, nil
 		}
 
-		st.managedObject = createResult.Data
-		st.created = true
+		// Another client bound the external ID first: return its object.
+		// Nothing was created, so there is nothing to clean up.
+		if createResult.HTTPStatus == http.StatusConflict {
+			return st, st.loadExisting(ctx)
+		}
+
+		// Older platforms reject the externalIds field: create without it and
+		// bind the identity in a separate request (assignIdentity step).
+		if externalIDsUnsupported(createResult.Err) {
+			createResult = st.service.Create(ctx, st.body)
+			if createResult.Err == nil {
+				st.managedObject = createResult.Data
+				st.created = true
+				st.httpStatus = createResult.HTTPStatus
+				return st, nil
+			}
+		}
+
+		st.err = createResult.Err
 		st.httpStatus = createResult.HTTPStatus
-		return st, nil
+		return st, createResult.Err
 	}
 
 	// Step 3: Assign external identity
 	assignIdentity := func(ctx context.Context, st *externalIDState) (*externalIDState, error) {
-		if st.err != nil || st.found {
+		if st.err != nil || st.found || st.duplicate || st.identityAssigned {
 			return st, st.err
 		}
 
@@ -569,6 +659,7 @@ func (s *Service) executeGetOrCreateByExternalID(
 			st.managedObject = getResult.Data
 			st.created = false
 			st.duplicate = true
+			st.orphanDeleted = true
 			st.httpStatus = 409
 			return st, nil
 		}
@@ -600,7 +691,7 @@ func (s *Service) executeGetOrCreateByExternalID(
 		return op.Duplicate(finalState.managedObject, map[string]any{
 			"externalID":      finalState.externalID,
 			"externalIDType":  finalState.externalIDType,
-			"orphanedDeleted": true,
+			"orphanedDeleted": finalState.orphanDeleted,
 		}).WithHTTPStatus(finalState.httpStatus)
 	}
 
@@ -609,6 +700,7 @@ func (s *Service) executeGetOrCreateByExternalID(
 			"externalID":       finalState.externalID,
 			"externalIDType":   finalState.externalIDType,
 			"identityAssigned": true,
+			"atomicCreate":     finalState.identityAssigned,
 			"found":            false,
 		}).WithHTTPStatus(finalState.httpStatus)
 	}
@@ -657,4 +749,50 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *ManagedObjectI
 		},
 		jsonmodels.NewManagedObject,
 	)
+}
+
+// withBatchOffset sets BatchError.Offset when err wraps a *core.BatchError.
+func withBatchOffset(err error, offset int) error {
+	var be *core.BatchError
+	if errors.As(err, &be) {
+		be.Offset = offset
+	}
+	return err
+}
+
+// loadExisting fetches the managed object already bound to the external ID and
+// marks the state as a duplicate.
+func (st *externalIDState) loadExisting(ctx context.Context) error {
+	lookup := st.service.identityService.Get(ctx, identity.IdentityOptions{
+		ExternalID: st.externalID,
+		Type:       st.externalIDType,
+	})
+	if lookup.Err != nil {
+		st.err = fmt.Errorf("external ID already bound, but failed to look it up: %w", lookup.Err)
+		st.httpStatus = lookup.HTTPStatus
+		return st.err
+	}
+	got := st.service.Get(ctx, lookup.Data.ManagedObjectID(), GetOptions{})
+	if got.Err != nil {
+		st.err = fmt.Errorf("external ID already bound, but failed to get the managed object: %w", got.Err)
+		st.httpStatus = got.HTTPStatus
+		return st.err
+	}
+	st.managedObject = got.Data
+	st.duplicate = true
+	st.httpStatus = http.StatusConflict
+	return nil
+}
+
+// externalIDsUnsupported reports whether err means the platform does not
+// accept the externalIds field on create (older platforms).
+func externalIDsUnsupported(err error) bool {
+	var e *core.Error
+	if !errors.As(err, &e) {
+		return false
+	}
+	if e.StatusCode() != http.StatusBadRequest && e.StatusCode() != http.StatusUnprocessableEntity {
+		return false
+	}
+	return strings.Contains(e.MessageRaw, "externalIds") || strings.Contains(e.Message, "externalIds")
 }

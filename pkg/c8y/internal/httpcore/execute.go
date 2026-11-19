@@ -197,7 +197,7 @@ func ExecuteNoContent(ctx context.Context, req *TryRequest, extraMeta ...map[str
 		// response (which is nil on error), so callers' IgnoreNotFound() does
 		// not apply to the request's own 404. Kept as is: changing it would
 		// change Delete semantics (tracked as a follow-up).
-		result := op.Failed[core.NoContent](err, true)
+		result := failed[core.NoContent](err, true)
 		if resp != nil {
 			result = result.WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
 		}

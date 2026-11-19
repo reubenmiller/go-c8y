@@ -53,6 +53,10 @@ type APIError struct {
 	ErrorType string `json:"error,omitempty"`   // Error type formatted as "<<resource type>>/<<error name>>"". For example, an object not found in the inventory is reported as "inventory/notFound".
 	Message   string `json:"message,omitempty"` // error message
 	Info      string `json:"info,omitempty"`    // URL to an error description on the Internet.
+
+	// BulkRequest is set when the error belongs to one item of a request that
+	// carries several items. See BatchError.
+	BulkRequest *BulkRequestInfo `json:"bulkRequest,omitempty"`
 }
 
 func (r APIError) Error() string {

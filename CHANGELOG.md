@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+* Added batch outcomes for requests that carry several items: `core.BatchError` (`Index`, `Offset`, `Applied`, `Marker`), produced for any error with a `bulkRequest` body (managed object bulk create/update, `Measurements.CreateList`), and the result status `op.StatusPartial` when part of a request was written. Batch failures are never marked retryable.
+* Added `ManagedObjects.RecoverCreateBulk` (signature `pipeline.BatchRecoverer`) and `BulkStreamOptions.RecoverPartial` to complete a partially written bulk create without duplicates.
+* Added `managedobjects.ExternalID` and `managedobjects.WithExternalIDs` to bind external IDs on create.
+* `CreateBulk` and `UpdateBulk` reject empty requests, more than 50 items, and (create) an external ID used twice, before sending anything.
+* `GetOrCreateByExternalID` now creates the managed object and its external ID in one request. A conflict returns the existing object without deleting anything. Older platforms fall back to the previous create-then-assign flow.
 * **Breaking**: resty types are no longer part of the public API, so resty upgrades cannot break go-c8y users. Migration:
 
   | Before | After |
