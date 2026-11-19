@@ -4,7 +4,7 @@
 **Branch reviewed:** `origin/v2` at `37d0690`
 **Spec compared:** latest `https://cumulocity.com/api/core/dist/c8y-oas.yml` (downloaded 2026-11-19) against the vendored `docs/c8y-oas.yml` (vendored 2026-06-07)
 
-This review covers four things: API coverage against the latest core spec, the four areas you named, and design changes worth making before the public API is frozen. Each item is tagged **Must** (do before v2.0.0, because it changes public API or is a security issue), **Should** (additive, can land in a minor release), or **Could**.
+This review covers API coverage against the latest core spec; bulk managed objects, certificate login, and multi-tenant microservices; and design changes worth making before the public API is frozen. Each item is tagged **Must** (do before v2.0.0, because it changes public API or is a security issue), **Should** (additive, can land in a minor release), or **Could**.
 
 ---
 
