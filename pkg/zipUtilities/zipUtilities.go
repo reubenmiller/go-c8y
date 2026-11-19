@@ -75,8 +75,9 @@ func zipIt(source, target string, excludeRoot bool) error {
 			}
 		}
 
-		// Zip entry names always use forward slashes (APPNOTE 4.4.17), also on Windows
-		header.Name = filepath.ToSlash(header.Name)
+		// Zip entry names always use forward slashes and are relative
+		// (APPNOTE 4.4.17), also on Windows
+		header.Name = strings.TrimPrefix(filepath.ToSlash(header.Name), "/")
 
 		if info.IsDir() {
 			header.Name += "/"
