@@ -86,6 +86,16 @@ tasks:
     cmds:
       - ./tools/scripts/check-api-surface.sh
 
+  check-docs:
+    desc: Fail on v1 import paths in docs, and build every package main example in README.md and docs/
+    cmds:
+      - ./tools/scripts/check-doc-examples.sh
+
+  check-api-compat:
+    desc: Compare the exported API with the latest v2 tag (gorelease); blocking once v2.0.0 exists
+    cmds:
+      - ./tools/scripts/check-api-compat.sh
+
   fetch-spec:
     desc: Download the latest Cumulocity OpenAPI spec into docs/c8y-oas.yml
     cmds:

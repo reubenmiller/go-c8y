@@ -391,6 +391,39 @@ for m := range result.IterAs[CustomMeasurement]() {
 }
 ```
 
+## Tenant-scoped endpoints
+
+Some endpoints have a `{tenantId}` path parameter, for example `/tenant/tenants/{tenantId}/options` or `/user/{tenantId}/users`. Their options structs have a `Tenant` (or `TenantID`) field, and the SDK picks the value in this order:
+
+1. `api.WithTenant(ctx, "t123")` on the request context. It wins over the options field and does not change which credentials are used.
+2. The `Tenant` field in the options, when it is not empty.
+3. The client's tenant (`ClientOptions.Auth.Tenant`, or the tenant found by `Client.ResolveTenant`).
+
+So in most code you leave `Tenant` empty:
+
+```go
+// Lists users of the client's own tenant
+own := client.Users.List(ctx, users.ListOptions{})
+
+// Lists users of a subtenant with the same credentials
+sub := client.Users.List(api.WithTenant(ctx, "t456"), users.ListOptions{})
+```
+
+## Listing applications
+
+`client.Applications.List` calls `GET /application/applications` and filters on the server with the query parameters in `applications.ListOptions` (`Name`, `Owner`, `Subscriber`, `ProvidedFor`, `Tenant`, `User`, `Type`, and more). The filters can be combined.
+
+The `ListBy*` methods call separate endpoints that each take one value in the path:
+
+| Method | Endpoint | Returns |
+|---|---|---|
+| `ListByName` | `/application/applicationsByName/{name}` | Applications with that name |
+| `ListByTenant` | `/application/applicationsByTenant/{tenantId}` | Applications the tenant owns or is subscribed to |
+| `ListByOwner` | `/application/applicationsByOwner/{tenantId}` | Applications the tenant owns |
+| `ListByUser` | `/application/applicationsByUser/{username}` | Applications the user can access |
+
+Use `List` when you need to combine filters or need a filter that has no `ListBy*` method (`Type`, `ProvidedFor`, `Availability`). Use a `ListBy*` method to match the endpoint other Cumulocity clients use for the same lookup.
+
 ## Service Architecture
 
 ### Service Structure Pattern

@@ -17,8 +17,8 @@ import (
 	"resty.dev/v3"
 )
 
-// RequestOptions defines options for making custom HTTP requests.
-// This provides backward compatibility with the v1 client API.
+// RequestOptions defines a custom HTTP request for [Client.SendRequest]. It is
+// supported v2 API.
 //
 // Example:
 //
@@ -146,9 +146,10 @@ func (r *RequestResult) Header(key string) string {
 	return r.Response.Header.Get(key)
 }
 
-// SendRequest creates and sends a custom HTTP request.
-// This method provides backward compatibility with the v1 client
-// and is useful for making requests not covered by typed service methods.
+// SendRequest creates and sends a custom HTTP request. It is supported v2 API
+// and the intended way to call endpoints that have no typed service method; it
+// also eases migration from the v1 client. Prefer the typed services where
+// they exist, since they return op.Result with metadata and pagination.
 //
 // Example - Simple GET:
 //
