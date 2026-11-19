@@ -22,6 +22,29 @@ The client SHALL accept middleware of type `api.Middleware`, defined as `func(ne
 - **WHEN** two middlewares A and B are registered in that order
 - **THEN** A sees the request before B, and B sees the response before A
 
+### Requirement: Built-in middleware is internal
+The middleware that `NewClient` installs itself, and the unused middleware helpers, SHALL NOT be exported. Package `api` SHALL export exactly two middleware constructors for users: `CountRequests(counter *int64) Middleware` and `CountByMethodAndPath(stats *StatsMap) Middleware`.
+
+#### Scenario: Internal middleware is not callable
+- **WHEN** user code calls `api.MiddlewareRemoveEmptyTenantID()`
+- **THEN** the code does not compile
+
+#### Scenario: Request counter
+- **WHEN** a client is created with `api.CountRequests(&n)` and sends 3 requests that succeed on the first attempt
+- **THEN** `n` is 3
+
+#### Scenario: Counter counts retry attempts
+- **WHEN** a request fails once with `503` and succeeds on the retry
+- **THEN** `api.CountRequests` counts 2
+
+#### Scenario: Dry-run requests are not counted
+- **WHEN** a request is sent with `api.WithDryRun(ctx, true)`
+- **THEN** neither counter changes
+
+#### Scenario: Statistics by method and path
+- **WHEN** a client with `api.CountByMethodAndPath(stats)` sends 2 `GET /inventory/managedObjects` requests
+- **THEN** `stats` reports 2 for `GET` and `/inventory/managedObjects`
+
 ### Requirement: Request and response hooks use standard library types
 `RequestOptions.PrepareRequest` SHALL have type `func(*http.Request) error`, and `RequestOptions.OnResponse` SHALL have type `func(*http.Response) error`. The response body passed to `OnResponse` SHALL be readable without consuming the body returned to the caller.
 

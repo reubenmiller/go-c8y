@@ -24,6 +24,15 @@ rc.4 also showed that resty's internal buffer handling can change without any si
 
 **Hooks on `*http.Request` / `*http.Response`.** `PrepareRequest` runs on the built `*http.Request` before sending (headers, query, body can still be changed). `OnResponse` receives `*http.Response` with the body already buffered so it can be read more than once.
 
+**Hide the built-in middleware; keep only the counters public** (decided 2026-11-19). The 10 exported middleware functions fall into three groups:
+- Installed by `NewClient`: `MiddlewareAddUserAgent`, `MiddlewareAddHost`, `MiddlewareRemoveEmptyTenantID`, `TokenSourceMiddleware`, `MiddlewareContextAuthorization`. Users never call them.
+- Unused: `MiddlewareAddCookies`, `MiddlewareAuthorization` (its only call is commented out), `TokenRenewalRetryMiddleware`.
+- Added by users: `MiddlewareCountByMethodAndPath` (used in `examples/pipeline`), `MiddlewareCountRequests`.
+
+The first two groups become unexported and stay resty middleware internally. Several of them cannot work as `RoundTripper` middleware: `MiddlewareRemoveEmptyTenantID` edits the `{tenantId}` path parameter before resty builds the URL, and the token and context-auth middleware hook into resty's auth steps. The counters become `api.CountRequests(*int64) api.Middleware` and `api.CountByMethodAndPath(*StatsMap) api.Middleware`. Alternative considered: keep all 10 public as `api.Middleware`. Rejected because it freezes eight functions users don't need, some would conflict with the client's own setup if added again, and some would lose their current behavior as `RoundTripper` wrappers. Users who need extra cookies or headers write their own `api.Middleware` or use `api.WithExtraHeaders`.
+
+**Counters count attempts.** As `RoundTripper` middleware, the counters see each retry attempt, not one count per logical request. They still skip dry-run and mock requests by checking the request context. Document this in their godoc.
+
 **Escape hatch `(*Client).Resty()`.** Some users need resty-level control (custom retry conditions, debug). One accessor keeps that possible while making the risk explicit. Alternative: no escape hatch. Rejected because go-c8y-cli uses resty features directly today.
 
 **Stop embedding `core.Service`.** Exported service types hold `svc *core.Service` in an unexported field. Alternative: move `core` to `internal/`. Rejected because promoted fields from an embedded internal type are still accessible to users, so moving alone does not hide them.
@@ -44,5 +53,4 @@ rc.4 also showed that resty's internal buffer handling can change without any si
 
 ## Open Questions
 
-- Should the built-in `Middleware*` helpers stay public as `api.Middleware`, or become unexported options on `ClientOptions`?
 - Does go-c8y-cli need any resty feature that `Resty()` cannot cover?

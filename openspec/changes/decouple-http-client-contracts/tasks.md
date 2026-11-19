@@ -2,7 +2,7 @@
 
 - [ ] 1.1 Land PR #180 (resty v3.0.0-rc.4 and the DryRunTransport body copy)
 - [ ] 1.2 Add a CI check that fails if `go doc -all ./pkg/...` shows a `resty.` type other than `Client.Resty()`, initially in report-only mode
-- [ ] 1.3 List go-c8y-cli call sites that use resty types through go-c8y, to size the migration
+- [ ] 1.3 List go-c8y-cli call sites that use resty types or any `Middleware*` helper through go-c8y, to size the migration
 
 ## 2. Core layer
 
@@ -15,7 +15,8 @@
 ## 3. Client layer
 
 - [ ] 3.1 Add `api.Middleware` and `ClientOptions.Middleware []api.Middleware`, applied around the transport
-- [ ] 3.2 Convert or unexport `Middleware*`, `TokenSourceMiddleware`, `TokenRenewalRetry*`, `SetAuth`, and `NoAcceptHeader`
+- [ ] 3.2 Unexport `MiddlewareAddUserAgent`, `MiddlewareAddHost`, `MiddlewareRemoveEmptyTenantID`, `TokenSourceMiddleware`, `MiddlewareContextAuthorization`, `TokenRenewalRetry`, `SetAuth`, and `NoAcceptHeader`; delete the unused `MiddlewareAddCookies`, `MiddlewareAuthorization`, and `TokenRenewalRetryMiddleware`
+- [ ] 3.2a Replace `MiddlewareCountRequests` / `MiddlewareCountByMethodAndPath` with `api.CountRequests` / `api.CountByMethodAndPath` (`api.Middleware`); update `examples/pipeline` and `test/c8y_api_test/managed_object_bulk_stream_test.go`
 - [ ] 3.3 Change `RequestOptions.PrepareRequest` and `OnResponse` to standard library types; make `OnResponse` read a buffered body
 - [ ] 3.4 Change `RequestResult.Response` to an SDK-owned type
 - [ ] 3.5 Make `Client.HTTPClient` unexported; add `(*Client).Resty()` with the compatibility warning in godoc

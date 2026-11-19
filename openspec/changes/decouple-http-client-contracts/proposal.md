@@ -11,7 +11,7 @@ The v2 public API exposes resty types (`*resty.Client`, `*resty.Request`, `*rest
   - Multipart and binary helpers use `core.MultipartField` and `*http.Response`.
 - **BREAKING** Make `Client.HTTPClient` and `core.Service.Client` unexported. Add one escape hatch, `(*Client).Resty() *resty.Client`, documented as outside the v2 compatibility guarantee.
 - **BREAKING** Services stop embedding `core.Service` in their exported types, so its fields are not promoted into every service's public API.
-- Built-in `Middleware*` helpers are either converted to `api.Middleware` or made unexported.
+- **BREAKING** Unexport the built-in middleware that `NewClient` installs itself (`MiddlewareAddUserAgent`, `MiddlewareAddHost`, `MiddlewareRemoveEmptyTenantID`, `TokenSourceMiddleware`, `MiddlewareContextAuthorization`) and the unused ones (`MiddlewareAddCookies`, `MiddlewareAuthorization`, `TokenRenewalRetryMiddleware`). Keep the two request counters public as `api.Middleware`: `api.CountRequests` and `api.CountByMethodAndPath`. The user agent stays configurable through `ClientOptions.Agent`.
 - Track resty v3.0.0 when it is released. Only internal code changes after this work.
 
 Must land before v2.0.0.
