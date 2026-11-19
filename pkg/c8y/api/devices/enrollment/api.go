@@ -30,10 +30,10 @@ var ApiEnroll = ".well-known/est/simpleenroll"
 var ApiReEnroll = ".well-known/est/simplereenroll"
 
 // Service provides device enrollment functionality to enroll new devices and receive device certificates
-type Service struct{ httpcore.Service }
+type Service struct{ svc httpcore.Service }
 
 func NewService(s *httpcore.Service) *Service {
-	return &Service{Service: *s}
+	return &Service{svc: *s}
 }
 
 // EnrollOptions options for enrolling a device
@@ -49,14 +49,14 @@ func (s *Service) Enroll(ctx context.Context, opt EnrollOptions) op.Result[X509C
 		return op.Failed[X509Certificate](fmt.Errorf("certificate signing request is required"), false)
 	}
 
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Content-Transfer-Encoding", "base64").
 		SetContentType("application/pkcs10").
 		SetBody(base64.StdEncoding.EncodeToString(opt.CSR.Raw)).
 		SetURL(ApiEnroll)
 
-	b := httpcore.NewTryRequest(s.Client, req).
+	b := httpcore.NewTryRequest(s.svc.Client, req).
 		SetBasicAuth(opt.ExternalID, opt.OneTimePassword)
 	return executeWithCertParse(ctx, b)
 }
@@ -76,14 +76,14 @@ func (s *Service) ReEnroll(ctx context.Context, opt ReEnrollOptions) op.Result[X
 		return op.Failed[X509Certificate](fmt.Errorf("certificate signing request is required"), false)
 	}
 
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Content-Transfer-Encoding", "base64").
 		SetContentType("application/pkcs10").
 		SetBody(base64.StdEncoding.EncodeToString(opt.CSR.Raw)).
 		SetURL(ApiReEnroll)
 
-	b := httpcore.NewTryRequest(s.Client, req)
+	b := httpcore.NewTryRequest(s.svc.Client, req)
 	if opt.Token != "" {
 		b.SetToken(opt.Token)
 	}
@@ -277,7 +277,7 @@ var DeviceRegistrationHeader string
 func (s *Service) EnrollmentURL(externalID string, oneTimePassword string) string {
 	return fmt.Sprintf(
 		"%s/apps/devicemanagement/index.html#/deviceregistration?externalId=%s&one-time-password=%s",
-		strings.TrimRight(s.Client.BaseURL(), "/"),
+		strings.TrimRight(s.svc.Client.BaseURL(), "/"),
 		externalID,
 		oneTimePassword,
 	)
@@ -316,7 +316,7 @@ func (s *Service) printEnrollmentLog(externalID string, oneTimePassword string, 
 		Divider         string
 	}{
 		Title:           DeviceRegistrationHeader,
-		BaseURL:         s.Client.BaseURL(),
+		BaseURL:         s.svc.Client.BaseURL(),
 		Url:             fullURL,
 		ExternalID:      externalID,
 		OneTimePassword: oneTimePassword,

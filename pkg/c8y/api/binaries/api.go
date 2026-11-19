@@ -21,10 +21,10 @@ const ResultProperty = "managedObjects"
 
 // Service to manage binaries
 // Managed objects can perform operations to store, retrieve and delete binaries. One binary can store only one file. Together with the binary, a managed object is created which acts as a metadata information for the binary.
-type Service struct{ httpcore.Service }
+type Service struct{ svc httpcore.Service }
 
 func NewService(common *httpcore.Service) *Service {
-	return &Service{Service: *common}
+	return &Service{svc: *common}
 }
 
 // ListOptions is generated from the OpenAPI spec — see zz_generated_options.go.
@@ -54,11 +54,11 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *BinaryIterator
 }
 
 func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiBinaries)
-	return httpcore.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // Get a binary
@@ -67,11 +67,11 @@ func (s *Service) Get(ctx context.Context, ID string) op.Result[core.BinaryRespo
 }
 
 func (s *Service) getB(ID string) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamID, ID).
 		SetURL(ApiBinary)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 type UploadFileOptions = core.UploadFileOptions
@@ -82,12 +82,12 @@ func (s *Service) Create(ctx context.Context, opt UploadFileOptions) op.Result[j
 }
 
 func (s *Service) createB(opt UploadFileOptions) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetMultipartFields(httpcore.NewMultiPartFileFields(opt)...).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiBinaries)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Update/replace a binary
@@ -96,14 +96,14 @@ func (s *Service) Update(ctx context.Context, ID string, opt UploadFileOptions) 
 }
 
 func (s *Service) updateB(eventID string, opt UploadFileOptions) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamID, eventID).
 		SetBody(opt.GetReader()).
 		SetContentType(types.MimeTypeApplicationOctetStream).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiBinary)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Delete a binary
@@ -112,9 +112,9 @@ func (s *Service) Delete(ctx context.Context, ID string) op.Result[core.NoConten
 }
 
 func (s *Service) deleteB(ID string) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamID, ID).
 		SetURL(ApiBinary)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }

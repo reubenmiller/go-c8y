@@ -27,10 +27,10 @@ var ParamID = "id"
 const ResultProperty = "newDeviceRequests"
 
 // Service provides api to get/set/delete device requests in Cumulocity
-type Service struct{ httpcore.Service }
+type Service struct{ svc httpcore.Service }
 
 func NewService(common *httpcore.Service) *Service {
-	return &Service{Service: *common}
+	return &Service{svc: *common}
 }
 
 // ListOptions to list the device requests
@@ -61,12 +61,12 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *DeviceRequestI
 }
 
 func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiDeviceRequests)
-	return httpcore.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // Get retrieves a device request
@@ -75,12 +75,12 @@ func (s *Service) Get(ctx context.Context, id string) op.Result[jsonmodels.Devic
 }
 
 func (s *Service) getB(id string) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, id).
 		SetURL(ApiDeviceRequest)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 type CreateOptions struct {
@@ -109,13 +109,13 @@ func (s *Service) CreateRaw(ctx context.Context, body any) op.Result[jsonmodels.
 }
 
 func (s *Service) createB(body any) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeNewDeviceRequest).
 		SetBody(body).
 		SetURL(ApiDeviceRequests)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 type UpdateOptions struct {
@@ -144,14 +144,14 @@ func (s *Service) UpdateRaw(ctx context.Context, id string, body any) op.Result[
 }
 
 func (s *Service) updateB(id string, body any) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamID, id).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeNewDeviceRequest).
 		SetBody(body).
 		SetURL(ApiDeviceRequest)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Delete removes a device request
@@ -160,11 +160,11 @@ func (s *Service) Delete(ctx context.Context, id string) op.Result[core.NoConten
 }
 
 func (s *Service) deleteB(id string) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamID, id).
 		SetURL(ApiDeviceRequest)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 /*
@@ -194,13 +194,13 @@ func (s *Service) CreateCredentialsRaw(ctx context.Context, body any) op.Result[
 }
 
 func (s *Service) createCredentialsB(body any) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeDeviceCredentials).
 		SetBody(body).
 		SetURL(ApiDeviceCredentials)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // PollNewDeviceRequest continuously polls a device request for a specified id at defined intervals. The func will wait until the device request has been set to ACCEPTED.
@@ -254,12 +254,12 @@ func (s *Service) CreateBulk(ctx context.Context, opt UploadFileOptions) op.Resu
 }
 
 func (s *Service) createBulkB(opt UploadFileOptions) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetMultipartFields(httpcore.NewMultiPartFileFields(opt)...).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiBulkDeviceRequests)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // GeneratePassword generates a device password with the recommended password length by default

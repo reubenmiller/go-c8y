@@ -23,10 +23,10 @@ var (
 const SubscriptionsResultProperty = "users"
 
 // Service to interact with the current application
-type Service struct{ httpcore.Service }
+type Service struct{ svc httpcore.Service }
 
 func NewService(s *httpcore.Service) *Service {
-	return &Service{Service: *s}
+	return &Service{svc: *s}
 }
 
 // Get the current application. Only works with application bootstrap credentials
@@ -36,11 +36,11 @@ func (s *Service) Get(ctx context.Context) op.Result[jsonmodels.Application] {
 }
 
 func (s *Service) getB() *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiApplication)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Update the current application. Requires authentication with the application
@@ -50,13 +50,13 @@ func (s *Service) Update(ctx context.Context, body any) op.Result[jsonmodels.App
 }
 
 func (s *Service) updateB(body any) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiApplication)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // ListSubscriptions retrieves the subscribed users of the current application.
@@ -67,9 +67,9 @@ func (s *Service) ListSubscriptions(ctx context.Context) op.Result[jsonmodels.Ap
 }
 
 func (s *Service) listSubscriptionsB() *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiApplicationSubscriptions)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }

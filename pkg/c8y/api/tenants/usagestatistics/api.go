@@ -22,10 +22,10 @@ const ParamChild = "child"
 const ResultProperty = "usageStatistics"
 
 // Service
-type Service struct{ httpcore.Service }
+type Service struct{ svc httpcore.Service }
 
 func NewService(common *httpcore.Service) *Service {
-	return &Service{Service: *common}
+	return &Service{svc: *common}
 }
 
 // ListOptions
@@ -61,11 +61,11 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *TenantUsageSta
 }
 
 func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiTenantStatistics)
-	return httpcore.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // ListSummaryOptions
@@ -83,11 +83,11 @@ func (s *Service) ListSummary(ctx context.Context, opt ListSummaryOptions) op.Re
 }
 
 func (s *Service) listSummaryB(opt ListSummaryOptions) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiTenantStatisticsSummary)
-	return httpcore.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // ListSummaryAllTenantsOptions
@@ -103,9 +103,9 @@ func (s *Service) ListSummaryAllTenants(ctx context.Context, opt ListSummaryAllT
 }
 
 func (s *Service) listSummaryAllTenantsB(opt ListSummaryAllTenantsOptions) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiTenantStatisticsAllTenantsSummary)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }

@@ -19,10 +19,10 @@ var ParamID = "id"
 const ResultProperty = "auditRecords"
 
 // Service provides api to get/set/delete audit entries in Cumulocity
-type Service struct{ httpcore.Service }
+type Service struct{ svc httpcore.Service }
 
 func NewService(common *httpcore.Service) *Service {
-	return &Service{Service: *common}
+	return &Service{svc: *common}
 }
 
 // ListOptions is generated from the OpenAPI spec — see zz_generated_options.go.
@@ -52,12 +52,12 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *AuditRecordIte
 }
 
 func (s *Service) listB(opt any) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiAuditRecords)
-	return httpcore.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // Get an audit record
@@ -66,12 +66,12 @@ func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Audit
 }
 
 func (s *Service) getB(ID string) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamID, ID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiAuditRecord)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Create an audit record
@@ -80,11 +80,11 @@ func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Aud
 }
 
 func (s *Service) createB(body any) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiAuditRecords)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }

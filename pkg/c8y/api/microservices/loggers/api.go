@@ -31,10 +31,10 @@ const (
 )
 
 // Service manages microservice log levels.
-type Service struct{ httpcore.Service }
+type Service struct{ svc httpcore.Service }
 
 func NewService(common *httpcore.Service) *Service {
-	return &Service{Service: *common}
+	return &Service{svc: *common}
 }
 
 // List returns the configured loggers of a microservice. The server answers
@@ -45,12 +45,12 @@ func (s *Service) List(ctx context.Context, name string) op.Result[jsonmodels.Mi
 }
 
 func (s *Service) listB(name string) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamName, name).
 		SetURL(ApiLoggers)
-	return httpcore.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // Get returns the configured/effective log level of a single logger (a
@@ -60,13 +60,13 @@ func (s *Service) Get(ctx context.Context, name string, loggerName string) op.Re
 }
 
 func (s *Service) getB(name string, loggerName string) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamName, name).
 		SetPathParam(ParamLoggerName, loggerName).
 		SetURL(ApiLogger)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Set configures the log level of a logger by POSTing the given body (e.g.
@@ -78,7 +78,7 @@ func (s *Service) Set(ctx context.Context, name string, loggerName string, body 
 }
 
 func (s *Service) setB(name string, loggerName string, body any) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
@@ -86,5 +86,5 @@ func (s *Service) setB(name string, loggerName string, body any) *httpcore.TryRe
 		SetPathParam(ParamName, name).
 		SetPathParam(ParamLoggerName, loggerName).
 		SetURL(ApiLogger)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }

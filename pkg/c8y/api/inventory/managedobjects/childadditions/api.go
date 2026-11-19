@@ -23,10 +23,10 @@ const ParamChild = "child"
 const ResultProperty = child.ResultProperty
 
 // Service
-type Service struct{ httpcore.Service }
+type Service struct{ svc httpcore.Service }
 
 func NewService(common *httpcore.Service) *Service {
-	return &Service{Service: *common}
+	return &Service{svc: *common}
 }
 
 type ListOptions child.ListOptions
@@ -54,13 +54,13 @@ func (s *Service) ListAll(ctx context.Context, parentID string, opts ListOptions
 }
 
 func (s *Service) listB(parentID string, opt ListOptions) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, parentID).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiManagedObjectChildAdditions)
-	return httpcore.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // Get existing child addition from a parent. The response is a managedObjectReference;
@@ -70,13 +70,13 @@ func (s *Service) Get(ctx context.Context, parentID string, childID string) op.R
 }
 
 func (s *Service) getB(parentID string, childID string) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamID, parentID).
 		SetPathParam(ParamChild, childID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiManagedObjectChildAddition)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Create a new managed object and assign it as a child addition to an existing managed object
@@ -85,14 +85,14 @@ func (s *Service) Create(ctx context.Context, parentID string, body any) op.Resu
 }
 
 func (s *Service) createB(parentID string, body any) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(ParamID, parentID).
 		SetContentType(types.MimeTypeManagedObject).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiManagedObjectChildAdditions)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Assign an existing child addition to a managed object
@@ -104,13 +104,13 @@ func (s *Service) Assign(ctx context.Context, parentID string, child any) op.Res
 
 func (s *Service) assignB(parentID string, child any) *httpcore.TryRequest {
 	contentType, body := model.FromManagedObjectChildReferences(child)
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetContentType(contentType).
 		SetBody(body).
 		SetPathParam(ParamID, parentID).
 		SetURL(ApiManagedObjectChildAdditions)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Unassign removes a single child-addition reference from a parent managed object
@@ -121,10 +121,10 @@ func (s *Service) Unassign(ctx context.Context, parentID string, childID string)
 }
 
 func (s *Service) unassignB(parentID string, childID string) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamID, parentID).
 		SetPathParam(ParamChild, childID).
 		SetURL(ApiManagedObjectChildAddition)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }

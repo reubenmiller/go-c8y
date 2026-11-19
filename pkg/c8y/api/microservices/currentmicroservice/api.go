@@ -17,10 +17,10 @@ var (
 )
 
 // Service
-type Service struct{ httpcore.Service }
+type Service struct{ svc httpcore.Service }
 
 func NewService(common *httpcore.Service) *Service {
-	return &Service{Service: *common}
+	return &Service{svc: *common}
 }
 
 // Get the current microservice
@@ -29,11 +29,11 @@ func (s *Service) Get(ctx context.Context) op.Result[jsonmodels.Microservice] {
 }
 
 func (s *Service) getB() *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiApplication)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // Retrieve the subscribed users of the current application
@@ -42,11 +42,11 @@ func (s *Service) ListUsers(ctx context.Context) op.Result[jsonmodels.Microservi
 }
 
 func (s *Service) listUsersB() *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiApplicationSubscriptions)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // ListSettings returns the current application settings.
@@ -59,9 +59,9 @@ func (s *Service) ListSettings(ctx context.Context) op.Result[jsonmodels.Microse
 }
 
 func (s *Service) listSettingsB() *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiApplicationSettings)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }

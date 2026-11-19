@@ -21,10 +21,10 @@ var ParamID = "id"
 var ParamManagedObjectID = "managedObjectID"
 
 // Service provides api to managed Cloud Remote Access configurations
-type Service struct{ httpcore.Service }
+type Service struct{ svc httpcore.Service }
 
 func NewService(common *httpcore.Service) *Service {
-	return &Service{Service: *common}
+	return &Service{svc: *common}
 }
 
 type ListOptions struct {
@@ -54,12 +54,12 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 }
 
 func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamManagedObjectID, opt.ManagedObjectID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiConfigurations)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 type GetOptions struct {
@@ -73,13 +73,13 @@ func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.
 }
 
 func (s *Service) getB(opt GetOptions) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamManagedObjectID, opt.ManagedObjectID).
 		SetPathParam(ParamID, opt.ConfigurationID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiConfiguration)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // ResolveID resolves a configuration reference to its id, scoped to a device.
@@ -118,14 +118,14 @@ func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonm
 }
 
 func (s *Service) createB(opt CreateOptions, body any) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam(ParamManagedObjectID, opt.ManagedObjectID).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetURL(ApiConfigurations)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 type UpdateOptions struct {
@@ -140,7 +140,7 @@ func (s *Service) Update(ctx context.Context, opt UpdateOptions) op.Result[jsonm
 }
 
 func (s *Service) updateB(opt UpdateOptions) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(ParamManagedObjectID, opt.ManagedObjectID).
 		SetPathParam(ParamID, opt.ConfigurationID).
@@ -148,7 +148,7 @@ func (s *Service) updateB(opt UpdateOptions) *httpcore.TryRequest {
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiConfiguration)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 type DeleteOptions struct {
@@ -162,10 +162,10 @@ func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.
 }
 
 func (s *Service) deleteB(opt DeleteOptions) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(ParamManagedObjectID, opt.ManagedObjectID).
 		SetPathParam(ParamID, opt.ConfigurationID).
 		SetURL(ApiConfiguration)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }

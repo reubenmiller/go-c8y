@@ -22,10 +22,10 @@ const ParamChild = "child"
 const ResultProperty = "statisticsFiles"
 
 // Service
-type Service struct{ httpcore.Service }
+type Service struct{ svc httpcore.Service }
 
 func NewService(common *httpcore.Service) *Service {
-	return &Service{Service: *common}
+	return &Service{svc: *common}
 }
 
 // ListOptions
@@ -61,11 +61,11 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *UsageStatistic
 }
 
 func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiTenantStatisticsFiles)
-	return httpcore.NewTryRequest(s.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
 }
 
 // Get a usage statistics file report
@@ -74,11 +74,11 @@ func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Usage
 }
 
 func (s *Service) getB(ID string) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam(ParamID, ID).
 		SetURL(ApiTenantStatisticsFile)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 type GetByMonthOptions struct {
@@ -92,11 +92,11 @@ func (s *Service) GetByMonth(ctx context.Context, opt GetByMonthOptions) op.Resu
 }
 
 func (s *Service) getByMonthB(opt GetByMonthOptions) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetURL(ApiTenantStatisticsFileLatestByMonth)
-	return httpcore.NewTryRequest(s.Client, req)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 // CreateOptions create options
@@ -116,10 +116,10 @@ func (s *Service) Create(ctx context.Context, opt ListOptions) op.Result[jsonmod
 }
 
 func (s *Service) createB(opt ListOptions) *httpcore.TryRequest {
-	req := s.Client.R().
+	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiTenantStatisticsFiles)
-	return httpcore.NewTryRequest(s.Client, req, "")
+	return httpcore.NewTryRequest(s.svc.Client, req, "")
 }
