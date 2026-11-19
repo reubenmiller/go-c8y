@@ -10,12 +10,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"

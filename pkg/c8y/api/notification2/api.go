@@ -10,11 +10,11 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/notification2"

@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 )
 
 // Status represents the outcome of an operation

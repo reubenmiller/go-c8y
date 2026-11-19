@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
-	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/contexthelpers"
+	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"

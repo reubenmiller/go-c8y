@@ -1,4 +1,4 @@
-package context
+package api
 
 import (
 	"context"
@@ -48,17 +48,17 @@ func TestProcessingModeContext(t *testing.T) {
 			ctx := context.Background()
 			ctx = tt.setupContext(ctx)
 
-			actual := GetProcessingMode(ctx)
-			assert.Equal(t, tt.expected, actual, "GetProcessingMode() should return expected mode")
+			actual := ProcessingMode(ctx)
+			assert.Equal(t, tt.expected, actual, "ProcessingMode() should return expected mode")
 		})
 	}
 }
 
 func TestProcessingModeNotSet(t *testing.T) {
 	ctx := context.Background()
-	mode := GetProcessingMode(ctx)
+	mode := ProcessingMode(ctx)
 
-	assert.Empty(t, mode, "GetProcessingMode() should return empty string when not set")
+	assert.Empty(t, mode, "ProcessingMode() should return empty string when not set")
 }
 
 func TestProcessingModeOverride(t *testing.T) {
@@ -66,11 +66,11 @@ func TestProcessingModeOverride(t *testing.T) {
 
 	// Set to persistent first
 	ctx = WithProcessingModePersistent(ctx)
-	mode := GetProcessingMode(ctx)
+	mode := ProcessingMode(ctx)
 	assert.Equal(t, types.ProcessingModePersistent, mode, "Should set to persistent mode")
 
 	// Override with transient
 	ctx = WithProcessingModeTransient(ctx)
-	mode = GetProcessingMode(ctx)
+	mode = ProcessingMode(ctx)
 	assert.Equal(t, types.ProcessingModeTransient, mode, "Should override to transient mode")
 }
