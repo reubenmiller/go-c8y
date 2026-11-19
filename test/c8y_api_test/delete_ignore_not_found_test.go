@@ -31,7 +31,7 @@ func TestManagedObject_Delete_KeepsOtherErrors(t *testing.T) {
 	assert.Equal(t, op.StatusFailed, result.Status)
 }
 
-// The not-found behavior applies to the other services' deletes too.
+// The not-found behaviour applies to the other services' deletes too.
 func TestEvent_Delete_NotFound(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	result := client.Events.Delete(context.Background(), "99999999")
