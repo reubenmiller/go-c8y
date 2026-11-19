@@ -192,6 +192,7 @@ generator uses, so it is a stepping-stone, not throwaway work.
 | **2** | Generate option struct + façade model for the **pilot** resource (`alarms`); refactor `api.go`/`jsonmodels` to compose them. Prove the seam. | ✅ **done** |
 | **3** | Replace the in-code registry with a spec overlay (`docs/c8y-oas.overlay.yml`); roll the pattern across resources, resource-by-resource | 🔄 **in progress** — overlay + `extraFields` done; 9 resources migrated (alarms, events, measurements, operations, tenants, auditrecords, binaries, notification2, loginoptions); remainder is divergent or low-value (see below) |
 | **4** | Make `task lint-api` **gating** (`--strict`) in CI; add `CONTRIBUTING` note: edit the spec/overlay, not `zz_generated_*.go` | ✅ **done** |
+| **5** | Method-aware drift: compare operations (method + path) inferred from `SetMethod`/`SetURL` in request builders; method-level waivers; every waiver needs a reason | ✅ **done** (2026-11-19, spec vendored the same day: 152 paths, 255 operations, 0 undeclared drift) |
 
 Each phase leaves the repo building and tested (the offline suite in
 `OFFLINE_TESTING.md` is the regression net). Stop after any phase and still net positive.

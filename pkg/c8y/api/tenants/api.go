@@ -6,6 +6,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/currenttenant"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/restrictedroles"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/systemoptions"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/tenantoptions"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/usagestatistics"
@@ -36,6 +37,7 @@ func NewService(s *httpcore.Service) *Service {
 		Current:         currenttenant.NewService(s),
 		Options:         tenantoptions.NewService(s),
 		SystemOptions:   systemoptions.NewService(s),
+		RestrictedRoles: restrictedroles.NewService(s),
 	}
 }
 
@@ -47,6 +49,7 @@ type Service struct {
 	Current         *currenttenant.Service
 	Options         *tenantoptions.Service
 	SystemOptions   *systemoptions.Service
+	RestrictedRoles *restrictedroles.Service
 }
 
 // ListOptions is generated from the OpenAPI spec — see zz_generated_options.go.

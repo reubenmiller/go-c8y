@@ -173,6 +173,8 @@ type GetOptions struct {
 	// WithCertificates includes the user's provisioned (trusted) certificates
 	// as provisionedCertificates (serialNumber, notBefore, notAfter).
 	// Note: Cumulocity omits the "enabled" field in this response.
+	// withCertificates and provisionedCertificates are not in the public core
+	// OpenAPI spec; they may change without notice.
 	WithCertificates bool `url:"withCertificates,omitempty"`
 }
 

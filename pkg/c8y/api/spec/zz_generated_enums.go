@@ -49,6 +49,21 @@ const (
 	AlarmUpsertStatusCleared      AlarmUpsertStatus = "CLEARED"
 )
 
+// ApplicationAuthTypeRequiredAuthType enumerates the values for the ApplicationAuthTypeRequiredAuthType field.
+type ApplicationAuthTypeRequiredAuthType = string
+
+const (
+	ApplicationAuthTypeRequiredAuthTypeNone         ApplicationAuthTypeRequiredAuthType = "NONE"
+	ApplicationAuthTypeRequiredAuthTypeCertificates ApplicationAuthTypeRequiredAuthType = "CERTIFICATES"
+)
+
+// ApplicationAuthTypeResetRequiredAuthType enumerates the values for the ApplicationAuthTypeResetRequiredAuthType field.
+type ApplicationAuthTypeResetRequiredAuthType = string
+
+const (
+	ApplicationAuthTypeResetRequiredAuthTypeNone ApplicationAuthTypeResetRequiredAuthType = "NONE"
+)
+
 // ApplicationAvailability enumerates the values for the ApplicationAvailability field.
 type ApplicationAvailability = string
 
@@ -235,6 +250,14 @@ const (
 	C8yAvailabilityDataStatusAvailable   C8yAvailabilityDataStatus = "AVAILABLE"
 	C8yAvailabilityDataStatusMaintenance C8yAvailabilityDataStatus = "MAINTENANCE"
 	C8yAvailabilityDataStatusUnavailable C8yAvailabilityDataStatus = "UNAVAILABLE"
+)
+
+// CurrentUserRequiredAuthType enumerates the values for the CurrentUserRequiredAuthType field.
+type CurrentUserRequiredAuthType = string
+
+const (
+	CurrentUserRequiredAuthTypeNone         CurrentUserRequiredAuthType = "NONE"
+	CurrentUserRequiredAuthTypeCertificates CurrentUserRequiredAuthType = "CERTIFICATES"
 )
 
 // FeatureTogglePhase enumerates the values for the FeatureTogglePhase field.

@@ -20,3 +20,9 @@ func (t TOTPSecret) SecretQRURL() string {
 func (t TOTPSecret) RawSecret() string {
 	return t.Get("rawSecret").String()
 }
+
+// IsActive reports whether TOTP two-factor authentication is active (from
+// GET /user/currentUser/totpSecret/activity).
+func (t TOTPSecret) IsActive() bool {
+	return t.Get("isActive").Bool()
+}

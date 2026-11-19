@@ -268,15 +268,10 @@ drift:
     - /user
     # EST enrollment — handled in the devices package under a different path.
     - /.well-known/est/*
-    # --- Known coverage gaps (TODO: implement; tracked in docs/assessment.md §2) ---
-    - /features/{featureKey}
-    - /notification/realtime
-    - /application/applicationsByOwner/{tenantId}
-    - /application/applications/{id}/binaries/{binaryId}
-    - /application/applications/{id}/versions?version=1.0
-    - /inventory/managedObjects/{id}/childDevices/{childId}
-    - /tenant/tenants/{tenantId}/trusted-certificates/bulk
-    - /tenant/trusted-certificates/verify-cert-chain
+    # Method-level waivers.
+    - POST /tenant/trusted-certificates/settings/crl # file upload is covered by PUT (certificaterevocationlist.AddFile)
+    - /notification/realtime # realtime client uses CometD over WebSocket on cep/realtime
+    - /application/applications/{id}/versions?version=1.0 # spec path with a query string; covered by the versions service
   # SDK path literals with no OAS counterpart — non-OAS features and variants.
   ignoreExtra:
     - /meta/*                   # CometD/Bayeux realtime channels (not in the REST OAS)
@@ -291,8 +286,3 @@ drift:
     - /inventory/managedObjects/count # managed object count (platform endpoint, undocumented in the OAS)
     - /tenant/system/options/system/version # concrete key of /tenant/system/options/{category}/{key}
     - /user/{tenantId}/users/{id}/totpSecret/revoke # admin TOTP revoke (platform endpoint, not in the vendored OAS)
-    # In the latest core OAS but not yet in the vendored copy; remove when
-    # cover-latest-core-spec vendors the new spec.
-    - /tenant/oauth/certificate                       # certificate token exchange
-    - /application/currentApplication/authType        # service user certificate opt-in
-    - /application/applications/{id}/authType         # admin reset of a service user's auth type

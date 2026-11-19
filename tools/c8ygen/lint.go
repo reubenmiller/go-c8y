@@ -18,7 +18,7 @@ var pathLiteral = regexp.MustCompile(`"(/[A-Za-z0-9_./{}-]+)"`)
 type LintResult struct {
 	OASPaths     int
 	SDKPaths     int
-	MissingInSDK []string // present in OAS, no matching path literal in the SDK (unwaived)
+	MissingInSDK []string // OAS operations ("METHOD /path") the SDK does not send (unwaived)
 	ExtraInSDK   []string // path literal in the SDK with no matching OAS path (unwaived)
 	WaivedCount  int      // drift items suppressed by overlay waivers
 }
@@ -46,18 +46,43 @@ func Lint(doc *OAS, srcDir string, waivers driftWaivers) (LintResult, error) {
 	}
 	res.SDKPaths = len(sdk)
 
-	missing := normalizePatterns(waivers.IgnoreMissing)
-	extra := normalizePatterns(waivers.IgnoreExtra)
+	methods, err := scanSDKMethods(srcDir)
+	if err != nil {
+		return res, err
+	}
+	// Paths used in a request builder are SDK paths even when the literal
+	// scan skipped them (e.g. single-segment paths).
+	for norm := range methods {
+		if _, ok := sdk[norm]; !ok {
+			sdk[norm] = norm
+		}
+	}
+	res.SDKPaths = len(sdk)
+	missing := parseOpWaivers(waivers.IgnoreMissing)
+	extraPatterns := make([]string, 0, len(waivers.IgnoreExtra))
+	for _, w := range waivers.IgnoreExtra {
+		_, p := splitWaiver(w)
+		extraPatterns = append(extraPatterns, p)
+	}
+	extra := normalizePatterns(extraPatterns)
 
-	for norm, orig := range oas {
-		if _, ok := sdk[norm]; ok {
-			continue
+	// Compare operations (method + path). A path the SDK uses without a
+	// method that can be inferred counts as covering every method.
+	for _, orig := range sortedKeys(doc.Paths) {
+		norm := normalizePath(orig)
+		for _, mo := range doc.Paths[orig].Operations() {
+			if _, ok := sdk[norm]; ok {
+				known := methods[norm]
+				if len(known) == 0 || known[mo.Method] {
+					continue
+				}
+			}
+			if opWaived(mo.Method, norm, missing) {
+				res.WaivedCount++
+				continue
+			}
+			res.MissingInSDK = append(res.MissingInSDK, opString(mo.Method, orig))
 		}
-		if matchesAny(norm, missing) {
-			res.WaivedCount++
-			continue
-		}
-		res.MissingInSDK = append(res.MissingInSDK, orig)
 	}
 	for norm, orig := range sdk {
 		if _, ok := oas[norm]; ok {
@@ -208,7 +233,7 @@ func PrintLintReport(r LintResult) {
 		len(r.MissingInSDK), len(r.ExtraInSDK), r.WaivedCount)
 
 	if len(r.MissingInSDK) > 0 {
-		fmt.Printf("OAS operations with no matching SDK path (potential coverage gaps):\n")
+		fmt.Printf("OAS operations the SDK does not send (potential coverage gaps):\n")
 		for _, p := range r.MissingInSDK {
 			fmt.Printf("  - %s\n", p)
 		}
