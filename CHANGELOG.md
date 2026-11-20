@@ -18,6 +18,17 @@ v2 is a new module, `github.com/reubenmiller/go-c8y/v2`. Entries marked **Breaki
   | `jsondoc.Decode[T](d)` (returned `*T`) | `d.Decode[T]()` (returns `T`) |
   | `jsonmodels.GetAs[T](mo, key)` | `mo.GetAs[T](key)` |
   | `jsonmodels.GetFragment[T](mo)` | `mo.Fragment[T]()` |
+* **Breaking**: `op.Result` has fewer methods, because each method of a generic type is compiled for every `Result` instantiation (about 100) in every package that imports the SDK. With 30 methods, importing `api` alone compiled about 5,300 functions into each importing package; it is now about 3,300 (a cold go-c8y-cli build uses about 20% less CPU). The removed methods are package functions now, which are only compiled where they are called:
+
+  | Before | After |
+  |---|---|
+  | `r.WithMeta(k, v)`, `r.WithHTTPStatus(s)`, `r.WithRequest(req)`, `r.WithResponse(b)`, `r.WithRequestID(id)`, `r.WithAttempts(n)`, `r.WithDuration(d)`, `r.WithExecutor(fn)` | `op.WithMeta(r, k, v)`, `op.WithHTTPStatus(r, s)`, ... (same name, the result first) |
+  | `r.ExecuteOrDefer(ctx)` | `op.ExecuteOrDefer(ctx, r)` |
+  | `r.IgnoreStatusCodes(codes...)` | `op.IgnoreStatusCodes(r, codes...)` |
+  | `r.IsSuccess()` / `r.IsRetryable()` | `op.IsSuccess(r)` / `op.IsRetryable(r)` |
+  | `r.TotalElements()`, `r.TotalPages()`, `r.CurrentPage()`, `r.PageSize()`, `r.HasNextPage()` | `r.Meta.TotalElements()`, ... (`Result.Meta` is now the named type `op.Meta`, still a `map[string]any`) |
+
+  `IsError`, `IsNotFound`, `IgnoreNotFound`, `IgnoreConflict`, `Unwrap`, `Items`, `Seq`, `First`, `Collect`, `IsDeferred`, `Execute`, `Documents` and the generic methods stay.
 * Added `r.Decode[U]()` on results, and `Map` and `As[U]()` on `pagination.Iterator`. `model.ErrFragmentNotFound` is now the same value as `jsondoc.ErrKeyNotFound`.
 
 ### HTTP client and middleware

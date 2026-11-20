@@ -104,7 +104,7 @@ func (opt CreateOptions) annotate(body map[string]any) map[string]any {
 
 // Create a firmware item
 func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.Firmware] {
-	return op.Result[jsonmodels.Firmware]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.Firmware] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[jsonmodels.Firmware]{}, func(execCtx context.Context) op.Result[jsonmodels.Firmware] {
 		// Build body - start with custom properties if provided
 		body := make(map[string]any)
 
@@ -152,7 +152,7 @@ func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonm
 		})
 
 		if result.IsError() {
-			return op.Failed[jsonmodels.Firmware](result.Err, result.IsRetryable())
+			return op.Failed[jsonmodels.Firmware](result.Err, op.IsRetryable(result))
 		}
 
 		// Convert ManagedObject result to Firmware result
@@ -165,8 +165,7 @@ func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonm
 		}
 
 		return firmwareResult
-	}).WithMeta("operation", "create").
-		ExecuteOrDefer(ctx)
+	}), "operation", "create"))
 }
 
 // CreateRaw creates a firmware item (managed object) from a pre-built body,
@@ -490,7 +489,7 @@ func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.R
 
 // GetOrCreate searches by name, creating if not found
 func (s *Service) GetOrCreate(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.Firmware] {
-	return op.Result[jsonmodels.Firmware]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.Firmware] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[jsonmodels.Firmware]{}, func(execCtx context.Context) op.Result[jsonmodels.Firmware] {
 		finder := func(ctx context.Context) (op.Result[jsonmodels.Firmware], bool) {
 			listResult := s.List(ctx, ListOptions{
 				Name: opt.Name,
@@ -519,13 +518,12 @@ func (s *Service) GetOrCreate(ctx context.Context, opt CreateOptions) op.Result[
 		}
 
 		return op.GetOrCreateR(execCtx, finder, creator)
-	}).WithMeta("operation", "getOrCreate").
-		ExecuteOrDefer(ctx)
+	}), "operation", "getOrCreate"))
 }
 
 // UpsertByName searches by name, updating if found or creating if not found
 func (s *Service) UpsertByName(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.Firmware] {
-	return op.Result[jsonmodels.Firmware]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.Firmware] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[jsonmodels.Firmware]{}, func(execCtx context.Context) op.Result[jsonmodels.Firmware] {
 		finder := func(ctx context.Context) (op.Result[jsonmodels.Firmware], bool) {
 			listResult := s.List(ctx, ListOptions{
 				Name: opt.Name,
@@ -594,8 +592,7 @@ func (s *Service) UpsertByName(ctx context.Context, opt CreateOptions) op.Result
 		}
 
 		return op.UpsertR(execCtx, finder, updater, creator)
-	}).WithMeta("operation", "upsertByName").
-		ExecuteOrDefer(ctx)
+	}), "operation", "upsertByName"))
 }
 
 // Builder methods

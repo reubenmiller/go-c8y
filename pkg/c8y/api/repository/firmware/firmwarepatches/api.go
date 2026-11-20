@@ -57,7 +57,7 @@ type CreateOptions struct {
 
 // Create creates a firmware patch
 func (s *Service) Create(ctx context.Context, firmwareID string, opt CreateOptions) op.Result[jsonmodels.FirmwarePatch] {
-	return op.Result[jsonmodels.FirmwarePatch]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.FirmwarePatch] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[jsonmodels.FirmwarePatch]{}, func(execCtx context.Context) op.Result[jsonmodels.FirmwarePatch] {
 		resolvedID, err := s.firmware.Resolver.ResolveID(execCtx, firmwareID, nil)
 		if err != nil {
 			return op.Failed[jsonmodels.FirmwarePatch](
@@ -84,8 +84,7 @@ func (s *Service) Create(ctx context.Context, firmwareID string, opt CreateOptio
 		}
 
 		return httpcore.Execute(execCtx, s.createB(resolvedID, patchBody), jsonmodels.NewFirmwarePatch)
-	}).WithMeta("operation", "create").
-		ExecuteOrDefer(ctx)
+	}), "operation", "create"))
 }
 
 type ListOptions struct {
@@ -421,7 +420,7 @@ type CreatePatchOptions struct {
 
 // CreatePatch creates a firmware patch with automatic firmware resolution
 func (s *Service) CreatePatch(ctx context.Context, opt CreatePatchOptions) op.Result[jsonmodels.FirmwarePatch] {
-	return op.Result[jsonmodels.FirmwarePatch]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.FirmwarePatch] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[jsonmodels.FirmwarePatch]{}, func(execCtx context.Context) op.Result[jsonmodels.FirmwarePatch] {
 		var firmwareID string
 		if opt.FirmwareID != "" {
 			firmwareID = opt.FirmwareID
@@ -448,13 +447,12 @@ func (s *Service) CreatePatch(ctx context.Context, opt CreatePatchOptions) op.Re
 			File:              opt.File,
 		}
 		return s.Create(execCtx, firmwareID, createOpt)
-	}).WithMeta("operation", "createPatch").
-		ExecuteOrDefer(ctx)
+	}), "operation", "createPatch"))
 }
 
 // GetOrCreatePatch gets or creates a firmware patch
 func (s *Service) GetOrCreatePatch(ctx context.Context, opt CreatePatchOptions) op.Result[jsonmodels.FirmwarePatch] {
-	return op.Result[jsonmodels.FirmwarePatch]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.FirmwarePatch] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[jsonmodels.FirmwarePatch]{}, func(execCtx context.Context) op.Result[jsonmodels.FirmwarePatch] {
 		finder := func(ctx context.Context) (op.Result[jsonmodels.FirmwarePatch], bool) {
 			firmwareID := opt.FirmwareID
 			if firmwareID == "" && opt.FirmwareName != "" {
@@ -504,13 +502,12 @@ func (s *Service) GetOrCreatePatch(ctx context.Context, opt CreatePatchOptions) 
 		}
 
 		return op.GetOrCreateR(execCtx, finder, creator)
-	}).WithMeta("operation", "getOrCreatePatch").
-		ExecuteOrDefer(ctx)
+	}), "operation", "getOrCreatePatch"))
 }
 
 // UpsertByVersionAndDependency upserts a firmware patch
 func (s *Service) UpsertByVersionAndDependency(ctx context.Context, opt CreatePatchOptions) op.Result[jsonmodels.FirmwarePatch] {
-	return op.Result[jsonmodels.FirmwarePatch]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.FirmwarePatch] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[jsonmodels.FirmwarePatch]{}, func(execCtx context.Context) op.Result[jsonmodels.FirmwarePatch] {
 		firmwareID := opt.FirmwareID
 		if firmwareID == "" && opt.FirmwareName != "" {
 			firmwareResult := s.firmware.Get(execCtx, firmwareitems.NewRef().ByName(opt.FirmwareName), firmwareitems.GetOptions{})
@@ -539,8 +536,7 @@ func (s *Service) UpsertByVersionAndDependency(ctx context.Context, opt CreatePa
 			Build()
 
 		return s.upsertWithQuery(execCtx, query, opt)
-	}).WithMeta("operation", "upsertByVersionAndDependency").
-		ExecuteOrDefer(ctx)
+	}), "operation", "upsertByVersionAndDependency"))
 }
 
 func (s *Service) upsertWithQuery(ctx context.Context, query string, opt CreatePatchOptions) op.Result[jsonmodels.FirmwarePatch] {

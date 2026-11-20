@@ -34,9 +34,9 @@ func Upsert[T any](
 				return Failed[T](err, isRetryableError(err)), err
 			}
 
-			return Updated(updated, map[string]any{
+			return WithDuration(Updated(updated, map[string]any{
 				"key": key,
-			}).WithDuration(time.Since(start)), nil
+			}), time.Since(start)), nil
 		}
 
 		// If error is not "not found", return it
@@ -50,9 +50,9 @@ func Upsert[T any](
 			return Failed[T](err, isRetryableError(err)), err
 		}
 
-		return Created(created, map[string]any{
+		return WithDuration(Created(created, map[string]any{
 			"key": key,
-		}).WithDuration(time.Since(start)), nil
+		}), time.Since(start)), nil
 	}
 }
 
@@ -77,8 +77,7 @@ func UpsertWithMerge[T any](
 
 			// Check if there are actual changes
 			if reflect.DeepEqual(existing, merged) {
-				return Skipped(existing, "no changes detected").
-					WithDuration(time.Since(start)), nil
+				return WithDuration(Skipped(existing, "no changes detected"), time.Since(start)), nil
 			}
 
 			// Update with merged data
@@ -87,10 +86,10 @@ func UpsertWithMerge[T any](
 				return Failed[T](err, isRetryableError(err)), err
 			}
 
-			return Updated(updated, map[string]any{
+			return WithDuration(Updated(updated, map[string]any{
 				"key":     key,
 				"changed": true,
-			}).WithDuration(time.Since(start)), nil
+			}), time.Since(start)), nil
 		}
 
 		// If error is not "not found", return it
@@ -104,9 +103,9 @@ func UpsertWithMerge[T any](
 			return Failed[T](err, isRetryableError(err)), err
 		}
 
-		return Created(created, map[string]any{
+		return WithDuration(Created(created, map[string]any{
 			"key": key,
-		}).WithDuration(time.Since(start)), nil
+		}), time.Since(start)), nil
 	}
 }
 
@@ -147,10 +146,10 @@ func UpsertWithConflictResolution[T any](
 					return Failed[T](err, isRetryableError(err)), err
 				}
 
-				return Updated(updated, map[string]any{
+				return WithAttempts(WithDuration(Updated(updated, map[string]any{
 					"key":      key,
 					"attempts": attempt + 1,
-				}).WithDuration(time.Since(start)).WithAttempts(attempt + 1), nil
+				}), time.Since(start)), attempt+1), nil
 			}
 
 			// If error is not "not found", check if retryable
@@ -176,10 +175,10 @@ func UpsertWithConflictResolution[T any](
 				return Failed[T](err, isRetryableError(err)), err
 			}
 
-			return Created(created, map[string]any{
+			return WithAttempts(WithDuration(Created(created, map[string]any{
 				"key":      key,
 				"attempts": attempt + 1,
-			}).WithDuration(time.Since(start)).WithAttempts(attempt + 1), nil
+			}), time.Since(start)), attempt+1), nil
 		}
 
 		return lastResult, lastErr
@@ -266,11 +265,11 @@ func UpsertWithOptimisticLocking[T any](
 					return Failed[T](err, isRetryableError(err)), err
 				}
 
-				return Updated(updated, map[string]any{
+				return WithAttempts(WithDuration(Updated(updated, map[string]any{
 					"key":      key,
 					"version":  versionFunc(updated),
 					"attempts": attempt + 1,
-				}).WithDuration(time.Since(start)).WithAttempts(attempt + 1), nil
+				}), time.Since(start)), attempt+1), nil
 			}
 
 			// If not found, create
@@ -284,11 +283,11 @@ func UpsertWithOptimisticLocking[T any](
 					return Failed[T](err, isRetryableError(err)), err
 				}
 
-				return Created(created, map[string]any{
+				return WithAttempts(WithDuration(Created(created, map[string]any{
 					"key":      key,
 					"version":  versionFunc(created),
 					"attempts": attempt + 1,
-				}).WithDuration(time.Since(start)).WithAttempts(attempt + 1), nil
+				}), time.Since(start)), attempt+1), nil
 			}
 
 			// Other error

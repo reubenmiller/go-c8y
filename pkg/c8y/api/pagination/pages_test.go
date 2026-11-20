@@ -30,16 +30,8 @@ func (f fakeCollection) Iter() iter.Seq[jsondoc.JSONDoc] {
 // item). Each page's Response carries the full envelope (array + statistics +
 // paging links), exactly as ExecuteCollection now retains it.
 func twoPageFetch() func(PaginationOptions) op.Result[fakeCollection] {
-	page1 := op.OK(fakeCollection{items: []string{`{"id":"1"}`, `{"id":"2"}`}}).
-		WithResponse([]byte(`{"managedObjects":[{"id":"1"},{"id":"2"}],"next":"https://x/page2","statistics":{"currentPage":1,"pageSize":2,"totalPages":2,"totalElements":3}}`)).
-		WithMeta("next", "https://x/page2").
-		WithMeta("totalPages", int64(2)).
-		WithMeta("totalElements", int64(3))
-	page2 := op.OK(fakeCollection{items: []string{`{"id":"3"}`}}).
-		WithResponse([]byte(`{"managedObjects":[{"id":"3"}],"statistics":{"currentPage":2,"pageSize":2,"totalPages":2,"totalElements":3}}`)).
-		WithMeta("next", "").
-		WithMeta("totalPages", int64(2)).
-		WithMeta("totalElements", int64(3))
+	page1 := op.WithMeta(op.WithMeta(op.WithMeta(op.WithResponse(op.OK(fakeCollection{items: []string{`{"id":"1"}`, `{"id":"2"}`}}), []byte(`{"managedObjects":[{"id":"1"},{"id":"2"}],"next":"https://x/page2","statistics":{"currentPage":1,"pageSize":2,"totalPages":2,"totalElements":3}}`)), "next", "https://x/page2"), "totalPages", int64(2)), "totalElements", int64(3))
+	page2 := op.WithMeta(op.WithMeta(op.WithMeta(op.WithResponse(op.OK(fakeCollection{items: []string{`{"id":"3"}`}}), []byte(`{"managedObjects":[{"id":"3"}],"statistics":{"currentPage":2,"pageSize":2,"totalPages":2,"totalElements":3}}`)), "next", ""), "totalPages", int64(2)), "totalElements", int64(3))
 
 	return func(opts PaginationOptions) op.Result[fakeCollection] {
 		switch opts.CurrentPage {
