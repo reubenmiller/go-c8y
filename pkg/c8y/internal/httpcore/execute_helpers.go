@@ -29,7 +29,7 @@ func deferred[T any](ctx context.Context, req *TryRequest, doNotParse bool, meta
 	}
 	result := op.Result[T]{Request: httpReq}
 	mergeMeta(&result, meta)
-	return result.WithExecutor(exec)
+	return op.WithExecutor(result, exec)
 }
 
 // dryRunRequest returns the sent request in dry-run mode, for inspection.
@@ -64,13 +64,13 @@ func mergeMeta[T any](result *op.Result[T], meta map[string]any) {
 func failedWithStatus[T any](err error, resp *resty.Response) op.Result[T] {
 	result := failed[T](err, true)
 	if resp != nil {
-		return result.WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
+		return op.WithHTTPStatus(op.WithDuration(result, resp.Duration()), resp.StatusCode())
 	}
 	var apiErr *core.Error
 	if errors.As(err, &apiErr) && apiErr.Code >= 100 && apiErr.Code < 600 {
-		result = result.WithHTTPStatus(apiErr.Code)
+		result = op.WithHTTPStatus(result, apiErr.Code)
 		if apiErr.Duration > 0 {
-			result = result.WithDuration(apiErr.Duration)
+			result = op.WithDuration(result, apiErr.Duration)
 		}
 	}
 	return result

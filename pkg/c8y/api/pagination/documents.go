@@ -27,9 +27,3 @@ func (it *Iterator[T]) Documents() iter.Seq2[jsondoc.JSONDoc, error] {
 		}
 	}
 }
-
-// PageDocuments returns one document per page: the whole response envelope
-// (items, statistics and links), e.g. for a CLI's --raw output.
-func (it *Iterator[T]) PageDocuments() iter.Seq2[jsondoc.JSONDoc, error] {
-	return it.Pages()
-}

@@ -39,10 +39,10 @@ func TestResultDocuments(t *testing.T) {
 		{"no content", nil, 0, func() ([]string, []error) { return collect(NoContent(struct{}{})) }},
 		{"dry run", nil, 0, func() ([]string, []error) {
 			req, _ := http.NewRequest(http.MethodPost, "http://x", nil)
-			return collect(OK(map[string]string{}).WithRequest(req))
+			return collect(WithRequest(OK(map[string]string{}), req))
 		}},
 		{"deferred", nil, 0, func() ([]string, []error) {
-			return collect(Result[docModel]{}.WithExecutor(func(context.Context) Result[docModel] { return Result[docModel]{} }))
+			return collect(WithExecutor(Result[docModel]{}, func(context.Context) Result[docModel] { return Result[docModel]{} }))
 		}},
 		{"plain value", []string{`{"a":"b"}`}, 0, func() ([]string, []error) { return collect(OK(map[string]string{"a": "b"})) }},
 		{"raw message", []string{`[1]`}, 0, func() ([]string, []error) { return collect(OK(json.RawMessage(`[1]`))) }},

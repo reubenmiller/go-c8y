@@ -36,10 +36,10 @@ func GetOrCreate[T any](
 		// Try to get existing resource
 		existing, err := getter(ctx, key)
 		if err == nil {
-			return OK(existing, map[string]any{
+			return WithDuration(OK(existing, map[string]any{
 				"key":    key,
 				"cached": false,
-			}).WithDuration(time.Since(start)), nil
+			}), time.Since(start)), nil
 		}
 
 		// If error is not "not found", return it
@@ -53,9 +53,9 @@ func GetOrCreate[T any](
 			return Failed[T](err, isRetryableError(err)), err
 		}
 
-		return Created(created, map[string]any{
+		return WithDuration(Created(created, map[string]any{
 			"key": key,
-		}).WithDuration(time.Since(start)), nil
+		}), time.Since(start)), nil
 	}
 }
 
@@ -77,9 +77,9 @@ func GetOrCreateWithFind[T any](
 
 		// If found, return first match
 		if len(found) > 0 {
-			return OK(found[0], map[string]any{
+			return WithDuration(OK(found[0], map[string]any{
 				"matchCount": len(found),
-			}).WithDuration(time.Since(start)), nil
+			}), time.Since(start)), nil
 		}
 
 		// Not found, create it
@@ -88,7 +88,7 @@ func GetOrCreateWithFind[T any](
 			return Failed[T](err, isRetryableError(err)), err
 		}
 
-		return Created(created).WithDuration(time.Since(start)), nil
+		return WithDuration(Created(created), time.Since(start)), nil
 	}
 }
 
@@ -136,7 +136,7 @@ func TryGetOrCreate[T any](
 			result, err := baseFunc(ctx, obj)
 
 			if err == nil {
-				return result.WithAttempts(attempt + 1), nil
+				return WithAttempts(result, attempt+1), nil
 			}
 
 			lastResult = result
@@ -161,7 +161,7 @@ func TryGetOrCreate[T any](
 			}
 		}
 
-		return lastResult.WithAttempts(retryConfig.MaxAttempts), lastErr
+		return WithAttempts(lastResult, retryConfig.MaxAttempts), lastErr
 	}
 }
 

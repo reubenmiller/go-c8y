@@ -18,7 +18,7 @@ type myDevice struct {
 }
 
 func TestResultMap(t *testing.T) {
-	r := op.OK(jsonmodels.NewManagedObject([]byte(`{"id":"1","name":"dev1"}`))).WithHTTPStatus(http.StatusOK)
+	r := op.WithHTTPStatus(op.OK(jsonmodels.NewManagedObject([]byte(`{"id":"1","name":"dev1"}`))), http.StatusOK)
 	names := r.Map(func(mo jsonmodels.ManagedObject) string { return mo.Name() })
 	assert.Equal(t, "dev1", names.Data)
 	assert.Equal(t, http.StatusOK, names.HTTPStatus)
