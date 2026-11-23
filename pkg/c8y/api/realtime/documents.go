@@ -16,11 +16,8 @@ import (
 // GetJSONDoc returns the message payload as a JSON document, so StreamData is
 // a jsondoc.Unwrapper like the other models.
 func (d StreamData[T]) GetJSONDoc() jsondoc.JSONDoc {
-	switch v := any(d.Data).(type) {
-	case jsondoc.Unwrapper:
-		return v.GetJSONDoc()
-	case jsondoc.JSONDoc:
-		return v
+	if v, ok := any(d.Data).(jsondoc.Unwrapper); ok {
+		return v.GetJSONDoc() // includes jsondoc.JSONDoc itself
 	}
 	b, err := json.Marshal(d.Data)
 	if err != nil {
