@@ -178,3 +178,45 @@ func WithNoAccept(ctx context.Context, enabled bool) context.Context {
 func WithNoAuth(ctx context.Context) context.Context {
 	return ctxhelpers.WithNoAuth(ctx)
 }
+
+// ErrRequestNotApproved is the error of a request declined by the approver set
+// with WithRequestApprover. Use errors.Is to detect it.
+var ErrRequestNotApproved = ctxhelpers.ErrRequestNotApproved
+
+// RequestApprover decides whether a request that changes data may be sent. It
+// receives the final request (resolved ids, headers and query parameters
+// applied) before it is sent, so it can show exactly what will happen.
+// Returning false declines the request with ErrRequestNotApproved; returning
+// an error declines it with that error.
+type RequestApprover = ctxhelpers.RequestApprover
+
+// WithRequestApprover returns a context whose requests that change data (any
+// method other than GET, HEAD and OPTIONS) are passed to fn before they are
+// sent. Use it for confirmation prompts: unlike deferred execution, the
+// request is built and sent once, and streaming uploads work unchanged.
+//
+// The approver is not called for dry runs, mock responses, deferred
+// preparation or the lookups that resolve references (names, external ids).
+// Combine it with WithApprovalScope so an operation that sends several
+// requests is approved once. A nil fn removes the approver.
+func WithRequestApprover(ctx context.Context, fn RequestApprover) context.Context {
+	return ctxhelpers.WithRequestApprover(ctx, fn)
+}
+
+// WithApprovalScope returns a context that starts a new approval scope: the
+// approver is asked for the first request that changes data, and every later
+// request made under the same scope reuses that decision. Start one scope per
+// logical operation, for example per input item of a CLI command.
+func WithApprovalScope(ctx context.Context) context.Context {
+	return ctxhelpers.WithApprovalScope(ctx)
+}
+
+// ResolutionContext returns the context the SDK uses for reference lookups
+// (names, external ids, queries): dry run, deferred execution, implicit mock
+// responses and the request approver are removed, everything else (auth,
+// tenant, extra headers and query parameters, processing mode, cancellation)
+// is kept. Use it when resolving a reference yourself, so the lookup behaves
+// exactly like the SDK's own.
+func ResolutionContext(ctx context.Context) context.Context {
+	return ctxhelpers.ResolutionContext(ctx)
+}
