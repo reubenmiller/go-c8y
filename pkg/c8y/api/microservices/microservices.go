@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -53,11 +52,10 @@ func getApplicationDetails(opt CreateOptions) (*model.Microservice, error) {
 	} else if opt.File != "" {
 		// Assume json (regardless of file type)
 		slog.Info("Assuming file is json (regardless of file extension)", "path", opt.File)
-		jsonFile, err := os.Open(opt.File)
+		byteValue, err := os.ReadFile(opt.File)
 		if err != nil {
 			return nil, err
 		}
-		byteValue, _ := io.ReadAll(jsonFile)
 
 		if err := json.Unmarshal(byteValue, app.Manifest); err != nil {
 			slog.Warn("invalid manifest file. Only json or zip files are accepted", "err", strings.TrimSpace(err.Error()))
