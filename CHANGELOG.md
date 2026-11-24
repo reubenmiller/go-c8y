@@ -90,6 +90,7 @@ v2 is a new module, `github.com/reubenmiller/go-c8y/v2`. Entries marked **Breaki
 
 ### Microservices
 
+* **Breaking**: `Microservices.CreateOrUpdate(ctx, opt) (*model.Microservice, error)` is now `Microservices.Deploy(ctx, opt) op.Result[jsonmodels.Microservice]`, like `Applications.DeployHosted`. The file is checked before anything is created, the lookup is sent also in a dry run (the later steps are skipped), the result's `Status` is `StatusCreated` or `StatusUpdated`, and deferred execution is supported.
 * `op.Result.Documents` yields one document per item when the result is a collection (its data is a JSON array), like a page of a pagination iterator. Before, the whole array was one document.
 * Added `Microservices.ListServiceUsers`, which lists the service users of a microservice (one per subscribed tenant): it resolves the microservice, fetches its bootstrap user and reads the subscriptions with the bootstrap user's credentials. The fake server now serves `GET /application/applications/{id}/bootstrapUser`.
 * **Security, breaking (behavior)**: `Microservice.TenantContext` with `UseServiceUser: true` now validates the caller's credentials with `GET /user/currentUser` before acting as the tenant's service user (cached per credential). Previously any request naming a subscribed tenant got service-user access. Set `TenantContextOptions{Validation: microservice.ValidateNone}` to trust the platform proxy instead. New: `ValidationTTL`, `Validator`, `CallerInfo`, `CallerFromContext`, `RequireRoles`.
