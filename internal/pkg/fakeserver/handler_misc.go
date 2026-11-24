@@ -466,6 +466,9 @@ func (fs *FakeServer) handleBulkNewDeviceRequests(w http.ResponseWriter, r *http
 			mo["com_cumulocity_model_Agent"] = map[string]any{}
 		}
 		moID, _ := fs.ManagedObjects.Create(marshalJSON(mo), fs.URL()+"/inventory/managedObjects")
+		if otp := row["ENROLLMENT_OTP"]; otp != "" {
+			fs.Enrollments.CreateWithID(id, marshalJSON(map[string]any{"otp": otp}))
+		}
 		fs.ExternalIDs.CreateWithID(storeKey, marshalJSON(map[string]any{
 			"type":       idType,
 			"externalId": id,
