@@ -3,10 +3,12 @@ package api_test
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/v2/internal/pkg/testingutils"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/devices/registration"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/identity"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects"
@@ -61,4 +63,49 @@ func Test_Registration_CreateBulk(t *testing.T) {
 	for _, failure := range again.Data.FailedCreationList() {
 		assert.NotEmpty(t, failure.FailureReason())
 	}
+}
+
+func Test_Registration_Register(t *testing.T) {
+	client := testcore.CreateTestClient(t)
+	ctx := context.Background()
+
+	id := "reg" + testingutils.RandomString(10)
+	opt := registration.RegisterOptions{
+		ExternalID:  id,
+		AuthType:    registration.AuthTypeBasic,
+		Credentials: "Pass-" + testingutils.RandomString(16),
+		Type:        "c8y_Test",
+	}
+	result := client.Devices.Registration.Register(ctx, opt)
+	require.NoError(t, result.Err)
+	t.Cleanup(func() {
+		client.ManagedObjects.Delete(ctx, result.Data.ManagedObjectID(), managedobjects.DeleteOptions{})
+	})
+	assert.Equal(t, id, result.Data.ExternalID())
+	assert.NotEmpty(t, result.Data.ManagedObjectID())
+
+	again := client.Devices.Registration.Register(ctx, opt)
+	require.Error(t, again.Err, "an external ID that exists is an error")
+	assert.Contains(t, again.Err.Error(), id)
+}
+
+func Test_Registration_Register_DryRun(t *testing.T) {
+	testcore.SkipLive(t)
+	client, srv := testcore.CreateTestClientWithFakeServer(t)
+	ctx := api.WithDryRun(context.Background(), true)
+
+	before := srv.ManagedObjects.Count()
+	var requests []string
+	ctx = api.WithDryRunHandler(ctx, func(req *http.Request) {
+		requests = append(requests, req.Method+" "+req.URL.Path)
+	})
+	result := client.Devices.Registration.Register(ctx, registration.RegisterOptions{ExternalID: "dryrun01", AuthType: registration.AuthTypeBasic, Credentials: "x"})
+	require.NoError(t, result.Err)
+	assert.Equal(t, []string{"POST /devicecontrol/bulkNewDeviceRequests"}, requests, "only the registration is shown")
+	assert.Equal(t, before, srv.ManagedObjects.Count(), "nothing is created")
+	n := 0
+	for range result.Documents() {
+		n++
+	}
+	assert.Zero(t, n)
 }

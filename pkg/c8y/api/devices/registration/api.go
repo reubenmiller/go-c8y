@@ -10,6 +10,7 @@ import (
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/devicegroups"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/identity"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/source"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
@@ -32,12 +33,13 @@ const ResultProperty = "newDeviceRequests"
 
 // Service provides api to get/set/delete device requests in Cumulocity
 type Service struct {
-	svc    httpcore.Service
-	groups *devicegroups.Service
+	svc      httpcore.Service
+	groups   *devicegroups.Service
+	identity *identity.Service
 }
 
 func NewService(common *httpcore.Service) *Service {
-	return &Service{svc: *common, groups: devicegroups.NewService(common)}
+	return &Service{svc: *common, groups: devicegroups.NewService(common), identity: identity.NewService(common)}
 }
 
 // ListOptions to list the device requests

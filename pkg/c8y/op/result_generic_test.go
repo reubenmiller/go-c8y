@@ -1,6 +1,7 @@
 package op_test
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"testing"
@@ -30,6 +31,18 @@ func TestResultMap(t *testing.T) {
 	})
 	assert.False(t, called, "fn is not called for a failed result")
 	assert.EqualError(t, failed.Err, "boom")
+}
+
+func TestResultMap_KeepsDryRunRequest(t *testing.T) {
+	req, _ := http.NewRequest(http.MethodPost, "https://example.com/inventory/managedObjects", nil)
+	dryRun := op.WithRequest(op.Created(jsonmodels.NewManagedObject(nil)), req)
+	mapped := dryRun.Map(func(jsonmodels.ManagedObject) json.RawMessage { return json.RawMessage(`{"id":"1"}`) })
+	assert.Same(t, req, mapped.Request)
+	n := 0
+	for range mapped.Documents() {
+		n++
+	}
+	assert.Zero(t, n, "a mapped dry-run result still renders nothing")
 }
 
 func TestResultFlatMap(t *testing.T) {

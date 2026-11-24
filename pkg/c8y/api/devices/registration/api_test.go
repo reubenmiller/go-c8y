@@ -316,3 +316,21 @@ func TestCreateBulk(t *testing.T) {
 		t.Errorf("created = %d, want 1", res.Data.TotalCreated())
 	}
 }
+
+func TestRegisterOptionsCSV(t *testing.T) {
+	b, err := RegisterOptions{
+		ExternalID:    "tmp01",
+		AuthType:      AuthTypeCertificates,
+		EnrollmentOTP: "LookHowSecretThisIs1337",
+		Type:          "thin-edge.io",
+		IsAgent:       true,
+	}.csv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "ID\tAUTH_TYPE\tENROLLMENT_OTP\tNAME\tTYPE\tIDTYPE\tcom_cumulocity_model_Agent.active\n" +
+		"tmp01\tCERTIFICATES\tLookHowSecretThisIs1337\ttmp01\tthin-edge.io\tc8y_Serial\ttrue\n"
+	if string(b) != want {
+		t.Errorf("csv =\n%q\nwant\n%q", b, want)
+	}
+}

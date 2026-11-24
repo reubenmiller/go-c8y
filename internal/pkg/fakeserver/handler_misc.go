@@ -414,15 +414,20 @@ func (fs *FakeServer) handleBulkNewDeviceRequests(w http.ResponseWriter, r *http
 		writeError(w, http.StatusBadRequest, "general/badRequest", err.Error())
 		return
 	}
-	f, _, err := r.FormFile("file")
-	if err != nil {
+	// The file part may come without a file name (a plain form field).
+	var content []byte
+	if f, _, ferr := r.FormFile("file"); ferr == nil {
+		var err error
+		content, err = io.ReadAll(f)
+		f.Close()
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "general/badRequest", err.Error())
+			return
+		}
+	} else if values := r.MultipartForm.Value["file"]; len(values) > 0 {
+		content = []byte(values[0])
+	} else {
 		writeError(w, http.StatusBadRequest, "general/badRequest", "missing file part")
-		return
-	}
-	defer f.Close()
-	content, err := io.ReadAll(f)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "general/badRequest", err.Error())
 		return
 	}
 	rows, err := parseBulkCSV(content)
