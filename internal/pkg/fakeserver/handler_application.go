@@ -464,9 +464,10 @@ func (fs *FakeServer) handleCurrentApplication(w http.ResponseWriter, r *http.Re
 		resp := marshalJSON(map[string]any{
 			"users": []map[string]any{
 				{
-					"tenant": "t12345",
-					"name":   "admin",
-					"self":   fs.URL() + "/tenant/tenants/t12345",
+					"tenant":   "t12345",
+					"name":     "service_t12345",
+					"password": "service-pass",
+					"self":     fs.URL() + "/tenant/tenants/t12345",
 				},
 			},
 			"self": fs.URL() + "/application/currentApplication/subscriptions",

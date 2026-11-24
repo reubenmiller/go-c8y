@@ -20,7 +20,8 @@ type DocumentSource interface {
 //   - a failed result yields its error once;
 //   - a result with nothing to show yields nothing: dry runs and deferred
 //     results (the request was not sent), 204 No Content and skipped results;
-//   - Data implementing jsondoc.Unwrapper yields its document (if non-empty);
+//   - Data implementing jsondoc.Unwrapper yields its document (if non-empty),
+//     or one document per item when it is a JSON array (a collection);
 //   - json.RawMessage / []byte Data yields it as is;
 //   - any other Data is JSON-encoded (e.g. the map of a tenant-options call).
 func (r Result[T]) Documents() iter.Seq2[jsondoc.JSONDoc, error] {
@@ -49,6 +50,17 @@ func (r Result[T]) Documents() iter.Seq2[jsondoc.JSONDoc, error] {
 		case jsondoc.Unwrapper:
 			doc := data.GetJSONDoc()
 			if len(doc.Raw()) == 0 {
+				return
+			}
+			if value := doc.Get(); value.IsArray() {
+				// a collection (e.g. the plucked items of a collection
+				// response): one document per item, like a page of a
+				// pagination iterator
+				for _, item := range value.Array() {
+					if !yield(jsondoc.New([]byte(item.Raw)), nil) {
+						return
+					}
+				}
 				return
 			}
 			yield(doc, nil)
