@@ -71,7 +71,7 @@ type CreateWithBinaryOptions struct {
 // This is a common pattern in Cumulocity where binaries need to be uploaded and linked to managed objects
 // Example use cases: configuration files, software binaries, firmware files, device certificates
 func (s *Service) CreateWithBinary(ctx context.Context, opt CreateWithBinaryOptions) op.Result[jsonmodels.ManagedObject] {
-	return op.Result[jsonmodels.ManagedObject]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.ManagedObject] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[jsonmodels.ManagedObject]{}, func(execCtx context.Context) op.Result[jsonmodels.ManagedObject] {
 		var binaryID string
 		var binaryURL string
 
@@ -164,8 +164,7 @@ func (s *Service) CreateWithBinary(ctx context.Context, opt CreateWithBinaryOpti
 		}
 
 		return createResult
-	}).WithMeta("operation", "createWithBinary").
-		ExecuteOrDefer(ctx)
+	}), "operation", "createWithBinary"))
 }
 
 func (s *Service) Get(ctx context.Context, ID string, opt GetOptions) op.Result[jsonmodels.ManagedObject] {
@@ -373,19 +372,18 @@ func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.R
 
 // GetOrCreateByName searches by name and optionally type, creating if not found
 func (s *Service) GetOrCreateByName(ctx context.Context, name, objType string, body map[string]any) op.Result[jsonmodels.ManagedObject] {
-	return op.Result[jsonmodels.ManagedObject]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.ManagedObject] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[jsonmodels.ManagedObject]{}, func(execCtx context.Context) op.Result[jsonmodels.ManagedObject] {
 		query := model.NewInventoryQuery().
 			AddFilterEqStr("name", name).
 			AddFilterEqStr("type", objType).
 			Build()
 		return s.getOrCreateWithQuery(execCtx, body, query)
-	}).WithMeta("operation", "getOrCreateByName").
-		ExecuteOrDefer(ctx)
+	}), "operation", "getOrCreateByName"))
 }
 
 // GetOrCreateByFragment searches for objects with a specific fragment property
 func (s *Service) GetOrCreateByFragment(ctx context.Context, fragment string, body map[string]any) op.Result[jsonmodels.ManagedObject] {
-	return op.Result[jsonmodels.ManagedObject]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.ManagedObject] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[jsonmodels.ManagedObject]{}, func(execCtx context.Context) op.Result[jsonmodels.ManagedObject] {
 		if fragment == "" {
 			return op.Failed[jsonmodels.ManagedObject](fmt.Errorf("fragment must be set"), false)
 		}
@@ -393,8 +391,7 @@ func (s *Service) GetOrCreateByFragment(ctx context.Context, fragment string, bo
 			HasFragment(fragment).
 			Build()
 		return s.getOrCreateWithQuery(execCtx, body, query)
-	}).WithMeta("operation", "getOrCreateByFragment").
-		ExecuteOrDefer(ctx)
+	}), "operation", "getOrCreateByFragment"))
 }
 
 // GetOrCreateWith provides a generic query-based lookup
@@ -403,13 +400,12 @@ func (s *Service) GetOrCreateByFragment(ctx context.Context, fragment string, bo
 //   - "has(c8y_IsDevice) and c8y_Serial eq '12345'"
 //   - "fragmentType eq 'c8y_CustomFragment'"
 func (s *Service) GetOrCreateWith(ctx context.Context, body map[string]any, query string) op.Result[jsonmodels.ManagedObject] {
-	return op.Result[jsonmodels.ManagedObject]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.ManagedObject] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[jsonmodels.ManagedObject]{}, func(execCtx context.Context) op.Result[jsonmodels.ManagedObject] {
 		query_ := model.NewInventoryQuery().
 			AddFilterPart(query).
 			Build()
 		return s.getOrCreateWithQuery(execCtx, body, query_)
-	}).WithMeta("operation", "getOrCreateWith").
-		ExecuteOrDefer(ctx)
+	}), "operation", "getOrCreateWith"))
 }
 
 // getOrCreateWithQuery is the internal implementation
@@ -519,15 +515,14 @@ func (s *Service) GetOrCreateByExternalID(
 	ctx context.Context,
 	opts GetOrCreateByExternalIDOptions,
 ) op.Result[jsonmodels.ManagedObject] {
-	return op.Result[jsonmodels.ManagedObject]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.ManagedObject] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[jsonmodels.ManagedObject]{}, func(execCtx context.Context) op.Result[jsonmodels.ManagedObject] {
 		// Default external ID type
 		if opts.ExternalIDType == "" {
 			opts.ExternalIDType = "c8y_Serial"
 		}
 
 		return s.executeGetOrCreateByExternalID(execCtx, opts)
-	}).WithMeta("operation", "getOrCreateByExternalID").
-		ExecuteOrDefer(ctx)
+	}), "operation", "getOrCreateByExternalID"))
 }
 
 func (s *Service) executeGetOrCreateByExternalID(
@@ -681,36 +676,33 @@ func (s *Service) executeGetOrCreateByExternalID(
 
 	// Convert state to Result
 	if finalState.err != nil {
-		return op.Failed[jsonmodels.ManagedObject](finalState.err, true).
-			WithHTTPStatus(finalState.httpStatus).
-			WithMeta("externalID", finalState.externalID).
-			WithMeta("externalIDType", finalState.externalIDType)
+		return op.WithMeta(op.WithMeta(op.WithHTTPStatus(op.Failed[jsonmodels.ManagedObject](finalState.err, true), finalState.httpStatus), "externalID", finalState.externalID), "externalIDType", finalState.externalIDType)
 	}
 
 	if finalState.duplicate {
-		return op.Duplicate(finalState.managedObject, map[string]any{
+		return op.WithHTTPStatus(op.Duplicate(finalState.managedObject, map[string]any{
 			"externalID":      finalState.externalID,
 			"externalIDType":  finalState.externalIDType,
 			"orphanedDeleted": finalState.orphanDeleted,
-		}).WithHTTPStatus(finalState.httpStatus)
+		}), finalState.httpStatus)
 	}
 
 	if finalState.created {
-		return op.Created(finalState.managedObject, map[string]any{
+		return op.WithHTTPStatus(op.Created(finalState.managedObject, map[string]any{
 			"externalID":       finalState.externalID,
 			"externalIDType":   finalState.externalIDType,
 			"identityAssigned": true,
 			"atomicCreate":     finalState.identityAssigned,
 			"found":            false,
-		}).WithHTTPStatus(finalState.httpStatus)
+		}), finalState.httpStatus)
 	}
 
-	return op.OK(finalState.managedObject, map[string]any{
+	return op.WithHTTPStatus(op.OK(finalState.managedObject, map[string]any{
 		"externalID":     finalState.externalID,
 		"externalIDType": finalState.externalIDType,
 		"found":          true,
 		"lookupMethod":   "externalIdentity",
-	}).WithHTTPStatus(finalState.httpStatus)
+	}), finalState.httpStatus)
 }
 
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.ManagedObject] {

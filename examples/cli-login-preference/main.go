@@ -453,7 +453,7 @@ func main() {
 		slog.Error("Devices API call failed", "err", devResult.Err)
 		os.Exit(1)
 	}
-	fmt.Fprintf(os.Stderr, "  Devices: %d\n", devResult.TotalElements())
+	fmt.Fprintf(os.Stderr, "  Devices: %d\n", devResult.Meta.TotalElements())
 }
 
 // ---------------------------------------------------------------------------

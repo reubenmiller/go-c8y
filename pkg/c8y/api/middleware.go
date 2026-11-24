@@ -145,6 +145,17 @@ func (t *DryRunTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	// If neither flag is set, proceed normally
 	if !isDryRun && !isMockResponses {
+		// WithRequestApprover: ask before sending a request that changes data.
+		// This runs on the final request (ids resolved, every option applied)
+		// and only for real sends: dry runs, mocks and deferred preparation
+		// never reach it. A declined request is not sent; its body is closed
+		// so a streaming (io.Pipe) body writer is released.
+		if err := ctxhelpers.ApproveRequest(ctx, req); err != nil {
+			if req.Body != nil {
+				_ = req.Body.Close()
+			}
+			return nil, err
+		}
 		return t.Transport.RoundTrip(req)
 	}
 

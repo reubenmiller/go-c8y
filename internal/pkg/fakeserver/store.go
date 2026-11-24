@@ -1,6 +1,7 @@
 package fakeserver
 
 import (
+	"bytes"
 	"encoding/json"
 	"strconv"
 	"sync"
@@ -126,7 +127,9 @@ func (s *Store) Count() int {
 	return len(s.items)
 }
 
-// mergeJSON merges two JSON objects. Fields in patch override those in base.
+// mergeJSON merges two JSON objects. Fields in patch override those in base,
+// and a top-level field set to null in patch is removed, as Cumulocity does
+// on an update (e.g. {"c8y_Position": null} removes the fragment).
 func mergeJSON(base, patch json.RawMessage) json.RawMessage {
 	var baseMap, patchMap map[string]json.RawMessage
 	if err := json.Unmarshal(base, &baseMap); err != nil {
@@ -136,6 +139,10 @@ func mergeJSON(base, patch json.RawMessage) json.RawMessage {
 		return base
 	}
 	for k, v := range patchMap {
+		if string(bytes.TrimSpace(v)) == "null" {
+			delete(baseMap, k)
+			continue
+		}
 		baseMap[k] = v
 	}
 	out, _ := json.Marshal(baseMap)

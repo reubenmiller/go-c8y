@@ -32,31 +32,45 @@ func GetOrCreate[T any](
 	return func(ctx context.Context, obj T) (Result[T], error) {
 		start := time.Now()
 		key := keyFunc(obj)
-
-		// Try to get existing resource
-		existing, err := getter(ctx, key)
-		if err == nil {
-			return OK(existing, map[string]any{
+		return getElseCreate(ctx, getter, creator, key, obj, start, func(existing T) (Result[T], error) {
+			return WithDuration(OK(existing, map[string]any{
 				"key":    key,
 				"cached": false,
-			}).WithDuration(time.Since(start)), nil
-		}
-
-		// If error is not "not found", return it
-		if !errors.Is(err, ErrNotFound) {
-			return Failed[T](err, isRetryableError(err)), err
-		}
-
-		// Resource doesn't exist, create it
-		created, err := creator(ctx, obj)
-		if err != nil {
-			return Failed[T](err, isRetryableError(err)), err
-		}
-
-		return Created(created, map[string]any{
-			"key": key,
-		}).WithDuration(time.Since(start)), nil
+			}), time.Since(start)), nil
+		})
 	}
+}
+
+// getElseCreate gets the resource with the key and passes it to found. If
+// it does not exist, obj is created instead.
+func getElseCreate[T any](
+	ctx context.Context,
+	getter GetFunc[T],
+	creator CreateFunc[T],
+	key string,
+	obj T,
+	start time.Time,
+	found func(existing T) (Result[T], error),
+) (Result[T], error) {
+	existing, err := getter(ctx, key)
+	if err == nil {
+		return found(existing)
+	}
+	if !errors.Is(err, ErrNotFound) {
+		return failed[T](err)
+	}
+	created, err := creator(ctx, obj)
+	if err != nil {
+		return failed[T](err)
+	}
+	return WithDuration(Created(created, map[string]any{
+		"key": key,
+	}), time.Since(start)), nil
+}
+
+// failed returns a failed result for err, retryable if err is.
+func failed[T any](err error) (Result[T], error) {
+	return Failed[T](err, isRetryableError(err)), err
 }
 
 // GetOrCreateWithFind uses a find operation instead of get by key
@@ -72,23 +86,23 @@ func GetOrCreateWithFind[T any](
 		// Try to find matching resource
 		found, err := finder(ctx, matcher)
 		if err != nil {
-			return Failed[T](err, isRetryableError(err)), err
+			return failed[T](err)
 		}
 
 		// If found, return first match
 		if len(found) > 0 {
-			return OK(found[0], map[string]any{
+			return WithDuration(OK(found[0], map[string]any{
 				"matchCount": len(found),
-			}).WithDuration(time.Since(start)), nil
+			}), time.Since(start)), nil
 		}
 
 		// Not found, create it
 		created, err := creator(ctx, obj)
 		if err != nil {
-			return Failed[T](err, isRetryableError(err)), err
+			return failed[T](err)
 		}
 
-		return Created(created).WithDuration(time.Since(start)), nil
+		return WithDuration(Created(created), time.Since(start)), nil
 	}
 }
 
@@ -136,7 +150,7 @@ func TryGetOrCreate[T any](
 			result, err := baseFunc(ctx, obj)
 
 			if err == nil {
-				return result.WithAttempts(attempt + 1), nil
+				return WithAttempts(result, attempt+1), nil
 			}
 
 			lastResult = result
@@ -161,7 +175,7 @@ func TryGetOrCreate[T any](
 			}
 		}
 
-		return lastResult.WithAttempts(retryConfig.MaxAttempts), lastErr
+		return WithAttempts(lastResult, retryConfig.MaxAttempts), lastErr
 	}
 }
 

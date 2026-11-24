@@ -9,6 +9,7 @@ import (
 type dryRunKey struct{}
 type mockResponsesKey struct{}
 type dryRunHandlerKey struct{}
+type mockResponsesAutoKey struct{}
 
 // WithDryRunHandler registers a callback that receives the prepared request in
 // dry-run mode, letting a caller (e.g. a CLI) render it in its own format
@@ -25,17 +26,29 @@ func DryRunHandler(ctx context.Context) func(*http.Request) {
 	return nil
 }
 
-// WithDryRun returns a context with dry run enabled
-// Dry run mode logs requests for inspection/validation
-// For backward compatibility, this also enables mock responses by default
-// To have dry run without mocks, use WithDryRun followed by WithMockResponses(ctx, false)
+// WithDryRun returns a context with dry run enabled.
+// Dry run mode logs requests for inspection/validation.
+//
+// For backward compatibility, dry run also enables mock responses unless the
+// caller has set them explicitly with WithMockResponses, before or after this
+// call: WithMockResponses(WithDryRun(ctx, true), false) and
+// WithDryRun(WithMockResponses(ctx, false), true) both give a pure dry run.
 func WithDryRun(ctx context.Context, enabled bool) context.Context {
 	ctx = context.WithValue(ctx, dryRunKey{}, enabled)
-	// Backward compatibility: enable mock responses by default with dry run
-	if enabled && !IsMockResponses(ctx) {
-		ctx = WithMockResponses(ctx, true)
+	if enabled {
+		if _, explicit := ctx.Value(mockResponsesKey{}).(bool); !explicit || IsMockResponsesAuto(ctx) {
+			ctx = context.WithValue(ctx, mockResponsesKey{}, true)
+			ctx = context.WithValue(ctx, mockResponsesAutoKey{}, true)
+		}
 	}
 	return ctx
+}
+
+// IsMockResponsesAuto reports whether mock responses were enabled implicitly by
+// WithDryRun rather than requested explicitly with WithMockResponses.
+func IsMockResponsesAuto(ctx context.Context) bool {
+	v, _ := ctx.Value(mockResponsesAutoKey{}).(bool)
+	return v
 }
 
 // IsDryRun checks if dry run is enabled in the context
@@ -50,7 +63,8 @@ func IsDryRun(ctx context.Context) bool {
 // When enabled, HTTP requests will return mock data from embedded JSON files
 // instead of making real API calls. Useful for unit testing without network dependencies.
 func WithMockResponses(ctx context.Context, enabled bool) context.Context {
-	return context.WithValue(ctx, mockResponsesKey{}, enabled)
+	ctx = context.WithValue(ctx, mockResponsesKey{}, enabled)
+	return context.WithValue(ctx, mockResponsesAutoKey{}, false)
 }
 
 // IsMockResponses checks if mock responses are enabled in the context

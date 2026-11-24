@@ -21,8 +21,17 @@ _site
 .scannerwork
 *.zip
 
-# example binaries (go build output, named after the directory)
+# example binaries (go build output, named after the directory). "go build
+# ./examples/<name>" from the repository root writes them to the root.
+/certificate-login
+/multi-tenant
+/helloworld-native
+/notification2-microservice
 examples/cached-client/cached-client
+examples/certificate-login/certificate-login
+examples/microservice/helloworld-native/helloworld-native
+examples/microservice/multi-tenant/multi-tenant
+examples/microservice/notification2-microservice/notification2-microservice
 examples/cli-demo/cli-demo
 examples/cli-login-preference/cli-login-preference
 examples/client-simple-v2/client-simple-v2
