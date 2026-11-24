@@ -257,6 +257,31 @@ func TestMergeJSON_NullRemovesField(t *testing.T) {
 	}
 }
 
+func TestCertificateAuthority_CreateStoresTheCA(t *testing.T) {
+	fs := New(t)
+	post := func() int {
+		req, _ := http.NewRequest(http.MethodPost, fs.URL()+"/certificate-authority", nil)
+		req.SetBasicAuth("t12345/admin", "admin-pass")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		return resp.StatusCode
+	}
+	// The fake server is seeded with a CA certificate.
+	if got := post(); got != http.StatusConflict {
+		t.Fatalf("with a CA: status = %d, want 409", got)
+	}
+	fs.TrustedCerts.Delete("ca-fingerprint-001")
+	if got := post(); got != http.StatusCreated {
+		t.Fatalf("without a CA: status = %d, want 201", got)
+	}
+	if got := post(); got != http.StatusConflict {
+		t.Fatalf("the created CA must be stored: status = %d, want 409", got)
+	}
+}
+
 func TestManagedObject_WithParents(t *testing.T) {
 	fs := New(t)
 	do := func(method, path, body string) []byte {
