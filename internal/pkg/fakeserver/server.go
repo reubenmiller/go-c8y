@@ -54,6 +54,12 @@ type FakeServer struct {
 	RemoteAccessConfigs        *Store
 	SystemOptions              *Store
 
+	// Enrollments: external ID → the one-time password a device enrolls with
+	// (from a bulk registration); see handleEST
+	Enrollments *Store
+	// ca signs the certificates of enrolling devices
+	ca estCA
+
 	// Identity stores: externalType+externalValue → managedObjectID
 	ExternalIDs *Store
 
@@ -177,6 +183,7 @@ func newUnstarted() *FakeServer {
 		Notification2Subscriptions: NewStore(),
 		RemoteAccessConfigs:        NewStore(),
 		SystemOptions:              NewStore(),
+		Enrollments:                NewStore(),
 
 		ChildDevices:   make(map[string][]string),
 		ChildAssets:    make(map[string][]string),
@@ -306,6 +313,10 @@ func (fs *FakeServer) registerRoutes(mux *http.ServeMux) {
 		// Certificate authority
 		case strings.HasPrefix(path, "/certificate-authority"):
 			fs.handleCertificateAuthority(w, r)
+
+		// Device certificate enrollment (EST)
+		case strings.HasPrefix(path, "/.well-known/est/"):
+			fs.handleEST(w, r)
 
 		default:
 			writeError(w, http.StatusNotFound, "general/notFound", "Endpoint not found: "+path)

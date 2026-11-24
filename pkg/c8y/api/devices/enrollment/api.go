@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
@@ -283,7 +284,9 @@ func (s *Service) EnrollmentURL(externalID string, oneTimePassword string) strin
 	)
 }
 
-func (s *Service) printEnrollmentLog(externalID string, oneTimePassword string, opts DeviceEnrollmentBannerOptions) error {
+// WriteBanner writes the banner which asks a user to register the device, with
+// the registration URL and, if a QRCodeRenderer is given, its QR code.
+func (s *Service) WriteBanner(w io.Writer, externalID string, oneTimePassword string, opts DeviceEnrollmentBannerOptions) error {
 	if opts.Template == "" {
 		opts.Template = DeviceEnrollmentDefaultTemplate
 	}
@@ -325,7 +328,7 @@ func (s *Service) printEnrollmentLog(externalID string, oneTimePassword string, 
 		QRCode:          qrcode,
 		Divider:         strings.Repeat("-", 80),
 	})
-	_, err = fmt.Fprintf(os.Stderr, "%s\n", b.String())
+	_, err = fmt.Fprintf(w, "%s\n", b.String())
 	return err
 }
 
@@ -344,7 +347,7 @@ func (s *Service) PollEnroll(ctx context.Context, opts DeviceEnrollmentOption) <
 	done := make(chan DeviceEnrollmentPollResult)
 
 	if opts.Banner != nil && opts.Banner.Enable {
-		if err := s.printEnrollmentLog(opts.ExternalID, opts.OneTimePassword, *opts.Banner); err != nil {
+		if err := s.WriteBanner(os.Stderr, opts.ExternalID, opts.OneTimePassword, *opts.Banner); err != nil {
 			slog.Warn("Failed to print enrollment banner", "err", err)
 		}
 	}
