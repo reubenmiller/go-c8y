@@ -19,7 +19,11 @@ import (
 // budget is the most functions the probe package may contain. Raise it only
 // for a deliberate API addition, and say why in the pull request. The count
 // was 3,615 when the budget was set (5,291 before op.Result was slimmed).
-const budget = 3800
+//
+// Raised from 3,800 to 3,850 for the Digital Twin Manager read-only service
+// (client.DigitalTwin): six op.Result and four pagination.Iterator
+// instantiations for its models, 3,836 functions in all.
+const budget = 3850
 
 func TestCompiledFunctionBudget(t *testing.T) {
 	if testing.Short() {
