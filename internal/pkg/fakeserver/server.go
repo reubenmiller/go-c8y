@@ -54,7 +54,7 @@ type FakeServer struct {
 	RemoteAccessConfigs        *Store
 	SystemOptions              *Store
 
-	// Enrollments: external ID → the one-time password a device enrolls with
+	// Enrollments: external ID → the one-time password a device requests its certificate with
 	// (from a bulk registration); see handleEST
 	Enrollments *Store
 	// ca signs the certificates of enrolling devices

@@ -33,7 +33,7 @@ func (ca *estCA) init() error {
 		}
 		tmpl := &x509.Certificate{
 			SerialNumber:          big.NewInt(1),
-			Subject:               pkix.Name{CommonName: "Fake Tenant CA", Organization: []string{"t12345"}},
+			Subject:               pkix.Name{CommonName: "Fake Tenant CA", Organization: []string{"t12345"}}, //nolint:misspell
 			NotBefore:             time.Now().Add(-time.Hour),
 			NotAfter:              time.Now().AddDate(10, 0, 0),
 			IsCA:                  true,

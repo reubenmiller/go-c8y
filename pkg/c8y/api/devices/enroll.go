@@ -22,7 +22,7 @@ type EnrollOptions struct {
 	// Type of the device, used when Register registers it
 	Type string
 
-	// OneTimePassword the device enrolls with. A random one is generated when empty
+	// OneTimePassword the device requests its certificate with. A random one is generated when empty
 	OneTimePassword string
 
 	// CSR is the device's certificate signing request (required)
