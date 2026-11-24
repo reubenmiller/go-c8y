@@ -152,7 +152,7 @@ func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonm
 		})
 
 		if result.IsError() {
-			return op.Failed[jsonmodels.Firmware](result.Err, op.IsRetryable(result))
+			return op.Failed[jsonmodels.Firmware](result.Err, result.IsRetryable())
 		}
 
 		// Convert ManagedObject result to Firmware result

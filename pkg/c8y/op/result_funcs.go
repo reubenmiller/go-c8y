@@ -8,12 +8,8 @@ import (
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 )
 
-// Result builders and rarely used checks are package functions rather than
-// methods of Result on purpose. Every method of a generic type is compiled for
-// each of its instantiations in every package that (indirectly) refers to
-// them, and the SDK has around a hundred Result instantiations, so each method
-// costs every importing package a hundred functions. Functions are only
-// compiled where they are called.
+// The functions below build a Result. They are package functions rather than
+// methods on purpose: see the package documentation.
 
 // WithHTTPStatus returns r with the HTTP status code set.
 func WithHTTPStatus[T any](r Result[T], status int) Result[T] {
@@ -78,32 +74,6 @@ func ExecuteOrDefer[T any](ctx context.Context, r Result[T]) Result[T] {
 		return r
 	}
 	return r.Execute(ctx)
-}
-
-// IgnoreStatusCodes clears the error of r if its HTTP status is one of codes.
-//
-//	result := op.IgnoreStatusCodes(client.Update(ctx, data), 404, 409)
-func IgnoreStatusCodes[T any](r Result[T], codes ...int) Result[T] {
-	for _, code := range codes {
-		if r.HTTPStatus == code {
-			r.Err = nil
-			r = WithMeta(r, "ignoredStatus", code)
-			break
-		}
-	}
-	return r
-}
-
-// IsSuccess reports whether the operation succeeded.
-func IsSuccess[T any](r Result[T]) bool {
-	return r.Status == StatusOK || r.Status == StatusCreated || r.Status == StatusUpdated || r.Status == StatusSkipped
-}
-
-// IsRetryable reports whether the HTTP status indicates a retryable error:
-// server errors (5xx) and rate limiting (429). For 429 responses, clients
-// should respect the Retry-After header.
-func IsRetryable[T any](r Result[T]) bool {
-	return r.HTTPStatus >= 500 || r.HTTPStatus == 429
 }
 
 // Meta is the metadata of a Result. Its accessors read the collection

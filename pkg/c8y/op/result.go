@@ -240,6 +240,32 @@ func (r Result[T]) IgnoreConflict() Result[T] {
 	return r
 }
 
+// IgnoreStatusCodes clears the error if the HTTP status is one of codes.
+//
+//	result := client.Update(ctx, data).IgnoreStatusCodes(404, 409)
+func (r Result[T]) IgnoreStatusCodes(codes ...int) Result[T] {
+	for _, code := range codes {
+		if r.HTTPStatus == code {
+			r.Err = nil
+			r = WithMeta(r, "ignoredStatus", code)
+			break
+		}
+	}
+	return r
+}
+
+// IsSuccess reports whether the operation succeeded.
+func (r Result[T]) IsSuccess() bool {
+	return r.Status == StatusOK || r.Status == StatusCreated || r.Status == StatusUpdated || r.Status == StatusSkipped
+}
+
+// IsRetryable reports whether the HTTP status indicates a retryable error:
+// server errors (5xx) and rate limiting (429). For 429 responses, clients
+// should respect the Retry-After header.
+func (r Result[T]) IsRetryable() bool {
+	return r.HTTPStatus >= 500 || r.HTTPStatus == 429
+}
+
 // IsError returns true if the result contains an error
 func (r Result[T]) IsError() bool {
 	return r.Err != nil || r.Status == StatusFailed

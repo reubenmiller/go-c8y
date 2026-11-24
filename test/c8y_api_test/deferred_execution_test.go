@@ -7,7 +7,6 @@ import (
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -33,7 +32,7 @@ func Test_DeferredExecution_Get(t *testing.T) {
 	// Should have executed
 	assert.False(t, result.IsDeferred(), "Result should not be deferred after execution")
 	assert.NoError(t, result.Err)
-	assert.True(t, op.IsSuccess(result))
+	assert.True(t, result.IsSuccess())
 }
 
 func Test_DeferredExecution_Delete(t *testing.T) {

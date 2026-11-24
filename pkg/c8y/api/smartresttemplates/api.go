@@ -218,11 +218,11 @@ func (s *Service) Get(ctx context.Context, name string) op.Result[jsonmodels.Sma
 	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[jsonmodels.SmartRestTemplateCollection]{}, func(execCtx context.Context) op.Result[jsonmodels.SmartRestTemplateCollection] {
 		ref := s.identity.Get(execCtx, identity.IdentityOptions{Type: ExternalIDType, ExternalID: name})
 		if ref.Err != nil {
-			return op.Failed[jsonmodels.SmartRestTemplateCollection](ref.Err, op.IsRetryable(ref))
+			return op.Failed[jsonmodels.SmartRestTemplateCollection](ref.Err, ref.IsRetryable())
 		}
 		existing := s.managedObjects.Get(execCtx, ref.Data.ManagedObjectID(), managedobjects.GetOptions{})
 		if existing.Err != nil {
-			return op.Failed[jsonmodels.SmartRestTemplateCollection](existing.Err, op.IsRetryable(existing))
+			return op.Failed[jsonmodels.SmartRestTemplateCollection](existing.Err, existing.IsRetryable())
 		}
 		result := op.OK(jsonmodels.NewSmartRestTemplateCollection(existing.Data.Bytes()))
 		result.HTTPStatus = existing.HTTPStatus
@@ -242,7 +242,7 @@ func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonm
 func (s *Service) create(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.SmartRestTemplateCollection] {
 	created := s.managedObjects.Create(ctx, opt.annotate(opt.desiredBody()))
 	if created.Err != nil {
-		return op.Failed[jsonmodels.SmartRestTemplateCollection](created.Err, op.IsRetryable(created))
+		return op.Failed[jsonmodels.SmartRestTemplateCollection](created.Err, created.IsRetryable())
 	}
 
 	identityResult := s.identity.Create(ctx, created.Data.ID(), identity.IdentityOptions{
@@ -254,7 +254,7 @@ func (s *Service) create(ctx context.Context, opt CreateOptions) op.Result[jsonm
 		s.managedObjects.Delete(ctx, created.Data.ID(), managedobjects.DeleteOptions{})
 		return op.Failed[jsonmodels.SmartRestTemplateCollection](
 			fmt.Errorf("failed to register external identity %s/%s: %w", ExternalIDType, opt.Name, identityResult.Err),
-			op.IsRetryable(identityResult))
+			identityResult.IsRetryable())
 	}
 
 	result := op.Created(jsonmodels.NewSmartRestTemplateCollection(created.Data.Bytes()))
@@ -277,7 +277,7 @@ func (s *Service) Upsert(ctx context.Context, opt CreateOptions) op.Result[jsonm
 			if !core.IsNotFound(ref.Err) {
 				return op.Failed[jsonmodels.SmartRestTemplateCollection](
 					fmt.Errorf("failed to lookup external identity %s/%s: %w", ExternalIDType, opt.Name, ref.Err),
-					op.IsRetryable(ref))
+					ref.IsRetryable())
 			}
 			created := s.create(execCtx, opt)
 			created.Meta["found"] = false
@@ -286,7 +286,7 @@ func (s *Service) Upsert(ctx context.Context, opt CreateOptions) op.Result[jsonm
 
 		existing := s.managedObjects.Get(execCtx, ref.Data.ManagedObjectID(), managedobjects.GetOptions{})
 		if existing.Err != nil {
-			return op.Failed[jsonmodels.SmartRestTemplateCollection](existing.Err, op.IsRetryable(existing))
+			return op.Failed[jsonmodels.SmartRestTemplateCollection](existing.Err, existing.IsRetryable())
 		}
 
 		desired := opt.desiredBody()
@@ -299,7 +299,7 @@ func (s *Service) Upsert(ctx context.Context, opt CreateOptions) op.Result[jsonm
 
 		updated := s.managedObjects.Update(execCtx, existing.Data.ID(), opt.annotate(desired))
 		if updated.Err != nil {
-			return op.Failed[jsonmodels.SmartRestTemplateCollection](updated.Err, op.IsRetryable(updated))
+			return op.Failed[jsonmodels.SmartRestTemplateCollection](updated.Err, updated.IsRetryable())
 		}
 		result := op.Updated(jsonmodels.NewSmartRestTemplateCollection(updated.Data.Bytes()))
 		result.HTTPStatus = updated.HTTPStatus
@@ -318,7 +318,7 @@ func (s *Service) Delete(ctx context.Context, name string) op.Result[core.NoCont
 			if core.IsNotFound(ref.Err) {
 				return op.Skipped(core.NoContent{}, "not found")
 			}
-			return op.Failed[core.NoContent](ref.Err, op.IsRetryable(ref))
+			return op.Failed[core.NoContent](ref.Err, ref.IsRetryable())
 		}
 		return s.managedObjects.Delete(execCtx, ref.Data.ManagedObjectID(), managedobjects.DeleteOptions{})
 	}), "operation", "delete"))
