@@ -3,8 +3,11 @@
 // (the Asset API), and property, asset, measurement, event and alarm
 // definitions (the Definition API).
 //
-// This package currently covers the read-only endpoints. See
-// docs/proposals/DATAPREP_AND_DTM.md for the planned write methods.
+// Writes follow the v2 idempotency rules: Delete and Unassign return
+// StatusSkipped when the target is already gone, GetOrCreate returns
+// StatusOK for an existing resource, and Upsert returns StatusSkipped when
+// the existing resource already matches the desired state. See
+// docs/proposals/DATAPREP_AND_DTM.md.
 package dtm
 
 import (
@@ -24,12 +27,17 @@ const (
 	ApiSubAssets              = "/service/dtm/assets/{assetId}/subAssets"
 	ApiSubAssetsByExternalID  = "/service/dtm/assets/externalIds/{externalId}/subAssets"
 	ApiSubAssetsByParents     = "/service/dtm/assets/subAssets"
+	ApiSubAsset               = "/service/dtm/assets/{assetId}/subAssets/{subAssetId}"
 	ApiAssetDevices           = "/service/dtm/assets/{assetId}/devices"
+	ApiAssetDevice            = "/service/dtm/assets/{assetId}/devices/{deviceId}"
+	ApiLinkedSeriesLabel      = "/service/dtm/assets/{assetId}/linkedSeries/{fragment}/{series}/label"
 	ApiAssetLinkedSeries      = "/service/dtm/assets/{assetId}/linkedSeries"
 	ApiAssetLinkedSeriesCount = "/service/dtm/assets/{assetId}/linkedSeries/count"
 	ApiLinkedSeriesSource     = "/service/dtm/assets/{assetId}/linkedSeries/{fragment}/{series}/source"
 	ApiAllLinkedSeries        = "/service/dtm/assets/linkedSeries"
 	ApiLinkedSeriesOpposites  = "/service/dtm/assets/linkedSeries/opposites/{deviceId}"
+
+	ApiDefinitionsCompose = "/service/dtm/definitions/properties/compose"
 
 	ApiDefinitions      = "/service/dtm/definitions/{kind}"
 	ApiDefinition       = "/service/dtm/definitions/{kind}/{identifier}"
@@ -40,6 +48,7 @@ const (
 // Path parameters
 const (
 	ParamAssetID    = "assetId"
+	ParamSubAssetID = "subAssetId"
 	ParamExternalID = "externalId"
 	ParamDeviceID   = "deviceId"
 	ParamFragment   = "fragment"
