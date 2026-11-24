@@ -127,7 +127,7 @@ func (s *Service) Deploy(ctx context.Context, opt CreateOptions) op.Result[jsonm
 
 func (s *Service) deploy(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.Microservice] {
 	if _, err := os.Stat(opt.File); err != nil {
-		return op.Failed[jsonmodels.Microservice](fmt.Errorf("could not read microservice file. path=%s. %w", opt.File, err), false)
+		return op.Failed[jsonmodels.Microservice](fmt.Errorf("could not read manifest file. path=%s. %w", opt.File, err), false)
 	}
 	details, err := getApplicationDetails(opt)
 	if err != nil {
