@@ -43,6 +43,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/databroker"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/datahub"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/dataprep"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/devicegroups"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/deviceprofiles"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/devices"
@@ -174,6 +175,7 @@ type Client struct {
 	Agents               *agents.Service
 	DataBroker           *databroker.Service
 	DataHub              *datahub.Service
+	DataPreparation      *dataprep.Service
 	Devices              *devices.Service
 	DeviceGroups         *devicegroups.Service
 	DeviceProfiles       *deviceprofiles.Service
@@ -460,6 +462,7 @@ func (c *Client) initServices() {
 	c.Agents = agents.NewService(&c.common)
 	c.DataBroker = databroker.NewService(&c.common)
 	c.DataHub = datahub.NewService(&c.common)
+	c.DataPreparation = dataprep.NewService(&c.common)
 	c.Devices = devices.NewService(&c.common)
 	c.DeviceGroups = devicegroups.NewService(&c.common)
 	c.DeviceProfiles = deviceprofiles.NewService(&c.common)
