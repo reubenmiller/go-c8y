@@ -25,11 +25,13 @@ func errorResult[T, R any](r Result[T]) Result[R] {
 		Duration:   r.Duration,
 		RequestID:  r.RequestID,
 		Timestamp:  r.Timestamp,
+		Request:    r.Request,
 	}
 }
 
 // Map converts the result's data with fn, keeping the status and HTTP
-// metadata. fn is not called for a failed result; the error is kept.
+// metadata, including the request (so a dry-run result stays one). fn is not
+// called for a failed result; the error is kept.
 //
 //	names := result.Map(func(mo jsonmodels.ManagedObject) string { return mo.Name() })
 func (r Result[T]) Map[R any](fn func(T) R) Result[R] {

@@ -10,6 +10,7 @@ import (
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/devicegroups"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/identity"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/source"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
@@ -32,12 +33,13 @@ const ResultProperty = "newDeviceRequests"
 
 // Service provides api to get/set/delete device requests in Cumulocity
 type Service struct {
-	svc    httpcore.Service
-	groups *devicegroups.Service
+	svc      httpcore.Service
+	groups   *devicegroups.Service
+	identity *identity.Service
 }
 
 func NewService(common *httpcore.Service) *Service {
-	return &Service{svc: *common, groups: devicegroups.NewService(common)}
+	return &Service{svc: *common, groups: devicegroups.NewService(common), identity: identity.NewService(common)}
 }
 
 // ListOptions to list the device requests
@@ -263,15 +265,22 @@ type UploadFileOptions = core.UploadFileOptions
 /*
 * Bulk Registration
  */
-// CreateBulk allows multiple devices to be registered in one request
+// CreateBulk registers several devices in one request. The file is a CSV
+// file with a header row and one row per device (see the Cumulocity bulk
+// registration documentation for the columns). It is sent as the only part of
+// the multipart request; Name and ContentType name the part. Rows that fail
+// are listed in the result's FailedCreationList, the request itself succeeds.
 func (s *Service) CreateBulk(ctx context.Context, opt UploadFileOptions) op.Result[jsonmodels.BulkNewDeviceRequests] {
 	return httpcore.Execute(ctx, s.createBulkB(opt), jsonmodels.NewBulkNewDeviceRequests)
 }
 
 func (s *Service) createBulkB(opt UploadFileOptions) *httpcore.TryRequest {
+	// The endpoint takes only the file, without the "object" metadata part
+	// that binary uploads carry.
+	file := httpcore.NewMultiPartFileFields(opt)[0]
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
-		SetMultipartFields(httpcore.NewMultiPartFileFields(opt)...).
+		SetMultipartFields(file).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiBulkDeviceRequests)
 	return httpcore.NewTryRequest(s.svc.Client, req)

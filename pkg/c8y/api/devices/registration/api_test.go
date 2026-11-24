@@ -275,3 +275,62 @@ func TestCreateCredentialsRaw(t *testing.T) {
 		t.Errorf("body = %q, want raw passthrough", gotBody)
 	}
 }
+
+// TestCreateBulk verifies the CSV file is the only part of the request.
+func TestCreateBulk(t *testing.T) {
+	var parts []string
+	var content string
+	svc, closeFn := testService(func(w http.ResponseWriter, r *http.Request) {
+		reader, err := r.MultipartReader()
+		if err != nil {
+			t.Errorf("multipart: %v", err)
+			return
+		}
+		for {
+			part, err := reader.NextPart()
+			if err != nil {
+				break
+			}
+			parts = append(parts, part.FormName())
+			b, _ := io.ReadAll(part)
+			content = string(b)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"numberOfAll":1,"numberOfCreated":1,"numberOfFailed":0,"numberOfSuccessful":1,"status":"CREATED"}`))
+	})
+	defer closeFn()
+
+	csv := "ID\tNAME\ndevice01\tdevice01\n"
+	res := svc.CreateBulk(context.Background(), UploadFileOptions{Reader: strings.NewReader(csv), Name: "devices.csv"})
+	if res.Err != nil {
+		t.Fatalf("CreateBulk: %v", res.Err)
+	}
+	if len(parts) != 1 || parts[0] != "file" {
+		t.Errorf("parts = %v, want [file]", parts)
+	}
+	if content != csv {
+		t.Errorf("file = %q, want %q", content, csv)
+	}
+	if res.Data.TotalCreated() != 1 {
+		t.Errorf("created = %d, want 1", res.Data.TotalCreated())
+	}
+}
+
+func TestRegisterOptionsCSV(t *testing.T) {
+	b, err := RegisterOptions{
+		ExternalID:    "tmp01",
+		AuthType:      AuthTypeCertificates,
+		EnrollmentOTP: "LookHowSecretThisIs1337",
+		Type:          "thin-edge.io",
+		IsAgent:       true,
+	}.csv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "ID\tAUTH_TYPE\tENROLLMENT_OTP\tNAME\tTYPE\tIDTYPE\tcom_cumulocity_model_Agent.active\n" +
+		"tmp01\tCERTIFICATES\tLookHowSecretThisIs1337\ttmp01\tthin-edge.io\tc8y_Serial\ttrue\n"
+	if string(b) != want {
+		t.Errorf("csv =\n%q\nwant\n%q", b, want)
+	}
+}

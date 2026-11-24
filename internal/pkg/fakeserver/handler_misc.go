@@ -1,8 +1,12 @@
 package fakeserver
 
 import (
+	"bytes"
 	"encoding/base64"
+	"encoding/csv"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -406,48 +410,122 @@ func (fs *FakeServer) handleBulkNewDeviceRequests(w http.ResponseWriter, r *http
 		writeError(w, http.StatusMethodNotAllowed, "general/methodNotAllowed", "Method not allowed")
 		return
 	}
+	if err := r.ParseMultipartForm(32 << 20); err != nil {
+		writeError(w, http.StatusBadRequest, "general/badRequest", err.Error())
+		return
+	}
+	// The file part may come without a file name (a plain form field).
+	var content []byte
+	if f, _, ferr := r.FormFile("file"); ferr == nil {
+		var err error
+		content, err = io.ReadAll(f)
+		f.Close()
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "general/badRequest", err.Error())
+			return
+		}
+	} else if values := r.MultipartForm.Value["file"]; len(values) > 0 {
+		content = []byte(values[0])
+	} else {
+		writeError(w, http.StatusBadRequest, "general/badRequest", "missing file part")
+		return
+	}
+	rows, err := parseBulkCSV(content)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "general/badRequest", err.Error())
+		return
+	}
 
-	// Count CSV lines (rows) in the uploaded file to simulate per-line responses.
-	// The upload is typically multipart with a CSV body.
-	// CSV has a header row + data rows. Each row ends with \n.
-	// Total rows = count of \n characters. Data rows = total rows - 1 (header).
-	lines := 0
-	if err := r.ParseMultipartForm(32 << 20); err == nil {
-		f, _, ferr := r.FormFile("file")
-		if ferr == nil {
-			buf := make([]byte, 0, 4096)
-			tmp := make([]byte, 1024)
-			for {
-				n, rerr := f.Read(tmp)
-				buf = append(buf, tmp[:n]...)
-				if rerr != nil {
-					break
-				}
-			}
-			f.Close()
-			for _, b := range buf {
-				if b == '\n' {
-					lines++
-				}
-			}
-			// Subtract header row
-			if lines > 0 {
-				lines--
-			}
+	// Each row creates a device with its external ID, as Cumulocity does. A row
+	// whose external ID already exists fails.
+	created := 0
+	failed := []map[string]any{}
+	for _, row := range rows {
+		id := row["ID"]
+		idType := row["IDTYPE"]
+		if idType == "" {
+			idType = "c8y_Serial"
+		}
+		if id == "" {
+			failed = append(failed, map[string]any{"deviceId": id, "failureReason": "missing ID"})
+			continue
+		}
+		storeKey := idType + ":" + id
+		if _, exists := fs.ExternalIDs.Get(storeKey); exists {
+			failed = append(failed, map[string]any{"deviceId": id, "failureReason": "Device with external ID " + id + " already exists"})
+			continue
+		}
+		mo := map[string]any{"name": id, "c8y_IsDevice": map[string]any{}}
+		if v := row["NAME"]; v != "" {
+			mo["name"] = v
+		}
+		if v := row["TYPE"]; v != "" {
+			mo["type"] = v
+		}
+		if row["com_cumulocity_model_Agent.active"] == "true" {
+			mo["com_cumulocity_model_Agent"] = map[string]any{}
+		}
+		moID, _ := fs.ManagedObjects.Create(marshalJSON(mo), fs.URL()+"/inventory/managedObjects")
+		fs.ExternalIDs.CreateWithID(storeKey, marshalJSON(map[string]any{
+			"type":       idType,
+			"externalId": id,
+			"managedObject": map[string]any{
+				"id":   moID,
+				"self": fs.URL() + "/inventory/managedObjects/" + moID,
+			},
+			"self": fs.URL() + "/identity/externalIds/" + idType + "/" + id,
+		}))
+		created++
+	}
+
+	status := "CREATED"
+	if len(failed) > 0 {
+		status = "PARTIAL"
+		if created == 0 {
+			status = "FAILED"
 		}
 	}
-	if lines == 0 {
-		lines = 1
-	}
+	writeJSON(w, http.StatusCreated, marshalJSON(map[string]any{
+		"numberOfAll":        len(rows),
+		"numberOfCreated":    created,
+		"numberOfFailed":     len(failed),
+		"numberOfSuccessful": created,
+		"failedCreationList": failed,
+		"status":             status,
+	}))
+}
 
-	resp := marshalJSON(map[string]any{
-		"numberOfAll":        lines,
-		"numberOfCreated":    lines,
-		"numberOfFailed":     0,
-		"numberOfSuccessful": lines,
-		"status":             "CREATED",
-	})
-	writeJSON(w, http.StatusCreated, resp)
+// parseBulkCSV reads a bulk registration file: a header row and one row per
+// device, separated by a tab, comma or semicolon (detected from the header).
+func parseBulkCSV(content []byte) ([]map[string]string, error) {
+	header, _, _ := strings.Cut(string(content), "\n")
+	reader := csv.NewReader(bytes.NewReader(content))
+	reader.FieldsPerRecord = -1
+	reader.Comma = ','
+	for _, sep := range []rune{'\t', ';'} {
+		if strings.ContainsRune(header, sep) {
+			reader.Comma = sep
+			break
+		}
+	}
+	records, err := reader.ReadAll()
+	if err != nil {
+		return nil, err
+	}
+	if len(records) == 0 {
+		return nil, fmt.Errorf("empty file")
+	}
+	rows := make([]map[string]string, 0, len(records)-1)
+	for _, record := range records[1:] {
+		row := map[string]string{}
+		for i, key := range records[0] {
+			if i < len(record) {
+				row[strings.TrimSpace(key)] = strings.TrimSpace(record[i])
+			}
+		}
+		rows = append(rows, row)
+	}
+	return rows, nil
 }
 
 // handleRemoteAccess routes /service/remoteaccess/ requests.
