@@ -14,9 +14,10 @@ func Test_Microservices_ListServiceUsers(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
-	app, found := client.Microservices.FindFirst(ctx, microservices.ListOptions{})
-	if !found || app.Err != nil {
-		t.Skip("no microservice to read the service users of")
+	// Only the tenant that owns a microservice can read its bootstrap user.
+	app, found := client.Microservices.FindFirst(ctx, microservices.ListOptions{Owner: client.Auth.Tenant})
+	if !found || app.Err != nil || app.Data.Owner() != client.Auth.Tenant {
+		t.Skip("the tenant owns no microservice to read the service users of")
 	}
 
 	users := client.Microservices.ListServiceUsers(ctx, app.Data.ID())
