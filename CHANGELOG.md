@@ -31,6 +31,7 @@ v2 is a new module, `github.com/reubenmiller/go-c8y/v2`. Entries marked **Breaki
 
 ### HTTP client and middleware
 
+* Added `ClientOptions.Logger` (`*slog.Logger`, default `slog.Default()`). The HTTP layer's messages go to it instead of always to stderr: the request and response logs of `Debug` and its warnings (e.g. "Using sensitive credentials in HTTP mode") at info level, its errors at error level. An application can hide those warnings with a warn-level logger.
 * **Breaking (behavior)**: deleting a resource that does not exist now succeeds. The result has no error, `Status` is `op.StatusSkipped`, `HTTPStatus` is `404`, and `Meta["ignoredStatus"]` is `404`. Most deletes already called `IgnoreNotFound()` internally (44 calls in 38 packages), but a delete's own `404` was never stored in `HTTPStatus`, so the error was always returned. Other delete errors (`401`, `403`, `409`, `5xx`) are still returned. To treat a missing resource as an error, check `result.Status == op.StatusSkipped`. Deletes without an internal `IgnoreNotFound()` now report `HTTPStatus`, so `IsNotFound()` and `IgnoreNotFound()` work on them.
 * **Breaking**: resty types are no longer part of the public API, so resty upgrades cannot break go-c8y users. Migration:
 
