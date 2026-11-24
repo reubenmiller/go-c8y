@@ -76,7 +76,7 @@ func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.
 	}
 	// No certificate found - simulate a not found error
 	return op.Result[jsonmodels.TrustedCertificate]{
-		Err:        core.Error{Code: 404},
+		Err:        &core.Error{Code: http.StatusNotFound, Type: "certificate/notFound", Message: "no certificate authority found"},
 		Status:     result.Status,
 		HTTPStatus: 404,
 		Attempts:   result.Attempts,

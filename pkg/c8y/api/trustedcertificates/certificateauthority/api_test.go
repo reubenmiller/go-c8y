@@ -2,6 +2,7 @@ package certificateauthority
 
 import (
 	"context"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -128,5 +129,21 @@ func TestCreate_NoUpdateWhenSettingsMatch(t *testing.T) {
 	}
 	if len(ca.requests) != 1 {
 		t.Errorf("requests = %v, want only the POST", ca.requests)
+	}
+}
+
+func TestGet_NotFoundIsAnAPIError(t *testing.T) {
+	svc, closeFn := testService(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"certificates":[]}`))
+	})
+	defer closeFn()
+
+	res := svc.Get(context.Background(), GetOptions{TenantID: "t123"})
+	if !core.ErrHasStatus(res.Err, http.StatusNotFound) {
+		t.Fatalf("Get without a CA: err = %#v, want a 404 core.Error", res.Err)
+	}
+	if !strings.Contains(res.Err.Error(), "no certificate authority found") {
+		t.Errorf("message = %q", res.Err.Error())
 	}
 }
