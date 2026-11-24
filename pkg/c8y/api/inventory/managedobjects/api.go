@@ -16,6 +16,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/realtime"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/source"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
@@ -455,6 +456,14 @@ type ManagedObjectStream = realtime.Stream[realtime.StreamData[jsonmodels.Manage
 //	    return err
 //	}
 func (s *Service) SubscribeStream(ctx context.Context, ID string) op.Result[*ManagedObjectStream] {
+	// A device reference that is not an id (or "*") is resolved first.
+	if ID != "" && ID != "*" && !source.IsID(ID) {
+		resolvedID, err := s.ResolveID(ctxhelpers.ResolutionContext(ctx), source.ParseRef(ID), nil)
+		if err != nil {
+			return op.Failed[*ManagedObjectStream](err, false)
+		}
+		ID = resolvedID
+	}
 	err := s.svc.RealtimeClient.Connect()
 	if err != nil {
 		return op.Failed[*ManagedObjectStream](err, false)

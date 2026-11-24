@@ -29,7 +29,7 @@ func coupleAPIErrors(r *resty.Response, err error) (*resty.Response, error) {
 	// the http server will respond with a default "Bad Gateway" page with Content-Type
 	// "text/html".
 	if r.StatusCode() == http.StatusBadGateway && responseContentType == "text/html" {
-		return nil, core.Error{Code: http.StatusBadGateway, Message: http.StatusText(http.StatusBadGateway)}
+		return nil, &core.Error{Code: http.StatusBadGateway, Message: http.StatusText(http.StatusBadGateway)}
 	}
 
 	if !r.IsRead {

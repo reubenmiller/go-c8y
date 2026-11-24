@@ -1,6 +1,7 @@
 package dtm
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -101,4 +102,10 @@ func jsonObject(b []byte) map[string]any {
 		return nil
 	}
 	return m
+}
+
+// deferrable runs fn now, or defers it under deferred execution, and tags
+// the result with the operation name.
+func deferrable[T any](ctx context.Context, operation string, fn func(context.Context) op.Result[T]) op.Result[T] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[T]{}, fn), "operation", operation))
 }

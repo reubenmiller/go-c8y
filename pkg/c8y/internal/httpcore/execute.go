@@ -58,7 +58,7 @@ func Execute[T any](ctx context.Context, req *TryRequest, fromBytes func([]byte)
 	if err != nil {
 		result := failedWithStatus[T](err, resp)
 		mergeMeta(&result, meta)
-		return result.WithRequest(httpReq)
+		return op.WithRequest(result, httpReq)
 	}
 
 	var result op.Result[T]
@@ -70,7 +70,7 @@ func Execute[T any](ctx context.Context, req *TryRequest, fromBytes func([]byte)
 	default:
 		result = op.OK(fromBytes(resp.Bytes()))
 	}
-	result = result.WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
+	result = op.WithRequest(op.WithHTTPStatus(op.WithDuration(result, resp.Duration()), resp.StatusCode()), httpReq)
 	addCacheMeta(&result, resp)
 	mergeMeta(&result, meta)
 	return result
@@ -90,7 +90,7 @@ func ExecuteCollection[T any](ctx context.Context, req *TryRequest, arrayPath, m
 	httpReq := dryRunRequest(ctx, resp)
 
 	if err != nil {
-		return failedWithStatus[T](err, resp).WithRequest(httpReq)
+		return op.WithRequest(failedWithStatus[T](err, resp), httpReq)
 	}
 
 	// TODO: how to do this more efficiently
@@ -156,7 +156,7 @@ func ExecuteBinary(ctx context.Context, req *TryRequest) op.Result[core.BinaryRe
 		Send())
 
 	if err != nil {
-		return op.Failed[core.BinaryResponse](err, false).WithHTTPStatus(getStatusCodeFromError(err))
+		return op.WithHTTPStatus(op.Failed[core.BinaryResponse](err, false), getStatusCodeFromError(err))
 	}
 
 	bin := NewBinaryResponse(resp)
@@ -164,15 +164,15 @@ func ExecuteBinary(ctx context.Context, req *TryRequest) op.Result[core.BinaryRe
 	httpReq := dryRunRequest(ctx, resp)
 
 	if resp.StatusCode() == http.StatusCreated {
-		return op.Created(*bin).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
+		return op.WithRequest(op.WithHTTPStatus(op.WithDuration(op.Created(*bin), resp.Duration()), resp.StatusCode()), httpReq)
 	}
 
 	if resp.StatusCode() == http.StatusOK {
 		if req.Request.Method == http.MethodPut {
-			return op.Updated(*bin).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
+			return op.WithRequest(op.WithHTTPStatus(op.WithDuration(op.Updated(*bin), resp.Duration()), resp.StatusCode()), httpReq)
 		}
 	}
-	return op.OK(*bin).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
+	return op.WithRequest(op.WithHTTPStatus(op.WithDuration(op.OK(*bin), resp.Duration()), resp.StatusCode()), httpReq)
 }
 
 // Execute a request that doesn't any result only if there was an error or not
@@ -193,22 +193,24 @@ func ExecuteNoContent(ctx context.Context, req *TryRequest, extraMeta ...map[str
 	httpReq := dryRunRequest(ctx, resp)
 
 	if err != nil {
-		// Unlike the other executors, the HTTP status is only taken from the
-		// response (which is nil on error), so callers' IgnoreNotFound() does
-		// not apply to the request's own 404. Kept as is: changing it would
-		// change Delete semantics (tracked as a follow-up).
-		result := failed[core.NoContent](err, true)
+		// The response is nil on an HTTP error, so take the status from the
+		// error. Without it, IgnoreNotFound() and IsNotFound() on a Delete
+		// result would never see the request's own 404.
+		result := op.WithHTTPStatus(failed[core.NoContent](err, true), getStatusCodeFromError(err))
 		if resp != nil {
-			result = result.WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
+			result = op.WithDuration(result, resp.Duration())
+			if code := resp.StatusCode(); code != 0 {
+				result = op.WithHTTPStatus(result, code)
+			}
 		}
-		return result.WithRequest(httpReq)
+		return op.WithRequest(result, httpReq)
 	}
 	var empty core.NoContent
 	if resp.StatusCode() == http.StatusNoContent {
-		return op.NoContent(empty, meta).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
+		return op.WithRequest(op.WithHTTPStatus(op.WithDuration(op.NoContent(empty, meta), resp.Duration()), resp.StatusCode()), httpReq)
 	}
 	if resp.StatusCode() == http.StatusOK && (req.Request.Method == http.MethodPut || req.Request.Method == http.MethodPatch) {
-		return op.Updated(empty, meta).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
+		return op.WithRequest(op.WithHTTPStatus(op.WithDuration(op.Updated(empty, meta), resp.Duration()), resp.StatusCode()), httpReq)
 	}
-	return op.OK(empty, meta).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
+	return op.WithRequest(op.WithHTTPStatus(op.WithDuration(op.OK(empty, meta), resp.Duration()), resp.StatusCode()), httpReq)
 }

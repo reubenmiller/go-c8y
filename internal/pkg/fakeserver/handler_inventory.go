@@ -3,6 +3,7 @@ package fakeserver
 import (
 	"encoding/json"
 	"net/http"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -182,6 +183,9 @@ func (fs *FakeServer) handleManagedObjectSingle(w http.ResponseWriter, r *http.R
 		if !ok {
 			writeNotFound(w, "inventory/managedObject")
 			return
+		}
+		if r.URL.Query().Get("withParents") == "true" {
+			doc = fs.withParents(id, doc)
 		}
 		writeJSON(w, http.StatusOK, doc)
 
@@ -701,4 +705,58 @@ func getNestedID(doc json.RawMessage) string {
 		return strings.Trim(string(idRaw), `"`)
 	}
 	return ""
+}
+
+// withParents adds assetParents, additionParents and deviceParents to doc:
+// the flat list of all parents and grandparents of the managed object for
+// each kind of relationship, the direct parents first, as Cumulocity does
+// for withParents=true.
+func (fs *FakeServer) withParents(id string, doc json.RawMessage) json.RawMessage {
+	fs.ManagedObjects.mu.RLock()
+	parents := map[string][]string{
+		"assetParents":    ancestors(id, fs.ChildAssets),
+		"additionParents": ancestors(id, fs.ChildAdditions),
+		"deviceParents":   ancestors(id, fs.ChildDevices),
+	}
+	fs.ManagedObjects.mu.RUnlock()
+
+	fields := map[string]any{}
+	for name, ids := range parents {
+		refs := []map[string]any{}
+		for _, parentID := range ids {
+			ref := map[string]any{"id": parentID, "self": fs.URL() + "/inventory/managedObjects/" + parentID}
+			if parent, ok := fs.ManagedObjects.Get(parentID); ok {
+				ref["name"] = getJSONString(parent, "name")
+			}
+			refs = append(refs, map[string]any{"managedObject": ref})
+		}
+		fields[name] = map[string]any{
+			"references": refs,
+			"self":       fs.URL() + "/inventory/managedObjects/" + id + "/" + strings.TrimSuffix(name, "Parents") + "Parents",
+		}
+	}
+	return mergeFields(doc, fields)
+}
+
+// ancestors lists the parents of id in relMap (parent -> children), then
+// their parents, breadth first, without duplicates.
+func ancestors(id string, relMap map[string][]string) []string {
+	var out []string
+	seen := map[string]bool{id: true}
+	level := []string{id}
+	for len(level) > 0 {
+		var next []string
+		for _, child := range level {
+			for parent, children := range relMap {
+				if !seen[parent] && slices.Contains(children, child) {
+					seen[parent] = true
+					next = append(next, parent)
+				}
+			}
+		}
+		slices.Sort(next)
+		out = append(out, next...)
+		level = next
+	}
+	return out
 }

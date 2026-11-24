@@ -123,31 +123,31 @@ func executeWithCertParse(ctx context.Context, req *httpcore.TryRequest) op.Resu
 	if err != nil {
 		result := op.Failed[X509Certificate](err, true)
 		if resp != nil {
-			result = result.WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode())
+			result = op.WithHTTPStatus(op.WithDuration(result, resp.Duration()), resp.StatusCode())
 		} else {
 			// Extract HTTP status from error if response is nil
 			var apiErr *core.Error
 			if errors.As(err, &apiErr) && apiErr.Code >= 100 && apiErr.Code < 600 {
-				result = result.WithHTTPStatus(apiErr.Code)
+				result = op.WithHTTPStatus(result, apiErr.Code)
 				if apiErr.Duration > 0 {
-					result = result.WithDuration(apiErr.Duration)
+					result = op.WithDuration(result, apiErr.Duration)
 				}
 			}
 		}
-		return result.WithRequest(httpReq)
+		return op.WithRequest(result, httpReq)
 	}
 
 	// In dry run mode, skip certificate parsing and return a placeholder result
 	if ctxhelpers.IsDryRun(ctx) {
-		return op.OK(X509Certificate{}).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
+		return op.WithRequest(op.WithHTTPStatus(op.WithDuration(op.OK(X509Certificate{}), resp.Duration()), resp.StatusCode()), httpReq)
 	}
 
 	cert, parseErr := parsePKCS7Response(resp.Bytes(), resp.Header())
 	if parseErr != nil {
-		return op.Failed[X509Certificate](parseErr, false).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
+		return op.WithRequest(op.WithHTTPStatus(op.WithDuration(op.Failed[X509Certificate](parseErr, false), resp.Duration()), resp.StatusCode()), httpReq)
 	}
 
-	return op.OK(X509Certificate{cert}).WithDuration(resp.Duration()).WithHTTPStatus(resp.StatusCode()).WithRequest(httpReq)
+	return op.WithRequest(op.WithHTTPStatus(op.WithDuration(op.OK(X509Certificate{cert}), resp.Duration()), resp.StatusCode()), httpReq)
 }
 
 // parsePKCS7Response parses the PKCS7 response

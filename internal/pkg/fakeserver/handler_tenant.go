@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
+	"crypto/sha256"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/json"
@@ -631,31 +632,6 @@ func (fs *FakeServer) handleTrustedCertificatesPop(w http.ResponseWriter, r *htt
 	}
 }
 
-// handleCertificateAuthority handles /certificate-authority endpoints
-func (fs *FakeServer) handleCertificateAuthority(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodPost:
-		// Check if a CA certificate already exists
-		for _, item := range fs.TrustedCerts.List() {
-			if getJSONString(item, "tenantCertificateAuthority") == "true" {
-				writeError(w, http.StatusConflict, "certificate/conflict", "Certificate authority already exists")
-				return
-			}
-		}
-		// No CA cert exists — create one
-		writeJSON(w, http.StatusCreated, marshalJSON(map[string]any{
-			"fingerprint":                "auto-generated-ca",
-			"name":                       "Tenant CA Certificate",
-			"status":                     "ENABLED",
-			"tenantCertificateAuthority": true,
-			"self":                       fs.URL() + "/tenant/tenants/t12345/trusted-certificates/auto-generated-ca",
-		}))
-
-	default:
-		writeError(w, http.StatusMethodNotAllowed, "general/methodNotAllowed", "Method not allowed")
-	}
-}
-
 // handleCertificateRevocationList handles /tenant/trusted-certificates/settings/crl
 func (fs *FakeServer) handleCertificateRevocationList(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
@@ -712,4 +688,49 @@ func (fs *FakeServer) generateMinimalCRL() []byte {
 		return nil
 	}
 	return crlBytes
+}
+
+// handleCertificateAuthority handles POST /certificate-authority, which
+// creates the tenant's CA certificate (409 when one exists), and POST
+// /certificate-authority/renew.
+func (fs *FakeServer) handleCertificateAuthority(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "general/methodNotAllowed", "Method not allowed")
+		return
+	}
+	var existing json.RawMessage
+	for _, item := range fs.TrustedCerts.List() {
+		if getJSONString(item, "tenantCertificateAuthority") == "true" {
+			existing = item
+			break
+		}
+	}
+	renew := strings.HasSuffix(r.URL.Path, "/renew")
+	switch {
+	case existing != nil && !renew:
+		writeError(w, http.StatusConflict, "certificate/alreadyExists", "Certificate authority already exists")
+		return
+	case existing == nil && renew:
+		writeNotFound(w, "certificate authority")
+		return
+	case existing != nil:
+		fs.TrustedCerts.Delete(getJSONString(existing, "fingerprint"))
+	}
+	// A stable-looking, 40 hex digit fingerprint (like a SHA-1 one); not used for security.
+	fingerprint := fmt.Sprintf("%x", sha256.Sum256([]byte(time.Now().String())))[:40]
+	doc := marshalJSON(map[string]any{
+		"fingerprint":                fingerprint,
+		"name":                       "Tenant CA Certificate",
+		"status":                     "ENABLED",
+		"autoRegistrationEnabled":    true,
+		"algorithmName":              "RSA",
+		"version":                    3,
+		"proofOfPossessionValid":     true,
+		"tenantCertificateAuthority": true,
+		"notBefore":                  time.Now().UTC().Format(time.RFC3339),
+		"notAfter":                   time.Now().UTC().AddDate(10, 0, 0).Format(time.RFC3339),
+		"self":                       fs.URL() + "/tenant/tenants/t12345/trusted-certificates/" + fingerprint,
+	})
+	fs.TrustedCerts.CreateWithID(fingerprint, doc)
+	writeJSON(w, http.StatusCreated, doc)
 }

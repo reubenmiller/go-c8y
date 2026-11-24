@@ -104,7 +104,7 @@ func (opt CreateOptions) annotate(body map[string]any) map[string]any {
 
 // Create a configuration item
 func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.Configuration] {
-	return op.Result[jsonmodels.Configuration]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.Configuration] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[jsonmodels.Configuration]{}, func(execCtx context.Context) op.Result[jsonmodels.Configuration] {
 		// Build body - start with custom properties if provided
 		body := make(map[string]any)
 
@@ -164,8 +164,7 @@ func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonm
 		}
 
 		return configResult
-	}).WithMeta("operation", "create").
-		ExecuteOrDefer(ctx)
+	}), "operation", "create"))
 }
 
 // uploadBinaryIfNeeded uploads a binary file if needed, or returns the provided URL
@@ -491,7 +490,7 @@ func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.R
 
 // GetOrCreate searches by name and optional configuration type, creating if not found
 func (s *Service) GetOrCreate(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.Configuration] {
-	return op.Result[jsonmodels.Configuration]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.Configuration] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[jsonmodels.Configuration]{}, func(execCtx context.Context) op.Result[jsonmodels.Configuration] {
 		finder := func(ctx context.Context) (op.Result[jsonmodels.Configuration], bool) {
 			listResult := s.List(ctx, ListOptions{
 				Name:              opt.Name,
@@ -521,13 +520,12 @@ func (s *Service) GetOrCreate(ctx context.Context, opt CreateOptions) op.Result[
 		}
 
 		return op.GetOrCreateR(execCtx, finder, creator)
-	}).WithMeta("operation", "getOrCreate").
-		ExecuteOrDefer(ctx)
+	}), "operation", "getOrCreate"))
 }
 
 // UpsertByName searches by name and optional configuration type, updating if found or creating if not found
 func (s *Service) UpsertByName(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.Configuration] {
-	return op.Result[jsonmodels.Configuration]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.Configuration] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[jsonmodels.Configuration]{}, func(execCtx context.Context) op.Result[jsonmodels.Configuration] {
 		finder := func(ctx context.Context) (op.Result[jsonmodels.Configuration], bool) {
 			listResult := s.List(ctx, ListOptions{
 				Name:              opt.Name,
@@ -597,8 +595,7 @@ func (s *Service) UpsertByName(ctx context.Context, opt CreateOptions) op.Result
 		}
 
 		return op.UpsertR(execCtx, finder, updater, creator)
-	}).WithMeta("operation", "upsertByName").
-		ExecuteOrDefer(ctx)
+	}), "operation", "upsertByName"))
 }
 
 // Builder methods

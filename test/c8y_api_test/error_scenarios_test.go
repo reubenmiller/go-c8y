@@ -9,6 +9,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/events"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 )
@@ -65,11 +66,15 @@ func TestManagedObject_Update_NotFound(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, result.HTTPStatus)
 }
 
+// Deleting a resource that does not exist is not an error: the desired state
+// is reached, so the result is Skipped with the 404 kept in HTTPStatus.
 func TestManagedObject_Delete_NotFound(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	result := client.ManagedObjects.Delete(context.Background(), "99999999", managedobjects.DeleteOptions{})
-	assert.Error(t, result.Err)
-	assert.True(t, core.IsNotFound(result.Err))
+	assert.NoError(t, result.Err)
+	assert.Equal(t, op.StatusSkipped, result.Status)
+	assert.Equal(t, http.StatusNotFound, result.HTTPStatus)
+	assert.Equal(t, 404, result.Meta["ignoredStatus"])
 }
 
 // --- 401 Unauthorised scenarios ---

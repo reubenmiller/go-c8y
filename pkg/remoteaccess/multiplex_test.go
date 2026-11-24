@@ -7,6 +7,8 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -372,5 +374,16 @@ func TestPipeClosesLocalConnectionWhichIgnoresTheHalfClose(t *testing.T) {
 	case <-done:
 	case <-time.After(5 * time.Second):
 		t.Fatal("pipe did not return after the remote side finished")
+	}
+}
+
+func TestNoAnswerDescribesWhyTheDeviceDidNotAnswer(t *testing.T) {
+	closed := describeNoAnswer(&websocket.CloseError{Code: websocket.CloseNormalClosure}, 1200*time.Millisecond, 15*time.Second)
+	if !strings.Contains(closed, "closed after 1.2s") {
+		t.Errorf("expected the elapsed time of a closed session, got %q", closed)
+	}
+	timedOut := describeNoAnswer(os.ErrDeadlineExceeded, 15*time.Second, 15*time.Second)
+	if timedOut != "no answer within 15s" {
+		t.Errorf("expected a timeout, got %q", timedOut)
 	}
 }
