@@ -20,7 +20,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/dtm"
 )
 
-// statefulDTM is an in-memory DTM with the server behaviors seen on a
+// statefulDTM is an in-memory DTM with the server behaviours seen on a
 // tenant: tags come back in another order, composition entries get
 // minOccurs "0", the schema gets $schema, repeat assignments are no-ops, and
 // a referenced property definition cannot be deleted.
@@ -392,7 +392,10 @@ func writeModel(t *testing.T) string {
 	return dir
 }
 
-func summary(r dtm.ApplyReport) []string {
+func summary(r *dtm.ApplyReport) []string {
+	if r == nil {
+		return nil
+	}
 	var out []string
 	for _, it := range r.Items {
 		s := fmt.Sprintf("%s %s %s", it.Action, it.Kind, it.Key)

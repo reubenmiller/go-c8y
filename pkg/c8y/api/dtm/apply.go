@@ -57,8 +57,12 @@ type ApplyReport struct {
 	Planned bool
 }
 
-// Changes returns the number of items that write (or would write).
-func (r ApplyReport) Changes() int {
+// Changes returns the number of items that write (or would write). It is
+// 0 for a nil report.
+func (r *ApplyReport) Changes() int {
+	if r == nil {
+		return 0
+	}
 	n := 0
 	for _, it := range r.Items {
 		if it.Action != ActionNone && it.Err == nil {
@@ -68,8 +72,11 @@ func (r ApplyReport) Changes() int {
 	return n
 }
 
-// Errors returns the items that failed.
-func (r ApplyReport) Errors() []ApplyItem {
+// Errors returns the items that failed. It is nil for a nil report.
+func (r *ApplyReport) Errors() []ApplyItem {
+	if r == nil {
+		return nil
+	}
 	var out []ApplyItem
 	for _, it := range r.Items {
 		if it.Err != nil {
@@ -99,15 +106,17 @@ type ApplyOptions struct {
 // writing anything. Every item has the action Apply would take, the fields
 // that differ, and the request it would send.
 //
-// The returned result can be executed: plan.Execute(ctx) runs Apply with
+// result.Data is nil only when the model is rejected before any lookup
+// (for example a cycle). The returned result can be executed:
+// plan.Execute(ctx) runs Apply with
 // the same model and options (it reads the tenant again, so changes made
 // in between are taken into account).
-func (s *Service) Plan(ctx context.Context, m *Model, opt ApplyOptions) op.Result[ApplyReport] {
+func (s *Service) Plan(ctx context.Context, m *Model, opt ApplyOptions) op.Result[*ApplyReport] {
 	steps, err := s.steps(m, opt)
 	if err != nil {
-		return op.Failed[ApplyReport](err, false)
+		return op.Failed[*ApplyReport](err, false)
 	}
-	report := ApplyReport{Planned: true}
+	report := &ApplyReport{Planned: true}
 	for _, st := range steps {
 		items := st.plan(ctx)
 		report.Items = append(report.Items, items...)
@@ -115,12 +124,12 @@ func (s *Service) Plan(ctx context.Context, m *Model, opt ApplyOptions) op.Resul
 	if opt.Prune {
 		report.Items = append(report.Items, s.prune(ctx, m, opt, false)...)
 	}
-	res := op.OK(report).WithMeta("changes", report.Changes())
+	res := op.WithMeta(op.OK(report), "changes", report.Changes())
 	if errs := report.Errors(); len(errs) > 0 {
 		res.Err = itemsError(errs)
 		res.Status = op.StatusFailed
 	}
-	return res.WithExecutor(func(ctx context.Context) op.Result[ApplyReport] {
+	return op.WithExecutor(res, func(ctx context.Context) op.Result[*ApplyReport] {
 		return s.Apply(ctx, m, opt)
 	})
 }
@@ -135,15 +144,17 @@ func (s *Service) Plan(ctx context.Context, m *Model, opt ApplyOptions) op.Resul
 // ActionNone and are not written, so applying the same model twice writes
 // nothing the second time.
 //
-// result.Err joins the errors of the failed items; result.Data always
-// holds the report of what was done.
-func (s *Service) Apply(ctx context.Context, m *Model, opt ApplyOptions) op.Result[ApplyReport] {
+// result.Err joins the errors of the failed items, and result.Data holds
+// the report of what was done. result.Data is nil only when the model is
+// rejected before any item runs (for example a cycle, or Prune without
+// ManagedBy).
+func (s *Service) Apply(ctx context.Context, m *Model, opt ApplyOptions) op.Result[*ApplyReport] {
 	steps, err := s.steps(m, opt)
 	if err != nil {
-		return op.Failed[ApplyReport](err, false)
+		return op.Failed[*ApplyReport](err, false)
 	}
-	return op.Result[ApplyReport]{}.WithExecutor(func(ctx context.Context) op.Result[ApplyReport] {
-		var report ApplyReport
+	return deferrable(ctx, "apply", func(ctx context.Context) op.Result[*ApplyReport] {
+		report := &ApplyReport{}
 		for _, st := range steps {
 			item := st.apply(ctx)
 			report.Items = append(report.Items, item)
@@ -157,12 +168,12 @@ func (s *Service) Apply(ctx context.Context, m *Model, opt ApplyOptions) op.Resu
 		if len(report.Errors()) > 0 {
 			return failedReport(report)
 		}
-		return op.OK(report).WithMeta("changes", report.Changes())
-	}).WithMeta("operation", "apply").ExecuteOrDefer(ctx)
+		return op.WithMeta(op.OK(report), "changes", report.Changes())
+	})
 }
 
-func failedReport(report ApplyReport) op.Result[ApplyReport] {
-	res := op.Failed[ApplyReport](itemsError(report.Errors()), false)
+func failedReport(report *ApplyReport) op.Result[*ApplyReport] {
+	res := op.Failed[*ApplyReport](itemsError(report.Errors()), false)
 	res.Data = report
 	return res
 }
@@ -186,7 +197,7 @@ func (s *Service) steps(m *Model, opt ApplyOptions) ([]step, error) {
 		return nil, fmt.Errorf("model is nil")
 	}
 	if opt.Prune && opt.ManagedBy == "" {
-		return nil, fmt.Errorf("Prune requires ManagedBy")
+		return nil, fmt.Errorf("pruning requires ManagedBy")
 	}
 	var steps []step
 	defs := s.Definitions
