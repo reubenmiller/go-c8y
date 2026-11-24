@@ -192,7 +192,7 @@ type TestAndDeployOptions struct {
 // Status: as Deploy.
 func (s *RuleService) TestAndDeploy(ctx context.Context, name string, opt TestAndDeployOptions) op.Result[jsonmodels.DataPrepRule] {
 	if opt.Package == nil {
-		return op.Failed[jsonmodels.DataPrepRule](fmt.Errorf("Package is required"), false)
+		return op.Failed[jsonmodels.DataPrepRule](fmt.Errorf("a package is required"), false)
 	}
 	if err := opt.Package.Validate(); err != nil {
 		return op.Failed[jsonmodels.DataPrepRule](err, false)

@@ -255,14 +255,14 @@ func composite[T any](ctx context.Context, meta map[string]any, fn func(context.
 	withMeta := func(r op.Result[T]) op.Result[T] {
 		for k, v := range meta {
 			if _, exists := r.Meta[k]; !exists {
-				r = r.WithMeta(k, v)
+				r = op.WithMeta(r, k, v)
 			}
 		}
 		return r
 	}
-	return withMeta(op.Result[T]{}.WithExecutor(func(ctx context.Context) op.Result[T] {
+	return op.ExecuteOrDefer(ctx, withMeta(op.WithExecutor(op.Result[T]{}, func(ctx context.Context) op.Result[T] {
 		return withMeta(fn(ctx))
-	})).ExecuteOrDefer(ctx)
+	})))
 }
 
 // deploy sends the archive and optionally waits. previous is the rule
@@ -276,7 +276,7 @@ func (s *RuleService) deploy(ctx context.Context, name string, body []byte, exis
 		SetURL(ApiRuleDeployed)
 	put := httpcore.ExecuteNoContent(ctx, httpcore.NewTryRequest(s.svc.Client, req))
 	if put.Err != nil {
-		return op.Failed[jsonmodels.DataPrepRule](put.Err, false).WithHTTPStatus(put.HTTPStatus).WithRequest(put.Request)
+		return op.WithRequest(op.WithHTTPStatus(op.Failed[jsonmodels.DataPrepRule](put.Err, false), put.HTTPStatus), put.Request)
 	}
 
 	data := jsonmodels.NewDataPrepRule(withName([]byte(`{}`), name))
@@ -296,7 +296,7 @@ func (s *RuleService) deploy(ctx context.Context, name string, body []byte, exis
 	if existed {
 		result = op.Updated(data)
 	}
-	return result.WithHTTPStatus(put.HTTPStatus).WithRequest(put.Request).WithDuration(put.Duration)
+	return op.WithDuration(op.WithRequest(op.WithHTTPStatus(result, put.HTTPStatus), put.Request), put.Duration)
 }
 
 // WaitDeployed polls the rule until its deployment is no longer in
@@ -355,7 +355,7 @@ func (s *RuleService) Apply(ctx context.Context, name string, opt ApplyOptions) 
 		return op.Failed[jsonmodels.DataPrepRule](fmt.Errorf("empty rule name"), false)
 	}
 	if opt.Package == nil {
-		return op.Failed[jsonmodels.DataPrepRule](fmt.Errorf("Package is required"), false)
+		return op.Failed[jsonmodels.DataPrepRule](fmt.Errorf("a package is required"), false)
 	}
 	body, err := opt.Package.Archive()
 	if err != nil {
@@ -380,7 +380,7 @@ func (s *RuleService) Apply(ctx context.Context, name string, opt ApplyOptions) 
 		if failed {
 			changed = append(changed, "deploymentStatus.error")
 		}
-		return s.deploy(ctx, name, body, true, &current.Data, opt.Wait).WithMeta("changed", changed)
+		return op.WithMeta(s.deploy(ctx, name, body, true, &current.Data, opt.Wait), "changed", changed)
 	})
 }
 
@@ -466,7 +466,7 @@ func (s *RuleService) Export(ctx context.Context, name string, opt ExportOptions
 		res = s.GetDraft(ctx, name)
 	}
 	if res.Err != nil {
-		return op.Failed[*RulePackage](res.Err, false).WithHTTPStatus(res.HTTPStatus)
+		return op.WithHTTPStatus(op.Failed[*RulePackage](res.Err, false), res.HTTPStatus)
 	}
 	p, err := PackageFromRule(res.Data)
 	if err != nil {

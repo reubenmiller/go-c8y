@@ -429,7 +429,7 @@ func PackageFromArchive(r io.Reader) (*RulePackage, error) {
 		}
 		name := strings.TrimPrefix(hdr.Name, "./")
 		if slices.Contains(strings.Split(name, "/"), "..") {
-			return nil, fmt.Errorf("%w: entry %q contains ..", ErrInvalidPackage, hdr.Name)
+			return nil, fmt.Errorf("%w: entry %q contains a \"..\" path segment", ErrInvalidPackage, hdr.Name)
 		}
 		b, err := io.ReadAll(io.LimitReader(tr, DefaultLimits.MaxTotalSize+1))
 		if err != nil {
