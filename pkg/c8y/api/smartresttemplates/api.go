@@ -215,7 +215,7 @@ func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 
 // Get retrieves a template collection by name, resolved via its external identity
 func (s *Service) Get(ctx context.Context, name string) op.Result[jsonmodels.SmartRestTemplateCollection] {
-	return op.Result[jsonmodels.SmartRestTemplateCollection]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.SmartRestTemplateCollection] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[jsonmodels.SmartRestTemplateCollection]{}, func(execCtx context.Context) op.Result[jsonmodels.SmartRestTemplateCollection] {
 		ref := s.identity.Get(execCtx, identity.IdentityOptions{Type: ExternalIDType, ExternalID: name})
 		if ref.Err != nil {
 			return op.Failed[jsonmodels.SmartRestTemplateCollection](ref.Err, ref.IsRetryable())
@@ -227,18 +227,16 @@ func (s *Service) Get(ctx context.Context, name string) op.Result[jsonmodels.Sma
 		result := op.OK(jsonmodels.NewSmartRestTemplateCollection(existing.Data.Bytes()))
 		result.HTTPStatus = existing.HTTPStatus
 		return result
-	}).WithMeta("operation", "get").
-		ExecuteOrDefer(ctx)
+	}), "operation", "get"))
 }
 
 // Create a template collection and register its external identity. When the
 // identity cannot be registered the managed object is removed again (best
 // effort) so a retry does not leave a duplicate behind.
 func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.SmartRestTemplateCollection] {
-	return op.Result[jsonmodels.SmartRestTemplateCollection]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.SmartRestTemplateCollection] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[jsonmodels.SmartRestTemplateCollection]{}, func(execCtx context.Context) op.Result[jsonmodels.SmartRestTemplateCollection] {
 		return s.create(execCtx, opt)
-	}).WithMeta("operation", "create").
-		ExecuteOrDefer(ctx)
+	}), "operation", "create"))
 }
 
 func (s *Service) create(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.SmartRestTemplateCollection] {
@@ -269,7 +267,7 @@ func (s *Service) create(ctx context.Context, opt CreateOptions) op.Result[jsonm
 // when the desired state differs (annotations excluded, template order
 // ignored), so re-applying the same collection performs no writes.
 func (s *Service) Upsert(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.SmartRestTemplateCollection] {
-	return op.Result[jsonmodels.SmartRestTemplateCollection]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.SmartRestTemplateCollection] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[jsonmodels.SmartRestTemplateCollection]{}, func(execCtx context.Context) op.Result[jsonmodels.SmartRestTemplateCollection] {
 		if opt.Name == "" {
 			return op.Failed[jsonmodels.SmartRestTemplateCollection](fmt.Errorf("name is required"), false)
 		}
@@ -307,15 +305,14 @@ func (s *Service) Upsert(ctx context.Context, opt CreateOptions) op.Result[jsonm
 		result.HTTPStatus = updated.HTTPStatus
 		result.Meta["found"] = true
 		return result
-	}).WithMeta("operation", "upsert").
-		ExecuteOrDefer(ctx)
+	}), "operation", "upsert"))
 }
 
 // Delete removes a template collection by name. A missing collection counts
 // as the desired state being reached. The external identity is removed
 // together with the managed object.
 func (s *Service) Delete(ctx context.Context, name string) op.Result[core.NoContent] {
-	return op.Result[core.NoContent]{}.WithExecutor(func(execCtx context.Context) op.Result[core.NoContent] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[core.NoContent]{}, func(execCtx context.Context) op.Result[core.NoContent] {
 		ref := s.identity.Get(execCtx, identity.IdentityOptions{Type: ExternalIDType, ExternalID: name})
 		if ref.Err != nil {
 			if core.IsNotFound(ref.Err) {
@@ -324,6 +321,5 @@ func (s *Service) Delete(ctx context.Context, name string) op.Result[core.NoCont
 			return op.Failed[core.NoContent](ref.Err, ref.IsRetryable())
 		}
 		return s.managedObjects.Delete(execCtx, ref.Data.ManagedObjectID(), managedobjects.DeleteOptions{})
-	}).WithMeta("operation", "delete").
-		ExecuteOrDefer(ctx)
+	}), "operation", "delete"))
 }
