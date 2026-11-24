@@ -139,7 +139,7 @@ func (s *DefinitionService) Update(ctx context.Context, identifier string, body 
 		SetBody(m)
 	if s.kind == KindProperties {
 		req.SetPathParam(ParamIdentifier, identifier).
-			SetQueryParamsFromValues(httpcore.QueryParameters(contextsQuery{opt.Contexts})).
+			SetQueryParamsFromValues(httpcore.QueryParameters(contextsQuery(opt))).
 			SetURL(ApiDefinition)
 	} else {
 		req.SetURL(ApiDefinitions)
@@ -168,7 +168,7 @@ func (s *DefinitionService) Delete(ctx context.Context, identifier string, opt D
 		SetPathParam(ParamIdentifier, identifier).
 		SetURL(ApiDefinition)
 	if s.kind == KindProperties {
-		req.SetQueryParamsFromValues(httpcore.QueryParameters(contextsQuery{opt.Contexts}))
+		req.SetQueryParamsFromValues(httpcore.QueryParameters(contextsQuery(opt)))
 	}
 	res := httpcore.ExecuteNoContent(ctx, httpcore.NewTryRequest(s.svc.Client, req), map[string]any{"identifier": identifier})
 	return skipIfNotFound(classifyDefinitionError(res))
@@ -194,7 +194,7 @@ func (s *DefinitionService) Find(ctx context.Context, identifier string, context
 		PaginationOptions: pagination.PaginationOptions{PageSize: 100},
 	})
 	if list.Err != nil {
-		return op.Failed[jsonmodels.DigitalTwinDefinition](list.Err, false).WithHTTPStatus(list.HTTPStatus), false
+		return op.WithHTTPStatus(op.Failed[jsonmodels.DigitalTwinDefinition](list.Err, false), list.HTTPStatus), false
 	}
 	for def := range list.Seq() {
 		if def.Identifier() == identifier && sameSet(def.Contexts(), contexts) {
@@ -210,7 +210,7 @@ func (s *DefinitionService) Find(ctx context.Context, identifier string, context
 //
 // Status: StatusCreated (new) or StatusOK (existed, no write).
 func (s *DefinitionService) GetOrCreate(ctx context.Context, body any) op.Result[jsonmodels.DigitalTwinDefinition] {
-	return op.Result[jsonmodels.DigitalTwinDefinition]{}.WithExecutor(func(ctx context.Context) op.Result[jsonmodels.DigitalTwinDefinition] {
+	return deferrable(ctx, "getOrCreate", func(ctx context.Context) op.Result[jsonmodels.DigitalTwinDefinition] {
 		m, err := toMap(body)
 		if err != nil {
 			return op.Failed[jsonmodels.DigitalTwinDefinition](err, false)
@@ -220,12 +220,12 @@ func (s *DefinitionService) GetOrCreate(ctx context.Context, body any) op.Result
 			return op.Failed[jsonmodels.DigitalTwinDefinition](err, false)
 		}
 		if existing, ok := s.Find(ctx, id, contexts); ok {
-			return existing.WithMeta("existing", true)
+			return op.WithMeta(existing, "existing", true)
 		} else if existing.Err != nil {
 			return existing
 		}
 		return s.Create(ctx, m)
-	}).WithMeta("operation", "getOrCreate").ExecuteOrDefer(ctx)
+	})
 }
 
 // Upsert creates the definition described by body or updates the existing
@@ -248,7 +248,7 @@ func (s *DefinitionService) GetOrCreate(ctx context.Context, body any) op.Result
 //
 // Status: StatusCreated, StatusUpdated or StatusSkipped.
 func (s *DefinitionService) Upsert(ctx context.Context, body any) op.Result[jsonmodels.DigitalTwinDefinition] {
-	return op.Result[jsonmodels.DigitalTwinDefinition]{}.WithExecutor(func(ctx context.Context) op.Result[jsonmodels.DigitalTwinDefinition] {
+	return deferrable(ctx, "upsert", func(ctx context.Context) op.Result[jsonmodels.DigitalTwinDefinition] {
 		desired, err := toMap(body)
 		if err != nil {
 			return op.Failed[jsonmodels.DigitalTwinDefinition](err, false)
@@ -284,8 +284,8 @@ func (s *DefinitionService) Upsert(ctx context.Context, body any) op.Result[json
 			}
 		}
 		res := s.Update(ctx, id, update, UpdateDefinitionOptions{Contexts: contexts})
-		return res.WithMeta("changed", changed)
-	}).WithMeta("operation", "upsert").ExecuteOrDefer(ctx)
+		return op.WithMeta(res, "changed", changed)
+	})
 }
 
 // definitionChanges returns the top-level fields of desired that differ
@@ -324,11 +324,11 @@ func definitionChanges(desired map[string]any, existing []byte) []string {
 // each desired entry is a subset match of the stored entry with the same
 // identifier. Other fields use a subset match.
 func compositionMatches(want, have any) bool {
-	w, ok := normalize(want).(map[string]any)
+	w, ok := normalise(want).(map[string]any)
 	if !ok {
 		return false
 	}
-	h, _ := normalize(have).(map[string]any)
+	h, _ := normalise(have).(map[string]any)
 	if h == nil {
 		h = map[string]any{}
 	}
@@ -415,9 +415,9 @@ func stringSlice(v any) []string {
 	return nil
 }
 
-// normalize round-trips v through JSON, so Go structs and parsed JSON
+// normalise round-trips v through JSON, so Go structs and parsed JSON
 // compare the same way.
-func normalize(v any) any {
+func normalise(v any) any {
 	var out any
 	_ = json.Unmarshal(mustJSON(v), &out)
 	return out

@@ -43,7 +43,7 @@ func (s *SubAssetService) createB(parentID string, body any) *httpcore.TryReques
 //
 // Status: StatusCreated (new) or StatusOK (existed).
 func (s *SubAssetService) GetOrCreate(ctx context.Context, parent AssetRef, opt AssetCreateOptions, annotations ...model.Fragment) op.Result[jsonmodels.DigitalTwinAsset] {
-	return op.Result[jsonmodels.DigitalTwinAsset]{}.WithExecutor(func(ctx context.Context) op.Result[jsonmodels.DigitalTwinAsset] {
+	return deferrable(ctx, "getOrCreateSubAsset", func(ctx context.Context) op.Result[jsonmodels.DigitalTwinAsset] {
 		body, err := opt.body(annotations...)
 		if err != nil {
 			return op.Failed[jsonmodels.DigitalTwinAsset](err, false)
@@ -59,7 +59,7 @@ func (s *SubAssetService) GetOrCreate(ctx context.Context, parent AssetRef, opt 
 			if res := s.Assign(ctx, AssetByID(parentID), AssetByID(existing.Data.ID())); res.Err != nil {
 				return op.Failed[jsonmodels.DigitalTwinAsset](res.Err, false)
 			}
-			return existing.WithMeta("existing", true).WithMeta("parentId", parentID)
+			return op.WithMeta(op.WithMeta(existing, "existing", true), "parentId", parentID)
 		case !core.IsNotFound(existing.Err):
 			return existing
 		}
@@ -72,8 +72,8 @@ func (s *SubAssetService) GetOrCreate(ctx context.Context, parent AssetRef, opt 
 			return created
 		}
 		created.Status = op.StatusCreated
-		return created.WithMeta("parentId", parentID)
-	}).WithMeta("operation", "getOrCreateSubAsset").ExecuteOrDefer(ctx)
+		return op.WithMeta(created, "parentId", parentID)
+	})
 }
 
 // Assign makes child a sub-asset of parent. Both must exist. Assigning

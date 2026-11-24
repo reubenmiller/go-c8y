@@ -200,9 +200,9 @@ type LinkOptions struct {
 // Status: StatusCreated (new linked series), StatusUpdated or StatusSkipped.
 // result.Data is the linked series as read back from the server.
 func (s *LinkedSeriesService) Link(ctx context.Context, asset AssetRef, opt LinkOptions) op.Result[jsonmodels.DigitalTwinLinkedSeries] {
-	return op.Result[jsonmodels.DigitalTwinLinkedSeries]{}.WithExecutor(func(ctx context.Context) op.Result[jsonmodels.DigitalTwinLinkedSeries] {
+	return deferrable(ctx, "link", func(ctx context.Context) op.Result[jsonmodels.DigitalTwinLinkedSeries] {
 		if opt.Fragment == "" || opt.Series == "" || opt.Device == "" {
-			return op.Failed[jsonmodels.DigitalTwinLinkedSeries](fmt.Errorf("Fragment, Series and Device are required"), false)
+			return op.Failed[jsonmodels.DigitalTwinLinkedSeries](fmt.Errorf("fragment, series and device are required"), false)
 		}
 		meta := map[string]any{}
 		assetID, deviceID, err := s.assets.resolveAssetAndDevice(ctx, asset, opt.Device, meta)
@@ -244,7 +244,7 @@ func (s *LinkedSeriesService) Link(ctx context.Context, asset AssetRef, opt Link
 			return op.Updated(after, meta)
 		}
 		return op.Created(after, meta)
-	}).WithMeta("operation", "link").ExecuteOrDefer(ctx)
+	})
 }
 
 // find returns the linked series fragment.series of an asset.

@@ -160,7 +160,7 @@ func (o AssetCreateOptions) body(annotations ...model.Fragment) (map[string]any,
 //
 // annotations are merged into the body when the asset is created.
 func (s *AssetService) GetOrCreate(ctx context.Context, opt AssetCreateOptions, annotations ...model.Fragment) op.Result[jsonmodels.DigitalTwinAsset] {
-	return op.Result[jsonmodels.DigitalTwinAsset]{}.WithExecutor(func(ctx context.Context) op.Result[jsonmodels.DigitalTwinAsset] {
+	return deferrable(ctx, "getOrCreate", func(ctx context.Context) op.Result[jsonmodels.DigitalTwinAsset] {
 		body, err := opt.body(annotations...)
 		if err != nil {
 			return op.Failed[jsonmodels.DigitalTwinAsset](err, false)
@@ -174,8 +174,8 @@ func (s *AssetService) GetOrCreate(ctx context.Context, opt AssetCreateOptions, 
 		if existing.Err != nil {
 			return existing
 		}
-		return existing.WithMeta("existing", true)
-	}).WithMeta("operation", "getOrCreate").ExecuteOrDefer(ctx)
+		return op.WithMeta(existing, "existing", true)
+	})
 }
 
 // AssetUpsertOptions describes the desired state of an asset identified by
@@ -203,7 +203,7 @@ type AssetUpsertOptions struct {
 // every real update, but are not compared, so they never cause an update on
 // their own.
 func (s *AssetService) Upsert(ctx context.Context, opt AssetUpsertOptions, annotations ...model.Fragment) op.Result[jsonmodels.DigitalTwinAsset] {
-	return op.Result[jsonmodels.DigitalTwinAsset]{}.WithExecutor(func(ctx context.Context) op.Result[jsonmodels.DigitalTwinAsset] {
+	return deferrable(ctx, "upsert", func(ctx context.Context) op.Result[jsonmodels.DigitalTwinAsset] {
 		desired, err := opt.body()
 		if err != nil {
 			return op.Failed[jsonmodels.DigitalTwinAsset](err, false)
@@ -225,7 +225,7 @@ func (s *AssetService) Upsert(ctx context.Context, opt AssetUpsertOptions, annot
 			}
 		}
 		return s.serverUpsert(ctx, body, opt.WriteOptions)
-	}).WithMeta("operation", "upsert").ExecuteOrDefer(ctx)
+	})
 }
 
 // serverUpsert sends POST /assets with X-Upsert-Mode: true. The server
