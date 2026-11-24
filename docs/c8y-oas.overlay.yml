@@ -281,6 +281,7 @@ drift:
     - /tenant/statistics/device/ # trailing-slash device statistics variant
     - /user/passwordReset       # password-reset endpoint (not in the core OAS)
     - /service/datahub/*        # DataHub microservice API (not in the core OAS)
+    - /service/dataprep/*       # Data Preparation API (separate OAS: https://cumulocity.com/api/data-preparation/)
     - /service/dtm/*            # Digital Twin Manager API (separate OAS: https://cumulocity.com/api/dtm/)
     - /databroker/*             # data broker connectors (not in the core OAS)
     - /service/{name}/loggers*  # Spring Boot microservice log levels (per-service, not in the core OAS)

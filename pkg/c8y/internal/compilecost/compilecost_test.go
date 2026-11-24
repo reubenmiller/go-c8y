@@ -27,7 +27,11 @@ import (
 // Raised to 3,875 for DigitalTwin.Apply and Plan (3,857). They return
 // op.Result[*ApplyReport]: a pointer shares one shape with every other
 // pointer type, where a struct report cost about 75 functions.
-const budget = 3875
+//
+// Raised to 3,950 for the Data Preparation service (client.DataPreparation),
+// 3,920 with both services: its rule, deployment status and test result
+// models add about 63 functions.
+const budget = 3950
 
 func TestCompiledFunctionBudget(t *testing.T) {
 	if testing.Short() {
