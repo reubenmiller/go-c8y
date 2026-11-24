@@ -90,6 +90,8 @@ v2 is a new module, `github.com/reubenmiller/go-c8y/v2`. Entries marked **Breaki
 
 ### Microservices
 
+* `op.Result.Documents` yields one document per item when the result is a collection (its data is a JSON array), like a page of a pagination iterator. Before, the whole array was one document.
+* Added `Microservices.ListServiceUsers`, which lists the service users of a microservice (one per subscribed tenant): it resolves the microservice, fetches its bootstrap user and reads the subscriptions with the bootstrap user's credentials. The fake server now serves `GET /application/applications/{id}/bootstrapUser`.
 * **Security, breaking (behavior)**: `Microservice.TenantContext` with `UseServiceUser: true` now validates the caller's credentials with `GET /user/currentUser` before acting as the tenant's service user (cached per credential). Previously any request naming a subscribed tenant got service-user access. Set `TenantContextOptions{Validation: microservice.ValidateNone}` to trust the platform proxy instead. New: `ValidationTTL`, `Validator`, `CallerInfo`, `CallerFromContext`, `RequireRoles`.
 * Added `Microservice.TenantContext()`, a framework-agnostic `net/http` middleware that binds the caller's tenant credentials to the request context (parity with the Java SDK's per-request security context), with optional service-user (tenant) scope via `TenantContextOptions{UseServiceUser: true}`
 * Added `Microservice.ForEachTenant()` and `Microservice.WithServiceUser()` helpers for running code within a tenant's context (parity with the Java SDK's `runForEachTenant`/`runForTenant`)

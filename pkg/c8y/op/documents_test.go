@@ -65,3 +65,19 @@ func TestResultDocuments(t *testing.T) {
 		})
 	}
 }
+
+func TestResultDocuments_CollectionYieldsItems(t *testing.T) {
+	r := OK(docModel{jsondoc.New([]byte(`[{"id":"1"},{"id":"2"}]`))})
+	docs, errs := collect(r)
+	if len(errs) != 0 {
+		t.Fatal(errs)
+	}
+	if len(docs) != 2 || docs[0] != `{"id":"1"}` || docs[1] != `{"id":"2"}` {
+		t.Errorf("docs = %v, want one per item", docs)
+	}
+
+	empty, _ := collect(OK(docModel{jsondoc.New([]byte(`[]`))}))
+	if len(empty) != 0 {
+		t.Errorf("an empty collection yields nothing, got %v", empty)
+	}
+}
