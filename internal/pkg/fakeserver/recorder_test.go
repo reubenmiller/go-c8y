@@ -241,3 +241,17 @@ func TestCompareRecords_NoMatchingRequest(t *testing.T) {
 	require.Len(t, results, 1)
 	assert.False(t, results[0].StatusMatch)
 }
+
+func TestMergeJSON_NullRemovesField(t *testing.T) {
+	got := mergeJSON(json.RawMessage(`{"id":"1","myCustom":{"value":"two"},"name":"x"}`), json.RawMessage(`{"myCustom":null,"name":"y"}`))
+	var m map[string]any
+	if err := json.Unmarshal(got, &m); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := m["myCustom"]; ok {
+		t.Errorf("myCustom should be removed: %s", got)
+	}
+	if m["name"] != "y" || m["id"] != "1" {
+		t.Errorf("unexpected merge result: %s", got)
+	}
+}
