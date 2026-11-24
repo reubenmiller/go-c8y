@@ -1,42 +1,75 @@
+// Package applicationplugins manages the UI plugins installed in a hosted
+// application.
+//
+// The installed plugins are the application's config.remotes: a map from
+// "<plugin contextPath>@<version>" to the list of the plugin's modules, e.g.
+//
+//	{"config": {"remotes": {"my-plugin@1.2.0": ["MyPluginModule"]}}}
+//
+// Entries whose key has no "@<version>" are not plugins managed here and are
+// always kept as they are.
 package applicationplugins
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"log/slog"
+	"slices"
+	"strings"
 
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/applications"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/ui/plugins"
+	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
+	"github.com/tidwall/gjson"
 	"resty.dev/v3"
 )
 
-// Note: Application plugins are managed by modifying the host application object itself
-// via PUT /application/applications/{id}, not through dedicated plugin endpoints.
-// This service wraps those operations for convenience.
 var (
 	ApiApplication = "/application/applications/{id}"
 )
 
 var ParamID = "id"
 
+// VersionLatest selects the newest version of a plugin (its "latest" tag).
+const VersionLatest = "latest"
+
+const availabilityShared = "SHARED"
+
 type Service struct {
-	svc httpcore.Service
+	svc          httpcore.Service
+	applications *applications.Service
+	plugins      *plugins.Service
 }
 
 func NewService(s *httpcore.Service) *Service {
-	return &Service{svc: *s}
+	return &Service{
+		svc:          *s,
+		applications: applications.NewService(s),
+		plugins:      plugins.NewService(s),
+	}
 }
 
-// PluginReference represents a reference to an installed plugin
-type PluginReference struct {
-	ID      string `json:"id,omitempty"`
-	Name    string `json:"name,omitempty"`
-	Version string `json:"version,omitempty"`
+// InstalledPlugin is one plugin installed in an application.
+type InstalledPlugin struct {
+	ContextPath string
+	Version     string
+	Modules     []string
 }
 
-// ApplicationWithPlugins wraps application data focusing on plugin management
+// Key is the config.remotes key of the plugin: "<contextPath>@<version>".
+func (p InstalledPlugin) Key() string {
+	return p.ContextPath + "@" + p.Version
+}
+
+// ApplicationWithPlugins is a hosted application.
 type ApplicationWithPlugins struct {
 	jsondoc.Facade
 }
@@ -49,49 +82,40 @@ func (a ApplicationWithPlugins) ID() string {
 	return a.Get("id").String()
 }
 
-func (a ApplicationWithPlugins) Plugins() []map[string]any {
-	plugins := a.Get("applicationBuilder.plugins").Array()
-	result := make([]map[string]any, len(plugins))
-	for i, p := range plugins {
-		// Convert gjson.Result to map[string]any
-		result[i] = p.Value().(map[string]any)
+// Plugins returns the plugins installed in the application (the
+// "<contextPath>@<version>" entries of config.remotes), sorted by key.
+func (a ApplicationWithPlugins) Plugins() []InstalledPlugin {
+	var out []InstalledPlugin
+	a.Get("config.remotes").ForEach(func(key, value gjson.Result) bool {
+		contextPath, version, ok := strings.Cut(key.String(), "@")
+		if !ok {
+			return true
+		}
+		p := InstalledPlugin{ContextPath: contextPath, Version: version, Modules: []string{}}
+		for _, m := range value.Array() {
+			if name := m.String(); name != "" {
+				p.Modules = append(p.Modules, name)
+			}
+		}
+		out = append(out, p)
+		return true
+	})
+	slices.SortFunc(out, func(a, b InstalledPlugin) int { return strings.Compare(a.Key(), b.Key()) })
+	return out
+}
+
+// get fetches the application. applicationID may be a name ("name:...").
+// The lookup is sent also in a dry run.
+func (s *Service) get(ctx context.Context, applicationID string) op.Result[ApplicationWithPlugins] {
+	lookupCtx := ctxhelpers.ResolutionContext(ctx)
+	id, err := s.applications.ResolveID(lookupCtx, applicationID, nil)
+	if err != nil {
+		return op.Failed[ApplicationWithPlugins](err, false)
 	}
-	return result
+	return httpcore.Execute(lookupCtx, s.getB(id), NewApplicationWithPlugins)
 }
 
-// PluginReferenceResult wraps plugin reference data
-type PluginReferenceResult struct {
-	jsondoc.Facade
-}
-
-func NewPluginReference(data []byte) PluginReferenceResult {
-	return PluginReferenceResult{jsondoc.Facade{JSONDoc: jsondoc.New(data)}}
-}
-
-func (p PluginReferenceResult) ID() string {
-	return p.Get("id").String()
-}
-
-func (p PluginReferenceResult) Name() string {
-	return p.Get("name").String()
-}
-
-func (p PluginReferenceResult) Version() string {
-	return p.Get("version").String()
-}
-
-type ListOptions struct {
-	pagination.PaginationOptions
-}
-
-type PluginReferenceIterator = pagination.Iterator[PluginReferenceResult]
-
-// getApplication fetches the current application object
-func (s *Service) getApplication(ctx context.Context, applicationID string) op.Result[ApplicationWithPlugins] {
-	return httpcore.Execute(ctx, s.getApplicationB(applicationID), NewApplicationWithPlugins)
-}
-
-func (s *Service) getApplicationB(applicationID string) *httpcore.TryRequest {
+func (s *Service) getB(applicationID string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -100,12 +124,7 @@ func (s *Service) getApplicationB(applicationID string) *httpcore.TryRequest {
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
-// updateApplication updates the application with new data
-func (s *Service) updateApplication(ctx context.Context, applicationID string, body map[string]any) op.Result[ApplicationWithPlugins] {
-	return httpcore.Execute(ctx, s.updateApplicationB(applicationID, body), NewApplicationWithPlugins)
-}
-
-func (s *Service) updateApplicationB(applicationID string, body map[string]any) *httpcore.TryRequest {
+func (s *Service) updateB(applicationID string, body any) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
@@ -116,118 +135,314 @@ func (s *Service) updateApplicationB(applicationID string, body map[string]any) 
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
-// List retrieves all plugins installed in an application
-// This fetches the application and returns it - use Plugins() method to extract plugin references
-func (s *Service) List(ctx context.Context, applicationID string, opt ListOptions) op.Result[ApplicationWithPlugins] {
-	return s.getApplication(ctx, applicationID)
+// List returns the application; its Plugins method lists the installed
+// plugins. ListPlugins returns them with the details of each plugin.
+func (s *Service) List(ctx context.Context, applicationID string) op.Result[ApplicationWithPlugins] {
+	return s.get(ctx, applicationID)
 }
 
-// ListAll is not applicable for application plugins as they're part of the application object
-// Use List() to get the application and extract plugins with app.Plugins()
-func (s *Service) ListAll(ctx context.Context, applicationID string, opts ListOptions) op.Result[ApplicationWithPlugins] {
-	return s.List(ctx, applicationID, opts)
+// PluginDetails describes a plugin installed in an application, with the
+// plugin application it refers to.
+type PluginDetails struct {
+	ID          string         `json:"id,omitempty"`
+	Name        string         `json:"name,omitempty"`
+	Modules     []string       `json:"modules,omitempty"`
+	ContextPath string         `json:"contextPath,omitempty"`
+	Description string         `json:"description,omitempty"`
+	Version     string         `json:"version,omitempty"`
+	Plugin      map[string]any `json:"plugin,omitempty"`
 }
 
-// Install adds a plugin reference to an application
-// This fetches the application, adds the plugin, and updates it
-func (s *Service) Install(ctx context.Context, applicationID string, pluginID string) op.Result[ApplicationWithPlugins] {
-	// Get current application state
-	appResult := s.getApplication(ctx, applicationID)
-	if appResult.Err != nil {
-		return appResult
+// ListPlugins lists the plugins installed in an application with the details
+// of each plugin (its id, name, description and the plugin application). The
+// result is a collection: one document per plugin. A plugin that no longer
+// exists is left out and logged at warn level.
+func (s *Service) ListPlugins(ctx context.Context, applicationID string) op.Result[jsondoc.JSONDoc] {
+	app := s.get(ctx, applicationID)
+	if app.Err != nil {
+		return op.Result[jsondoc.JSONDoc]{Err: app.Err, Status: app.Status, HTTPStatus: app.HTTPStatus}
 	}
-
-	// Get current plugins
-	currentPluginsResult := appResult.Data.Get("applicationBuilder.plugins").Array()
-
-	// Convert to []any
-	currentPlugins := make([]any, len(currentPluginsResult))
-	for i, p := range currentPluginsResult {
-		currentPlugins[i] = p.Value()
+	catalog, err := s.catalog(ctx)
+	if err != nil {
+		return op.Failed[jsondoc.JSONDoc](err, false)
 	}
-
-	// Add new plugin reference
-	newPlugin := map[string]any{
-		"id": pluginID,
-	}
-	updatedPlugins := append(currentPlugins, newPlugin)
-
-	// Update application with new plugin list
-	body := map[string]any{
-		"applicationBuilder": map[string]any{
-			"plugins": updatedPlugins,
-		},
-	}
-
-	return s.updateApplication(ctx, applicationID, body)
-}
-
-// Update updates installed plugin references in an application
-// This replaces all plugins with the provided list
-func (s *Service) Update(ctx context.Context, applicationID string, pluginRefs []PluginReference) op.Result[ApplicationWithPlugins] {
-	// Convert plugin references to the format expected by the API
-	plugins := make([]map[string]any, len(pluginRefs))
-	for i, ref := range pluginRefs {
-		plugin := map[string]any{}
-		if ref.ID != "" {
-			plugin["id"] = ref.ID
+	details := []PluginDetails{}
+	for _, installed := range app.Data.Plugins() {
+		plugin, ok := catalog.find(installed.ContextPath)
+		if !ok {
+			slog.Warn("could not find plugin", "contextPath", installed.ContextPath, "version", installed.Version)
+			continue
 		}
-		if ref.Name != "" {
-			plugin["name"] = ref.Name
-		}
-		if ref.Version != "" {
-			plugin["version"] = ref.Version
-		}
-		plugins[i] = plugin
+		raw := map[string]any{}
+		_ = json.Unmarshal(plugin.Bytes(), &raw)
+		details = append(details, PluginDetails{
+			ID:          plugin.ID(),
+			Name:        plugin.Name(),
+			Modules:     installed.Modules,
+			ContextPath: plugin.ContextPath(),
+			Description: plugin.Get("manifest.description").String(),
+			Version:     installed.Version,
+			Plugin:      raw,
+		})
 	}
-
-	body := map[string]any{
-		"applicationBuilder": map[string]any{
-			"plugins": plugins,
-		},
+	b, err := json.Marshal(details)
+	if err != nil {
+		return op.Failed[jsondoc.JSONDoc](err, false)
 	}
-
-	return s.updateApplication(ctx, applicationID, body)
+	return op.OK(jsondoc.New(b))
 }
 
-// Replace replaces all installed plugins in an application
-// This is the same as Update but more explicit in intent
-func (s *Service) Replace(ctx context.Context, applicationID string, pluginRefs []PluginReference) op.Result[ApplicationWithPlugins] {
-	return s.Update(ctx, applicationID, pluginRefs)
+// UpdateOptions are the changes to the plugins of an application. Plugins
+// are given as "<name or contextPath>[@<version or tag>]"; without a version
+// the latest one is used.
+type UpdateOptions struct {
+	// Install adds these plugins, or changes the version of installed ones.
+	Install []string
+
+	// Remove removes these plugins (any version).
+	Remove []string
+
+	// RemoveAll removes all installed plugins first (e.g. to replace them
+	// with Install).
+	RemoveAll bool
+
+	// UpdateAll moves every installed plugin to its latest version.
+	UpdateAll bool
+
+	// RemoveInvalid removes installed plugins whose plugin or version no
+	// longer exists, instead of failing.
+	RemoveInvalid bool
+
+	// Body holds more application fields to change, as a JSON object (e.g.
+	// {"config": {"excludedRemotes": [...]}}). Objects are merged into the
+	// application's current values; config.remotes is always set from the
+	// plugins.
+	Body any
 }
 
-// Delete removes a plugin reference from an application
-// This fetches the application, removes the plugin, and updates it
-func (s *Service) Delete(ctx context.Context, applicationID string, pluginID string) op.Result[core.NoContent] {
-	// Get current application state
-	appResult := s.getApplication(ctx, applicationID)
-	if appResult.Err != nil {
-		return op.Failed[core.NoContent](appResult.Err, false)
+// Update changes the plugins installed in an application and writes the
+// application's config back with them. The application and the plugins are
+// looked up first (also in a dry run, so the update request is complete).
+// Every other config field and every config.remotes entry that is not a
+// plugin ("<key>" without "@<version>") is kept.
+func (s *Service) Update(ctx context.Context, applicationID string, opt UpdateOptions) op.Result[ApplicationWithPlugins] {
+	app := s.get(ctx, applicationID)
+	if app.Err != nil {
+		return app
+	}
+	catalog, err := s.catalog(ctx)
+	if err != nil {
+		return op.Failed[ApplicationWithPlugins](err, false)
 	}
 
-	// Get current plugins and filter out the one to delete
-	currentPluginsResult := appResult.Data.Get("applicationBuilder.plugins").Array()
-	updatedPlugins := []any{}
+	remotes := map[string]InstalledPlugin{} // by contextPath
+	var install []string
+	if !opt.RemoveAll {
+		for _, p := range app.Data.Plugins() {
+			switch {
+			case opt.UpdateAll:
+				install = append(install, p.ContextPath+"@"+VersionLatest)
+			case opt.RemoveInvalid:
+				install = append(install, p.Key()) // validated below
+			default:
+				remotes[p.ContextPath] = p
+			}
+		}
+	}
+	install = append(install, opt.Install...)
 
-	for _, p := range currentPluginsResult {
-		// Get the id from the gjson.Result
-		id := p.Get("id").String()
-		if id != "" && id != pluginID {
-			updatedPlugins = append(updatedPlugins, p.Value())
+	var errs []error
+	for _, ref := range install {
+		name, version, _ := strings.Cut(ref, "@")
+		plugin, ok := catalog.find(name)
+		if !ok {
+			if opt.RemoveInvalid {
+				slog.Warn("removing reference to orphaned plugin", "remote", ref)
+				continue
+			}
+			errs = append(errs, fmt.Errorf("plugin does not exist. name=%s, tag/version=%s", name, version))
+			continue
+		}
+		installed, err := resolveVersion(plugin, version)
+		if err != nil {
+			if opt.RemoveInvalid {
+				slog.Warn("removing reference to revoked plugin version", "name", plugin.Name(), "version", version)
+				continue
+			}
+			errs = append(errs, err)
+			continue
+		}
+		remotes[installed.ContextPath] = installed
+	}
+	if len(errs) > 0 {
+		return op.Failed[ApplicationWithPlugins](errors.Join(errs...), false)
+	}
+	for _, ref := range opt.Remove {
+		name, _, _ := strings.Cut(ref, "@")
+		if plugin, ok := catalog.find(name); ok {
+			delete(remotes, plugin.ContextPath())
+		} else {
+			delete(remotes, name)
 		}
 	}
 
-	// Update application with filtered plugin list
-	body := map[string]any{
-		"applicationBuilder": map[string]any{
-			"plugins": updatedPlugins,
-		},
+	body, err := applicationBody(app.Data, remotes, opt.Body)
+	if err != nil {
+		return op.Failed[ApplicationWithPlugins](err, false)
+	}
+	return httpcore.Execute(ctx, s.updateB(app.Data.ID(), body), NewApplicationWithPlugins)
+}
+
+// Install adds plugins to an application (see UpdateOptions.Install).
+func (s *Service) Install(ctx context.Context, applicationID string, plugins ...string) op.Result[ApplicationWithPlugins] {
+	return s.Update(ctx, applicationID, UpdateOptions{Install: plugins})
+}
+
+// Replace replaces all plugins of an application with the given ones.
+func (s *Service) Replace(ctx context.Context, applicationID string, plugins ...string) op.Result[ApplicationWithPlugins] {
+	return s.Update(ctx, applicationID, UpdateOptions{RemoveAll: true, Install: plugins})
+}
+
+// Delete removes plugins from an application.
+func (s *Service) Delete(ctx context.Context, applicationID string, plugins ...string) op.Result[ApplicationWithPlugins] {
+	return s.Update(ctx, applicationID, UpdateOptions{Remove: plugins})
+}
+
+// resolveVersion finds the version (or tag) of a plugin. An empty version is
+// the latest.
+func resolveVersion(plugin jsonmodels.UIPlugin, versionOrTag string) (InstalledPlugin, error) {
+	if versionOrTag == "" {
+		versionOrTag = VersionLatest
+	}
+	match := ""
+	for _, v := range plugin.Get("applicationVersions").Array() {
+		version := v.Get("version").String()
+		if version == versionOrTag {
+			match = version
+			break
+		}
+		if slices.ContainsFunc(v.Get("tags").Array(), func(t gjson.Result) bool { return t.String() == versionOrTag }) {
+			match = version
+			break
+		}
+	}
+	if match == "" {
+		return InstalledPlugin{}, fmt.Errorf("plugin version not found. plugin=%s, version=%s", plugin.Name(), versionOrTag)
+	}
+	installed := InstalledPlugin{ContextPath: plugin.ContextPath(), Version: match, Modules: []string{}}
+	plugin.Get("manifest.remotes").ForEach(func(_, modules gjson.Result) bool {
+		for _, m := range modules.Array() {
+			if name := m.String(); name != "" {
+				installed.Modules = append(installed.Modules, name)
+			}
+		}
+		return true
+	})
+	return installed, nil
+}
+
+// applicationBody builds the PUT body: the application's config with extra
+// merged in and config.remotes set to the plugins (plus the entries that are
+// not plugins).
+func applicationBody(app ApplicationWithPlugins, installed map[string]InstalledPlugin, extra any) (map[string]any, error) {
+	config := map[string]any{}
+	if v := app.Get("config"); v.IsObject() {
+		if err := json.Unmarshal([]byte(v.Raw), &config); err != nil {
+			return nil, err
+		}
+	}
+	body := map[string]any{"config": config}
+	if extra != nil {
+		b, err := json.Marshal(extra)
+		if err != nil {
+			return nil, err
+		}
+		if string(b) != "null" {
+			var fields map[string]any
+			if err := json.Unmarshal(b, &fields); err != nil {
+				return nil, fmt.Errorf("the application fields must be a JSON object: %w", err)
+			}
+			deepMerge(body, fields)
+		}
+	}
+	config, _ = body["config"].(map[string]any)
+	if config == nil {
+		config = map[string]any{}
+		body["config"] = config
 	}
 
-	updateResult := s.updateApplication(ctx, applicationID, body)
-	if updateResult.Err != nil {
-		return op.Failed[core.NoContent](updateResult.Err, false)
+	remotes := map[string]any{}
+	app.Get("config.remotes").ForEach(func(key, value gjson.Result) bool {
+		if !strings.Contains(key.String(), "@") {
+			remotes[key.String()] = value.Value()
+		}
+		return true
+	})
+	for _, p := range installed {
+		remotes[p.Key()] = p.Modules
 	}
+	config["remotes"] = remotes
+	return body, nil
+}
 
-	return op.OK(core.NoContent{})
+// deepMerge merges src into dst: objects are merged, other values replace.
+func deepMerge(dst, src map[string]any) {
+	for k, v := range src {
+		if srcMap, ok := v.(map[string]any); ok {
+			if dstMap, ok := dst[k].(map[string]any); ok {
+				deepMerge(dstMap, srcMap)
+				continue
+			}
+		}
+		dst[k] = v
+	}
+}
+
+// pluginCatalog is the UI plugins the tenant can install: its own and the
+// shared ones.
+type pluginCatalog struct {
+	owned  []jsonmodels.UIPlugin
+	shared []jsonmodels.UIPlugin
+}
+
+// find returns the plugin with the name or contextPath (case-insensitive),
+// preferring the tenant's own plugins over shared ones.
+func (c pluginCatalog) find(name string) (jsonmodels.UIPlugin, bool) {
+	for _, list := range [][]jsonmodels.UIPlugin{c.owned, c.shared} {
+		for _, p := range list {
+			if strings.EqualFold(p.Name(), name) || strings.EqualFold(p.ContextPath(), name) {
+				return p, true
+			}
+		}
+	}
+	return jsonmodels.UIPlugin{}, false
+}
+
+// catalog lists the plugins the tenant can use (also in a dry run).
+func (s *Service) catalog(ctx context.Context) (pluginCatalog, error) {
+	lookupCtx := ctxhelpers.ResolutionContext(ctx)
+	var c pluginCatalog
+	seen := map[string]bool{}
+	for _, opt := range []plugins.ListOptions{
+		{Type: plugins.ApplicationTypeHosted},
+		{Availability: availabilityShared},
+	} {
+		opt.PaginationOptions = pagination.PaginationOptions{MaxItems: 2000}
+		it := s.plugins.ListAll(lookupCtx, opt)
+		for item := range it.Items() {
+			if seen[item.ID()] {
+				continue
+			}
+			seen[item.ID()] = true
+			if item.Get("availability").String() == availabilityShared {
+				c.shared = append(c.shared, item)
+			} else {
+				c.owned = append(c.owned, item)
+			}
+		}
+		if err := it.Err(); err != nil {
+			return c, err
+		}
+	}
+	return c, nil
 }
