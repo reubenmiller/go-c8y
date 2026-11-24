@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
+
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"resty.dev/v3"
 )
@@ -270,10 +272,10 @@ func TestBootstrapUserGet(t *testing.T) {
 	}
 }
 
-// TestCreateOrUpdate verifies that a missing application is created and an
+// TestDeploy verifies that a missing application is created and an
 // existing one is reused (not re-created), and that the binary is uploaded to
 // the resolved application.
-func TestCreateOrUpdate(t *testing.T) {
+func TestDeploy(t *testing.T) {
 	cases := []struct {
 		name     string
 		listBody string
@@ -322,12 +324,15 @@ func TestCreateOrUpdate(t *testing.T) {
 			})
 			defer closeFn()
 
-			app, err := svc.CreateOrUpdate(context.Background(), CreateOptions{File: file, SkipSubscription: true})
-			if err != nil {
-				t.Fatalf("CreateOrUpdate: %v", err)
+			res := svc.Deploy(context.Background(), CreateOptions{File: file, SkipSubscription: true})
+			if res.Err != nil {
+				t.Fatalf("Deploy: %v", res.Err)
 			}
-			if app.ID != tc.wantID {
-				t.Errorf("id = %q, want %q", app.ID, tc.wantID)
+			if res.Data.ID() != tc.wantID {
+				t.Errorf("id = %q, want %q", res.Data.ID(), tc.wantID)
+			}
+			if wantStatus := map[bool]op.Status{true: op.StatusCreated, false: op.StatusUpdated}[tc.wantPOST]; res.Status != wantStatus {
+				t.Errorf("status = %s, want %s", res.Status, wantStatus)
 			}
 			if wantPath := "/application/applications/" + tc.wantID + "/binaries"; uploadPath != wantPath {
 				t.Errorf("upload path = %q, want %q", uploadPath, wantPath)

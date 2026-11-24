@@ -603,34 +603,72 @@ schema := props.Compose(ctx, []string{"maxFlow", "minFlow"})
 
 ### 5.6 Scenario: apply a whole model from files (declarative)
 
-For GitOps-style workflows, `dtm.Model` holds definitions (and optionally assets) and `Apply` syncs them in dependency order: property, measurement, event and alarm definitions first, then asset definitions (children before parents, so `composition` references exist), then assets, sub-asset assignments and linked series.
+For GitOps-style workflows, `dtm.Model` holds definitions and, optionally, assets. `Apply` makes the tenant match it, in dependency order:
+
+1. property, measurement, event and alarm definitions
+2. asset definitions, each after the asset definitions its composition allows as sub-assets
+3. assets, each after its parent when the parent is in the model
+4. sub-asset assignments, device assignments, linked series
+5. with `Prune`, deletes of definitions that are no longer in the model
+
+A cycle (in compositions or in parents) is an error before anything is sent.
+
+Model files are YAML or JSON. A file holds one or more objects (YAML documents separated by `---`, or a list), each with a `kind`:
+
+```yaml
+kind: PropertyDefinition
+identifier: maxFlow
+contexts: [asset]
+jsonSchema: {title: Maximum flow, type: number}
+---
+kind: AssetDefinition
+identifier: Pump
+jsonSchema: {title: Pump}
+composition:
+  allowedProperties: [{identifier: maxFlow}]
+---
+kind: Asset
+externalId: pump-07
+parent: ext:site-berlin
+asset: {name: Pump 07, type: Pump, maxFlow: 120}
+devices: ["name:pump-07-controller"]
+linkedSeries:
+  - {fragment: c8y_Flow, series: F, label: Flow, device: "name:pump-07-controller", sourceType: c8y_FlowMeasurement}
+```
+
+The kinds are `PropertyDefinition`, `AssetDefinition`, `MeasurementDefinition`, `EventDefinition`, `AlarmDefinition` and `Asset`. Asset fields go under `asset:`; an unknown field at the top level of an `Asset` is an error, so a typo is not silently dropped.
 
 ```go
-twin, err := dtm.LoadModel("./twin-model") // *.yaml or *.json, one object per file or lists
+twin, err := dtm.LoadModel("./twin-model") // files or folders; *.yaml, *.yml, *.json
 if err != nil {
     return err
 }
 
 report := client.DigitalTwin.Apply(ctx, twin, dtm.ApplyOptions{
-    Prune:          false, // true deletes definitions with a matching ManagedBy tag that are not in the model
-    ManagedBy:      "plant-model", // tag added to everything Apply writes, used by Prune
-    ContinueOnError: true,
+    ManagedBy:       "plant-model", // tag added to every definition Apply writes
+    Prune:           true,          // delete definitions tagged plant-model that are not in the model
+    ContinueOnError: true,          // default: stop at the first failure
 })
 for _, item := range report.Data.Items {
-    fmt.Printf("%-10s %-22s %s\n", item.Status, item.Kind, item.Key)
+    fmt.Printf("%-7s %-19s %-30s %v %v\n", item.Action, item.Kind, item.Key, item.Changed, item.Err)
 }
-// Created    PropertyDefinition     maxFlow[asset]
-// Skipped    AssetDefinition        Motor
-// Updated    AssetDefinition        Pump  (composition.allowedProperties changed)
-// Failed     PropertyDefinition     rpm   (title "Speed" already used by speed)
+// create  PropertyDefinition  maxFlow[asset]                 [] <nil>
+// none    AssetDefinition     Motor                          [] <nil>
+// update  AssetDefinition     Pump                           [composition] <nil>
+// assign  SubAssetAssignment  ext:site-berlin > ext:pump-07  [] <nil>
+// delete  PropertyDefinition  rpm[asset]                     [] <nil>
 ```
 
-`Plan` is `Apply` with deferred execution: it does all lookups and comparisons, sends no writes, and returns one prepared result per change. A CLI prints the plan, asks once, then executes:
+Every item is idempotent: objects that already match get `ActionNone` and are not written, so applying the same model twice writes nothing the second time. `result.Err` joins the errors of the failed items, and `result.Data` always holds the report.
+
+`Plan` does all lookups and comparisons with the same helpers as `Apply`, sends no writes, and reports for each item the action `Apply` would take, the fields that differ, and the request it would send (`Method`, `Path`). Executing the plan runs `Apply` with the same model and options; it reads the tenant again, so changes made in between are taken into account:
 
 ```go
-plan := client.DigitalTwin.Plan(ctx, twin, dtm.ApplyOptions{})
-for _, step := range plan.Data.Items {
-    fmt.Println(step.Status, step.Kind, step.Key, step.Request.Method, step.Request.URL.Path)
+plan := client.DigitalTwin.Plan(ctx, twin, opt)
+for _, it := range plan.Data.Items {
+    if it.Action != dtm.ActionNone {
+        fmt.Println(it.Action, it.Kind, it.Key, it.Method, it.Path)
+    }
 }
 if confirm(fmt.Sprintf("Apply %d changes?", plan.Data.Changes())) {
     report := plan.Execute(ctx)
@@ -638,7 +676,7 @@ if confirm(fmt.Sprintf("Apply %d changes?", plan.Data.Changes())) {
 }
 ```
 
-The report uses the same per-item outcome shape as `core.BatchError` and the batch-outcomes spec, so CLI output and error handling match bulk managed object calls.
+Prune covers definitions only (open question 3): deleting assets can cascade to devices. Asset definitions are deleted before the definitions their composition uses, and property definitions last, so the "still referenced" 409 is avoided.
 
 ### 5.7 Scenario: delete with confirmation, and cascade
 
@@ -729,7 +767,7 @@ Steps 1 to 3 and step 4 do not depend on each other and can be built in parallel
    - Is `PUT .../deployed` synchronous, or can `deploymentInProgress` still be `true` after the 200? This decides whether `WaitTimeout` defaults to 0 or to a few seconds.
    - Is there a write endpoint for drafts (used by the application editor), and should the SDK expose it?
 2. **Data Preparation deploy behavior (not yet verified).** go-c8y-cli's `api --file` sends multipart, so the deploy test could not run through it. Still to check with a raw `PUT`: whether `deploymentInProgress` can be `true` right after the 200, and whether redeploying an identical package changes `deploymentVersion`.
-3. **Prune scope.** Should `Apply` with `Prune: true` cover assets, or only definitions? Pruning assets can cascade to devices, so the proposal limits it to definitions.
+3. **Prune scope.** Resolved: `Prune` covers definitions only, because pruning assets can cascade to devices. Assets can be added later as a separate opt-in if needed.
 4. **Naming.** `client.DigitalTwin` and `client.DataPreparation`, or `client.DTM` and `client.DataPrep` to match the URL paths?
 5. **Expected-output comparison.** The run-tests endpoint returns outputs only. Should `Compare` treat extra output fields as a pass (subset match, same as `DesiredStateMatches`) or a fail? The proposal uses subset match.
 6. **DTM definition updates (for the DTM team).**

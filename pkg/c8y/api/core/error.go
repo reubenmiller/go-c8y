@@ -54,6 +54,10 @@ type APIError struct {
 	Message   string `json:"message,omitempty"` // error message
 	Info      string `json:"info,omitempty"`    // URL to an error description on the Internet.
 
+	// Messages is used instead of Message by some services, for example the
+	// Digital Twin Manager ({"messages": ["..."]}).
+	Messages []string `json:"messages,omitempty"`
+
 	// BulkRequest is set when the error belongs to one item of a request that
 	// carries several items. See BatchError.
 	BulkRequest *BulkRequestInfo `json:"bulkRequest,omitempty"`
@@ -63,6 +67,8 @@ func (r APIError) Error() string {
 	parts := []string{}
 	if r.Message != "" {
 		parts = append(parts, r.Message)
+	} else if len(r.Messages) > 0 {
+		parts = append(parts, strings.Join(r.Messages, "; "))
 	}
 	if r.Info != "" {
 		parts = append(parts, r.Info)
