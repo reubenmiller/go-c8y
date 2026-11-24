@@ -263,15 +263,22 @@ type UploadFileOptions = core.UploadFileOptions
 /*
 * Bulk Registration
  */
-// CreateBulk allows multiple devices to be registered in one request
+// CreateBulk registers several devices in one request. The file is a CSV
+// file with a header row and one row per device (see the Cumulocity bulk
+// registration documentation for the columns). It is sent as the only part of
+// the multipart request; Name and ContentType name the part. Rows that fail
+// are listed in the result's FailedCreationList, the request itself succeeds.
 func (s *Service) CreateBulk(ctx context.Context, opt UploadFileOptions) op.Result[jsonmodels.BulkNewDeviceRequests] {
 	return httpcore.Execute(ctx, s.createBulkB(opt), jsonmodels.NewBulkNewDeviceRequests)
 }
 
 func (s *Service) createBulkB(opt UploadFileOptions) *httpcore.TryRequest {
+	// The endpoint takes only the file, without the "object" metadata part
+	// that binary uploads carry.
+	file := httpcore.NewMultiPartFileFields(opt)[0]
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
-		SetMultipartFields(httpcore.NewMultiPartFileFields(opt)...).
+		SetMultipartFields(file).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(ApiBulkDeviceRequests)
 	return httpcore.NewTryRequest(s.svc.Client, req)
