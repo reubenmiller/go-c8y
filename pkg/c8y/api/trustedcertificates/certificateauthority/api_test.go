@@ -2,13 +2,14 @@ package certificateauthority
 
 import (
 	"context"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"resty.dev/v3"

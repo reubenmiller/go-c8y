@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
+	"crypto/sha256"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/json"
@@ -715,7 +716,8 @@ func (fs *FakeServer) handleCertificateAuthority(w http.ResponseWriter, r *http.
 	case existing != nil:
 		fs.TrustedCerts.Delete(getJSONString(existing, "fingerprint"))
 	}
-	fingerprint := fmt.Sprintf("%x", sha1.Sum([]byte(time.Now().String())))
+	// A stable-looking, 40 hex digit fingerprint (like a SHA-1 one); not used for security.
+	fingerprint := fmt.Sprintf("%x", sha256.Sum256([]byte(time.Now().String())))[:40]
 	doc := marshalJSON(map[string]any{
 		"fingerprint":                fingerprint,
 		"name":                       "Tenant CA Certificate",
