@@ -215,8 +215,8 @@ type UpdateOptions struct {
 
 	// Body holds more application fields to change, as a JSON object (e.g.
 	// {"config": {"excludedRemotes": [...]}}). Objects are merged into the
-	// application's current values; config.remotes is always set from the
-	// plugins.
+	// application's current values. Entries of config.remotes are added to
+	// the plugins as given (to add a remote by hand).
 	Body any
 }
 
@@ -341,9 +341,9 @@ func resolveVersion(plugin jsonmodels.UIPlugin, versionOrTag string) (InstalledP
 	return installed, nil
 }
 
-// applicationBody builds the PUT body: the application's config with extra
-// merged in and config.remotes set to the plugins (plus the entries that are
-// not plugins).
+// applicationBody builds the PUT body: the application id and config with
+// extra merged in, and config.remotes set to the plugins, the entries that are
+// not plugins, and the remotes given in extra.
 func applicationBody(app ApplicationWithPlugins, installed map[string]InstalledPlugin, extra any) (map[string]any, error) {
 	config := map[string]any{}
 	if v := app.Get("config"); v.IsObject() {
@@ -352,6 +352,7 @@ func applicationBody(app ApplicationWithPlugins, installed map[string]InstalledP
 		}
 	}
 	body := map[string]any{"config": config}
+	var extraRemotes map[string]any
 	if extra != nil {
 		b, err := json.Marshal(extra)
 		if err != nil {
@@ -361,6 +362,10 @@ func applicationBody(app ApplicationWithPlugins, installed map[string]InstalledP
 			var fields map[string]any
 			if err := json.Unmarshal(b, &fields); err != nil {
 				return nil, fmt.Errorf("the application fields must be a JSON object: %w", err)
+			}
+			if c, ok := fields["config"].(map[string]any); ok {
+				extraRemotes, _ = c["remotes"].(map[string]any)
+				delete(c, "remotes")
 			}
 			deepMerge(body, fields)
 		}
@@ -381,7 +386,12 @@ func applicationBody(app ApplicationWithPlugins, installed map[string]InstalledP
 	for _, p := range installed {
 		remotes[p.Key()] = p.Modules
 	}
+	// entries given explicitly (e.g. a plugin added by hand) are added last
+	for k, v := range extraRemotes {
+		remotes[k] = v
+	}
 	config["remotes"] = remotes
+	body["id"] = app.ID()
 	return body, nil
 }
 

@@ -44,14 +44,14 @@ func TestApplicationBody(t *testing.T) {
 	installed := map[string]InstalledPlugin{
 		"new": {ContextPath: "new", Version: "2.0.0", Modules: []string{"New"}},
 	}
-	extra := map[string]any{"config": map[string]any{"nested": map[string]any{"change": 2}}, "name": "renamed"}
+	extra := map[string]any{"config": map[string]any{"nested": map[string]any{"change": 2}, "remotes": map[string]any{"manual@1.0.0": []string{"M"}}}, "name": "renamed"}
 
 	body, err := applicationBody(app, installed, extra)
 	if err != nil {
 		t.Fatal(err)
 	}
 	b, _ := json.Marshal(body)
-	want := `{"config":{"excludedRemotes":["a"],"nested":{"change":2,"keep":1},"remotes":{"legacy":["L"],"new@2.0.0":["New"]}},"name":"renamed"}`
+	want := `{"config":{"excludedRemotes":["a"],"nested":{"change":2,"keep":1},"remotes":{"legacy":["L"],"manual@1.0.0":["M"],"new@2.0.0":["New"]}},"id":"1","name":"renamed"}`
 	if string(b) != want {
 		t.Errorf("body =\n%s\nwant\n%s", b, want)
 	}
@@ -63,7 +63,7 @@ func TestApplicationBody_NoConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 	b, _ := json.Marshal(body)
-	if string(b) != `{"config":{"remotes":{}}}` {
+	if string(b) != `{"config":{"remotes":{}},"id":"1"}` {
 		t.Errorf("body = %s", b)
 	}
 }
