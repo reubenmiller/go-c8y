@@ -209,17 +209,7 @@ func (s *LinkedSeriesService) Link(ctx context.Context, asset AssetRef, opt Link
 		if err != nil {
 			return op.Failed[jsonmodels.DigitalTwinLinkedSeries](err, false)
 		}
-		desired := LinkedSeries{
-			Fragment: opt.Fragment,
-			Series:   opt.Series,
-			Label:    opt.Label,
-			Source: &SeriesSource{
-				ID:       deviceID,
-				Fragment: orDefault(opt.SourceFragment, opt.Fragment),
-				Series:   orDefault(opt.SourceSeries, opt.Series),
-				Type:     opt.SourceType,
-			},
-		}
+		desired := desiredLink(opt, deviceID)
 
 		current, found, res := s.find(ctx, assetID, opt.Fragment, opt.Series)
 		if res.Err != nil {
