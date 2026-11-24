@@ -3,9 +3,11 @@ package certificateauthority
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
@@ -33,7 +35,19 @@ type Service struct {
 	svc httpcore.Service
 }
 
-type CreateOptions struct{}
+// CreateOptions are the settings of a new certificate authority. Settings
+// that are not set keep the platform's defaults.
+type CreateOptions struct {
+	TenantID string `url:"-"`
+
+	// Status (ENABLED or DISABLED) is set after the certificate authority is
+	// created, when it differs. Empty keeps the status.
+	Status string `url:"-"`
+
+	// AutoRegistrationEnabled is set after the certificate authority is
+	// created, when it differs. nil keeps the setting.
+	AutoRegistrationEnabled *bool `url:"-"`
+}
 
 // ListOptions trusted certificates filter options
 type GetOptions struct {
@@ -83,9 +97,64 @@ func (s *Service) getB(opt GetOptions) *httpcore.TryRequest {
 }
 
 // Create certificate authority.
-// A 409 response (already exists) is treated as a duplicate (StatusDuplicate, Idempotent: true).
+// A 409 response (already exists) is treated as a duplicate (StatusDuplicate,
+// Idempotent: true) and returns the existing certificate authority. Status
+// and AutoRegistrationEnabled are then applied with Update when they differ
+// (not in a dry run, where nothing was created).
 func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.TrustedCertificate] {
-	return httpcore.Execute(ctx, s.createB(opt), jsonmodels.NewTrustedCertificate).IgnoreConflict()
+	result := httpcore.Execute(ctx, s.createB(opt), jsonmodels.NewTrustedCertificate).IgnoreConflict()
+	if result.Err != nil || ctxhelpers.IsDryRun(ctx) || ctxhelpers.IsDeferredExecution(ctx) {
+		return result
+	}
+	if result.Status == op.StatusDuplicate {
+		existing := s.Get(ctx, GetOptions{TenantID: opt.TenantID})
+		if existing.Err != nil {
+			return existing
+		}
+		existing.Status = op.StatusDuplicate
+		existing.Idempotent = true
+		result = existing
+	}
+	changes := map[string]any{}
+	if opt.Status != "" && !strings.EqualFold(opt.Status, result.Data.Status()) {
+		changes["status"] = opt.Status
+	}
+	if opt.AutoRegistrationEnabled != nil && *opt.AutoRegistrationEnabled != result.Data.Get("autoRegistrationEnabled").Bool() {
+		changes["autoRegistrationEnabled"] = *opt.AutoRegistrationEnabled
+	}
+	if len(changes) == 0 {
+		return result
+	}
+	return httpcore.Execute(ctx, s.updateB(opt.TenantID, result.Data.Fingerprint(), changes), jsonmodels.NewTrustedCertificate)
+}
+
+// UpdateOptions options to update the tenant CA certificate
+type UpdateOptions struct {
+	TenantID string `url:"-"`
+}
+
+// Update changes the tenant's CA certificate, e.g.
+// {"status": "DISABLED", "autoRegistrationEnabled": false}. The certificate
+// authority is looked up first to get its fingerprint; that lookup is always
+// sent, also in a dry run, so the update request is complete.
+func (s *Service) Update(ctx context.Context, opt UpdateOptions, body any) op.Result[jsonmodels.TrustedCertificate] {
+	cert := s.Get(ctxhelpers.ResolutionContext(ctx), GetOptions(opt))
+	if cert.Err != nil {
+		return cert
+	}
+	return httpcore.Execute(ctx, s.updateB(opt.TenantID, cert.Data.Fingerprint(), body), jsonmodels.NewTrustedCertificate)
+}
+
+func (s *Service) updateB(tenantID, fingerprint string, body any) *httpcore.TryRequest {
+	req := s.svc.Client.R().
+		SetMethod(resty.MethodPut).
+		SetPathParam(core.PathParamTenantID, tenantID).
+		SetPathParam(ParamFingerprint, fingerprint).
+		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetBody(body).
+		SetURL(ApiTrustedCertificate)
+	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 func (s *Service) createB(opt CreateOptions) *httpcore.TryRequest {
@@ -116,8 +185,9 @@ type DeleteOptions struct {
 // the trusted-certificates API.
 // If no CA certificate exists the call is a no-op and returns successfully.
 func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.NoContent] {
-	// Step 1: get the CA certificate so we can extract the fingerprint
-	cert := s.Get(ctx, GetOptions(opt))
+	// Step 1: get the CA certificate so we can extract the fingerprint. The
+	// lookup is always sent, also in a dry run, so the delete is complete.
+	cert := s.Get(ctxhelpers.ResolutionContext(ctx), GetOptions(opt))
 	if cert.IsError() {
 		// No CA present — intent is already fulfilled, but surface the fact as metadata
 		if cert.HTTPStatus == 404 {

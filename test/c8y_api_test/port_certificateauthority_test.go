@@ -2,12 +2,12 @@ package api_test
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
 	c8yapi "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/trustedcertificates"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/trustedcertificates/certificateauthority"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -83,15 +83,22 @@ func Test_CertificateAuthority_DryRun(t *testing.T) {
 func Test_CertificateAuthority_Delete_DryRun(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
-	// DryRun intercepts both GET and DELETE. Get returns a mock empty response
-	// which produces a synthetic 404. Delete should treat it as a no-op success
-	// and indicate via Status/Meta that nothing was done.
+	// The CA lookup is sent also in a dry run (it is a read), so the dry run
+	// shows the DELETE with the real fingerprint, and nothing is deleted.
+	ca := client.TrustedCertificates.CertificateAuthority.Get(context.Background(), certificateauthority.GetOptions{TenantID: client.Auth.Tenant})
+	if ca.Err != nil {
+		t.Skip("no certificate authority to delete")
+	}
 	ctx := c8yapi.WithDryRun(context.Background(), true)
 
 	result := client.TrustedCertificates.CertificateAuthority.Delete(ctx, certificateauthority.DeleteOptions{
 		TenantID: client.Auth.Tenant,
 	})
-	require.NoError(t, result.Err, "Delete should succeed (no-op) when no CA is present")
-	assert.Equal(t, op.StatusSkipped, result.Status, "Status should indicate no action was taken")
-	assert.Contains(t, result.Meta["message"], "no certificate authority found")
+	require.NoError(t, result.Err)
+	require.NotNil(t, result.Request, "the dry run returns the prepared request")
+	assert.Equal(t, http.MethodDelete, result.Request.Method)
+	assert.Contains(t, result.Request.URL.Path, ca.Data.Fingerprint())
+
+	after := client.TrustedCertificates.CertificateAuthority.Get(context.Background(), certificateauthority.GetOptions{TenantID: client.Auth.Tenant})
+	require.NoError(t, after.Err, "a dry run must not delete the certificate authority")
 }
