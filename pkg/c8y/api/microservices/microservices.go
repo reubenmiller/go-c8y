@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -12,8 +13,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
+
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/applications"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core/artifact" //nolint:misspell
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
@@ -101,115 +104,102 @@ func getApplicationDetails(opt CreateOptions) (*model.Microservice, error) {
 	return &app, nil
 }
 
-// CreateOrUpdate creates the microservice application when none with the same
-// name exists in the current tenant, then uploads the binary (zip files only)
-// or updates the roles from the manifest, and optionally subscribes the tenant.
-func (s *Service) CreateOrUpdate(ctx context.Context, opt CreateOptions) (*model.Microservice, error) {
-	applicationDetails, err := getApplicationDetails(opt)
-	if err != nil {
-		return applicationDetails, err
-	}
-	if applicationDetails == nil || applicationDetails.Name == "" {
-		return nil, fmt.Errorf("could not detect application name for the given input")
-	}
+// Deploy creates a microservice, or updates the existing one with the same
+// name in the current tenant, from a zip file or a manifest (cumulocity.json):
+//
+//  1. Look for the microservice by name; create it when none exists.
+//  2. For a zip file, upload it as the microservice's binary. For any other
+//     file the microservice is hosted outside of the platform, so only the
+//     roles from the manifest are updated.
+//  3. Subscribe the tenant (opt.TenantID, default the client's tenant)
+//     unless SkipSubscription is set. An existing subscription is not an
+//     error.
+//
+// The result is the microservice. Its Status is StatusCreated for a new
+// microservice and StatusUpdated for an existing one. In a dry run the lookup
+// is still sent, so the result shows whether the microservice would be
+// created, and the later steps are skipped.
+func (s *Service) Deploy(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.Microservice] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[jsonmodels.Microservice]{}, func(execCtx context.Context) op.Result[jsonmodels.Microservice] {
+		return s.deploy(execCtx, opt)
+	}), "operation", "deployMicroservice"))
+}
 
-	application, err := s.findOrCreate(ctx, applicationDetails)
-	if err != nil {
-		return nil, err
-	}
-
+func (s *Service) deploy(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.Microservice] {
 	if _, err := os.Stat(opt.File); err != nil {
-		return nil, fmt.Errorf("could not read manifest file. %s. error=%s", opt.File, err)
+		return op.Failed[jsonmodels.Microservice](fmt.Errorf("could not read microservice file. path=%s. %w", opt.File, err), false)
+	}
+	details, err := getApplicationDetails(opt)
+	if err != nil {
+		return op.Failed[jsonmodels.Microservice](err, false)
+	}
+	if details == nil || details.Name == "" {
+		return op.Failed[jsonmodels.Microservice](errors.New("could not detect the microservice name. Set the name explicitly"), false)
 	}
 
-	if err := s.deploy(ctx, application, applicationDetails, opt); err != nil {
-		return application, err
+	app, created := s.findOrCreate(ctx, details)
+	if app.Err != nil || ctxhelpers.IsDryRun(ctx) {
+		return app
+	}
+	id := app.Data.ID()
+
+	result := app
+	if !opt.SkipUpload && strings.HasSuffix(opt.File, ".zip") {
+		slog.Info("uploading microservice binary", "id", id)
+		upload := s.Upload(ctx, id, UploadFileOptions{FilePath: opt.File})
+		if upload.Err != nil {
+			return op.Failed[jsonmodels.Microservice](fmt.Errorf("failed to upload file. path=%s. %w", opt.File, upload.Err), false)
+		}
+	} else {
+		slog.Info("updating microservice roles", "id", id,
+			"requiredRoles", strings.Join(details.Manifest.RequiredRoles, ","),
+			"roles", strings.Join(details.Manifest.Roles, ","))
+		result = s.Update(ctx, id, &model.Microservice{
+			RequiredRoles: details.Manifest.RequiredRoles,
+			Roles:         details.Manifest.Roles,
+		})
+		if result.Err != nil {
+			return result
+		}
 	}
 
 	if !opt.SkipSubscription {
-		if err := s.subscribeIgnoreExisting(ctx, opt.TenantID, application.Self); err != nil {
-			return application, err
+		slog.Info("subscribing to microservice", "id", id)
+		if sub := s.Subscribe(ctx, opt.TenantID, app.Data.Self()); sub.Err != nil {
+			return op.Failed[jsonmodels.Microservice](fmt.Errorf("failed to subscribe to the microservice. %w", sub.Err), false)
 		}
 	}
-	return application, nil
+
+	if created {
+		result.Status = op.StatusCreated
+	} else {
+		result.Status = op.StatusUpdated
+	}
+	return result
 }
 
-// findOrCreate returns the application with the given name in the current
-// tenant, creating it when it does not exist. Only the current tenant is
-// searched, as managing microservices of subtenants (e.g. uploading binaries)
-// is not allowed, which also avoids name conflicts with subtenant applications.
-func (s *Service) findOrCreate(ctx context.Context, details *model.Microservice) (*model.Microservice, error) {
-	result, exists := s.FindFirst(ctx, ListOptions{Name: details.Name})
-	if result.Err != nil {
-		return nil, result.Err
+// findOrCreate returns the microservice with the name in the current tenant,
+// or creates it; the boolean is true when it was created. Only the current
+// tenant is searched, as managing microservices of subtenants (e.g. uploading
+// binaries) is not allowed. The lookup is sent also in a dry run.
+func (s *Service) findOrCreate(ctx context.Context, details *model.Microservice) (op.Result[jsonmodels.Microservice], bool) {
+	lookupCtx := ctxhelpers.ResolutionContext(ctx)
+	found, exists := s.FindFirst(lookupCtx, ListOptions{Name: details.Name})
+	if found.Err != nil {
+		return found, false
 	}
-
-	if exists && result.Data.Exists("id") {
-		applicationID := result.Data.ID()
-		slog.Info("Getting existing application", "id", applicationID)
-		existing := s.Get(ctx, applicationID)
+	if exists && found.Data.Exists("id") {
+		existing := s.Get(lookupCtx, found.Data.ID())
 		if existing.Err != nil {
-			return nil, fmt.Errorf("failed to get microservice. %w", existing.Err)
+			existing.Err = fmt.Errorf("failed to get microservice. %w", existing.Err)
 		}
-		return toMicroservice(existing.Data), nil
+		return existing, false
 	}
-
-	slog.Info("Creating new application")
 	created := s.Create(ctx, details)
 	if created.Err != nil {
-		return nil, fmt.Errorf("failed to create microservice. %w", created.Err)
+		created.Err = fmt.Errorf("failed to create microservice. %w", created.Err)
 	}
-	return toMicroservice(created.Data), nil
-}
-
-func toMicroservice(app jsonmodels.Microservice) *model.Microservice {
-	return &model.Microservice{
-		ID:   app.ID(),
-		Name: app.Name(),
-		Key:  app.Key(),
-		Self: app.Self(),
-	}
-}
-
-// deploy uploads the binary for zip files. For any other input the app is
-// hosted outside of the platform, so only the roles from the manifest
-// (cumulocity.json) are updated.
-func (s *Service) deploy(ctx context.Context, application, details *model.Microservice, opt CreateOptions) error {
-	if !opt.SkipUpload && strings.HasSuffix(opt.File, ".zip") {
-		slog.Info("uploading microservice binary", "id", application.ID)
-		result := s.Upload(ctx, application.ID, UploadFileOptions{FilePath: opt.File})
-		if result.Err != nil {
-			return fmt.Errorf("failed to upload file. path=%s. %w", opt.File, result.Err)
-		}
-		return nil
-	}
-
-	slog.Info(
-		"Updating application details",
-		"id", application.ID,
-		"requiredRoles", strings.Join(details.Manifest.RequiredRoles, ","),
-		"roles", strings.Join(details.Manifest.Roles, ","),
-	)
-	result := s.Update(ctx, application.ID, &model.Microservice{
-		RequiredRoles: details.Manifest.RequiredRoles,
-		Roles:         details.Manifest.Roles,
-	})
-	return result.Err
-}
-
-// subscribeIgnoreExisting subscribes the tenant to the application, treating an
-// existing subscription (409) as success.
-func (s *Service) subscribeIgnoreExisting(ctx context.Context, tenantID, self string) error {
-	slog.Info("Subscribing to microservice")
-	result := s.Subscribe(ctx, tenantID, self)
-	if core.ErrHasStatus(result.Err, 409) {
-		slog.Info("microservice is already subscribed to")
-		return nil
-	}
-	if result.Err != nil {
-		return fmt.Errorf("failed to subscribe to application. %w", result.Err)
-	}
-	return nil
+	return created, true
 }
 
 func GetManifestContents(zipFilename string, contents any) error {

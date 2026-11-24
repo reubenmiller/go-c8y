@@ -65,7 +65,7 @@ func Test_MicroserviceGetByContext(t *testing.T) {
 
 func Test_MicroserviceUpload(t *testing.T) {
 	t.Skipf("TODO: Currently failing and need to be fixed")
-	testcore.SkipOffline(t, "requires Docker and CreateOrUpdate SDK support")
+	testcore.SkipOffline(t, "requires Docker")
 	client := testcore.CreateTestClient(t)
 	client.SetDebug(true)
 
@@ -88,16 +88,16 @@ func Test_MicroserviceUpload(t *testing.T) {
 	}
 	assert.NotEmpty(t, filename)
 
-	app, err := client.Microservices.CreateOrUpdate(context.Background(), microservices.CreateOptions{
+	app := client.Microservices.Deploy(context.Background(), microservices.CreateOptions{
 		File:       filename,
 		TenantID:   client.Auth.Tenant,
 		SkipUpload: false,
 	})
-	assert.NoError(t, err)
+	assert.NoError(t, app.Err)
 	t.Cleanup(func() {
 		client.Microservices.Delete(context.Background(), client.Microservices.ByName(manifest.Name), microservices.DeleteOptions{Force: true})
 	})
-	assert.Equal(t, manifest.Name, app.Name)
+	assert.Equal(t, manifest.Name, app.Data.Name())
 }
 
 func RelativePath(p string) string {
