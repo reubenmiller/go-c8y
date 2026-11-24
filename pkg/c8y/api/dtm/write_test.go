@@ -523,6 +523,27 @@ func TestDefinitionUpsert(t *testing.T) {
 	})
 }
 
+// Regression: for kinds other than properties, a missing definition used to
+// come back from Find with its 404 error, so Upsert and GetOrCreate failed
+// instead of creating it.
+func TestDefinitionUpsertCreatesMissing(t *testing.T) {
+	for _, kind := range []string{"assets", "measurements", "events", "alarms"} {
+		t.Run(kind, func(t *testing.T) {
+			f := newFakeDTM(t)
+			f.handle(http.MethodGet, "/service/dtm/definitions/"+kind+"/new", reply(http.StatusNotFound, `{"messages":["not found"]}`))
+			f.handle(http.MethodPost, "/service/dtm/definitions/"+kind, reply(http.StatusCreated, `{"identifier":"new"}`))
+			svc := f.client()
+			byKind := map[string]*dtm.DefinitionService{
+				"assets": svc.Definitions.Assets, "measurements": svc.Definitions.Measurements,
+				"events": svc.Definitions.Events, "alarms": svc.Definitions.Alarms,
+			}
+			def := dtm.Definition{Identifier: "new", JSONSchema: map[string]any{"title": "New"}}
+			wantStatus(t, byKind[kind].Upsert(context.Background(), def), op.StatusCreated)
+			wantStatus(t, byKind[kind].GetOrCreate(context.Background(), def), op.StatusCreated)
+		})
+	}
+}
+
 func TestDefinitionGetOrCreate(t *testing.T) {
 	f := newFakeDTM(t)
 	f.handle(http.MethodGet, "/service/dtm/definitions/events/door", reply(http.StatusOK, `{"identifier":"door","jsonSchema":{"title":"Door"}}`))

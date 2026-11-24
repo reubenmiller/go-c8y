@@ -176,12 +176,16 @@ func (s *DefinitionService) Delete(ctx context.Context, identifier string, opt D
 
 // Find returns the definition with the identifier and contexts of body, as
 // used by GetOrCreate and Upsert. For property definitions the contexts
-// must match exactly (in any order). The bool is false when there is none.
+// must match exactly (in any order).
+//
+// The bool is true when the definition exists. When it does not, the
+// result has StatusNoMatch and no error; result.Err is only set when the
+// lookup itself failed.
 func (s *DefinitionService) Find(ctx context.Context, identifier string, contexts []string) (op.Result[jsonmodels.DigitalTwinDefinition], bool) {
 	if s.kind != KindProperties {
 		res := s.Get(ctx, identifier, GetDefinitionOptions{})
 		if core.IsNotFound(res.Err) {
-			return res, false
+			return op.NoMatch[jsonmodels.DigitalTwinDefinition](), false
 		}
 		return res, res.Err == nil
 	}
