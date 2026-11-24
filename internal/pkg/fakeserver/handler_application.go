@@ -54,6 +54,12 @@ func (fs *FakeServer) handleApplications(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// /application/applications/{id}/bootstrapUser
+	if strings.HasPrefix(path, "/application/applications/") && strings.HasSuffix(path, "/bootstrapUser") {
+		fs.handleBootstrapUser(w, r, strings.TrimSuffix(strings.TrimPrefix(path, "/application/applications/"), "/bootstrapUser"))
+		return
+	}
+
 	// /application/applications
 	if !strings.HasPrefix(path, "/application/applications") {
 		writeNotFound(w, "application")
@@ -458,9 +464,10 @@ func (fs *FakeServer) handleCurrentApplication(w http.ResponseWriter, r *http.Re
 		resp := marshalJSON(map[string]any{
 			"users": []map[string]any{
 				{
-					"tenant": "t12345",
-					"name":   "admin",
-					"self":   fs.URL() + "/tenant/tenants/t12345",
+					"tenant":   "t12345",
+					"name":     "service_t12345",
+					"password": "service-pass",
+					"self":     fs.URL() + "/tenant/tenants/t12345",
 				},
 			},
 			"self": fs.URL() + "/application/currentApplication/subscriptions",
@@ -526,4 +533,23 @@ func setDefaultFieldAny(doc json.RawMessage, key string, value any) json.RawMess
 		return out
 	}
 	return doc
+}
+
+// handleBootstrapUser handles GET /application/applications/{id}/bootstrapUser:
+// the credentials a microservice uses to read its subscriptions.
+func (fs *FakeServer) handleBootstrapUser(w http.ResponseWriter, r *http.Request, id string) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "general/methodNotAllowed", "Method not allowed")
+		return
+	}
+	app, ok := fs.Applications.Get(id)
+	if !ok {
+		writeNotFound(w, "application")
+		return
+	}
+	writeJSON(w, http.StatusOK, marshalJSON(map[string]any{
+		"tenant":   "t12345",
+		"name":     "servicebootstrap_" + getJSONString(app, "name"),
+		"password": "bootstrap-pass",
+	}))
 }

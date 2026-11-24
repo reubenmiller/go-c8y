@@ -116,10 +116,13 @@ type OffsetStrategy struct{}
 
 func (OffsetStrategy) Name() string { return "offset" }
 
-// First always starts at page 1, matching the historical ListAll behaviour
-// (any CurrentPage in the caller's options is ignored for a full walk).
+// First starts at the caller's CurrentPage, or at page 1 when it is not set,
+// so a walk can resume part way through a collection (e.g. a CLI's
+// --currentPage 3 --totalPages 2 reads pages 3 and 4).
 func (OffsetStrategy) First(base PageRequest) PageRequest {
-	base.CurrentPage = 1
+	if base.CurrentPage < 1 {
+		base.CurrentPage = 1
+	}
 	return base
 }
 
@@ -141,15 +144,17 @@ func (OffsetStrategy) Accept(PageRequest, jsondoc.JSONDoc) bool { return true }
 
 func (OffsetStrategy) DefaultReadAhead() int { return 0 }
 
-// Plan enumerates pages 2..totalPages as independent requests for parallel
-// fan-out. Returns ok=false when the total is unknown or there is a single page.
+// Plan enumerates the pages after the first one (start+1..totalPages) as
+// independent requests for parallel fan-out. Returns ok=false when the total
+// is unknown or there are no further pages.
 func (OffsetStrategy) Plan(bootstrap PageView, base PageRequest) ([]PageRequest, bool) {
 	tp, ok := bootstrap.Meta["totalPages"].(int64)
-	if !ok || tp <= 1 {
+	start := int64(max(base.CurrentPage, 1))
+	if !ok || tp <= start {
 		return nil, false
 	}
-	reqs := make([]PageRequest, 0, tp-1)
-	for p := int64(2); p <= tp; p++ {
+	reqs := make([]PageRequest, 0, tp-start)
+	for p := start + 1; p <= tp; p++ {
 		r := base
 		r.CurrentPage = int(p)
 		reqs = append(reqs, r)

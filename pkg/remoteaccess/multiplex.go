@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/hashicorp/yamux"
 	"github.com/multiformats/go-multistream"
 	"github.com/reubenmiller/go-c8y/v2/pkg/wsconnadapter"
@@ -31,6 +32,10 @@ var ErrMultiplexNotSupported = errors.New("remote access multiplexing is not sup
 // errMultiplexNoAnswer is returned when the device did not answer the multiplexing request, which
 // does not tell whether the device supports it (e.g. a slow device, or a target which waits for more data)
 var errMultiplexNoAnswer = errors.New("no answer to the remote access multiplexing request")
+
+// errMultiplexDisabled is returned once multiplexing was disabled for the client, so the reason is
+// only reported once
+var errMultiplexDisabled = fmt.Errorf("%w: multiplexing was disabled", ErrMultiplexNotSupported)
 
 // DefaultMultiplexNegotiationTimeout is the maximum time to wait for the device to acknowledge
 // multiplexing, unless RemoteAccessOptions.MultiplexNegotiationTimeout is set. It includes the time
@@ -68,13 +73,15 @@ func (c *RemoteAccessClient) OpenMultiplexedSession() (*yamux.Session, error) {
 	if timeout <= 0 {
 		timeout = DefaultMultiplexNegotiationTimeout
 	}
-	_ = conn.SetDeadline(time.Now().Add(timeout))
+	started := time.Now()
+	_ = conn.SetDeadline(started.Add(timeout))
 	if err := multistream.SelectProtoOrFail(MultiplexProtocol, conn); err != nil {
 		conn.Close()
+		elapsed := time.Since(started).Round(time.Millisecond)
 		if conn.received.Load() > 0 {
-			return nil, fmt.Errorf("%w: %v", ErrMultiplexNotSupported, err)
+			return nil, fmt.Errorf("%w: the device answered with something else after %s: %v", ErrMultiplexNotSupported, elapsed, err)
 		}
-		return nil, fmt.Errorf("%w: %v", errMultiplexNoAnswer, err)
+		return nil, fmt.Errorf("%w: %s", errMultiplexNoAnswer, describeNoAnswer(err, elapsed, timeout))
 	}
 	_ = conn.SetDeadline(time.Time{})
 
@@ -87,6 +94,22 @@ func (c *RemoteAccessClient) OpenMultiplexedSession() (*yamux.Session, error) {
 	}
 	slog.Info("Multiplexing connections", "url", remoteURL)
 	return session, nil
+}
+
+// describeNoAnswer explains why the device did not answer the multiplexing request
+func describeNoAnswer(err error, elapsed, timeout time.Duration) string {
+	var netErr net.Error
+	if errors.As(err, &netErr) && netErr.Timeout() {
+		return fmt.Sprintf("no answer within %s", timeout)
+	}
+	var closeErr *websocket.CloseError
+	if errors.As(err, &closeErr) || errors.Is(err, io.EOF) {
+		// e.g. a device without multiplexing support forwards the request to the target, which
+		// closes the connection, or (thin-edge.io <= 2.1.0) the target dropped its idle connection
+		// before the request arrived, so the device selected the passthrough mode
+		return fmt.Sprintf("the remote access session was closed after %s without an answer, e.g. the device does not support multiplexing, or the target closed its connection before the request arrived: %v", elapsed, err)
+	}
+	return fmt.Sprintf("failed after %s: %v", elapsed, err)
 }
 
 // countingConn counts the bytes received, to tell whether the device answered at all
@@ -106,7 +129,7 @@ func (m *multiplexer) getSession(c *RemoteAccessClient) (*yamux.Session, error) 
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.unsupported {
-		return nil, ErrMultiplexNotSupported
+		return nil, errMultiplexDisabled
 	}
 	if m.session != nil && !m.session.IsClosed() {
 		return m.session, nil
@@ -115,7 +138,9 @@ func (m *multiplexer) getSession(c *RemoteAccessClient) (*yamux.Session, error) 
 	if errors.Is(err, errMultiplexNoAnswer) {
 		m.noAnswers++
 		if m.noAnswers >= multiplexMaxNoAnswers {
-			err = fmt.Errorf("%w: no answer to %d requests: %v", ErrMultiplexNotSupported, m.noAnswers, err)
+			err = fmt.Errorf("%w: no answer to %d requests, last error: %v", ErrMultiplexNotSupported, m.noAnswers, err)
+		} else {
+			err = fmt.Errorf("%w (attempt %d of %d, multiplexing is disabled after %d attempts without an answer)", err, m.noAnswers, multiplexMaxNoAnswers, multiplexMaxNoAnswers)
 		}
 	}
 	if errors.Is(err, ErrMultiplexNotSupported) {
@@ -142,10 +167,13 @@ func (m *multiplexer) close() {
 func (c *RemoteAccessClient) serveMultiplexed(localConn net.Conn) bool {
 	session, err := c.mux.getSession(c)
 	if err != nil {
-		if errors.Is(err, ErrMultiplexNotSupported) {
-			slog.Info("Multiplexing not available, using one websocket per connection", "err", err)
-		} else {
-			slog.Warn("Could not open multiplexed session, using one websocket per connection", "err", err)
+		switch {
+		case errors.Is(err, errMultiplexDisabled):
+			slog.Debug("Multiplexing disabled, using one websocket per connection")
+		case errors.Is(err, ErrMultiplexNotSupported):
+			slog.Warn("Multiplexing disabled, using one websocket per connection", "err", err)
+		default:
+			slog.Warn("Could not open multiplexed session, using one websocket for this connection", "err", err)
 		}
 		return false
 	}

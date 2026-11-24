@@ -212,7 +212,7 @@ func (fs *FakeServer) handler() http.Handler {
 			return
 		}
 		fs.record(r)
-		mux.ServeHTTP(w, r)
+		fs.withRealtimePublish(w, r, mux.ServeHTTP)
 	})
 }
 

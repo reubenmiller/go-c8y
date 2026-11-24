@@ -103,10 +103,9 @@ type DeployHostedOptions struct {
 // In dry-run mode the lookup is still sent so the result shows whether the
 // application would be created, but the upload and activation are skipped.
 func (s *Service) DeployHosted(ctx context.Context, opt DeployHostedOptions) op.Result[jsonmodels.Application] {
-	return op.Result[jsonmodels.Application]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.Application] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[jsonmodels.Application]{}, func(execCtx context.Context) op.Result[jsonmodels.Application] {
 		return s.deployHosted(execCtx, opt)
-	}).WithMeta("operation", "deployHosted").
-		ExecuteOrDefer(ctx)
+	}), "operation", "deployHosted"))
 }
 
 func (s *Service) deployHosted(ctx context.Context, opt DeployHostedOptions) op.Result[jsonmodels.Application] {
@@ -183,7 +182,7 @@ func (s *Service) deployHosted(ctx context.Context, opt DeployHostedOptions) op.
 			activeID = binaryID
 		}
 		deleted, err := s.rotateBinaries(ctx, app.ID(), opt.KeepBinaries, binaryID, activeID)
-		result = result.WithMeta("deletedBinaries", deleted)
+		result = op.WithMeta(result, "deletedBinaries", deleted)
 		if err != nil {
 			result.Err = fmt.Errorf("deployed the web application but failed to delete old binaries. %w", err)
 			result.Status = op.StatusPartial
@@ -243,14 +242,12 @@ func (s *Service) rotateBinaries(ctx context.Context, appID string, keep int, pr
 }
 
 func withDeployMeta(r op.Result[jsonmodels.Application], created bool, binaryID string, activated bool) op.Result[jsonmodels.Application] {
-	r = r.WithMeta("operation", "deployHosted").
-		WithMeta("created", created).
-		WithMeta("activated", activated)
+	r = op.WithMeta(op.WithMeta(op.WithMeta(r, "operation", "deployHosted"), "created", created), "activated", activated)
 	if id := r.Data.ID(); id != "" {
-		r = r.WithMeta("applicationId", id)
+		r = op.WithMeta(r, "applicationId", id)
 	}
 	if binaryID != "" {
-		r = r.WithMeta("binaryId", binaryID)
+		r = op.WithMeta(r, "binaryId", binaryID)
 	}
 	return r
 }

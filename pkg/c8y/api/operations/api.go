@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/source"
+
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
@@ -81,6 +83,21 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 // time-window keyset optimisation (cursoring on creationTime); set
 // ListOptions.Strategy to override.
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *OperationIterator {
+	// Resolve references once for the whole walk, not once per page.
+	if opts.DeviceID != "" && s.DeviceResolver != nil {
+		resolvedID, err := s.DeviceResolver.ResolveID(ctxhelpers.ResolutionContext(ctx), opts.DeviceID, nil)
+		if err != nil {
+			return pagination.NewErrorIterator[jsonmodels.Operation](err)
+		}
+		opts.DeviceID = managedobjects.DeviceRef(resolvedID)
+	}
+	if opts.AgentID != "" && s.DeviceResolver != nil {
+		resolvedID, err := s.DeviceResolver.ResolveID(ctxhelpers.ResolutionContext(ctx), opts.AgentID, nil)
+		if err != nil {
+			return pagination.NewErrorIterator[jsonmodels.Operation](err)
+		}
+		opts.AgentID = managedobjects.DeviceRef(resolvedID)
+	}
 	strategy, err := pagination.ResolveTimeStrategy(opts.Strategy)
 	if err != nil {
 		return pagination.NewErrorIterator[jsonmodels.Operation](err)
@@ -165,10 +182,16 @@ func (s *Service) Create(ctx context.Context, opts CreateOptions) op.Result[json
 	return s.createWithOptions(ctx, opts)
 }
 
-// CreateRaw creates an operation from a pre-built body, passed through to the API as-is.
+// CreateRaw creates an operation from a pre-built body, passed through to the API as-is,
+// except that a device reference at "deviceId" or "agentId" that is not an id (e.g. "dev01",
+// "name:dev01", "ext:c8y_Serial:ABC") is resolved to the device id first.
 //
 //	result := client.Operations.CreateRaw(ctx, map[string]any{...})
 func (s *Service) CreateRaw(ctx context.Context, body any) op.Result[jsonmodels.Operation] {
+	body, err := s.DeviceResolver.ResolveBodyRefs(ctx, body, "deviceId", "agentId")
+	if err != nil {
+		return op.Failed[jsonmodels.Operation](err, false)
+	}
 	return httpcore.Execute(ctx, s.createB(body), jsonmodels.NewOperation)
 }
 
@@ -248,8 +271,13 @@ func (s *Service) createBWithJSON(bodyJSON []byte) *httpcore.TryRequest {
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
-// Update an operation
+// Update an operation. A device reference at "deviceId" or "agentId" in the
+// body that is not an id (e.g. "dev01", "name:dev01") is resolved first.
 func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jsonmodels.Operation] {
+	body, err := s.DeviceResolver.ResolveBodyRefs(ctx, body, "deviceId", "agentId")
+	if err != nil {
+		return op.Failed[jsonmodels.Operation](err, false)
+	}
 	return httpcore.Execute(ctx, s.updateB(ID, body), jsonmodels.NewOperation)
 }
 
@@ -361,6 +389,14 @@ type OperationStream = realtime.Stream[realtime.StreamData[jsonmodels.Operation]
 //	    return err
 //	}
 func (s *Service) SubscribeStream(ctx context.Context, ID string) op.Result[*OperationStream] {
+	// A device reference that is not an id (or "*") is resolved first.
+	if ID != "" && ID != "*" && !source.IsID(ID) {
+		resolvedID, err := s.DeviceResolver.ResolveID(ctxhelpers.ResolutionContext(ctx), managedobjects.DeviceRef(source.ParseRef(ID)), nil)
+		if err != nil {
+			return op.Failed[*OperationStream](err, false)
+		}
+		ID = resolvedID
+	}
 	err := s.svc.RealtimeClient.Connect()
 	if err != nil {
 		return op.Failed[*OperationStream](err, false)

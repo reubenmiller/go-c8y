@@ -249,6 +249,12 @@ type ClientOptions struct {
 	// ShowSensitive is also set.
 	Debug bool
 
+	// Logger receives the messages of the HTTP layer: the request and
+	// response logs of Debug at info level, its warnings (e.g. credentials
+	// sent over plain HTTP) at info level and its errors at error level.
+	// nil uses slog.Default().
+	Logger *slog.Logger
+
 	// Enable Keyring for saving and retrieving a token
 	UseKeyRing bool
 
@@ -370,7 +376,8 @@ func newRestyClient(opts ClientOptions, targetBaseURL *url.URL) *resty.Client {
 		SetRetryWaitTime(2 * time.Second).
 		SetRetryMaxWaitTime(30 * time.Second).
 		SetResultError(core.APIError{}).
-		SetCircuitBreaker(circuitBreaker)
+		SetCircuitBreaker(circuitBreaker).
+		SetLogger(restyLogger{opts.Logger})
 
 	if opts.Timeout > 0 {
 		rclient.SetTimeout(opts.Timeout)
