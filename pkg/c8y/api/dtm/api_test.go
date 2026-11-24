@@ -1,8 +1,10 @@
 package dtm_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -29,14 +31,18 @@ type fakeDTM struct {
 
 	mu       sync.Mutex
 	requests []*http.Request
+	bodies   []string
 }
 
 func newFakeDTM(t *testing.T) *fakeDTM {
 	t.Helper()
 	f := &fakeDTM{t: t, routes: map[string]func(http.ResponseWriter, *http.Request){}}
 	f.server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		r.Body = io.NopCloser(bytes.NewReader(body))
 		f.mu.Lock()
 		f.requests = append(f.requests, r.Clone(context.Background()))
+		f.bodies = append(f.bodies, string(body))
 		f.mu.Unlock()
 		h, ok := f.routes[r.Method+" "+r.URL.Path]
 		if !ok {
@@ -79,6 +85,19 @@ func (f *fakeDTM) last(path string) *http.Request {
 		}
 	}
 	return nil
+}
+
+// sent returns the requests with this method and path, with their bodies.
+func (f *fakeDTM) sent(method, path string) (reqs []*http.Request, bodies []string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for i, r := range f.requests {
+		if r.Method == method && r.URL.Path == path {
+			reqs = append(reqs, r)
+			bodies = append(bodies, f.bodies[i])
+		}
+	}
+	return reqs, bodies
 }
 
 func writeJSON(w http.ResponseWriter, status int, body string) {
