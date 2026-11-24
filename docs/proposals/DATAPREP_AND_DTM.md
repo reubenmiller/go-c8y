@@ -49,8 +49,9 @@ Service names follow the existing convention (`client.DataHub`, `client.RemoteAc
 
 | Method | Already in desired state | Not found | Conflict |
 |---|---|---|---|
-| `Delete`, `Unassign`, `DeleteSource` | n/a | `StatusSkipped`, `Err == nil` | returned as error |
-| `Assign` | `StatusSkipped` | error (the parent or child is missing) | n/a |
+| `Delete`, `DeleteSource` | n/a | `StatusSkipped`, `Err == nil` | returned as error |
+| `Unassign` | n/a | `StatusSkipped` (server returns 422 "is not a child of object", see 9.2) | returned as error |
+| `Assign` | `StatusCreated` (server returns 201 again and adds no duplicate, see 9.2) | error (the parent or child is missing) | n/a |
 | `GetOrCreate` | `StatusOK` (no write) | `StatusCreated` | 409 resolved by a follow-up GET (`StatusOK`) |
 | `Upsert` | `StatusSkipped` (no write) | `StatusCreated` | `StatusUpdated` |
 | `Create`, `Update` | plain calls, no extra lookups | error | error |
@@ -452,6 +453,8 @@ case op.StatusFailed:
 
 How it works: GET `/assets/externalIds/{id}`; if found and `DesiredStateMatches`, return `Skipped`; otherwise POST with `X-Upsert-Mode: true`. Set `AssetUpsertOptions.SkipCompare: true` to send the upsert directly (one request, never `Skipped`).
 
+The client-side comparison is needed: on the tenant, a server upsert with an identical body still returned 200 and changed `lastUpdated`, so it always writes (see 9.2).
+
 `GetOrCreate` uses the same key but never updates:
 
 ```go
@@ -480,11 +483,14 @@ hall := client.DigitalTwin.Assets.SubAssets.GetOrCreate(ctx, "ext:site-berlin", 
     Body:       map[string]any{"name": "Hall 1", "type": "Building"},
 })
 
-// Assign an existing asset. Already assigned -> StatusSkipped.
+// Assign an existing asset. Safe to repeat: the server ignores a repeat.
 client.DigitalTwin.Assets.SubAssets.Assign(ctx, "ext:hall-1", "ext:pump-07")
 
-// Assign a device by name. Already assigned -> StatusSkipped.
+// Assign a device by name. Safe to repeat.
 client.DigitalTwin.Assets.Devices.Assign(ctx, "ext:pump-07", "name:pump-07-controller")
+
+// Unassign. Not assigned (server 422 "is not a child of object") -> StatusSkipped.
+client.DigitalTwin.Assets.Devices.Unassign(ctx, "ext:pump-07", "name:pump-07-controller")
 
 // Read the tree back
 tree := client.DigitalTwin.Assets.Get(ctx, "ext:site-berlin", dtm.GetOptions{
@@ -566,7 +572,15 @@ res = assetDefs.Upsert(ctx, dtm.AssetDefinition{
 })
 ```
 
-**Immutable schemas.** An asset definition's schema cannot change after creation. When `Upsert` finds an existing definition whose `jsonSchema` differs, it returns `StatusFailed` with `dtm.ErrSchemaImmutable` and sends nothing. Tags and composition still update normally. The error names the fields that differ, so the user can decide to create a new identifier (the documented way to version a definition).
+**Server-generated schema fields.** The server adds to the `jsonSchema` you send: `$schema`, `additionalProperties: false`, and for asset definitions `definitions`, `properties` and `required` built from `composition` (for measurement definitions, a required `source`). So:
+
+- `Upsert` compares with a subset match (`op.DesiredStateMatches`): the desired schema only has to be contained in the stored one. Sending `{title: "Pump"}` again returns `Skipped`.
+- For asset definitions, the structure belongs in `composition`, not in `jsonSchema.properties`. `Upsert` compares `title`, `description`, `tags` and `composition`.
+- `PUT` replaces the whole `jsonSchema`. On the tenant this dropped the server-generated `source` from a measurement definition. `Update` and `Upsert` therefore send the stored schema merged with the desired one by default; `UpdateOptions.Replace: true` sends only what you give.
+
+**Asset definition immutability.** The API description says an asset definition's schema can't change after creation, but on the tenant a PUT changed the title, description and composition, and the server rebuilt `properties` and `required` to match (see 9.2). The SDK does not add its own immutability check. Open question 6 asks the DTM team which behavior is intended.
+
+**Unique titles.** Creating a property definition with a new identifier but an existing `title` fails with 409 ("Property Definition with title '…' already exists"). `Upsert` keys on `identifier`, so this case comes back as `StatusFailed` with `dtm.ErrDuplicateTitle` and the conflicting title, instead of a raw 409.
 
 **Shared and library definitions.** Definitions that come from the enterprise tenant (`c8y_SharedDefinition`) or a library (`c8y_Origin`) are read-only. `Upsert` returns `StatusSkipped` if they already match, and `dtm.ErrReadOnlyDefinition` otherwise, instead of a raw 403.
 
@@ -607,7 +621,8 @@ for _, item := range report.Data.Items {
 }
 // Created    PropertyDefinition     maxFlow[asset]
 // Skipped    AssetDefinition        Motor
-// Failed     AssetDefinition        Pump  (schema is immutable: properties.rpm changed)
+// Updated    AssetDefinition        Pump  (composition.allowedProperties changed)
+// Failed     PropertyDefinition     rpm   (title "Speed" already used by speed)
 ```
 
 `Plan` is `Apply` with deferred execution: it does all lookups and comparisons, sends no writes, and returns one prepared result per change. A CLI prints the plan, asks once, then executes:
@@ -664,7 +679,7 @@ func TestPumpDashboard(t *testing.T) {
 }
 ```
 
-Deletes run in reverse order (asset before definition), which is also the order the API needs: a property definition in use returns 409.
+Deletes run in reverse order (asset before definition), which is also the order the API needs. A property definition still used by an asset definition returns 409 ("is still referenced in Asset Definition '…'"); the SDK returns it as `dtm.ErrDefinitionInUse` with the referencing identifiers, and `Apply` with `Prune` deletes in reverse dependency order so it doesn't hit this.
 
 ### 5.9 Scenario: dry run in unit tests
 
@@ -698,7 +713,7 @@ Collections use `httpcore.ExecuteCollection` with the DTM array names (`assets`,
 
 1. `dtm` read-only: models, `Assets.Get/List/ListAll/Count`, asset resolver, definition `Get/List/Count/Tags`. Offline tests with recorded responses.
 2. `dtm` writes: CRUD, `Assign/Unassign`, linked series, idempotent `Delete`.
-3. `dtm` composites: `GetOrCreate`, `Upsert` (assets and definitions), `Link`, schema-immutability and read-only checks.
+3. `dtm` composites: `GetOrCreate`, `Upsert` (assets and definitions), `Link`, schema merge on update, read-only and in-use checks, and the 422 "is not a child" mapping for `Unassign`.
 4. `dataprep`: `RulePackage` with local validation, `List`, `Get`, `GetDraft`, `Exists`, `Deploy` (with wait), `Delete`, `Tests.Run`, `TestAndDeploy`, `Apply`, `Export`, `Diagnostics.Download`.
 5. `dtm.Apply` / `Plan` (after open question 3 is settled).
 6. Integration tests in `test/` against a tenant with DTM and Data Preparation subscribed; skip when `GET /service/dtm/assets/count` or `/service/dataprep/...` returns 404.
@@ -713,7 +728,43 @@ Steps 1 to 3 and step 4 do not depend on each other and can be built in parallel
    - What is `deploymentVersion` computed from? If it is a hash of the normalized package, `Apply` could compare one value instead of the code, config and tests.
    - Is `PUT .../deployed` synchronous, or can `deploymentInProgress` still be `true` after the 200? This decides whether `WaitTimeout` defaults to 0 or to a few seconds.
    - Is there a write endpoint for drafts (used by the application editor), and should the SDK expose it?
-2. **Assign responses.** The spec lists only 201 for `POST /assets/{id}/subAssets/{subId}` and `/devices/{deviceId}`. What does the server return when the child is already assigned (201 again, 409 or 422)? This decides whether `Assign` needs a GET first to return `StatusSkipped`.
+2. **Data Preparation deploy behavior (not yet verified).** go-c8y-cli's `api --file` sends multipart, so the deploy test could not run through it. Still to check with a raw `PUT`: whether `deploymentInProgress` can be `true` right after the 200, and whether redeploying an identical package changes `deploymentVersion`.
 3. **Prune scope.** Should `Apply` with `Prune: true` cover assets, or only definitions? Pruning assets can cascade to devices, so the proposal limits it to definitions.
 4. **Naming.** `client.DigitalTwin` and `client.DataPreparation`, or `client.DTM` and `client.DataPrep` to match the URL paths?
 5. **Expected-output comparison.** The run-tests endpoint returns outputs only. Should `Compare` treat extra output fields as a pass (subset match, same as `DesiredStateMatches`) or a fail? The proposal uses subset match.
+6. **DTM definition updates (for the DTM team).**
+   - The asset definition docs say the schema can't change after creation, but PUT changed title, description and composition. Which is intended?
+   - PUT on a measurement definition dropped the server-generated `source` property and `required`. Is that a bug, or should clients always send the full schema?
+   - Unassigning a child that isn't assigned returns 422. Could it return 204 or 404, so clients don't need to match the message text?
+
+## 9. Verified behavior
+
+Checked on a Cumulocity tenant on 2026-11-24 with go-c8y-cli. All test objects used a `gocy-proposal` prefix and were deleted afterwards.
+
+### 9.1 Data Preparation (read only)
+
+| Request | Result |
+|---|---|
+| `GET /v1/rules` | 200, object keyed by rule name with `config` and `deploymentStatus`, not paged |
+| `GET /v1/rules/{name}/deployed` | 200, adds `jsCode` and `tests` |
+| `GET /v1/rules/{name}/draft` | 200, same shape as `deployed` |
+| `GET /v1/rules/{name}` | 405 |
+| `GET /v1/rules/{missing}/deployed` | 404, `Rule '<name>' not found` |
+
+### 9.2 Digital Twin Manager
+
+| Request | Result | SDK consequence |
+|---|---|---|
+| `POST /assets`, external ID exists, no header | 409, `externalId '…' is already used by ManagedObject '<id>'` | `GetOrCreate` follows up with a GET by external ID |
+| `POST /assets`, `X-Upsert-Mode: true`, identical body | 200, `lastUpdated` changes | client-side compare needed to return `Skipped` |
+| `POST /assets/{id}/subAssets/{subId}` twice | 201 both times, no duplicate | `Assign` is safe to repeat without a pre-check |
+| `POST /assets/{id}/devices/{deviceId}` twice | 201 both times, one device listed | same |
+| `DELETE /assets/{id}/subAssets/{subId}` when not assigned | 422, `is not a child of object` | `Unassign` maps this 422 (and only this message) to `Skipped` |
+| `DELETE /assets/{id}/devices/{deviceId}` when not assigned | 422, same message | same |
+| `POST /definitions/properties`, same identifier and contexts | 409, lists both the title and the identifier conflict | `GetOrCreate` follows up with a GET; `ErrDuplicateTitle` for a title-only conflict |
+| `POST /definitions/assets`, `/measurements` | 201; server adds `$schema`, `definitions`, `properties`, `required`, `additionalProperties` | subset comparison in `Upsert` |
+| `PUT /definitions/assets` with new title, description, composition | 200, all applied, schema rebuilt from composition | no SDK immutability check (open question 6) |
+| `PUT /definitions/measurements` with partial `jsonSchema` | 200, schema replaced, server-generated `source` dropped | `Update` merges with the stored schema by default |
+| `DELETE /definitions/properties/{id}` while referenced | 409, `still referenced in Asset Definition '…'` | `ErrDefinitionInUse`, reverse-order prune |
+| `DELETE /definitions/assets/{id}` twice | 204, then 404 | `Delete` uses `IgnoreNotFound` |
+| `DELETE /assets/{id}` twice | 204, then 404 | same |
