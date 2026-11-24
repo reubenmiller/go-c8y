@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
-	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 )
 
 // Status represents the outcome of an operation
@@ -47,9 +46,9 @@ type Result[T any] struct {
 	Err        error  // Error if operation failed
 
 	// Operation characteristics
-	Retryable  bool           // Whether the operation can be retried
-	Idempotent bool           // Whether operation is idempotent
-	Meta       map[string]any // Additional metadata
+	Retryable  bool // Whether the operation can be retried
+	Idempotent bool // Whether operation is idempotent
+	Meta       Meta // Additional metadata (collection statistics: see the Meta accessors)
 
 	// Operation tracking
 	Attempts  int           // Number of retry attempts
@@ -185,48 +184,6 @@ func Failed[T any](err error, retryable bool) Result[T] {
 	}
 }
 
-// WithHTTPStatus sets the HTTP status code
-func (r Result[T]) WithHTTPStatus(status int) Result[T] {
-	r.HTTPStatus = status
-	return r
-}
-
-// WithRequestID sets the request correlation ID
-func (r Result[T]) WithRequestID(id string) Result[T] {
-	r.RequestID = id
-	return r
-}
-
-// WithAttempts sets the number of retry attempts
-func (r Result[T]) WithAttempts(attempts int) Result[T] {
-	r.Attempts = attempts
-	return r
-}
-
-// WithDuration sets the operation duration
-func (r Result[T]) WithDuration(duration time.Duration) Result[T] {
-	r.Duration = duration
-	return r
-}
-
-// WithRequest sets the HTTP request
-func (r Result[T]) WithRequest(req *http.Request) Result[T] {
-	r.Request = req
-	return r
-}
-
-// WithResponse attaches the raw response body (the full, un-plucked envelope).
-func (r Result[T]) WithResponse(body []byte) Result[T] {
-	r.Response = body
-	return r
-}
-
-// WithExecutor stores the execution function for deferred execution
-func (r Result[T]) WithExecutor(executor func(context.Context) Result[T]) Result[T] {
-	r.executor = executor
-	return r
-}
-
 // IsDeferred returns true if this result has deferred execution
 func (r Result[T]) IsDeferred() bool {
 	return r.executor != nil
@@ -239,29 +196,6 @@ func (r Result[T]) Execute(ctx context.Context) Result[T] {
 		return r.executor(ctx)
 	}
 	return r // Already executed
-}
-
-// ExecuteOrDefer executes the result immediately if deferred execution is not enabled in the context,
-// otherwise returns the result with its executor for later execution.
-// This is the standard pattern for operations that support deferred execution:
-//
-//	return op.Result[T]{}.WithExecutor(func(ctx context.Context) op.Result[T] {
-//	    // implementation
-//	}).WithMeta(...).ExecuteOrDefer(ctx)
-func (r Result[T]) ExecuteOrDefer(ctx context.Context) Result[T] {
-	if ctxhelpers.IsDeferredExecution(ctx) {
-		return r
-	}
-	return r.Execute(ctx)
-}
-
-// WithMeta adds metadata to the result
-func (r Result[T]) WithMeta(key string, value any) Result[T] {
-	if r.Meta == nil {
-		r.Meta = make(map[string]any)
-	}
-	r.Meta[key] = value
-	return r
 }
 
 // IgnoreNotFound clears any error if the HTTP status is 404 Not Found.
@@ -280,7 +214,7 @@ func (r Result[T]) IgnoreNotFound() Result[T] {
 		r.Err = nil
 		r.Status = StatusSkipped
 		r.Idempotent = true
-		r = r.WithMeta("ignoredStatus", 404)
+		r = WithMeta(r, "ignoredStatus", 404)
 	}
 	return r
 }
@@ -301,29 +235,35 @@ func (r Result[T]) IgnoreConflict() Result[T] {
 		r.Err = nil
 		r.Status = StatusDuplicate
 		r.Idempotent = true
-		r = r.WithMeta("ignoredStatus", 409)
+		r = WithMeta(r, "ignoredStatus", 409)
 	}
 	return r
 }
 
-// IgnoreStatusCodes clears any error if the HTTP status matches any of the provided codes.
-// This is useful for operations where certain HTTP status codes are acceptable.
-//
-// Example:
+// IgnoreStatusCodes clears the error if the HTTP status is one of codes.
 //
 //	result := client.Update(ctx, data).IgnoreStatusCodes(404, 409)
-//	if result.Err != nil {
-//	    // Only errors not related to 404 or 409
-//	}
 func (r Result[T]) IgnoreStatusCodes(codes ...int) Result[T] {
 	for _, code := range codes {
 		if r.HTTPStatus == code {
 			r.Err = nil
-			r = r.WithMeta("ignoredStatus", code)
+			r = WithMeta(r, "ignoredStatus", code)
 			break
 		}
 	}
 	return r
+}
+
+// IsSuccess reports whether the operation succeeded.
+func (r Result[T]) IsSuccess() bool {
+	return r.Status == StatusOK || r.Status == StatusCreated || r.Status == StatusUpdated || r.Status == StatusSkipped
+}
+
+// IsRetryable reports whether the HTTP status indicates a retryable error:
+// server errors (5xx) and rate limiting (429). For 429 responses, clients
+// should respect the Retry-After header.
+func (r Result[T]) IsRetryable() bool {
+	return r.HTTPStatus >= 500 || r.HTTPStatus == 429
 }
 
 // IsError returns true if the result contains an error
@@ -331,22 +271,9 @@ func (r Result[T]) IsError() bool {
 	return r.Err != nil || r.Status == StatusFailed
 }
 
-// IsSuccess returns true if the operation succeeded
-func (r Result[T]) IsSuccess() bool {
-	return r.Status == StatusOK || r.Status == StatusCreated || r.Status == StatusUpdated || r.Status == StatusSkipped
-}
-
 // IsNotFound returns true if the HTTP status is 404
 func (r Result[T]) IsNotFound() bool {
 	return r.HTTPStatus == 404
-}
-
-// IsRetryable returns true if the HTTP status indicates a retryable error
-// Retryable errors include server errors (5xx) and rate limiting (429)
-// Note: For 429 responses, clients should respect the Retry-After header to determine
-// when to retry. This method only indicates that the error category is retryable.
-func (r Result[T]) IsRetryable() bool {
-	return r.HTTPStatus >= 500 || r.HTTPStatus == 429
 }
 
 // Unwrap returns the data and error in the standard Go two-value form,
@@ -401,47 +328,6 @@ func (r Result[T]) Items() iter.Seq2[T, error] {
 			}
 		}
 	}
-}
-
-// TotalElements returns the total number of matching elements reported by the
-// server for a collection result.
-//
-// This value is only populated when the request included WithTotalElements: true
-// in its PaginationOptions. It returns 0 if the statistic was not requested,
-// the server did not return it, or the result is not a collection.
-func (r Result[T]) TotalElements() int64 {
-	v, _ := r.Meta["totalElements"].(int64)
-	return v
-}
-
-// TotalPages returns the total number of pages for the current page size.
-//
-// This value is only populated when the request included WithTotalPages: true
-// in its PaginationOptions. It returns 0 if the statistic was not requested,
-// the server did not return it, or the result is not a collection.
-func (r Result[T]) TotalPages() int64 {
-	v, _ := r.Meta["totalPages"].(int64)
-	return v
-}
-
-// CurrentPage returns the page number of this result within the full collection.
-// Returns 0 if the result is not a collection.
-func (r Result[T]) CurrentPage() int64 {
-	v, _ := r.Meta["currentPage"].(int64)
-	return v
-}
-
-// PageSize returns the maximum number of items per page for this result.
-// Returns 0 if the result is not a collection.
-func (r Result[T]) PageSize() int64 {
-	v, _ := r.Meta["pageSize"].(int64)
-	return v
-}
-
-// HasNextPage reports whether the server indicated a next page is available.
-func (r Result[T]) HasNextPage() bool {
-	next, _ := r.Meta["next"].(string)
-	return next != ""
 }
 
 // Combine merges two results, preferring errors

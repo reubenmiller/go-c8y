@@ -176,7 +176,7 @@ func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonm
 	if opt.File.IsZero() {
 		return s.CreateRaw(ctx, opt.Body)
 	}
-	return op.Result[jsonmodels.ManagedObject]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.ManagedObject] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[jsonmodels.ManagedObject]{}, func(execCtx context.Context) op.Result[jsonmodels.ManagedObject] {
 		body, binaryID, err := s.uploadAndSetURL(execCtx, opt.Body, opt.File)
 		if err != nil {
 			return op.Failed[jsonmodels.ManagedObject](err, true)
@@ -187,7 +187,7 @@ func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonm
 		}
 		s.linkBinary(execCtx, res.Data.ID(), binaryID)
 		return res
-	}).WithMeta("operation", "create").ExecuteOrDefer(ctx)
+	}), "operation", "create"))
 }
 
 // UpdateOptions updates a configuration file with an optional binary upload.
@@ -204,7 +204,7 @@ func (s *Service) Update(ctx context.Context, ref ConfigurationRef, opt UpdateOp
 	if opt.File.IsZero() {
 		return s.UpdateRaw(ctx, ref, opt.Body)
 	}
-	return op.Result[jsonmodels.ManagedObject]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.ManagedObject] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[jsonmodels.ManagedObject]{}, func(execCtx context.Context) op.Result[jsonmodels.ManagedObject] {
 		id, err := s.ResolveID(execCtx, string(ref), nil)
 		if err != nil {
 			return op.Failed[jsonmodels.ManagedObject](err, false)
@@ -219,7 +219,7 @@ func (s *Service) Update(ctx context.Context, ref ConfigurationRef, opt UpdateOp
 		}
 		s.linkBinary(execCtx, id, binaryID)
 		return res
-	}).WithMeta("operation", "update").ExecuteOrDefer(ctx)
+	}), "operation", "update"))
 }
 
 // Delete deletes a configuration file by reference. forceCascade (DeleteOptions)

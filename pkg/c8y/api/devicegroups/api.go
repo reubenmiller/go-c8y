@@ -28,8 +28,9 @@ const (
 	FragmentIsDeviceGroup = "c8y_IsDeviceGroup"
 	// TypeDeviceGroup is the type of a root device group.
 	TypeDeviceGroup = "c8y_DeviceGroup"
-	// TypeDeviceSubGroup is the type of a nested device group.
-	TypeDeviceSubGroup = "c8y_DeviceSubGroup"
+	// TypeDeviceSubGroup is the type of a nested device group (as created by
+	// the Cumulocity UI; note the lowercase "g").
+	TypeDeviceSubGroup = "c8y_DeviceSubgroup"
 )
 
 // ManagedObjectIterator iterates device groups.

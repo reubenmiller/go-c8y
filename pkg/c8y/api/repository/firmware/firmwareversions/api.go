@@ -66,7 +66,7 @@ type CreateOptions struct {
 // firmwareID can be a direct ID or use string-based resolver patterns (e.g., "name:MyFirmware")
 // Assumes the firmware item exists (does not create it)
 func (s *Service) Create(ctx context.Context, firmwareID string, opt CreateOptions) op.Result[jsonmodels.FirmwareVersion] {
-	return op.Result[jsonmodels.FirmwareVersion]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.FirmwareVersion] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[jsonmodels.FirmwareVersion]{}, func(execCtx context.Context) op.Result[jsonmodels.FirmwareVersion] {
 		// Resolve firmware ID if needed
 		resolvedID, err := s.firmware.Resolver.ResolveID(execCtx, firmwareID, nil)
 		if err != nil {
@@ -100,8 +100,7 @@ func (s *Service) Create(ctx context.Context, firmwareID string, opt CreateOptio
 		}
 
 		return httpcore.Execute(execCtx, s.createB(resolvedID, versionBody), jsonmodels.NewFirmwareVersion)
-	}).WithMeta("operation", "create").
-		ExecuteOrDefer(ctx)
+	}), "operation", "create"))
 }
 
 // ResolveID resolves a firmware version identifier to an ID using the resolver
@@ -470,7 +469,7 @@ type CreateVersionOptions struct {
 
 // CreateVersion creates a firmware version, automatically handling firmware item lookup/creation and binary upload
 func (s *Service) CreateVersion(ctx context.Context, opt CreateVersionOptions) op.Result[jsonmodels.FirmwareVersion] {
-	return op.Result[jsonmodels.FirmwareVersion]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.FirmwareVersion] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[jsonmodels.FirmwareVersion]{}, func(execCtx context.Context) op.Result[jsonmodels.FirmwareVersion] {
 		// Step 1: Get or create firmware item
 		var firmwareID string
 		if opt.FirmwareID != "" {
@@ -501,13 +500,12 @@ func (s *Service) CreateVersion(ctx context.Context, opt CreateVersionOptions) o
 			Annotations: opt.Annotations,
 		}
 		return s.Create(execCtx, firmwareID, createOpt)
-	}).WithMeta("operation", "createVersion").
-		ExecuteOrDefer(ctx)
+	}), "operation", "createVersion"))
 }
 
 // GetOrCreateVersion searches by firmware + version, creating if not found
 func (s *Service) GetOrCreateVersion(ctx context.Context, opt CreateVersionOptions) op.Result[jsonmodels.FirmwareVersion] {
-	return op.Result[jsonmodels.FirmwareVersion]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.FirmwareVersion] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[jsonmodels.FirmwareVersion]{}, func(execCtx context.Context) op.Result[jsonmodels.FirmwareVersion] {
 		// Define finder function
 		finder := func(ctx context.Context) (op.Result[jsonmodels.FirmwareVersion], bool) {
 			// First resolve firmware ID
@@ -567,12 +565,11 @@ func (s *Service) GetOrCreateVersion(ctx context.Context, opt CreateVersionOptio
 
 		// Execute get-or-create pattern
 		return op.GetOrCreateR(execCtx, finder, creator)
-	}).WithMeta("operation", "getOrCreateVersion").
-		ExecuteOrDefer(ctx)
+	}), "operation", "getOrCreateVersion"))
 }
 
 func (s *Service) DeleteAndCreate(ctx context.Context, versionID string, opt CreateVersionOptions) op.Result[jsonmodels.FirmwareVersion] {
-	return op.Result[jsonmodels.FirmwareVersion]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.FirmwareVersion] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[jsonmodels.FirmwareVersion]{}, func(execCtx context.Context) op.Result[jsonmodels.FirmwareVersion] {
 		// Step 1: Delete any existing version (if it exists)
 		deleteResult := s.Delete(execCtx, versionID, DeleteOptions{})
 		if deleteResult.Err != nil {
@@ -584,8 +581,7 @@ func (s *Service) DeleteAndCreate(ctx context.Context, versionID string, opt Cre
 
 		// Step 2: Create new version
 		return s.CreateVersion(execCtx, opt)
-	}).WithMeta("operation", "deleteAndCreate").
-		ExecuteOrDefer(ctx)
+	}), "operation", "deleteAndCreate"))
 }
 
 // Upsert Methods
@@ -606,7 +602,7 @@ func (s *Service) DeleteAndCreate(ctx context.Context, versionID string, opt Cre
 // If the version doesn't exist, creates it.
 // This is useful for ensuring a version exists with the latest binary.
 func (s *Service) UpsertByVersion(ctx context.Context, opt CreateVersionOptions) op.Result[jsonmodels.FirmwareVersion] {
-	return op.Result[jsonmodels.FirmwareVersion]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.FirmwareVersion] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[jsonmodels.FirmwareVersion]{}, func(execCtx context.Context) op.Result[jsonmodels.FirmwareVersion] {
 		// Resolve firmware ID if needed
 		firmwareID := opt.FirmwareID
 		if firmwareID == "" && opt.FirmwareName != "" {
@@ -639,8 +635,7 @@ func (s *Service) UpsertByVersion(ctx context.Context, opt CreateVersionOptions)
 			Build()
 
 		return s.upsertWithQuery(execCtx, query, opt)
-	}).WithMeta("operation", "upsertByVersion").
-		ExecuteOrDefer(ctx)
+	}), "operation", "upsertByVersion"))
 }
 
 // UpsertWith provides a generic query-based upsert for firmware versions
@@ -648,7 +643,7 @@ func (s *Service) UpsertByVersion(ctx context.Context, opt CreateVersionOptions)
 // Example queries:
 //   - "c8y_Firmware.version eq '1.0.0'" (requires firmwareID in opt)
 func (s *Service) UpsertWith(ctx context.Context, query string, opt CreateVersionOptions) op.Result[jsonmodels.FirmwareVersion] {
-	return op.Result[jsonmodels.FirmwareVersion]{}.WithExecutor(func(execCtx context.Context) op.Result[jsonmodels.FirmwareVersion] {
+	return op.ExecuteOrDefer(ctx, op.WithMeta(op.WithExecutor(op.Result[jsonmodels.FirmwareVersion]{}, func(execCtx context.Context) op.Result[jsonmodels.FirmwareVersion] {
 		query_ := model.NewInventoryQuery().
 			AddFilterEqStr("type", "c8y_FirmwareBinary").
 			AddFilterPart(query).
@@ -657,8 +652,7 @@ func (s *Service) UpsertWith(ctx context.Context, query string, opt CreateVersio
 			Build()
 
 		return s.upsertWithQuery(execCtx, query_, opt)
-	}).WithMeta("operation", "upsertWith").
-		ExecuteOrDefer(ctx)
+	}), "operation", "upsertWith"))
 }
 
 // upsertWithQuery is the internal implementation for upsert

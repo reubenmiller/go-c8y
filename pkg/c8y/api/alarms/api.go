@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/source"
+
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
@@ -77,6 +79,14 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 // keyset optimisation (newest first; the alarm API has no revert option); set
 // ListOptions.Strategy to override.
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *AlarmIterator {
+	// Resolve references once for the whole walk, not once per page.
+	if opts.Source != "" && s.DeviceResolver != nil {
+		resolvedID, err := s.DeviceResolver.ResolveID(ctxhelpers.ResolutionContext(ctx), opts.Source, nil)
+		if err != nil {
+			return pagination.NewErrorIterator[jsonmodels.Alarm](err)
+		}
+		opts.Source = managedobjects.DeviceRef(resolvedID)
+	}
 	strategy, err := pagination.ResolveTimeStrategy(opts.Strategy)
 	if err != nil {
 		return pagination.NewErrorIterator[jsonmodels.Alarm](err)
@@ -199,11 +209,17 @@ func (s *Service) Create(ctx context.Context, opts CreateOptions) op.Result[json
 	return s.createWithOptions(ctx, opts)
 }
 
-// CreateRaw creates an alarm from a pre-built body, passed through to the API as-is.
+// CreateRaw creates an alarm from a pre-built body, passed through to the API as-is,
+// except that a device reference at "source.id" that is not an id (e.g. "dev01",
+// "name:dev01", "ext:c8y_Serial:ABC") is resolved to the device id first.
 // It is the explicit escape hatch for shapes the typed CreateOptions does not cover.
 //
 //	result := client.Alarms.CreateRaw(ctx, map[string]any{...})
 func (s *Service) CreateRaw(ctx context.Context, body any) op.Result[jsonmodels.Alarm] {
+	body, err := s.DeviceResolver.ResolveBodyRefs(ctx, body, "source.id")
+	if err != nil {
+		return op.Failed[jsonmodels.Alarm](err, false)
+	}
 	return httpcore.Execute(ctx, s.createB(body), jsonmodels.NewAlarm)
 }
 
@@ -639,6 +655,14 @@ type AlarmStream = realtime.Stream[realtime.StreamData[jsonmodels.Alarm]]
 //	    return err
 //	}
 func (s *Service) SubscribeStream(ctx context.Context, ID string) op.Result[*AlarmStream] {
+	// A device reference that is not an id (or "*") is resolved first.
+	if ID != "" && ID != "*" && !source.IsID(ID) {
+		resolvedID, err := s.DeviceResolver.ResolveID(ctxhelpers.ResolutionContext(ctx), managedobjects.DeviceRef(source.ParseRef(ID)), nil)
+		if err != nil {
+			return op.Failed[*AlarmStream](err, false)
+		}
+		ID = resolvedID
+	}
 	err := s.svc.RealtimeClient.Connect()
 	if err != nil {
 		return op.Failed[*AlarmStream](err, false)
