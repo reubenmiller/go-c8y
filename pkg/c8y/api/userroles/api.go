@@ -12,6 +12,7 @@ import (
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/userroles/inventory"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/userroles/usergroups"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/userroles/users"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
@@ -28,9 +29,10 @@ const ResultProperty = "roles"
 
 func NewService(s *httpcore.Service) *Service {
 	return &Service{
-		svc:    *s,
-		Groups: usergroups.NewService(s),
-		Users:  users.NewService(s),
+		svc:       *s,
+		Groups:    usergroups.NewService(s),
+		Users:     users.NewService(s),
+		Inventory: inventoryroles.NewService(s),
 	}
 }
 
@@ -39,6 +41,10 @@ type Service struct {
 	svc    httpcore.Service
 	Groups *usergroups.Service
 	Users  *users.Service
+
+	// Inventory is the inventory roles sub-resource. Client.InventoryRoles is
+	// a deprecated alias for the same instance.
+	Inventory *inventoryroles.Service
 }
 
 // ListOptions to filter the user roles by

@@ -27,11 +27,20 @@ const ResultProperty = "applications"
 // Service to manage binaries
 // Managed objects can perform operations to store, retrieve and delete binaries. One binary can store only one file. Together with the binary, a managed object is created which acts as a metadata information for the binary.
 type Service struct {
-	svc                 httpcore.Service
-	applicationAPI      applications.Service
-	BootstrapUser       bootstrapuser.Service
+	svc            httpcore.Service
+	applicationAPI *applications.Service
+	BootstrapUser  bootstrapuser.Service
+	// CurrentMicroservice is the current-microservice sub-resource.
+	//
+	// Deprecated: use Client.Microservices.Current.
 	CurrentMicroservice currentmicroservice.Service
 	Loggers             loggers.Service
+
+	// Current is the current-microservice sub-resource (/application/currentApplication
+	// as seen by a microservice). It is the canonical name, matching
+	// Tenants.Current, Applications.Current and Users.Current, and points at
+	// the same instance as CurrentMicroservice.
+	Current *currentmicroservice.Service
 
 	lookupByName        func(ctx context.Context, name string) (string, map[string]any, error)
 	lookupByContextPath func(ctx context.Context, contextPath string) (string, map[string]any, error)
@@ -39,14 +48,23 @@ type Service struct {
 }
 
 func NewService(common *httpcore.Service) *Service {
+	return NewServiceWithApplications(common, applications.NewService(common))
+}
+
+// NewServiceWithApplications creates the service using an existing applications
+// service, so that resolvers and lookups registered on it (e.g.
+// Client.Applications) are shared rather than copied.
+func NewServiceWithApplications(common *httpcore.Service, apps *applications.Service) *Service {
 	service := &Service{
 		svc:                 *common,
-		applicationAPI:      *applications.NewService(common),
+		applicationAPI:      apps,
 		BootstrapUser:       *bootstrapuser.NewService(common),
 		CurrentMicroservice: *currentmicroservice.NewService(common),
 		Loggers:             *loggers.NewService(common),
 		customResolvers:     make(map[string]source.Resolver),
 	}
+
+	service.Current = &service.CurrentMicroservice
 
 	// Setup lookup function for name-based resolution
 	service.lookupByName = func(ctx context.Context, name string) (string, map[string]any, error) {

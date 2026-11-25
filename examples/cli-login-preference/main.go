@@ -430,7 +430,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	userResult := client.Users.CurrentUser.Get(ctx)
+	userResult := client.Users.Current.Get(ctx)
 	if userResult.Err != nil {
 		slog.Error("API call failed", "err", userResult.Err)
 		os.Exit(1)

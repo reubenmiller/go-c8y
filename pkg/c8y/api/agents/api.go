@@ -158,6 +158,9 @@ func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Man
 
 // CreateAgent creates a new agent with the given name, including the
 // c8y_IsDevice and com_cumulocity_model_Agent fragments.
+//
+// Deprecated: use Create with jsonmodels.NewAgent(name), which is the
+// canonical create verb (Create takes a body in every service).
 func (s *Service) CreateAgent(ctx context.Context, name string) op.Result[jsonmodels.ManagedObject] {
 	return s.managedObjects.Create(ctx, jsonmodels.NewAgent(name))
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/users/currentuser"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/users/devicepermissions"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
@@ -88,16 +89,31 @@ func CalculatePasswordStrength(password string) PasswordStrength {
 const ResultProperty = "users"
 
 func NewService(s *httpcore.Service) *Service {
+	cu := currentuser.NewService(s)
 	return &Service{
-		svc:         *s,
-		CurrentUser: currentuser.NewService(s),
+		svc:               *s,
+		CurrentUser:       cu,
+		Current:           cu,
+		DevicePermissions: devicepermissions.NewService(s),
 	}
 }
 
 // Service provides api to manage users
 type Service struct {
-	svc         httpcore.Service
+	svc httpcore.Service
+
+	// Current is the current-user sub-resource (/user/currentUser). This is
+	// the canonical name, matching Tenants.Current and Applications.Current.
+	Current *currentuser.Service
+
+	// CurrentUser is the same instance as Current.
+	//
+	// Deprecated: use Client.Users.Current.
 	CurrentUser *currentuser.Service
+
+	// DevicePermissions is the device permissions sub-resource.
+	// Client.DevicePermissions is a deprecated alias for the same instance.
+	DevicePermissions *devicepermissions.Service
 }
 
 // ListOptions to filter the users by

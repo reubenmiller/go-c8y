@@ -117,6 +117,20 @@ v2 is a new module, `github.com/reubenmiller/go-c8y/v2`. Entries marked **Breaki
 
 ### API coverage
 
+* Service tree, non-breaking. Sub-resources are now reachable from the service that owns them, and the old `Client` fields stay as deprecated aliases of the same instance:
+
+  | Canonical | Deprecated alias |
+  |---|---|
+  | `Applications.Versions` | `Client.ApplicationVersions` |
+  | `Tenants.DeviceStatistics` | `Client.DeviceStatistics` |
+  | `Tenants.LoginTokens` | `Client.LoginTokens` |
+  | `Users.DevicePermissions` | `Client.DevicePermissions` |
+  | `UserRoles.Inventory` | `Client.InventoryRoles` |
+  | `Users.Current` | `Users.CurrentUser` |
+  | `Microservices.Current` | `Microservices.CurrentMicroservice` |
+
+  `Devices` and `Microservices` now share `Client.ManagedObjects` and `Client.Applications` instead of holding copies (`devices.NewServiceWithManagedObjects`, `microservices.NewServiceWithApplications`). `Devices.CreateDevice` and `Agents.CreateAgent` are deprecated in favor of `Create` with `jsonmodels.NewDevice` / `jsonmodels.NewAgent`. `docs/API_DESIGN.md` documents the `Raw` suffix.
+* Added `ResolveID(ctx, identifier, meta)` to `Users` (by user name, `*` wildcards), `Tenants` (by id, domain or company) and `Binaries` (by id or name). They return a not found error for no match and an error for more than one match.
 * **Breaking**: `UIApplicationPlugins` (`ui/applicationplugins`) now manages the plugins in the application's `config.remotes` (`"<contextPath>@<version>": [modules]`), the model the Cumulocity UI uses. It wrote `applicationBuilder.plugins` before, which the UI does not read. Plugins are given as `"<name or contextPath>[@<version or tag>]"` and looked up among the tenant's own and the shared plugins:
 
   | Before | After |
