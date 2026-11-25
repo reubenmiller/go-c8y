@@ -28,6 +28,10 @@ type RemoteAccessOptions struct {
 	// negotiation request (a few bytes of text) to the target once, before falling back.
 	Multiplex bool
 
+	// Logger receives the client's messages. nil uses the logger of the
+	// Cumulocity client (see api.Client.Logger).
+	Logger *slog.Logger
+
 	// MultiplexNegotiationTimeout is the maximum time to wait for the device to acknowledge
 	// multiplexing. Defaults to DefaultMultiplexNegotiationTimeout
 	MultiplexNegotiationTimeout time.Duration
@@ -55,15 +59,21 @@ type RemoteAccessClient struct {
 	ctx      RemoteAccessOptions
 	listener net.Listener
 	mux      multiplexer
+	log      *slog.Logger
 }
 
 // Create new Remote Access client to allow local clients
 // to connect to a device via the Cloud Remote Access feature
 func NewRemoteAccessClient(client *api.Client, opt RemoteAccessOptions) *RemoteAccessClient {
+	log := opt.Logger
+	if log == nil {
+		log = client.Logger()
+	}
 	return &RemoteAccessClient{
 		client:   client,
 		ctx:      opt,
 		listener: nil,
+		log:      log,
 	}
 }
 
@@ -87,7 +97,7 @@ func (c *RemoteAccessClient) createRemoteAccessConnection() (*websocket.Conn, st
 	if authHeader != "" {
 		requestHeader.Set("Authorization", authHeader)
 	}
-	slog.Info("Connecting to Cumulocity IoT", "url", remoteURL, "headers", c.client.HideSensitiveInformationIfActive(fmt.Sprintf("%v", requestHeader)))
+	c.log.Info("Connecting to Cumulocity IoT", "url", remoteURL, "headers", c.client.HideSensitiveInformationIfActive(fmt.Sprintf("%v", requestHeader)))
 
 	wsConn, _, err := websocket.DefaultDialer.Dial(remoteURL, requestHeader)
 	return wsConn, remoteURL, err
@@ -107,13 +117,13 @@ func (c *RemoteAccessClient) GetListenerAddress() string {
 func (c *RemoteAccessClient) ListenServe(r io.ReadCloser, w io.Writer) error {
 	clientWsConn, remoteURL, err := c.createRemoteAccessConnection()
 	if err != nil {
-		slog.Error("Could not create remote access connection", "err", err.Error())
+		c.log.Error("Could not create remote access connection", "err", err.Error())
 		return err
 	}
-	slog.Info(fmt.Sprintf("Proxying traffic to %v via %v for %v", remoteURL, clientWsConn.RemoteAddr(), "stdio"))
+	c.log.Info(fmt.Sprintf("Proxying traffic to %v via %v for %v", remoteURL, clientWsConn.RemoteAddr(), "stdio"))
 
 	// block until finished as stdio mode can not launch multiple instances
-	proxy.CopyReadWriter(clientWsConn, r, w)
+	proxy.CopyReadWriterWithLogger(c.log, clientWsConn, r, w)
 	return nil
 }
 
@@ -126,11 +136,11 @@ func (c *RemoteAccessClient) Listen(addr string) error {
 		return err
 	}
 
-	slog.Info("Creating listener", "network", network, "address", localAddress)
+	c.log.Info("Creating listener", "network", network, "address", localAddress)
 
 	l, err := net.Listen(network, localAddress)
 	if err != nil {
-		slog.Error("Could not create listener", "network", strings.ToUpper(network), "err", err.Error())
+		c.log.Error("Could not create listener", "network", strings.ToUpper(network), "err", err.Error())
 		return err
 	}
 
@@ -155,7 +165,7 @@ func (c *RemoteAccessClient) Serve() error {
 			if errors.Is(err, net.ErrClosed) {
 				return nil
 			}
-			slog.Error("Failed to accept incoming connection (ACCEPT)", "err", err.Error())
+			c.log.Error("Failed to accept incoming connection (ACCEPT)", "err", err.Error())
 			// avoid a busy loop on persistent errors (e.g. too many open files)
 			time.Sleep(100 * time.Millisecond)
 			continue
@@ -167,12 +177,12 @@ func (c *RemoteAccessClient) Serve() error {
 
 		clientWsConn, remoteURL, err := c.createRemoteAccessConnection()
 		if err != nil {
-			slog.Error("Could not create remove access connection", "err", err.Error())
+			c.log.Error("Could not create remove access connection", "err", err.Error())
 			tcpConn.Close()
 			return err
 		}
 		// Handle connections in a new goroutine.
-		slog.Info(fmt.Sprintf("Proxying traffic to %v via %v for %v", remoteURL, clientWsConn.RemoteAddr(), tcpConn.RemoteAddr()))
-		go proxy.Copy(clientWsConn, tcpConn)
+		c.log.Info(fmt.Sprintf("Proxying traffic to %v via %v for %v", remoteURL, clientWsConn.RemoteAddr(), tcpConn.RemoteAddr()))
+		go proxy.CopyWithLogger(c.log, clientWsConn, tcpConn)
 	}
 }

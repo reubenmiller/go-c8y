@@ -134,6 +134,7 @@ v2 is a new module, `github.com/reubenmiller/go-c8y/v2`. Entries marked **Breaki
 * Fixed `zipUtilities.UnzipFile`, which extracted every entry except the given `names`; it now extracts only the named entries (case-insensitive), and everything when `names` is empty.
 * Added `RemoteAccess.Configurations.Detect`, which selects a device's passthrough configuration for a connection from an id, a name or a wildcard pattern, or automatically when none is given (the only one, else the one on port 22, else the first with "ssh" in its name).
 * Fixed the remote access client's websocket handshake with basic auth, which sent the credentials without the tenant. It now sends the same `Authorization` header as a request of the client (`Client.AuthorizationHeader`), including a renewed token from the token source.
+* The remote access client and `pkg/proxy` log to the Cumulocity client's logger (`ClientOptions.Logger`, now returned by `Client.Logger`) instead of `slog.Default()`, or to `RemoteAccessOptions.Logger`. Added `proxy.CopyWithLogger` and `proxy.CopyReadWriterWithLogger`.
 * The fake server (`c8y-fakeserver`) serves the remote access websocket of a stored configuration, with an echo server as the device, so local proxies can be tested end to end.
 
 ### Tooling and documentation
