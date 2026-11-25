@@ -136,7 +136,7 @@ func (c *Client) fetchTokenFor(auth authentication.AuthOptions) (*authentication
 		}
 	}
 
-	tok := c.LoginTokens.Create(ctx, logintokens.CreateTokenOptions{
+	tok := c.Tenants.LoginTokens.Create(ctx, logintokens.CreateTokenOptions{
 		Tenant:    auth.Tenant,
 		Username:  auth.Username,
 		Password:  auth.Password,

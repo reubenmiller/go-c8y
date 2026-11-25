@@ -78,7 +78,7 @@ func New(opts Options) *Microservice {
 // metadata is logged but not fatal.
 func (m *Microservice) Bootstrap(ctx context.Context) error {
 	// Retrieve current application metadata.
-	currentApplication := m.Client.Microservices.CurrentMicroservice.Get(ctx)
+	currentApplication := m.Client.Microservices.Current.Get(ctx)
 	if currentApplication.Err != nil {
 		slog.Warn("Failed to get current application information", "err", currentApplication.Err)
 	} else {

@@ -9,6 +9,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects/childadditions"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects/childassets"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects/childdevices"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,7 +20,7 @@ func Test_Devices_CRUD(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
-	createRes := client.Devices.CreateDevice(ctx, "test-dev-"+t.Name())
+	createRes := client.Devices.Create(ctx, jsonmodels.NewDevice("test-dev-"+t.Name()))
 	require.NoError(t, createRes.Err)
 	id := createRes.Data.ID()
 	t.Cleanup(func() {

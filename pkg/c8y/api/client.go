@@ -174,22 +174,24 @@ type Client struct {
 
 	LoginOptions *loginoptions.Service
 
+	// Deprecated: use Client.Tenants.LoginTokens.
 	LoginTokens *logintokens.Service
 
-	Agents               *agents.Service
-	DataBroker           *databroker.Service
-	DataHub              *datahub.Service
-	DataPreparation      *dataprep.Service
-	DigitalTwin          *dtm.Service
-	Devices              *devices.Service
-	DeviceGroups         *devicegroups.Service
-	DeviceProfiles       *deviceprofiles.Service
-	Configuration        *configuration.Service
-	ManagedObjects       *managedobjects.Service
-	Operations           *operations.Service
-	Tenants              *tenants.Service
-	Events               *events.Service
-	Applications         *applications.Service
+	Agents          *agents.Service
+	DataBroker      *databroker.Service
+	DataHub         *datahub.Service
+	DataPreparation *dataprep.Service
+	DigitalTwin     *dtm.Service
+	Devices         *devices.Service
+	DeviceGroups    *devicegroups.Service
+	DeviceProfiles  *deviceprofiles.Service
+	Configuration   *configuration.Service
+	ManagedObjects  *managedobjects.Service
+	Operations      *operations.Service
+	Tenants         *tenants.Service
+	Events          *events.Service
+	Applications    *applications.Service
+	// Deprecated: use Client.Applications.Versions.
 	ApplicationVersions  *appversions.Service
 	Microservices        *microservices.Service
 	Repository           *repository.Service
@@ -205,10 +207,13 @@ type Client struct {
 	Users                *users.Service
 	UserGroups           *usergroups.Service
 	UserRoles            *userroles.Service
-	InventoryRoles       *inventoryroles.Service
-	DevicePermissions    *devicepermissions.Service
-	DeviceStatistics     *devicestatistics.Service
-	Features             *features.Service
+	// Deprecated: use Client.UserRoles.Inventory.
+	InventoryRoles *inventoryroles.Service
+	// Deprecated: use Client.Users.DevicePermissions.
+	DevicePermissions *devicepermissions.Service
+	// Deprecated: use Client.Tenants.DeviceStatistics.
+	DeviceStatistics *devicestatistics.Service
+	Features         *features.Service
 }
 
 const (
@@ -486,13 +491,13 @@ func (c *Client) initServices() {
 	c.DataHub = datahub.NewService(&c.common)
 	c.DataPreparation = dataprep.NewService(&c.common)
 	c.DigitalTwin = dtm.NewService(&c.common, c.ManagedObjects)
-	c.Devices = devices.NewService(&c.common)
+	c.Devices = devices.NewServiceWithManagedObjects(&c.common, c.ManagedObjects)
 	c.DeviceGroups = devicegroups.NewService(&c.common)
 	c.DeviceProfiles = deviceprofiles.NewService(&c.common)
 	c.Configuration = configuration.NewService(&c.common)
 	c.Applications = applications.NewService(&c.common)
-	c.ApplicationVersions = appversions.NewService(&c.common)
-	c.Microservices = microservices.NewService(&c.common)
+	c.ApplicationVersions = c.Applications.Versions
+	c.Microservices = microservices.NewServiceWithApplications(&c.common, c.Applications)
 	c.Repository = repository.NewService(&c.common)
 	c.UIPlugins = plugins.NewService(&c.common)
 	c.UIApplicationPlugins = applicationplugins.NewService(&c.common)
@@ -505,13 +510,13 @@ func (c *Client) initServices() {
 	c.Users = users.NewService(&c.common)
 	c.UserGroups = usergroups.NewService(&c.common)
 	c.UserRoles = userroles.NewService(&c.common)
-	c.InventoryRoles = inventoryroles.NewService(&c.common)
-	c.DevicePermissions = devicepermissions.NewService(&c.common)
-	c.DeviceStatistics = devicestatistics.NewService(&c.common)
 	c.Tenants = tenants.NewService(&c.common)
+	c.InventoryRoles = c.UserRoles.Inventory
+	c.DevicePermissions = c.Users.DevicePermissions
+	c.DeviceStatistics = c.Tenants.DeviceStatistics
 	c.Features = features.NewService(&c.common)
 	c.LoginOptions = loginoptions.NewService(&c.common)
-	c.LoginTokens = logintokens.NewService(&c.common)
+	c.LoginTokens = c.Tenants.LoginTokens
 }
 
 // initTokenSource determines the token source.
@@ -1643,7 +1648,7 @@ func (c *Client) loginInternalSSOWithTFA(ctx context.Context, opts LoginOptions)
 	switch {
 	case apiErr.StatusCode() == 401 && strings.Contains(errorMessage, "totp setup required"):
 		// First-time enrollment: generate secret → show QR → verify → activate.
-		secretResult := c.Users.CurrentUser.TOTP.GenerateSecret(ctx)
+		secretResult := c.Users.Current.TOTP.GenerateSecret(ctx)
 		if secretResult.Err != nil {
 			return "", fmt.Errorf("totp: generate secret: %w", secretResult.Err)
 		}
@@ -1667,10 +1672,10 @@ func (c *Client) loginInternalSSOWithTFA(ctx context.Context, opts LoginOptions)
 			return "", fmt.Errorf("totp: code input: %w", err)
 		}
 
-		if r := c.Users.CurrentUser.TOTP.VerifyCode(ctx, tfaCode); r.Err != nil {
+		if r := c.Users.Current.TOTP.VerifyCode(ctx, tfaCode); r.Err != nil {
 			return "", fmt.Errorf("totp: verify code: %w", r.Err)
 		}
-		if r := c.Users.CurrentUser.TOTP.SetActivity(ctx, true); r.Err != nil {
+		if r := c.Users.Current.TOTP.SetActivity(ctx, true); r.Err != nil {
 			return "", fmt.Errorf("totp: activate: %w", r.Err)
 		}
 
@@ -1739,7 +1744,7 @@ func (c *Client) loginInternalSSOWithTFA(ctx context.Context, opts LoginOptions)
 	}
 
 	// Retry login with the TOTP code supplied.
-	tok := c.LoginTokens.Create(ctx, logintokens.CreateTokenOptions{
+	tok := c.Tenants.LoginTokens.Create(ctx, logintokens.CreateTokenOptions{
 		Tenant:    c.Auth.Tenant,
 		Username:  c.Auth.Username,
 		Password:  c.Auth.Password,
@@ -1793,7 +1798,7 @@ func computeTOTPCode(secret string) (string, error) {
 }
 
 func (c *Client) loginInternalSSO(ctx context.Context) (string, error) {
-	tok := c.LoginTokens.Create(ctx, logintokens.CreateTokenOptions{
+	tok := c.Tenants.LoginTokens.Create(ctx, logintokens.CreateTokenOptions{
 		Username:  c.Auth.Username,
 		Password:  c.Auth.Password,
 		GrantType: logintokens.GrantTypePassword,

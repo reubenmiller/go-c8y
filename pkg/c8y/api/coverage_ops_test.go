@@ -86,7 +86,7 @@ func Test_ChildUnassignMany(t *testing.T) {
 
 func Test_TOTPGetActivity(t *testing.T) {
 	ss := newScriptServer(t, func(r recorded, n int) (int, string) { return 200, `{"isActive":true}` })
-	res := newScriptClient(ss).Users.CurrentUser.TOTP.GetActivity(context.Background())
+	res := newScriptClient(ss).Users.Current.TOTP.GetActivity(context.Background())
 	require.NoError(t, res.Err)
 	assert.True(t, res.Data.IsActive())
 	assert.Len(t, ss.matching(http.MethodGet, "/user/currentUser/totpSecret/activity"), 1)

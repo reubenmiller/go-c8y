@@ -51,6 +51,22 @@ result := client.Measurements.Create(ctx, measurements.CreateOptions{...})
 - `Alarms` - Alarm management
 - `Applications`, `Binaries`, `Users`, `Tenants`, etc.
 
+**Service tree.** A service that owns a sub-resource exposes it as a field, and the sub-resource is the same instance wherever it is reachable. The current-entity sub-resource is always called `Current`:
+
+| Canonical path | Deprecated alias (same instance) |
+|---|---|
+| `Applications.Versions` | `Client.ApplicationVersions` |
+| `Tenants.DeviceStatistics` | `Client.DeviceStatistics` |
+| `Tenants.LoginTokens` | `Client.LoginTokens` |
+| `Users.DevicePermissions` | `Client.DevicePermissions` |
+| `UserRoles.Inventory` | `Client.InventoryRoles` |
+| `Users.Current` | `Users.CurrentUser` |
+| `Microservices.Current` | `Microservices.CurrentMicroservice` |
+
+`Tenants.Current` and `Applications.Current` already followed this. `Client.UIPlugins`, `Client.UIApplicationPlugins` and `Client.Configuration` stay flat: UI plugins are their own resource, and `Configuration` (configuration files) is not `Repository.Configuration` (the repository of configuration items).
+
+Services that depend on another service share the client's instance instead of copying it: `Devices` uses `Client.ManagedObjects` and `Microservices` uses `Client.Applications`, so a resolver registered with `Client.ManagedObjects.RegisterResolver` applies to them too. Build such a service on its own with `devices.NewServiceWithManagedObjects` or `microservices.NewServiceWithApplications`.
+
 ## Result Type
 
 The `Result<T>` type is central to v2's design, providing rich metadata about every operation:
@@ -492,6 +508,13 @@ Update(ctx context.Context, ID string, body any) op.Result[T]
 // Delete resource
 Delete(ctx context.Context, ID string) op.Result[T]
 ```
+
+### Naming conventions
+
+* `Create(ctx, body any)` is the canonical create verb. Helpers that only wrap it (`Devices.CreateDevice(name)`, `Agents.CreateAgent(name)`) are deprecated: pass `jsonmodels.NewDevice(name)` or `jsonmodels.NewAgent(name)` to `Create`.
+* The software and firmware `CreateVersion` / `CreatePatch` are not duplicates of `Create`: `Create(ctx, parentID, opt)` adds a version or patch to an item that exists, while `CreateVersion` / `CreatePatch` first look up or create the item and upload the file.
+* The `Raw` suffix (`CreateRaw`, `UpdateRaw`, `UpsertRaw`, `CreateTokenRaw`) means the method takes a pre-built body (`any`, e.g. a map or `json.RawMessage`) that is sent as-is, instead of the typed options struct of the method without the suffix. Device references in the body (`source.id`, `groupId`) are still resolved. It is the escape hatch for bodies the typed options do not cover. Services whose `Create` already takes a body do not have a `Raw` variant.
+* `ResolveID(ctx, identifier string, meta map[string]any) (string, error)` is the signature for new resolvers. `meta` may be nil. Users, user roles, tenants and binaries resolve by name: a user or role name without a wildcard is its id and is returned without a request, a `*` wildcard (case-insensitive) is looked up and must match exactly one resource. Tenants are found by id, domain or company name, binaries by id or name; a not found error is a 404 `core.Error` (`core.IsNotFound`).
 
 ### Options Pattern
 

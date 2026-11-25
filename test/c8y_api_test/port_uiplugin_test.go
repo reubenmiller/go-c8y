@@ -78,7 +78,7 @@ func Test_UIPlugin_CreateWithVersions(t *testing.T) {
 	// Upload first version (2.4.3) with tag1.
 	// UI plugin versions are application versions (same endpoint), so they are
 	// managed via the ApplicationVersions service.
-	version1Result := client.ApplicationVersions.CreateFromFile(ctx, pluginID, file1.Name(), "2.4.3", []string{"tag1"})
+	version1Result := client.Applications.Versions.CreateFromFile(ctx, pluginID, file1.Name(), "2.4.3", []string{"tag1"})
 	require.NoError(t, version1Result.Err)
 	tags := version1Result.Data.Tags()
 	assert.Equal(t, 201, version1Result.HTTPStatus)
@@ -95,7 +95,7 @@ func Test_UIPlugin_CreateWithVersions(t *testing.T) {
 	require.NoError(t, err)
 
 	// Upload second version (2.5.0) with tag2 and latest
-	version2Result := client.ApplicationVersions.CreateFromFile(ctx, pluginID, file2.Name(), "2.5.0", []string{"latest", "tag2"})
+	version2Result := client.Applications.Versions.CreateFromFile(ctx, pluginID, file2.Name(), "2.5.0", []string{"latest", "tag2"})
 	require.NoError(t, version2Result.Err)
 	assert.Equal(t, 201, version2Result.HTTPStatus)
 	assert.Equal(t, "2.5.0", version2Result.Data.Version())

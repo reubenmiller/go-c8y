@@ -359,7 +359,7 @@ func Test_CertOptIn_Helpers(t *testing.T) {
 	ss := newScriptServer(t, func(r recorded, n int) (int, string) { return 200, `{}` })
 	client := newScriptClient(ss)
 
-	require.NoError(t, client.Users.CurrentUser.SetRequiredAuthType(context.Background(), currentuser.AuthTypeCertificates).Err)
+	require.NoError(t, client.Users.Current.SetRequiredAuthType(context.Background(), currentuser.AuthTypeCertificates).Err)
 	require.NoError(t, client.Applications.Current.SetAuthType(context.Background(), currentuser.AuthTypeCertificates).Err)
 	require.NoError(t, client.Applications.ResetAuthType(context.Background(), "42").Err)
 

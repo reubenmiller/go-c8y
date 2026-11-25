@@ -137,7 +137,7 @@ func (s *Syncer) resolveServiceUserCredentials(ctx context.Context, targets []Ta
 			}
 		}
 
-		result := bootstrapClient.Microservices.CurrentMicroservice.ListUsers(ctx)
+		result := bootstrapClient.Microservices.Current.ListUsers(ctx)
 		if result.Err != nil {
 			return fmt.Errorf("failed to list service users of credentials application %q: %w", name, result.Err)
 		}

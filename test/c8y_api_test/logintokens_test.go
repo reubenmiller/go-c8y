@@ -15,7 +15,7 @@ import (
 func Test_LoginTokensCreate(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
-	tok := client.LoginTokens.Create(context.Background(), logintokens.CreateTokenOptions{
+	tok := client.Tenants.LoginTokens.Create(context.Background(), logintokens.CreateTokenOptions{
 		Username:  authentication.GetEnvValue(authentication.EnvironmentUsername...),
 		Password:  authentication.GetEnvValue(authentication.EnvironmentPassword...),
 		GrantType: "PASSWORD",
@@ -33,7 +33,7 @@ func Test_LoginTokensCreate(t *testing.T) {
 func Test_LoginTokensCreate_PermissionDenied(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 
-	tok := client.LoginTokens.Create(context.Background(), logintokens.CreateTokenOptions{
+	tok := client.Tenants.LoginTokens.Create(context.Background(), logintokens.CreateTokenOptions{
 		Username:  "test",
 		Password:  "invalid",
 		GrantType: "PASSWORD",
