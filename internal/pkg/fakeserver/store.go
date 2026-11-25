@@ -39,7 +39,7 @@ func NewStore() *Store {
 // (id, self, creationTime, lastUpdated), and returns the ID and stored doc.
 func (s *Store) Create(body json.RawMessage, selfURL string) (string, json.RawMessage) {
 	id := NextID()
-	now := time.Now().UTC().Format(time.RFC3339Nano)
+	now := time.Now().UTC().Truncate(time.Millisecond).Format("2006-01-02T15:04:05.000Z07:00")
 	doc := mergeFields(body, map[string]any{
 		"id":           id,
 		"self":         selfURL + "/" + id,

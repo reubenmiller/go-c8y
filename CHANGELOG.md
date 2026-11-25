@@ -180,6 +180,7 @@ The realtime, notification2 and remote access clients now connect like an HTTP c
 
 ### Errors and robustness
 
+* **Fixed**: `ListAll` on events, alarms, measurements and operations could loop forever, or repeat items, when several items were created within the same few milliseconds. The time keyset cursor compared timestamps at finer than millisecond precision while the platform filters `dateFrom`/`dateTo` at millisecond resolution, so ties were never recognized and the same page was requested again. Timestamps are now compared at millisecond resolution, and any pagination strategy that asks for the same page request twice now stops with a "pagination made no progress" error instead of hanging. The fake server also stamps `creationTime` and `lastUpdated` at millisecond resolution, like the platform.
 * **Fixed**: library code no longer exits or panics the host process on runtime failures. Each of these now returns an error:
   * `realtime`: an invalid host, a failed dial, a missing dialer, a rejected handshake (bad credentials) and a server advice of `none` used to call `os.Exit(1)` or `panic`. `Connect` now returns the error. A failure which happens later, in the background worker, stops the client, closes the channels of all subscribers and is returned from `Client.Err()` (new) and from pending acknowledgements. New errors: `realtime.ErrHandshakeFailed`, `ErrServerNoReconnect`, `ErrMissingDialer`.
   * `notification2`: an invalid host (`os.Exit`) and a missing dialer (`panic`). `Connect` returns the error. New `notification2.ErrMissingDialer`.
