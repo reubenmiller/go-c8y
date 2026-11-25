@@ -533,22 +533,16 @@ func applyCQLFilter(items []json.RawMessage, query string) []json.RawMessage {
 		return applyCQLFilter(items, stripped)
 	}
 
-	// Handle "field eq 'value'" – supports trailing wildcard (e.g. name eq 'foo*')
+	// Handle "field eq 'value'" – supports "*" wildcards anywhere in the value
+	// (e.g. name eq 'foo*', name eq '*foo*'), like the platform
 	if strings.Contains(query, " eq ") {
 		parts := strings.SplitN(query, " eq ", 2)
 		if len(parts) == 2 {
 			field := strings.TrimSpace(parts[0])
 			value := strings.Trim(strings.TrimSpace(parts[1]), "'\"")
 			var filtered []json.RawMessage
-			wildcard := strings.HasSuffix(value, "*")
-			prefix := strings.TrimSuffix(value, "*")
 			for _, item := range items {
-				actual := getJSONPath(item, field)
-				if wildcard {
-					if strings.HasPrefix(actual, prefix) {
-						filtered = append(filtered, item)
-					}
-				} else if actual == value {
+				if matchWildcard(value, getJSONPath(item, field)) {
 					filtered = append(filtered, item)
 				}
 			}
@@ -584,6 +578,29 @@ func applyCQLFilter(items []json.RawMessage, query string) []json.RawMessage {
 
 	// Fallback: no filtering
 	return items
+}
+
+// matchWildcard reports whether actual matches pattern, where each "*" in the
+// pattern matches any (possibly empty) run of characters. A pattern without
+// "*" must match exactly.
+func matchWildcard(pattern, actual string) bool {
+	if !strings.Contains(pattern, "*") {
+		return pattern == actual
+	}
+	parts := strings.Split(pattern, "*")
+	first, last := parts[0], parts[len(parts)-1]
+	if !strings.HasPrefix(actual, first) {
+		return false
+	}
+	rest := actual[len(first):]
+	for _, part := range parts[1 : len(parts)-1] {
+		idx := strings.Index(rest, part)
+		if idx < 0 {
+			return false
+		}
+		rest = rest[idx+len(part):]
+	}
+	return strings.HasSuffix(rest, last)
 }
 
 // stripWrappingParens removes outer parentheses only when the leading "(" is

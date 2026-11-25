@@ -22,6 +22,11 @@ func (t TrustedCertificate) Name() string {
 	return t.Get("name").String()
 }
 
+// Issuer is the distinguished name of the certificate's issuer.
+func (t TrustedCertificate) Issuer() string {
+	return t.Get("issuer").String()
+}
+
 func (t TrustedCertificate) Status() string {
 	return t.Get("status").String()
 }

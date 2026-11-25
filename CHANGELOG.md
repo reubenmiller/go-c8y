@@ -136,6 +136,8 @@ v2 is a new module, `github.com/reubenmiller/go-c8y/v2`. Entries marked **Breaki
 * Fixed the remote access client's websocket handshake with basic auth, which sent the credentials without the tenant. It now sends the same `Authorization` header as a request of the client (`Client.AuthorizationHeader`), including a renewed token from the token source.
 * The remote access client and `pkg/proxy` log to the Cumulocity client's logger (`ClientOptions.Logger`, now returned by `Client.Logger`) instead of `slog.Default()`, or to `RemoteAccessOptions.Logger`. Added `proxy.CopyWithLogger` and `proxy.CopyReadWriterWithLogger`.
 * The fake server (`c8y-fakeserver`) serves the remote access websocket of a stored configuration, with an echo server as the device, so local proxies can be tested end to end.
+* Added model accessors `Application.ContextPath`, `Application.OwnerTenantID`, `Tenant.Company`, `TrustedCertificate.Issuer` and `Notification2Subscription.SourceName`.
+* The fake server matches `*` wildcards anywhere in an inventory query value (`name eq '*device*'`), not only at the end, and `GET /features` returns a plain JSON array like the platform (it returned a paged collection, which `Features.List` could not read).
 
 ### Tooling and documentation
 

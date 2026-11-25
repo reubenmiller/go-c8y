@@ -355,6 +355,15 @@ func (fs *FakeServer) seedDefaults() {
 		"self": fs.URL() + "/user/roles/ROLE_TENANT_ADMIN",
 	}))
 
+	// Seed feature toggles, stored by key (GET /features/{key}), as every
+	// platform tenant has some
+	for _, feature := range []map[string]any{
+		{"key": "core.example.public", "phase": "PUBLIC_PREVIEW", "active": true, "strategy": "DEFAULT"},
+		{"key": "core.example.private", "phase": "PRIVATE_PREVIEW", "active": false, "strategy": "TENANT"},
+	} {
+		fs.Features.CreateWithID(feature["key"].(string), marshalJSON(feature))
+	}
+
 	// Seed default login options (Basic)
 	fs.LoginOptions.CreateWithID("BASIC", marshalJSON(map[string]any{
 		"id":                   "BASIC",
