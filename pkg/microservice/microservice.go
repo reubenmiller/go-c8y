@@ -397,12 +397,15 @@ func (s *RealtimeClientCache) LoadOrNewClient(user model.ServiceUser) (*realtime
 	if client, err := s.GetClient(user); err == nil {
 		return client, nil
 	}
-	client := realtime.NewClient(nil, realtime.ClientOptions{
+	client, err := realtime.NewClientE(nil, realtime.ClientOptions{
 		Host:     s.host,
 		Tenant:   user.Tenant,
 		Username: user.Username,
 		Password: user.Password,
 	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create realtime client: %w", err)
+	}
 	if client != nil {
 		s.SetClient(user, client)
 		return client, nil

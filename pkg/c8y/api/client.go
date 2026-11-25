@@ -308,13 +308,14 @@ func (c *Client) Realtime() *realtime.Client {
 	c.clientMu.Lock()
 	defer c.clientMu.Unlock()
 	if c.common.RealtimeClient == nil {
-		c.common.RealtimeClient = realtime.NewClient(nil, realtime.ClientOptions{
-			Host:     c.BaseURL.String(),
-			Tenant:   c.Auth.Tenant,
-			Username: c.Auth.Username,
-			Password: c.Auth.Password,
-			Token:    c.Auth.Token,
-		})
+		c.common.RealtimeClient = realtime.NewClient(nil, //nolint:staticcheck // an invalid host is reported by Connect
+			realtime.ClientOptions{
+				Host:     c.BaseURL.String(),
+				Tenant:   c.Auth.Tenant,
+				Username: c.Auth.Username,
+				Password: c.Auth.Password,
+				Token:    c.Auth.Token,
+			})
 	}
 	return c.common.RealtimeClient
 }
@@ -597,13 +598,14 @@ func NewClient(opts ClientOptions) *Client {
 	c.common.Client = rclient
 	c.common.MTLSPort = opts.MTLSPort
 	c.common.CertChainHeader = buildCertChainHeader(opts.Auth)
-	c.common.RealtimeClient = realtime.NewClient(nil, realtime.ClientOptions{
-		Host:     targetBaseURL.String(),
-		Tenant:   c.Auth.Tenant,
-		Username: c.Auth.Username,
-		Password: c.Auth.Password,
-		Token:    c.Auth.Token,
-	})
+	c.common.RealtimeClient = realtime.NewClient(nil, //nolint:staticcheck // an invalid host is reported by Connect
+		realtime.ClientOptions{
+			Host:     targetBaseURL.String(),
+			Tenant:   c.Auth.Tenant,
+			Username: c.Auth.Username,
+			Password: c.Auth.Password,
+			Token:    c.Auth.Token,
+		})
 	c.initServices()
 
 	c.registerMiddleware()

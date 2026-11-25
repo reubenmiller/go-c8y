@@ -19,7 +19,7 @@ func IsNotFound(err error) bool {
 	return core.IsNotFound(err)
 }
 
-// IsUnauthorized reports whether err is a 401 Unauthorized error.
+// IsUnauthorized reports whether err is an HTTP 401 error.
 func IsUnauthorized(err error) bool {
 	return core.ErrHasStatus(err, http.StatusUnauthorized)
 }

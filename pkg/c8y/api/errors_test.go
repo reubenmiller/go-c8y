@@ -43,9 +43,9 @@ func Test_NonJSONErrorBodies_KeepStatus(t *testing.T) {
 		sentinel    error
 		is          func(error) bool
 	}{
-		{"401 html", 401, "text/html", "<html><body>Unauthorized</body></html>", api.ErrUnauthorized, api.IsUnauthorized},
+		{"401 html", 401, "text/html", "<html><body>denied</body></html>", api.ErrUnauthorized, api.IsUnauthorized},
 		{"401 empty", 401, "", "", api.ErrUnauthorized, api.IsUnauthorized},
-		{"401 text", 401, "text/plain", "Unauthorized", api.ErrUnauthorized, api.IsUnauthorized},
+		{"401 text", 401, "text/plain", "denied", api.ErrUnauthorized, api.IsUnauthorized},
 		{"403 html", 403, "text/html; charset=utf-8", "<h1>Forbidden</h1>", api.ErrForbidden, api.IsForbidden},
 		{"404 html", 404, "text/html", "<h1>Not found</h1>", api.ErrNotFound, api.IsNotFound},
 		{"404 empty", 404, "", "", api.ErrNotFound, api.IsNotFound},
