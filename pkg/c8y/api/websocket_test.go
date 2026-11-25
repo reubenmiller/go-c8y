@@ -586,9 +586,10 @@ func TestRealtimeRehandshakeUsesCurrentAuthorization(t *testing.T) {
 	srv := newWSTestServer(t, false, nil)
 	var current atomic.Value
 	current.Store("token-1")
-	source := authentication.TokenSourceFunc(func() (*authentication.Token, error) {
+	// a caching source: the cached token is dropped for the new handshake
+	source := authentication.NewCachedTokenSource(authentication.TokenSourceFunc(func() (*authentication.Token, error) {
 		return &authentication.Token{AccessToken: current.Load().(string)}, nil
-	})
+	}))
 	client := wsTestClient(srv.URL, authentication.AuthOptions{TokenSource: source}, false)
 	rt := client.Realtime()
 	require.NoError(t, rt.ConnectContext(context.Background()))

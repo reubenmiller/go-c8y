@@ -637,7 +637,14 @@ func (c *Client) reconnect() error {
 	}
 	c.cancel = nil
 	c.connected = false
+	connector := c.connector
 	c.mtx.Unlock()
+
+	// The connection was lost: do not reconnect with a cached token the server
+	// may have revoked or expired.
+	if connector != nil {
+		invalidateAuthorization(connector)
+	}
 
 	// Remove all pending requests
 	c.pendingRequests.Range(func(key, value any) bool {
@@ -872,6 +879,15 @@ func (c *Client) handshake(renew bool) chan error {
 	return c.WaitForMessage(message.ID)
 }
 
+// invalidateAuthorization asks the connector to drop a cached token, so the
+// next connection does not reuse a token which the server may have revoked or
+// expired.
+func invalidateAuthorization(connector wsdial.Connector) {
+	if inv, ok := connector.(interface{ InvalidateToken() }); ok {
+		inv.InvalidateToken()
+	}
+}
+
 // renewExtension reads the current authorization from the connector.
 func (c *Client) renewExtension() {
 	c.mtx.RLock()
@@ -880,6 +896,7 @@ func (c *Client) renewExtension() {
 	if connector == nil {
 		return
 	}
+	invalidateAuthorization(connector)
 	header, err := connector.WebsocketHeader(c.connectionContext())
 	if err != nil {
 		c.log().Warn("Could not renew the authorization for the handshake", "err", err)

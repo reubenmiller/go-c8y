@@ -232,6 +232,20 @@ func dialContext(ctx context.Context, dialer *websocket.Dialer, rawURL string, h
 	return conn, resp, err
 }
 
+// InvalidateToken discards the cached token of the client's token source, so the
+// next request (or websocket connection) gets a new one. It does nothing when the
+// token source does not cache. Use it when the server rejected a token which has
+// not expired by the clock, for example after it was revoked. The realtime client
+// calls it before it reconnects.
+func (c *Client) InvalidateToken() {
+	c.clientMu.Lock()
+	source := c.tokenSource
+	c.clientMu.Unlock()
+	if inv, ok := source.(interface{ Invalidate() }); ok {
+		inv.Invalidate()
+	}
+}
+
 // websocketURL normalises a URL to the ws/wss scheme.
 func websocketURL(rawURL string) (string, error) {
 	u, err := url.Parse(rawURL)

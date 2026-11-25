@@ -68,7 +68,7 @@ func (h *Hub) Run() {
 			closed := make(map[chan<- *Message]struct{}, len(h.clients))
 			for client := range h.clients {
 				if _, done := closed[client.out]; !done {
-					close(client.out)
+					closeSubscriber(client.out)
 					closed[client.out] = struct{}{}
 				}
 				delete(h.clients, client)
@@ -85,4 +85,12 @@ func (h *Hub) Run() {
 			}
 		}
 	}
+}
+
+// closeSubscriber closes a subscriber's channel. It tolerates a channel which
+// was closed already (a subscriber's channel can be closed by the caller or
+// by an earlier shutdown).
+func closeSubscriber(ch chan<- *Message) {
+	defer func() { _ = recover() }()
+	close(ch)
 }
