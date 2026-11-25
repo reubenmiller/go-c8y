@@ -11,10 +11,10 @@ import (
 	"strings"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/tidwall/gjson"
 	"resty.dev/v3"
 )
@@ -392,12 +392,13 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) *Reque
 //
 //	result := client.Request(ctx, api.RequestOptions{
 //	    Method: "GET",
-//	    Path:   "/tenant/system/options/category/key",
+//	    Path:   "/inventory/managedObjects",
+//	    Query:  "pageSize=1",
 //	})
 //	if result.IsError() {
 //	    return result.Err
 //	}
-//	value := result.Data.Get("value").String()
+//	name := result.Data.Get("managedObjects.0.name").String()
 func (c *Client) Request(ctx context.Context, options RequestOptions) op.Result[jsondoc.JSONDoc] {
 	raw := c.SendRequest(ctx, options)
 

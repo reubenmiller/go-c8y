@@ -43,7 +43,7 @@ func (s *UploadFileOptions) IsSet() bool {
 }
 
 func (s *UploadFileOptions) GetReader() any {
-	var r io.Reader = s.Reader
+	r := s.Reader
 	if s.FilePath != "" {
 		r = SafeOpenFile(s.FilePath)
 	}

@@ -137,7 +137,7 @@ func (s *Service) createB(applicationID string, opts CreateOptions) *httpcore.Tr
 
 	applicationVersion, _ := json.Marshal(opts)
 
-	var binary io.Reader = opts.File.Reader
+	binary := opts.File.Reader
 	if opts.File.Progress != nil && binary != nil {
 		binary = core.NewProgressReader(binary, core.ReaderSize(binary), opts.File.Progress)
 	}
