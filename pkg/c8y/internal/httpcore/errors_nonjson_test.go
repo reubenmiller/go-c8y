@@ -20,8 +20,8 @@ func Test_coupleAPIErrors_UnparsedNonJSONBody(t *testing.T) {
 		status                  int
 		wantMsg                 string
 	}{
-		{"401 html", "text/html", "<html>nope</html>", 401, "Unauthorized"},
-		{"401 empty", "", "", 401, "Unauthorized"},
+		{"401 html", "text/html", "<html>nope</html>", 401, http.StatusText(http.StatusUnauthorized)},
+		{"401 empty", "", "", 401, http.StatusText(http.StatusUnauthorized)},
 		{"404 text", "text/plain", "gone fishing", 404, "gone fishing"},
 		{"409 empty", "", "", 409, "Conflict"},
 	} {
