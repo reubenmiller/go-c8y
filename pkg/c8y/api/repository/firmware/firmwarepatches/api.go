@@ -240,6 +240,17 @@ func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.R
 	return httpcore.ExecuteNoContent(ctx, s.deleteB(id, opt), meta).IgnoreNotFound()
 }
 
+// ResolveID resolves a firmware patch identifier to an ID using the resolver.
+// This is a convenience method that wraps the Resolver.ResolveID.
+// Supported formats:
+//   - "12345" - direct ID
+//   - "version:1.0.1:firmware:12345" - by version and firmware ID
+//   - "version:1.0.1:name:MyFirmware" - by version and firmware name
+//   - "version:1.0.1:dependency:1.0.0:firmware:12345" - by version, dependency and firmware ID
+func (s *Service) ResolveID(ctx context.Context, identifier string, meta map[string]any) (string, error) {
+	return s.Resolver.ResolveID(ctx, identifier, meta)
+}
+
 // Resolver handles firmware patch resolution
 type Resolver struct {
 	service *Service

@@ -62,3 +62,31 @@ func TestIsPlainID(t *testing.T) {
 		}
 	}
 }
+
+// TestServiceResolveID verifies the service's ResolveID uses the patch
+// resolver: a plain id is used as is, and a version is looked up scoped to its
+// firmware.
+func TestServiceResolveID(t *testing.T) {
+	var rawQuery string
+	svc, closeFn := testService(func(w http.ResponseWriter, r *http.Request) {
+		rawQuery, _ = url.QueryUnescape(r.URL.RawQuery)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"managedObjects":[{"id":"777","c8y_Patch":{}}]}`))
+	})
+	defer closeFn()
+
+	if got, err := svc.ResolveID(context.Background(), "12345", nil); err != nil || got != "12345" {
+		t.Errorf("ResolveID(id) = %q, %v, want 12345", got, err)
+	}
+	if rawQuery != "" {
+		t.Errorf("a plain id was looked up. query=%s", rawQuery)
+	}
+
+	got, err := svc.ResolveID(context.Background(), NewRef().ByVersion("1.0.1", "100"), nil)
+	if err != nil || got != "777" {
+		t.Errorf("ResolveID(version) = %q, %v, want 777", got, err)
+	}
+	if !strings.Contains(rawQuery, "bygroupid(100)") || !strings.Contains(rawQuery, "1.0.1") {
+		t.Errorf("the patch was not looked up by its firmware and version. query=%s", rawQuery)
+	}
+}

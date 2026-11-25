@@ -2,10 +2,13 @@ package userroles
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
+	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
+	"github.com/reubenmiller/go-c8y/v2/pkg/matcher"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
@@ -108,6 +111,47 @@ func (s *Service) RoleSelfLink(ref string) string {
 		return ref
 	}
 	return strings.TrimRight(s.svc.Client.BaseURL(), "/") + ApiRoles + "/" + ref
+}
+
+// ResolveID resolves a role reference to the role id (which equals the role
+// name in Cumulocity). A role id, a self link or a role document is reduced
+// to the id like RoleID, without a request. A name with "*" or "?" wildcards
+// (e.g. "ROLE_ALARM_*") is matched, ignoring case, against the tenant's roles
+// and the first match is used; the roles are requested also in a dry run.
+// If meta is not nil, it is given the role's "id" and "name" and the "source"
+// of the id ("id" or "name").
+func (s *Service) ResolveID(ctx context.Context, ref string, meta map[string]any) (string, error) {
+	id := s.RoleID(ref)
+	if id == "" {
+		return "", fmt.Errorf("empty role reference")
+	}
+	if !strings.ContainsAny(id, "*?") {
+		if meta != nil {
+			meta["id"] = id
+			meta["name"] = id
+			meta["source"] = "id"
+		}
+		return id, nil
+	}
+
+	ctx = ctxhelpers.ResolutionContext(ctx)
+	roles := s.ListAll(ctx, ListOptions{
+		PaginationOptions: pagination.PaginationOptions{PageSize: 2000},
+	})
+	for role, err := range roles.Items() {
+		if err != nil {
+			return "", err
+		}
+		if found, _ := matcher.MatchWithWildcards(role.Name(), id); found {
+			if meta != nil {
+				meta["id"] = role.ID()
+				meta["name"] = role.Name()
+				meta["source"] = "name"
+			}
+			return role.ID(), nil
+		}
+	}
+	return "", fmt.Errorf("role not found: %s", id)
 }
 
 // RoleID returns the role id (which equals the role name in Cumulocity) for a
