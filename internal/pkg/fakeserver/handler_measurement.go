@@ -54,6 +54,21 @@ func (fs *FakeServer) handleMeasurements(w http.ResponseWriter, r *http.Request)
 			writeError(w, http.StatusBadRequest, "general/badRequest", err.Error())
 			return
 		}
+		var collection struct {
+			Measurements []json.RawMessage `json:"measurements"`
+		}
+		if json.Unmarshal(body, &collection) == nil && collection.Measurements != nil {
+			// A measurement collection (bulk create): each measurement is
+			// created, and the created measurements are returned
+			created := make([]json.RawMessage, 0, len(collection.Measurements))
+			for _, item := range collection.Measurements {
+				_, doc := fs.Measurements.Create(enrichSource(item, fs.URL()), fs.URL()+"/measurement/measurements")
+				created = append(created, doc)
+			}
+			resp, _ := json.Marshal(map[string]any{"measurements": created})
+			writeJSON(w, http.StatusCreated, resp)
+			return
+		}
 		body = enrichSource(body, fs.URL())
 		_, doc := fs.Measurements.Create(body, fs.URL()+"/measurement/measurements")
 		writeJSON(w, http.StatusCreated, doc)

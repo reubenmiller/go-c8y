@@ -335,4 +335,37 @@ func Test_CreateMeasurements(t *testing.T) {
 
 	// Verify that 2 measurements were created
 	assert.EqualValues(t, 2, result.Data.Length())
+	list := client.Measurements.List(ctx, measurements.ListOptions{
+		Source:            managedobjects.DeviceRef(device.ID()),
+		ValueFragmentType: valueFragmentType,
+	})
+	require.NoError(t, list.Err)
+	assert.EqualValues(t, 2, list.Data.Length(), "the measurements are stored individually")
+}
+
+func Test_CreateMeasurements_DeviceName(t *testing.T) {
+	client := testcore.CreateTestClient(t)
+	ctx := context.Background()
+
+	device := testcore.CreateDevice(t, client).Data
+	item := func(value float64) map[string]any {
+		return map[string]any{
+			"source":    map[string]any{"id": device.Name()},
+			"type":      "TestSeries1",
+			"time":      time.Now(),
+			"nx_byName": map[string]any{"Signal1": map[string]any{"value": value}},
+		}
+	}
+
+	result := client.Measurements.CreateList(ctx, map[string]any{
+		"measurements": []map[string]any{item(1), item(2)},
+	})
+	require.NoError(t, result.Err)
+
+	list := client.Measurements.List(ctx, measurements.ListOptions{
+		Source:            managedobjects.DeviceRef(device.ID()),
+		ValueFragmentType: "nx_byName",
+	})
+	require.NoError(t, list.Err)
+	assert.EqualValues(t, 2, list.Data.Length(), "the device name is resolved to its id")
 }
