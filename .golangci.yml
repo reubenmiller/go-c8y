@@ -22,6 +22,9 @@ linters:
       extra-words:
         - typo: mosquitto
           correction: mosquitto
+        # "artifact" is the name of a package and of a Cumulocity term.
+        - typo: artifact
+          correction: artifact
 
 formatters:
   enable:

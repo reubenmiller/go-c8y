@@ -41,7 +41,7 @@
 //
 // # Context options
 //
-// The context carries per call behavior without changing the method
+// The context carries per call behaviour without changing the method
 // signatures: [WithDryRun] (build and report the request without sending it),
 // [WithDryRunHandler], [WithRequestHook], [WithAuth], tenant selection and
 // extra headers. See also [Client.Request] for endpoints without a typed

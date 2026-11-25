@@ -3,11 +3,12 @@
 package examplesetup
 
 import (
+	"io"
+	"log/slog"
+
 	"github.com/reubenmiller/go-c8y/v2/internal/pkg/fakeserver"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
-	"io"
-	"log/slog"
 )
 
 // New starts a fake server and returns a client for it. Call the returned
