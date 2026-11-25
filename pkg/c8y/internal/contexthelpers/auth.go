@@ -16,3 +16,17 @@ func IsNoAuth(ctx context.Context) bool {
 	v, _ := ctx.Value(noAuthKey{}).(bool)
 	return v
 }
+
+type explicitAuthTypeKey struct{}
+
+// WithExplicitAuthType marks a request as having its own authentication type, so
+// the client-level AuthType does not apply to it.
+func WithExplicitAuthType(ctx context.Context) context.Context {
+	return context.WithValue(ctx, explicitAuthTypeKey{}, true)
+}
+
+// IsExplicitAuthType reports whether the request chose its own authentication type.
+func IsExplicitAuthType(ctx context.Context) bool {
+	v, _ := ctx.Value(explicitAuthTypeKey{}).(bool)
+	return v
+}

@@ -108,6 +108,10 @@ func (t *DryRunTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	// outgoing headers.
 	if ctxhelpers.IsNoAuth(ctx) {
 		req.Header.Del("Authorization")
+	} else if req.Header.Get("Authorization") == emptyBasicAuthorization {
+		// SetAuth with no credentials resets the HTTP client's basic credentials
+		// to empty values (resty cannot unset them); do not send them.
+		req.Header.Del("Authorization")
 	}
 	// --noAccept: drop the Accept header so a POST/PUT returns the resource as
 	// stored rather than a forced representation. Stripped here (the transport)
@@ -380,8 +384,11 @@ func bearerAuthorization(token string) string {
 //     source is returned.
 //  4. The client's static credentials (Client.Auth) as SetAuth gives them to the
 //     HTTP client: the token when one is set (it overrides Basic on the wire),
-//     otherwise Basic from username and password. AuthType does not select
-//     between them here, as it does not for a request.
+//     otherwise Basic from username and password.
+//
+// The client's AuthType (AuthOptions.AuthType) applies as it does for a request:
+// Basic returns the Basic header of the username and password (no token), None
+// returns "".
 //
 // Renewal is limited to what the token source does (renew on expiry). The
 // client's retry-on-401 logic only runs for requests the client sends itself, so
@@ -398,13 +405,34 @@ func (c *Client) AuthorizationHeader(ctx context.Context) (string, error) {
 		if v := c.contextAuthorization(ctx, auth); v != "" {
 			return v, nil
 		}
-	} else if v, err := c.tokenSourceAuthorization(ctx); err != nil || v != "" {
-		return v, err
+	} else if !ctxhelpers.IsExplicitAuthType(ctx) {
+		switch c.authType() {
+		case authentication.AuthTypeNone:
+			return "", nil
+		case authentication.AuthTypeBasic:
+			c.clientMu.Lock()
+			auth := c.Auth
+			c.clientMu.Unlock()
+			return basicStaticAuthorization(auth), nil
+		}
+	}
+	if _, ok := authentication.AuthFromContext(ctx); !ok {
+		if v, err := c.tokenSourceAuthorization(ctx); err != nil || v != "" {
+			return v, err
+		}
 	}
 	c.clientMu.Lock()
 	auth := c.Auth
 	c.clientMu.Unlock()
 	return staticAuthorization(auth), nil
+}
+
+// basicStaticAuthorization is the Basic header for the client's credentials.
+func basicStaticAuthorization(auth authentication.AuthOptions) string {
+	if auth.Username != "" && auth.Password != "" {
+		return basicAuthorization(authentication.JoinTenantUser(auth.Tenant, auth.Username), auth.Password)
+	}
+	return ""
 }
 
 // staticAuthorization is the header the HTTP client sends for credentials set
@@ -422,13 +450,18 @@ func staticAuthorization(auth authentication.AuthOptions) string {
 // contextAuthorization mirrors middlewareContextAuthorization for credentials
 // carried in the context.
 func (c *Client) contextAuthorization(ctx context.Context, auth authentication.AuthOptions) string {
-	if auth.Token != "" {
-		return bearerAuthorization(auth.Token)
-	}
-	if auth.Username == "" || auth.Password == "" {
+	authType := effectiveAuthType(auth)
+	if authType == authentication.AuthTypeNone {
 		return ""
 	}
-	if !ctxhelpers.IsSkipContextTokenExchange(ctx) {
+	hasBasic := auth.Username != "" && auth.Password != ""
+	if auth.Token != "" && !(authType == authentication.AuthTypeBasic && hasBasic) {
+		return bearerAuthorization(auth.Token)
+	}
+	if !hasBasic {
+		return ""
+	}
+	if authType != authentication.AuthTypeBasic && !ctxhelpers.IsSkipContextTokenExchange(ctx) {
 		if token := c.contextTokenFor(auth); token != "" {
 			return bearerAuthorization(token)
 		}
@@ -438,10 +471,11 @@ func (c *Client) contextAuthorization(ctx context.Context, auth authentication.A
 
 // tokenSourceAuthorization mirrors tokenSourceMiddleware.
 func (c *Client) tokenSourceAuthorization(ctx context.Context) (string, error) {
-	if c.tokenSource == nil || ctxhelpers.IsSkipTokenSource(ctx) || ctxhelpers.IsDryRun(ctx) {
+	source := c.currentTokenSource()
+	if source == nil || ctxhelpers.IsSkipTokenSource(ctx) || ctxhelpers.IsDryRun(ctx) {
 		return "", nil
 	}
-	tok, err := c.tokenSource.Token()
+	tok, err := source.Token()
 	if err != nil {
 		return "", fmt.Errorf("token source: %w", err)
 	}
@@ -486,13 +520,19 @@ func middlewareContextAuthorization(c *Client) resty.RequestMiddleware {
 		}
 		// Clear any client-level token so the per-request credentials win
 		r.SetAuthToken("")
+		authType := effectiveAuthType(auth)
+		if authType == authentication.AuthTypeNone {
+			r.SetContext(ctxhelpers.WithNoAuth(r.Context()))
+			return nil
+		}
+		hasBasic := auth.Username != "" && auth.Password != ""
 		switch {
-		case auth.Token != "":
+		case auth.Token != "" && !(authType == authentication.AuthTypeBasic && hasBasic):
 			r.SetAuthScheme("Bearer")
 			r.SetAuthToken(auth.Token)
-		case auth.Username != "" && auth.Password != "":
+		case hasBasic:
 			token := ""
-			if !ctxhelpers.IsSkipContextTokenExchange(r.Context()) {
+			if authType != authentication.AuthTypeBasic && !ctxhelpers.IsSkipContextTokenExchange(r.Context()) {
 				token = c.contextTokenFor(auth)
 			}
 			if token != "" {
@@ -511,6 +551,13 @@ func middlewareContextAuthorization(c *Client) resty.RequestMiddleware {
 	}
 }
 
+// emptyBasicAuthorization is the header resty builds from an empty username and
+// password, which is how setAuth clears the HTTP client's basic credentials.
+const emptyBasicAuthorization = "Basic Og=="
+
+// setAuth makes the HTTP client send exactly the credentials in auth: values the
+// options leave empty are cleared, so a token or basic credentials of an earlier
+// call are not sent any more.
 func setAuth(c *resty.Client, auth authentication.AuthOptions) {
 	if auth.CertificateKey != "" && auth.Certificate != "" {
 		if _, err := os.Stat(auth.CertificateKey); err == nil {
@@ -519,11 +566,50 @@ func setAuth(c *resty.Client, auth authentication.AuthOptions) {
 			c.SetCertificateFromString(auth.Certificate, auth.CertificateKey)
 		}
 	}
-	if auth.Token != "" {
-		c.SetAuthToken(auth.Token)
-	}
+	c.SetAuthToken(auth.Token)
 	if auth.Username != "" && auth.Password != "" {
 		c.SetBasicAuth(authentication.JoinTenantUser(auth.Tenant, auth.Username), auth.Password)
+	} else {
+		c.SetBasicAuth("", "")
+	}
+}
+
+// effectiveAuthType is the authentication type a request without its own type
+// uses: the first entry of auth.AuthType which is not AuthTypeUnset, otherwise
+// AuthTypeUnset (use whatever credentials are present).
+func effectiveAuthType(auth authentication.AuthOptions) authentication.AuthType {
+	for _, t := range auth.AuthType {
+		if t != authentication.AuthTypeUnset {
+			return t
+		}
+	}
+	return authentication.AuthTypeUnset
+}
+
+// middlewareAuthType applies the client's AuthType to requests which did not
+// choose a type themselves (see TryRequest.WithAuthType). It must run before the
+// token source middleware: Basic and None skip the token source and drop the
+// bearer token so that only basic credentials (or none) are sent, None also
+// strips the header at the transport. Requests with per-request credentials
+// (WithAuth) are left alone.
+func middlewareAuthType(c *Client) resty.RequestMiddleware {
+	return func(_ *resty.Client, r *resty.Request) error {
+		ctx := r.Context()
+		if ctxhelpers.IsExplicitAuthType(ctx) {
+			return nil
+		}
+		if _, ok := authentication.AuthFromContext(ctx); ok {
+			return nil
+		}
+		switch c.authType() {
+		case authentication.AuthTypeBasic:
+			r.SetAuthToken("")
+			r.SetContext(ctxhelpers.WithSkipTokenSource(ctx))
+		case authentication.AuthTypeNone:
+			r.SetAuthToken("")
+			r.SetContext(ctxhelpers.WithNoAuth(ctxhelpers.WithSkipTokenSource(ctx)))
+		}
+		return nil
 	}
 }
 

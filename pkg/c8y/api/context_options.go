@@ -85,6 +85,10 @@ func IsDeferredExecution(ctx context.Context) bool {
 // WithAuth returns a context that carries per-request credentials. API calls made
 // with the returned context use these credentials instead of the client-level
 // credentials, so one client can act on behalf of multiple tenants.
+//
+// auth.AuthType selects what is sent when auth has more than one kind of
+// credentials: AuthTypeBasic sends Basic (no token, no token exchange),
+// AuthTypeNone sends no Authorization header.
 func WithAuth(ctx context.Context, auth authentication.AuthOptions) context.Context {
 	return authentication.WithAuth(ctx, auth)
 }

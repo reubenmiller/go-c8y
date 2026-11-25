@@ -7,6 +7,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 	"net"
 	"strings"
 	"time"
@@ -23,6 +24,9 @@ import (
 // Auth.CertificateTransport. opts may be nil (token refresh): then a TFA
 // challenge cannot be answered and is returned as an error.
 func (c *Client) certificateLogin(ctx context.Context, opts *LoginOptions) (string, time.Time, error) {
+	// The exchange must not go through the token source, which would start
+	// another exchange (the token source is what calls this when it is empty).
+	ctx = ctxhelpers.WithSkipTokenSource(ctx)
 	cert, err := loadClientKeyPair(c.Auth.Certificate, c.Auth.CertificateKey)
 	if err != nil {
 		return "", time.Time{}, fmt.Errorf("certificate login: load certificate: %w", err)
