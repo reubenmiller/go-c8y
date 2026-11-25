@@ -79,12 +79,20 @@ func (r *TryRequest) ApplyContextRequestOptions(ctx context.Context) *TryRequest
 	for k, v := range ctxhelpers.GetExtraHeaders(ctx) {
 		r.Request.SetHeader(k, v)
 	}
-	for k, values := range ctxhelpers.GetExtraQueryParams(ctx) {
+	SetExtraQueryParams(r.Request, ctxhelpers.GetExtraQueryParams(ctx))
+	return r
+}
+
+// SetExtraQueryParams sets custom query parameters on a request: each key's
+// values replace the request's own values for that key, and every value of a
+// repeated key is kept.
+func SetExtraQueryParams(req *resty.Request, params url.Values) {
+	for k, values := range params {
+		req.QueryParams.Del(k)
 		for _, v := range values {
-			r.Request.SetQueryParam(k, v)
+			req.QueryParams.Add(k, v)
 		}
 	}
-	return r
 }
 
 // WithAuthType forces a specific authentication strategy for this request,
