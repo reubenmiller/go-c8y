@@ -446,12 +446,23 @@ func (m *Microservice) TestClientConnection() error {
 
 // SetMicroserviceHost overrides the host used for outbound requests.
 // Useful when the microservice is not deployed in Cumulocity (e.g. local dev).
+//
+// Deprecated: use [Microservice.SetMicroserviceHostE]. This logs an invalid
+// host and leaves the current host unchanged.
 func (m *Microservice) SetMicroserviceHost(host string) {
-	_, err := url.Parse(host)
-	if err != nil {
-		panic(fmt.Errorf("invalid microservice host: %s", err))
+	if err := m.SetMicroserviceHostE(host); err != nil {
+		slog.Error("Could not set microservice host", "err", err)
+	}
+}
+
+// SetMicroserviceHostE overrides the host used for outbound requests and
+// returns an error, leaving the host unchanged, when host is not a valid URL.
+func (m *Microservice) SetMicroserviceHostE(host string) error {
+	if _, err := url.Parse(host); err != nil {
+		return fmt.Errorf("invalid microservice host: %w", err)
 	}
 	m.MicroserviceHost = host
+	return nil
 }
 
 // WithBootstrapUserCredentials returns the bootstrap user credentials stored on
@@ -466,10 +477,9 @@ func (m *Microservice) WithBootstrapUserCredentials() model.ServiceUser {
 
 // WithServiceUserCredentials returns the service-user credentials for the given
 // tenant. If no tenant is specified the first available service user is returned.
+// Only the first tenant argument is used; further arguments are ignored (this
+// used to panic).
 func (m *Microservice) WithServiceUserCredentials(tenant ...string) model.ServiceUser {
-	if len(tenant) > 1 {
-		panic("WithServiceUserCredentials accepts at most one tenant argument")
-	}
 	targetTenant := ""
 	if len(tenant) > 0 {
 		targetTenant = tenant[0]

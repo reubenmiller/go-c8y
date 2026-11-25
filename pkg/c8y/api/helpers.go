@@ -2,7 +2,9 @@ package api
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
+	"net/http"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 )
@@ -11,8 +13,40 @@ func ErrHasStatus(err error, code ...int) bool {
 	return core.ErrHasStatus(err, code...)
 }
 
+// IsNotFound reports whether err is a 404 Not Found error, including the "no
+// result" error of the op package.
 func IsNotFound(err error) bool {
 	return core.IsNotFound(err)
+}
+
+// IsUnauthorized reports whether err is a 401 Unauthorized error.
+func IsUnauthorized(err error) bool {
+	return core.ErrHasStatus(err, http.StatusUnauthorized)
+}
+
+// IsForbidden reports whether err is a 403 Forbidden error.
+func IsForbidden(err error) bool {
+	return core.ErrHasStatus(err, http.StatusForbidden)
+}
+
+// IsConflict reports whether err is a 409 Conflict error.
+func IsConflict(err error) bool {
+	return core.ErrHasStatus(err, http.StatusConflict)
+}
+
+// StatusCode returns the HTTP status code carried by err (or an error it
+// wraps). The second result is false when err has no HTTP status, for example
+// a transport failure or a validation error.
+func StatusCode(err error) (int, bool) {
+	var e *core.Error
+	if errors.As(err, &e) && e.Code >= 100 && e.Code < 600 {
+		return e.Code, true
+	}
+	var v core.Error
+	if errors.As(err, &v) && v.Code >= 100 && v.Code < 600 {
+		return v.Code, true
+	}
+	return 0, false
 }
 
 type Error = core.Error

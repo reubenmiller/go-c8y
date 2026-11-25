@@ -11,7 +11,6 @@ import (
 	"math"
 	"net/http"
 	"net/url"
-	"os"
 	"sync"
 	"time"
 
@@ -67,6 +66,7 @@ func (o *ConnectionOptions) GetPingDuration() time.Duration {
 type Notification2Client struct {
 	mtx               sync.RWMutex
 	host              string
+	initErr           error // set when the client was built with an invalid host
 	url               *url.URL
 	ctx               context.Context
 	cancel            context.CancelFunc
@@ -88,6 +88,9 @@ type Notification2Client struct {
 }
 
 // ErrClientClosed is returned when sending on a closed client.
+// ErrMissingDialer is returned by Connect when the client has no websocket dialer.
+var ErrMissingDialer = errors.New("notification2: missing websocket dialer")
+
 var ErrClientClosed = errors.New("notification2: client is closed")
 
 type Subscription struct {
@@ -122,22 +125,47 @@ func (m *Message) JSON() gjson.Result {
 	return gjson.ParseBytes(m.Payload)
 }
 
-func getEndpoint(host string, subscription Subscription) *url.URL {
+func getEndpoint(host string, subscription Subscription) (*url.URL, error) {
 	c8yHost, err := wsurl.GetWebsocketURL(host, "notification2/consumer/")
 	if err != nil {
-		slog.Error("Invalid url", "err", err)
-		os.Exit(1)
+		return nil, fmt.Errorf("invalid notification2 host %q: %w", host, err)
 	}
 	c8yHost.RawQuery = "token=" + subscription.Token
 
 	if subscription.Consumer != "" {
 		c8yHost.RawQuery += "&consumer=" + subscription.Consumer
 	}
-	return c8yHost
+	return c8yHost, nil
 }
 
-// NewNotification2Client initialises a new notification2 client used to subscribe to realtime notifications from Cumulocity
+// NewNotification2Client initialises a new notification2 client.
+//
+// Deprecated: use [NewNotification2ClientE]. When host is invalid this still
+// returns a client (it never exits the process), but [Notification2Client.Connect]
+// then returns the error.
 func NewNotification2Client(host string, wsDialer *websocket.Dialer, subscription Subscription, options ConnectionOptions) *Notification2Client {
+	client, err := NewNotification2ClientE(host, wsDialer, subscription, options)
+	if err != nil {
+		return &Notification2Client{
+			host:              host,
+			url:               &url.URL{},
+			initErr:           err,
+			Subscription:      subscription,
+			ConnectionOptions: options,
+			done:              make(chan struct{}),
+			hub:               NewHub(),
+		}
+	}
+	return client
+}
+
+// NewNotification2ClientE initialises a new notification2 client used to subscribe to
+// realtime notifications from Cumulocity. It returns an error when host is invalid.
+func NewNotification2ClientE(host string, wsDialer *websocket.Dialer, subscription Subscription, options ConnectionOptions) (*Notification2Client, error) {
+	endpoint, err := getEndpoint(host, subscription)
+	if err != nil {
+		return nil, err
+	}
 	if wsDialer == nil {
 		// Default client ignores self signed certificates (to enable compatibility to the edge which uses self signed certs)
 		wsDialer = &websocket.Dialer{
@@ -152,7 +180,7 @@ func NewNotification2Client(host string, wsDialer *websocket.Dialer, subscriptio
 
 	client := &Notification2Client{
 		host:              host,
-		url:               getEndpoint(host, subscription),
+		url:               endpoint,
 		dialer:            wsDialer,
 		messages:          make(chan *Message, 100),
 		Subscription:      subscription,
@@ -166,12 +194,15 @@ func NewNotification2Client(host string, wsDialer *websocket.Dialer, subscriptio
 
 	go client.hub.Run(client.done)
 	go client.writeHandler()
-	return client
+	return client, nil
 }
 
 // Connect performs a handshake with the server and will repeatedly initiate a
 // websocket connection until `Close` is called on the client.
 func (c *Notification2Client) Connect() error {
+	if c.initErr != nil {
+		return c.initErr
+	}
 	if !c.IsConnected() {
 		err := c.connect()
 		if err != nil {
@@ -186,7 +217,11 @@ func (c *Notification2Client) Endpoint() string {
 }
 
 func (c *Notification2Client) URL(hideSensitive bool) string {
-	wsURL := getEndpoint(c.url.String(), c.Subscription).String()
+	endpoint, err := getEndpoint(c.url.String(), c.Subscription)
+	if err != nil {
+		return c.url.String()
+	}
+	wsURL := endpoint.String()
 	if hideSensitive {
 		if u, err := url.Parse(wsURL); err == nil {
 			q := u.Query()
@@ -312,8 +347,11 @@ func (c *Notification2Client) reconnect() error {
 
 // StartWebsocket opens a websocket to cumulocity
 func (c *Notification2Client) connect() error {
+	if c.initErr != nil {
+		return c.initErr
+	}
 	if c.dialer == nil {
-		panic("Missing dialer for realtime client")
+		return ErrMissingDialer
 	}
 
 	// This may be overkill, but is in place to prevent unexpected errors

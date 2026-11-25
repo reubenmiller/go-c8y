@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
@@ -40,9 +41,18 @@ func coupleAPIErrors(r *resty.Response, err error) (*resty.Response, error) {
 			return nil, core.NewError(err)
 		}
 
+		// The body is not always JSON (HTML pages from proxies, plain text,
+		// empty bodies). The status code is always kept so that errors.Is
+		// against the api.Err* sentinels keeps working.
 		var apiError core.APIError
 		if err := json.Unmarshal(buf, &apiError); err != nil {
-			return nil, core.NewError(err)
+			apiError = core.APIError{}
+			raw := strings.TrimSpace(string(buf))
+			msg := http.StatusText(r.StatusCode())
+			if raw != "" && !strings.HasPrefix(raw, "<") {
+				msg = raw
+			}
+			apiError.Message = msg
 		}
 
 		httpErr := &core.Error{

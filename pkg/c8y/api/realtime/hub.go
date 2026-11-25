@@ -19,6 +19,10 @@ type Hub struct {
 	// Return a channel of channels
 	getChannels chan chan string
 
+	// Closes the out channel of every subscription and removes them.
+	// Used when the client fails permanently so that subscribers are released.
+	closeAll chan struct{}
+
 	channels sync.Map
 }
 
@@ -30,6 +34,7 @@ func NewHub() *Hub {
 		clients:    make(map[*subscription]bool),
 
 		getChannels: make(chan chan string),
+		closeAll:    make(chan struct{}),
 	}
 }
 
@@ -57,6 +62,15 @@ func (h *Hub) Run() {
 					delete(h.clients, client)
 				}
 			}
+		case <-h.closeAll:
+			for client := range h.clients {
+				close(client.out)
+				delete(h.clients, client)
+			}
+			h.channels.Range(func(key, _ any) bool {
+				h.channels.Delete(key)
+				return true
+			})
 		case message := <-h.broadcast:
 			for client := range h.clients {
 				if ((client.isWildcard && client.glob.MatchString(message.Channel)) || client.glob.String() == message.Channel) && !client.disabled {

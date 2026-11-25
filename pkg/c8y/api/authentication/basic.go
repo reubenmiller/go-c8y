@@ -28,7 +28,7 @@ func DecodeBasicAuth(auth string, host string) (*BasicAuthCredentials, error) {
 	parts := strings.SplitN(dataStr, ":", 2)
 
 	if len(parts) != 2 {
-		panic("Invalid basic 64 encoding in Authorization header")
+		return nil, errors.New("invalid basic auth encoding in Authorization header: expected user:password")
 	}
 
 	tenant := ""

@@ -83,7 +83,9 @@ import (
 	"resty.dev/v3"
 )
 
-var ErrNotFound = errors.New("item: not found")
+// ErrNotFound matches any 404 error with errors.Is: a real 404 response, the
+// "no result" error of the op package (op.ErrNotFound) and core.ErrNotFound.
+var ErrNotFound = Error{Code: 404}
 
 // ErrNoLoginMethodAvailable is returned by LoginWithOptions when a Preference
 // list is given but no method in the list could be used (all were either missing

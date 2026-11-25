@@ -127,11 +127,13 @@ func (d *MeasurementSeriesGroup) UnmarshalJSON(data []byte) error {
 
 	// Get each series values
 	var allSeries []MeasurementSeriesValueGroup
+	var parseErr error
 	c8ySeries.Get("values").ForEach(func(key, values gjson.Result) bool {
 		timestamp, err := time.Parse(time.RFC3339, key.Str)
 
 		if err != nil {
-			panic(fmt.Sprintf("Invalid timestamp: %s", key.Str))
+			parseErr = fmt.Errorf("invalid timestamp %q: %w", key.Str, err)
+			return false
 		}
 
 		seriesValues := &MeasurementSeriesValueGroup{
@@ -151,6 +153,10 @@ func (d *MeasurementSeriesGroup) UnmarshalJSON(data []byte) error {
 		allSeries = append(allSeries, *seriesValues)
 		return true
 	})
+
+	if parseErr != nil {
+		return parseErr
+	}
 
 	// Store the first and last timestamps
 	if len(allSeries) > 0 {
@@ -186,6 +192,7 @@ func (d *MeasurementSeriesAggregateGroup) UnmarshalJSON(data []byte) error {
 
 	// Get each series values
 	var allSeries []MeasurementSeriesAggregateValueGroup
+	var parseErr error
 	c8ySeries.Get("values").ForEach(func(key, values gjson.Result) bool {
 
 		slog.Info("Series", "key", key, "values", values)
@@ -193,7 +200,8 @@ func (d *MeasurementSeriesAggregateGroup) UnmarshalJSON(data []byte) error {
 		timestamp, err := time.Parse(time.RFC3339, key.Str)
 
 		if err != nil {
-			panic(fmt.Sprintf("Invalid timestamp: %s", key.Str))
+			parseErr = fmt.Errorf("invalid timestamp %q: %w", key.Str, err)
+			return false
 		}
 
 		seriesValues := &MeasurementSeriesAggregateValueGroup{
@@ -217,6 +225,10 @@ func (d *MeasurementSeriesAggregateGroup) UnmarshalJSON(data []byte) error {
 		allSeries = append(allSeries, *seriesValues)
 		return true
 	})
+
+	if parseErr != nil {
+		return parseErr
+	}
 
 	// Store the first and last timestamps
 	if len(allSeries) > 0 {
