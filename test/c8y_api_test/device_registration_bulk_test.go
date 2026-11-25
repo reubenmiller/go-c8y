@@ -34,7 +34,7 @@ func Test_Registration_CreateBulk(t *testing.T) {
 	var csv strings.Builder
 	csv.WriteString("ID\tCREDENTIALS\tNAME\tTYPE\tIDTYPE\n")
 	for _, id := range ids {
-		fmt.Fprintf(&csv, "%s\t%s\t%s\tc8y_Test\tc8y_Serial\n", id, "Pass-"+testingutils.RandomString(16), id)
+		fmt.Fprintf(&csv, "%s\t%s\t%s\tc8y_Test\tc8y_Serial\n", id, "Pass-7x!"+testingutils.RandomString(16), id)
 	}
 
 	result := client.Devices.Registration.CreateBulk(ctx, registration.UploadFileOptions{
@@ -43,7 +43,11 @@ func Test_Registration_CreateBulk(t *testing.T) {
 	})
 	require.NoError(t, result.Err)
 	assert.EqualValues(t, 2, result.Data.Total())
-	assert.EqualValues(t, 0, result.Data.TotalFailed())
+	if !assert.EqualValues(t, 0, result.Data.TotalFailed()) {
+		for _, failure := range result.Data.FailedCreationList() {
+			t.Logf("row failed: %s", failure.FailureReason())
+		}
+	}
 
 	for _, id := range ids {
 		ident := client.Identity.Get(ctx, identity.IdentityOptions{ExternalID: id, Type: "c8y_Serial"})
