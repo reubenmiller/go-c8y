@@ -132,6 +132,9 @@ v2 is a new module, `github.com/reubenmiller/go-c8y/v2`. Entries marked **Breaki
 * Fixed `zipUtilities.ZipDirectoryContents`, `ZipDirectory`, and `ZipFile`: zip entry names now always use forward slashes (previously backslashes on Windows) and never start with "/", and errors from reading the source are returned instead of being ignored.
 * Fixed `Applications.ListByOwner`, which called `/application/applicationsByTenant/{tenantId}` instead of `/application/applicationsByOwner/{tenantId}`.
 * Fixed `zipUtilities.UnzipFile`, which extracted every entry except the given `names`; it now extracts only the named entries (case-insensitive), and everything when `names` is empty.
+* Added `RemoteAccess.Configurations.Detect`, which selects a device's passthrough configuration for a connection from an id, a name or a wildcard pattern, or automatically when none is given (the only one, else the one on port 22, else the first with "ssh" in its name).
+* Fixed the remote access client's websocket handshake with basic auth, which sent the credentials without the tenant. It now sends the same `Authorization` header as a request of the client (`Client.AuthorizationHeader`), including a renewed token from the token source.
+* The fake server (`c8y-fakeserver`) serves the remote access websocket of a stored configuration, with an echo server as the device, so local proxies can be tested end to end.
 
 ### Tooling and documentation
 

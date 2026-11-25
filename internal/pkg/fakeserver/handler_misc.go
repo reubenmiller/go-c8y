@@ -533,6 +533,10 @@ func parseBulkCSV(content []byte) ([]map[string]string, error) {
 
 // handleRemoteAccess routes /service/remoteaccess/ requests.
 func (fs *FakeServer) handleRemoteAccess(w http.ResponseWriter, r *http.Request) {
+	if strings.HasPrefix(r.URL.Path, "/service/remoteaccess/client/") {
+		fs.handleRemoteAccessClient(w, r)
+		return
+	}
 	// /service/remoteaccess/devices/{moId}/configurations[/{id}]
 	segments := extractPathSegments(r.URL.Path, "/service/remoteaccess/devices")
 	if len(segments) < 2 {
@@ -592,5 +596,35 @@ func (fs *FakeServer) handleRemoteAccess(w http.ResponseWriter, r *http.Request)
 		writeNoContent(w)
 	default:
 		writeError(w, http.StatusMethodNotAllowed, "general/methodNotAllowed", "Method not allowed")
+	}
+}
+
+// handleRemoteAccessClient serves the remote access websocket
+// (/service/remoteaccess/client/{moId}/configurations/{id}) of a stored
+// configuration. The device side is an echo server: every message is sent
+// back unchanged, so a local proxy can be tested end to end.
+func (fs *FakeServer) handleRemoteAccessClient(w http.ResponseWriter, r *http.Request) {
+	segments := extractPathSegments(r.URL.Path, "/service/remoteaccess/client")
+	if len(segments) != 3 || segments[1] != "configurations" {
+		writeNotFound(w, "remoteaccess")
+		return
+	}
+	if _, ok := fs.RemoteAccessConfigs.Get(segments[2]); !ok {
+		writeNotFound(w, "remoteaccess/configuration")
+		return
+	}
+	conn, err := wsUpgrader.Upgrade(w, r, nil)
+	if err != nil {
+		return
+	}
+	defer conn.Close()
+	for {
+		messageType, data, err := conn.ReadMessage()
+		if err != nil {
+			return
+		}
+		if err := conn.WriteMessage(messageType, data); err != nil {
+			return
+		}
 	}
 }

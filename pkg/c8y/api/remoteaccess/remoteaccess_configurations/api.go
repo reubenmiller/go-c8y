@@ -6,11 +6,13 @@ import (
 	"strings"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/source"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
+	"github.com/reubenmiller/go-c8y/v2/pkg/matcher"
 	"resty.dev/v3"
 )
 
@@ -105,6 +107,80 @@ func (s *Service) ResolveID(ctx context.Context, managedObjectID, ref string) (s
 		}
 	}
 	return "", fmt.Errorf("remote access configuration not found: name=%s", name)
+}
+
+// DetectOptions selects the passthrough configuration of a device for a
+// remote access connection (see [Service.Detect]).
+type DetectOptions struct {
+	ManagedObjectID string
+	// Name is a configuration id, a name (case-insensitive) or a name pattern
+	// with * wildcards. Leave it empty to select a configuration automatically.
+	Name string
+}
+
+// Detect returns the passthrough configuration of a device to connect to, as
+// the local proxy and the ssh client need one.
+//
+// With a Name, it returns the configuration with that id, else the first
+// passthrough configuration with that name, else the first whose name matches
+// the Name as a wildcard pattern. Without a Name, it returns the only
+// passthrough configuration, else the first on port 22, else the first with
+// "ssh" in its name, else the first one. The managedObjectID must already be
+// a concrete id.
+func (s *Service) Detect(ctx context.Context, opt DetectOptions) (jsonmodels.RemoteAccessConfiguration, error) {
+	if source.IsID(opt.Name) {
+		res := s.Get(ctx, GetOptions{ManagedObjectID: opt.ManagedObjectID, ConfigurationID: opt.Name})
+		if res.Err == nil {
+			return res.Data, nil
+		}
+		// A name can look like an id, so match it by name below
+	}
+
+	res := s.List(ctx, ListOptions{ManagedObjectID: opt.ManagedObjectID})
+	if res.Err != nil {
+		return jsonmodels.RemoteAccessConfiguration{}, res.Err
+	}
+	passthrough := make([]jsonmodels.RemoteAccessConfiguration, 0)
+	for cfg, err := range res.Items() {
+		if err != nil {
+			return jsonmodels.RemoteAccessConfiguration{}, err
+		}
+		if strings.EqualFold(cfg.Protocol(), string(model.RemoteAccessProtocolPassthrough)) {
+			passthrough = append(passthrough, cfg)
+		}
+	}
+
+	if opt.Name != "" {
+		for _, cfg := range passthrough {
+			if strings.EqualFold(cfg.Name(), opt.Name) {
+				return cfg, nil
+			}
+		}
+		for _, cfg := range passthrough {
+			if ok, _ := matcher.MatchWithWildcards(cfg.Name(), opt.Name); ok {
+				return cfg, nil
+			}
+		}
+		return jsonmodels.RemoteAccessConfiguration{}, fmt.Errorf("remote access passthrough configuration not found: name=%s", opt.Name)
+	}
+
+	switch len(passthrough) {
+	case 0:
+		return jsonmodels.RemoteAccessConfiguration{}, fmt.Errorf("device has no remote access passthrough configuration: id=%s", opt.ManagedObjectID)
+	case 1:
+		return passthrough[0], nil
+	}
+	for _, cfg := range passthrough {
+		if cfg.Port() == 22 {
+			return cfg, nil
+		}
+	}
+	for _, cfg := range passthrough {
+		if strings.Contains(strings.ToLower(cfg.Name()), "ssh") {
+			return cfg, nil
+		}
+	}
+	return passthrough[0], nil
 }
 
 type CreateOptions struct {
