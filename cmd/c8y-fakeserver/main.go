@@ -5,7 +5,7 @@
 //
 // Usage:
 //
-//	c8y-fakeserver --addr 127.0.0.1:8111
+//	c8y-fakeserver --addr 127.0.0.1:8111 [--tls]
 //
 // It prints the listening URL (the line "C8Y_HOST=<url>") and blocks until
 // interrupted. Credentials: any non-empty basic auth is accepted for normal
@@ -26,9 +26,14 @@ import (
 
 func main() {
 	addr := flag.String("addr", "127.0.0.1:0", "address to listen on (host:port); port 0 picks a free port")
+	useTLS := flag.Bool("tls", false, "serve https with a self-signed certificate (like a real tenant); clients must accept it, e.g. C8Y_SETTINGS_DEFAULTS_INSECURE=true")
 	flag.Parse()
 
-	fs, err := fakeserver.NewServer(*addr)
+	newServer := fakeserver.NewServer
+	if *useTLS {
+		newServer = fakeserver.NewTLSServer
+	}
+	fs, err := newServer(*addr)
 	if err != nil {
 		log.Fatalf("failed to start fake server: %v", err)
 	}

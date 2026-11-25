@@ -148,10 +148,11 @@ func Test_WatchSubscriptions_Lifecycle(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "p1-new", got.Password)
 
-	before := lp.subscriptions.Load()
+	// The unsubscribed tenant is forgotten. Whether a miss refreshes is checked
+	// by Test_WatchSubscriptions_NoRefreshOnMiss: the watcher polls every 20ms
+	// here, so counting the requests around the lookup would be racy.
 	_, ok = ms.GetServiceUser("t2")
 	assert.False(t, ok)
-	assert.Equal(t, before, lp.subscriptions.Load(), "no refresh on a miss while watching")
 
 	cancel()
 	select {
@@ -163,6 +164,31 @@ func Test_WatchSubscriptions_Lifecycle(t *testing.T) {
 	after := lp.subscriptions.Load()
 	time.Sleep(60 * time.Millisecond)
 	assert.Equal(t, after, lp.subscriptions.Load(), "no requests after cancellation")
+}
+
+func Test_WatchSubscriptions_NoRefreshOnMiss(t *testing.T) {
+	lp := newLifecyclePlatform(t, userT1)
+	ms := newLifecycleMicroservice(lp)
+	rec := &recorder{}
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	// The interval is so long that only the initial poll happens, so the
+	// request count can only change if the lookup itself refreshes
+	go func() { done <- ms.WatchSubscriptions(ctx, rec.options(time.Hour)) }()
+
+	require.Eventually(t, func() bool { return len(rec.snapshot()) >= 1 }, 2*time.Second, 5*time.Millisecond)
+	before := lp.subscriptions.Load()
+	_, ok := ms.GetServiceUser("t2")
+	assert.False(t, ok)
+	assert.Equal(t, before, lp.subscriptions.Load(), "no refresh on a miss while watching")
+
+	cancel()
+	select {
+	case err := <-done:
+		assert.NoError(t, err)
+	case <-time.After(time.Second):
+		t.Fatal("WatchSubscriptions did not return after cancellation")
+	}
 }
 
 func Test_WatchSubscriptions_CallbackErrorDoesNotStop(t *testing.T) {

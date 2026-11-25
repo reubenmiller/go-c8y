@@ -5,6 +5,7 @@ import (
 	"io"
 	"maps"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -32,6 +33,7 @@ func (fs *FakeServer) handleBinaries(w http.ResponseWriter, r *http.Request) {
 					contentType = ct
 				}
 				w.Header().Set("Content-Type", contentType)
+				setContentDisposition(w, getJSONString(doc, "name"))
 				w.WriteHeader(http.StatusOK)
 				_, _ = w.Write(data)
 			} else {
@@ -155,4 +157,13 @@ func (fs *FakeServer) handleBinaries(w http.ResponseWriter, r *http.Request) {
 	default:
 		writeError(w, http.StatusMethodNotAllowed, "general/methodNotAllowed", "Method not allowed")
 	}
+}
+
+// setContentDisposition sets the Content-Disposition header which Cumulocity
+// adds to binary downloads, so clients can derive the file name.
+func setContentDisposition(w http.ResponseWriter, name string) {
+	if name == "" {
+		return
+	}
+	w.Header().Set("Content-Disposition", "attachment; filename="+strconv.Quote(name))
 }

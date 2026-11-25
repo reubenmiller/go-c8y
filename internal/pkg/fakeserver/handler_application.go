@@ -1,9 +1,12 @@
 package fakeserver
 
 import (
+	"archive/zip"
+	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -18,6 +21,64 @@ func filterByOwnerTenant(items []json.RawMessage, tenant string) []json.RawMessa
 		}
 	}
 	return out
+}
+
+// filterItemsBy keeps the items for which keep returns true.
+func filterItemsBy(items []json.RawMessage, keep func(json.RawMessage) bool) []json.RawMessage {
+	out := []json.RawMessage{}
+	for _, item := range items {
+		if keep(item) {
+			out = append(out, item)
+		}
+	}
+	return out
+}
+
+// applicationVersions returns the uploaded versions of the application.
+func (fs *FakeServer) applicationVersions(appID string) []json.RawMessage {
+	var versions []json.RawMessage
+	for _, v := range fs.AppVersions.List() {
+		if getJSONString(v, "applicationId") == appID {
+			versions = append(versions, v)
+		}
+	}
+	return versions
+}
+
+// hasApplicationVersions reports whether the application has versions: uploaded
+// ones, or an applicationVersions array given when the application was created.
+func (fs *FakeServer) hasApplicationVersions(app json.RawMessage) bool {
+	if len(fs.applicationVersions(getJSONString(app, "id"))) > 0 {
+		return true
+	}
+	var m struct {
+		Versions []json.RawMessage `json:"applicationVersions"`
+	}
+	return json.Unmarshal(app, &m) == nil && len(m.Versions) > 0
+}
+
+// withApplicationVersions adds the applicationVersions (version, tags and
+// binary id of each version) to an application which has versions.
+func (fs *FakeServer) withApplicationVersions(app json.RawMessage) json.RawMessage {
+	versions := fs.applicationVersions(getJSONString(app, "id"))
+	if len(versions) == 0 {
+		return app
+	}
+	summaries := make([]map[string]any, 0, len(versions))
+	for _, v := range versions {
+		summary := map[string]any{
+			"version": getJSONString(v, "version"),
+			"tags":    getJSONStrings(v, "tags"),
+		}
+		if tags, _ := summary["tags"].([]string); tags == nil {
+			summary["tags"] = []string{}
+		}
+		if binaryID := getJSONString(v, "binaryId"); binaryID != "" {
+			summary["binaryId"] = binaryID
+		}
+		summaries = append(summaries, summary)
+	}
+	return mergeFields(app, map[string]any{"applicationVersions": summaries})
 }
 
 // handleApplications routes /application/ requests.
@@ -75,6 +136,24 @@ func (fs *FakeServer) handleApplications(w http.ResponseWriter, r *http.Request)
 			items := FilterItems(r, fs.Applications.List())
 			if owner := r.URL.Query().Get("owner"); owner != "" {
 				items = filterByOwnerTenant(items, owner)
+			}
+			if availability := r.URL.Query().Get("availability"); availability != "" {
+				items = filterItemsBy(items, func(item json.RawMessage) bool {
+					return getJSONString(item, "availability") == availability
+				})
+			}
+			if hasVersions := r.URL.Query().Get("hasVersions"); hasVersions != "" {
+				// Embeds the versions and only returns the applications which have
+				// (true) or do not have (false) a version
+				withVersions := hasVersions == "true"
+				items = filterItemsBy(items, func(item json.RawMessage) bool {
+					return fs.hasApplicationVersions(item) == withVersions
+				})
+				embedded := make([]json.RawMessage, len(items))
+				for i, item := range items {
+					embedded[i] = fs.withApplicationVersions(item)
+				}
+				items = embedded
 			}
 			page := Paginate(r, items)
 			writeJSON(w, http.StatusOK, BuildCollectionResponse(r, fs.URL(), "applications", page))
@@ -142,7 +221,7 @@ func (fs *FakeServer) handleApplications(w http.ResponseWriter, r *http.Request)
 			writeNotFound(w, "application")
 			return
 		}
-		writeJSON(w, http.StatusOK, doc)
+		writeJSON(w, http.StatusOK, fs.withApplicationVersions(doc))
 
 	case http.MethodPut:
 		body, err := readBody(r)
@@ -208,9 +287,12 @@ func (fs *FakeServer) handleAppVersions(w http.ResponseWriter, r *http.Request, 
 		switch r.Method {
 		case http.MethodGet:
 			// /application/applications/{id}/versions?version=...|tag=...
+			// Like the platform, the filters only take effect with the Accept header
+			// of a single version, which then answers the version itself. Otherwise
+			// they are ignored and the whole collection is returned.
 			versionFilter := r.URL.Query().Get("version")
 			tagFilter := r.URL.Query().Get("tag")
-			if versionFilter != "" || tagFilter != "" {
+			if (versionFilter != "" || tagFilter != "") && strings.Contains(r.Header.Get("Accept"), "applicationversion+json") {
 				field := "version"
 				value := versionFilter
 				if tagFilter != "" {
@@ -218,9 +300,7 @@ func (fs *FakeServer) handleAppVersions(w http.ResponseWriter, r *http.Request, 
 					value = tagFilter
 				}
 				if _, doc, ok := findVersionBy(field, value); ok {
-					// SDK calls ExecuteCollection so return a collection
-					page := Paginate(r, []json.RawMessage{doc})
-					writeJSON(w, http.StatusOK, BuildCollectionResponse(r, fs.URL(), "applicationVersions", page))
+					writeJSON(w, http.StatusOK, doc)
 					return
 				}
 				writeNotFound(w, "application/version")
@@ -244,8 +324,32 @@ func (fs *FakeServer) handleAppVersions(w http.ResponseWriter, r *http.Request, 
 			// containing version + tags fields plus a binary part.  Parse
 			// out the version metadata when it is present, otherwise fall
 			// back to the raw body.
-			body := readApplicationVersionBody(r)
-			body = mergeFields(body, map[string]any{"applicationId": appID})
+			body, binary := readApplicationVersionUpload(r)
+			fields := map[string]any{"applicationId": appID}
+			if getJSONString(body, "version") == "" {
+				// Like the platform, take the version from the manifest of the
+				// uploaded web application (cumulocity.json)
+				if version := manifestVersion(binary); version != "" {
+					fields["version"] = version
+				}
+			}
+			if binary != nil {
+				// The platform keeps the uploaded zip as a binary of the application
+				meta := marshalJSON(map[string]any{
+					"name":          "upload.zip",
+					"contentType":   "application/zip",
+					"length":        strconv.Itoa(len(binary)),
+					"applicationId": appID,
+					"created":       time.Now().UTC().Format(time.RFC3339Nano),
+				})
+				binaryID, _ := fs.AppBinaries.Create(meta, fs.URL()+"/application/applications/"+appID+"/binaries")
+				fs.binaryMu.Lock()
+				fs.BinaryData[binaryID] = binary
+				fs.binaryMu.Unlock()
+				fields["binaryId"] = binaryID
+			}
+			body = mergeFields(body, fields)
+			fs.moveTags(appID, "", getJSONStrings(body, "tags"))
 			_, doc := fs.AppVersions.Create(body, fs.URL()+"/application/applications/"+appID+"/versions")
 			writeJSON(w, http.StatusCreated, doc)
 
@@ -276,6 +380,12 @@ func (fs *FakeServer) handleAppVersions(w http.ResponseWriter, r *http.Request, 
 	}
 
 	versionID := remaining[0]
+	// The version is addressed by its id or by its version (e.g. 1.0.1)
+	if doc, ok := fs.AppVersions.Get(versionID); !ok || getJSONString(doc, "applicationId") != appID {
+		if id, _, found := findVersionBy("version", versionID); found {
+			versionID = id
+		}
+	}
 	switch r.Method {
 	case http.MethodGet:
 		doc, ok := fs.AppVersions.Get(versionID)
@@ -291,15 +401,15 @@ func (fs *FakeServer) handleAppVersions(w http.ResponseWriter, r *http.Request, 
 			writeError(w, http.StatusBadRequest, "general/badRequest", err.Error())
 			return
 		}
-		// `versionID` may be the literal version string, locate the stored
-		// document accordingly.
-		id, existing, ok := findVersionBy("version", versionID)
+		existing, ok := fs.AppVersions.Get(versionID)
 		if !ok {
 			writeNotFound(w, "application/version")
 			return
 		}
+		// A tag belongs to a single version of an application
+		fs.moveTags(appID, versionID, getJSONStrings(body, "tags"))
 		merged := mergeFields(existing, mustUnmarshalMap(body))
-		doc, _ := fs.AppVersions.Update(id, merged)
+		doc, _ := fs.AppVersions.Update(versionID, merged)
 		writeJSON(w, http.StatusOK, doc)
 
 	case http.MethodDelete:
@@ -324,38 +434,108 @@ func mustUnmarshalMap(body json.RawMessage) map[string]any {
 	return m
 }
 
-// readApplicationVersionBody parses the multipart body the SDK uses to upload
-// an application version and returns the metadata (version + tags) as JSON.
-// Falls back to readBody when the request isn't multipart.
-func readApplicationVersionBody(r *http.Request) json.RawMessage {
+// readApplicationVersionUpload parses the multipart body the SDK uses to upload
+// an application version: the metadata (version + tags) as JSON and the
+// uploaded zip file (nil when there is none). Falls back to readBody when the
+// request isn't multipart.
+func readApplicationVersionUpload(r *http.Request) (json.RawMessage, []byte) {
 	ct := r.Header.Get("Content-Type")
 	if !strings.Contains(ct, "multipart/") {
 		b, _ := readBody(r)
-		return b
+		return b, nil
 	}
 	if err := r.ParseMultipartForm(32 << 20); err != nil {
-		return json.RawMessage(`{}`)
+		return json.RawMessage(`{}`), nil
 	}
+	meta := json.RawMessage(`{}`)
+	var binary []byte
 	if values, ok := r.MultipartForm.Value["applicationVersion"]; ok && len(values) > 0 {
-		return json.RawMessage(values[0])
+		meta = json.RawMessage(values[0])
 	}
-	// Try files (the SDK puts applicationVersion as a multipart "file" with
-	// JSON content-type rather than a form value).
-	for _, files := range r.MultipartForm.File {
+	// The SDK puts applicationVersion as a multipart "file" with JSON content-type
+	// rather than a form value, and the zip as applicationBinary.
+	for name, files := range r.MultipartForm.File {
 		for _, fh := range files {
-			if fh.Filename == "applicationVersion" || strings.HasPrefix(fh.Header.Get("Content-Type"), "application/json") {
-				f, err := fh.Open()
-				if err != nil {
-					continue
-				}
-				defer f.Close()
-				buf := make([]byte, fh.Size)
-				_, _ = f.Read(buf)
-				return json.RawMessage(buf)
+			f, err := fh.Open()
+			if err != nil {
+				continue
+			}
+			data, _ := io.ReadAll(f)
+			f.Close()
+			if name == "applicationVersion" || fh.Filename == "applicationVersion" || strings.HasPrefix(fh.Header.Get("Content-Type"), "application/json") {
+				meta = data
+			} else if name == "applicationBinary" || binary == nil {
+				binary = data
 			}
 		}
 	}
-	return json.RawMessage(`{}`)
+	return meta, binary
+}
+
+// manifestVersion returns the version in the cumulocity.json manifest of a
+// zipped web application, or "" when there is none.
+func manifestVersion(zipData []byte) string {
+	if len(zipData) == 0 {
+		return ""
+	}
+	zr, err := zip.NewReader(bytes.NewReader(zipData), int64(len(zipData)))
+	if err != nil {
+		return ""
+	}
+	for _, f := range zr.File {
+		if f.Name != "cumulocity.json" && !strings.HasSuffix(f.Name, "/cumulocity.json") {
+			continue
+		}
+		rc, err := f.Open()
+		if err != nil {
+			return ""
+		}
+		data, _ := io.ReadAll(rc)
+		rc.Close()
+		return getJSONString(data, "version")
+	}
+	return ""
+}
+
+// getJSONStrings returns the string array stored under key, or nil.
+func getJSONStrings(doc json.RawMessage, key string) []string {
+	var m map[string][]string
+	if err := json.Unmarshal(doc, &m); err != nil {
+		// other fields are not strings arrays
+		var generic map[string]json.RawMessage
+		if json.Unmarshal(doc, &generic) != nil {
+			return nil
+		}
+		var tags []string
+		_ = json.Unmarshal(generic[key], &tags)
+		return tags
+	}
+	return m[key]
+}
+
+// moveTags removes the tags from the other versions of the application: a tag
+// (e.g. latest) belongs to a single version. exceptID is the version which is
+// keeping the tags.
+func (fs *FakeServer) moveTags(appID, exceptID string, tags []string) {
+	if len(tags) == 0 {
+		return
+	}
+	for _, v := range fs.AppVersions.List() {
+		id := getJSONString(v, "id")
+		if id == exceptID || getJSONString(v, "applicationId") != appID {
+			continue
+		}
+		current := getJSONStrings(v, "tags")
+		kept := make([]string, 0, len(current))
+		for _, tag := range current {
+			if !slices.Contains(tags, tag) {
+				kept = append(kept, tag)
+			}
+		}
+		if len(kept) != len(current) {
+			fs.AppVersions.Update(id, marshalJSON(map[string]any{"tags": kept}))
+		}
+	}
 }
 
 // handleAppBinaries handles /application/applications/{id}/binaries[/{binaryId}].
