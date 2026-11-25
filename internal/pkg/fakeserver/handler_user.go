@@ -3,6 +3,8 @@ package fakeserver
 import (
 	"encoding/json"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 )
 
@@ -58,6 +60,18 @@ func (fs *FakeServer) handleCurrentUser(w http.ResponseWriter, r *http.Request) 
 	// /user/currentUser/password
 	if strings.HasSuffix(path, "/password") {
 		if r.Method == http.MethodPut {
+			if body, err := readBody(r); err == nil {
+				if user, _, ok := r.BasicAuth(); ok {
+					if i := strings.LastIndex(user, "/"); i >= 0 {
+						user = user[i+1:]
+					}
+					if newPassword := getJSONString(body, "newPassword"); newPassword != "" {
+						fs.passwordsMu.Lock()
+						fs.passwords[user] = newPassword
+						fs.passwordsMu.Unlock()
+					}
+				}
+			}
 			writeNoContent(w)
 			return
 		}
@@ -141,8 +155,9 @@ func (fs *FakeServer) handleTenantUsers(w http.ResponseWriter, r *http.Request, 
 			}
 			body = mergeFields(body, map[string]any{
 				"id":   userName,
-				"self": fs.URL() + "/user/" + segments[0] + "/users/" + userName,
+				"self": fs.URL() + "/user/" + segments[0] + "/users/" + userSelfSegment(userName),
 			})
+			body = fs.storePassword(userName, body)
 			fs.Users.CreateWithID(userName, body)
 			writeJSON(w, http.StatusCreated, body)
 
@@ -252,7 +267,7 @@ func (fs *FakeServer) handleTenantUsers(w http.ResponseWriter, r *http.Request, 
 				writeError(w, http.StatusBadRequest, "general/badRequest", err.Error())
 				return
 			}
-			doc, ok := fs.Users.Update(userID, body)
+			doc, ok := fs.Users.Update(userID, fs.storePassword(userID, body))
 			if !ok {
 				writeNotFound(w, "user")
 				return
@@ -288,8 +303,7 @@ func (fs *FakeServer) handleUserGroups(w http.ResponseWriter, r *http.Request, s
 				writeError(w, http.StatusBadRequest, "general/badRequest", err.Error())
 				return
 			}
-			_, doc := fs.UserGroups.Create(body, fs.URL()+"/user/"+segments[0]+"/groups")
-			writeJSON(w, http.StatusCreated, doc)
+			writeJSON(w, http.StatusCreated, fs.createUserGroup(body, segments[0]))
 
 		default:
 			writeError(w, http.StatusMethodNotAllowed, "general/methodNotAllowed", "Method not allowed")
@@ -629,4 +643,20 @@ func (fs *FakeServer) handleDevicePermissions(w http.ResponseWriter, r *http.Req
 	default:
 		writeError(w, http.StatusMethodNotAllowed, "general/methodNotAllowed", "Method not allowed")
 	}
+}
+
+// userSelfSegment escapes a user name for the self link of the user. Like
+// Cumulocity, it also escapes "@" (a user name is often an email address).
+func userSelfSegment(userName string) string {
+	return strings.ReplaceAll(url.PathEscape(userName), "@", "%40")
+}
+
+// createUserGroup stores a new user group. Unlike other objects, Cumulocity
+// identifies user groups by a number, so the id is a JSON number.
+func (fs *FakeServer) createUserGroup(body json.RawMessage, tenant string) json.RawMessage {
+	id, doc := fs.UserGroups.Create(body, fs.URL()+"/user/"+tenant+"/groups")
+	if n, err := strconv.ParseInt(id, 10, 64); err == nil {
+		doc, _ = fs.UserGroups.Update(id, marshalJSON(map[string]any{"id": n}))
+	}
+	return doc
 }

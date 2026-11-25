@@ -80,6 +80,14 @@ func (fs *FakeServer) handleManagedObjectCollection(w http.ResponseWriter, r *ht
 	case http.MethodGet:
 		items := fs.filterManagedObjects(r)
 		page := Paginate(r, items)
+		if r.URL.Query().Get("withParents") == "true" {
+			// Add the parents to each object of the page (not to the stored objects)
+			withParents := make([]json.RawMessage, len(page.Items))
+			for i, item := range page.Items {
+				withParents[i] = fs.withParents(getJSONString(item, "id"), item)
+			}
+			page.Items = withParents
+		}
 		writeJSON(w, http.StatusOK, BuildCollectionResponse(r, fs.URL(), "managedObjects", page))
 
 	case http.MethodPost:
@@ -295,7 +303,7 @@ func (fs *FakeServer) handleChildRelationship(w http.ResponseWriter, r *http.Req
 				if !ok {
 					continue
 				}
-				filtered := applyCQLFilter([]json.RawMessage{doc}, q)
+				filtered := fs.applyCQLFilter([]json.RawMessage{doc}, q)
 				if len(filtered) == 0 {
 					continue
 				}
@@ -453,7 +461,7 @@ func (fs *FakeServer) filterManagedObjects(r *http.Request) []json.RawMessage {
 		queryStr = q.Get("q")
 	}
 	if queryStr != "" {
-		items = applyCQLFilter(items, queryStr)
+		items = fs.applyCQLFilter(items, queryStr)
 		return applyCQLOrderBy(items, queryStr)
 	}
 
@@ -482,6 +490,41 @@ func (fs *FakeServer) filterManagedObjects(r *http.Request) []json.RawMessage {
 // Strips "order by ...", "$orderby=..." clauses before filtering.
 // Handles $filter=(...) format used by inventory queries.
 func applyCQLFilter(items []json.RawMessage, query string) []json.RawMessage {
+	return filterCQL(nil, items, query)
+}
+
+// applyCQLFilter is the free function applyCQLFilter with the relationship based functions, such
+// as bygroupid(<id>), resolved against the fake server's hierarchy.
+func (fs *FakeServer) applyCQLFilter(items []json.RawMessage, query string) []json.RawMessage {
+	return filterCQL(fs.groupMembers, items, query)
+}
+
+// groupMembers returns the ids of all objects below the managed object id in
+// the hierarchy (child devices, child assets and child additions, including
+// the children of the children).
+func (fs *FakeServer) groupMembers(id string) map[string]bool {
+	fs.ManagedObjects.mu.RLock()
+	defer fs.ManagedObjects.mu.RUnlock()
+	members := map[string]bool{}
+	queue := []string{id}
+	for len(queue) > 0 {
+		parent := queue[0]
+		queue = queue[1:]
+		for _, relMap := range []map[string][]string{fs.ChildDevices, fs.ChildAssets, fs.ChildAdditions} {
+			for _, child := range relMap[parent] {
+				if !members[child] {
+					members[child] = true
+					queue = append(queue, child)
+				}
+			}
+		}
+	}
+	return members
+}
+
+// filterCQL implements applyCQLFilter. members resolves bygroupid(<id>) and may
+// be nil, in which case the function matches nothing.
+func filterCQL(members func(id string) map[string]bool, items []json.RawMessage, query string) []json.RawMessage {
 	query = strings.TrimSpace(query)
 	if query == "" {
 		return items
@@ -494,7 +537,7 @@ func applyCQLFilter(items []json.RawMessage, query string) []json.RawMessage {
 		if idx := strings.Index(query, " $orderby="); idx >= 0 {
 			query = strings.TrimSpace(query[:idx])
 		}
-		return applyCQLFilter(items, stripWrappingParens(strings.TrimSpace(query)))
+		return filterCQL(members, items, stripWrappingParens(strings.TrimSpace(query)))
 	}
 
 	// Strip "order by ..." suffix (case-insensitive)
@@ -511,8 +554,38 @@ func applyCQLFilter(items []json.RawMessage, query string) []json.RawMessage {
 	if idx := topLevelIndex(query, " and "); idx >= 0 {
 		left := strings.TrimSpace(query[:idx])
 		right := strings.TrimSpace(query[idx+5:])
-		items = applyCQLFilter(items, left)
-		return applyCQLFilter(items, right)
+		items = filterCQL(members, items, left)
+		return filterCQL(members, items, right)
+	}
+
+	// Handle "not(expr)": the items which do not match expr
+	if len(query) > 4 && strings.EqualFold(query[:4], "not(") && parensCloseAtEnd(query[3:]) {
+		matching := map[string]bool{}
+		for _, item := range filterCQL(members, items, query[4:len(query)-1]) {
+			matching[string(item)] = true
+		}
+		var filtered []json.RawMessage
+		for _, item := range items {
+			if !matching[string(item)] {
+				filtered = append(filtered, item)
+			}
+		}
+		return filtered
+	}
+
+	// Handle "bygroupid(id)": the objects below the group in the hierarchy
+	if len(query) > 11 && strings.EqualFold(query[:10], "bygroupid(") && parensCloseAtEnd(query[9:]) {
+		var below map[string]bool
+		if members != nil {
+			below = members(strings.Trim(strings.TrimSpace(query[10:len(query)-1]), "'\""))
+		}
+		var filtered []json.RawMessage
+		for _, item := range items {
+			if below[getJSONString(item, "id")] {
+				filtered = append(filtered, item)
+			}
+		}
+		return filtered
 	}
 
 	// Handle "has(fragment)"
@@ -530,7 +603,7 @@ func applyCQLFilter(items []json.RawMessage, query string) []json.RawMessage {
 
 	// Strip wrapping parentheses (e.g., "(name eq 'foo')")
 	if stripped := stripWrappingParens(query); stripped != query {
-		return applyCQLFilter(items, stripped)
+		return filterCQL(members, items, stripped)
 	}
 
 	// Handle "field eq 'value'" – supports "*" wildcards anywhere in the value
@@ -743,7 +816,15 @@ func (fs *FakeServer) withParents(id string, doc json.RawMessage) json.RawMessag
 		for _, parentID := range ids {
 			ref := map[string]any{"id": parentID, "self": fs.URL() + "/inventory/managedObjects/" + parentID}
 			if parent, ok := fs.ManagedObjects.Get(parentID); ok {
-				ref["name"] = getJSONString(parent, "name")
+				// Cumulocity returns the parent managed object itself (name, type,
+				// owner, fragments, ...), not only its id: clients such as the
+				// software version lookups read the parent's type and name.
+				var full map[string]any
+				if json.Unmarshal(parent, &full) == nil {
+					for k, v := range full {
+						ref[k] = v
+					}
+				}
 			}
 			refs = append(refs, map[string]any{"managedObject": ref})
 		}

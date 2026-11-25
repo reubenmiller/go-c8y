@@ -168,6 +168,34 @@ func (fs *FakeServer) handleEventBinaries(w http.ResponseWriter, r *http.Request
 		fs.Events.Update(eventID, doc)
 		writeJSON(w, http.StatusCreated, doc)
 
+	case http.MethodPut:
+		// Replace the content of the existing attachment
+		fs.ManagedObjects.mu.RLock()
+		_, ok := fs.EventBinaries[eventID]
+		fs.ManagedObjects.mu.RUnlock()
+		if !ok {
+			writeNotFound(w, "event/binary")
+			return
+		}
+		data, err := io.ReadAll(r.Body)
+		r.Body.Close()
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "general/badRequest", err.Error())
+			return
+		}
+		fs.ManagedObjects.mu.Lock()
+		fs.EventBinaries[eventID] = data
+		fs.ManagedObjects.mu.Unlock()
+
+		doc, _ := fs.Events.Get(eventID)
+		fields := map[string]any{"length": len(data)}
+		if ct := r.Header.Get("Content-Type"); ct != "" {
+			fields["contentType"] = ct
+		}
+		doc = mergeFields(doc, fields)
+		fs.Events.Update(eventID, doc)
+		writeJSON(w, http.StatusOK, doc)
+
 	case http.MethodGet:
 		fs.ManagedObjects.mu.RLock()
 		data, ok := fs.EventBinaries[eventID]
@@ -183,6 +211,9 @@ func (fs *FakeServer) handleEventBinaries(w http.ResponseWriter, r *http.Request
 			}
 		}
 		w.Header().Set("Content-Type", contentType)
+		if doc, ok := fs.Events.Get(eventID); ok {
+			setContentDisposition(w, getJSONString(doc, "name"))
+		}
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write(data)
 

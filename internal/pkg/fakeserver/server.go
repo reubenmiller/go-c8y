@@ -60,6 +60,12 @@ type FakeServer struct {
 	// ca signs the certificates of enrolling devices
 	ca estCA
 
+	// passwords holds the passwords of the users, by user name, which are not
+	// part of the user documents (Cumulocity never returns them). Users without
+	// an entry accept any password.
+	passwordsMu sync.RWMutex
+	passwords   map[string]string
+
 	// Identity stores: externalType+externalValue → managedObjectID
 	ExternalIDs *Store
 
@@ -133,6 +139,18 @@ func New(t *testing.T) *FakeServer {
 // binary, which needs the same stateful server the test suite uses but without
 // a *testing.T. Call fs.Server.Close() to stop it.
 func NewServer(addr string) (*FakeServer, error) {
+	return newServer(addr, false)
+}
+
+// NewTLSServer is like NewServer but serves https, using the self-signed
+// certificate of net/http/httptest (valid for 127.0.0.1 and example.com). The
+// self links then use https like the ones of a real tenant; clients need to
+// accept the certificate (e.g. the insecure setting of go-c8y-cli).
+func NewTLSServer(addr string) (*FakeServer, error) {
+	return newServer(addr, true)
+}
+
+func newServer(addr string, useTLS bool) (*FakeServer, error) {
 	fs := newUnstarted()
 	srv := httptest.NewUnstartedServer(fs.handler())
 	if addr != "" {
@@ -143,7 +161,11 @@ func NewServer(addr string) (*FakeServer, error) {
 		_ = srv.Listener.Close()
 		srv.Listener = l
 	}
-	srv.Start()
+	if useTLS {
+		srv.StartTLS()
+	} else {
+		srv.Start()
+	}
 	fs.Server = srv
 
 	// Seed default data (current tenant, current user)
@@ -195,6 +217,7 @@ func newUnstarted() *FakeServer {
 		LoginOptionAccessMappings:          make(map[string]*Store),
 		LoginOptionInventoryAccessMappings: make(map[string]*Store),
 
+		passwords:     map[string]string{"admin": "admin-pass"},
 		Realtime:      newRealtimeState(),
 		Notification2: newNotification2State(),
 	}
@@ -216,6 +239,10 @@ func (fs *FakeServer) handler() http.Handler {
 			strings.HasPrefix(p, "/notification2/consumer")
 		if !public && r.Header.Get("Authorization") == "" {
 			writeError(w, http.StatusUnauthorized, "security/Unauthorized", "Missing credentials") //nolint:misspell
+			return
+		}
+		if !public && !fs.credentialsValid(r) {
+			writeError(w, http.StatusUnauthorized, "security/Unauthorized", "Bad credentials") //nolint:misspell
 			return
 		}
 		fs.record(r)
@@ -414,12 +441,29 @@ func (fs *FakeServer) seedDefaults() {
 		"self":      fs.URL() + "/user/t12345/users/admin",
 	}))
 
-	// Seed a default admin role
-	fs.UserRoles.CreateWithID("ROLE_TENANT_ADMIN", marshalJSON(map[string]any{
-		"id":   "ROLE_TENANT_ADMIN",
-		"name": "ROLE_TENANT_ADMIN",
-		"self": fs.URL() + "/user/roles/ROLE_TENANT_ADMIN",
-	}))
+	// Seed the global roles which every tenant has
+	for _, role := range []string{
+		"ROLE_TENANT_ADMIN",
+		"ROLE_ALARM_READ", "ROLE_ALARM_ADMIN",
+		"ROLE_APPLICATION_MANAGEMENT_READ", "ROLE_APPLICATION_MANAGEMENT_ADMIN",
+		"ROLE_AUDIT_READ", "ROLE_AUDIT_ADMIN",
+		"ROLE_BULK_OPERATION_READ", "ROLE_BULK_OPERATION_ADMIN",
+		"ROLE_DEVICE_CONTROL_READ", "ROLE_DEVICE_CONTROL_ADMIN",
+		"ROLE_EVENT_READ", "ROLE_EVENT_ADMIN",
+		"ROLE_IDENTITY_READ", "ROLE_IDENTITY_ADMIN",
+		"ROLE_INVENTORY_READ", "ROLE_INVENTORY_ADMIN", "ROLE_INVENTORY_CREATE",
+		"ROLE_MEASUREMENT_READ", "ROLE_MEASUREMENT_ADMIN",
+		"ROLE_OPTION_MANAGEMENT_READ", "ROLE_OPTION_MANAGEMENT_ADMIN",
+		"ROLE_TENANT_MANAGEMENT_READ", "ROLE_TENANT_MANAGEMENT_ADMIN",
+		"ROLE_USER_MANAGEMENT_READ", "ROLE_USER_MANAGEMENT_ADMIN",
+		"ROLE_USER_MANAGEMENT_CREATE", "ROLE_USER_MANAGEMENT_OWN_READ", "ROLE_USER_MANAGEMENT_OWN_ADMIN",
+	} {
+		fs.UserRoles.CreateWithID(role, marshalJSON(map[string]any{
+			"id":   role,
+			"name": role,
+			"self": fs.URL() + "/user/roles/" + role,
+		}))
+	}
 
 	// Seed feature toggles, stored by key (GET /features/{key}), as every
 	// platform tenant has some
@@ -452,12 +496,8 @@ func (fs *FakeServer) seedDefaults() {
 	}))
 
 	// Seed default user group
-	fs.UserGroups.Create(marshalJSON(map[string]any{
-		"name": "admins",
-	}), fs.URL()+"/user/t12345/groups")
-	fs.UserGroups.Create(marshalJSON(map[string]any{
-		"name": "devices",
-	}), fs.URL()+"/user/t12345/groups")
+	fs.createUserGroup(marshalJSON(map[string]any{"name": "admins"}), "t12345")
+	fs.createUserGroup(marshalJSON(map[string]any{"name": "devices"}), "t12345")
 
 	// Seed a default retention rule (every tenant has at least one)
 	fs.RetentionRules.Create(marshalJSON(map[string]any{
@@ -558,14 +598,20 @@ func (fs *FakeServer) seedDefaults() {
 		{"administration", "administration-application-key", "HOSTED", "administration"},
 		{"report-agent", "report-agent-key", "MICROSERVICE", "reporting"},
 	} {
+		// The standard web applications are owned by the management tenant and
+		// subscribed by the tenant, so they do not count as the tenant's own.
+		owner := "t12345"
+		if app.appType == "HOSTED" {
+			owner = "management"
+		}
 		fs.Applications.Create(marshalJSON(map[string]any{
 			"name":        app.name,
 			"key":         app.key,
 			"type":        app.appType,
 			"contextPath": app.contextPath,
 			"owner": map[string]any{
-				"tenant": map[string]any{"id": "t12345"},
-				"self":   fs.URL() + "/tenant/tenants/t12345",
+				"tenant": map[string]any{"id": owner},
+				"self":   fs.URL() + "/tenant/tenants/" + owner,
 			},
 			"availability": "MARKET",
 		}), fs.URL()+"/application/applications")
@@ -590,6 +636,65 @@ func (fs *FakeServer) seedDefaults() {
 			"availability": "MARKET",
 		}), fs.URL()+"/application/applications")
 	}
+
+	// The shared plugin that every tenant can install into its web applications
+	fs.seedSharedPlugin("Cumulocity community plugins", "sag-pkg-community-plugins", "1.2.3", "CommunityPluginsModule")
+
+	// A tenant specific microservice, with a running instance
+	fs.seedMicroserviceWithInstance("advanced-software-mgmt", "advanced-software-mgmt-scope-6b9d7c5f4-x2k8q")
+}
+
+// seedSharedPlugin adds a UI plugin of the management tenant which is shared
+// with all tenants, with one version (tagged latest).
+func (fs *FakeServer) seedSharedPlugin(name, contextPath, version string, modules ...string) {
+	id, _ := fs.Applications.Create(marshalJSON(map[string]any{
+		"name":         name,
+		"key":          contextPath + "-key",
+		"type":         "HOSTED",
+		"contextPath":  contextPath,
+		"availability": "SHARED",
+		"manifest": map[string]any{
+			"isPackage": true,
+			"package":   "plugin",
+			"remotes":   map[string]any{contextPath: modules},
+		},
+		"owner": map[string]any{
+			"tenant": map[string]any{"id": "management"},
+			"self":   fs.URL() + "/tenant/tenants/management",
+		},
+	}), fs.URL()+"/application/applications")
+	fs.AppVersions.Create(marshalJSON(map[string]any{
+		"applicationId": id,
+		"version":       version,
+		"tags":          []string{"latest"},
+	}), fs.URL()+"/application/applications/"+id+"/versions")
+}
+
+// seedMicroserviceWithInstance adds a subscribed microservice together with the
+// managed object (type c8y_Application_<id>) in which the platform tracks the
+// status of its running instances (c8y_Status.instances).
+func (fs *FakeServer) seedMicroserviceWithInstance(name string, instances ...string) {
+	id, _ := fs.Applications.Create(marshalJSON(map[string]any{
+		"name":        name,
+		"key":         name + "-key",
+		"type":        "MICROSERVICE",
+		"contextPath": name,
+		"owner": map[string]any{
+			"tenant": map[string]any{"id": "t12345"},
+			"self":   fs.URL() + "/tenant/tenants/t12345",
+		},
+		"availability": "MARKET",
+	}), fs.URL()+"/application/applications")
+
+	status := map[string]any{}
+	for _, instance := range instances {
+		status[instance] = map[string]any{"status": "UP", "memory": 0, "cpu": 0}
+	}
+	fs.ManagedObjects.Create(marshalJSON(map[string]any{
+		"type":       "c8y_Application_" + id,
+		"name":       name,
+		"c8y_Status": map[string]any{"status": "UP", "instances": status},
+	}), fs.URL()+"/inventory/managedObjects")
 }
 
 func marshalJSON(v any) []byte {
@@ -640,4 +745,48 @@ func (fs *FakeServer) Replay(req RecordedRequest) RecordedResponse {
 		StatusCode: resp.StatusCode,
 		Body:       respJSON,
 	}
+}
+
+// credentialsValid reports whether the basic credentials of the request match
+// the password of a user the server knows the password of (the seeded admin
+// and the users created with a password). Other requests, such as those of
+// unknown users, bearer tokens and device credentials, are accepted.
+func (fs *FakeServer) credentialsValid(r *http.Request) bool {
+	user, password, ok := r.BasicAuth()
+	if !ok {
+		return true
+	}
+	// The user name may carry the tenant: <tenant>/<user>
+	if i := strings.LastIndex(user, "/"); i >= 0 {
+		user = user[i+1:]
+	}
+	fs.passwordsMu.RLock()
+	expected, known := fs.passwords[user]
+	fs.passwordsMu.RUnlock()
+	return !known || expected == password
+}
+
+// storePassword records the password of a user and returns the user document
+// without it.
+func (fs *FakeServer) storePassword(userName string, doc json.RawMessage) json.RawMessage {
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal(doc, &m); err != nil {
+		return doc
+	}
+	raw, ok := m["password"]
+	if !ok {
+		return doc
+	}
+	var password string
+	if json.Unmarshal(raw, &password) == nil && password != "" && userName != "" {
+		fs.passwordsMu.Lock()
+		fs.passwords[userName] = password
+		fs.passwordsMu.Unlock()
+	}
+	delete(m, "password")
+	out, err := json.Marshal(m)
+	if err != nil {
+		return doc
+	}
+	return out
 }
