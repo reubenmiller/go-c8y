@@ -20,7 +20,7 @@ func Test_DeviceStatistics_Monthly_DryRun(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := api.WithDryRun(context.Background(), true)
 
-	result := client.DeviceStatistics.ListMonthly(ctx, devicestatistics.ListOptions{
+	result := client.Tenants.DeviceStatistics.ListMonthly(ctx, devicestatistics.ListOptions{
 		TenantID: "t123",
 		Date:     "2024-01-01",
 	})
@@ -33,7 +33,7 @@ func Test_DeviceStatistics_Monthly_RequestInspection(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := api.WithDeferredExecution(context.Background(), true)
 
-	prepared := client.DeviceStatistics.ListMonthly(ctx, devicestatistics.ListOptions{
+	prepared := client.Tenants.DeviceStatistics.ListMonthly(ctx, devicestatistics.ListOptions{
 		TenantID: "t123",
 		Date:     "2024-01-01",
 	})
@@ -53,7 +53,7 @@ func Test_DeviceStatistics_Monthly_DeviceIDFilter(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := api.WithDeferredExecution(context.Background(), true)
 
-	prepared := client.DeviceStatistics.ListMonthly(ctx, devicestatistics.ListOptions{
+	prepared := client.Tenants.DeviceStatistics.ListMonthly(ctx, devicestatistics.ListOptions{
 		TenantID: "t123",
 		Date:     "2024-01-01",
 		DeviceID: "12345",
@@ -76,7 +76,7 @@ func Test_DeviceStatistics_Monthly_Pagination(t *testing.T) {
 	opts.PageSize = 10
 	opts.WithTotalPages = true
 
-	prepared := client.DeviceStatistics.ListMonthly(ctx, opts)
+	prepared := client.Tenants.DeviceStatistics.ListMonthly(ctx, opts)
 
 	require.True(t, prepared.IsDeferred())
 	require.NotNil(t, prepared.Request)
@@ -92,7 +92,7 @@ func Test_DeviceStatistics_Daily_DryRun(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := api.WithDryRun(context.Background(), true)
 
-	result := client.DeviceStatistics.ListDaily(ctx, devicestatistics.ListOptions{
+	result := client.Tenants.DeviceStatistics.ListDaily(ctx, devicestatistics.ListOptions{
 		TenantID: "t123",
 		Date:     "2024-01-15",
 	})
@@ -105,7 +105,7 @@ func Test_DeviceStatistics_Daily_RequestInspection(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := api.WithDeferredExecution(context.Background(), true)
 
-	prepared := client.DeviceStatistics.ListDaily(ctx, devicestatistics.ListOptions{
+	prepared := client.Tenants.DeviceStatistics.ListDaily(ctx, devicestatistics.ListOptions{
 		TenantID: "t123",
 		Date:     "2024-01-15",
 	})
@@ -125,7 +125,7 @@ func Test_DeviceStatistics_Daily_DeviceIDFilter(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := api.WithDeferredExecution(context.Background(), true)
 
-	prepared := client.DeviceStatistics.ListDaily(ctx, devicestatistics.ListOptions{
+	prepared := client.Tenants.DeviceStatistics.ListDaily(ctx, devicestatistics.ListOptions{
 		TenantID: "t123",
 		Date:     "2024-01-15",
 		DeviceID: "67890",
@@ -147,7 +147,7 @@ func Test_DeviceStatistics_Daily_Pagination(t *testing.T) {
 	}
 	opts.PageSize = 20
 
-	prepared := client.DeviceStatistics.ListDaily(ctx, opts)
+	prepared := client.Tenants.DeviceStatistics.ListDaily(ctx, opts)
 
 	require.True(t, prepared.IsDeferred())
 	require.NotNil(t, prepared.Request)

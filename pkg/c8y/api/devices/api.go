@@ -26,7 +26,13 @@ const ParamID = "id"
 const ResultProperty = managedobjects.ResultProperty
 
 func NewService(s *httpcore.Service) *Service {
-	mos := managedobjects.NewService(s)
+	return NewServiceWithManagedObjects(s, managedobjects.NewService(s))
+}
+
+// NewServiceWithManagedObjects creates the service on top of an existing
+// managed objects service, so that resolvers registered on it (e.g.
+// Client.ManagedObjects) apply to the devices service too.
+func NewServiceWithManagedObjects(s *httpcore.Service, mos *managedobjects.Service) *Service {
 	return &Service{
 		svc:            *s,
 		Enrollment:     enrollment.NewService(s),
@@ -34,7 +40,7 @@ func NewService(s *httpcore.Service) *Service {
 		ChildAdditions: mos.ChildAdditions,
 		ChildAssets:    mos.ChildAssets,
 		ChildDevices:   mos.ChildDevices,
-		managedObjects: *mos,
+		managedObjects: mos,
 	}
 }
 
@@ -48,7 +54,7 @@ type Service struct {
 	ChildAssets    *childassets.Service
 	ChildDevices   *childdevices.Service
 
-	managedObjects managedobjects.Service
+	managedObjects *managedobjects.Service
 }
 
 // ListOptions filter managed object
@@ -141,6 +147,9 @@ func (s *Service) findB(opt FindOptions) *httpcore.TryRequest {
 }
 
 // CreateDevice creates a new device with the given name.
+//
+// Deprecated: use Create with jsonmodels.NewDevice(name), which is the
+// canonical create verb (Create takes a body in every service).
 // It automatically includes the c8y_IsDevice fragment.
 // For more control, use jsonmodels.NewDevice() or jsonmodels.NewDeviceWithType() and pass to Create().
 func (s *Service) CreateDevice(ctx context.Context, name string) op.Result[jsonmodels.ManagedObject] {

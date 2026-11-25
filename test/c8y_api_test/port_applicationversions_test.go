@@ -31,7 +31,7 @@ func createTestPlugin(t *testing.T, client *api.Client, version string, tags []s
 	pluginID := createResult.Data.ID()
 
 	// Upload version
-	versionResult := client.ApplicationVersions.CreateFromFile(ctx, pluginID, uiExamplePluginURL, version, tags)
+	versionResult := client.Applications.Versions.CreateFromFile(ctx, pluginID, uiExamplePluginURL, version, tags)
 	require.NoError(t, versionResult.Err)
 
 	t.Cleanup(func() {
@@ -49,7 +49,7 @@ func Test_ApplicationVersions_GetVersions(t *testing.T) {
 	appID := createTestPlugin(t, client, "1.0.0", []string{"latest"})
 
 	// List versions
-	result := client.ApplicationVersions.List(ctx, appID, appversions.ListOptions{})
+	result := client.Applications.Versions.List(ctx, appID, appversions.ListOptions{})
 
 	require.NoError(t, result.Err)
 	assert.Equal(t, 200, result.HTTPStatus)
@@ -70,7 +70,7 @@ func Test_ApplicationVersions_GetVersionByTag(t *testing.T) {
 	appID := createTestPlugin(t, client, "1.0.1", []string{"latest", "tag1"})
 
 	// List versions by tag
-	result := client.ApplicationVersions.ListByTag(ctx, appID, "tag1")
+	result := client.Applications.Versions.ListByTag(ctx, appID, "tag1")
 
 	require.NoError(t, result.Err)
 
@@ -94,7 +94,7 @@ func Test_ApplicationVersions_GetVersionByName(t *testing.T) {
 	appID := createTestPlugin(t, client, "1.0.2", []string{"tag1"})
 
 	// Get version by name
-	result := client.ApplicationVersions.ListByVersion(ctx, appID, "1.0.2")
+	result := client.Applications.Versions.ListByVersion(ctx, appID, "1.0.2")
 
 	require.NoError(t, result.Err)
 	assert.Equal(t, 200, result.HTTPStatus)
@@ -129,7 +129,7 @@ func Test_ApplicationVersions_CRUD_Extension(t *testing.T) {
 	})
 
 	// Create first version
-	version1Result := client.ApplicationVersions.CreateFromFile(ctx, pluginID, uiExamplePluginURL, "2.5.0", []string{"latest", "tag1"})
+	version1Result := client.Applications.Versions.CreateFromFile(ctx, pluginID, uiExamplePluginURL, "2.5.0", []string{"latest", "tag1"})
 	require.NoError(t, version1Result.Err)
 	assert.Equal(t, 201, version1Result.HTTPStatus)
 	assert.Equal(t, "2.5.0", version1Result.Data.Version())
@@ -138,7 +138,7 @@ func Test_ApplicationVersions_CRUD_Extension(t *testing.T) {
 	assert.Contains(t, version1Result.Data.Tags(), "tag1")
 
 	// Create second version
-	version2Result := client.ApplicationVersions.CreateFromFile(ctx, pluginID, uiExamplePluginURL, "2.5.1", []string{"latest", "tagA"})
+	version2Result := client.Applications.Versions.CreateFromFile(ctx, pluginID, uiExamplePluginURL, "2.5.1", []string{"latest", "tagA"})
 	require.NoError(t, version2Result.Err)
 	assert.Equal(t, 201, version2Result.HTTPStatus)
 	assert.Equal(t, "2.5.1", version2Result.Data.Version())
@@ -155,7 +155,7 @@ func Test_ApplicationVersions_CRUD_Extension(t *testing.T) {
 	assert.True(t, containsTagA, "Should contain tag 'taga' or 'tagA'")
 
 	// Update tags on first version
-	updatedResult := client.ApplicationVersions.Update(ctx, pluginID, "2.5.0", []string{"tag2", "tag3", "latest"})
+	updatedResult := client.Applications.Versions.Update(ctx, pluginID, "2.5.0", []string{"tag2", "tag3", "latest"})
 	require.NoError(t, updatedResult.Err)
 	assert.Equal(t, 200, updatedResult.HTTPStatus)
 	assert.Len(t, updatedResult.Data.Tags(), 3)
@@ -169,6 +169,6 @@ func Test_ApplicationVersions_CRUD_Extension(t *testing.T) {
 	assert.Equal(t, 200, activateResult.HTTPStatus)
 
 	// Delete by version (the non-active version)
-	result := client.ApplicationVersions.DeleteByVersion(ctx, pluginID, "2.5.1")
+	result := client.Applications.Versions.DeleteByVersion(ctx, pluginID, "2.5.1")
 	require.NoError(t, result.Err)
 }

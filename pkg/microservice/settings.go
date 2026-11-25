@@ -40,7 +40,7 @@ func (m *Microservice) Settings(ctx context.Context) (jsonmodels.MicroserviceSet
 			reqCtx = m.WithServiceUser(ctx, tenant)
 		}
 	}
-	res := m.Client.Microservices.CurrentMicroservice.ListSettings(reqCtx)
+	res := m.Client.Microservices.Current.ListSettings(reqCtx)
 	if res.Err != nil {
 		return jsonmodels.MicroserviceSettings{}, res.Err
 	}

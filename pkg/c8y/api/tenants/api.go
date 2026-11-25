@@ -6,6 +6,8 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/currenttenant"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/devicestatistics"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/logintokens"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/restrictedroles"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/systemoptions"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/tenantoptions"
@@ -32,12 +34,14 @@ const ApplicationReferencesResultProperty = "references"
 
 func NewService(s *httpcore.Service) *Service {
 	return &Service{
-		svc:             *s,
-		UsageStatistics: usagestatistics.NewService(s),
-		Current:         currenttenant.NewService(s),
-		Options:         tenantoptions.NewService(s),
-		SystemOptions:   systemoptions.NewService(s),
-		RestrictedRoles: restrictedroles.NewService(s),
+		svc:              *s,
+		UsageStatistics:  usagestatistics.NewService(s),
+		Current:          currenttenant.NewService(s),
+		Options:          tenantoptions.NewService(s),
+		SystemOptions:    systemoptions.NewService(s),
+		RestrictedRoles:  restrictedroles.NewService(s),
+		DeviceStatistics: devicestatistics.NewService(s),
+		LoginTokens:      logintokens.NewService(s),
 	}
 }
 
@@ -50,6 +54,15 @@ type Service struct {
 	Options         *tenantoptions.Service
 	SystemOptions   *systemoptions.Service
 	RestrictedRoles *restrictedroles.Service
+
+	// DeviceStatistics is the device statistics sub-resource
+	// (/tenant/statistics/device). Client.DeviceStatistics is a deprecated
+	// alias for the same instance.
+	DeviceStatistics *devicestatistics.Service
+
+	// LoginTokens is the login token sub-resource (/tenant/oauth/token).
+	// Client.LoginTokens is a deprecated alias for the same instance.
+	LoginTokens *logintokens.Service
 }
 
 // ListOptions is generated from the OpenAPI spec — see zz_generated_options.go.

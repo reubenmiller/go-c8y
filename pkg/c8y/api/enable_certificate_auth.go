@@ -100,7 +100,7 @@ func (c *Client) EnableCertificateAuth(ctx context.Context, opts EnableCertifica
 			return fmt.Errorf("enable certificate auth: %w", res.Err)
 		}
 	default:
-		if res := c.Users.CurrentUser.SetRequiredAuthType(ctx, currentuser.AuthTypeCertificates); res.Err != nil {
+		if res := c.Users.Current.SetRequiredAuthType(ctx, currentuser.AuthTypeCertificates); res.Err != nil {
 			return fmt.Errorf("enable certificate auth: %w", res.Err)
 		}
 	}

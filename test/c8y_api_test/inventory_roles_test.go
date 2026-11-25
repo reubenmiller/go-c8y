@@ -20,7 +20,7 @@ func Test_InventoryRoles_List_DryRun(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := api.WithDryRun(context.Background(), true)
 
-	result := client.InventoryRoles.List(ctx, inventoryroles.ListOptions{})
+	result := client.UserRoles.Inventory.List(ctx, inventoryroles.ListOptions{})
 
 	assert.NoError(t, result.Err)
 	assert.Equal(t, http.StatusOK, result.HTTPStatus)
@@ -30,7 +30,7 @@ func Test_InventoryRoles_List_RequestInspection(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := api.WithDeferredExecution(context.Background(), true)
 
-	prepared := client.InventoryRoles.List(ctx, inventoryroles.ListOptions{})
+	prepared := client.UserRoles.Inventory.List(ctx, inventoryroles.ListOptions{})
 
 	require.True(t, prepared.IsDeferred())
 	require.NotNil(t, prepared.Request)
@@ -51,7 +51,7 @@ func Test_InventoryRoles_List_Pagination(t *testing.T) {
 	opts.PageSize = 5
 	opts.WithTotalElements = true
 
-	prepared := client.InventoryRoles.List(ctx, opts)
+	prepared := client.UserRoles.Inventory.List(ctx, opts)
 
 	require.True(t, prepared.IsDeferred())
 	require.NotNil(t, prepared.Request)
@@ -67,7 +67,7 @@ func Test_InventoryRoles_Get_DryRun(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := api.WithDryRun(context.Background(), true)
 
-	result := client.InventoryRoles.Get(ctx, 1)
+	result := client.UserRoles.Inventory.Get(ctx, 1)
 
 	assert.NoError(t, result.Err)
 	assert.Equal(t, http.StatusOK, result.HTTPStatus)
@@ -77,7 +77,7 @@ func Test_InventoryRoles_Get_RequestInspection(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := api.WithDeferredExecution(context.Background(), true)
 
-	prepared := client.InventoryRoles.Get(ctx, 42)
+	prepared := client.UserRoles.Inventory.Get(ctx, 42)
 
 	require.True(t, prepared.IsDeferred())
 	require.NotNil(t, prepared.Request)
@@ -98,7 +98,7 @@ func Test_InventoryRoles_Create_DryRun(t *testing.T) {
 		"description": "A test inventory role",
 	}
 
-	result := client.InventoryRoles.Create(ctx, body)
+	result := client.UserRoles.Inventory.Create(ctx, body)
 
 	assert.NoError(t, result.Err)
 }
@@ -112,7 +112,7 @@ func Test_InventoryRoles_Create_RequestInspection(t *testing.T) {
 		"description": "A test inventory role",
 	}
 
-	prepared := client.InventoryRoles.Create(ctx, body)
+	prepared := client.UserRoles.Inventory.Create(ctx, body)
 
 	require.True(t, prepared.IsDeferred())
 	require.NotNil(t, prepared.Request)
@@ -133,7 +133,7 @@ func Test_InventoryRoles_Update_DryRun(t *testing.T) {
 		"description": "Updated description",
 	}
 
-	result := client.InventoryRoles.Update(ctx, 42, body)
+	result := client.UserRoles.Inventory.Update(ctx, 42, body)
 
 	assert.NoError(t, result.Err)
 }
@@ -146,7 +146,7 @@ func Test_InventoryRoles_Update_RequestInspection(t *testing.T) {
 		"name": "UpdatedInventoryRole",
 	}
 
-	prepared := client.InventoryRoles.Update(ctx, 42, body)
+	prepared := client.UserRoles.Inventory.Update(ctx, 42, body)
 
 	require.True(t, prepared.IsDeferred())
 	require.NotNil(t, prepared.Request)
@@ -162,7 +162,7 @@ func Test_InventoryRoles_Delete_DryRun(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := api.WithDryRun(context.Background(), true)
 
-	result := client.InventoryRoles.Delete(ctx, 42)
+	result := client.UserRoles.Inventory.Delete(ctx, 42)
 
 	assert.NoError(t, result.Err)
 	assert.Equal(t, http.StatusNoContent, result.HTTPStatus)
@@ -172,7 +172,7 @@ func Test_InventoryRoles_Delete_RequestInspection(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := api.WithDeferredExecution(context.Background(), true)
 
-	prepared := client.InventoryRoles.Delete(ctx, 42)
+	prepared := client.UserRoles.Inventory.Delete(ctx, 42)
 
 	require.True(t, prepared.IsDeferred())
 	require.NotNil(t, prepared.Request)

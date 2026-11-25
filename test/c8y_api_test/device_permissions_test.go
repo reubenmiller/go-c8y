@@ -20,7 +20,7 @@ func Test_DevicePermissions_Get_DryRun(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := api.WithDryRun(context.Background(), true)
 
-	result := client.DevicePermissions.GetDevicePermissions(ctx, devicepermissions.GetDevicePermissionsOptions{
+	result := client.Users.DevicePermissions.GetDevicePermissions(ctx, devicepermissions.GetDevicePermissionsOptions{
 		ManagedObjectID: "12345",
 	})
 
@@ -32,7 +32,7 @@ func Test_DevicePermissions_Get_RequestInspection(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := api.WithDeferredExecution(context.Background(), true)
 
-	prepared := client.DevicePermissions.GetDevicePermissions(ctx, devicepermissions.GetDevicePermissionsOptions{
+	prepared := client.Users.DevicePermissions.GetDevicePermissions(ctx, devicepermissions.GetDevicePermissionsOptions{
 		ManagedObjectID: "12345",
 	})
 
@@ -61,7 +61,7 @@ func Test_DevicePermissions_Update_DryRun(t *testing.T) {
 		"groups": []map[string]any{},
 	}
 
-	result := client.DevicePermissions.UpdateDevicePermissions(ctx, devicepermissions.GetDevicePermissionsOptions{
+	result := client.Users.DevicePermissions.UpdateDevicePermissions(ctx, devicepermissions.GetDevicePermissionsOptions{
 		ManagedObjectID: "12345",
 	}, body)
 
@@ -82,7 +82,7 @@ func Test_DevicePermissions_Update_RequestInspection(t *testing.T) {
 		"groups": []map[string]any{},
 	}
 
-	prepared := client.DevicePermissions.UpdateDevicePermissions(ctx, devicepermissions.GetDevicePermissionsOptions{
+	prepared := client.Users.DevicePermissions.UpdateDevicePermissions(ctx, devicepermissions.GetDevicePermissionsOptions{
 		ManagedObjectID: "12345",
 	}, body)
 
@@ -100,7 +100,7 @@ func Test_DevicePermissions_ListAssignments_DryRun(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := api.WithDryRun(context.Background(), true)
 
-	result := client.DevicePermissions.ListInventoryRoleAssignments(ctx, devicepermissions.ListInventoryRoleAssignmentOptions{
+	result := client.Users.DevicePermissions.ListInventoryRoleAssignments(ctx, devicepermissions.ListInventoryRoleAssignmentOptions{
 		UserScopedOptions: devicepermissions.UserScopedOptions{UserID: "testuser"},
 	})
 
@@ -112,7 +112,7 @@ func Test_DevicePermissions_ListAssignments_RequestInspection(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := api.WithDeferredExecution(context.Background(), true)
 
-	prepared := client.DevicePermissions.ListInventoryRoleAssignments(ctx, devicepermissions.ListInventoryRoleAssignmentOptions{
+	prepared := client.Users.DevicePermissions.ListInventoryRoleAssignments(ctx, devicepermissions.ListInventoryRoleAssignmentOptions{
 		UserScopedOptions: devicepermissions.UserScopedOptions{UserID: "testuser"},
 	})
 
@@ -137,7 +137,7 @@ func Test_DevicePermissions_ListAssignments_Pagination(t *testing.T) {
 	opts.PageSize = 5
 	opts.WithTotalElements = true
 
-	prepared := client.DevicePermissions.ListInventoryRoleAssignments(ctx, opts)
+	prepared := client.Users.DevicePermissions.ListInventoryRoleAssignments(ctx, opts)
 
 	require.True(t, prepared.IsDeferred())
 	require.NotNil(t, prepared.Request)
@@ -159,7 +159,7 @@ func Test_DevicePermissions_AssignRole_DryRun(t *testing.T) {
 		"roles":         []map[string]any{{"id": 1}},
 	}
 
-	result := client.DevicePermissions.AssignInventoryRole(ctx, devicepermissions.UserScopedOptions{
+	result := client.Users.DevicePermissions.AssignInventoryRole(ctx, devicepermissions.UserScopedOptions{
 		UserID: "testuser",
 	}, body)
 
@@ -175,7 +175,7 @@ func Test_DevicePermissions_AssignRole_RequestInspection(t *testing.T) {
 		"roles":         []map[string]any{{"id": 1}},
 	}
 
-	prepared := client.DevicePermissions.AssignInventoryRole(ctx, devicepermissions.UserScopedOptions{
+	prepared := client.Users.DevicePermissions.AssignInventoryRole(ctx, devicepermissions.UserScopedOptions{
 		UserID: "testuser",
 	}, body)
 
@@ -194,7 +194,7 @@ func Test_DevicePermissions_GetAssignment_DryRun(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := api.WithDryRun(context.Background(), true)
 
-	result := client.DevicePermissions.GetInventoryRoleAssignment(ctx, devicepermissions.GetInventoryRoleAssignmentOptions{
+	result := client.Users.DevicePermissions.GetInventoryRoleAssignment(ctx, devicepermissions.GetInventoryRoleAssignmentOptions{
 		UserScopedOptions: devicepermissions.UserScopedOptions{UserID: "testuser"},
 		ID:                1,
 	})
@@ -207,7 +207,7 @@ func Test_DevicePermissions_GetAssignment_RequestInspection(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := api.WithDeferredExecution(context.Background(), true)
 
-	prepared := client.DevicePermissions.GetInventoryRoleAssignment(ctx, devicepermissions.GetInventoryRoleAssignmentOptions{
+	prepared := client.Users.DevicePermissions.GetInventoryRoleAssignment(ctx, devicepermissions.GetInventoryRoleAssignmentOptions{
 		UserScopedOptions: devicepermissions.UserScopedOptions{UserID: "testuser"},
 		ID:                42,
 	})
@@ -230,7 +230,7 @@ func Test_DevicePermissions_UpdateAssignment_DryRun(t *testing.T) {
 		"roles": []map[string]any{{"id": 2}},
 	}
 
-	result := client.DevicePermissions.UpdateInventoryRoleAssignment(ctx, devicepermissions.GetInventoryRoleAssignmentOptions{
+	result := client.Users.DevicePermissions.UpdateInventoryRoleAssignment(ctx, devicepermissions.GetInventoryRoleAssignmentOptions{
 		UserScopedOptions: devicepermissions.UserScopedOptions{UserID: "testuser"},
 		ID:                42,
 	}, body)
@@ -246,7 +246,7 @@ func Test_DevicePermissions_UpdateAssignment_RequestInspection(t *testing.T) {
 		"roles": []map[string]any{{"id": 2}},
 	}
 
-	prepared := client.DevicePermissions.UpdateInventoryRoleAssignment(ctx, devicepermissions.GetInventoryRoleAssignmentOptions{
+	prepared := client.Users.DevicePermissions.UpdateInventoryRoleAssignment(ctx, devicepermissions.GetInventoryRoleAssignmentOptions{
 		UserScopedOptions: devicepermissions.UserScopedOptions{UserID: "testuser"},
 		ID:                42,
 	}, body)
@@ -265,7 +265,7 @@ func Test_DevicePermissions_DeleteAssignment_DryRun(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := api.WithDryRun(context.Background(), true)
 
-	result := client.DevicePermissions.DeleteInventoryRoleAssignment(ctx, devicepermissions.GetInventoryRoleAssignmentOptions{
+	result := client.Users.DevicePermissions.DeleteInventoryRoleAssignment(ctx, devicepermissions.GetInventoryRoleAssignmentOptions{
 		UserScopedOptions: devicepermissions.UserScopedOptions{UserID: "testuser"},
 		ID:                42,
 	})
@@ -278,7 +278,7 @@ func Test_DevicePermissions_DeleteAssignment_RequestInspection(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := api.WithDeferredExecution(context.Background(), true)
 
-	prepared := client.DevicePermissions.DeleteInventoryRoleAssignment(ctx, devicepermissions.GetInventoryRoleAssignmentOptions{
+	prepared := client.Users.DevicePermissions.DeleteInventoryRoleAssignment(ctx, devicepermissions.GetInventoryRoleAssignmentOptions{
 		UserScopedOptions: devicepermissions.UserScopedOptions{UserID: "testuser"},
 		ID:                42,
 	})

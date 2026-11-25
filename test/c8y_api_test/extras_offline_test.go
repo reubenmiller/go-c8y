@@ -144,7 +144,7 @@ func Test_TOTP_GenerateSecret(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
-	res := client.Users.CurrentUser.TOTP.GenerateSecret(ctx)
+	res := client.Users.Current.TOTP.GenerateSecret(ctx)
 	require.NoError(t, res.Err)
 }
 
@@ -152,7 +152,7 @@ func Test_TOTP_VerifyCode(t *testing.T) {
 	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
-	res := client.Users.CurrentUser.TOTP.VerifyCode(ctx, "123456")
+	res := client.Users.Current.TOTP.VerifyCode(ctx, "123456")
 	require.NoError(t, res.Err)
 }
 
@@ -160,7 +160,7 @@ func Test_TOTP_SetActivity(t *testing.T) {
 	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
-	res := client.Users.CurrentUser.TOTP.SetActivity(ctx, true)
+	res := client.Users.Current.TOTP.SetActivity(ctx, true)
 	require.NoError(t, res.Err)
 }
 

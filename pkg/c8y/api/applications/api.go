@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/applications/currentapplication"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/applications/versions"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
@@ -49,6 +50,10 @@ type Service struct {
 	// Current is the current-application sub-resource (/application/currentApplication)
 	Current *currentapplication.Service
 
+	// Versions is the application versions sub-resource. Client.ApplicationVersions
+	// is a deprecated alias for the same instance.
+	Versions *versions.Service
+
 	// Resolver lookup function
 	lookupByName    func(ctx context.Context, name, appType string) (string, map[string]any, error)
 	customResolvers map[string]source.Resolver
@@ -58,6 +63,7 @@ func NewService(common *httpcore.Service) *Service {
 	service := &Service{
 		svc:             *common,
 		Current:         currentapplication.NewService(common),
+		Versions:        versions.NewService(common),
 		customResolvers: make(map[string]source.Resolver),
 	}
 

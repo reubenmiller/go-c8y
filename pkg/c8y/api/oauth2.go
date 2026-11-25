@@ -490,7 +490,7 @@ func (c *Client) AuthorizeWithBrowserFlow(ctx context.Context, initRequest strin
 		}
 		tokenClient := NewClient(ClientOptions{BaseURL: c.httpClient.BaseURL()})
 		tokenClient.SetDebug(c.debugEnabled)
-		tok := tokenClient.LoginTokens.Create(ctx, logintokens.CreateTokenOptions{
+		tok := tokenClient.Tenants.LoginTokens.Create(ctx, logintokens.CreateTokenOptions{
 			GrantType:     logintokens.GrantTypeAuthorizationCode,
 			Code:          code,
 			RequestOrigin: callbackURL,
