@@ -10,12 +10,16 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/realtime"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/wsdial"
 	"resty.dev/v3"
 )
 
 type Service struct {
 	Client         *resty.Client
 	RealtimeClient *realtime.Client
+	// Connector opens websocket connections with the client's TLS, proxy,
+	// authorization, middleware and dry-run handling (see api.Client.DialWebsocket).
+	Connector wsdial.Connector
 	// MTLSPort is the port used for the mutual-TLS device-certificate token endpoint.
 	// Defaults to "8443" when empty.
 	MTLSPort string

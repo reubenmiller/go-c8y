@@ -1,6 +1,7 @@
 package remoteaccess
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -62,7 +63,13 @@ type multiplexer struct {
 // acknowledgement. If the device did not answer (in time), e.g. the websocket was closed before,
 // the error wraps errMultiplexNoAnswer.
 func (c *RemoteAccessClient) OpenMultiplexedSession() (*yamux.Session, error) {
-	wsConn, remoteURL, err := c.createRemoteAccessConnection()
+	return c.OpenMultiplexedSessionContext(context.Background())
+}
+
+// OpenMultiplexedSessionContext is like OpenMultiplexedSession; ctx is used to
+// connect (see DialContext).
+func (c *RemoteAccessClient) OpenMultiplexedSessionContext(ctx context.Context) (*yamux.Session, error) {
+	wsConn, remoteURL, err := c.createRemoteAccessConnection(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +131,7 @@ func (c *countingConn) Read(p []byte) (int, error) {
 }
 
 // getSession returns the open multiplexed session, opening a new one if required
-func (m *multiplexer) getSession(c *RemoteAccessClient) (*yamux.Session, error) {
+func (m *multiplexer) getSession(ctx context.Context, c *RemoteAccessClient) (*yamux.Session, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.unsupported {
@@ -133,7 +140,7 @@ func (m *multiplexer) getSession(c *RemoteAccessClient) (*yamux.Session, error) 
 	if m.session != nil && !m.session.IsClosed() {
 		return m.session, nil
 	}
-	session, err := c.OpenMultiplexedSession()
+	session, err := c.OpenMultiplexedSessionContext(ctx)
 	if errors.Is(err, errMultiplexNoAnswer) {
 		m.noAnswers++
 		if m.noAnswers >= multiplexMaxNoAnswers {
@@ -163,8 +170,8 @@ func (m *multiplexer) close() {
 
 // serveMultiplexed carries a local connection as a stream of the multiplexed session.
 // It returns false if the connection could not be multiplexed (and was not used).
-func (c *RemoteAccessClient) serveMultiplexed(localConn net.Conn) bool {
-	session, err := c.mux.getSession(c)
+func (c *RemoteAccessClient) serveMultiplexed(ctx context.Context, localConn net.Conn) bool {
+	session, err := c.mux.getSession(ctx, c)
 	if err != nil {
 		switch {
 		case errors.Is(err, errMultiplexDisabled):

@@ -608,8 +608,11 @@ func (s *Service) deleteListB(opt DeleteListOptions) *httpcore.TryRequest {
 // Subscribe subscribes to realtime alarms and sends raw messages to the provided channel.
 // The subscription automatically unsubscribes when the context is cancelled or times out.
 func (s *Service) Subscribe(ctx context.Context, ID string, out chan<- *realtime.Message) op.Result[chan error] {
-	err := s.svc.RealtimeClient.Connect()
+	err := s.svc.RealtimeClient.ConnectContext(ctx)
 	if err != nil {
+		if dry, ok := realtime.DryRunSubscribe(ctx, err, out, realtime.Alarms(ID)); ok {
+			return dry
+		}
 		return op.Failed[chan error](err, false)
 	}
 	return op.OK(s.svc.RealtimeClient.Subscribe(ctx, realtime.Alarms(ID), out))
@@ -663,13 +666,16 @@ func (s *Service) SubscribeStream(ctx context.Context, ID string) op.Result[*Ala
 		}
 		ID = resolvedID
 	}
-	err := s.svc.RealtimeClient.Connect()
+	pattern := realtime.Alarms(ID)
+	err := s.svc.RealtimeClient.ConnectContext(ctx)
 	if err != nil {
+		if dry, ok := realtime.DryRunStream[realtime.StreamData[jsonmodels.Alarm]](ctx, err, pattern); ok {
+			return dry
+		}
 		return op.Failed[*AlarmStream](err, false)
 	}
 
 	messages := make(chan *realtime.Message, 10)
-	pattern := realtime.Alarms(ID)
 	errorChan := s.svc.RealtimeClient.Subscribe(ctx, pattern, messages)
 	stream := realtime.NewStream(ctx, messages, errorChan, func(msg *realtime.Message) realtime.StreamData[jsonmodels.Alarm] {
 		return realtime.StreamData[jsonmodels.Alarm]{

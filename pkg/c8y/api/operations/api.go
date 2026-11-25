@@ -397,13 +397,16 @@ func (s *Service) SubscribeStream(ctx context.Context, ID string) op.Result[*Ope
 		}
 		ID = resolvedID
 	}
-	err := s.svc.RealtimeClient.Connect()
+	pattern := realtime.Operations(ID)
+	err := s.svc.RealtimeClient.ConnectContext(ctx)
 	if err != nil {
+		if dry, ok := realtime.DryRunStream[realtime.StreamData[jsonmodels.Operation]](ctx, err, pattern); ok {
+			return dry
+		}
 		return op.Failed[*OperationStream](err, false)
 	}
 
 	messages := make(chan *realtime.Message, 10)
-	pattern := realtime.Operations(ID)
 	errorChan := s.svc.RealtimeClient.Subscribe(ctx, pattern, messages)
 	stream := realtime.NewStream(ctx, messages, errorChan, func(msg *realtime.Message) realtime.StreamData[jsonmodels.Operation] {
 		return realtime.StreamData[jsonmodels.Operation]{

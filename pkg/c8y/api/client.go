@@ -304,20 +304,28 @@ type ClientOptions struct {
 	ContextCertificateSource func(tenant string) (tls.Certificate, error)
 }
 
+// Realtime returns the realtime (Bayeux) client of this API client.
+//
+// The realtime client connects through the API client (see
+// [Client.DialWebsocket]): it uses the client's TLS and proxy settings, reads
+// the current authorization for every connect and reconnect (a token refreshed
+// since the first call is used), applies request middleware and honors dry run
+// ([WithDryRun]) and the other context options of [realtime.Client.ConnectContext].
 func (c *Client) Realtime() *realtime.Client {
 	c.clientMu.Lock()
 	defer c.clientMu.Unlock()
 	if c.common.RealtimeClient == nil {
-		c.common.RealtimeClient = realtime.NewClient(nil, //nolint:staticcheck // an invalid host is reported by Connect
-			realtime.ClientOptions{
-				Host:     c.BaseURL.String(),
-				Tenant:   c.Auth.Tenant,
-				Username: c.Auth.Username,
-				Password: c.Auth.Password,
-				Token:    c.Auth.Token,
-			})
+		c.common.RealtimeClient = c.newRealtimeClient()
 	}
 	return c.common.RealtimeClient
+}
+
+func (c *Client) newRealtimeClient() *realtime.Client {
+	return realtime.NewClient(nil, //nolint:staticcheck // an invalid host is reported by Connect
+		realtime.ClientOptions{
+			Host:      c.BaseURL.String(),
+			Connector: c,
+		})
 }
 
 func NewClientFromEnvironment(opt ClientOptions) *Client {
@@ -598,14 +606,8 @@ func NewClient(opts ClientOptions) *Client {
 	c.common.Client = rclient
 	c.common.MTLSPort = opts.MTLSPort
 	c.common.CertChainHeader = buildCertChainHeader(opts.Auth)
-	c.common.RealtimeClient = realtime.NewClient(nil, //nolint:staticcheck // an invalid host is reported by Connect
-		realtime.ClientOptions{
-			Host:     targetBaseURL.String(),
-			Tenant:   c.Auth.Tenant,
-			Username: c.Auth.Username,
-			Password: c.Auth.Password,
-			Token:    c.Auth.Token,
-		})
+	c.common.RealtimeClient = c.newRealtimeClient()
+	c.common.Connector = c
 	c.initServices()
 
 	c.registerMiddleware()

@@ -1,6 +1,7 @@
 package remoteaccess
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -39,7 +40,7 @@ func TestRemoteAccessConnectionAuthorization(t *testing.T) {
 
 			client := api.NewClient(api.ClientOptions{BaseURL: server.URL, Auth: tc.auth, SkipTenantLookup: true})
 			ra := NewRemoteAccessClient(client, RemoteAccessOptions{ManagedObjectID: "12345", RemoteAccessID: "1"})
-			if _, _, err := ra.createRemoteAccessConnection(); err == nil {
+			if _, _, err := ra.createRemoteAccessConnection(context.Background()); err == nil {
 				t.Fatal("expected the handshake to be rejected")
 			}
 			if gotPath != "/service/remoteaccess/client/12345/configurations/1" {
