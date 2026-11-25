@@ -62,8 +62,15 @@ type RequestOptions struct {
 	// Useful for cross-tenant operations or custom aliases
 	Host string
 
-	// FormData for multipart/form-data uploads
-	// map[fieldName]io.Reader
+	// FormData for multipart/form-data uploads (map[fieldName]io.Reader). The
+	// parts are sent in field name order. The value's type sets the part:
+	//   - *FormFile: a file part with the given file name and content type
+	//   - *FormField: a plain form field
+	//   - *os.File: a file part named after the file, with a content type
+	//     detected from the file name or the contents
+	//   - any other reader: the "object" field is sent as JSON (the binary
+	//     metadata of the Cumulocity upload APIs), every other field as a file
+	//     part named after the field, as application/octet-stream
 	FormData map[string]io.Reader
 
 	// PrepareRequest is called with the final *http.Request just before it is
@@ -87,7 +94,10 @@ type RequestOptions struct {
 type RequestResult struct {
 	// Response is the HTTP response. Its Request field is a copy of the request
 	// that was sent, including its body.
-	Response   *http.Response
+	Response *http.Response
+	// Error is the error of a request which could not be sent, or a
+	// *core.Error for a response with an HTTP error status (400 or above,
+	// unless DoNotParseResponse is set).
 	Error      error
 	cachedBody []byte
 }
@@ -209,12 +219,8 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) *Reque
 		}
 		req.SetURL(u.Path)
 
-		// Add inline query params from path
-		for key, values := range u.Query() {
-			for _, value := range values {
-				req.SetQueryParam(key, value)
-			}
-		}
+		// Add inline query params from path (every value of a repeated key)
+		req.SetQueryParamsFromValues(u.Query())
 	}
 
 	// Add additional query parameters
@@ -223,11 +229,7 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) *Reque
 		case string:
 			// Parse string query and add params
 			if parsedQuery, err := url.ParseQuery(q); err == nil {
-				for key, values := range parsedQuery {
-					for _, value := range values {
-						req.SetQueryParam(key, value)
-					}
-				}
+				req.SetQueryParamsFromValues(parsedQuery)
 			}
 		case url.Values:
 			req.SetQueryParamsFromValues(q)
@@ -245,6 +247,20 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) *Reque
 		}
 		req.SetHeader("Accept", accept)
 	}
+
+	// Apply the context's request options as the typed service methods do:
+	// the processing mode and the custom headers and query parameters. The
+	// request's own options below win.
+	if mode := ctxhelpers.GetProcessingMode(ctxRequest); mode != "" {
+		req.SetHeader(types.HeaderProcessingMode, string(mode))
+	}
+	for key, value := range ctxhelpers.GetExtraHeaders(ctxRequest) {
+		req.SetHeader(key, value)
+	}
+	if options.Accept != "" && !options.IgnoreAccept {
+		req.SetHeader("Accept", options.Accept)
+	}
+	httpcore.SetExtraQueryParams(req, ctxhelpers.GetExtraQueryParams(ctxRequest))
 
 	// Set Content-Type if provided
 	if options.ContentType != "" {
@@ -264,20 +280,19 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) *Reque
 	// Set body
 	if options.Body != nil {
 		req.SetBody(options.Body)
+		if strings.EqualFold(options.Method, http.MethodDelete) {
+			// The HTTP client drops a DELETE body unless allowed
+			req.SetMethodDeleteAllowPayload(true)
+		}
 	}
 
 	// Handle multipart form data
 	if len(options.FormData) > 0 {
-		for fieldName, reader := range options.FormData {
-			// Special handling for common Cumulocity binary upload patterns
-			if fieldName == "object" {
-				// Metadata field - no filename, JSON content type
-				req.SetMultipartField(fieldName, "", types.MimeTypeApplicationJSON, reader)
-			} else {
-				// File field - use field name as filename, octet-stream content type
-				req.SetMultipartField(fieldName, fieldName, types.MimeTypeApplicationOctetStream, reader)
-			}
+		fields, err := multipartFields(options.FormData)
+		if err != nil {
+			return &RequestResult{Error: fmt.Errorf("invalid form data: %w", err)}
 		}
+		req.SetMultipartFields(fields...)
 	}
 
 	// Override host if provided (use full URL with scheme)
@@ -288,7 +303,9 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) *Reque
 		if !strings.HasPrefix(fullURL, "http://") && !strings.HasPrefix(fullURL, "https://") {
 			fullURL = "https://" + fullURL
 		}
-		fullURL = strings.TrimSuffix(fullURL, "/") + options.Path
+		// The path's query parameters were already added
+		path, _, _ := strings.Cut(options.Path, "?")
+		fullURL = strings.TrimSuffix(fullURL, "/") + path
 	}
 
 	if options.DoNotParseResponse {
@@ -334,6 +351,16 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) *Reque
 		resp.Body.Close()
 	}
 	httpResp.Body = io.NopCloser(bytes.NewReader(result.cachedBody))
+
+	if httpResp.StatusCode >= 400 {
+		apiErr := responseError(resp, &httpResp, result.cachedBody)
+		if len(result.cachedBody) == 0 {
+			// A JSON error body was parsed by the client: keep it readable
+			result.cachedBody = []byte(apiErr.MessageRaw)
+			httpResp.Body = io.NopCloser(bytes.NewReader(result.cachedBody))
+		}
+		result.Error = apiErr
+	}
 
 	if options.OnResponse != nil {
 		hookResp := httpResp
