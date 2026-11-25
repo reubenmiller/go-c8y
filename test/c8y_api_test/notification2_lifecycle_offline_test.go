@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/currenttenant"
 	notif "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/notification2"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/currenttenant"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/notification2"
 	"github.com/reubenmiller/go-c8y/v2/pkg/microservice"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
