@@ -60,7 +60,7 @@ func newRAServer(t *testing.T, useTLS bool) *raServer {
 	} else {
 		s.Server = httptest.NewServer(handler)
 	}
-	t.Cleanup(s.Server.Close)
+	t.Cleanup(s.Close)
 	return s
 }
 

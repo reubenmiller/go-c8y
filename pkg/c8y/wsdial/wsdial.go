@@ -20,6 +20,12 @@ import (
 //
 // *api.Client implements Connector.
 type Connector interface {
+	// WebsocketHeader returns the request headers of a connection made with
+	// ctx, in particular the current Authorization. Clients which keep a
+	// connection for long read it again when they must authenticate again, so a
+	// refreshed token is used.
+	WebsocketHeader(ctx context.Context) (http.Header, error)
+
 	// DialWebsocket opens the websocket at rawURL (ws, wss, http or https).
 	// header holds additional request headers. On success the returned
 	// response's Request is the upgrade request that was sent.

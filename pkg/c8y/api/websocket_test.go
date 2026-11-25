@@ -50,6 +50,20 @@ type wsTestServer struct {
 	handshakes []json.RawMessage // ext of every /meta/handshake
 	other      http.HandlerFunc
 	hits       atomic.Int64
+	last       *websocket.Conn // the last realtime connection
+	writeMu    sync.Mutex
+}
+
+// Push sends a Bayeux message array on the last realtime connection.
+func (s *wsTestServer) Push(t *testing.T, messages ...map[string]any) {
+	t.Helper()
+	s.mu.Lock()
+	conn := s.last
+	s.mu.Unlock()
+	require.NotNil(t, conn)
+	s.writeMu.Lock()
+	defer s.writeMu.Unlock()
+	require.NoError(t, conn.WriteJSON(messages))
 }
 
 func newWSTestServer(t *testing.T, useTLS bool, other http.HandlerFunc, configure ...func(*httptest.Server)) *wsTestServer {
@@ -75,6 +89,11 @@ func newWSTestServer(t *testing.T, useTLS bool, other http.HandlerFunc, configur
 			return
 		}
 		defer conn.Close()
+		if strings.HasPrefix(r.URL.Path, "/cep/realtime") {
+			s.mu.Lock()
+			s.last = conn
+			s.mu.Unlock()
+		}
 		for {
 			_, data, err := conn.ReadMessage()
 			if err != nil {
@@ -109,7 +128,9 @@ func newWSTestServer(t *testing.T, useTLS bool, other http.HandlerFunc, configur
 				replies = append(replies, reply)
 			}
 			if len(replies) > 0 {
+				s.writeMu.Lock()
 				_ = conn.WriteJSON(replies)
+				s.writeMu.Unlock()
 			}
 		}
 	})
@@ -122,7 +143,7 @@ func newWSTestServer(t *testing.T, useTLS bool, other http.HandlerFunc, configur
 	} else {
 		s.Start()
 	}
-	t.Cleanup(s.Server.Close)
+	t.Cleanup(s.Close)
 	return s
 }
 
@@ -556,6 +577,32 @@ func TestRealtimeUsesCurrentAuthorization(t *testing.T) {
 	require.Len(t, hs, 2)
 	assert.Contains(t, hs[0], `"token-1"`)
 	assert.Contains(t, hs[1], `"token-2"`)
+}
+
+// The server can ask for a new handshake on a connection which is kept. The
+// token of the connection may have expired by then, so the handshake must use
+// the current authorization of the client.
+func TestRealtimeRehandshakeUsesCurrentAuthorization(t *testing.T) {
+	srv := newWSTestServer(t, false, nil)
+	var current atomic.Value
+	current.Store("token-1")
+	source := authentication.TokenSourceFunc(func() (*authentication.Token, error) {
+		return &authentication.Token{AccessToken: current.Load().(string)}, nil
+	})
+	client := wsTestClient(srv.URL, authentication.AuthOptions{TokenSource: source}, false)
+	rt := client.Realtime()
+	require.NoError(t, rt.ConnectContext(context.Background()))
+	defer rt.Close()
+	require.Len(t, srv.Handshakes(), 1)
+
+	current.Store("token-2")
+	srv.Push(t, map[string]any{
+		"channel": "/meta/connect", "successful": false,
+		"advice": map[string]any{"reconnect": "handshake", "interval": 10},
+	})
+	require.Eventually(t, func() bool { return len(srv.Handshakes()) == 2 }, 5*time.Second, 20*time.Millisecond)
+	assert.Contains(t, srv.Handshakes()[0], `"token-1"`)
+	assert.Contains(t, srv.Handshakes()[1], `"token-2"`)
 }
 
 func TestRealtimeBasicAuthHandshake(t *testing.T) {

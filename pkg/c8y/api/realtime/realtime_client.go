@@ -95,6 +95,7 @@ type Client struct {
 	// reconnectCtx carries the values (not the cancellation) of the context
 	// given to ConnectContext, for automatic reconnects.
 	reconnectCtx context.Context
+	ctxMu        sync.Mutex
 
 	send chan *request
 
@@ -455,9 +456,9 @@ func (c *Client) ConnectContext(ctx context.Context) error {
 		ctx = context.Background()
 	}
 	if !c.IsConnected() {
-		c.mtx.Lock()
+		c.ctxMu.Lock()
 		c.reconnectCtx = context.WithoutCancel(ctx)
-		c.mtx.Unlock()
+		c.ctxMu.Unlock()
 
 		err := c.waitConnect(ctx, c.connect(ctx))
 		if err != nil {
@@ -491,8 +492,9 @@ func (c *Client) waitConnect(ctx context.Context, ch chan error) error {
 }
 
 func (c *Client) connectionContext() context.Context {
-	c.mtx.RLock()
-	defer c.mtx.RUnlock()
+	// own lock: the handshake is built while mtx is held
+	c.ctxMu.Lock()
+	defer c.ctxMu.Unlock()
 	if c.reconnectCtx != nil {
 		return c.reconnectCtx
 	}
@@ -528,7 +530,10 @@ func (c *Client) useAuthorization(resp *http.Response) {
 	if resp == nil || resp.Request == nil {
 		return
 	}
-	authz := resp.Request.Header.Get("Authorization")
+	c.useAuthorizationValue(resp.Request.Header.Get("Authorization"))
+}
+
+func (c *Client) useAuthorizationValue(authz string) {
 	scheme, value, ok := strings.Cut(authz, " ")
 	if !ok || value == "" {
 		return
@@ -545,6 +550,12 @@ func (c *Client) useAuthorization(resp *http.Response) {
 		// The Bayeux token of basic auth is the base64 "tenant/user:password"
 		c.extension = getC8yExtensionFromToken(value)
 	}
+}
+
+func (c *Client) getClientID() string {
+	c.mtx.RLock()
+	defer c.mtx.RUnlock()
+	return c.clientID
 }
 
 // IsConnected returns true if the websocket is connected
@@ -587,7 +598,7 @@ func (c *Client) disconnect() error {
 	message := &request{
 		ID:       c.nextMessageID(),
 		Channel:  "/meta/disconnect",
-		ClientID: c.clientID,
+		ClientID: c.getClientID(),
 	}
 
 	// Change to disconnected state, as the server will not send a reply upon receiving the /meta/disconnect command
@@ -684,7 +695,7 @@ func (c *Client) connect(ctx context.Context) chan error {
 		go c.worker()
 	}
 
-	return c.handshake()
+	return c.handshake(false)
 }
 
 func (c *Client) worker() {
@@ -765,7 +776,7 @@ func (c *Client) worker() {
 						case "handshake":
 							c.log().Info("Scheduling sending of new handshake to server with a small delay", "delay_ms", retryDelay)
 							time.AfterFunc(time.Duration(retryDelay)*time.Millisecond, func() {
-								c.handshake()
+								c.handshake(true)
 							})
 						case "retry":
 							c.log().Info("Resending /meta/connect heartbeat after a small delay", "delay_ms", retryDelay)
@@ -836,7 +847,13 @@ func (c *Client) worker() {
 	}
 }
 
-func (c *Client) handshake() chan error {
+// handshake sends /meta/handshake. When renew is set (the server asked for a new
+// handshake on a connection which is kept) the authorization is read again from
+// the connector first: the token of the connection may have expired since.
+func (c *Client) handshake(renew bool) chan error {
+	if renew {
+		c.renewExtension()
+	}
 	message := &request{
 		ID:                       c.nextMessageID(),
 		Channel:                  "/meta/handshake",
@@ -855,6 +872,22 @@ func (c *Client) handshake() chan error {
 	return c.WaitForMessage(message.ID)
 }
 
+// renewExtension reads the current authorization from the connector.
+func (c *Client) renewExtension() {
+	c.mtx.RLock()
+	connector := c.connector
+	c.mtx.RUnlock()
+	if connector == nil {
+		return
+	}
+	header, err := connector.WebsocketHeader(c.connectionContext())
+	if err != nil {
+		c.log().Warn("Could not renew the authorization for the handshake", "err", err)
+		return
+	}
+	c.useAuthorizationValue(header.Get("Authorization"))
+}
+
 func (c *Client) currentExtension() any {
 	c.extMu.Lock()
 	defer c.extMu.Unlock()
@@ -869,7 +902,7 @@ func (c *Client) sendMeta() error {
 		ID:             c.nextMessageID(),
 		Channel:        "/meta/connect",
 		ConnectionType: "websocket",
-		ClientID:       c.clientID,
+		ClientID:       c.getClientID(),
 	}
 
 	c.send <- message
@@ -877,7 +910,7 @@ func (c *Client) sendMeta() error {
 }
 
 func (c *Client) getAdvice() chan error {
-	clientID := c.clientID
+	clientID := c.getClientID()
 	message := &request{
 		ID:             c.nextMessageID(),
 		Channel:        "/meta/connect",
@@ -948,7 +981,7 @@ func (c *Client) Subscribe(ctx context.Context, pattern string, out chan<- *Mess
 		Channel:        "/meta/subscribe",
 		Subscription:   pattern,
 		ConnectionType: "websocket",
-		ClientID:       c.clientID,
+		ClientID:       c.getClientID(),
 	}
 
 	c.hub.register <- &subscription{
@@ -1015,7 +1048,7 @@ func (c *Client) reactivateSubscriptions() {
 			Channel:        "/meta/subscribe",
 			Subscription:   subscription,
 			ConnectionType: "websocket",
-			ClientID:       c.clientID,
+			ClientID:       c.getClientID(),
 		}
 
 		ids = append(ids, message.ID)
@@ -1037,7 +1070,7 @@ func (c *Client) UnsubscribeAll() chan error {
 			ID:           c.nextMessageID(),
 			Channel:      "/meta/unsubscribe",
 			Subscription: pattern,
-			ClientID:     c.clientID,
+			ClientID:     c.getClientID(),
 		}
 
 		ids = append(ids, message.ID)
@@ -1057,7 +1090,7 @@ func (c *Client) Unsubscribe(pattern string) chan error {
 		ID:           c.nextMessageID(),
 		Channel:      "/meta/unsubscribe",
 		Subscription: pattern,
-		ClientID:     c.clientID,
+		ClientID:     c.getClientID(),
 	}
 
 	c.hub.unregister <- pattern

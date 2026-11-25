@@ -63,8 +63,14 @@ func (h *Hub) Run() {
 				}
 			}
 		case <-h.closeAll:
+			// A channel can be registered more than once (subscriptions are
+			// registered again after a reconnect): close it once.
+			closed := make(map[chan<- *Message]struct{}, len(h.clients))
 			for client := range h.clients {
-				close(client.out)
+				if _, done := closed[client.out]; !done {
+					close(client.out)
+					closed[client.out] = struct{}{}
+				}
 				delete(h.clients, client)
 			}
 			h.channels.Range(func(key, _ any) bool {
