@@ -288,6 +288,8 @@ func TestManagedObject_WithParents(t *testing.T) {
 		req, _ := http.NewRequest(method, fs.URL()+path, strings.NewReader(body))
 		req.SetBasicAuth("t12345/admin", "admin-pass")
 		req.Header.Set("Content-Type", "application/json")
+		// without it, a POST returns no body (like Cumulocity)
+		req.Header.Set("Accept", "application/json")
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			t.Fatal(err)

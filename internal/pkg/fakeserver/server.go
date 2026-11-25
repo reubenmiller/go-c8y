@@ -219,8 +219,74 @@ func (fs *FakeServer) handler() http.Handler {
 			return
 		}
 		fs.record(r)
+		if isNoAcceptJSONWrite(r) {
+			// Cumulocity only returns the created/updated object when the request
+			// asks for it with an Accept header (e.g. the cli's --noAccept flag).
+			// The realtime notification still carries the object.
+			w = &noAcceptResponseWriter{ResponseWriter: w}
+		}
 		fs.withRealtimePublish(w, r, mux.ServeHTTP)
 	})
+}
+
+// noAcceptPaths are the REST resources whose POST/PUT response body depends on
+// the Accept header. Other endpoints (e.g. EST certificate enrollment, binary
+// uploads, oauth) return their body regardless.
+var noAcceptPaths = []string{
+	"/inventory/managedObjects",
+	"/alarm/alarms",
+	"/event/events",
+	"/measurement/measurements",
+	"/devicecontrol/operations",
+	"/identity/",
+	"/user/",
+}
+
+// isNoAcceptJSONWrite reports whether r is a json POST or PUT request, without
+// an Accept header, to one of the noAcceptPaths.
+func isNoAcceptJSONWrite(r *http.Request) bool {
+	if r.Method != http.MethodPost && r.Method != http.MethodPut {
+		return false
+	}
+	if r.Header.Get("Accept") != "" {
+		return false
+	}
+	contentType := r.Header.Get("Content-Type")
+	if !strings.Contains(contentType, "json") {
+		return false
+	}
+	for _, prefix := range noAcceptPaths {
+		if strings.HasPrefix(r.URL.Path, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+// noAcceptResponseWriter drops the body of a successful response, like
+// Cumulocity does for a POST or PUT request without an Accept header. Error
+// responses keep their body.
+type noAcceptResponseWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (w *noAcceptResponseWriter) WriteHeader(status int) {
+	w.status = status
+	if status >= 200 && status < 300 {
+		w.Header().Del("Content-Type")
+	}
+	w.ResponseWriter.WriteHeader(status)
+}
+
+func (w *noAcceptResponseWriter) Write(b []byte) (int, error) {
+	if w.status == 0 {
+		w.WriteHeader(http.StatusOK)
+	}
+	if w.status >= 200 && w.status < 300 {
+		return len(b), nil
+	}
+	return w.ResponseWriter.Write(b)
 }
 
 // URL returns the base URL of the fake server.
@@ -361,6 +427,17 @@ func (fs *FakeServer) seedDefaults() {
 		"type":                 "BASIC",
 		"self":                 fs.URL() + "/tenant/loginOptions/BASIC",
 		"grantType":            "PASSWORD",
+		"userManagementSource": "INTERNAL",
+		"visibleOnLoginPage":   true,
+	}))
+	// OAI-Secure (the default of a Cumulocity tenant): the token is created by
+	// POST /tenant/oauth (see handleOAuth)
+	fs.LoginOptions.CreateWithID("OAUTH2_INTERNAL", marshalJSON(map[string]any{
+		"id":                   "OAUTH2_INTERNAL",
+		"type":                 "OAUTH2_INTERNAL",
+		"self":                 fs.URL() + "/tenant/loginOptions/OAUTH2_INTERNAL",
+		"grantType":            "PASSWORD",
+		"initRequest":          fs.URL() + "/tenant/oauth?tenant_id=t12345",
 		"userManagementSource": "INTERNAL",
 		"visibleOnLoginPage":   true,
 	}))

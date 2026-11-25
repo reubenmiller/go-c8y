@@ -142,6 +142,7 @@ v2 is a new module, `github.com/reubenmiller/go-c8y/v2`. Entries marked **Breaki
 * `c8ygen lint` now compares operations (method + path) and requires a reason for every drift waiver; waivers can name a method (`POST /path`).
 * The README describes v2 (install, quick start, Go 1.27, stability promise), and the docs use `/v2` import paths. `docs/API_DESIGN.md` explains the tenant default for tenant-scoped endpoints and how `Applications.List` differs from the `ListBy*` methods.
 * CI checks the docs (`task check-docs`: no v1 import paths, every `package main` example builds) and runs `gorelease` against the latest v2 tag (`task check-api-compat`, blocking once `v2.0.0` exists).
+* The fake server (`c8y-fakeserver`) behaves more like a Cumulocity tenant, so go-c8y-cli tests can run against it: a json `POST` or `PUT` without an `Accept` header to a REST resource (inventory, alarms, events, measurements, operations, identity, users) returns no body; the tenant offers the `OAUTH2_INTERNAL` login option (initRequest `/tenant/oauth?tenant_id=t12345`) besides `BASIC`; and the `/tenant/oauth` token has `iat`, `nbf`, and `exp` claims.
 
 ## Released
 
