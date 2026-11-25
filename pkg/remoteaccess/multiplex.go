@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -92,7 +91,7 @@ func (c *RemoteAccessClient) OpenMultiplexedSession() (*yamux.Session, error) {
 		conn.Close()
 		return nil, err
 	}
-	slog.Info("Multiplexing connections", "url", remoteURL)
+	c.log.Info("Multiplexing connections", "url", remoteURL)
 	return session, nil
 }
 
@@ -169,17 +168,17 @@ func (c *RemoteAccessClient) serveMultiplexed(localConn net.Conn) bool {
 	if err != nil {
 		switch {
 		case errors.Is(err, errMultiplexDisabled):
-			slog.Debug("Multiplexing disabled, using one websocket per connection")
+			c.log.Debug("Multiplexing disabled, using one websocket per connection")
 		case errors.Is(err, ErrMultiplexNotSupported):
-			slog.Warn("Multiplexing disabled, using one websocket per connection", "err", err)
+			c.log.Warn("Multiplexing disabled, using one websocket per connection", "err", err)
 		default:
-			slog.Warn("Could not open multiplexed session, using one websocket for this connection", "err", err)
+			c.log.Warn("Could not open multiplexed session, using one websocket for this connection", "err", err)
 		}
 		return false
 	}
 	stream, err := session.OpenStream()
 	if err != nil {
-		slog.Warn("Could not open multiplexed stream, using one websocket per connection", "err", err)
+		c.log.Warn("Could not open multiplexed stream, using one websocket per connection", "err", err)
 		return false
 	}
 	go pipe(localConn, stream, multiplexHalfCloseTimeout)

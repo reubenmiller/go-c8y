@@ -34,7 +34,14 @@ func chanFromConn(conn io.Reader) chan []byte {
 }
 
 // Copy accepts a websocket connection and TCP connection and copies data between them
+// Copy copies the data between a websocket and a TCP connection until either
+// is closed. It logs to slog.Default(); see CopyWithLogger.
 func Copy(gwsConn *websocket.Conn, tcpConn net.Conn) {
+	CopyWithLogger(slog.Default(), gwsConn, tcpConn)
+}
+
+// CopyWithLogger is Copy logging to log.
+func CopyWithLogger(log *slog.Logger, gwsConn *websocket.Conn, tcpConn net.Conn) {
 	wsConn := wsconnadapter.New(gwsConn)
 	wsChan := chanFromConn(wsConn)
 	tcpChan := chanFromConn(tcpConn)
@@ -45,14 +52,14 @@ func Copy(gwsConn *websocket.Conn, tcpConn net.Conn) {
 		select {
 		case wsData := <-wsChan:
 			if wsData == nil {
-				slog.Info("Connection closed", "dst", tcpConn.LocalAddr(), "src", wsConn.RemoteAddr())
+				log.Info("Connection closed", "dst", tcpConn.LocalAddr(), "src", wsConn.RemoteAddr())
 				return
 			} else {
 				tcpConn.Write(wsData)
 			}
 		case tcpData := <-tcpChan:
 			if tcpData == nil {
-				slog.Info("Connection closed", "dst", tcpConn.LocalAddr(), "src", wsConn.LocalAddr())
+				log.Info("Connection closed", "dst", tcpConn.LocalAddr(), "src", wsConn.LocalAddr())
 				return
 			} else {
 				wsConn.Write(tcpData)
@@ -63,7 +70,15 @@ func Copy(gwsConn *websocket.Conn, tcpConn net.Conn) {
 }
 
 // Copy accepts a websocket connection and read/writer and copies data between them
+// CopyReadWriter copies the data between a websocket and a reader and writer
+// (e.g. stdin and stdout) until either is closed. It logs to slog.Default();
+// see CopyReadWriterWithLogger.
 func CopyReadWriter(gwsConn *websocket.Conn, r io.ReadCloser, w io.Writer) {
+	CopyReadWriterWithLogger(slog.Default(), gwsConn, r, w)
+}
+
+// CopyReadWriterWithLogger is CopyReadWriter logging to log.
+func CopyReadWriterWithLogger(log *slog.Logger, gwsConn *websocket.Conn, r io.ReadCloser, w io.Writer) {
 	wsConn := wsconnadapter.New(gwsConn)
 	wsChan := chanFromConn(wsConn)
 	stdioChan := chanFromConn(r)
@@ -74,14 +89,14 @@ func CopyReadWriter(gwsConn *websocket.Conn, r io.ReadCloser, w io.Writer) {
 		select {
 		case wsData := <-wsChan:
 			if wsData == nil {
-				slog.Info("STDIO connection closed", "dst", "stdio", "src", wsConn.RemoteAddr())
+				log.Info("STDIO connection closed", "dst", "stdio", "src", wsConn.RemoteAddr())
 				return
 			} else {
 				w.Write(wsData)
 			}
 		case tcpData := <-stdioChan:
 			if tcpData == nil {
-				slog.Info("STDIO connection closed", "dst", "stdio", "src", wsConn.LocalAddr())
+				log.Info("STDIO connection closed", "dst", "stdio", "src", wsConn.LocalAddr())
 				return
 			} else {
 				wsConn.Write(tcpData)

@@ -107,6 +107,7 @@ type DefaultRequestOptions struct {
 // A Client manages communication with the Cumulocity API.
 type Client struct {
 	clientMu   sync.Mutex    // clientMu protects the client during calls that modify the CheckRedirect func.
+	logger     *slog.Logger  // ClientOptions.Logger; nil uses slog.Default()
 	httpClient *resty.Client // HTTP client used to communicate with the API. See Resty().
 
 	// Transport chain: dryRunTransport -> middleware -> baseTransport.
@@ -254,7 +255,8 @@ type ClientOptions struct {
 	// Logger receives the messages of the HTTP layer: the request and
 	// response logs of Debug at info level, its warnings (e.g. credentials
 	// sent over plain HTTP) at info level and its errors at error level.
-	// nil uses slog.Default().
+	// Clients built on this one (e.g. remoteaccess) log to it too, see
+	// Client.Logger. nil uses slog.Default().
 	Logger *slog.Logger
 
 	// Enable Keyring for saving and retrieving a token
@@ -574,6 +576,7 @@ func NewClient(opts ClientOptions) *Client {
 	rclient.SetPathParam(core.PathParamTenantID, opts.Auth.Tenant)
 
 	c := &Client{
+		logger:              opts.Logger,
 		httpClient:          rclient,
 		dryRunTransport:     dryRunTransport,
 		baseTransport:       baseTransport,
@@ -2015,4 +2018,14 @@ func tokenRenewalRetry(c *Client) func(res *resty.Response, err error) bool {
 
 func KeyringName(host *url.URL, tenant string) string {
 	return fmt.Sprintf("go-c8y-%s", strings.Join([]string{host.Hostname(), tenant}, "#"))
+}
+
+// Logger returns the logger of the client (ClientOptions.Logger, or
+// slog.Default() when none was given), for clients built on it such as the
+// remote access client.
+func (c *Client) Logger() *slog.Logger {
+	if c.logger == nil {
+		return slog.Default()
+	}
+	return c.logger
 }
