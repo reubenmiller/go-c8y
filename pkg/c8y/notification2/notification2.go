@@ -15,6 +15,8 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/wsdial"
 	"github.com/reubenmiller/go-c8y/v2/pkg/wsurl"
 	"github.com/tidwall/gjson"
 )
@@ -74,6 +76,8 @@ type Notification2Client struct {
 	messages          chan *Message
 	connected         bool
 	dialer            *websocket.Dialer
+	connector         wsdial.Connector
+	reconnectCtx      context.Context
 	ws                *websocket.Conn
 	Subscription      Subscription
 	ConnectionOptions ConnectionOptions
@@ -197,19 +201,58 @@ func NewNotification2ClientE(host string, wsDialer *websocket.Dialer, subscripti
 	return client, nil
 }
 
-// Connect performs a handshake with the server and will repeatedly initiate a
-// websocket connection until `Close` is called on the client.
+// SetConnector sets the connector used to open the websocket, for example an
+// *api.Client: the connection then uses the client's TLS and proxy settings,
+// request middleware and extra headers, and respects dry run. The notification2
+// token in the URL authenticates the connection, so the connector's
+// Authorization header is not sent. nil goes back to the client's own dialer.
+func (c *Notification2Client) SetConnector(connector wsdial.Connector) {
+	c.mtx.Lock()
+	c.connector = connector
+	c.mtx.Unlock()
+}
+
+// Connect opens the websocket and will repeatedly initiate a websocket
+// connection until `Close` is called on the client.
+//
+// Connect is ConnectContext with context.Background().
 func (c *Notification2Client) Connect() error {
+	return c.ConnectContext(context.Background())
+}
+
+// ConnectContext is like Connect, and cancelling ctx (or its deadline passing)
+// aborts connecting. Automatic reconnects use the values of ctx but not its
+// cancellation, so a short-lived ctx can be used to connect.
+//
+// Dry run: when the connector is in dry run (api.WithDryRun) nothing is connected
+// and ConnectContext returns an error for which errors.Is(err,
+// wsdial.ErrDryRun) is true; wsdial.DryRunRequest(err) is the upgrade request.
+func (c *Notification2Client) ConnectContext(ctx context.Context) error {
 	if c.initErr != nil {
 		return c.initErr
 	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	if !c.IsConnected() {
-		err := c.connect()
+		c.mtx.Lock()
+		c.reconnectCtx = context.WithoutCancel(ctx)
+		c.mtx.Unlock()
+		err := c.connect(ctx)
 		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func (c *Notification2Client) connectionContext() context.Context {
+	c.mtx.RLock()
+	defer c.mtx.RUnlock()
+	if c.reconnectCtx != nil {
+		return c.reconnectCtx
+	}
+	return context.Background()
 }
 
 func (c *Notification2Client) Endpoint() string {
@@ -296,7 +339,7 @@ func (c *Notification2Client) disconnect() error {
 	return nil
 }
 
-func (c *Notification2Client) createWebsocket() (*websocket.Conn, error) {
+func (c *Notification2Client) createWebsocket(ctx context.Context) (*websocket.Conn, error) {
 
 	if c.Subscription.TokenRenewal != nil {
 		token, err := c.Subscription.TokenRenewal(c.Subscription.Token)
@@ -307,14 +350,35 @@ func (c *Notification2Client) createWebsocket() (*websocket.Conn, error) {
 	}
 
 	slog.Debug(fmt.Sprintf("Establishing connection to %s", c.URL(true)))
-	ws, _, err := c.dialer.Dial(c.URL(false), nil)
+	ws, err := c.dial(ctx)
 
 	if err != nil {
-		slog.Warn("Failed to establish connection", "err", err)
+		if !errors.Is(err, wsdial.ErrDryRun) {
+			slog.Warn("Failed to establish connection", "err", err)
+		}
 		return ws, err
 	}
 	slog.Debug("Established websocket connection")
 	return ws, nil
+}
+
+// dial opens the websocket with the connector, or with the client's dialer.
+func (c *Notification2Client) dial(ctx context.Context) (*websocket.Conn, error) {
+	c.mtx.RLock()
+	connector := c.connector
+	dialer := c.dialer
+	c.mtx.RUnlock()
+
+	if connector != nil {
+		// The token in the URL is the credential of this endpoint
+		ws, _, err := connector.DialWebsocket(ctxhelpers.WithNoAuth(ctx), c.URL(false), nil)
+		return ws, err
+	}
+	if dialer == nil {
+		return nil, ErrMissingDialer
+	}
+	ws, _, err := dialer.DialContext(ctx, c.URL(false), nil)
+	return ws, err
 }
 
 func (c *Notification2Client) reconnect() error {
@@ -330,7 +394,7 @@ func (c *Notification2Client) reconnect() error {
 			return ErrClientClosed
 		case <-time.After(time.Duration(interval) * time.Second):
 		}
-		err := c.connect()
+		err := c.connect(c.connectionContext())
 
 		if err != nil {
 			slog.Warn("Failed to connect", "err", err)
@@ -346,11 +410,14 @@ func (c *Notification2Client) reconnect() error {
 }
 
 // StartWebsocket opens a websocket to cumulocity
-func (c *Notification2Client) connect() error {
+func (c *Notification2Client) connect(ctx context.Context) error {
 	if c.initErr != nil {
 		return c.initErr
 	}
-	if c.dialer == nil {
+	c.mtx.RLock()
+	hasDialer := c.dialer != nil || c.connector != nil
+	c.mtx.RUnlock()
+	if !hasDialer {
 		return ErrMissingDialer
 	}
 
@@ -360,7 +427,7 @@ func (c *Notification2Client) connect() error {
 			slog.Info("Error whilst closing connection before connecting", "err", err)
 		}
 	}
-	ws, err := c.createWebsocket()
+	ws, err := c.createWebsocket(ctx)
 
 	if err != nil {
 		return err

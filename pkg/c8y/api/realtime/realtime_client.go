@@ -22,6 +22,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/wsdial"
 	"github.com/reubenmiller/go-c8y/v2/pkg/matcher"
 	"github.com/reubenmiller/go-c8y/v2/pkg/wsurl"
 	"golang.org/x/net/publicsuffix"
@@ -67,20 +68,34 @@ const (
 
 // Client allows connecting to a Bayeux server and subscribing to channels.
 type Client struct {
-	mtx           sync.RWMutex
-	url           *url.URL
-	c8yURL        *url.URL
-	clientID      string
-	ctx           context.Context
-	cancel        context.CancelFunc
-	workerDone    chan struct{}
-	messages      chan *Message
-	connected     bool
-	dialer        *websocket.Dialer
-	ws            *websocket.Conn
-	extension     any
+	mtx        sync.RWMutex
+	url        *url.URL
+	c8yURL     *url.URL
+	clientID   string
+	ctx        context.Context
+	cancel     context.CancelFunc
+	workerDone chan struct{}
+	messages   chan *Message
+	connected  bool
+	dialer     *websocket.Dialer
+	ws         *websocket.Conn
+	extension  any
+	// extMu guards extension and extensionExplicit (the handshake is built
+	// while mtx is held, so it needs its own lock).
+	extMu         sync.Mutex
 	requestID     uint64
 	requestHeader http.Header
+
+	// connector, when set, opens the websocket (TLS, proxy, authorization and
+	// dry run come from it) instead of dialer. See SetConnector.
+	connector wsdial.Connector
+	// extensionExplicit is set when the Bayeux authentication was set with
+	// SetBearerToken or SetXSRFToken: the connector then no longer replaces it.
+	extensionExplicit bool
+	// reconnectCtx carries the values (not the cancellation) of the context
+	// given to ConnectContext, for automatic reconnects.
+	reconnectCtx context.Context
+	ctxMu        sync.Mutex
 
 	send chan *request
 
@@ -261,6 +276,13 @@ type ClientOptions struct {
 
 	ChannelSize        int
 	InsecureSkipVerify bool
+
+	// Connector opens the websocket, for example an *api.Client (see
+	// api.Client.Realtime). With a connector the client uses the connector's
+	// TLS, proxy, authorization (read again for every connect and reconnect, so
+	// refreshed tokens are used), request middleware and dry run handling; the
+	// credentials above and InsecureSkipVerify are only used without one.
+	Connector wsdial.Connector
 }
 
 // NewClient initialises a new Bayeux client.
@@ -310,9 +332,10 @@ func newClient(wsDialer *websocket.Dialer, opt ClientOptions) (*Client, error) {
 	c8yURL, _ := url.Parse(opt.Host)
 
 	client := &Client{
-		url:      websocketURL,
-		dialer:   wsDialer,
-		messages: make(chan *Message, opt.ChannelSize),
+		url:       websocketURL,
+		dialer:    wsDialer,
+		connector: opt.Connector,
+		messages:  make(chan *Message, opt.ChannelSize),
 
 		c8yURL: c8yURL,
 
@@ -329,6 +352,14 @@ func newClient(wsDialer *websocket.Dialer, opt ClientOptions) (*Client, error) {
 	go client.hub.Run()
 	go client.writeHandler()
 	return client, urlErr
+}
+
+// SetConnector sets the connector used to open the websocket (see
+// ClientOptions.Connector). nil goes back to the client's own dialer.
+func (c *Client) SetConnector(connector wsdial.Connector) {
+	c.mtx.Lock()
+	c.connector = connector
+	c.mtx.Unlock()
 }
 
 // SetRequestHeader sets the header to use when establishing the realtime connection.
@@ -353,12 +384,18 @@ func (c *Client) SetCookies(cookies []*http.Cookie) error {
 
 // SetXSRFToken set the token required for authentication via OAUTH
 func (c *Client) SetXSRFToken(token string) {
+	c.extMu.Lock()
 	c.extension = getC8yExtensionFromXSRFToken(token)
+	c.extensionExplicit = true
+	c.extMu.Unlock()
 }
 
 // SetBearerToken set the token required for authentication via OAUTH
 func (c *Client) SetBearerToken(token string) {
+	c.extMu.Lock()
 	c.extension = getC8yExtensionFromToken(token)
+	c.extensionExplicit = true
+	c.extMu.Unlock()
 }
 
 // SetLogger configures a custom logger for this client instance.
@@ -390,13 +427,40 @@ func (c *Client) log() *slog.Logger {
 
 // Connect performs a handshake with the server and will repeatedly initiate a
 // websocket connection until `Close` is called on the client.
+//
+// Connect is ConnectContext with context.Background().
 func (c *Client) Connect() error {
+	return c.ConnectContext(context.Background())
+}
+
+// ConnectContext is like Connect, and ctx also controls the connection: when it
+// is cancelled (or its deadline passes) while connecting or waiting for the
+// handshake, the attempt is aborted, the client is closed and ctx's error is
+// returned.
+//
+// With a connector (see ClientOptions.Connector) ctx also selects the
+// credentials and options of the connection, like for an HTTP call:
+// api.WithTenant, api.WithAuth, api.WithExtraHeaders and so on. Automatic
+// reconnects after a lost connection use the values of ctx but not its
+// cancellation, so a short-lived ctx can be used to connect. They read the
+// connector's authorization again, so a token refreshed since is used.
+//
+// Dry run: when the connector is in dry run (api.WithDryRun) nothing is connected
+// and ConnectContext returns an error for which errors.Is(err,
+// wsdial.ErrDryRun) is true; wsdial.DryRunRequest(err) is the upgrade request.
+func (c *Client) ConnectContext(ctx context.Context) error {
 	if c.initErr != nil {
 		return c.initErr
 	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	if !c.IsConnected() {
+		c.ctxMu.Lock()
+		c.reconnectCtx = context.WithoutCancel(ctx)
+		c.ctxMu.Unlock()
 
-		err := <-c.connect()
+		err := c.waitConnect(ctx, c.connect(ctx))
 		if err != nil {
 			return err
 		}
@@ -406,12 +470,92 @@ func (c *Client) Connect() error {
 			return err
 		}
 
-		err = <-c.getAdvice()
+		err = c.waitConnect(ctx, c.getAdvice())
 		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// waitConnect waits for the result of a connect step. When ctx ends first the
+// client is closed and the step's channel is drained so its goroutine can exit.
+func (c *Client) waitConnect(ctx context.Context, ch chan error) error {
+	select {
+	case err := <-ch:
+		return err
+	case <-ctx.Done():
+		go func() { <-ch }()
+		_ = c.Close()
+		return ctx.Err()
+	}
+}
+
+func (c *Client) connectionContext() context.Context {
+	// own lock: the handshake is built while mtx is held
+	c.ctxMu.Lock()
+	defer c.ctxMu.Unlock()
+	if c.reconnectCtx != nil {
+		return c.reconnectCtx
+	}
+	return context.Background()
+}
+
+// dial opens the websocket with the connector, or with the client's dialer.
+func (c *Client) dial(ctx context.Context) (*websocket.Conn, error) {
+	c.mtx.RLock()
+	connector := c.connector
+	dialer := c.dialer
+	c.mtx.RUnlock()
+
+	if connector != nil {
+		ws, resp, err := connector.DialWebsocket(ctx, c.url.String(), c.requestHeader)
+		if err != nil {
+			return nil, err
+		}
+		c.useAuthorization(resp)
+		return ws, nil
+	}
+	if dialer == nil {
+		return nil, ErrMissingDialer
+	}
+	ws, _, err := dialer.DialContext(ctx, c.url.String(), c.requestHeader)
+	return ws, err
+}
+
+// useAuthorization derives the Bayeux authentication of the handshake from the
+// Authorization header the connection was opened with, so the handshake uses
+// the credentials of that connection (a refreshed token, not a snapshot).
+func (c *Client) useAuthorization(resp *http.Response) {
+	if resp == nil || resp.Request == nil {
+		return
+	}
+	c.useAuthorizationValue(resp.Request.Header.Get("Authorization"))
+}
+
+func (c *Client) useAuthorizationValue(authz string) {
+	scheme, value, ok := strings.Cut(authz, " ")
+	if !ok || value == "" {
+		return
+	}
+	c.extMu.Lock()
+	defer c.extMu.Unlock()
+	if c.extensionExplicit {
+		return
+	}
+	switch strings.ToLower(scheme) {
+	case "bearer":
+		c.extension = getC8yExtensionFromToken(value)
+	case "basic":
+		// The Bayeux token of basic auth is the base64 "tenant/user:password"
+		c.extension = getC8yExtensionFromToken(value)
+	}
+}
+
+func (c *Client) getClientID() string {
+	c.mtx.RLock()
+	defer c.mtx.RUnlock()
+	return c.clientID
 }
 
 // IsConnected returns true if the websocket is connected
@@ -454,7 +598,7 @@ func (c *Client) disconnect() error {
 	message := &request{
 		ID:       c.nextMessageID(),
 		Channel:  "/meta/disconnect",
-		ClientID: c.clientID,
+		ClientID: c.getClientID(),
 	}
 
 	// Change to disconnected state, as the server will not send a reply upon receiving the /meta/disconnect command
@@ -468,7 +612,7 @@ func (c *Client) disconnect() error {
 
 func (c *Client) createWebsocket() error {
 	c.log().Info("Establishing connection", "to", c.url.String())
-	ws, _, err := c.dialer.Dial(c.url.String(), c.requestHeader)
+	ws, err := c.dial(c.connectionContext())
 
 	if err != nil {
 		return err
@@ -493,7 +637,14 @@ func (c *Client) reconnect() error {
 	}
 	c.cancel = nil
 	c.connected = false
+	connector := c.connector
 	c.mtx.Unlock()
+
+	// The connection was lost: do not reconnect with a cached token the server
+	// may have revoked or expired.
+	if connector != nil {
+		invalidateAuthorization(connector)
+	}
 
 	// Remove all pending requests
 	c.pendingRequests.Range(func(key, value any) bool {
@@ -514,7 +665,7 @@ func (c *Client) reconnect() error {
 			continue
 		}
 
-		if err := c.Connect(); err != nil {
+		if err := c.ConnectContext(c.connectionContext()); err != nil {
 			c.log().Info("Failed to get advice from server", "err", err)
 		} else {
 			connected = true
@@ -528,14 +679,14 @@ func (c *Client) reconnect() error {
 }
 
 // StartWebsocket opens a websocket to cumulocity
-func (c *Client) connect() chan error {
-	if c.dialer == nil {
-		return errChan(ErrMissingDialer)
-	}
+func (c *Client) connect(ctx context.Context) chan error {
 	c.log().Info(fmt.Sprintf("Establishing connection to %s", c.url.String()))
-	ws, _, err := c.dialer.Dial(c.url.String(), c.requestHeader)
+	ws, err := c.dial(ctx)
 
 	if err != nil {
+		if errors.Is(err, ErrMissingDialer) || errors.Is(err, wsdial.ErrDryRun) {
+			return errChan(err)
+		}
 		return errChan(fmt.Errorf("realtime: failed to connect to %s: %w", c.url.String(), err))
 	}
 
@@ -551,7 +702,7 @@ func (c *Client) connect() chan error {
 		go c.worker()
 	}
 
-	return c.handshake()
+	return c.handshake(false)
 }
 
 func (c *Client) worker() {
@@ -632,7 +783,7 @@ func (c *Client) worker() {
 						case "handshake":
 							c.log().Info("Scheduling sending of new handshake to server with a small delay", "delay_ms", retryDelay)
 							time.AfterFunc(time.Duration(retryDelay)*time.Millisecond, func() {
-								c.handshake()
+								c.handshake(true)
 							})
 						case "retry":
 							c.log().Info("Resending /meta/connect heartbeat after a small delay", "delay_ms", retryDelay)
@@ -703,14 +854,20 @@ func (c *Client) worker() {
 	}
 }
 
-func (c *Client) handshake() chan error {
+// handshake sends /meta/handshake. When renew is set (the server asked for a new
+// handshake on a connection which is kept) the authorization is read again from
+// the connector first: the token of the connection may have expired since.
+func (c *Client) handshake(renew bool) chan error {
+	if renew {
+		c.renewExtension()
+	}
 	message := &request{
 		ID:                       c.nextMessageID(),
 		Channel:                  "/meta/handshake",
 		Version:                  VERSION,
 		MinimumVersion:           MINIMUM_VERSION,
 		SupportedConnectionTypes: []string{"websocket", "long-polling"},
-		Extension:                c.extension,
+		Extension:                c.currentExtension(),
 		Advice: &advice{
 			Interval:  0,
 			Timeout:   60000,
@@ -722,6 +879,38 @@ func (c *Client) handshake() chan error {
 	return c.WaitForMessage(message.ID)
 }
 
+// invalidateAuthorization asks the connector to drop a cached token, so the
+// next connection does not reuse a token which the server may have revoked or
+// expired.
+func invalidateAuthorization(connector wsdial.Connector) {
+	if inv, ok := connector.(interface{ InvalidateToken() }); ok {
+		inv.InvalidateToken()
+	}
+}
+
+// renewExtension reads the current authorization from the connector.
+func (c *Client) renewExtension() {
+	c.mtx.RLock()
+	connector := c.connector
+	c.mtx.RUnlock()
+	if connector == nil {
+		return
+	}
+	invalidateAuthorization(connector)
+	header, err := connector.WebsocketHeader(c.connectionContext())
+	if err != nil {
+		c.log().Warn("Could not renew the authorization for the handshake", "err", err)
+		return
+	}
+	c.useAuthorizationValue(header.Get("Authorization"))
+}
+
+func (c *Client) currentExtension() any {
+	c.extMu.Lock()
+	defer c.extMu.Unlock()
+	return c.extension
+}
+
 func (c *Client) sendMeta() error {
 	if c.ws == nil {
 		return fmt.Errorf("websocket is nil")
@@ -730,7 +919,7 @@ func (c *Client) sendMeta() error {
 		ID:             c.nextMessageID(),
 		Channel:        "/meta/connect",
 		ConnectionType: "websocket",
-		ClientID:       c.clientID,
+		ClientID:       c.getClientID(),
 	}
 
 	c.send <- message
@@ -738,7 +927,7 @@ func (c *Client) sendMeta() error {
 }
 
 func (c *Client) getAdvice() chan error {
-	clientID := c.clientID
+	clientID := c.getClientID()
 	message := &request{
 		ID:             c.nextMessageID(),
 		Channel:        "/meta/connect",
@@ -809,7 +998,7 @@ func (c *Client) Subscribe(ctx context.Context, pattern string, out chan<- *Mess
 		Channel:        "/meta/subscribe",
 		Subscription:   pattern,
 		ConnectionType: "websocket",
-		ClientID:       c.clientID,
+		ClientID:       c.getClientID(),
 	}
 
 	c.hub.register <- &subscription{
@@ -876,7 +1065,7 @@ func (c *Client) reactivateSubscriptions() {
 			Channel:        "/meta/subscribe",
 			Subscription:   subscription,
 			ConnectionType: "websocket",
-			ClientID:       c.clientID,
+			ClientID:       c.getClientID(),
 		}
 
 		ids = append(ids, message.ID)
@@ -898,7 +1087,7 @@ func (c *Client) UnsubscribeAll() chan error {
 			ID:           c.nextMessageID(),
 			Channel:      "/meta/unsubscribe",
 			Subscription: pattern,
-			ClientID:     c.clientID,
+			ClientID:     c.getClientID(),
 		}
 
 		ids = append(ids, message.ID)
@@ -918,7 +1107,7 @@ func (c *Client) Unsubscribe(pattern string) chan error {
 		ID:           c.nextMessageID(),
 		Channel:      "/meta/unsubscribe",
 		Subscription: pattern,
-		ClientID:     c.clientID,
+		ClientID:     c.getClientID(),
 	}
 
 	c.hub.unregister <- pattern

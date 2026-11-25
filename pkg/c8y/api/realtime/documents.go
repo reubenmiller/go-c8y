@@ -103,7 +103,10 @@ func (s *Stream[T]) Documents() iter.Seq2[jsondoc.JSONDoc, error] {
 // messages, with the payload as a JSON document. Use it for channels that no
 // typed service covers, or to listen to several kinds of data at once.
 func (c *Client) SubscribeStream(ctx context.Context, patterns ...string) op.Result[*Stream[StreamData[jsondoc.JSONDoc]]] {
-	if err := c.Connect(); err != nil {
+	if err := c.ConnectContext(ctx); err != nil {
+		if dry, ok := DryRunStream[StreamData[jsondoc.JSONDoc]](ctx, err, patterns...); ok {
+			return dry
+		}
 		return op.Failed[*Stream[StreamData[jsondoc.JSONDoc]]](err, false)
 	}
 

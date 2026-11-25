@@ -321,7 +321,12 @@ func (s *Service) RenewToken(ctx context.Context, opt ClientOptions) (string, er
 			isValid = false
 		}
 
-		slog.Info("Existing token", "alg", token.Method.Alg(), "valid", isValid, "expired", claims.HasExpired(), "issuedAt", claims.IssuedAt, "expiresAt", claims.ExpiresAt, "subscription", claims.Subscription(), "subscriber", claims.Subscriber, "shared", claims.IsShared(), "tenant", claims.Tenant())
+		alg := ""
+		if token != nil && token.Method != nil {
+			// token is nil when the token could not be parsed at all
+			alg = token.Method.Alg()
+		}
+		slog.Info("Existing token", "alg", alg, "valid", isValid, "expired", claims.HasExpired(), "issuedAt", claims.IssuedAt, "expiresAt", claims.ExpiresAt, "subscription", claims.Subscription(), "subscriber", claims.Subscriber, "shared", claims.IsShared(), "tenant", claims.Tenant())
 
 		if opt.Options.Subscription != "" {
 			if claims.Subscription() != opt.Options.Subscription {
@@ -372,15 +377,21 @@ func (s *Service) RenewToken(ctx context.Context, opt ClientOptions) (string, er
 	return result.Data.Token(), nil
 }
 
+// CreateClient renews or creates the notification2 token and returns a client
+// for it. The client connects through the Cumulocity client (TLS, proxy,
+// request middleware and extra headers, dry run), see
+// [notification2.Notification2Client.SetConnector]. ctx supplies the context
+// values of the token renewal done on every reconnect, but not its cancellation.
 func (s *Service) CreateClient(ctx context.Context, opt ClientOptions) (*notification2.Notification2Client, error) {
 	token, err := s.RenewToken(ctx, opt)
 	if err != nil {
 		return nil, err
 	}
 
+	renewCtx := context.WithoutCancel(ctx)
 	client, err := notification2.NewNotification2ClientE(s.svc.Client.BaseURL(), nil, notification2.Subscription{
 		TokenRenewal: func(v string) (string, error) {
-			return s.RenewToken(ctx, ClientOptions{
+			return s.RenewToken(renewCtx, ClientOptions{
 				Token: v,
 			})
 		},
@@ -389,6 +400,9 @@ func (s *Service) CreateClient(ctx context.Context, opt ClientOptions) (*notific
 	}, opt.ConnectionOptions)
 	if err != nil {
 		return nil, err
+	}
+	if s.svc.Connector != nil {
+		client.SetConnector(s.svc.Connector)
 	}
 	return client, nil
 }
@@ -411,7 +425,11 @@ func (s *Service) SubscribeStream(ctx context.Context, opt ClientOptions) op.Res
 		return op.Failed[*MessageStream](err, false)
 	}
 
-	if err := client.Connect(); err != nil {
+	if err := client.ConnectContext(ctx); err != nil {
+		if dry, ok := notification2.DryRunStream[notification2.StreamData[jsondoc.JSONDoc]](ctx, client, err); ok {
+			return dry
+		}
+		_ = client.Close()
 		return op.Failed[*MessageStream](err, false)
 	}
 

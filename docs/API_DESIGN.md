@@ -249,6 +249,31 @@ if result.Request != nil {
 
 **Security:** Sensitive headers are automatically redacted in dry run logs. See [REQUEST_INSPECTION.md](./REQUEST_INSPECTION.md) for details.
 
+#### Dry run and websockets
+
+Realtime, notification 2.0 and remote access connect over a websocket. Under dry run nothing is connected. The websocket upgrade request is reported through the same path as an HTTP request: the handler set with `api.WithDryRunHandler`, or a `DRY RUN` log line with `Authorization` redacted (and the `token` query parameter of notification 2.0).
+
+```go
+ctx := api.WithDryRun(context.Background(), true)
+ctx = api.WithDryRunHandler(ctx, func(req *http.Request) {
+    fmt.Println(req.Method, req.URL, req.Header.Get("Upgrade"))
+})
+
+result := client.Alarms.SubscribeStream(ctx, "12345")
+// result.Err == nil, result.Status == op.StatusSkipped
+// result.Request       the upgrade request: GET https://tenant/cep/realtime, Upgrade: websocket
+// result.Meta["channels"]  []string{"/alarms/12345"}
+// result.Data          a stream which ends immediately, without an error
+```
+
+The same applies to the other `SubscribeStream` and `Subscribe` methods, `realtime.Client.SubscribeStream` and `Notification2.SubscribeStream` (`Meta["consumer"]` and `Meta["url"]`, token redacted). Lower level code gets an error for which `errors.Is(err, wsdial.ErrDryRun)` is true from `Connect`/`ConnectContext`/`DialWebsocket`; `wsdial.DryRunRequest(err)` is the request. For remote access, `RemoteAccessClient.DialContext` returns that error, `ListenServeContext` and `ServeContext` return `nil`, and `RemoteAccessClient.DryRunRequest()` returns the request.
+
+As for HTTP, the request returned to the caller still has the real `Authorization` header: redact it before you print it.
+
+#### Websocket connection settings
+
+`Client.WebsocketDialer()`, `Client.WebsocketHeader(ctx)` and `Client.DialWebsocket(ctx, url, header)` give a websocket the settings of an HTTP call: TLS (`InsecureSkipVerify`, root CAs, client certificates), proxy, the current authorization (token sources and refresh, certificate tokens, `api.WithAuth`), `api.WithTenant` (selects the tenant of Basic credentials), `api.WithExtraHeaders` and the request middleware. The upgrade request is passed through the client's request middleware and the headers it ends with are sent. Limits: only request-side changes apply (headers, host); the response side sees a synthetic empty `101` response; a transport which is not an `*http.Transport` falls back to the proxy from the environment. Realtime reads the authorization again on every (re)connect, so a token refreshed since is used.
+
 ### Deferred Execution
 
 Prepare operations (including parameter resolution) without sending, then execute after user confirmation:

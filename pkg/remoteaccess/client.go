@@ -9,10 +9,12 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/wsdial"
 	"github.com/reubenmiller/go-c8y/v2/pkg/proxy"
 )
 
@@ -60,6 +62,9 @@ type RemoteAccessClient struct {
 	listener net.Listener
 	mux      multiplexer
 	log      *slog.Logger
+
+	dryRunMu      sync.Mutex
+	dryRunRequest *http.Request
 }
 
 // Create new Remote Access client to allow local clients
@@ -77,7 +82,8 @@ func NewRemoteAccessClient(client *api.Client, opt RemoteAccessOptions) *RemoteA
 	}
 }
 
-func (c *RemoteAccessClient) createRemoteAccessConnection() (*websocket.Conn, string, error) {
+// remoteAccessURL is the websocket URL of the remote access configuration.
+func (c *RemoteAccessClient) remoteAccessURL() string {
 	host := c.client.BaseURL.String()
 	wsHost := ""
 	if strings.HasPrefix(host, "http://") {
@@ -85,22 +91,50 @@ func (c *RemoteAccessClient) createRemoteAccessConnection() (*websocket.Conn, st
 	} else if strings.HasPrefix(host, "https://") {
 		wsHost = "wss://" + host[8:]
 	}
-	remoteURL := fmt.Sprintf("%s/service/remoteaccess/client/%s/configurations/%s", strings.TrimRight(wsHost, "/"), c.ctx.ManagedObjectID, c.ctx.RemoteAccessID)
+	return fmt.Sprintf("%s/service/remoteaccess/client/%s/configurations/%s", strings.TrimRight(wsHost, "/"), c.ctx.ManagedObjectID, c.ctx.RemoteAccessID)
+}
+
+// DialContext opens one websocket to the remote access configuration, using the
+// connection settings of the Cumulocity client: its TLS and proxy settings, the
+// current authorization (see api.Client.WebsocketHeader), request middleware and
+// the context options of ctx. Cancelling ctx aborts connecting.
+//
+// Dry run: when ctx has dry run enabled (api.WithDryRun) nothing is connected. The
+// upgrade request is handed to the dry-run handler (api.WithDryRunHandler) or
+// logged, like an HTTP request, and the error returned matches
+// wsdial.ErrDryRun; wsdial.DryRunRequest(err) is the request, and
+// [RemoteAccessClient.DryRunRequest] returns it too.
+func (c *RemoteAccessClient) DialContext(ctx context.Context) (*websocket.Conn, error) {
+	conn, _, err := c.createRemoteAccessConnection(ctx)
+	return conn, err
+}
+
+// DryRunRequest returns the upgrade request which the last dry-run connection
+// would have sent, or nil if there was none.
+func (c *RemoteAccessClient) DryRunRequest() *http.Request {
+	c.dryRunMu.Lock()
+	defer c.dryRunMu.Unlock()
+	return c.dryRunRequest
+}
+
+func (c *RemoteAccessClient) createRemoteAccessConnection(ctx context.Context) (*websocket.Conn, string, error) {
+	remoteURL := c.remoteAccessURL()
 
 	requestHeader := http.Header{}
 	requestHeader.Add("Content-Type", "application/json")
 
-	authHeader, err := c.client.AuthorizationHeader(context.Background())
+	c.log.Info("Connecting to Cumulocity IoT", "url", remoteURL)
+
+	wsConn, _, err := c.client.DialWebsocket(ctx, remoteURL, requestHeader)
 	if err != nil {
+		if req := wsdial.DryRunRequest(err); req != nil {
+			c.dryRunMu.Lock()
+			c.dryRunRequest = req
+			c.dryRunMu.Unlock()
+		}
 		return nil, remoteURL, err
 	}
-	if authHeader != "" {
-		requestHeader.Set("Authorization", authHeader)
-	}
-	c.log.Info("Connecting to Cumulocity IoT", "url", remoteURL, "headers", c.client.HideSensitiveInformationIfActive(fmt.Sprintf("%v", requestHeader)))
-
-	wsConn, _, err := websocket.DefaultDialer.Dial(remoteURL, requestHeader)
-	return wsConn, remoteURL, err
+	return wsConn, remoteURL, nil
 }
 
 // Get the listener address. Useful when using the "free port" option, and need
@@ -115,7 +149,17 @@ func (c *RemoteAccessClient) GetListenerAddress() string {
 // Listen and serve a single connection. It bridges between the websocket and the given reader/writer
 // Typically it can be used to setup proxying to stdin/stdout
 func (c *RemoteAccessClient) ListenServe(r io.ReadCloser, w io.Writer) error {
-	clientWsConn, remoteURL, err := c.createRemoteAccessConnection()
+	return c.ListenServeContext(context.Background(), r, w)
+}
+
+// ListenServeContext is like ListenServe. ctx is used to connect (see
+// DialContext); under dry run nothing is connected and it returns nil, the
+// request is available from DryRunRequest.
+func (c *RemoteAccessClient) ListenServeContext(ctx context.Context, r io.ReadCloser, w io.Writer) error {
+	clientWsConn, remoteURL, err := c.createRemoteAccessConnection(ctx)
+	if wsdial.IsDryRun(err) {
+		return nil
+	}
 	if err != nil {
 		c.log.Error("Could not create remote access connection", "err", err.Error())
 		return err
@@ -151,6 +195,17 @@ func (c *RemoteAccessClient) Listen(addr string) error {
 // Serve requests to the local TCP server or Unix socket
 // The Listen must be called prior to trying to serve
 func (c *RemoteAccessClient) Serve() error {
+	return c.ServeContext(context.Background())
+}
+
+// ServeContext is like Serve. ctx is used to connect for every local connection
+// (see DialContext), and cancelling it stops serving: the listener is closed
+// and ServeContext returns ctx.Err().
+//
+// Under dry run (api.WithDryRun) it does not accept connections: it reports the
+// upgrade request once (see DialContext), makes it available from DryRunRequest
+// and returns nil.
+func (c *RemoteAccessClient) ServeContext(ctx context.Context) error {
 	if c.listener == nil {
 		return fmt.Errorf("listen must be called before serve")
 	}
@@ -158,10 +213,24 @@ func (c *RemoteAccessClient) Serve() error {
 	// Close the listener when the application closes.
 	defer c.listener.Close()
 	defer c.mux.close()
+
+	if api.IsDryRun(ctx) {
+		_, _, err := c.createRemoteAccessConnection(ctx)
+		if err != nil && !wsdial.IsDryRun(err) {
+			return err
+		}
+		return nil
+	}
+
+	stop := context.AfterFunc(ctx, func() { _ = c.listener.Close() })
+	defer stop()
 	for {
 		// Listen for an incoming connection.
 		tcpConn, err := c.listener.Accept()
 		if err != nil {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
 			if errors.Is(err, net.ErrClosed) {
 				return nil
 			}
@@ -171,11 +240,11 @@ func (c *RemoteAccessClient) Serve() error {
 			continue
 		}
 
-		if c.ctx.Multiplex && c.serveMultiplexed(tcpConn) {
+		if c.ctx.Multiplex && c.serveMultiplexed(ctx, tcpConn) {
 			continue
 		}
 
-		clientWsConn, remoteURL, err := c.createRemoteAccessConnection()
+		clientWsConn, remoteURL, err := c.createRemoteAccessConnection(ctx)
 		if err != nil {
 			c.log.Error("Could not create remove access connection", "err", err.Error())
 			tcpConn.Close()
