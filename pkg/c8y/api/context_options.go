@@ -11,13 +11,22 @@ package api
 //	result := client.Events.Create(ctx, body)
 //
 // This package is the only public place for these options.
+//
+// To observe or wrap the HTTP bodies, use WithRequestHook (final request),
+// WithResponseBodyWrapper (response body), or the progress shortcuts
+// WithUploadProgress and WithDownloadProgress. Typed uploads also take
+// core.UploadFileOptions.Progress, which reports the file bytes and the file
+// size. For endpoints without a service method use Client.Request, which
+// returns an op.Result and applies the same options.
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/url"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
@@ -219,4 +228,48 @@ func WithApprovalScope(ctx context.Context) context.Context {
 // exactly like the SDK's own.
 func ResolutionContext(ctx context.Context) context.Context {
 	return ctxhelpers.ResolutionContext(ctx)
+}
+
+// WithRequestHook returns a context whose requests are passed to fn on the
+// final *http.Request just before they are sent, once per attempt (again on
+// retries) and also for dry runs. fn may change headers or the URL, or replace
+// req.Body (for example to wrap it and count bytes). Returning an error aborts
+// the request. It applies to every request made with the context, typed or
+// raw; for a single [Client.SendRequest] use RequestOptions.PrepareRequest.
+func WithRequestHook(ctx context.Context, fn func(req *http.Request) error) context.Context {
+	return ctxhelpers.WithRequestHook(ctx, fn)
+}
+
+// WithResponseBodyWrapper returns a context whose responses have their body
+// replaced by fn(resp) as soon as the headers arrive, for example to count the
+// bytes of a download. fn returns the new body; returning nil keeps the
+// original. The wrapper is not called for dry runs or mock responses.
+func WithResponseBodyWrapper(ctx context.Context, fn func(resp *http.Response) io.ReadCloser) context.Context {
+	return ctxhelpers.WithResponseBodyWrapper(ctx, fn)
+}
+
+// WithUploadProgress returns a context that reports the request body bytes
+// sent. total is the request's Content-Length, or -1 when it is not known
+// (typically a multipart upload, which is streamed). For the file size of a
+// typed upload use core.UploadFileOptions.Progress instead.
+func WithUploadProgress(ctx context.Context, fn core.ProgressFunc) context.Context {
+	return WithRequestHook(ctx, func(req *http.Request) error {
+		if req.Body != nil && req.Body != http.NoBody {
+			total := req.ContentLength
+			if total <= 0 {
+				total = -1
+			}
+			req.Body = core.NewProgressReader(req.Body, total, fn)
+		}
+		return nil
+	})
+}
+
+// WithDownloadProgress returns a context that reports the response body bytes
+// read, for example while saving a binary. total is the response's
+// Content-Length, or -1 when it is not known.
+func WithDownloadProgress(ctx context.Context, fn core.ProgressFunc) context.Context {
+	return WithResponseBodyWrapper(ctx, func(resp *http.Response) io.ReadCloser {
+		return core.NewProgressReader(resp.Body, resp.ContentLength, fn)
+	})
 }

@@ -2,6 +2,7 @@ package contexthelpers
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"sync"
 )
@@ -53,4 +54,18 @@ func WithRequestCapture(ctx context.Context, c *RequestCapture) context.Context 
 func GetRequestCapture(ctx context.Context) *RequestCapture {
 	c, _ := ctx.Value(requestCaptureKey{}).(*RequestCapture)
 	return c
+}
+
+type responseBodyWrapperKey struct{}
+
+// WithResponseBodyWrapper returns a context whose responses have their body
+// replaced by fn(resp) once the response headers have arrived.
+func WithResponseBodyWrapper(ctx context.Context, fn func(*http.Response) io.ReadCloser) context.Context {
+	return context.WithValue(ctx, responseBodyWrapperKey{}, fn)
+}
+
+// ResponseBodyWrapper returns the wrapper set with WithResponseBodyWrapper, or nil.
+func ResponseBodyWrapper(ctx context.Context) func(*http.Response) io.ReadCloser {
+	fn, _ := ctx.Value(responseBodyWrapperKey{}).(func(*http.Response) io.ReadCloser)
+	return fn
 }

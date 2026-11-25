@@ -24,6 +24,13 @@ type UploadFileOptions struct {
 	// the same indented JSON v1 produced, while a plain --data object stays
 	// compact.
 	ObjectIndent string
+
+	// Progress, when set, is called with the number of file bytes uploaded so
+	// far and the file size (-1 when the size of a Reader is not known). It
+	// counts the file content only, not the multipart envelope. It is called
+	// from the goroutine that sends the request, and is also called when the
+	// body is read for a dry run.
+	Progress ProgressFunc
 }
 
 // Check if a read is defined or not. Either the FilePath or Reader must be set
@@ -36,10 +43,19 @@ func (s *UploadFileOptions) IsSet() bool {
 }
 
 func (s *UploadFileOptions) GetReader() any {
+	var r io.Reader = s.Reader
 	if s.FilePath != "" {
-		return SafeOpenFile(s.FilePath)
+		r = SafeOpenFile(s.FilePath)
 	}
-	return s.Reader
+	if s.Progress != nil && r != nil {
+		if f, ok := r.(*os.File); ok {
+			return NewProgressReader(f, ReaderSize(f), s.Progress)
+		}
+		if _, isErr := r.(ReaderError); !isErr {
+			return NewProgressReader(r, ReaderSize(r), s.Progress)
+		}
+	}
+	return r
 }
 
 func (s *UploadFileOptions) Close() error {

@@ -156,7 +156,15 @@ func (t *DryRunTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 			}
 			return nil, err
 		}
-		return t.Transport.RoundTrip(req)
+		resp, err := t.Transport.RoundTrip(req)
+		if err == nil && resp != nil && resp.Body != nil {
+			if wrap := ctxhelpers.ResponseBodyWrapper(ctx); wrap != nil {
+				if body := wrap(resp); body != nil {
+					resp.Body = body
+				}
+			}
+		}
+		return resp, err
 	}
 
 	// The request is not sent, but callers inspect it afterwards through

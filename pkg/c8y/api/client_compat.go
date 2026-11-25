@@ -11,6 +11,8 @@ import (
 	"strings"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/tidwall/gjson"
@@ -370,5 +372,59 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) *Reque
 		}
 	}
 
+	return result
+}
+
+// Request sends a custom HTTP request and returns the response as an
+// [op.Result] of the JSON body, like the typed service methods do. It is the
+// typed escape hatch for endpoints without a service method, and takes the
+// same path as them: middleware, authentication, dry run, mock responses,
+// context options (tenant, processing mode, request hook, ...) and API error
+// handling apply. An HTTP status of 400 or above is returned as the result's
+// error (a *core.Error); errors found while building the request are returned
+// the same way.
+//
+// Use [Client.SendRequest] instead when you need the raw response, a streamed
+// body (DoNotParseResponse) or the response headers; Request keeps the status,
+// duration, request and raw body on the result.
+//
+// Example:
+//
+//	result := client.Request(ctx, api.RequestOptions{
+//	    Method: "GET",
+//	    Path:   "/tenant/system/options/category/key",
+//	})
+//	if result.IsError() {
+//	    return result.Err
+//	}
+//	value := result.Data.Get("value").String()
+func (c *Client) Request(ctx context.Context, options RequestOptions) op.Result[jsondoc.JSONDoc] {
+	raw := c.SendRequest(ctx, options)
+
+	var httpReq *http.Request
+	status := raw.StatusCode()
+	if raw.Response != nil {
+		httpReq = raw.Response.Request
+	}
+
+	var result op.Result[jsondoc.JSONDoc]
+	switch {
+	case raw.Error != nil:
+		result = op.Failed[jsondoc.JSONDoc](raw.Error, false)
+	case status == http.StatusCreated:
+		result = op.Created(jsondoc.New(raw.Body()))
+	case status == http.StatusOK && (options.Method == http.MethodPut || options.Method == http.MethodPatch):
+		result = op.Updated(jsondoc.New(raw.Body()))
+	default:
+		result = op.OK(jsondoc.New(raw.Body()))
+	}
+	if raw.Response != nil {
+		result = op.WithHTTPStatus(result, status)
+		result = op.WithRequestID(result, raw.Header("X-Request-ID"))
+	}
+	result = op.WithRequest(result, httpReq)
+	if raw.Error == nil {
+		result = op.WithResponse(result, raw.Body())
+	}
 	return result
 }
