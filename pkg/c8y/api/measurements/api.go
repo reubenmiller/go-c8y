@@ -3,6 +3,7 @@ package measurements
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/source"
@@ -17,6 +18,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
+	"github.com/tidwall/gjson"
 	"resty.dev/v3"
 )
 
@@ -346,9 +348,54 @@ func (s *Service) createBWithJSON(bodyJSON []byte) *httpcore.TryRequest {
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
-// CreateList creates multiple measurements to the platform
+// CreateList creates multiple measurements in one request. The body is a
+// measurement collection, {"measurements": [...]}. As in CreateRaw, a device
+// reference at "source.id" of a measurement that is not an id is resolved to
+// the device id first (each reference once).
 func (s *Service) CreateList(ctx context.Context, body any) op.Result[jsonmodels.Measurement] {
+	body, err := s.resolveListSources(ctx, body)
+	if err != nil {
+		return op.Failed[jsonmodels.Measurement](err, false)
+	}
 	return httpcore.ExecuteCollection(ctx, s.createListB(body), ResultProperty, "", jsonmodels.NewMeasurement)
+}
+
+// resolveListSources resolves the device references of the measurements in a
+// measurement collection.
+func (s *Service) resolveListSources(ctx context.Context, body any) (any, error) {
+	if s.DeviceResolver == nil || body == nil {
+		return body, nil
+	}
+	var raw []byte
+	switch b := body.(type) {
+	case json.RawMessage:
+		raw = b
+	case []byte:
+		raw = b
+	case string:
+		raw = []byte(b)
+	default:
+		var err error
+		if raw, err = json.Marshal(body); err != nil {
+			return body, err
+		}
+	}
+	n := gjson.GetBytes(raw, ResultProperty+".#").Int()
+	paths := make([]string, n)
+	for i := range paths {
+		paths[i] = fmt.Sprintf("%s.%d.source.id", ResultProperty, i)
+	}
+	ids := map[string]string{}
+	return source.ResolveBodyRefs(ctx, body, func(ctx context.Context, ref string) (string, error) {
+		if id, ok := ids[ref]; ok {
+			return id, nil
+		}
+		id, err := s.DeviceResolver.ResolveID(ctxhelpers.ResolutionContext(ctx), managedobjects.DeviceRef(ref), nil)
+		if err == nil {
+			ids[ref] = id
+		}
+		return id, err
+	}, paths...)
 }
 
 func (s *Service) createListB(body any) *httpcore.TryRequest {
