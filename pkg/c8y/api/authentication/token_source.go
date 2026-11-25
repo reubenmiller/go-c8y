@@ -79,3 +79,15 @@ func (c *CachedTokenSource) Seed(tok *Token) {
 	defer c.mu.Unlock()
 	c.cached = tok
 }
+
+// InvalidateToken clears the cache only when it still holds rejected, the token
+// a server refused. When another caller has already replaced it with a new token,
+// that token is kept. Use it after a 401 so that concurrent requests, which were
+// all refused for the same token, cause one token request instead of one each.
+func (c *CachedTokenSource) InvalidateToken(rejected string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.cached != nil && c.cached.AccessToken == rejected {
+		c.cached = nil
+	}
+}

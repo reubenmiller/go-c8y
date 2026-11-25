@@ -126,6 +126,10 @@ func (c *Client) HasExternalAuthProvider(ctx context.Context) (loginOption *json
 }
 
 // AuthorizeWithDeviceFlow authorize the client using the OAuth2 Device Authorization Flow (the Auth provider must support it)
+//
+// On success the only change to the client is its token: Auth.Token is set and
+// the token source is dropped (it would override the token). Username, password,
+// tenant and AuthType stay as they were; SetAuth switches back.
 func (c *Client) AuthorizeWithDeviceFlow(ctx context.Context, initRequest string, auth_endpoints oauth2_api.AuthEndpoints, displayFunc device.DeviceCodeFunc) (*oauth2_api.AccessToken, error) {
 	if initRequest == "" {
 		loginOption, found, err := c.HasExternalAuthProvider(ctx)
@@ -206,9 +210,7 @@ func (c *Client) AuthorizeWithDeviceFlow(ctx context.Context, initRequest string
 
 	// Update client auth
 	slog.Debug("Using token from device flow")
-	c.SetAuth(authentication.AuthOptions{
-		Token: accessToken.Token,
-	})
+	c.useToken(accessToken.Token)
 
 	return accessToken, nil
 }
@@ -504,7 +506,7 @@ func (c *Client) AuthorizeWithBrowserFlow(ctx context.Context, initRequest strin
 		if accessToken == "" {
 			return nil, fmt.Errorf("browser flow: token exchange returned empty access token")
 		}
-		c.SetAuth(authentication.AuthOptions{Token: accessToken})
+		c.useToken(accessToken)
 		return &oauth2_api.AccessToken{Token: accessToken}, nil
 	case <-ctx.Done():
 		return nil, ctx.Err()

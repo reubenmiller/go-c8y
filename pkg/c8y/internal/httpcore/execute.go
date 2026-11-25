@@ -15,6 +15,10 @@ import (
 
 // Execute a request and return the typed response
 func ExecuteResponseOnly(ctx context.Context, req *TryRequest) (*resty.Response, error) {
+	if req.authType != authentication.AuthTypeUnset {
+		// The request chose its own type: the client-level AuthType must not apply.
+		ctx = ctxhelpers.WithExplicitAuthType(ctx)
+	}
 	switch req.authType {
 	case authentication.AuthTypeBasic:
 		// Skip the token-source middleware and clear any bearer token that resty

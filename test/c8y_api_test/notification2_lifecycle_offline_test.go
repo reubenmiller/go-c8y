@@ -10,6 +10,7 @@ import (
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	notif "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/notification2"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/currenttenant"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/notification2"
 	"github.com/reubenmiller/go-c8y/v2/pkg/microservice"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
@@ -63,6 +64,9 @@ func TestNotification2Offline_SubscribeNotificationsPerTenant(t *testing.T) {
 	ms := &microservice.Microservice{Client: client}
 	ms.SetServiceUsers([]model.ServiceUser{{Tenant: "t12345", Username: "service_app", Password: "pw"}})
 
+	// The client sends no request until it is used (NewClient does not log in),
+	// so open its keep-alive connection first: its goroutines are not a leak.
+	_ = client.Tenants.Current.Get(context.Background(), currenttenant.GetOptions{})
 	baseline := runtime.NumGoroutine()
 
 	ctx, cancel := context.WithCancel(context.Background())

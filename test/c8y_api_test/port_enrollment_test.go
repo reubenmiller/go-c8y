@@ -140,8 +140,9 @@ func Test_Enrollment_Register(t *testing.T) {
 	require.NotNil(t, enrollResult.Data)
 
 	// Create client which uses the device certificate
-	// It should automatically request a token to use for API calls
+	// It requests a token to use for API calls (EagerLogin: at construction)
 	deviceClient := api.NewClient(api.ClientOptions{
+		EagerLogin:    true,
 		BaseURL:       client.Resty().BaseURL(),
 		Debug:         true,
 		ShowSensitive: true,
@@ -173,7 +174,8 @@ func Test_Enrollment_Register(t *testing.T) {
 
 	// Open another client using the newly issued certificate
 	deviceClient2 := api.NewClient(api.ClientOptions{
-		BaseURL: client.Resty().BaseURL(),
+		EagerLogin: true,
+		BaseURL:    client.Resty().BaseURL(),
 		Auth: authentication.AuthOptions{
 			CertificateKey: string(keyPem),
 			Certificate:    string(secondCertPEM),

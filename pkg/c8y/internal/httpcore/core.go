@@ -102,10 +102,12 @@ func SetExtraQueryParams(req *resty.Request, params url.Values) {
 // WithAuthType forces a specific authentication strategy for this request,
 // overriding the client's default token-source behaviour.
 //
-//   - AuthTypeUnset (default): token source runs normally.
+//   - AuthTypeUnset (default): the client's AuthType applies (token source runs
+//     normally when it is unset).
 //   - AuthTypeBasic: skip token source; use basic auth (client's credentials or
 //     those set by SetBasicAuth). Bearer token is suppressed.
-//   - AuthTypeBearer: equivalent to the default — token source runs normally.
+//   - AuthTypeBearer: token source runs normally, even when the client's AuthType
+//     is basic or none.
 //   - AuthTypeNone: no Authorization header is sent (public endpoints).
 func (r *TryRequest) WithAuthType(t authentication.AuthType) *TryRequest {
 	r.authType = t

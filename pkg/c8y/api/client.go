@@ -23,7 +23,6 @@ import (
 	"os"
 	"reflect"
 	"regexp"
-	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -279,6 +278,13 @@ type ClientOptions struct {
 	// need the tenant set later, e.g. via SetAuth or ResolveTenant.
 	SkipTenantLookup bool
 
+	// EagerLogin makes NewClient exchange the username and password (or device
+	// certificate) for a bearer token before it returns. By default NewClient
+	// does no token request: the token is fetched on the first request, or by
+	// Client.Login. The token request is skipped when AuthType is Basic or None.
+	// Errors of an eager login are only logged; use Client.Login to get them.
+	EagerLogin bool
+
 	Transport http.RoundTripper
 
 	// Middleware wraps the transport for every request the client sends; the
@@ -519,47 +525,57 @@ func (c *Client) initServices() {
 	c.LoginTokens = c.Tenants.LoginTokens
 }
 
-// initTokenSource determines the token source.
-// Priority: explicit TokenSource > credential-backed automatic source > static token.
-func (c *Client) initTokenSource(auth authentication.AuthOptions) {
+// buildTokenSource determines the token source for auth.
+// Priority: explicit TokenSource > credential-backed automatic source. A static
+// token needs none. Creating the source does no I/O: the token is requested on
+// first use. The source exists whatever the AuthType is, so a request which asks
+// for a bearer token (TryRequest.WithAuthType) can use it on a client whose
+// AuthType is Basic.
+func (c *Client) buildTokenSource(auth authentication.AuthOptions) authentication.TokenSource {
 	if auth.TokenSource != nil {
-		c.tokenSource = auth.TokenSource
-		return
-	}
-	if slices.Contains(auth.GetAuthTypes(), authentication.AuthTypeBasic) {
-		// The caller pinned basic auth: authenticate every request with the
-		// credentials directly instead of exchanging them for a bearer token
-		// at client construction (a POST /tenant/oauth/token per client, which
-		// basic-auth callers like the CLI neither need nor expect).
-		return
+		return auth.TokenSource
 	}
 	if auth.Username != "" || (auth.Certificate != "" && auth.CertificateKey != "") {
-		c.tokenSource = c.newInternalTokenSource()
+		return c.newInternalTokenSource()
 	}
+	return nil
 }
 
-// bootstrapAuth primes the token source / sets the initial auth.
-// Using a token source: fetch once to populate the cache and set Auth.Token.
-// No token source (static token): set auth directly as before.
-func (c *Client) bootstrapAuth(auth authentication.AuthOptions) {
-	if c.tokenSource == nil {
-		c.SetAuth(auth)
+// currentTokenSource returns the active token source, which SetAuth replaces.
+func (c *Client) currentTokenSource() authentication.TokenSource {
+	c.clientMu.Lock()
+	defer c.clientMu.Unlock()
+	return c.tokenSource
+}
+
+// authType is the client-level authentication type (see effectiveAuthType).
+func (c *Client) authType() authentication.AuthType {
+	c.clientMu.Lock()
+	defer c.clientMu.Unlock()
+	return effectiveAuthType(c.Auth)
+}
+
+// bootstrapAuth applies the initial auth. The token is only fetched here when
+// EagerLogin is set.
+func (c *Client) bootstrapAuth(auth authentication.AuthOptions, eager bool) {
+	c.refreshAuth()
+	source := c.currentTokenSource()
+	if source == nil || !eager {
 		return
 	}
-	tok, err := c.tokenSource.Token()
-	if err == nil && tok != nil {
-		c.SetToken(tok.AccessToken)
-		c.SetAuth(c.Auth)
+	if t := effectiveAuthType(auth); t == authentication.AuthTypeBasic || t == authentication.AuthTypeNone {
 		return
 	}
-	// Either an error (e.g. bad credentials) or nil token (e.g. username
-	// present but password empty — no credentials to exchange). In both
-	// cases fall back to whatever static auth was supplied (e.g. a raw
-	// bearer token).
+	tok, err := source.Token()
 	if err != nil {
+		// e.g. bad credentials: keep whatever static auth was supplied
 		slog.Debug("Failed to get initial token from token source", "err", err)
+		return
 	}
-	c.SetAuth(auth)
+	if tok != nil && tok.AccessToken != "" {
+		c.SetToken(tok.AccessToken)
+		c.refreshAuth()
+	}
 }
 
 // NewClient returns a new Cumulocity API client. If a nil httpClient is
@@ -617,8 +633,8 @@ func NewClient(opts ClientOptions) *Client {
 
 	c.registerMiddleware()
 
-	c.initTokenSource(opts.Auth)
-	c.bootstrapAuth(opts.Auth)
+	c.tokenSource = c.buildTokenSource(opts.Auth)
+	c.bootstrapAuth(opts.Auth, opts.EagerLogin)
 
 	// Auto-resolve the tenant ID if it was not provided by the caller, so that
 	// path-param APIs (e.g. /application/applicationsByTenant/{tenantId}) work
@@ -654,9 +670,9 @@ func (c *Client) registerMiddleware() error {
 	// tokenSourceMiddleware injects per-request auth from the active token source.
 	// It runs before the global resty auth and overrides it, so callers always get
 	// a fresh (non-expired) token without touching global client state.
-	c.httpClient.AddRequestMiddleware(tokenSourceMiddleware(func() authentication.TokenSource {
-		return c.tokenSource
-	}))
+	// Registered before it: the client's AuthType decides whether it runs.
+	c.httpClient.AddRequestMiddleware(middlewareAuthType(c))
+	c.httpClient.AddRequestMiddleware(tokenSourceMiddleware(c.currentTokenSource))
 	c.httpClient.AddRetryConditions(tokenRenewalRetry(c))
 
 	// Apply per-request credentials carried in the context (see WithAuth /
@@ -698,11 +714,42 @@ func (c *Client) SetBaseURL(v string) error {
 	return nil
 }
 
+// SetAuth replaces the credentials of the client. Nothing of the previous
+// credentials is kept: a token, username and password, or token source that opt
+// does not contain is no longer used, so switching from a bearer token to Basic
+// auth (or the other way) sends only the new credentials. A token source is
+// created for opt as NewClient does (no request is made until the first one).
+// opt.AuthType applies to every request from now on.
 func (c *Client) SetAuth(opt authentication.AuthOptions) {
 	c.clientMu.Lock()
 	defer c.clientMu.Unlock()
 	c.Auth = opt
+	c.tokenSource = c.buildTokenSource(opt)
+	if opt.Tenant != "" {
+		c.httpClient.SetPathParam(core.PathParamTenantID, opt.Tenant)
+	}
 	c.updateClientAuth()
+}
+
+// refreshAuth applies c.Auth to the HTTP client after the client itself changed
+// it (e.g. a token came back from a login). Unlike SetAuth it keeps the token
+// source.
+func (c *Client) refreshAuth() {
+	c.clientMu.Lock()
+	defer c.clientMu.Unlock()
+	c.updateClientAuth()
+}
+
+// useToken makes token the credential of the client, as the result of a login
+// flow, and changes nothing else in Auth (username, tenant, AuthType, ... stay).
+// The token source is dropped, because it would override the token on each
+// request; SetAuth restores one.
+func (c *Client) useToken(token string) {
+	c.clientMu.Lock()
+	c.tokenSource = nil
+	c.clientMu.Unlock()
+	c.SetToken(token)
+	c.refreshAuth()
 }
 
 func (c *Client) updateClientAuth() {
@@ -1329,8 +1376,7 @@ func (c *Client) Login(ctx context.Context) (token string, err error) {
 		return
 	}
 	slog.Debug("Updating client token")
-	c.SetToken(token)
-	c.SetAuth(c.Auth)
+	c.seedTokenSource(token)
 	return
 }
 
@@ -1551,7 +1597,6 @@ func (c *Client) loginWithMethod(ctx context.Context, m authentication.LoginMeth
 			if err := opts.CredentialPrompt(ctx, m, &auth); err != nil {
 				return "", err
 			}
-			c.Auth = auth
 			c.SetAuth(auth)
 		}
 	}
@@ -1563,8 +1608,9 @@ func (c *Client) loginWithMethod(ctx context.Context, m authentication.LoginMeth
 		}
 		// Basic auth requires no token exchange; just pin the auth type so
 		// the middleware always sends an Authorization: Basic header.
-		c.Auth.AuthType = []authentication.AuthType{authentication.AuthTypeBasic}
-		c.SetAuth(c.Auth)
+		auth := c.Auth
+		auth.AuthType = []authentication.AuthType{authentication.AuthTypeBasic}
+		c.SetAuth(auth)
 		return "", nil
 
 	case authentication.LoginMethodOAuth2Internal:
@@ -1798,6 +1844,8 @@ func computeTOTPCode(secret string) (string, error) {
 }
 
 func (c *Client) loginInternalSSO(ctx context.Context) (string, error) {
+	// Do not start a token source exchange for the token request itself.
+	ctx = ctxhelpers.WithSkipTokenSource(ctx)
 	tok := c.Tenants.LoginTokens.Create(ctx, logintokens.CreateTokenOptions{
 		Username:  c.Auth.Username,
 		Password:  c.Auth.Password,
@@ -1847,7 +1895,7 @@ func (c *Client) fetchToken(ctx context.Context) (*authentication.Token, error) 
 // call can use it directly instead of triggering an unnecessary token fetch.
 // It also stores the token in Auth and updates the resty client auth state.
 func (c *Client) seedTokenSource(raw string) {
-	if cached, ok := c.tokenSource.(*authentication.CachedTokenSource); ok {
+	if cached, ok := c.currentTokenSource().(*authentication.CachedTokenSource); ok {
 		expiry := time.Now().Add(55 * time.Minute)
 		if claims, parseErr := authentication.ParseToken(raw); parseErr == nil && claims.ExpiresAt != nil {
 			expiry = claims.ExpiresAt.Time
@@ -1855,7 +1903,7 @@ func (c *Client) seedTokenSource(raw string) {
 		cached.Seed(&authentication.Token{AccessToken: raw, Expiry: expiry})
 	}
 	c.SetToken(raw)
-	c.SetAuth(c.Auth)
+	c.refreshAuth()
 }
 
 // newInternalTokenSource creates a CachedTokenSource backed by this client's
@@ -1991,15 +2039,21 @@ func tokenRenewalRetry(c *Client) func(res *resty.Response, err error) bool {
 			}
 
 			if res.Request.AuthToken != "" && core.ErrTokenRevoked(res.ResultError()) {
-				if c.tokenSource != nil {
+				if source := c.currentTokenSource(); source != nil {
 					// Force-refresh: if the source supports explicit invalidation (e.g.
-					// CachedTokenSource), clear the cache so the next Token() call fetches
-					// a brand-new token rather than returning the revoked one.
-					if inv, ok := c.tokenSource.(interface{ Invalidate() }); ok {
+					// CachedTokenSource), drop the rejected token so the next Token() call
+					// fetches a new one. Only the rejected token is dropped: when several
+					// concurrent requests get a 401 for the same token, the first one
+					// refreshes and the others reuse the new token instead of each
+					// requesting one.
+					switch inv := source.(type) {
+					case *authentication.CachedTokenSource:
+						inv.InvalidateToken(res.Request.AuthToken)
+					case interface{ Invalidate() }:
 						inv.Invalidate()
 					}
 					slog.Warn("Token revoked, refreshing via token source")
-					tok, tokErr := c.tokenSource.Token()
+					tok, tokErr := source.Token()
 					if tokErr != nil || tok == nil {
 						return false
 					}

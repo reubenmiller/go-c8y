@@ -384,7 +384,8 @@ func Test_EnableCertificateAuth_UntrustedChainChangesNothing(t *testing.T) {
 	require.Error(t, err)
 	assert.ErrorIs(t, err, ErrCertificateNotTrusted)
 	assert.Empty(t, cs.find("/user/currentUser"), "requiredAuthType must not change")
-	assert.Empty(t, cs.find("/tenant/oauth/certificate"))
+	// The only exchange is the lazy token request for the verify call itself.
+	assert.Len(t, cs.find("/tenant/oauth/certificate"), 1)
 }
 
 func Test_EnableCertificateAuth_Success(t *testing.T) {
@@ -394,6 +395,7 @@ func Test_EnableCertificateAuth_Success(t *testing.T) {
 
 	require.NoError(t, client.EnableCertificateAuth(context.Background(), EnableCertificateAuthOptions{}))
 	assert.Equal(t, []string{
+		"POST /tenant/oauth/certificate", // lazy token for the first request
 		"POST /tenant/trusted-certificates/verify-cert-chain",
 		"PUT /user/currentUser",
 		"POST /tenant/oauth/certificate",

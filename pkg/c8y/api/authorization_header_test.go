@@ -16,7 +16,6 @@ import (
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"resty.dev/v3"
 )
 
 func Test_AuthorizationHeader_MatchesRequestsSentByClient(t *testing.T) {
@@ -150,8 +149,8 @@ func Test_AuthorizationHeader_TokenSourceError(t *testing.T) {
 }
 
 // Test_AuthorizationHeader_MatchesWire checks the client-level credentials
-// against the header the HTTP client really sends after SetAuth, including a
-// token set next to pinned Basic credentials (resty sends the token).
+// against the header the client really sends after SetAuth, including a token
+// set next to pinned Basic credentials (AuthType Basic sends Basic).
 func Test_AuthorizationHeader_MatchesWire(t *testing.T) {
 	var got string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -174,13 +173,11 @@ func Test_AuthorizationHeader_MatchesWire(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client := NewClient(ClientOptions{BaseURL: "http://localhost:1"})
-			client.Auth = tt.auth
-			rc := resty.New()
-			defer rc.Close()
-			setAuth(rc, tt.auth)
+			client := NewClient(ClientOptions{BaseURL: srv.URL, SkipTenantLookup: true})
+			client.SetAuth(tt.auth)
+			client.tokenSource = nil // static credentials only
 			got = ""
-			_, err := rc.R().Get(srv.URL)
+			_, err := client.Resty().R().Get(srv.URL)
 			require.NoError(t, err)
 
 			header, err := client.AuthorizationHeader(t.Context())
