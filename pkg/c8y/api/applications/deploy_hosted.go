@@ -9,7 +9,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core/artifact" //nolint:misspell
@@ -181,64 +180,18 @@ func (s *Service) deployHosted(ctx context.Context, opt DeployHostedOptions) op.
 		if !opt.SkipActivation {
 			activeID = binaryID
 		}
-		deleted, err := s.rotateBinaries(ctx, app.ID(), opt.KeepBinaries, binaryID, activeID)
-		result = op.WithMeta(result, "deletedBinaries", deleted)
-		if err != nil {
-			result.Err = fmt.Errorf("deployed the web application but failed to delete old binaries. %w", err)
+		rotation := s.rotateBinaries(ctx, app.ID(), RotateBinariesOptions{
+			Keep:            opt.KeepBinaries,
+			ActiveVersionID: activeID,
+			Protect:         []string{binaryID},
+		})
+		result = op.WithMeta(result, "deletedBinaries", deletedBinaries(rotation))
+		if rotation.Err != nil {
+			result.Err = fmt.Errorf("deployed the web application but failed to delete old binaries. %w", rotation.Err)
 			result.Status = op.StatusPartial
 		}
 	}
 	return result
-}
-
-// rotateBinaries deletes the oldest binaries of an application so that at most
-// keep binaries remain. The binaries with the ids in protect are never deleted
-// (they still count towards keep). It returns the ids of the deleted binaries.
-func (s *Service) rotateBinaries(ctx context.Context, appID string, keep int, protect ...string) ([]string, error) {
-	deleted := []string{}
-	listResult := s.ListBinaries(ctx, appID)
-	if listResult.Err != nil {
-		return deleted, fmt.Errorf("failed to list application binaries. %w", listResult.Err)
-	}
-
-	binaries := []jsonmodels.ApplicationBinary{}
-	for item, err := range listResult.Items() {
-		if err != nil {
-			return deleted, err
-		}
-		binaries = append(binaries, item)
-	}
-	if len(binaries) <= keep {
-		return deleted, nil
-	}
-
-	// Newest first. Binary ids are not ordered, so use the creation time; the
-	// stable sort keeps the listing order for binaries without one.
-	sort.SliceStable(binaries, func(i, j int) bool {
-		return binaries[i].Get("created").Time().After(binaries[j].Get("created").Time())
-	})
-
-	protected := map[string]bool{}
-	for _, id := range protect {
-		if id != "" {
-			protected[id] = true
-		}
-	}
-	remaining := len(binaries)
-	var errs []error
-	for i := len(binaries) - 1; i >= 0 && remaining > keep; i-- {
-		id := binaries[i].ID()
-		if protected[id] {
-			continue
-		}
-		if res := s.DeleteBinary(ctx, appID, id); res.Err != nil {
-			errs = append(errs, fmt.Errorf("binaryId=%s. %w", id, res.Err))
-			continue
-		}
-		deleted = append(deleted, id)
-		remaining--
-	}
-	return deleted, errors.Join(errs...)
 }
 
 func withDeployMeta(r op.Result[jsonmodels.Application], created bool, binaryID string, activated bool) op.Result[jsonmodels.Application] {
