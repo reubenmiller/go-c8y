@@ -211,6 +211,13 @@ The realtime, notification2 and remote access clients now connect like an HTTP c
   * `c8y-fakeserver --tls` (`fakeserver.NewTLSServer`) serves https with a self-signed certificate, so the self links start with `https://` like on a tenant. Clients must accept the certificate.
 * Fixed a flaky `Test_WatchSubscriptions_Lifecycle`: it counted the requests of the watcher around a lookup while the watcher polled every 20ms. The check is now its own test, `Test_WatchSubscriptions_NoRefreshOnMiss`, with a watcher that only polls once.
 
+### Docs
+
+* Added a package comment with a usage snippet to every package under `pkg/c8y/api` which had none (the `api` package and about 60 service packages), so the pkg.go.dev pages of the services are no longer empty.
+* Added runnable `Example` functions which run offline against the in-process fake server: managed objects (create, get, `ListAll`, `ResolveID`), alarms, events, measurements, operations, software item and version, applications, users (`ResolveID` with a wildcard), pagination, error handling and dry run. The shared client setup is `internal/pkg/examplesetup`.
+* README: added sections for pagination, dry run, request hooks and progress, and realtime, Notification 2.0 and remote access, a list of the examples, and a complete Features list. `docs/API_DESIGN.md`: fixed the client construction, the iterator example, documented the request hook, progress and `Client.Request`, the `IsSuccess` rule, the iterator aliases, and the implementation status.
+* Removed `pkg/c8y/api/events/source_integration_example.go`. It only held commented-out code and exported nothing.
+
 ## Released
 
 ### v0.14.0
