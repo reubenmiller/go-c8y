@@ -51,6 +51,7 @@ func NewMultiPartFileFields(opt core.UploadFileOptions) []*resty.MultipartField 
 		Reader:      opt.Reader,
 		ContentType: filePartType,
 	})
+	withUploadProgress(fields[0], opt)
 	// The object part is a plain form field (resty Values), not a Reader part, so
 	// resty writes it via CreateFormField — Content-Disposition only, no
 	// Content-Type and no content sniffing — matching v1.
@@ -69,7 +70,27 @@ func NewMultiPartFile(opt core.UploadFileOptions) []*resty.MultipartField {
 		FilePath: opt.FilePath,
 		Reader:   opt.Reader,
 	})
+	withUploadProgress(fields[0], opt)
 	return fields
+}
+
+// withUploadProgress reports the file part's progress to opt.Progress, using
+// the HTTP client's own multipart callback (which also handles retries).
+func withUploadProgress(f *resty.MultipartField, opt core.UploadFileOptions) {
+	if opt.Progress == nil {
+		return
+	}
+	if f.Reader != nil {
+		f.FileSize = core.ReaderSize(f.Reader)
+	}
+	fn := opt.Progress
+	f.ProgressCallback = func(p resty.MultipartFieldProgress) {
+		total := p.FileSize
+		if total == 0 {
+			total = -1
+		}
+		fn(p.Written, total)
+	}
 }
 
 func selectFirstNonEmptyValue(contentType ...string) string {

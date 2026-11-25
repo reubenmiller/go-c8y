@@ -76,6 +76,13 @@ v2 is a new module, `github.com/reubenmiller/go-c8y/v2`. Entries marked **Breaki
 * **Breaking**: the tenant path parameter is no longer read from the untyped context key `"tenant"`. Use `api.WithTenant(ctx, tenant)`.
 * Added context-scoped credentials to the core API client: `api.WithAuth`, `api.WithServiceUser` and `api.WithTenant` allow any request made with a shared client to execute on behalf of a specific tenant (see `docs/MICROSERVICE_TENANT_CONTEXT.md`)
 
+* Added a public request hook and transfer progress, so SDK users (and go-c8y-cli) can wrap request and response bodies without `SendRequest`:
+  * `api.WithRequestHook(ctx, func(*http.Request) error)` runs on the final request of every call made with the context, typed or raw (also for dry runs), and may replace `req.Body`.
+  * `api.WithResponseBodyWrapper(ctx, func(*http.Response) io.ReadCloser)` replaces the response body, for example for downloads.
+  * `api.WithUploadProgress` and `api.WithDownloadProgress` report `(read, total)` through the new `core.ProgressFunc`; `core.NewProgressReader` and `core.ReaderSize` are the building blocks.
+  * `core.UploadFileOptions.Progress` reports the uploaded file bytes of every typed upload (binaries, event binaries, applications and versions, microservices, firmware, software, configuration, certificate revocation lists, bulk device registration), with the file size as total.
+* Added `Client.Request(ctx, RequestOptions) op.Result[jsondoc.JSONDoc]`, a typed escape hatch for endpoints without a service method. It shares middleware, authentication, dry run and error handling with `SendRequest` and the typed services.
+
 ### Authentication and certificates
 
 * Added certificate login over HTTPS (`POST /tenant/oauth/certificate`) for RSA keys, including JWE token decryption, TFA, and token refresh. `LoginMethodCertificate` now picks the transport from the key type through `AuthOptions.CertificateTransport` (`Auto`, `HTTPS`, `MTLS`): RSA keys use HTTPS, EC and Ed25519 keys keep using mTLS on port 8443, with no fallback between them. **Breaking (behavior)**: RSA client certificates now use the HTTPS exchange instead of mTLS by default; set `CertificateTransportMTLS` to keep the previous behavior.

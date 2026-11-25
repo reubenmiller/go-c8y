@@ -137,11 +137,16 @@ func (s *Service) createB(applicationID string, opts CreateOptions) *httpcore.Tr
 
 	applicationVersion, _ := json.Marshal(opts)
 
+	binary := opts.File.Reader
+	if opts.File.Progress != nil && binary != nil {
+		binary = core.NewProgressReader(binary, core.ReaderSize(binary), opts.File.Progress)
+	}
+
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(ParamID, applicationID).
-		SetMultipartField("applicationBinary", filename, types.MimeTypeApplicationOctetStream, opts.File.Reader).
+		SetMultipartField("applicationBinary", filename, types.MimeTypeApplicationOctetStream, binary).
 		SetMultipartField("applicationVersion", "", types.MimeTypeApplicationJSON, bytes.NewReader(applicationVersion)).
 		SetURL(ApiVersions)
 
