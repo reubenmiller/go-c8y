@@ -11,7 +11,20 @@ type requestHookKey struct{}
 
 // WithRequestHook returns a context whose requests are passed to fn just before
 // they are sent (once per attempt). An error from fn aborts the request.
+// Hooks compose: a hook already set on ctx runs first, then fn.
 func WithRequestHook(ctx context.Context, fn func(*http.Request) error) context.Context {
+	if fn == nil {
+		return ctx
+	}
+	if prev := RequestHook(ctx); prev != nil {
+		next := fn
+		fn = func(r *http.Request) error {
+			if err := prev(r); err != nil {
+				return err
+			}
+			return next(r)
+		}
+	}
 	return context.WithValue(ctx, requestHookKey{}, fn)
 }
 
@@ -60,7 +73,21 @@ type responseBodyWrapperKey struct{}
 
 // WithResponseBodyWrapper returns a context whose responses have their body
 // replaced by fn(resp) once the response headers have arrived.
+// Wrappers compose: a wrapper already set on ctx wraps the body first, then fn
+// wraps the result. A wrapper returning nil keeps the body it was given.
 func WithResponseBodyWrapper(ctx context.Context, fn func(*http.Response) io.ReadCloser) context.Context {
+	if fn == nil {
+		return ctx
+	}
+	if prev := ResponseBodyWrapper(ctx); prev != nil {
+		next := fn
+		fn = func(resp *http.Response) io.ReadCloser {
+			if body := prev(resp); body != nil {
+				resp.Body = body
+			}
+			return next(resp)
+		}
+	}
 	return context.WithValue(ctx, responseBodyWrapperKey{}, fn)
 }
 

@@ -236,6 +236,8 @@ func ResolutionContext(ctx context.Context) context.Context {
 // req.Body (for example to wrap it and count bytes). Returning an error aborts
 // the request. It applies to every request made with the context, typed or
 // raw; for a single [Client.SendRequest] use RequestOptions.PrepareRequest.
+// Hooks compose: a hook already on ctx (including the ones set by
+// WithUploadProgress and PrepareRequest) runs first, then fn.
 func WithRequestHook(ctx context.Context, fn func(req *http.Request) error) context.Context {
 	return ctxhelpers.WithRequestHook(ctx, fn)
 }
@@ -244,6 +246,8 @@ func WithRequestHook(ctx context.Context, fn func(req *http.Request) error) cont
 // replaced by fn(resp) as soon as the headers arrive, for example to count the
 // bytes of a download. fn returns the new body; returning nil keeps the
 // original. The wrapper is not called for dry runs or mock responses.
+// Wrappers compose: a wrapper already on ctx (for example the one set by
+// WithDownloadProgress) wraps the body first, then fn wraps the result.
 func WithResponseBodyWrapper(ctx context.Context, fn func(resp *http.Response) io.ReadCloser) context.Context {
 	return ctxhelpers.WithResponseBodyWrapper(ctx, fn)
 }
