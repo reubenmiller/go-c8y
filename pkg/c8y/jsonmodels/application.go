@@ -45,3 +45,14 @@ func (a Application) CreationTime() time.Time {
 func (a Application) LastUpdated() time.Time {
 	return a.Get("lastUpdated").Time()
 }
+
+// ContextPath is the path under which a hosted application is served
+// (/apps/<contextPath>).
+func (a Application) ContextPath() string {
+	return a.Get("contextPath").String()
+}
+
+// OwnerTenantID is the id of the tenant which owns the application.
+func (a Application) OwnerTenantID() string {
+	return a.Get("owner.tenant.id").String()
+}

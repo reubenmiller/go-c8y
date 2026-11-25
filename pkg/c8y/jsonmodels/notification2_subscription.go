@@ -34,6 +34,12 @@ func (n Notification2Subscription) SourceID() string {
 	return n.Get("source.id").String()
 }
 
+// SourceName is the name of the managed object the subscription is for
+// (empty for tenant subscriptions).
+func (n Notification2Subscription) SourceName() string {
+	return n.Get("source.name").String()
+}
+
 func (n Notification2Subscription) SourceSelf() string {
 	return n.Get("source.self").String()
 }

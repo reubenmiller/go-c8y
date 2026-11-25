@@ -187,9 +187,18 @@ func (fs *FakeServer) handleFeatures(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodGet:
+		// Like the platform (and Features.List), the features are a plain
+		// JSON array, not a paged collection.
 		items := fs.Features.List()
-		page := Paginate(r, items)
-		writeJSON(w, http.StatusOK, BuildCollectionResponse(r, fs.URL(), "features", page))
+		if items == nil {
+			items = []json.RawMessage{}
+		}
+		body, err := json.Marshal(items)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "general/internalError", err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, body)
 
 	case http.MethodPost:
 		body, err := readBody(r)

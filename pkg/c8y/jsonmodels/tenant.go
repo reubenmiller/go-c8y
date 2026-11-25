@@ -26,6 +26,11 @@ func (t Tenant) Domain() string {
 	return t.Get("domain").String()
 }
 
+// Company is the company name of the tenant.
+func (t Tenant) Company() string {
+	return t.Get("company").String()
+}
+
 func (t Tenant) Self() string {
 	return t.Get("self").String()
 }
