@@ -7,7 +7,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 	"net"
 	"strings"
 	"time"
@@ -17,6 +16,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/logintokens"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/users/currentuser/totp"
+	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 )
 
 // certificateLogin exchanges the client certificate (Auth.Certificate and

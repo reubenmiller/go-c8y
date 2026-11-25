@@ -455,7 +455,7 @@ func (c *Client) contextAuthorization(ctx context.Context, auth authentication.A
 		return ""
 	}
 	hasBasic := auth.Username != "" && auth.Password != ""
-	if auth.Token != "" && !(authType == authentication.AuthTypeBasic && hasBasic) {
+	if auth.Token != "" && (authType != authentication.AuthTypeBasic || !hasBasic) {
 		return bearerAuthorization(auth.Token)
 	}
 	if !hasBasic {
@@ -527,7 +527,7 @@ func middlewareContextAuthorization(c *Client) resty.RequestMiddleware {
 		}
 		hasBasic := auth.Username != "" && auth.Password != ""
 		switch {
-		case auth.Token != "" && !(authType == authentication.AuthTypeBasic && hasBasic):
+		case auth.Token != "" && (authType != authentication.AuthTypeBasic || !hasBasic):
 			r.SetAuthScheme("Bearer")
 			r.SetAuthToken(auth.Token)
 		case hasBasic:

@@ -404,8 +404,7 @@ func Test_AuthType_PerRequestContextAuth(t *testing.T) {
 func Test_RevokedToken_ConcurrentRequestsRefreshOnce(t *testing.T) {
 	var mu sync.Mutex
 	issued := 0
-	var srv *httptest.Server
-	srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if r.URL.Path == "/tenant/oauth/token" {
 			mu.Lock()
