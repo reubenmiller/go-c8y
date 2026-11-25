@@ -22,15 +22,17 @@ CREATE
 }
 
 func Test_GetEndpoint(t *testing.T) {
-	endpoint := getEndpoint("http://cumulocity:8111", Subscription{
+	endpoint, err := getEndpoint("http://cumulocity:8111", Subscription{
 		Token:    "abcdef",
 		Consumer: "",
 	})
+	testingutils.Equals(t, err, nil)
 	testingutils.Equals(t, endpoint.Scheme, "ws")
 
-	endpoint = getEndpoint("https://cumulocity:8111", Subscription{
+	endpoint, err = getEndpoint("https://cumulocity:8111", Subscription{
 		Token:    "abcdef",
 		Consumer: "",
 	})
+	testingutils.Equals(t, err, nil)
 	testingutils.Equals(t, endpoint.Scheme, "wss")
 }

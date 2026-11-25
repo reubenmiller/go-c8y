@@ -94,10 +94,15 @@ func NewError(err any) *Error {
 
 		if !ok {
 			// If Build error manually if the APIError wasn't serialised
+			message := e.String()
+			if strings.HasPrefix(strings.TrimSpace(message), "<") {
+				// HTML error page (e.g. from a proxy): not useful as a message
+				message = http.StatusText(e.StatusCode())
+			}
 			wrappedErr := &Error{
 				Code:       e.StatusCode(),
 				Type:       "NoContent",
-				Message:    e.String(),
+				Message:    message,
 				MessageRaw: e.String(),
 				Response:   e.RawResponse,
 				Duration:   e.Duration(),
@@ -183,12 +188,18 @@ func ErrHasStatus(err error, code ...int) bool {
 		return false
 	}
 
+	var ec int
 	var e *Error
-	if !errors.As(err, &e) {
+	var v Error
+	switch {
+	case errors.As(err, &e):
+		ec = e.StatusCode()
+	case errors.As(err, &v):
+		// the api.Err* sentinels are Error values, not pointers
+		ec = v.StatusCode()
+	default:
 		return false
 	}
-
-	ec := e.StatusCode()
 	for _, c := range code {
 		if ec == c {
 			return true

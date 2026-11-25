@@ -3,12 +3,19 @@ package op
 import (
 	"context"
 	"errors"
+	"net/http"
 	"time"
+
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 )
 
 type contextKey string
 
-var ErrNotFound = errors.New("resource not found")
+// ErrNotFound is returned when an operation finds no result (for example
+// [Result.First] on an empty collection). It is a 404 [core.Error], so
+// errors.Is(err, api.ErrNotFound) is true for it, and errors.Is(err,
+// op.ErrNotFound) is also true for a real 404 response.
+var ErrNotFound error = &core.Error{Code: http.StatusNotFound, Type: "NoResult", Message: "resource not found"}
 
 // GetFunc retrieves a resource by key
 type GetFunc[T any] func(ctx context.Context, key string) (T, error)

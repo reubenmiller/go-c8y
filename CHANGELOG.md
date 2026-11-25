@@ -147,6 +147,24 @@ v2 is a new module, `github.com/reubenmiller/go-c8y/v2`. Entries marked **Breaki
 * Added model accessors `Application.ContextPath`, `Application.OwnerTenantID`, `Tenant.Company`, `TrustedCertificate.Issuer` and `Notification2Subscription.SourceName`.
 * The fake server matches `*` wildcards anywhere in an inventory query value (`name eq '*device*'`), not only at the end, and `GET /features` returns a plain JSON array like the platform (it returned a paged collection, which `Features.List` could not read).
 
+### Errors and robustness
+
+* **Fixed**: library code no longer exits or panics the host process on runtime failures. Each of these now returns an error:
+  * `realtime`: an invalid host, a failed dial, a missing dialer, a rejected handshake (bad credentials) and a server advice of `none` used to call `os.Exit(1)` or `panic`. `Connect` now returns the error. A failure which happens later, in the background worker, stops the client, closes the channels of all subscribers and is returned from `Client.Err()` (new) and from pending acknowledgements. New errors: `realtime.ErrHandshakeFailed`, `ErrServerNoReconnect`, `ErrMissingDialer`.
+  * `notification2`: an invalid host (`os.Exit`) and a missing dialer (`panic`). `Connect` returns the error. New `notification2.ErrMissingDialer`.
+  * `authentication.DecodeBasicAuth` returns an error for a header without `user:password` instead of panicking.
+  * `model.MeasurementSeriesGroup` and `MeasurementSeriesAggregateGroup` return an error from `UnmarshalJSON` for an invalid timestamp instead of panicking.
+  * `microservice.WithServiceUserCredentials` ignores arguments after the first tenant instead of panicking.
+* **Deprecated**, with a replacement which returns an error. The old functions keep their signature but no longer panic or exit:
+  * `realtime.NewClient` -> `realtime.NewClientE`. With an invalid host the old function returns a client whose `Connect` returns the error.
+  * `notification2.NewNotification2Client` -> `notification2.NewNotification2ClientE`. Same behavior for an invalid host.
+  * `microservice.SetMicroserviceHost` -> `SetMicroserviceHostE`. The old method logs an invalid host and keeps the current one.
+  * `encrypt.Encrypt`, `Decrypt`, `EncryptString`, `DecryptString` -> `EncryptE`, `DecryptE`, `EncryptStringE`, `DecryptStringE`. The old functions log the failure and return `nil` or `""`. `DecryptE` also returns `encrypt.ErrCiphertextTooShort` instead of panicking on truncated input.
+* **Fixed**: an HTTP error response whose body is not JSON (an HTML page from a proxy, plain text, an empty body) keeps its HTTP status, so `errors.Is(err, api.ErrUnauthorized)` and the other status checks work. The message is the body text, or the status text when the body is empty or HTML.
+* **Breaking (behavior, low impact)**: "not found" is now one concept. `op.ErrNotFound` is a 404 `*core.Error` and `api.ErrNotFound` is `api.Error{Code: 404}` (before: two unrelated `errors.New` values). `errors.Is(err, api.ErrNotFound)` is true for a real 404 response, for `Result.First()` on an empty collection and for `core.ErrNotFound(...)`. `errors.Is(err, op.ErrNotFound)` is now also true for a real 404, so `op.GetOrCreate` and `op.Upsert` treat a 404 from the lookup as "not found". Code which compared `err == op.ErrNotFound` by identity still works.
+* Added `api.IsUnauthorized`, `api.IsForbidden`, `api.IsConflict` and `api.StatusCode(err) (int, bool)`. `api.IsNotFound` and `api.ErrHasStatus` now also work with the `api.Err*` sentinel values (they are `Error` values, not pointers).
+* Docs: added an "Errors" section to the README and "Checking errors" to `docs/API_DESIGN.md`, and fixed examples there which used methods that do not exist (`Operations.Delete`, `ManagedObjects.GetOrCreate`).
+
 ### Tooling and documentation
 
 * `c8ygen lint` now compares operations (method + path) and requires a reason for every drift waiver; waivers can name a method (`POST /path`).

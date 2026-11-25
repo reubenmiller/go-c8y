@@ -83,7 +83,9 @@ import (
 	"resty.dev/v3"
 )
 
-var ErrNotFound = errors.New("item: not found")
+// ErrNotFound matches any 404 error with errors.Is: a real 404 response, the
+// "no result" error of the op package (op.ErrNotFound) and core.ErrNotFound.
+var ErrNotFound = Error{Code: 404}
 
 // ErrNoLoginMethodAvailable is returned by LoginWithOptions when a Preference
 // list is given but no method in the list could be used (all were either missing
@@ -306,13 +308,14 @@ func (c *Client) Realtime() *realtime.Client {
 	c.clientMu.Lock()
 	defer c.clientMu.Unlock()
 	if c.common.RealtimeClient == nil {
-		c.common.RealtimeClient = realtime.NewClient(nil, realtime.ClientOptions{
-			Host:     c.BaseURL.String(),
-			Tenant:   c.Auth.Tenant,
-			Username: c.Auth.Username,
-			Password: c.Auth.Password,
-			Token:    c.Auth.Token,
-		})
+		c.common.RealtimeClient = realtime.NewClient(nil, //nolint:staticcheck // an invalid host is reported by Connect
+			realtime.ClientOptions{
+				Host:     c.BaseURL.String(),
+				Tenant:   c.Auth.Tenant,
+				Username: c.Auth.Username,
+				Password: c.Auth.Password,
+				Token:    c.Auth.Token,
+			})
 	}
 	return c.common.RealtimeClient
 }
@@ -595,13 +598,14 @@ func NewClient(opts ClientOptions) *Client {
 	c.common.Client = rclient
 	c.common.MTLSPort = opts.MTLSPort
 	c.common.CertChainHeader = buildCertChainHeader(opts.Auth)
-	c.common.RealtimeClient = realtime.NewClient(nil, realtime.ClientOptions{
-		Host:     targetBaseURL.String(),
-		Tenant:   c.Auth.Tenant,
-		Username: c.Auth.Username,
-		Password: c.Auth.Password,
-		Token:    c.Auth.Token,
-	})
+	c.common.RealtimeClient = realtime.NewClient(nil, //nolint:staticcheck // an invalid host is reported by Connect
+		realtime.ClientOptions{
+			Host:     targetBaseURL.String(),
+			Tenant:   c.Auth.Tenant,
+			Username: c.Auth.Username,
+			Password: c.Auth.Password,
+			Token:    c.Auth.Token,
+		})
 	c.initServices()
 
 	c.registerMiddleware()

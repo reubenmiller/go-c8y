@@ -88,6 +88,12 @@ type Client struct {
 
 	pendingRequests sync.Map
 
+	// initErr is set when the client was created with an invalid host
+	initErr error
+
+	// fatalErr is set when the client stopped permanently, see Err
+	fatalErr error
+
 	// logger is the logger used by this client instance
 	// If not set, uses the package-level logger
 	logger *slog.Logger
@@ -187,13 +193,63 @@ func getC8yExtensionFromXSRFToken(token string) c8yExtensionMessage {
 	}
 }
 
-func getRealtimeURL(host string) *url.URL {
+func getRealtimeURL(host string) (*url.URL, error) {
 	c8yHost, err := wsurl.GetWebsocketURL(host, "cep/realtime")
 	if err != nil {
-		logger.Error("Invalid websocket url", "err", err)
-		os.Exit(1)
+		return nil, fmt.Errorf("invalid realtime host %q: %w", host, err)
 	}
-	return c8yHost
+	return c8yHost, nil
+}
+
+// ErrMissingDialer is returned by Connect when the client has no websocket dialer.
+var ErrMissingDialer = errors.New("realtime: missing websocket dialer")
+
+// ErrHandshakeFailed is returned (and set as [Client.Err]) when the server rejects
+// the handshake, usually because the tenant, username or password is wrong.
+var ErrHandshakeFailed = errors.New("realtime: handshake failed (check the tenant, username and password)")
+
+// ErrServerNoReconnect is set as [Client.Err] when the server advises that the
+// client must neither retry nor handshake again.
+var ErrServerNoReconnect = errors.New("realtime: server indicated that no retry or handshake should be done")
+
+func errChan(err error) chan error {
+	ch := make(chan error, 1)
+	ch <- err
+	close(ch)
+	return ch
+}
+
+// Err returns the error which permanently stopped the client (for example a
+// rejected handshake), or nil. When this happens the client stops its worker,
+// closes the channels of all subscribers and reports the error from Connect and
+// from pending acknowledgements. It never terminates the process.
+func (c *Client) Err() error {
+	c.mtx.RLock()
+	defer c.mtx.RUnlock()
+	return c.fatalErr
+}
+
+// fail records a permanent error, disconnects, stops the worker and releases the
+// subscribers.
+func (c *Client) fail(err error) {
+	c.log().Error("Realtime client stopped", "err", err)
+	c.mtx.Lock()
+	c.fatalErr = err
+	c.connected = false
+	if c.cancel != nil {
+		c.cancel()
+		c.cancel = nil
+	}
+	c.mtx.Unlock()
+
+	// Release subscribers. Done in a goroutine as the hub may be blocked
+	// delivering to a slow subscriber.
+	go func() {
+		select {
+		case c.hub.closeAll <- struct{}{}:
+		case <-time.After(5 * time.Second):
+		}
+	}()
 }
 
 type ClientOptions struct {
@@ -207,9 +263,29 @@ type ClientOptions struct {
 	InsecureSkipVerify bool
 }
 
-// NewClient initialises a new Bayeux client. By default `http.DefaultClient`
-// is used for HTTP connections.
+// NewClient initialises a new Bayeux client.
+//
+// Deprecated: use [NewClientE]. When opt.Host is invalid this still returns a
+// client (it never exits the process), but Connect then returns the error.
 func NewClient(wsDialer *websocket.Dialer, opt ClientOptions) *Client {
+	c, err := newClient(wsDialer, opt)
+	if err != nil {
+		c.initErr = err
+	}
+	return c
+}
+
+// NewClientE initialises a new Bayeux client and returns an error when
+// opt.Host is not a valid host URL.
+func NewClientE(wsDialer *websocket.Dialer, opt ClientOptions) (*Client, error) {
+	c, err := newClient(wsDialer, opt)
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+func newClient(wsDialer *websocket.Dialer, opt ClientOptions) (*Client, error) {
 	if wsDialer == nil {
 		// Default client ignores self signed certificates (to enable compatibility to the edge which uses self signed certs)
 		wsDialer = &websocket.Dialer{
@@ -227,7 +303,10 @@ func NewClient(wsDialer *websocket.Dialer, opt ClientOptions) *Client {
 	}
 
 	// Convert url to a websocket
-	websocketURL := getRealtimeURL(opt.Host)
+	websocketURL, urlErr := getRealtimeURL(opt.Host)
+	if websocketURL == nil {
+		websocketURL = &url.URL{}
+	}
 	c8yURL, _ := url.Parse(opt.Host)
 
 	client := &Client{
@@ -249,7 +328,7 @@ func NewClient(wsDialer *websocket.Dialer, opt ClientOptions) *Client {
 
 	go client.hub.Run()
 	go client.writeHandler()
-	return client
+	return client, urlErr
 }
 
 // SetRequestHeader sets the header to use when establishing the realtime connection.
@@ -312,10 +391,18 @@ func (c *Client) log() *slog.Logger {
 // Connect performs a handshake with the server and will repeatedly initiate a
 // websocket connection until `Close` is called on the client.
 func (c *Client) Connect() error {
+	if c.initErr != nil {
+		return c.initErr
+	}
 	if !c.IsConnected() {
 
 		err := <-c.connect()
 		if err != nil {
+			return err
+		}
+		// The handshake is answered asynchronously. A rejected handshake
+		// stops the client, so check before sending any further request.
+		if err := c.Err(); err != nil {
 			return err
 		}
 
@@ -443,17 +530,18 @@ func (c *Client) reconnect() error {
 // StartWebsocket opens a websocket to cumulocity
 func (c *Client) connect() chan error {
 	if c.dialer == nil {
-		panic("Missing dialer for realtime client")
+		return errChan(ErrMissingDialer)
 	}
 	c.log().Info(fmt.Sprintf("Establishing connection to %s", c.url.String()))
 	ws, _, err := c.dialer.Dial(c.url.String(), c.requestHeader)
 
 	if err != nil {
-		panic(err)
+		return errChan(fmt.Errorf("realtime: failed to connect to %s: %w", c.url.String(), err))
 	}
 
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
+	c.fatalErr = nil
 
 	c.ws = ws
 
@@ -514,7 +602,7 @@ func (c *Client) worker() {
 						c.mtx.Unlock()
 					} else {
 						c.log().Error("No clientID present in handshake. Check that the tenant, username and password is correct", "message", message)
-						os.Exit(1)
+						c.fail(ErrHandshakeFailed)
 					}
 
 				case "/meta/subscribe":
@@ -553,7 +641,7 @@ func (c *Client) worker() {
 							})
 						case "none":
 							// Do not attempt to retry or send a handshake as it must respect the servers response
-							panic("Server indicated that no retry or handshake should be done")
+							c.fail(ErrServerNoReconnect)
 						}
 						// Server indicated that a handshake should be sent again
 						break
@@ -902,7 +990,7 @@ func (c *Client) WaitForMessage(ID string) chan error {
 				// c.log().Info("Checking if ID has been removed")
 				if _, exists := c.pendingRequests.Load(ID); !exists {
 					c.log().Info("Received message", "id", ID)
-					out <- nil
+					out <- c.Err()
 					return
 				}
 			case <-timeout:

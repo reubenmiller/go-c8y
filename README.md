@@ -65,6 +65,25 @@ func main() {
 
 Every call returns an `op.Result[T]` with the data, the error, the HTTP status, and request metadata such as duration and retry attempts.
 
+## Errors
+
+Check errors with `errors.Is` against the sentinels in the `api` package, or with the helpers. The HTTP status is available for every error response, also when the body is not JSON.
+
+```go
+result := client.Alarms.Get(ctx, "12345")
+if errors.Is(result.Err, api.ErrNotFound) { // or api.IsNotFound(result.Err)
+	// no such alarm; also true for Result.First() on an empty collection
+}
+if api.IsUnauthorized(result.Err) || api.IsForbidden(result.Err) || api.IsConflict(result.Err) {
+	// ...
+}
+if code, ok := api.StatusCode(result.Err); ok {
+	fmt.Println("HTTP status:", code)
+}
+```
+
+See "Error Handling" in [API_DESIGN.md](./docs/API_DESIGN.md) for details.
+
 ## Features
 
 - Typed services for the Cumulocity core API, checked against the published OpenAPI spec in CI

@@ -378,7 +378,7 @@ func (s *Service) CreateClient(ctx context.Context, opt ClientOptions) (*notific
 		return nil, err
 	}
 
-	client := notification2.NewNotification2Client(s.svc.Client.BaseURL(), nil, notification2.Subscription{
+	client, err := notification2.NewNotification2ClientE(s.svc.Client.BaseURL(), nil, notification2.Subscription{
 		TokenRenewal: func(v string) (string, error) {
 			return s.RenewToken(ctx, ClientOptions{
 				Token: v,
@@ -387,6 +387,9 @@ func (s *Service) CreateClient(ctx context.Context, opt ClientOptions) (*notific
 		Consumer: s.NormalizedConsumer(opt.Consumer),
 		Token:    token,
 	}, opt.ConnectionOptions)
+	if err != nil {
+		return nil, err
+	}
 	return client, nil
 }
 

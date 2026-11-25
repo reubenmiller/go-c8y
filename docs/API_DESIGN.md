@@ -221,7 +221,7 @@ Execute operations without sending HTTP requests, useful for testing and debuggi
 ctx := api.WithDryRun(context.Background(), true)
 
 // Operation is prepared but not executed
-result := client.Operations.Delete(ctx, "12345")
+result := client.ManagedObjects.Delete(ctx, "12345", managedobjects.DeleteOptions{})
 
 // Inspect what would be sent
 if result.Request != nil {
@@ -497,9 +497,10 @@ result := client.Operations.List(ctx, operations.ListOptions{
 Idempotent operations that create if not exists:
 
 ```go
-result := client.ManagedObjects.GetOrCreate(ctx, managedobjects.GetOrCreateOptions{
-    Name: "my-device",
-    Type: "c8y_Device",
+// Also available: GetOrCreateByFragment, GetOrCreateByExternalID and
+// GetOrCreateWith (custom query).
+result := client.ManagedObjects.GetOrCreateByName(ctx, "my-device", "c8y_Device", map[string]any{
+    "c8y_IsDevice": map[string]any{},
     // Additional properties...
 })
 
@@ -559,7 +560,7 @@ if result.Idempotent {
 
 ### Error Values
 
-The SDK provides standard error values for common scenarios:
+Errors are `*api.Error` (an alias of `core.Error`) values carrying the HTTP status, the Cumulocity error type and message, and the raw body. The SDK provides sentinels for common statuses:
 
 ```go
 var (
@@ -569,10 +570,38 @@ var (
     ErrNotFound            = Error{Code: 404}
     ErrConflict            = Error{Code: 409}
     ErrUnprocessableEntity = Error{Code: 422}
-    ErrTooManyRequests     = Error{Code: 429}
-    ErrInternalServer      = Error{Code: 500}
+    ErrServer500           = Error{Code: 500} // also 501, 502, 503
 )
+```
 
+### Checking errors
+
+Match an error by status with `errors.Is`, or use the helpers, which also see through `fmt.Errorf("...: %w", err)` wrapping:
+
+```go
+result := client.Alarms.Get(ctx, id)
+switch {
+case errors.Is(result.Err, api.ErrNotFound): // same as api.IsNotFound(result.Err)
+    // the alarm does not exist
+case api.IsUnauthorized(result.Err), api.IsForbidden(result.Err):
+    // bad credentials or missing permissions
+case api.IsConflict(result.Err):
+    // the resource already exists
+case result.Err != nil:
+    if code, ok := api.StatusCode(result.Err); ok {
+        log.Printf("request failed with HTTP %d", code)
+    }
+}
+```
+
+Notes:
+
+* The status is available for every HTTP error response, also when the body is not JSON (an HTML page from a proxy, plain text, or an empty body). The message then falls back to the status text.
+* "Not found" is one concept. `errors.Is(err, api.ErrNotFound)` is true for a real 404, for "no result" from `Result.First()` on an empty collection (`op.ErrNotFound`), and for the not-found errors the SDK builds itself, such as when looking up an item by name (`core.ErrNotFound`).
+* `api.StatusCode(err)` returns `ok == false` for errors without an HTTP status, such as a transport failure or a validation error. Use `errors.Is(err, context.DeadlineExceeded)` for timeouts.
+* Library code never exits or panics on a runtime failure. The realtime and notification2 clients return connection and handshake errors from `Connect`. See `Client.Err()` of the realtime client for failures which stop it later.
+
+```go
 // Check error status
 if api.ErrHasStatus(result.Err, 404) {
     // Handle not found
