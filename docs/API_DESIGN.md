@@ -31,7 +31,15 @@ Client
 The `Client` is the entry point to the SDK, providing access to all service operations:
 
 ```go
-client := api.NewClient(baseURL, username, password)
+client := api.NewClient(api.ClientOptions{
+    BaseURL: "https://example.cumulocity.com",
+    Auth: authentication.AuthOptions{
+        Tenant: "t12345", Username: "user", Password: "password",
+        AuthType: []authentication.AuthType{authentication.AuthTypeBasic},
+    },
+})
+// or read C8Y_HOST, C8Y_TENANT, C8Y_USER and C8Y_PASSWORD from the environment:
+// client := api.NewClientFromEnvironment(api.ClientOptions{})
 
 // Service access
 result := client.Operations.List(ctx, operations.ListOptions{
@@ -110,6 +118,8 @@ The `Status` field provides semantic information about the operation outcome:
 - **`StatusDuplicate`** - Resource already exists (HTTP 409 conflict)
 - **`StatusNoMatch`** - No matching resources found (not an error)
 - **`StatusFailed`** - Operation failed with error
+
+`IsSuccess()` is true for `StatusOK`, `StatusCreated`, `StatusUpdated` and `StatusSkipped`. It is false for `StatusNoContent`, so a successful delete (HTTP 204) is not "success" by this method. Check `result.Err == nil` to decide whether a call worked, and use `IsSuccess()` only when you need to tell apart the statuses above.
 
 ### Result Usage Patterns
 
@@ -400,16 +410,19 @@ iterator := client.Operations.ListAll(ctx, operations.ListOptions{
     Status:   "PENDING",
 })
 
-// Iterate over all operations
-for op := range iterator.Items() {
-    fmt.Printf("%s: %s\n", op.ID(), op.Status())
-}
-
-// Check for errors
-if iterator.Err() != nil {
-    return iterator.Err()
+// Iterate over all operations. Items yields the error of a failed page request
+// as the second value, and the iteration stops after it.
+for operation, err := range iterator.Items() {
+    if err != nil {
+        return err
+    }
+    fmt.Printf("%s: %s\n", operation.ID(), operation.Status())
 }
 ```
+
+`PaginationOptions` (embedded in every `ListOptions`) sets `PageSize`, `MaxItems` (stop after that many items), `Strategy` (offset, or time or id keyset) and `Concurrency` (parallel page fetches for the offset strategy). Each package also declares an alias for its iterator type (for example `alarms.AlarmIterator` and `users.UserIterator`). Every alias is `*pagination.Iterator[jsonmodels.X]`, so they are interchangeable and you can write `pagination.Iterator[T]` yourself. The aliases are kept for compatibility and are not needed in new code.
+
+A runnable version is `ExampleIterator` in package `pagination`.
 
 ### Custom Unmarshaling with Iterators
 
@@ -581,6 +594,23 @@ client := api.NewClient(api.ClientOptions{
     Middleware: []api.Middleware{api.CountRequests(&requests)},
 })
 ```
+
+### Request hook, transfer progress and raw requests
+
+A request hook sees the final `*http.Request` of every call made with the context, typed or raw, once per attempt and also for dry runs. It can change headers or the URL, replace the body, or abort the request by returning an error. Progress callbacks are built on it:
+
+```go
+ctx = api.WithRequestHook(ctx, func(req *http.Request) error {
+    req.Header.Set("X-Trace", "abc")
+    return nil
+})
+ctx = api.WithUploadProgress(ctx, func(read, total int64) { /* request body bytes sent */ })
+ctx = api.WithDownloadProgress(ctx, func(read, total int64) { /* response body bytes read */ })
+```
+
+For the file size of a typed upload (binaries, event binaries, applications, firmware, software) set `UploadFileOptions.Progress`. `total` is -1 when the size is not known.
+
+`Client.Request(ctx, api.RequestOptions{...})` calls an endpoint which has no service method and returns an `op.Result[jsondoc.JSONDoc]`. It shares authentication, middleware, dry run and error handling with the typed services. See `ExampleWithRequestHook` and `ExampleClient_Request_uploadProgress`.
 
 `client.Resty()` returns the underlying resty client for cases these cannot
 cover. It is not covered by the v2 compatibility guarantee.
@@ -940,6 +970,23 @@ See [REQUEST_INSPECTION.md](./REQUEST_INSPECTION.md) for:
 - Logging request details
 - Security considerations for header redaction
 
+## Runnable examples
+
+The package documentation of every service has a short usage snippet, and these `Example` functions run offline against the in-process fake server (they are tests, so they cannot go stale):
+
+| Topic | Example |
+|---|---|
+| Managed objects: create, get, `ListAll`, `ResolveID` | `managedobjects.Example` |
+| Alarms, events, measurements, operations | `alarms.Example`, `events.Example`, `measurements.Example`, `operations.Example` |
+| Software item and version | `software.Example` |
+| Applications | `applications.Example` |
+| Users and `ResolveID` with a wildcard | `users.Example` |
+| Pagination | `pagination.ExampleIterator` |
+| Errors | `api.ExampleIsNotFound`, `api.Example_errorHandling` |
+| Dry run | `api.ExampleWithDryRun`, `api.ExampleClient_Realtime` |
+| Request hook and upload progress | `api.ExampleWithRequestHook`, `api.ExampleClient_Request_uploadProgress` |
+| Authentication | `api.ExampleNewClient_withTokenSource` and the other `ExampleNewClient_*` |
+
 ## Related Documentation
 
 - **[DEFERRED_EXECUTION.md](./DEFERRED_EXECUTION.md)** - Detailed guide on deferred execution pattern for user confirmation prompts
@@ -982,7 +1029,7 @@ Services:
 - [ ] Additional specialized services
 
 Advanced features:
-- [ ] Composable services (ManagedObjects → Devices)
-- [ ] Upsert operations
-- [ ] Extensible middleware
+- [x] Composable services (Devices uses the client's ManagedObjects)
+- [x] Upsert operations (`Upsert*` and `UpsertBy*` on alarms and the repository services)
+- [x] Middleware (`api.Middleware`)
 - [ ] Response streaming for large datasets
