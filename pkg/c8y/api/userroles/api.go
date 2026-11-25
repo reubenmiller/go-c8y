@@ -12,7 +12,7 @@ import (
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/userroles/inventory"
+	inventoryroles "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/userroles/inventory"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/userroles/usergroups"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/userroles/users"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"

@@ -54,7 +54,7 @@ func (c *Client) exchangeCertificate(ctx context.Context, tenant string, cert tl
 	}
 	req := logintokens.CertificateTokenOptions{Tenant: tenant, Chain: certificateChainPEM(cert)}
 
-	res := c.LoginTokens.CreateWithCertificate(ctx, req)
+	res := c.Tenants.LoginTokens.CreateWithCertificate(ctx, req)
 	if res.Err != nil && opts != nil {
 		code, handled, err := c.certificateTFACode(ctx, res.Err, *opts)
 		if err != nil {
@@ -62,7 +62,7 @@ func (c *Client) exchangeCertificate(ctx context.Context, tenant string, cert tl
 		}
 		if handled {
 			req.TFACode = code
-			res = c.LoginTokens.CreateWithCertificate(ctx, req)
+			res = c.Tenants.LoginTokens.CreateWithCertificate(ctx, req)
 		}
 	}
 	if res.Err != nil {

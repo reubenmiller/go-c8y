@@ -132,7 +132,7 @@ func (m *Microservice) fetchServiceUsers(ctx context.Context) ([]model.ServiceUs
 			Password: os.Getenv("C8Y_PASSWORD"),
 		}}, nil
 	}
-	result := m.Client.Microservices.CurrentMicroservice.ListUsers(ctx)
+	result := m.Client.Microservices.Current.ListUsers(ctx)
 	if result.Err != nil {
 		return nil, result.Err
 	}

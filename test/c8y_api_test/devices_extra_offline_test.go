@@ -2,6 +2,7 @@ package api_test
 
 import (
 	"context"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/devices"
@@ -19,7 +20,7 @@ func Test_Devices_CRUD(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
-	createRes := client.Devices.CreateDevice(ctx, "test-dev-"+t.Name())
+	createRes := client.Devices.Create(ctx, jsonmodels.NewDevice("test-dev-"+t.Name()))
 	require.NoError(t, createRes.Err)
 	id := createRes.Data.ID()
 	t.Cleanup(func() {

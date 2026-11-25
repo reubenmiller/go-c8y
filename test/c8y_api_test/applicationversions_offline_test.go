@@ -44,7 +44,7 @@ func Test_ApplicationVersions_FullLifecycle(t *testing.T) {
 	// Use Create() directly with an in-memory reader to avoid needing a file
 	// or a network download.
 	_, zipBuf := newPluginAndApp(t)
-	createRes := client.ApplicationVersions.Create(ctx, pluginID, appversions.CreateOptions{
+	createRes := client.Applications.Versions.Create(ctx, pluginID, appversions.CreateOptions{
 		Version: "1.0.0",
 		Tags:    []string{"latest", "stable"},
 		File: appversions.UploadFileOptions{
@@ -54,24 +54,24 @@ func Test_ApplicationVersions_FullLifecycle(t *testing.T) {
 	})
 	require.NoError(t, createRes.Err)
 
-	listRes := client.ApplicationVersions.List(ctx, pluginID, appversions.ListOptions{})
+	listRes := client.Applications.Versions.List(ctx, pluginID, appversions.ListOptions{})
 	require.NoError(t, listRes.Err)
 
-	itAll := client.ApplicationVersions.ListAll(ctx, pluginID, appversions.ListOptions{})
+	itAll := client.Applications.Versions.ListAll(ctx, pluginID, appversions.ListOptions{})
 	require.NoError(t, itAll.Err())
 
-	byVersion := client.ApplicationVersions.ListByVersion(ctx, pluginID, "1.0.0")
+	byVersion := client.Applications.Versions.ListByVersion(ctx, pluginID, "1.0.0")
 	require.NoError(t, byVersion.Err)
 
-	byTag := client.ApplicationVersions.ListByTag(ctx, pluginID, "latest")
+	byTag := client.Applications.Versions.ListByTag(ctx, pluginID, "latest")
 	require.NoError(t, byTag.Err)
 
-	upd := client.ApplicationVersions.Update(ctx, pluginID, "1.0.0", []string{"latest"})
+	upd := client.Applications.Versions.Update(ctx, pluginID, "1.0.0", []string{"latest"})
 	require.NoError(t, upd.Err)
 
 	// Create a second version so we can exercise DeleteByTag while a tag
 	// still exists.
-	createRes2 := client.ApplicationVersions.Create(ctx, pluginID, appversions.CreateOptions{
+	createRes2 := client.Applications.Versions.Create(ctx, pluginID, appversions.CreateOptions{
 		Version: "2.0.0",
 		Tags:    []string{"beta"},
 		File: appversions.UploadFileOptions{
@@ -81,10 +81,10 @@ func Test_ApplicationVersions_FullLifecycle(t *testing.T) {
 	})
 	require.NoError(t, createRes2.Err)
 
-	del := client.ApplicationVersions.DeleteByVersion(ctx, pluginID, "1.0.0")
+	del := client.Applications.Versions.DeleteByVersion(ctx, pluginID, "1.0.0")
 	require.NoError(t, del.Err)
 
-	delTag := client.ApplicationVersions.DeleteByTag(ctx, pluginID, "beta")
+	delTag := client.Applications.Versions.DeleteByTag(ctx, pluginID, "beta")
 	require.NoError(t, delTag.Err)
 }
 
@@ -106,7 +106,7 @@ func Test_ApplicationVersions_CreateFromFile_LocalPath(t *testing.T) {
 	fpath := filepath.Join(dir, "plugin.zip")
 	require.NoError(t, os.WriteFile(fpath, []byte("PK\x03\x04dummy"), 0o600))
 
-	res := client.ApplicationVersions.CreateFromFile(ctx, pluginID, fpath, "1.2.3", []string{"latest"})
+	res := client.Applications.Versions.CreateFromFile(ctx, pluginID, fpath, "1.2.3", []string{"latest"})
 	require.NoError(t, res.Err)
 }
 
@@ -131,7 +131,7 @@ func Test_ApplicationVersions_CreateFromFile_URL(t *testing.T) {
 		client.UIPlugins.Delete(ctx, pluginID)
 	})
 
-	res := client.ApplicationVersions.CreateFromFile(ctx, pluginID, httpSrv.URL+"/plugin.zip", "2.0.0", []string{"latest"})
+	res := client.Applications.Versions.CreateFromFile(ctx, pluginID, httpSrv.URL+"/plugin.zip", "2.0.0", []string{"latest"})
 	require.NoError(t, res.Err)
 }
 
@@ -148,7 +148,7 @@ func Test_ApplicationVersions_CreateFromFile_MissingFile(t *testing.T) {
 		client.UIPlugins.Delete(ctx, pluginID)
 	})
 
-	res := client.ApplicationVersions.CreateFromFile(ctx, pluginID, "/nonexistent/file/path.zip", "0.0.0", nil)
+	res := client.Applications.Versions.CreateFromFile(ctx, pluginID, "/nonexistent/file/path.zip", "0.0.0", nil)
 	assert.Error(t, res.Err)
 }
 

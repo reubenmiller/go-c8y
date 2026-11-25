@@ -128,7 +128,7 @@ func Test_GetCurrentUser(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
-	result := client.Users.CurrentUser.Get(ctx)
+	result := client.Users.Current.Get(ctx)
 
 	require.NoError(t, result.Err)
 	assert.Equal(t, 200, result.HTTPStatus)
@@ -140,7 +140,7 @@ func Test_UpdateCurrentUser(t *testing.T) {
 	ctx := context.Background()
 
 	randomFirstName := fmt.Sprintf("testUser-%d", time.Now().Unix())
-	result := client.Users.CurrentUser.Update(ctx, model.User{
+	result := client.Users.Current.Update(ctx, model.User{
 		FirstName: randomFirstName,
 	})
 

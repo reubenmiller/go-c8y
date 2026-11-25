@@ -100,12 +100,12 @@ func Test_Microservices_CurrentMicroservice(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
 
-	getRes := client.Microservices.CurrentMicroservice.Get(ctx)
+	getRes := client.Microservices.Current.Get(ctx)
 	require.NoError(t, getRes.Err)
 
-	users := client.Microservices.CurrentMicroservice.ListUsers(ctx)
+	users := client.Microservices.Current.ListUsers(ctx)
 	require.NoError(t, users.Err)
 
-	settings := client.Microservices.CurrentMicroservice.ListSettings(ctx)
+	settings := client.Microservices.Current.ListSettings(ctx)
 	require.NoError(t, settings.Err)
 }

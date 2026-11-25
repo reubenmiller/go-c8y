@@ -37,6 +37,7 @@ func (r fixedResolver) String() string { return "fixed:" + r.id }
 
 // The deprecated flat Client fields and the nested accessors are the same
 // service instance.
+//nolint:staticcheck // checks the deprecated aliases on purpose
 func TestClient_NestedServiceAliases(t *testing.T) {
 	c := newShapeClient(t, func(http.ResponseWriter, *http.Request) {})
 
