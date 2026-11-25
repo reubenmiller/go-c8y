@@ -235,7 +235,7 @@ if result.Request != nil {
 
 #### Dry run and websockets
 
-Realtime, notification 2.0 and remote access connect over a websocket. Under dry run nothing is dialed. The websocket upgrade request is reported through the same path as an HTTP request: the handler set with `api.WithDryRunHandler`, or a `DRY RUN` log line with `Authorization` redacted (and the `token` query parameter of notification 2.0).
+Realtime, notification 2.0 and remote access connect over a websocket. Under dry run nothing is connected. The websocket upgrade request is reported through the same path as an HTTP request: the handler set with `api.WithDryRunHandler`, or a `DRY RUN` log line with `Authorization` redacted (and the `token` query parameter of notification 2.0).
 
 ```go
 ctx := api.WithDryRun(context.Background(), true)

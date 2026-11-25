@@ -118,9 +118,9 @@ func newWSTestServer(t *testing.T, useTLS bool, other http.HandlerFunc, configur
 		fn(s.Server)
 	}
 	if useTLS {
-		s.Server.StartTLS()
+		s.StartTLS()
 	} else {
-		s.Server.Start()
+		s.Start()
 	}
 	t.Cleanup(s.Server.Close)
 	return s
@@ -183,7 +183,7 @@ func TestWebsocketTLSInsecureSkipVerify(t *testing.T) {
 		assert.Contains(t, err.Error(), "certificate")
 	})
 
-	t.Run("InsecureSkipVerify is honored by the dialer", func(t *testing.T) {
+	t.Run("InsecureSkipVerify is respected by the dialer", func(t *testing.T) {
 		client := wsTestClient(srv.URL, wsBasicAuth(), true)
 		assert.True(t, client.WebsocketDialer().TLSClientConfig.InsecureSkipVerify)
 		conn, resp, err := client.DialWebsocket(context.Background(), srv.URL+"/service/remoteaccess/x", nil)
@@ -372,7 +372,7 @@ func TestWebsocketMiddlewareHeaders(t *testing.T) {
 	assert.Equal(t, "/cep/realtime", last.Path)
 	assert.Equal(t, "abc", last.Header.Get("X-Trace"))
 
-	// a middleware error fails the connection without dialing
+	// a middleware error fails the connection without connecting
 	failing := wsTestClient(srv.URL, wsBasicAuth(), false, func(http.RoundTripper) http.RoundTripper {
 		return RoundTripperFunc(func(*http.Request) (*http.Response, error) { return nil, errors.New("blocked") })
 	})
@@ -382,7 +382,7 @@ func TestWebsocketMiddlewareHeaders(t *testing.T) {
 	assert.Equal(t, before, srv.hits.Load())
 }
 
-func TestWebsocketContextCancelAbortsDialing(t *testing.T) {
+func TestWebsocketContextCancelAbortsConnecting(t *testing.T) {
 	hang := wsHangingServer(t)
 	client := wsTestClient(hang.URL, wsBasicAuth(), false)
 
@@ -434,7 +434,7 @@ func TestWebsocketDryRun(t *testing.T) {
 		assert.Equal(t, "c1", req.URL.Query().Get("consumer"))
 		require.Len(t, handled, 1)
 		assert.Equal(t, req.URL.String(), handled[0].URL.String())
-		assert.Zero(t, srv.hits.Load(), "nothing is dialed")
+		assert.Zero(t, srv.hits.Load(), "nothing is connected")
 	})
 
 	t.Run("without a handler the request is logged with redacted headers", func(t *testing.T) {
@@ -525,7 +525,7 @@ func TestRealtimeDryRunSubscribeStream(t *testing.T) {
 	})
 
 	assert.Len(t, handled, 7, "one upgrade request per dry run")
-	assert.Zero(t, srv.hits.Load(), "nothing is dialed")
+	assert.Zero(t, srv.hits.Load(), "nothing is connected")
 	assert.False(t, client.Realtime().IsConnected())
 }
 
@@ -615,7 +615,7 @@ func TestNotification2UsesClientSettings(t *testing.T) {
 		assert.Contains(t, err.Error(), "certificate")
 	})
 
-	t.Run("ctx cancel aborts dialing", func(t *testing.T) {
+	t.Run("ctx cancel aborts connecting", func(t *testing.T) {
 		release := make(chan struct{})
 		hang := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/notification2/token" {
@@ -645,7 +645,7 @@ func TestNotification2UsesClientSettings(t *testing.T) {
 		assert.Equal(t, "Skipped", string(res.Status))
 		require.NotNil(t, res.Request)
 		assert.Equal(t, "/notification2/consumer/", res.Request.URL.Path)
-		assert.Equal(t, "myconsumer", res.Meta["consumer"], "the normalized consumer name")
+		assert.Equal(t, "myconsumer", res.Meta["consumer"], "the cleaned consumer name")
 		assert.NotContains(t, res.Request.URL.RawQuery, "n2-token")
 		assert.NotContains(t, res.Meta["url"].(string), "n2-token")
 		assert.Equal(t, "websocket", res.Request.Header.Get("Upgrade"))

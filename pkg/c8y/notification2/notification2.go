@@ -203,7 +203,7 @@ func NewNotification2ClientE(host string, wsDialer *websocket.Dialer, subscripti
 
 // SetConnector sets the connector used to open the websocket, for example an
 // *api.Client: the connection then uses the client's TLS and proxy settings,
-// request middleware and extra headers, and honors dry run. The notification2
+// request middleware and extra headers, and respects dry run. The notification2
 // token in the URL authenticates the connection, so the connector's
 // Authorization header is not sent. nil goes back to the client's own dialer.
 func (c *Notification2Client) SetConnector(connector wsdial.Connector) {
@@ -221,10 +221,10 @@ func (c *Notification2Client) Connect() error {
 }
 
 // ConnectContext is like Connect, and cancelling ctx (or its deadline passing)
-// aborts dialing. Automatic reconnects use the values of ctx but not its
+// aborts connecting. Automatic reconnects use the values of ctx but not its
 // cancellation, so a short-lived ctx can be used to connect.
 //
-// Dry run: when the connector is in dry run (api.WithDryRun) nothing is dialed
+// Dry run: when the connector is in dry run (api.WithDryRun) nothing is connected
 // and ConnectContext returns an error for which errors.Is(err,
 // wsdial.ErrDryRun) is true; wsdial.DryRunRequest(err) is the upgrade request.
 func (c *Notification2Client) ConnectContext(ctx context.Context) error {

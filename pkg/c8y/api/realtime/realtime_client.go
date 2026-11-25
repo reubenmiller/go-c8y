@@ -433,7 +433,7 @@ func (c *Client) Connect() error {
 }
 
 // ConnectContext is like Connect, and ctx also controls the connection: when it
-// is cancelled (or its deadline passes) while dialing or waiting for the
+// is cancelled (or its deadline passes) while connecting or waiting for the
 // handshake, the attempt is aborted, the client is closed and ctx's error is
 // returned.
 //
@@ -444,7 +444,7 @@ func (c *Client) Connect() error {
 // cancellation, so a short-lived ctx can be used to connect. They read the
 // connector's authorization again, so a token refreshed since is used.
 //
-// Dry run: when the connector is in dry run (api.WithDryRun) nothing is dialed
+// Dry run: when the connector is in dry run (api.WithDryRun) nothing is connected
 // and ConnectContext returns an error for which errors.Is(err,
 // wsdial.ErrDryRun) is true; wsdial.DryRunRequest(err) is the upgrade request.
 func (c *Client) ConnectContext(ctx context.Context) error {

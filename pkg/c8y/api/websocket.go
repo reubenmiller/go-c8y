@@ -145,9 +145,9 @@ func (c *Client) WebsocketHeader(ctx context.Context) (http.Header, error) {
 // (for example a subprotocol); it is applied before the context's extra headers,
 // and an Authorization header in it is kept instead of the client's.
 //
-// ctx cancels dialing and the handshake.
+// ctx cancels connecting and the handshake.
 //
-// Dry run: when [IsDryRun] is true for ctx nothing is dialed. The upgrade
+// Dry run: when [IsDryRun] is true for ctx nothing is connected. The upgrade
 // request is handed to the dry-run handler ([WithDryRunHandler]) or logged by
 // slog ("DRY RUN"), exactly like an HTTP request, with Authorization redacted
 // in the log, and a *[wsdial.DryRunError] is returned (errors.Is(err,

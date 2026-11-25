@@ -97,9 +97,9 @@ func (c *RemoteAccessClient) remoteAccessURL() string {
 // DialContext opens one websocket to the remote access configuration, using the
 // connection settings of the Cumulocity client: its TLS and proxy settings, the
 // current authorization (see api.Client.WebsocketHeader), request middleware and
-// the context options of ctx. Cancelling ctx aborts dialing.
+// the context options of ctx. Cancelling ctx aborts connecting.
 //
-// Dry run: when ctx has dry run enabled (api.WithDryRun) nothing is dialed. The
+// Dry run: when ctx has dry run enabled (api.WithDryRun) nothing is connected. The
 // upgrade request is handed to the dry-run handler (api.WithDryRunHandler) or
 // logged, like an HTTP request, and the error returned matches
 // wsdial.ErrDryRun; wsdial.DryRunRequest(err) is the request, and

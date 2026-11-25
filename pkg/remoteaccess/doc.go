@@ -5,9 +5,9 @@
 // TLS, proxy, the current authorization (a renewed token is used for every
 // new connection), request middleware and the context options of the context
 // given to DialContext, ListenServeContext and ServeContext. Cancelling that
-// context aborts dialing, and ServeContext stops serving.
+// context aborts connecting, and ServeContext stops serving.
 //
-// Under api.WithDryRun no websocket is dialed: the upgrade request goes to the
+// Under api.WithDryRun no websocket is connected: the upgrade request goes to the
 // dry-run handler (or is logged), RemoteAccessClient.DryRunRequest returns it,
 // and ListenServeContext and ServeContext return nil.
 package remoteaccess

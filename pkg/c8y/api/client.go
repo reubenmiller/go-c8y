@@ -309,7 +309,7 @@ type ClientOptions struct {
 // The realtime client connects through the API client (see
 // [Client.DialWebsocket]): it uses the client's TLS and proxy settings, reads
 // the current authorization for every connect and reconnect (a token refreshed
-// since the first call is used), applies request middleware and honors dry run
+// since the first call is used), applies request middleware and respects dry run
 // ([WithDryRun]) and the other context options of [realtime.Client.ConnectContext].
 func (c *Client) Realtime() *realtime.Client {
 	c.clientMu.Lock()

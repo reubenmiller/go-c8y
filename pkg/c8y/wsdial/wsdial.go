@@ -24,7 +24,7 @@ type Connector interface {
 	// header holds additional request headers. On success the returned
 	// response's Request is the upgrade request that was sent.
 	//
-	// When ctx has dry run enabled nothing is dialed: it returns a
+	// When ctx has dry run enabled nothing is connected: it returns a
 	// *DryRunError carrying the upgrade request (errors.Is(err, ErrDryRun)).
 	DialWebsocket(ctx context.Context, rawURL string, header http.Header) (*websocket.Conn, *http.Response, error)
 }

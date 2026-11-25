@@ -225,7 +225,7 @@ func TestRemoteAccessDryRun(t *testing.T) {
 	})
 
 	assert.Len(t, handled, 3)
-	assert.Zero(t, srv.hits.Load(), "nothing is dialed")
+	assert.Zero(t, srv.hits.Load(), "nothing is connected")
 
 	t.Run("without a handler the request is logged with redacted headers", func(t *testing.T) {
 		var logs bytes.Buffer
