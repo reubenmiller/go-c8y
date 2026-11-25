@@ -2,6 +2,7 @@ package pagination
 
 import (
 	"context"
+	"errors"
 
 	"github.com/destel/rill"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
@@ -165,6 +166,10 @@ func runSequential[D JSONDocument](
 			if !more {
 				return
 			}
+			if !requestAdvanced(req, next) {
+				emit(next, op.Failed[D](errNoProgress, false))
+				return
+			}
 			req = next
 		}
 	}
@@ -187,12 +192,18 @@ func runSequential[D JSONDocument](
 			// consumer has exclusive access to the result.
 			var next PageRequest
 			more := false
+			stalled := false
 			if result.Err == nil {
 				next, more = strategy.Advance(req, PageView{
 					Meta:  result.Meta,
 					Count: countDocs(result),
 					Docs:  result.Data.Iter(),
 				})
+				if more && !requestAdvanced(req, next) {
+					// Surface the stall after this page instead of looping forever.
+					more = false
+					stalled = true
+				}
 			}
 
 			select {
@@ -206,6 +217,13 @@ func runSequential[D JSONDocument](
 			}
 			pages++
 			if pageLimit > 0 && pages >= pageLimit {
+				return
+			}
+			if stalled {
+				select {
+				case ch <- pageEnvelope[D]{req: next, result: op.Failed[D](errNoProgress, false)}:
+				case <-done:
+				}
 				return
 			}
 			if !more {
@@ -227,6 +245,20 @@ func runSequential[D JSONDocument](
 			return
 		}
 	}
+}
+
+// errNoProgress is reported when a strategy asks for a page whose request is
+// identical to the one just fetched (same cursor and page), which would repeat
+// the same page forever.
+var errNoProgress = errors.New("pagination made no progress: the next page request is identical to the previous one (the cursor did not advance)")
+
+// requestAdvanced reports whether next differs from prev in a way that can
+// yield a different page: page number, or any cursor value.
+func requestAdvanced(prev, next PageRequest) bool {
+	return prev.CurrentPage != next.CurrentPage ||
+		prev.AfterID != next.AfterID ||
+		!prev.Before.Equal(next.Before) ||
+		!prev.After.Equal(next.After)
 }
 
 // pageCap returns the number of pages needed to satisfy maxItems at the given

@@ -121,7 +121,12 @@ func docTimestamp(doc jsondoc.JSONDoc) time.Time {
 	for _, field := range []string{"time", "creationTime"} {
 		if r := doc.Get(field); r.Exists() {
 			if t := r.Time(); !t.IsZero() {
-				return t
+				// Cumulocity stores timestamps at millisecond resolution, and
+				// dateFrom/dateTo compare at that resolution. Normalise so items
+				// within the same millisecond are ties, even if the server (or a
+				// proxy) returned finer precision; otherwise the cursor and the
+				// boundary dedup disagree and pages repeat forever.
+				return t.Truncate(time.Millisecond)
 			}
 		}
 	}
