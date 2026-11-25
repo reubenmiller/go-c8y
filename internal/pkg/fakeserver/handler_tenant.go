@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -576,11 +577,25 @@ func (fs *FakeServer) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Return a fake OAI-Secure token (JWT with sub, ten, xsrfToken claims)
+	// Return a fake OAI-Secure token (JWT with sub, ten, xsrfToken claims, and
+	// iat/nbf/exp so that clients can check when it expires, like a real token)
+	const expiresIn = 604800
+	now := time.Now()
+	b64 := base64.RawURLEncoding
+	header := b64.EncodeToString([]byte(`{"alg":"RS256"}`))
+	claims, _ := json.Marshal(map[string]any{
+		"sub":       "admin",
+		"ten":       "t12345",
+		"xsrfToken": "fakeXSRFToken123",
+		"iss":       "http://localhost",
+		"iat":       now.Unix(),
+		"nbf":       now.Unix(),
+		"exp":       now.Add(expiresIn * time.Second).Unix(),
+	})
 	writeJSON(w, http.StatusOK, marshalJSON(map[string]any{
-		"access_token": "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiAiYWRtaW4iLCAidGVuIjogInQxMjM0NSIsICJ4c3JmVG9rZW4iOiAiZmFrZVhTUkZUb2tlbjEyMyIsICJpc3MiOiAiaHR0cDovL2xvY2FsaG9zdCJ9.fakesig",
+		"access_token": header + "." + b64.EncodeToString(claims) + ".fakesig",
 		"token_type":   "Bearer",
-		"expires_in":   604800,
+		"expires_in":   expiresIn,
 	}))
 }
 
