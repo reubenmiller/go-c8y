@@ -76,3 +76,49 @@ func TestList(t *testing.T) {
 		t.Errorf("path = %q, want .../user/roles", gotPath)
 	}
 }
+
+// TestResolveID verifies a role reference resolves to the role id: a plain id,
+// self link or document without a request, and a wildcard name by matching the
+// tenant's roles (ignoring case).
+func TestResolveID(t *testing.T) {
+	requests := 0
+	svc, closeFn := testService(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"roles":[{"id":"ROLE_ALARM_ADMIN","name":"ROLE_ALARM_ADMIN"},{"id":"ROLE_ALARM_READ","name":"ROLE_ALARM_READ"}],"statistics":{"pageSize":2000}}`))
+	})
+	defer closeFn()
+
+	for ref, want := range map[string]string{
+		"ROLE_ALARM_READ": "ROLE_ALARM_READ",
+		"https://example.com/user/roles/ROLE_ALARM_READ": "ROLE_ALARM_READ",
+		`{"role":{"id":"ROLE_ALARM_READ"}}`:              "ROLE_ALARM_READ",
+	} {
+		got, err := svc.ResolveID(context.Background(), ref, nil)
+		if err != nil || got != want {
+			t.Errorf("ResolveID(%q) = %q, %v, want %q", ref, got, err, want)
+		}
+	}
+	if requests != 0 {
+		t.Errorf("a role id was looked up. requests=%d", requests)
+	}
+
+	meta := map[string]any{}
+	got, err := svc.ResolveID(context.Background(), "role_alarm_rea*", meta)
+	if err != nil || got != "ROLE_ALARM_READ" {
+		t.Errorf("ResolveID(wildcard) = %q, %v, want ROLE_ALARM_READ", got, err)
+	}
+	if meta["source"] != "name" || meta["name"] != "ROLE_ALARM_READ" {
+		t.Errorf("unexpected meta. got=%v", meta)
+	}
+	if requests != 1 {
+		t.Errorf("expected one request. got=%d", requests)
+	}
+
+	if _, err := svc.ResolveID(context.Background(), "ROLE_UNKNOWN_*", nil); err == nil || !strings.Contains(err.Error(), "role not found") {
+		t.Errorf("expected a not found error. got=%v", err)
+	}
+	if _, err := svc.ResolveID(context.Background(), "", nil); err == nil {
+		t.Error("expected an error for an empty reference")
+	}
+}
