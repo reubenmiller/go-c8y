@@ -110,3 +110,16 @@ func addCacheMeta[T any](result *op.Result[T], resp *resty.Response) {
 		}
 	}
 }
+
+// keepIgnorable marks a failed result so that IgnoreNotFound and
+// IgnoreConflict keep their error when the caller asked for it with
+// api.WithNotFoundAsError or api.WithConflictAsError.
+func keepIgnorable[T any](ctx context.Context, r op.Result[T]) op.Result[T] {
+	if ctxhelpers.NotFoundAsError(ctx) {
+		r = op.WithKeepNotFound(r, true)
+	}
+	if ctxhelpers.ConflictAsError(ctx) {
+		r = op.WithKeepConflict(r, true)
+	}
+	return r
+}

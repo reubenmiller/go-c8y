@@ -60,7 +60,7 @@ func Execute[T any](ctx context.Context, req *TryRequest, fromBytes func([]byte)
 	httpReq := dryRunRequest(ctx, resp)
 
 	if err != nil {
-		result := failedWithStatus[T](err, resp)
+		result := keepIgnorable(ctx, failedWithStatus[T](err, resp))
 		mergeMeta(&result, meta)
 		return op.WithRequest(result, httpReq)
 	}
@@ -215,9 +215,7 @@ func ExecuteNoContent(ctx context.Context, req *TryRequest, extraMeta ...map[str
 				result = op.WithHTTPStatus(result, code)
 			}
 		}
-		if ctxhelpers.NotFoundAsError(ctx) {
-			result = op.WithKeepNotFound(result, true)
-		}
+		result = keepIgnorable(ctx, result)
 		return op.WithRequest(result, httpReq)
 	}
 	var empty core.NoContent
