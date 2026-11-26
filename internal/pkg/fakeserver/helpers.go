@@ -48,7 +48,8 @@ func writeError(w http.ResponseWriter, status int, errorType, message string) {
 	writeJSON(w, status, body)
 }
 
-// readBody reads the full request body as json.RawMessage.
+// readBody reads the full request body as json.RawMessage. Fractional and
+// exponent numbers are normalized like the platform does (see normalizeJSONNumbers).
 func readBody(r *http.Request) (json.RawMessage, error) {
 	defer r.Body.Close()
 	b, err := io.ReadAll(r.Body)
@@ -58,7 +59,7 @@ func readBody(r *http.Request) (json.RawMessage, error) {
 	if len(b) == 0 {
 		return json.RawMessage(`{}`), nil
 	}
-	return json.RawMessage(b), nil
+	return json.RawMessage(normalizeJSONNumbers(b)), nil
 }
 
 // extractID extracts the resource ID from a URL path.
