@@ -602,7 +602,10 @@ func (fs *FakeServer) handleAppBinaries(w http.ResponseWriter, r *http.Request, 
 			data, _ = io.ReadAll(file)
 			name = header.Filename
 		} else {
-			data, _ = readBody(r)
+			// Raw upload: keep the bytes as sent (readBody would turn an
+			// empty body into {} and normalise the numbers of a JSON file).
+			data, _ = io.ReadAll(r.Body)
+			_ = r.Body.Close()
 		}
 
 		// The platform returns the binary (attachment) metadata, whose id is
