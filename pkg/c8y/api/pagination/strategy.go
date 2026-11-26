@@ -108,6 +108,24 @@ type ParallelStrategy interface {
 	Plan(bootstrap PageView, base PageRequest) (reqs []PageRequest, ok bool)
 }
 
+// SinglePageStrategy fetches one page and stops. Unlike the other strategies
+// its first request is the caller's request unchanged (the caller's
+// CurrentPage is kept and no cursor is added). It is selected by
+// PaginationOptions.SinglePage.
+type SinglePageStrategy struct{}
+
+func (SinglePageStrategy) Name() string { return "page" }
+
+func (SinglePageStrategy) First(base PageRequest) PageRequest { return base }
+
+func (SinglePageStrategy) Advance(prev PageRequest, _ PageView) (PageRequest, bool) {
+	return prev, false
+}
+
+func (SinglePageStrategy) Accept(PageRequest, jsondoc.JSONDoc) bool { return true }
+
+func (SinglePageStrategy) DefaultReadAhead() int { return 0 }
+
 // OffsetStrategy is classic Cumulocity currentPage paging: independent pages,
 // stop when the server stops returning a next link (or totalPages is reached).
 // It is the default for entities without a keyset optimisation and the fallback

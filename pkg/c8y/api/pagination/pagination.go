@@ -50,6 +50,14 @@ type PaginationOptions struct {
 	// issues first. A normal single-page list keeps the pristine base. Client-side
 	// only; never sent to the server.
 	FullWalk bool `url:"-" json:"-"`
+
+	// SinglePage fetches exactly the page the caller asked for, with the
+	// request unchanged: no strategy decoration (the id keyset cursor, the
+	// forced currentPage=1) and no further pages. The caller's CurrentPage and
+	// query are sent as given, so the request is the plain list request of the
+	// non-paginating List method. Use it for a command that returns one page.
+	// Client-side only; never sent to the server.
+	SinglePage bool `url:"-" json:"-"`
 }
 
 func (o PaginationOptions) IsZero() bool {

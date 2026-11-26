@@ -185,6 +185,10 @@ func PaginateWith[T any, D JSONDocument](
 	fetch func(req PageRequest) op.Result[D],
 	constructor func([]byte) T,
 ) *Iterator[T] {
+	if base.SinglePage {
+		strategy = SinglePageStrategy{}
+	}
+
 	iterator := &Iterator[T]{
 		totalCount: -1,
 		totalPages: -1,
