@@ -34,7 +34,12 @@ import (
 //
 // Raised to 3,975 for Tenants.UsageStatisticsFiles, which wires an existing
 // generated service into the client (3,954).
-const budget = 3975
+//
+// Raised to 4100 for op.Result.RawBody (4,082), which a consumer holding only an
+// op.DocumentSource needs to reach the response body without reflection. The
+// logic is in a function which is not generic, so the cost is the method alone:
+// about a dozen functions per hundred Result instantiations.
+const budget = 4100
 
 func TestCompiledFunctionBudget(t *testing.T) {
 	if testing.Short() {
