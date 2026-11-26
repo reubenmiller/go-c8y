@@ -44,3 +44,33 @@ func TestManagedObjectExponentNumber(t *testing.T) {
 		t.Fatalf("get: expected normalized number, got %s", got)
 	}
 }
+
+// A non-JSON request body (here a raw application binary upload) must be
+// stored byte for byte: the number normalization only applies to JSON.
+func TestRawBinaryUploadIsNotNormalized(t *testing.T) {
+	fs := New(t)
+	app := postJSON(t, fs, "/application/applications", `{"name":"raw1","key":"raw1-key","contextPath":"raw1","type":"HOSTED"}`)
+	content := `version 2.50 size 1e3 "x" 19.1010101E19`
+	status, meta := doRequest(t, fs, http.MethodPost, "/application/applications/"+app+"/binaries", content, jsonAccept)
+	if status != http.StatusCreated && status != http.StatusOK {
+		t.Fatalf("upload: status=%d body=%s", status, meta)
+	}
+	id := getJSONString([]byte(meta), "id")
+	_, got := doRequest(t, fs, http.MethodGet, "/application/applications/"+app+"/binaries/"+id, "", "")
+	if got != content {
+		t.Fatalf("binary changed: got %q, want %q", got, content)
+	}
+}
+
+// An application binary that is itself a JSON file is stored unchanged too.
+func TestRawJSONBinaryUploadIsNotNormalized(t *testing.T) {
+	fs := New(t)
+	app := postJSON(t, fs, "/application/applications", `{"name":"raw2","key":"raw2-key","contextPath":"raw2","type":"HOSTED"}`)
+	content := `{"version": 2.50, "size": 1e3}`
+	_, meta := doRequest(t, fs, http.MethodPost, "/application/applications/"+app+"/binaries", content, jsonAccept)
+	id := getJSONString([]byte(meta), "id")
+	_, got := doRequest(t, fs, http.MethodGet, "/application/applications/"+app+"/binaries/"+id, "", "")
+	if got != content {
+		t.Fatalf("binary changed: got %q, want %q", got, content)
+	}
+}

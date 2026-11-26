@@ -49,7 +49,8 @@ func writeError(w http.ResponseWriter, status int, errorType, message string) {
 }
 
 // readBody reads the full request body as json.RawMessage. Fractional and
-// exponent numbers are normalized like the platform does (see normalizeJSONNumbers).
+// exponent numbers of a valid JSON body are normalized like the platform does
+// (see normalizeJSONNumbers); any other body is returned unchanged.
 func readBody(r *http.Request) (json.RawMessage, error) {
 	defer r.Body.Close()
 	b, err := io.ReadAll(r.Body)
@@ -58,6 +59,9 @@ func readBody(r *http.Request) (json.RawMessage, error) {
 	}
 	if len(b) == 0 {
 		return json.RawMessage(`{}`), nil
+	}
+	if !json.Valid(b) {
+		return json.RawMessage(b), nil
 	}
 	return json.RawMessage(normalizeJSONNumbers(b)), nil
 }
