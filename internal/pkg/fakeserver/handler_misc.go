@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 )
@@ -446,9 +447,13 @@ func (fs *FakeServer) handleBulkNewDeviceRequests(w http.ResponseWriter, r *http
 	}
 
 	// Each row creates a device with its external ID, as Cumulocity does. A row
-	// whose external ID already exists fails.
+	// whose external ID already exists is not an error: the platform updates
+	// the credentials of the device and lists it in credentialUpdatedList,
+	// unless the device used the password before ("Error during password
+	// validation.", e.g. when the same file is registered twice).
 	created := 0
 	failed := []map[string]any{}
+	updated := []map[string]any{}
 	for _, row := range rows {
 		id := row["ID"]
 		idType := row["IDTYPE"]
@@ -460,10 +465,16 @@ func (fs *FakeServer) handleBulkNewDeviceRequests(w http.ResponseWriter, r *http
 			continue
 		}
 		storeKey := idType + ":" + id
+		credentials := row["CREDENTIALS"]
 		if _, exists := fs.ExternalIDs.Get(storeKey); exists {
-			failed = append(failed, map[string]any{"deviceId": id, "failureReason": "Device with external ID " + id + " already exists"})
+			if !fs.addDeviceCredentials(storeKey, credentials) {
+				failed = append(failed, map[string]any{"deviceId": id, "bulkNewDeviceStatus": "FAILED", "failureReason": "Error during password validation."})
+				continue
+			}
+			updated = append(updated, map[string]any{"deviceId": id, "bulkNewDeviceStatus": "CREDENTIAL_UPDATED"})
 			continue
 		}
+		fs.addDeviceCredentials(storeKey, credentials)
 		mo := map[string]any{"name": id, "c8y_IsDevice": map[string]any{}}
 		if v := row["NAME"]; v != "" {
 			mo["name"] = v
@@ -497,14 +508,40 @@ func (fs *FakeServer) handleBulkNewDeviceRequests(w http.ResponseWriter, r *http
 			status = "FAILED"
 		}
 	}
-	writeJSON(w, http.StatusCreated, marshalJSON(map[string]any{
+	// Like the platform, answer 200 when no device was created (only the
+	// credentials of existing devices were updated).
+	httpStatus := http.StatusCreated
+	if created == 0 && len(updated) > 0 && len(failed) == 0 {
+		httpStatus = http.StatusOK
+	}
+	resp := map[string]any{
 		"numberOfAll":        len(rows),
 		"numberOfCreated":    created,
 		"numberOfFailed":     len(failed),
-		"numberOfSuccessful": created,
+		"numberOfSuccessful": created + len(updated),
 		"failedCreationList": failed,
 		"status":             status,
-	}))
+	}
+	if len(updated) > 0 {
+		resp["credentialUpdatedList"] = updated
+	}
+	writeJSON(w, httpStatus, marshalJSON(resp))
+}
+
+// addDeviceCredentials records the credentials a bulk registered device is
+// given. It returns false, and records nothing, when the device used them
+// before. Empty credentials (e.g. certificate authentication) are not kept.
+func (fs *FakeServer) addDeviceCredentials(storeKey, credentials string) bool {
+	if credentials == "" {
+		return true
+	}
+	fs.passwordsMu.Lock()
+	defer fs.passwordsMu.Unlock()
+	if slices.Contains(fs.deviceCredentials[storeKey], credentials) {
+		return false
+	}
+	fs.deviceCredentials[storeKey] = append(fs.deviceCredentials[storeKey], credentials)
+	return true
 }
 
 // parseBulkCSV reads a bulk registration file: a header row and one row per

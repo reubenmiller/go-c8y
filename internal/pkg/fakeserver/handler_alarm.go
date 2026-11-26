@@ -64,7 +64,7 @@ func (fs *FakeServer) handleAlarms(w http.ResponseWriter, r *http.Request) {
 		case http.MethodGet:
 			doc, ok := fs.Alarms.Get(id)
 			if !ok {
-				writeNotFound(w, "alarm")
+				writeNotFound(w, "alarm", id)
 				return
 			}
 			writeJSON(w, http.StatusOK, doc)
@@ -77,14 +77,14 @@ func (fs *FakeServer) handleAlarms(w http.ResponseWriter, r *http.Request) {
 			}
 			doc, ok := fs.Alarms.Update(id, body)
 			if !ok {
-				writeNotFound(w, "alarm")
+				writeNotFound(w, "alarm", id)
 				return
 			}
 			writeJSON(w, http.StatusOK, doc)
 
 		case http.MethodDelete:
 			if !fs.Alarms.Delete(id) {
-				writeNotFound(w, "alarm")
+				writeNotFound(w, "alarm", id)
 				return
 			}
 			writeNoContent(w)

@@ -52,7 +52,7 @@ func TestNoAcceptHeader_DropsBodyOfPostAndPut(t *testing.T) {
 	}
 
 	status, body = doRequest(t, fs, http.MethodPut, "/inventory/managedObjects/does-not-exist", `{"name":"x"}`, "")
-	if status != http.StatusNotFound || !strings.Contains(body, "notFound") {
+	if status != http.StatusNotFound || !strings.Contains(body, "Not Found") {
 		t.Fatalf("PUT without Accept on a missing object: status=%d body=%q, want 404 with the error body", status, body)
 	}
 }

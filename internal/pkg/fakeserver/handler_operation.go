@@ -15,7 +15,7 @@ func (fs *FakeServer) handleOperations(w http.ResponseWriter, r *http.Request) {
 		case http.MethodGet:
 			doc, ok := fs.Operations.Get(id)
 			if !ok {
-				writeNotFound(w, "devicecontrol/operation")
+				writeNotFound(w, "devicecontrol/operation", id)
 				return
 			}
 			writeJSON(w, http.StatusOK, doc)
@@ -28,14 +28,14 @@ func (fs *FakeServer) handleOperations(w http.ResponseWriter, r *http.Request) {
 			}
 			doc, ok := fs.Operations.Update(id, body)
 			if !ok {
-				writeNotFound(w, "devicecontrol/operation")
+				writeNotFound(w, "devicecontrol/operation", id)
 				return
 			}
 			writeJSON(w, http.StatusOK, doc)
 
 		case http.MethodDelete:
 			if !fs.Operations.Delete(id) {
-				writeNotFound(w, "devicecontrol/operation")
+				writeNotFound(w, "devicecontrol/operation", id)
 				return
 			}
 			writeNoContent(w)

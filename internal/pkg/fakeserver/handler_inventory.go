@@ -189,7 +189,7 @@ func (fs *FakeServer) handleManagedObjectSingle(w http.ResponseWriter, r *http.R
 	case http.MethodGet:
 		doc, ok := fs.ManagedObjects.Get(id)
 		if !ok {
-			writeNotFound(w, "inventory/managedObject")
+			writeNotFound(w, "inventory/managedObject", id)
 			return
 		}
 		if r.URL.Query().Get("withParents") == "true" {
@@ -205,7 +205,7 @@ func (fs *FakeServer) handleManagedObjectSingle(w http.ResponseWriter, r *http.R
 		}
 		doc, ok := fs.ManagedObjects.Update(id, body)
 		if !ok {
-			writeNotFound(w, "inventory/managedObject")
+			writeNotFound(w, "inventory/managedObject", id)
 			return
 		}
 		writeJSON(w, http.StatusOK, doc)
@@ -217,7 +217,7 @@ func (fs *FakeServer) handleManagedObjectSingle(w http.ResponseWriter, r *http.R
 			fs.cascadeDelete(id)
 		}
 		if !fs.ManagedObjects.Delete(id) {
-			writeNotFound(w, "inventory/managedObject")
+			writeNotFound(w, "inventory/managedObject", id)
 			return
 		}
 		writeNoContent(w)
@@ -255,7 +255,7 @@ func (fs *FakeServer) cascadeDelete(id string) {
 // handleChildRelationship handles child device/asset/addition endpoints.
 func (fs *FakeServer) handleChildRelationship(w http.ResponseWriter, r *http.Request, parentID, relType string, relMap map[string][]string) {
 	if _, ok := fs.ManagedObjects.Get(parentID); !ok {
-		writeNotFound(w, "inventory/managedObject")
+		writeNotFound(w, "inventory/managedObject", parentID)
 		return
 	}
 

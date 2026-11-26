@@ -238,7 +238,7 @@ func (fs *FakeServer) handleInventoryTemplates(w http.ResponseWriter, r *http.Re
 	}
 	moID := segments[1]
 	if _, ok := fs.ManagedObjects.Get(moID); !ok {
-		writeNotFound(w, "inventory/managedObject")
+		writeNotFound(w, "inventory/managedObject", moID)
 		return
 	}
 	body, err := readBody(r)

@@ -71,6 +71,10 @@ type FakeServer struct {
 	// an entry accept any password.
 	passwordsMu sync.RWMutex
 	passwords   map[string]string
+	// deviceCredentials holds the credentials each bulk registered device
+	// was given, by external ID store key (guarded by passwordsMu). The
+	// platform rejects registering a device again with a password it used.
+	deviceCredentials map[string][]string
 
 	// Identity stores: externalType+externalValue → managedObjectID
 	ExternalIDs *Store
@@ -230,9 +234,10 @@ func newUnstarted() *FakeServer {
 		LoginOptionAccessMappings:          make(map[string]*Store),
 		LoginOptionInventoryAccessMappings: make(map[string]*Store),
 
-		passwords:     map[string]string{"admin": "admin-pass"},
-		Realtime:      newRealtimeState(),
-		Notification2: newNotification2State(),
+		passwords:         map[string]string{"admin": "admin-pass"},
+		deviceCredentials: map[string][]string{},
+		Realtime:          newRealtimeState(),
+		Notification2:     newNotification2State(),
 	}
 	return fs
 }
@@ -634,7 +639,7 @@ func (fs *FakeServer) seedDefaults() {
 		if app.appType == "HOSTED" {
 			owner = "management"
 		}
-		fs.Applications.Create(marshalJSON(map[string]any{
+		doc := map[string]any{
 			"name":        app.name,
 			"key":         app.key,
 			"type":        app.appType,
@@ -644,7 +649,11 @@ func (fs *FakeServer) seedDefaults() {
 				"self":   fs.URL() + "/tenant/tenants/" + owner,
 			},
 			"availability": "MARKET",
-		}), fs.URL()+"/application/applications")
+		}
+		if app.appType == "MICROSERVICE" {
+			doc["manifest"] = microserviceManifest(app.name)
+		}
+		fs.Applications.Create(withMicroserviceRoles(marshalJSON(doc)), fs.URL()+"/application/applications")
 	}
 
 	// Seed additional microservice applications (needed for tests expecting >= 10 microservices)
@@ -664,6 +673,7 @@ func (fs *FakeServer) seedDefaults() {
 				"self":   fs.URL() + "/tenant/tenants/t12345",
 			},
 			"availability": "MARKET",
+			"manifest":     microserviceManifest(name),
 		})), fs.URL()+"/application/applications")
 	}
 
@@ -714,6 +724,7 @@ func (fs *FakeServer) seedMicroserviceWithInstance(name string, instances ...str
 			"self":   fs.URL() + "/tenant/tenants/t12345",
 		},
 		"availability": "MARKET",
+		"manifest":     microserviceManifest(name),
 	})), fs.URL()+"/application/applications")
 
 	status := map[string]any{}
@@ -725,6 +736,21 @@ func (fs *FakeServer) seedMicroserviceWithInstance(name string, instances ...str
 		"name":       name,
 		"c8y_Status": map[string]any{"status": "UP", "instances": status},
 	}), fs.URL()+"/inventory/managedObjects")
+}
+
+// microserviceManifest returns the manifest the platform keeps for a
+// microservice: the roles it defines, the roles it requires and its
+// isolation. withMicroserviceRoles copies the role lists to the application.
+func microserviceManifest(name string) map[string]any {
+	role := "ROLE_" + strings.ToUpper(strings.NewReplacer("-", "_", ".", "_").Replace(name))
+	return map[string]any{
+		"apiVersion":    "1",
+		"version":       "1.0.0",
+		"provider":      map[string]any{"name": "Cumulocity"},
+		"isolation":     "MULTI_TENANT",
+		"requiredRoles": []string{"ROLE_INVENTORY_READ", "ROLE_INVENTORY_ADMIN"},
+		"roles":         []string{role + "_READ", role + "_ADMIN"},
+	}
 }
 
 func marshalJSON(v any) []byte {

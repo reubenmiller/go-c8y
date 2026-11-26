@@ -57,7 +57,9 @@ func Test_Registration_CreateBulk(t *testing.T) {
 		assert.Equal(t, id, mo.Data.Name())
 	}
 
-	// Registering the same devices again fails per row, not for the request.
+	// Registering the same devices again with the same passwords fails per
+	// row, not for the request: the platform rejects a password the device
+	// used before ("Error during password validation.").
 	again := client.Devices.Registration.CreateBulk(ctx, registration.UploadFileOptions{
 		Reader: strings.NewReader(csv.String()),
 		Name:   "devices.csv",
@@ -89,8 +91,14 @@ func Test_Registration_Register(t *testing.T) {
 	assert.NotEmpty(t, result.Data.ManagedObjectID())
 
 	again := client.Devices.Registration.Register(ctx, opt)
-	require.Error(t, again.Err, "an external ID that exists is an error")
+	require.Error(t, again.Err, "a password the device used before is rejected")
 	assert.Contains(t, again.Err.Error(), id)
+
+	// With a new password the platform updates the device's credentials.
+	opt.Credentials = "Pass-" + testingutils.RandomString(16)
+	updated := client.Devices.Registration.Register(ctx, opt)
+	require.NoError(t, updated.Err, "an external ID that exists gets its credentials updated")
+	assert.Equal(t, result.Data.ManagedObjectID(), updated.Data.ManagedObjectID())
 }
 
 func Test_Registration_Register_DryRun(t *testing.T) {

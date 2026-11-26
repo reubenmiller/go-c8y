@@ -25,7 +25,7 @@ func (fs *FakeServer) handleEvents(w http.ResponseWriter, r *http.Request) {
 		case http.MethodGet:
 			doc, ok := fs.Events.Get(id)
 			if !ok {
-				writeNotFound(w, "event")
+				writeNotFound(w, "event", id)
 				return
 			}
 			writeJSON(w, http.StatusOK, doc)
@@ -38,14 +38,14 @@ func (fs *FakeServer) handleEvents(w http.ResponseWriter, r *http.Request) {
 			}
 			doc, ok := fs.Events.Update(id, body)
 			if !ok {
-				writeNotFound(w, "event")
+				writeNotFound(w, "event", id)
 				return
 			}
 			writeJSON(w, http.StatusOK, doc)
 
 		case http.MethodDelete:
 			if !fs.Events.Delete(id) {
-				writeNotFound(w, "event")
+				writeNotFound(w, "event", id)
 				return
 			}
 			writeNoContent(w)
@@ -110,7 +110,7 @@ func (fs *FakeServer) handleEvents(w http.ResponseWriter, r *http.Request) {
 // handleEventBinaries handles /event/events/{id}/binaries
 func (fs *FakeServer) handleEventBinaries(w http.ResponseWriter, r *http.Request, eventID string) {
 	if _, ok := fs.Events.Get(eventID); !ok {
-		writeNotFound(w, "event")
+		writeNotFound(w, "event", eventID)
 		return
 	}
 
