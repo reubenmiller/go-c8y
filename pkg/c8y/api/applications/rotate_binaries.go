@@ -126,7 +126,7 @@ func (s *Service) rotateBinaries(ctx context.Context, appID string, opt RotateBi
 
 	var errs []error
 	for _, binaryID := range toDelete {
-		if res := s.DeleteBinary(ctx, id, binaryID); res.Err != nil {
+		if res := s.DeleteBinary(ctxhelpers.InternalStep(ctx), id, binaryID); res.Err != nil {
 			errs = append(errs, fmt.Errorf("failed to delete application binary. binaryId=%s. %w", binaryID, res.Err))
 			continue
 		}

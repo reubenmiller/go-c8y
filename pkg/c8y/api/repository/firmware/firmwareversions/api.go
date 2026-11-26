@@ -817,7 +817,7 @@ func (s *Service) deleteBinaryFromURL(ctx context.Context, url string) {
 	}
 
 	// Delete the binary
-	deleteResult := s.binaries.Delete(ctx, binaryID)
+	deleteResult := s.binaries.Delete(ctxhelpers.InternalStep(ctx), binaryID)
 	if deleteResult.Err != nil {
 		// Log warning but continue - the binary might already be deleted
 		slog.Info("failed to delete old binary", "binaryID", binaryID, "err", deleteResult.Err)

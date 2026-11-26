@@ -157,7 +157,8 @@ func (s *Service) deployHosted(ctx context.Context, opt DeployHostedOptions) op.
 		if binaryID == "" {
 			return withDeployMeta(op.Failed[jsonmodels.Application](errors.New("failed to activate the new application version because the binary id is empty"), false), created, "", false)
 		}
-		result = s.Update(ctx, app.ID(), &model.Application{ActiveVersionID: binaryID}).IgnoreConflict()
+		// An already active version (409) is not an error, also with api.WithConflictAsError
+		result = s.Update(ctxhelpers.InternalStep(ctx), app.ID(), &model.Application{ActiveVersionID: binaryID}).IgnoreConflict()
 		if result.Err != nil {
 			result.Err = fmt.Errorf("failed to activate application binary. binaryId=%s. %w", binaryID, result.Err)
 			return withDeployMeta(result, created, binaryID, false)

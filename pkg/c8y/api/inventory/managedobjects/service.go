@@ -112,7 +112,7 @@ func (s *Service) CreateWithBinary(ctx context.Context, opt CreateWithBinaryOpti
 
 		// Step 3: Link binary as child addition if requested and binary was uploaded
 		if binaryID != "" && opt.AddChildAddition {
-			additionResult := s.ChildAdditions.Assign(execCtx, createResult.Data.ID(), binaryID)
+			additionResult := s.ChildAdditions.Assign(ctxhelpers.InternalStep(execCtx), createResult.Data.ID(), binaryID)
 			if additionResult.IsError() {
 				if opt.FailOnChildAdditionError {
 					// Cleanup: Attempt to delete all created resources
@@ -120,14 +120,14 @@ func (s *Service) CreateWithBinary(ctx context.Context, opt CreateWithBinaryOpti
 					var cleanupErrors []error
 
 					// Try to delete the managed object
-					deleteResult := s.Delete(execCtx, createResult.Data.ID(), DeleteOptions{})
+					deleteResult := s.Delete(ctxhelpers.InternalStep(execCtx), createResult.Data.ID(), DeleteOptions{})
 					if deleteResult.IsError() {
 						cleanupErrors = append(cleanupErrors, fmt.Errorf("managed object cleanup failed: %w", deleteResult.Err))
 					}
 
 					// Try to delete the binary
 					if binaryID != "" {
-						binaryDeleteResult := s.binariesService.Delete(execCtx, binaryID)
+						binaryDeleteResult := s.binariesService.Delete(ctxhelpers.InternalStep(execCtx), binaryID)
 						if binaryDeleteResult.IsError() {
 							cleanupErrors = append(cleanupErrors, fmt.Errorf("binary cleanup failed: %w", binaryDeleteResult.Err))
 						}
@@ -618,7 +618,7 @@ func (s *Service) executeGetOrCreateByExternalID(
 		}
 
 		moID := st.managedObject.ID()
-		identResult := st.service.identityService.Create(ctx, moID, identity.IdentityOptions{
+		identResult := st.service.identityService.Create(ctxhelpers.InternalStep(ctx), moID, identity.IdentityOptions{
 			ExternalID: st.externalID,
 			Type:       st.externalIDType,
 		})
@@ -632,7 +632,7 @@ func (s *Service) executeGetOrCreateByExternalID(
 		if identResult.HTTPStatus == 409 {
 			// Conflict: identity already exists
 			// Delete the newly created MO
-			_ = st.service.Delete(ctx, moID, DeleteOptions{})
+			_ = st.service.Delete(ctxhelpers.InternalStep(ctx), moID, DeleteOptions{})
 
 			// Fetch the existing managed object
 			lookupResult := st.service.identityService.Get(ctx, identity.IdentityOptions{
@@ -660,7 +660,7 @@ func (s *Service) executeGetOrCreateByExternalID(
 		}
 
 		// Other failure - cleanup the created managed object
-		deleteResult := st.service.Delete(ctx, moID, DeleteOptions{})
+		deleteResult := st.service.Delete(ctxhelpers.InternalStep(ctx), moID, DeleteOptions{})
 		if deleteResult.Err != nil {
 			st.err = fmt.Errorf("failed to assign identity and cleanup failed: identity error: %w, delete error: %v", identResult.Err, deleteResult.Err)
 		} else {
