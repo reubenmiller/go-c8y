@@ -119,6 +119,21 @@ func WithNotFoundAsError(ctx context.Context) context.Context {
 	return ctxhelpers.WithNotFoundAsError(ctx)
 }
 
+// WithConflictAsError returns a context that makes creates, assigns and
+// subscribes of a resource that already exists return the 409 error.
+//
+// By default these calls are idempotent: a 409 is not an error, and the result
+// has Status == op.StatusDuplicate and HTTPStatus == 409. With this option the
+// result keeps its original error (api.StatusCode(err) reports 409). It
+// applies to every method that ignores a 409, such as identity Create, child
+// Assign and Subscribe.
+//
+//	ctx := api.WithConflictAsError(context.Background())
+//	err := client.Identity.Create(ctx, id, opts).Err // 409 error when it exists
+func WithConflictAsError(ctx context.Context) context.Context {
+	return ctxhelpers.WithConflictAsError(ctx)
+}
+
 // WithTenant returns a context that overrides the {tenantId} path parameter for
 // tenant-scoped endpoints without changing which credentials are used.
 func WithTenant(ctx context.Context, tenant string) context.Context {

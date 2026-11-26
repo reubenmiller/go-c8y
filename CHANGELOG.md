@@ -67,6 +67,7 @@ v2 is a new module, `github.com/reubenmiller/go-c8y/v2`. Entries marked **Breaki
 
 ### Request context
 
+* Added `api.WithConflictAsError(ctx)`, the counterpart for 409: creates, assigns and subscribes that ignore a conflict by default (`Status == op.StatusDuplicate`) keep the 409 error, so a caller such as go-c8y-cli can report an existing resource as an error.
 * Added `api.WithNotFoundAsError(ctx)`. Deletes, unassigns and unsubscribes ignore a 404 by default (`Status == op.StatusSkipped`); with this option the result keeps the 404 error, so `api.IsNotFound` and `errors.Is(err, api.ErrNotFound)` match. go-c8y-cli uses it to keep reporting a missing id as an error.
 * **Breaking**: request-scoped options now have one public home, package `api`. `pkg/c8y/api/context` is removed and `pkg/c8y/api/contexthelpers` moved to `pkg/c8y/internal/contexthelpers`. New in `api`: `WithProcessingMode` (plus `Persistent`, `Transient`, `Quiescent`, `CEP` variants), `ProcessingMode`, `WithExtraHeaders`, `ExtraHeaders`, `WithExtraQueryParams`, `ExtraQueryParams`, `WithNoAccept`, `WithNoAuth`, `WithDryRunHandler`, and `TenantFromContext`. Migration:
 

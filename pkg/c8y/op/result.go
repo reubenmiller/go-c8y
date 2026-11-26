@@ -69,6 +69,9 @@ type Result[T any] struct {
 	// context (see WithKeepNotFound).
 	keepNotFound bool
 
+	// keepConflict makes IgnoreConflict keep the 409 error (see WithKeepConflict).
+	keepConflict bool
+
 	// Deferred execution support
 	executor func(context.Context) Result[T] // Function to execute the actual operation
 }
@@ -237,8 +240,11 @@ func (r Result[T]) IgnoreNotFound() Result[T] {
 //	if subscribeResult.Err != nil {
 //	    // Only real errors, not 409s
 //	}
+//
+// A request made with a context from api.WithConflictAsError keeps its 409
+// error: IgnoreConflict then returns the result unchanged.
 func (r Result[T]) IgnoreConflict() Result[T] {
-	if r.HTTPStatus == 409 {
+	if r.HTTPStatus == 409 && !r.keepConflict {
 		r.Err = nil
 		r.Status = StatusDuplicate
 		r.Idempotent = true

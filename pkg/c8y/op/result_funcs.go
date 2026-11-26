@@ -122,3 +122,10 @@ func WithKeepNotFound[T any](r Result[T], keep bool) Result[T] {
 	r.keepNotFound = keep
 	return r
 }
+
+// WithKeepConflict returns r marked so that IgnoreConflict keeps the 409 error.
+// The client sets it when the request context came from api.WithConflictAsError.
+func WithKeepConflict[T any](r Result[T], keep bool) Result[T] {
+	r.keepConflict = keep
+	return r
+}
