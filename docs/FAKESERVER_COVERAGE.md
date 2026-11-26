@@ -10,7 +10,7 @@ something other than its default 404 page or a 405. The gaps are an allowlist
 (`internal/pkg/fakeserver/testdata/fakeserver_coverage_gaps.txt`) that may only shrink: the test fails
 for a new SDK endpoint that is neither handled nor listed.
 
-**235 of 306 distinct endpoints (method and path) are handled.**
+**250 of 306 distinct endpoints (method and path) are handled.**
 
 | Service | Method | Path | Handled |
 |---|---|---|---|
@@ -63,9 +63,9 @@ for a new SDK endpoint that is neither handled nor listed.
 | bulkoperations | PUT | `/devicecontrol/bulkoperations/{id}` | yes |
 | bulkoperations | GET | `/devicecontrol/operations` | yes |
 | configuration | GET | `/inventory/managedObjects` | yes |
-| databroker | GET | `/databroker/connectors` | no |
-| databroker | GET | `/databroker/connectors/{id}` | no |
-| databroker | PUT | `/databroker/connectors/{id}` | no |
+| databroker | GET | `/databroker/connectors` | yes |
+| databroker | GET | `/databroker/connectors/{id}` | yes |
+| databroker | PUT | `/databroker/connectors/{id}` | yes |
 | datahub | GET | `/service/datahub/dremio/users` | no |
 | datahub | GET | `/service/datahub/offloadingconfigurations` | no |
 | datahub | GET | `/service/datahub/scheduler/latestjobs` | no |
@@ -151,7 +151,7 @@ for a new SDK endpoint that is neither handled nor listed.
 | identity | GET | `/identity/externalIds/{type}/{externalID}` | yes |
 | identity | GET | `/identity/globalIds/{id}/externalIds` | yes |
 | identity | POST | `/identity/globalIds/{id}/externalIds` | yes |
-| identity | POST | `/identity/search` | no |
+| identity | POST | `/identity/search` | yes |
 | inventory/managedobjects | GET | `/inventory/managedObjects` | yes |
 | inventory/managedobjects | POST | `/inventory/managedObjects` | yes |
 | inventory/managedobjects | PUT | `/inventory/managedObjects` | yes |
@@ -215,9 +215,9 @@ for a new SDK endpoint that is neither handled nor listed.
 | microservices/currentmicroservice | GET | `/application/currentApplication` | yes |
 | microservices/currentmicroservice | GET | `/application/currentApplication/settings` | yes |
 | microservices/currentmicroservice | GET | `/application/currentApplication/subscriptions` | yes |
-| microservices/loggers | GET | `/service/{name}/loggers` | no |
-| microservices/loggers | GET | `/service/{name}/loggers/{loggerName}` | no |
-| microservices/loggers | POST | `/service/{name}/loggers/{loggerName}` | no |
+| microservices/loggers | GET | `/service/{name}/loggers` | yes |
+| microservices/loggers | GET | `/service/{name}/loggers/{loggerName}` | yes |
+| microservices/loggers | POST | `/service/{name}/loggers/{loggerName}` | yes |
 | notification2 | DELETE | `/notification2/subscriptions` | yes |
 | notification2 | GET | `/notification2/subscriptions` | yes |
 | notification2 | POST | `/notification2/subscriptions` | yes |
@@ -271,7 +271,7 @@ for a new SDK endpoint that is neither handled nor listed.
 | retentionrules | PUT | `/retention/retentions/{id}` | yes |
 | smartgroups | GET | `/inventory/managedObjects` | yes |
 | smartresttemplates | GET | `/inventory/managedObjects` | yes |
-| smartresttemplates | POST | `/inventory/templates/globalId/{globalId}/externalId` | no |
+| smartresttemplates | POST | `/inventory/templates/globalId/{globalId}/externalId` | yes |
 | tenants | GET | `/tenant/tenants` | yes |
 | tenants | POST | `/tenant/tenants` | yes |
 | tenants | DELETE | `/tenant/tenants/{id}` | yes |
@@ -357,9 +357,9 @@ for a new SDK endpoint that is neither handled nor listed.
 | userroles/users | GET | `/user/{tenantId}/users/{userId}/roles` | yes |
 | userroles/users | POST | `/user/{tenantId}/users/{userId}/roles` | yes |
 | userroles/users | DELETE | `/user/{tenantId}/users/{userId}/roles/{roleId}` | yes |
-| users | POST | `/user/logout` | no |
-| users | POST | `/user/logout/{tenantId}/allUsers` | no |
-| users | PUT | `/user/passwordReset` | no |
+| users | POST | `/user/logout` | yes |
+| users | POST | `/user/logout/{tenantId}/allUsers` | yes |
+| users | PUT | `/user/passwordReset` | yes |
 | users | GET | `/user/{tenantId}/userByName/{username}` | yes |
 | users | GET | `/user/{tenantId}/users` | yes |
 | users | POST | `/user/{tenantId}/users` | yes |
@@ -376,86 +376,71 @@ for a new SDK endpoint that is neither handled nor listed.
 | users/currentuser/totp | GET | `/user/currentUser/totpSecret/activity` | yes |
 | users/currentuser/totp | POST | `/user/currentUser/totpSecret/activity` | yes |
 | users/currentuser/totp | POST | `/user/currentUser/totpSecret/verify` | yes |
-| users/devicepermissions | GET | `/user/devicePermissions/{id}` | no |
-| users/devicepermissions | PUT | `/user/devicePermissions/{id}` | no |
+| users/devicepermissions | GET | `/user/devicePermissions/{id}` | yes |
+| users/devicepermissions | PUT | `/user/devicePermissions/{id}` | yes |
 | users/devicepermissions | GET | `/user/{tenantId}/users/{userId}/roles/inventory` | yes |
 | users/devicepermissions | POST | `/user/{tenantId}/users/{userId}/roles/inventory` | yes |
-| users/devicepermissions | DELETE | `/user/{tenantId}/users/{userId}/roles/inventory/{id}` | no |
+| users/devicepermissions | DELETE | `/user/{tenantId}/users/{userId}/roles/inventory/{id}` | yes |
 | users/devicepermissions | GET | `/user/{tenantId}/users/{userId}/roles/inventory/{id}` | yes |
-| users/devicepermissions | PUT | `/user/{tenantId}/users/{userId}/roles/inventory/{id}` | no |
+| users/devicepermissions | PUT | `/user/{tenantId}/users/{userId}/roles/inventory/{id}` | yes |
 
 ## Known gaps
 
 | Endpoint | Reason |
 |---|---|
 | DELETE `/service/dataprep/v1/rules/{ruleName}` | dataprep rule and test engine semantics are large |
-| DELETE `/service/dtm/assets/{assetId}` | digital twin manager semantics (models, assets, definitions) are large |
-| DELETE `/service/dtm/assets/{assetId}/devices/{deviceId}` | digital twin manager semantics (models, assets, definitions) are large |
-| DELETE `/service/dtm/assets/{assetId}/linkedSeries` | digital twin manager semantics (models, assets, definitions) are large |
-| DELETE `/service/dtm/assets/{assetId}/linkedSeries/{fragment}/{series}/source` | digital twin manager semantics (models, assets, definitions) are large |
-| DELETE `/service/dtm/assets/{assetId}/subAssets/{subAssetId}` | digital twin manager semantics (models, assets, definitions) are large |
-| DELETE `/service/dtm/definitions/{kind}/{identifier}` | digital twin manager semantics (models, assets, definitions) are large |
-| DELETE `/user/{tenantId}/users/{userId}/roles/inventory/{id}` | not implemented in the fake server |
-| GET `/databroker/connectors` | not implemented in the fake server |
-| GET `/databroker/connectors/{id}` | not implemented in the fake server |
-| GET `/service/datahub/dremio/api/v3/job/{id}` | data hub (dremio, offloading) semantics are large |
-| GET `/service/datahub/dremio/api/v3/job/{id}/results` | data hub (dremio, offloading) semantics are large |
-| GET `/service/datahub/dremio/users` | data hub (dremio, offloading) semantics are large |
-| GET `/service/datahub/offloadingconfigurations` | data hub (dremio, offloading) semantics are large |
-| GET `/service/datahub/scheduler/latestjobs` | data hub (dremio, offloading) semantics are large |
-| GET `/service/datahub/tenant` | data hub (dremio, offloading) semantics are large |
+| DELETE `/service/dtm/assets/{assetId}` | digital twin manager (models, assets, definitions) is a large microservice API |
+| DELETE `/service/dtm/assets/{assetId}/devices/{deviceId}` | digital twin manager (models, assets, definitions) is a large microservice API |
+| DELETE `/service/dtm/assets/{assetId}/linkedSeries` | digital twin manager (models, assets, definitions) is a large microservice API |
+| DELETE `/service/dtm/assets/{assetId}/linkedSeries/{fragment}/{series}/source` | digital twin manager (models, assets, definitions) is a large microservice API |
+| DELETE `/service/dtm/assets/{assetId}/subAssets/{subAssetId}` | digital twin manager (models, assets, definitions) is a large microservice API |
+| DELETE `/service/dtm/definitions/{kind}/{identifier}` | digital twin manager (models, assets, definitions) is a large microservice API |
+| GET `/service/datahub/dremio/api/v3/job/{id}` | data hub (dremio jobs, offloading) is a separate microservice with its own data model |
+| GET `/service/datahub/dremio/api/v3/job/{id}/results` | data hub (dremio jobs, offloading) is a separate microservice with its own data model |
+| GET `/service/datahub/dremio/users` | data hub (dremio jobs, offloading) is a separate microservice with its own data model |
+| GET `/service/datahub/offloadingconfigurations` | data hub (dremio jobs, offloading) is a separate microservice with its own data model |
+| GET `/service/datahub/scheduler/latestjobs` | data hub (dremio jobs, offloading) is a separate microservice with its own data model |
+| GET `/service/datahub/tenant` | data hub (dremio jobs, offloading) is a separate microservice with its own data model |
 | GET `/service/dataprep/v1/diagnostics` | dataprep rule and test engine semantics are large |
 | GET `/service/dataprep/v1/rules` | dataprep rule and test engine semantics are large |
 | GET `/service/dataprep/v1/rules/{ruleName}/deployed` | dataprep rule and test engine semantics are large |
 | GET `/service/dataprep/v1/rules/{ruleName}/draft` | dataprep rule and test engine semantics are large |
-| GET `/service/dtm/assets` | digital twin manager semantics (models, assets, definitions) are large |
-| GET `/service/dtm/assets/count` | digital twin manager semantics (models, assets, definitions) are large |
-| GET `/service/dtm/assets/externalIds/{externalId}` | digital twin manager semantics (models, assets, definitions) are large |
-| GET `/service/dtm/assets/externalIds/{externalId}/subAssets` | digital twin manager semantics (models, assets, definitions) are large |
-| GET `/service/dtm/assets/linkedSeries` | digital twin manager semantics (models, assets, definitions) are large |
-| GET `/service/dtm/assets/linkedSeries/opposites/{deviceId}` | digital twin manager semantics (models, assets, definitions) are large |
-| GET `/service/dtm/assets/subAssets` | digital twin manager semantics (models, assets, definitions) are large |
-| GET `/service/dtm/assets/{assetId}` | digital twin manager semantics (models, assets, definitions) are large |
-| GET `/service/dtm/assets/{assetId}/devices` | digital twin manager semantics (models, assets, definitions) are large |
-| GET `/service/dtm/assets/{assetId}/linkedSeries` | digital twin manager semantics (models, assets, definitions) are large |
-| GET `/service/dtm/assets/{assetId}/linkedSeries/count` | digital twin manager semantics (models, assets, definitions) are large |
-| GET `/service/dtm/assets/{assetId}/linkedSeries/{fragment}/{series}/source` | digital twin manager semantics (models, assets, definitions) are large |
-| GET `/service/dtm/assets/{assetId}/subAssets` | digital twin manager semantics (models, assets, definitions) are large |
-| GET `/service/dtm/definitions/{kind}` | digital twin manager semantics (models, assets, definitions) are large |
-| GET `/service/dtm/definitions/{kind}/count` | digital twin manager semantics (models, assets, definitions) are large |
-| GET `/service/dtm/definitions/{kind}/tags` | digital twin manager semantics (models, assets, definitions) are large |
-| GET `/service/dtm/definitions/{kind}/{identifier}` | digital twin manager semantics (models, assets, definitions) are large |
-| GET `/service/{name}/loggers` | microservice proxy endpoint |
-| GET `/service/{name}/loggers/{loggerName}` | microservice proxy endpoint |
-| GET `/user/devicePermissions/{id}` | not implemented in the fake server |
-| POST `/devicecontrol/deviceAccessToken` | not implemented in the fake server |
-| POST `/identity/search` | not implemented in the fake server |
-| POST `/inventory/templates/globalId/{globalId}/externalId` | not implemented in the fake server |
-| POST `/service/datahub/dremio/api/v3/job/{id}/cancel` | data hub (dremio, offloading) semantics are large |
-| POST `/service/datahub/dremio/api/v3/sql` | data hub (dremio, offloading) semantics are large |
-| POST `/service/datahub/sql` | data hub (dremio, offloading) semantics are large |
+| GET `/service/dtm/assets` | digital twin manager (models, assets, definitions) is a large microservice API |
+| GET `/service/dtm/assets/count` | digital twin manager (models, assets, definitions) is a large microservice API |
+| GET `/service/dtm/assets/externalIds/{externalId}` | digital twin manager (models, assets, definitions) is a large microservice API |
+| GET `/service/dtm/assets/externalIds/{externalId}/subAssets` | digital twin manager (models, assets, definitions) is a large microservice API |
+| GET `/service/dtm/assets/linkedSeries` | digital twin manager (models, assets, definitions) is a large microservice API |
+| GET `/service/dtm/assets/linkedSeries/opposites/{deviceId}` | digital twin manager (models, assets, definitions) is a large microservice API |
+| GET `/service/dtm/assets/subAssets` | digital twin manager (models, assets, definitions) is a large microservice API |
+| GET `/service/dtm/assets/{assetId}` | digital twin manager (models, assets, definitions) is a large microservice API |
+| GET `/service/dtm/assets/{assetId}/devices` | digital twin manager (models, assets, definitions) is a large microservice API |
+| GET `/service/dtm/assets/{assetId}/linkedSeries` | digital twin manager (models, assets, definitions) is a large microservice API |
+| GET `/service/dtm/assets/{assetId}/linkedSeries/count` | digital twin manager (models, assets, definitions) is a large microservice API |
+| GET `/service/dtm/assets/{assetId}/linkedSeries/{fragment}/{series}/source` | digital twin manager (models, assets, definitions) is a large microservice API |
+| GET `/service/dtm/assets/{assetId}/subAssets` | digital twin manager (models, assets, definitions) is a large microservice API |
+| GET `/service/dtm/definitions/{kind}` | digital twin manager (models, assets, definitions) is a large microservice API |
+| GET `/service/dtm/definitions/{kind}/count` | digital twin manager (models, assets, definitions) is a large microservice API |
+| GET `/service/dtm/definitions/{kind}/tags` | digital twin manager (models, assets, definitions) is a large microservice API |
+| GET `/service/dtm/definitions/{kind}/{identifier}` | digital twin manager (models, assets, definitions) is a large microservice API |
+| POST `/devicecontrol/deviceAccessToken` | needs the mTLS port and the client certificate chain, which httptest does not offer |
+| POST `/service/datahub/dremio/api/v3/job/{id}/cancel` | data hub (dremio jobs, offloading) is a separate microservice with its own data model |
+| POST `/service/datahub/dremio/api/v3/sql` | data hub (dremio jobs, offloading) is a separate microservice with its own data model |
+| POST `/service/datahub/sql` | data hub (dremio jobs, offloading) is a separate microservice with its own data model |
 | POST `/service/dataprep/v1/run-tests` | dataprep rule and test engine semantics are large |
-| POST `/service/dtm/assets` | digital twin manager semantics (models, assets, definitions) are large |
-| POST `/service/dtm/assets/{assetId}/devices/{deviceId}` | digital twin manager semantics (models, assets, definitions) are large |
-| POST `/service/dtm/assets/{assetId}/linkedSeries` | digital twin manager semantics (models, assets, definitions) are large |
-| POST `/service/dtm/assets/{assetId}/linkedSeries/{fragment}/{series}/source` | digital twin manager semantics (models, assets, definitions) are large |
-| POST `/service/dtm/assets/{assetId}/subAssets` | digital twin manager semantics (models, assets, definitions) are large |
-| POST `/service/dtm/assets/{assetId}/subAssets/{subAssetId}` | digital twin manager semantics (models, assets, definitions) are large |
-| POST `/service/dtm/definitions/properties/compose` | digital twin manager semantics (models, assets, definitions) are large |
-| POST `/service/dtm/definitions/{kind}` | digital twin manager semantics (models, assets, definitions) are large |
-| POST `/service/{name}/loggers/{loggerName}` | microservice proxy endpoint |
-| POST `/tenant/statistics/files` | not implemented in the fake server |
-| POST `/tenant/tenants/{tenantId}/trusted-certificates/bulk` | not implemented in the fake server |
-| POST `/tenant/trusted-certificates/verify-cert-chain` | not implemented in the fake server |
-| POST `/user/logout` | not implemented in the fake server |
-| POST `/user/logout/{tenantId}/allUsers` | not implemented in the fake server |
-| PUT `/databroker/connectors/{id}` | not implemented in the fake server |
+| POST `/service/dtm/assets` | digital twin manager (models, assets, definitions) is a large microservice API |
+| POST `/service/dtm/assets/{assetId}/devices/{deviceId}` | digital twin manager (models, assets, definitions) is a large microservice API |
+| POST `/service/dtm/assets/{assetId}/linkedSeries` | digital twin manager (models, assets, definitions) is a large microservice API |
+| POST `/service/dtm/assets/{assetId}/linkedSeries/{fragment}/{series}/source` | digital twin manager (models, assets, definitions) is a large microservice API |
+| POST `/service/dtm/assets/{assetId}/subAssets` | digital twin manager (models, assets, definitions) is a large microservice API |
+| POST `/service/dtm/assets/{assetId}/subAssets/{subAssetId}` | digital twin manager (models, assets, definitions) is a large microservice API |
+| POST `/service/dtm/definitions/properties/compose` | digital twin manager (models, assets, definitions) is a large microservice API |
+| POST `/service/dtm/definitions/{kind}` | digital twin manager (models, assets, definitions) is a large microservice API |
+| POST `/tenant/statistics/files` | multipart upload of the usage statistics reports; low value |
+| POST `/tenant/tenants/{tenantId}/trusted-certificates/bulk` | bulk certificate upload needs the X.509 validation of the real platform |
+| POST `/tenant/trusted-certificates/verify-cert-chain` | needs the X.509 chain validation of the real platform |
 | PUT `/service/dataprep/v1/rules/{ruleName}/deployed` | dataprep rule and test engine semantics are large |
-| PUT `/service/dtm/assets/{assetId}` | digital twin manager semantics (models, assets, definitions) are large |
-| PUT `/service/dtm/assets/{assetId}/linkedSeries/{fragment}/{series}/label` | digital twin manager semantics (models, assets, definitions) are large |
-| PUT `/service/dtm/definitions/{kind}` | digital twin manager semantics (models, assets, definitions) are large |
-| PUT `/service/dtm/definitions/{kind}/{identifier}` | digital twin manager semantics (models, assets, definitions) are large |
-| PUT `/tenant/tenants/{tenantId}/applications/restricted-roles` | not implemented in the fake server |
-| PUT `/user/devicePermissions/{id}` | not implemented in the fake server |
-| PUT `/user/passwordReset` | not implemented in the fake server |
-| PUT `/user/{tenantId}/users/{userId}/roles/inventory/{id}` | not implemented in the fake server |
+| PUT `/service/dtm/assets/{assetId}` | digital twin manager (models, assets, definitions) is a large microservice API |
+| PUT `/service/dtm/assets/{assetId}/linkedSeries/{fragment}/{series}/label` | digital twin manager (models, assets, definitions) is a large microservice API |
+| PUT `/service/dtm/definitions/{kind}` | digital twin manager (models, assets, definitions) is a large microservice API |
+| PUT `/service/dtm/definitions/{kind}/{identifier}` | digital twin manager (models, assets, definitions) is a large microservice API |
+| PUT `/tenant/tenants/{tenantId}/applications/restricted-roles` | restricted application roles are not modeled |

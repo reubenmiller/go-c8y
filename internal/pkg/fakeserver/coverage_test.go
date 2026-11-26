@@ -477,12 +477,17 @@ func readGaps(t *testing.T) map[string]string {
 	return gaps
 }
 
-// gapReason groups the known gaps; the first matching prefix wins.
+// gapReasons give the reason of a known gap by path prefix; the first
+// matching prefix wins.
 var gapReasons = []struct{ prefix, reason string }{
-	{"/service/dtm/", "digital twin manager semantics (models, assets, definitions) are large"},
+	{"/service/dtm/", "digital twin manager (models, assets, definitions) is a large microservice API"},
 	{"/service/dataprep/", "dataprep rule and test engine semantics are large"},
-	{"/service/datahub/", "data hub (dremio, offloading) semantics are large"},
-	{"/service/", "microservice proxy endpoint"},
+	{"/service/datahub/", "data hub (dremio jobs, offloading) is a separate microservice with its own data model"},
+	{"/devicecontrol/deviceAccessToken", "needs the mTLS port and the client certificate chain, which httptest does not offer"},
+	{"/tenant/statistics/files", "multipart upload of the usage statistics reports; low value"},
+	{"/tenant/tenants/{tenantId}/trusted-certificates/bulk", "bulk certificate upload needs the X.509 validation of the real platform"},
+	{"/tenant/trusted-certificates/verify-cert-chain", "needs the X.509 chain validation of the real platform"},
+	{"/tenant/tenants/{tenantId}/applications/restricted-roles", "restricted application roles are not modeled"},
 }
 
 func gapReason(path string) string {

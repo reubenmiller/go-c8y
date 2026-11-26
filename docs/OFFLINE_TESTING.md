@@ -100,8 +100,17 @@ internal/pkg/fakeserver/
 ├── handler_binary.go      # /inventory/binaries (multipart upload, download, replace)
 ├── handler_user.go        # /user/ (users, groups, roles, currentUser, permissions)
 ├── handler_tenant.go      # /tenant/ (tenants, currentTenant, options, statistics)
-└── handler_misc.go        # Retention, audit, features, login, certs, device requests, etc.
+├── handler_misc.go        # Retention, audit, features, login, certs, device requests, etc.
+├── handler_service_extras.go # microservice loggers, data broker, SmartREST X-Id, identity search, logout
+└── coverage_test.go       # SDK endpoint coverage matrix + allowlist ratchet
 ```
+
+### Coverage
+
+`docs/FAKESERVER_COVERAGE.md` lists every endpoint the SDK services call and whether the fake server handles it.
+`TestFakeServerCoverage` regenerates it and fails when an SDK endpoint is neither handled nor in
+`internal/pkg/fakeserver/testdata/fakeserver_coverage_gaps.txt` (the list may only shrink).
+Run `UPDATE=1 go test ./internal/pkg/fakeserver -run TestFakeServerCoverage` after adding a handler or an SDK endpoint.
 
 ### Store
 

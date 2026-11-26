@@ -53,6 +53,12 @@ type FakeServer struct {
 	Notification2Subscriptions *Store
 	RemoteAccessConfigs        *Store
 	SystemOptions              *Store
+	DatabrokerConnectors       *Store
+	// InventoryAssignments are the inventory role assignments of the users
+	// (the user name is kept in the __user field)
+	InventoryAssignments *Store
+	// DevicePermissionOwners holds the users and groups with permissions per managed object
+	DevicePermissionOwners *Store
 
 	// Enrollments: external ID → the one-time password a device requests its certificate with
 	// (from a bulk registration); see handleEST
@@ -95,6 +101,10 @@ type FakeServer struct {
 	// Notification2 is the state of any active /notification2/consumer/
 	// websocket connections.
 	Notification2 *notification2State
+
+	// loggers: microservice name -> logger name -> configured level (see handleServiceProxy)
+	loggersMu sync.Mutex
+	loggers   map[string]map[string]string
 
 	// Request capture (for pagination assertions in tests).
 	capturedMu sync.Mutex
@@ -205,6 +215,9 @@ func newUnstarted() *FakeServer {
 		Notification2Subscriptions: NewStore(),
 		RemoteAccessConfigs:        NewStore(),
 		SystemOptions:              NewStore(),
+		DatabrokerConnectors:       NewStore(),
+		InventoryAssignments:       NewStore(),
+		DevicePermissionOwners:     NewStore(),
 		Enrollments:                NewStore(),
 
 		ChildDevices:   make(map[string][]string),
@@ -235,6 +248,7 @@ func (fs *FakeServer) handler() http.Handler {
 		p := r.URL.Path
 		public := strings.HasPrefix(p, "/tenant/loginOptions") ||
 			strings.HasPrefix(p, "/tenant/oauth") ||
+			p == "/user/passwordReset" ||
 			p == "/cep/realtime" ||
 			strings.HasPrefix(p, "/notification2/consumer")
 		if !public && r.Header.Get("Authorization") == "" {
@@ -402,6 +416,18 @@ func (fs *FakeServer) registerRoutes(mux *http.ServeMux) {
 		// Remote access
 		case strings.HasPrefix(path, "/service/remoteaccess/"):
 			fs.handleRemoteAccess(w, r)
+
+		// Microservice proxy (actuator loggers)
+		case strings.HasPrefix(path, "/service/"):
+			fs.handleServiceProxy(w, r)
+
+		// Data broker
+		case strings.HasPrefix(path, "/databroker/"):
+			fs.handleDatabroker(w, r)
+
+		// SmartREST 1.0 template X-Id binding (before /inventory/managedObjects)
+		case strings.HasPrefix(path, "/inventory/templates"):
+			fs.handleInventoryTemplates(w, r)
 
 		// Certificate authority
 		case strings.HasPrefix(path, "/certificate-authority"):
