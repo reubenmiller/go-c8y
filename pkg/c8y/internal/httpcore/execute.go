@@ -207,6 +207,9 @@ func ExecuteNoContent(ctx context.Context, req *TryRequest, extraMeta ...map[str
 				result = op.WithHTTPStatus(result, code)
 			}
 		}
+		if ctxhelpers.NotFoundAsError(ctx) {
+			result = op.WithKeepNotFound(result, true)
+		}
 		return op.WithRequest(result, httpReq)
 	}
 	var empty core.NoContent

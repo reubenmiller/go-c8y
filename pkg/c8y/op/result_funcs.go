@@ -115,3 +115,10 @@ func (m Meta) HasNextPage() bool {
 	next, _ := m["next"].(string)
 	return next != ""
 }
+
+// WithKeepNotFound returns r marked so that IgnoreNotFound keeps the 404 error.
+// The client sets it when the request context came from api.WithNotFoundAsError.
+func WithKeepNotFound[T any](r Result[T], keep bool) Result[T] {
+	r.keepNotFound = keep
+	return r
+}

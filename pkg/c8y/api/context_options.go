@@ -104,6 +104,21 @@ func WithServiceUser(ctx context.Context, user model.ServiceUser) context.Contex
 	})
 }
 
+// WithNotFoundAsError returns a context that makes deletes of a resource that
+// does not exist return the 404 error.
+//
+// By default deletes are idempotent: a 404 is not an error, and the result has
+// Status == op.StatusSkipped and HTTPStatus == 404. With this option the result
+// keeps its original error (api.IsNotFound reports true, errors.Is matches
+// api.ErrNotFound) and Status stays failed. It applies to every method that
+// ignores a 404, such as the Delete, Unassign and Unsubscribe methods.
+//
+//	ctx := api.WithNotFoundAsError(context.Background())
+//	err := client.Events.Delete(ctx, id).Err // 404 error when the event is gone
+func WithNotFoundAsError(ctx context.Context) context.Context {
+	return ctxhelpers.WithNotFoundAsError(ctx)
+}
+
 // WithTenant returns a context that overrides the {tenantId} path parameter for
 // tenant-scoped endpoints without changing which credentials are used.
 func WithTenant(ctx context.Context, tenant string) context.Context {
