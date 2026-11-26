@@ -100,6 +100,8 @@ func seedManagedObjects(t *testing.T, srv *fakeserver.FakeServer, typ string, n 
 			"self": srv.URL() + "/inventory/managedObjects/" + id,
 			"name": fmt.Sprintf("po-%05d", i),
 			"type": typ,
+			// So the device (q) queries match too, as they do on the platform.
+			"c8y_IsDevice": map[string]any{},
 		})
 		require.NoError(t, err)
 		srv.ManagedObjects.CreateWithID(id, b)

@@ -40,6 +40,29 @@ func dryRunRequest(ctx context.Context, resp *resty.Response) *http.Request {
 	return nil
 }
 
+// DryRunReason is the "reason" metadata of a result for a request which was
+// not sent because of dry run.
+const DryRunReason = "dry run: request not sent"
+
+// isPureDryRun reports whether the request was built but neither sent nor
+// answered with mock data: the transport then returns a synthetic empty
+// response which must not be reported as the outcome of the operation.
+func isPureDryRun(ctx context.Context) bool {
+	return ctxhelpers.IsDryRun(ctx) && !ctxhelpers.IsMockResponses(ctx)
+}
+
+// dryRunResult builds the result of a request which was not sent: Status
+// Skipped, no error, the request in Request and the reason in Meta.
+func dryRunResult[T any](ctx context.Context, data T, resp *resty.Response, meta map[string]any) op.Result[T] {
+	result := op.Skipped(data, DryRunReason)
+	result.Request = dryRunRequest(ctx, resp)
+	if resp != nil {
+		result.Duration = resp.Duration()
+	}
+	mergeMeta(&result, meta)
+	return result
+}
+
 // firstMeta returns the optional extra metadata argument.
 func firstMeta(extraMeta []map[string]any) map[string]any {
 	if len(extraMeta) > 0 {

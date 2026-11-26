@@ -12,6 +12,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/systemoptions"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/tenantoptions"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/usagestatistics"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/usagestatisticsfiles"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
@@ -34,14 +35,15 @@ const ApplicationReferencesResultProperty = "references"
 
 func NewService(s *httpcore.Service) *Service {
 	return &Service{
-		svc:              *s,
-		UsageStatistics:  usagestatistics.NewService(s),
-		Current:          currenttenant.NewService(s),
-		Options:          tenantoptions.NewService(s),
-		SystemOptions:    systemoptions.NewService(s),
-		RestrictedRoles:  restrictedroles.NewService(s),
-		DeviceStatistics: devicestatistics.NewService(s),
-		LoginTokens:      logintokens.NewService(s),
+		svc:                  *s,
+		UsageStatistics:      usagestatistics.NewService(s),
+		UsageStatisticsFiles: usagestatisticsfiles.NewService(s),
+		Current:              currenttenant.NewService(s),
+		Options:              tenantoptions.NewService(s),
+		SystemOptions:        systemoptions.NewService(s),
+		RestrictedRoles:      restrictedroles.NewService(s),
+		DeviceStatistics:     devicestatistics.NewService(s),
+		LoginTokens:          logintokens.NewService(s),
 	}
 }
 
@@ -50,10 +52,13 @@ func NewService(s *httpcore.Service) *Service {
 type Service struct {
 	svc             httpcore.Service
 	UsageStatistics *usagestatistics.Service
-	Current         *currenttenant.Service
-	Options         *tenantoptions.Service
-	SystemOptions   *systemoptions.Service
-	RestrictedRoles *restrictedroles.Service
+	// UsageStatisticsFiles is the generated usage statistics files
+	// sub-resource (/tenant/statistics/files).
+	UsageStatisticsFiles *usagestatisticsfiles.Service
+	Current              *currenttenant.Service
+	Options              *tenantoptions.Service
+	SystemOptions        *systemoptions.Service
+	RestrictedRoles      *restrictedroles.Service
 
 	// DeviceStatistics is the device statistics sub-resource
 	// (/tenant/statistics/device). Client.DeviceStatistics is a deprecated

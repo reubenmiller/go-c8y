@@ -456,11 +456,26 @@ func (fs *FakeServer) filterManagedObjects(r *http.Request) []json.RawMessage {
 
 	// Like the platform, a query (query or q) replaces the plain filter
 	// parameters (type, fragmentType, ids, ...): they are ignored when present.
+	//
+	// `q` is the device query: the platform adds the criterion
+	// fragmentType=c8y_IsDevice to it, `query` does not.
 	queryStr := q.Get("query")
+	deviceQuery := false
 	if queryStr == "" {
 		queryStr = q.Get("q")
+		deviceQuery = queryStr != ""
 	}
 	if queryStr != "" {
+		if deviceQuery {
+			isDevice := hasField("c8y_IsDevice")
+			var devices []json.RawMessage
+			for _, item := range items {
+				if isDevice(item) {
+					devices = append(devices, item)
+				}
+			}
+			items = devices
+		}
 		items = fs.applyCQLFilter(items, queryStr)
 		return applyCQLOrderBy(items, queryStr)
 	}

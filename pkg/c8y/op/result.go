@@ -254,9 +254,24 @@ func (r Result[T]) IgnoreStatusCodes(codes ...int) Result[T] {
 	return r
 }
 
-// IsSuccess reports whether the operation succeeded.
+// IsSuccess reports whether the operation succeeded: no error, and a Status
+// which stands for a 2xx response (StatusOK, StatusCreated, StatusUpdated,
+// StatusNoContent) or an operation that was skipped because there was nothing
+// to do or it was not executed (StatusSkipped: idempotent no-op, ignored 404,
+// dry run).
+//
+// StatusDuplicate (409), StatusNoMatch, StatusPartial and StatusFailed are not
+// success, and neither is a result with a non-nil Err or an empty Status (a
+// deferred result which has not been executed yet).
 func (r Result[T]) IsSuccess() bool {
-	return r.Status == StatusOK || r.Status == StatusCreated || r.Status == StatusUpdated || r.Status == StatusSkipped
+	if r.Err != nil {
+		return false
+	}
+	switch r.Status {
+	case StatusOK, StatusCreated, StatusUpdated, StatusNoContent, StatusSkipped:
+		return true
+	}
+	return false
 }
 
 // IsRetryable reports whether the HTTP status indicates a retryable error:
