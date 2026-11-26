@@ -67,7 +67,9 @@ type RegisterOptions struct {
 // Register registers a device with the bulk registration API, which creates
 // the device and its external ID right away (no device request is involved),
 // and returns the device's external ID. A registration the server rejects
-// (for example an external ID that exists already) is an error.
+// (a row in failedCreationList) is an error. Registering an external ID that
+// exists already is not: the platform updates the device's credentials and
+// the existing identity is returned.
 //
 // In a dry run only the registration request is shown.
 func (s *Service) Register(ctx context.Context, opt RegisterOptions) op.Result[jsonmodels.Identity] {
