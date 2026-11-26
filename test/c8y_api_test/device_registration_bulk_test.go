@@ -57,16 +57,15 @@ func Test_Registration_CreateBulk(t *testing.T) {
 		assert.Equal(t, id, mo.Data.Name())
 	}
 
-	// Registering the same devices again fails per row, not for the request.
+	// Registering the same devices again updates their credentials: like the
+	// platform, no row fails.
 	again := client.Devices.Registration.CreateBulk(ctx, registration.UploadFileOptions{
 		Reader: strings.NewReader(csv.String()),
 		Name:   "devices.csv",
 	})
 	require.NoError(t, again.Err)
-	assert.EqualValues(t, 2, again.Data.TotalFailed())
-	for _, failure := range again.Data.FailedCreationList() {
-		assert.NotEmpty(t, failure.FailureReason())
-	}
+	assert.EqualValues(t, 0, again.Data.TotalFailed())
+	assert.Empty(t, again.Data.FailedCreationList())
 }
 
 func Test_Registration_Register(t *testing.T) {
@@ -89,8 +88,8 @@ func Test_Registration_Register(t *testing.T) {
 	assert.NotEmpty(t, result.Data.ManagedObjectID())
 
 	again := client.Devices.Registration.Register(ctx, opt)
-	require.Error(t, again.Err, "an external ID that exists is an error")
-	assert.Contains(t, again.Err.Error(), id)
+	require.NoError(t, again.Err, "an external ID that exists gets its credentials updated, as on the platform")
+	assert.Equal(t, result.Data.ManagedObjectID(), again.Data.ManagedObjectID())
 }
 
 func Test_Registration_Register_DryRun(t *testing.T) {

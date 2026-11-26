@@ -446,9 +446,11 @@ func (fs *FakeServer) handleBulkNewDeviceRequests(w http.ResponseWriter, r *http
 	}
 
 	// Each row creates a device with its external ID, as Cumulocity does. A row
-	// whose external ID already exists fails.
+	// whose external ID already exists is not an error: the platform updates
+	// the credentials of the device and lists it in credentialUpdatedList.
 	created := 0
 	failed := []map[string]any{}
+	updated := []map[string]any{}
 	for _, row := range rows {
 		id := row["ID"]
 		idType := row["IDTYPE"]
@@ -461,7 +463,7 @@ func (fs *FakeServer) handleBulkNewDeviceRequests(w http.ResponseWriter, r *http
 		}
 		storeKey := idType + ":" + id
 		if _, exists := fs.ExternalIDs.Get(storeKey); exists {
-			failed = append(failed, map[string]any{"deviceId": id, "failureReason": "Device with external ID " + id + " already exists"})
+			updated = append(updated, map[string]any{"deviceId": id, "bulkNewDeviceStatus": "CREDENTIAL_UPDATED"})
 			continue
 		}
 		mo := map[string]any{"name": id, "c8y_IsDevice": map[string]any{}}
@@ -497,14 +499,24 @@ func (fs *FakeServer) handleBulkNewDeviceRequests(w http.ResponseWriter, r *http
 			status = "FAILED"
 		}
 	}
-	writeJSON(w, http.StatusCreated, marshalJSON(map[string]any{
+	// Like the platform, answer 200 when no device was created (only the
+	// credentials of existing devices were updated).
+	httpStatus := http.StatusCreated
+	if created == 0 && len(updated) > 0 && len(failed) == 0 {
+		httpStatus = http.StatusOK
+	}
+	resp := map[string]any{
 		"numberOfAll":        len(rows),
 		"numberOfCreated":    created,
 		"numberOfFailed":     len(failed),
-		"numberOfSuccessful": created,
+		"numberOfSuccessful": created + len(updated),
 		"failedCreationList": failed,
 		"status":             status,
-	}))
+	}
+	if len(updated) > 0 {
+		resp["credentialUpdatedList"] = updated
+	}
+	writeJSON(w, httpStatus, marshalJSON(resp))
 }
 
 // parseBulkCSV reads a bulk registration file: a header row and one row per

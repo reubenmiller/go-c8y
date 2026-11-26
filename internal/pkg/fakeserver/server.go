@@ -634,7 +634,7 @@ func (fs *FakeServer) seedDefaults() {
 		if app.appType == "HOSTED" {
 			owner = "management"
 		}
-		fs.Applications.Create(marshalJSON(map[string]any{
+		doc := map[string]any{
 			"name":        app.name,
 			"key":         app.key,
 			"type":        app.appType,
@@ -644,7 +644,11 @@ func (fs *FakeServer) seedDefaults() {
 				"self":   fs.URL() + "/tenant/tenants/" + owner,
 			},
 			"availability": "MARKET",
-		}), fs.URL()+"/application/applications")
+		}
+		if app.appType == "MICROSERVICE" {
+			doc["manifest"] = microserviceManifest(app.name)
+		}
+		fs.Applications.Create(withMicroserviceRoles(marshalJSON(doc)), fs.URL()+"/application/applications")
 	}
 
 	// Seed additional microservice applications (needed for tests expecting >= 10 microservices)
@@ -664,6 +668,7 @@ func (fs *FakeServer) seedDefaults() {
 				"self":   fs.URL() + "/tenant/tenants/t12345",
 			},
 			"availability": "MARKET",
+			"manifest":     microserviceManifest(name),
 		})), fs.URL()+"/application/applications")
 	}
 
@@ -714,6 +719,7 @@ func (fs *FakeServer) seedMicroserviceWithInstance(name string, instances ...str
 			"self":   fs.URL() + "/tenant/tenants/t12345",
 		},
 		"availability": "MARKET",
+		"manifest":     microserviceManifest(name),
 	})), fs.URL()+"/application/applications")
 
 	status := map[string]any{}
@@ -725,6 +731,21 @@ func (fs *FakeServer) seedMicroserviceWithInstance(name string, instances ...str
 		"name":       name,
 		"c8y_Status": map[string]any{"status": "UP", "instances": status},
 	}), fs.URL()+"/inventory/managedObjects")
+}
+
+// microserviceManifest returns the manifest the platform keeps for a
+// microservice: the roles it defines, the roles it requires and its
+// isolation. withMicroserviceRoles copies the role lists to the application.
+func microserviceManifest(name string) map[string]any {
+	role := "ROLE_" + strings.ToUpper(strings.NewReplacer("-", "_", ".", "_").Replace(name))
+	return map[string]any{
+		"apiVersion":    "1",
+		"version":       "1.0.0",
+		"provider":      map[string]any{"name": "Cumulocity"},
+		"isolation":     "MULTI_TENANT",
+		"requiredRoles": []string{"ROLE_INVENTORY_READ", "ROLE_INVENTORY_ADMIN"},
+		"roles":         []string{role + "_READ", role + "_ADMIN"},
+	}
 }
 
 func marshalJSON(v any) []byte {

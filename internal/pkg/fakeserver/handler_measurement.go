@@ -23,14 +23,14 @@ func (fs *FakeServer) handleMeasurements(w http.ResponseWriter, r *http.Request)
 		case http.MethodGet:
 			doc, ok := fs.Measurements.Get(id)
 			if !ok {
-				writeNotFound(w, "measurement")
+				writeNotFound(w, "measurement", id)
 				return
 			}
 			writeJSON(w, http.StatusOK, doc)
 
 		case http.MethodDelete:
 			if !fs.Measurements.Delete(id) {
-				writeNotFound(w, "measurement")
+				writeNotFound(w, "measurement", id)
 				return
 			}
 			writeNoContent(w)

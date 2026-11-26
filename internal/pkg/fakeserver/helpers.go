@@ -21,8 +21,25 @@ func writeNoContent(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// writeNotFound writes a standard Cumulocity 404 error response.
-func writeNotFound(w http.ResponseWriter, resource string) {
+// platformNotFound maps a resource to the error type and message format the
+// platform answers for a missing item (the format takes the requested id).
+var platformNotFound = map[string]struct{ errorType, format string }{
+	"inventory/managedObject": {"inventory/Not Found", "Finding device data from database failed : No managedObject for id '%s'!"},
+	"alarm":                   {"alarm/Not Found", "Finding alarm data from database failed : No alarm for id '%s'!"},
+	"event":                   {"event/Not Found", "Finding event data from database failed : No event for id '%s'!"},
+	"measurement":             {"measurement/Not Found", "Finding measurement data from database failed : No measurement for id '%s'!"},
+	"devicecontrol/operation": {"devicecontrol/Not Found", "Finding operation data from database failed : No operation for id '%s'!"},
+}
+
+// writeNotFound writes a Cumulocity 404 error response. For the resources in
+// platformNotFound the error type and message follow the platform (e.g.
+// inventory/Not Found, "... No managedObject for id '0'!") when an id is
+// given; any other resource gets a generic not found error.
+func writeNotFound(w http.ResponseWriter, resource string, id ...string) {
+	if pn, ok := platformNotFound[resource]; ok && len(id) > 0 {
+		writeError(w, http.StatusNotFound, pn.errorType, fmt.Sprintf(pn.format, id[0]))
+		return
+	}
 	writeError(w, http.StatusNotFound, resource+"/notFound", "Not found")
 }
 
