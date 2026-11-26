@@ -416,7 +416,7 @@ func (fs *FakeServer) registerRoutes(mux *http.ServeMux) {
 			// HTML page, not the JSON error of a known resource.
 			w.Header().Set("Content-Type", "text/html")
 			w.WriteHeader(http.StatusNotFound)
-			_, _ = w.Write([]byte("<html>\n<head><title>404 Not Found</title></head>\n<body>\n<center><h1>404 Not Found</h1></center>\n</body>\n</html>\n"))
+			_, _ = w.Write([]byte("<html>\n<head><title>404 Not Found</title></head>\n<body>\n<h1>404 Not Found</h1>\n</body>\n</html>\n"))
 		}
 	})
 }
