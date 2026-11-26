@@ -14,6 +14,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"sort"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
@@ -246,13 +247,25 @@ func (s *Service) create(ctx context.Context, opt CreateOptions) op.Result[jsonm
 		return op.Failed[jsonmodels.SmartRestTemplateCollection](created.Err, created.IsRetryable())
 	}
 
-	identityResult := s.identity.Create(ctxhelpers.InternalStep(ctx), created.Data.ID(), identity.IdentityOptions{
+	// A 409 means the name is bound to another collection: always keep it as an
+	// error here (not ignored as a duplicate), so the new managed object is
+	// removed instead of being returned as if it was registered.
+	identityResult := s.identity.Create(ctxhelpers.WithConflictAsError(ctx), created.Data.ID(), identity.IdentityOptions{
 		Type:       ExternalIDType,
 		ExternalID: opt.Name,
 	})
 	if identityResult.Err != nil {
 		// Best-effort rollback so a retry does not create a duplicate
 		s.managedObjects.Delete(ctxhelpers.InternalStep(ctx), created.Data.ID(), managedobjects.DeleteOptions{})
+		if identityResult.HTTPStatus == http.StatusConflict && !ctxhelpers.ConflictAsError(ctx) {
+			// Another client registered the name first: return its collection
+			existing := s.Get(ctxhelpers.InternalStep(ctx), opt.Name)
+			if existing.Err == nil {
+				result := op.Duplicate(existing.Data)
+				result.Meta["name"] = opt.Name
+				return result
+			}
+		}
 		return op.Failed[jsonmodels.SmartRestTemplateCollection](
 			fmt.Errorf("failed to register external identity %s/%s: %w", ExternalIDType, opt.Name, identityResult.Err),
 			identityResult.IsRetryable())

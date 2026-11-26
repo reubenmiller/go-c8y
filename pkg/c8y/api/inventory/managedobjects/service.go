@@ -618,7 +618,10 @@ func (s *Service) executeGetOrCreateByExternalID(
 		}
 
 		moID := st.managedObject.ID()
-		identResult := st.service.identityService.Create(ctxhelpers.InternalStep(ctx), moID, identity.IdentityOptions{
+		// The external id is bound to another managed object when this is a 409:
+		// keep the error whatever options the caller set, so the conflict
+		// branch below removes the new managed object and returns the existing one.
+		identResult := st.service.identityService.Create(ctxhelpers.WithConflictAsError(ctx), moID, identity.IdentityOptions{
 			ExternalID: st.externalID,
 			Type:       st.externalIDType,
 		})
