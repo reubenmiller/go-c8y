@@ -700,6 +700,8 @@ if result.Status == op.StatusSkipped {
 }
 ```
 
+To get the 404 back as an error, for example in a CLI that reports every missing id, make the call with `api.WithNotFoundAsError(ctx)`. The result then keeps its original error: `api.IsNotFound(result.Err)` is true and `Status` is not `op.StatusSkipped`.
+
 ### Error Information
 
 Results provide comprehensive error context:

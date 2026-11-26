@@ -65,6 +65,10 @@ type Result[T any] struct {
 	// items in Data. Empty when Data already holds the whole body.
 	Response []byte
 
+	// keepNotFound makes IgnoreNotFound keep the 404 error. Set from the request
+	// context (see WithKeepNotFound).
+	keepNotFound bool
+
 	// Deferred execution support
 	executor func(context.Context) Result[T] // Function to execute the actual operation
 }
@@ -209,8 +213,11 @@ func (r Result[T]) Execute(ctx context.Context) Result[T] {
 //	if deleteResult.Err != nil {
 //	    // Only real errors, not 404s
 //	}
+//
+// A request made with a context from api.WithNotFoundAsError keeps its 404
+// error: IgnoreNotFound then returns the result unchanged.
 func (r Result[T]) IgnoreNotFound() Result[T] {
-	if r.HTTPStatus == 404 {
+	if r.HTTPStatus == 404 && !r.keepNotFound {
 		r.Err = nil
 		r.Status = StatusSkipped
 		r.Idempotent = true
