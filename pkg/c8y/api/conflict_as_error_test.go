@@ -14,29 +14,29 @@ func Test_WithConflictAsError(t *testing.T) {
 	client := newErrServer(t, 409, "application/json", `{"error":"identity/Duplicate","message":"exists"}`)
 	ctx := context.Background()
 
-	calls := map[string]func(ctx context.Context) (error, op.Status, int){
-		"child devices assign": func(ctx context.Context) (error, op.Status, int) {
+	calls := map[string]func(ctx context.Context) (op.Status, int, error){
+		"child devices assign": func(ctx context.Context) (op.Status, int, error) {
 			r := client.ManagedObjects.ChildDevices.Assign(ctx, "1", "2")
-			return r.Err, r.Status, r.HTTPStatus
+			return r.Status, r.HTTPStatus, r.Err
 		},
-		"child assets assign": func(ctx context.Context) (error, op.Status, int) {
+		"child assets assign": func(ctx context.Context) (op.Status, int, error) {
 			r := client.ManagedObjects.ChildAssets.Assign(ctx, "1", "2")
-			return r.Err, r.Status, r.HTTPStatus
+			return r.Status, r.HTTPStatus, r.Err
 		},
-		"applications subscribe": func(ctx context.Context) (error, op.Status, int) {
+		"applications subscribe": func(ctx context.Context) (op.Status, int, error) {
 			r := client.Applications.Subscribe(ctx, "t1", "2")
-			return r.Err, r.Status, r.HTTPStatus
+			return r.Status, r.HTTPStatus, r.Err
 		},
 	}
 	for name, call := range calls {
 		t.Run(name+" default is idempotent", func(t *testing.T) {
-			err, status, code := call(ctx)
+			status, code, err := call(ctx)
 			assert.NoError(t, err)
 			assert.Equal(t, op.StatusDuplicate, status)
 			assert.Equal(t, 409, code)
 		})
 		t.Run(name+" with option returns the 409", func(t *testing.T) {
-			err, status, code := call(api.WithConflictAsError(ctx))
+			status, code, err := call(api.WithConflictAsError(ctx))
 			if assert.Error(t, err) {
 				got, ok := api.StatusCode(err)
 				assert.True(t, ok)
