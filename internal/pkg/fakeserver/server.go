@@ -71,6 +71,10 @@ type FakeServer struct {
 	// an entry accept any password.
 	passwordsMu sync.RWMutex
 	passwords   map[string]string
+	// deviceCredentials holds the credentials each bulk registered device
+	// was given, by external ID store key (guarded by passwordsMu). The
+	// platform rejects registering a device again with a password it used.
+	deviceCredentials map[string][]string
 
 	// Identity stores: externalType+externalValue → managedObjectID
 	ExternalIDs *Store
@@ -230,9 +234,10 @@ func newUnstarted() *FakeServer {
 		LoginOptionAccessMappings:          make(map[string]*Store),
 		LoginOptionInventoryAccessMappings: make(map[string]*Store),
 
-		passwords:     map[string]string{"admin": "admin-pass"},
-		Realtime:      newRealtimeState(),
-		Notification2: newNotification2State(),
+		passwords:         map[string]string{"admin": "admin-pass"},
+		deviceCredentials: map[string][]string{},
+		Realtime:          newRealtimeState(),
+		Notification2:     newNotification2State(),
 	}
 	return fs
 }

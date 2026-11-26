@@ -65,9 +65,15 @@ func TestBulkRegistration_ExistingDeviceUpdatesCredentials(t *testing.T) {
 	if status != http.StatusCreated {
 		t.Fatalf("first: status=%d body=%s", status, out)
 	}
+	// The same password again is rejected for the row.
+	status, _, out = upload(t, fs, http.MethodPost, "/devicecontrol/bulkNewDeviceRequests", "file", "r.csv", "text/csv", []byte(csv), nil)
+	if status != http.StatusCreated || !strings.Contains(out, `"numberOfFailed":1`) || !strings.Contains(out, "Error during password validation.") {
+		t.Fatalf("same password: status=%d body=%s", status, out)
+	}
+	csv = strings.Replace(csv, "secret", "secret2", 1)
 	status, _, out = upload(t, fs, http.MethodPost, "/devicecontrol/bulkNewDeviceRequests", "file", "r.csv", "text/csv", []byte(csv), nil)
 	if status != http.StatusOK {
-		t.Fatalf("second: status=%d body=%s", status, out)
+		t.Fatalf("new password: status=%d body=%s", status, out)
 	}
 	var resp struct {
 		Successful int              `json:"numberOfSuccessful"`
