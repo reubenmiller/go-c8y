@@ -99,7 +99,7 @@ func (s *Service) Enroll(ctx context.Context, opt EnrollOptions) op.Result[enrol
 	}
 
 	if opt.RemoveRequest {
-		if result := s.Registration.Delete(ctx, opt.ExternalID); result.Err == nil {
+		if result := s.Registration.Delete(ctxhelpers.InternalStep(ctx), opt.ExternalID); result.Err == nil {
 			slog.Debug("Removed the device request", "externalID", opt.ExternalID)
 		}
 	}

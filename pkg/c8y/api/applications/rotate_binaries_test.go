@@ -21,8 +21,10 @@ type binaryServer struct {
 	binaries []struct{ id, created string }
 	// ids whose delete returns 500
 	failDelete map[string]bool
-	deleted    []string
-	appGets    int
+	// ids whose delete returns 404
+	missing map[string]bool
+	deleted []string
+	appGets int
 }
 
 func (b *binaryServer) handler(w http.ResponseWriter, r *http.Request) {
@@ -44,6 +46,10 @@ func (b *binaryServer) handler(w http.ResponseWriter, r *http.Request) {
 		if b.failDelete[id] {
 			w.WriteHeader(http.StatusInternalServerError)
 			_, _ = w.Write([]byte(`{"error":"general/internalError","message":"boom"}`))
+			return
+		}
+		if b.missing[id] {
+			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 		b.deleted = append(b.deleted, id)

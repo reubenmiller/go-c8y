@@ -28,6 +28,9 @@ type testServer struct {
 	updatedBody  map[string]any // body of PUT /inventory/managedObjects/123
 	identityBody map[string]any // body of POST /identity/globalIds/.../externalIds
 	deletedMO    bool
+
+	// identityConflict makes the external identity request return 409
+	identityConflict bool
 }
 
 func newTestServer(existing map[string]any) *testServer {
@@ -77,6 +80,11 @@ func newTestServer(existing map[string]any) *testServer {
 
 		case r.Method == http.MethodPost && strings.HasPrefix(path, "/identity/globalIds/"):
 			ts.identityBody = readBody()
+			if ts.identityConflict {
+				w.WriteHeader(http.StatusConflict)
+				_, _ = w.Write([]byte(`{"error":"general/conflict","message":"exists"}`))
+				return
+			}
 			w.WriteHeader(http.StatusCreated)
 			_ = json.NewEncoder(w).Encode(ts.identityBody)
 

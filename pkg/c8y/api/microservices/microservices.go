@@ -163,7 +163,7 @@ func (s *Service) deploy(ctx context.Context, opt CreateOptions) op.Result[jsonm
 
 	if !opt.SkipSubscription {
 		slog.Info("subscribing to microservice", "id", id)
-		if sub := s.Subscribe(ctx, opt.TenantID, app.Data.Self()); sub.Err != nil {
+		if sub := s.Subscribe(ctxhelpers.InternalStep(ctx), opt.TenantID, app.Data.Self()); sub.Err != nil {
 			return op.Failed[jsonmodels.Microservice](fmt.Errorf("failed to subscribe to the microservice. %w", sub.Err), false)
 		}
 	}

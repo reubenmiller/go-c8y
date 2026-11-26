@@ -22,6 +22,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
+	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
@@ -245,13 +246,13 @@ func (s *Service) create(ctx context.Context, opt CreateOptions) op.Result[jsonm
 		return op.Failed[jsonmodels.SmartRestTemplateCollection](created.Err, created.IsRetryable())
 	}
 
-	identityResult := s.identity.Create(ctx, created.Data.ID(), identity.IdentityOptions{
+	identityResult := s.identity.Create(ctxhelpers.InternalStep(ctx), created.Data.ID(), identity.IdentityOptions{
 		Type:       ExternalIDType,
 		ExternalID: opt.Name,
 	})
 	if identityResult.Err != nil {
 		// Best-effort rollback so a retry does not create a duplicate
-		s.managedObjects.Delete(ctx, created.Data.ID(), managedobjects.DeleteOptions{})
+		s.managedObjects.Delete(ctxhelpers.InternalStep(ctx), created.Data.ID(), managedobjects.DeleteOptions{})
 		return op.Failed[jsonmodels.SmartRestTemplateCollection](
 			fmt.Errorf("failed to register external identity %s/%s: %w", ExternalIDType, opt.Name, identityResult.Err),
 			identityResult.IsRetryable())
