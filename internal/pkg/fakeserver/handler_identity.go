@@ -110,5 +110,5 @@ func (fs *FakeServer) handleIdentity(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeNotFound(w, "identity")
+	writeUnrouted(w, "identity")
 }

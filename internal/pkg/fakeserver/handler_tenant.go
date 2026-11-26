@@ -49,7 +49,7 @@ func (fs *FakeServer) handleTenants(w http.ResponseWriter, r *http.Request) {
 		fs.handleTenantsCRUD(w, r)
 
 	default:
-		writeNotFound(w, "tenant")
+		writeUnrouted(w, "tenant")
 	}
 }
 

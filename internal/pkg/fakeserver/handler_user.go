@@ -33,7 +33,7 @@ func (fs *FakeServer) handleUsers(w http.ResponseWriter, r *http.Request) {
 	// /user/{tenantId}/users, /user/{tenantId}/groups, etc.
 	segments := extractPathSegments(path, "/user")
 	if len(segments) < 2 {
-		writeNotFound(w, "user")
+		writeUnrouted(w, "user")
 		return
 	}
 
@@ -50,7 +50,7 @@ func (fs *FakeServer) handleUsers(w http.ResponseWriter, r *http.Request) {
 	case "userByName":
 		fs.handleUserByName(w, r, segments)
 	default:
-		writeNotFound(w, "user")
+		writeUnrouted(w, "user")
 	}
 }
 
