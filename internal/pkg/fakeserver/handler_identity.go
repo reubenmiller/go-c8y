@@ -16,6 +16,11 @@ import (
 func (fs *FakeServer) handleIdentity(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 
+	if path == "/identity/search" {
+		fs.handleIdentitySearch(w, r)
+		return
+	}
+
 	// /identity/externalIds/{type}/{value}
 	if strings.HasPrefix(path, "/identity/externalIds/") {
 		rest := strings.TrimPrefix(path, "/identity/externalIds/")
@@ -89,20 +94,7 @@ func (fs *FakeServer) handleIdentity(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			storeKey := extType + ":" + extID
-
-			doc := marshalJSON(map[string]any{
-				"type":       extType,
-				"externalId": extID,
-				"managedObject": map[string]any{
-					"id":   moID,
-					"self": fs.URL() + "/inventory/managedObjects/" + moID,
-				},
-				"self": fs.URL() + "/identity/externalIds/" + extType + "/" + extID,
-			})
-
-			fs.ExternalIDs.CreateWithID(storeKey, doc)
-			writeJSON(w, http.StatusCreated, doc)
+			writeJSON(w, http.StatusCreated, fs.storeExternalID(moID, extType, extID))
 
 		default:
 			writeError(w, http.StatusMethodNotAllowed, "general/methodNotAllowed", "Method not allowed")
@@ -110,5 +102,5 @@ func (fs *FakeServer) handleIdentity(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeNotFound(w, "identity")
+	writeUnrouted(w, "identity")
 }

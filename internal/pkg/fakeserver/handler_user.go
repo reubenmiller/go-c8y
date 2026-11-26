@@ -30,10 +30,28 @@ func (fs *FakeServer) handleUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// /user/devicePermissions/{managedObjectId}
+	if strings.HasPrefix(path, "/user/devicePermissions/") {
+		fs.handleDevicePermissionOwners(w, r, extractID(path, "/user/devicePermissions"))
+		return
+	}
+
+	// /user/passwordReset
+	if path == "/user/passwordReset" {
+		fs.handlePasswordReset(w, r)
+		return
+	}
+
 	// /user/{tenantId}/users, /user/{tenantId}/groups, etc.
 	segments := extractPathSegments(path, "/user")
+
+	// /user/logout, /user/logout/{tenantId}/allUsers
+	if len(segments) > 0 && segments[0] == "logout" {
+		fs.handleLogout(w, r, segments)
+		return
+	}
 	if len(segments) < 2 {
-		writeNotFound(w, "user")
+		writeUnrouted(w, "user")
 		return
 	}
 
@@ -50,7 +68,7 @@ func (fs *FakeServer) handleUsers(w http.ResponseWriter, r *http.Request) {
 	case "userByName":
 		fs.handleUserByName(w, r, segments)
 	default:
-		writeNotFound(w, "user")
+		writeUnrouted(w, "user")
 	}
 }
 
@@ -172,7 +190,7 @@ func (fs *FakeServer) handleTenantUsers(w http.ResponseWriter, r *http.Request, 
 
 		// /user/{tenant}/users/{id}/roles/inventory
 		if len(segments) >= 5 && segments[3] == "roles" && segments[4] == "inventory" {
-			fs.handleUserInventoryRoleAssignments(w, r, userID)
+			fs.handleUserInventoryRoleAssignments(w, r, userID, segments[5:])
 			return
 		}
 
@@ -570,30 +588,6 @@ func (fs *FakeServer) handleInventoryRoles(w http.ResponseWriter, r *http.Reques
 		}
 		_, doc := fs.InventoryRoles.Create(body, fs.URL()+"/user/inventoryroles")
 		writeJSON(w, http.StatusCreated, doc)
-
-	default:
-		writeError(w, http.StatusMethodNotAllowed, "general/methodNotAllowed", "Method not allowed")
-	}
-}
-
-func (fs *FakeServer) handleUserInventoryRoleAssignments(w http.ResponseWriter, r *http.Request, _ string) {
-	switch r.Method {
-	case http.MethodGet:
-		resp := marshalJSON(map[string]any{
-			"inventoryAssignments": []json.RawMessage{},
-			"self":                 fs.URL() + r.URL.Path,
-			"statistics": map[string]int{
-				"currentPage":   1,
-				"pageSize":      5,
-				"totalPages":    1,
-				"totalElements": 0,
-			},
-		})
-		writeJSON(w, http.StatusOK, resp)
-
-	case http.MethodPost:
-		body, _ := readBody(r)
-		writeJSON(w, http.StatusCreated, body)
 
 	default:
 		writeError(w, http.StatusMethodNotAllowed, "general/methodNotAllowed", "Method not allowed")

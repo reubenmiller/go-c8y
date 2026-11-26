@@ -26,6 +26,18 @@ func writeNotFound(w http.ResponseWriter, resource string) {
 	writeError(w, http.StatusNotFound, resource+"/notFound", "Not found")
 }
 
+// unroutedHeader marks the 404 of a request which no handler routes (as opposed
+// to the 404 of a resource that does not exist). The coverage matrix test
+// (coverage_test.go) uses it to find the endpoints the fake server lacks.
+const unroutedHeader = "X-Fakeserver-Unrouted"
+
+// writeUnrouted answers a request to an endpoint the handler does not
+// implement: the same not found error as writeNotFound, plus unroutedHeader.
+func writeUnrouted(w http.ResponseWriter, resource string) {
+	w.Header().Set(unroutedHeader, "true")
+	writeNotFound(w, resource)
+}
+
 // writeError writes a Cumulocity-style error response.
 func writeError(w http.ResponseWriter, status int, errorType, message string) {
 	body, _ := json.Marshal(map[string]string{

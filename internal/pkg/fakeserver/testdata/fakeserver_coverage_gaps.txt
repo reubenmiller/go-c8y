@@ -1,0 +1,60 @@
+# Known gaps of the fake server: SDK endpoints without a handler.
+# The list may only shrink. Implement the endpoint and remove its line.
+# Regenerate with: UPDATE=1 go test ./internal/pkg/fakeserver -run TestFakeServerCoverage
+# Format: METHOD /path # reason
+DELETE /service/dataprep/v1/rules/{ruleName} # dataprep rule and test engine semantics are large
+DELETE /service/dtm/assets/{assetId} # digital twin manager (models, assets, definitions) is a large microservice API
+DELETE /service/dtm/assets/{assetId}/devices/{deviceId} # digital twin manager (models, assets, definitions) is a large microservice API
+DELETE /service/dtm/assets/{assetId}/linkedSeries # digital twin manager (models, assets, definitions) is a large microservice API
+DELETE /service/dtm/assets/{assetId}/linkedSeries/{fragment}/{series}/source # digital twin manager (models, assets, definitions) is a large microservice API
+DELETE /service/dtm/assets/{assetId}/subAssets/{subAssetId} # digital twin manager (models, assets, definitions) is a large microservice API
+DELETE /service/dtm/definitions/{kind}/{identifier} # digital twin manager (models, assets, definitions) is a large microservice API
+GET /service/datahub/dremio/api/v3/job/{id} # data hub (dremio jobs, offloading) is a separate microservice with its own data model
+GET /service/datahub/dremio/api/v3/job/{id}/results # data hub (dremio jobs, offloading) is a separate microservice with its own data model
+GET /service/datahub/dremio/users # data hub (dremio jobs, offloading) is a separate microservice with its own data model
+GET /service/datahub/offloadingconfigurations # data hub (dremio jobs, offloading) is a separate microservice with its own data model
+GET /service/datahub/scheduler/latestjobs # data hub (dremio jobs, offloading) is a separate microservice with its own data model
+GET /service/datahub/tenant # data hub (dremio jobs, offloading) is a separate microservice with its own data model
+GET /service/dataprep/v1/diagnostics # dataprep rule and test engine semantics are large
+GET /service/dataprep/v1/rules # dataprep rule and test engine semantics are large
+GET /service/dataprep/v1/rules/{ruleName}/deployed # dataprep rule and test engine semantics are large
+GET /service/dataprep/v1/rules/{ruleName}/draft # dataprep rule and test engine semantics are large
+GET /service/dtm/assets # digital twin manager (models, assets, definitions) is a large microservice API
+GET /service/dtm/assets/count # digital twin manager (models, assets, definitions) is a large microservice API
+GET /service/dtm/assets/externalIds/{externalId} # digital twin manager (models, assets, definitions) is a large microservice API
+GET /service/dtm/assets/externalIds/{externalId}/subAssets # digital twin manager (models, assets, definitions) is a large microservice API
+GET /service/dtm/assets/linkedSeries # digital twin manager (models, assets, definitions) is a large microservice API
+GET /service/dtm/assets/linkedSeries/opposites/{deviceId} # digital twin manager (models, assets, definitions) is a large microservice API
+GET /service/dtm/assets/subAssets # digital twin manager (models, assets, definitions) is a large microservice API
+GET /service/dtm/assets/{assetId} # digital twin manager (models, assets, definitions) is a large microservice API
+GET /service/dtm/assets/{assetId}/devices # digital twin manager (models, assets, definitions) is a large microservice API
+GET /service/dtm/assets/{assetId}/linkedSeries # digital twin manager (models, assets, definitions) is a large microservice API
+GET /service/dtm/assets/{assetId}/linkedSeries/count # digital twin manager (models, assets, definitions) is a large microservice API
+GET /service/dtm/assets/{assetId}/linkedSeries/{fragment}/{series}/source # digital twin manager (models, assets, definitions) is a large microservice API
+GET /service/dtm/assets/{assetId}/subAssets # digital twin manager (models, assets, definitions) is a large microservice API
+GET /service/dtm/definitions/{kind} # digital twin manager (models, assets, definitions) is a large microservice API
+GET /service/dtm/definitions/{kind}/count # digital twin manager (models, assets, definitions) is a large microservice API
+GET /service/dtm/definitions/{kind}/tags # digital twin manager (models, assets, definitions) is a large microservice API
+GET /service/dtm/definitions/{kind}/{identifier} # digital twin manager (models, assets, definitions) is a large microservice API
+POST /devicecontrol/deviceAccessToken # needs the mTLS port and the client certificate chain, which httptest does not offer
+POST /service/datahub/dremio/api/v3/job/{id}/cancel # data hub (dremio jobs, offloading) is a separate microservice with its own data model
+POST /service/datahub/dremio/api/v3/sql # data hub (dremio jobs, offloading) is a separate microservice with its own data model
+POST /service/datahub/sql # data hub (dremio jobs, offloading) is a separate microservice with its own data model
+POST /service/dataprep/v1/run-tests # dataprep rule and test engine semantics are large
+POST /service/dtm/assets # digital twin manager (models, assets, definitions) is a large microservice API
+POST /service/dtm/assets/{assetId}/devices/{deviceId} # digital twin manager (models, assets, definitions) is a large microservice API
+POST /service/dtm/assets/{assetId}/linkedSeries # digital twin manager (models, assets, definitions) is a large microservice API
+POST /service/dtm/assets/{assetId}/linkedSeries/{fragment}/{series}/source # digital twin manager (models, assets, definitions) is a large microservice API
+POST /service/dtm/assets/{assetId}/subAssets # digital twin manager (models, assets, definitions) is a large microservice API
+POST /service/dtm/assets/{assetId}/subAssets/{subAssetId} # digital twin manager (models, assets, definitions) is a large microservice API
+POST /service/dtm/definitions/properties/compose # digital twin manager (models, assets, definitions) is a large microservice API
+POST /service/dtm/definitions/{kind} # digital twin manager (models, assets, definitions) is a large microservice API
+POST /tenant/statistics/files # multipart upload of the usage statistics reports; low value
+POST /tenant/tenants/{tenantId}/trusted-certificates/bulk # bulk certificate upload needs the X.509 validation of the real platform
+POST /tenant/trusted-certificates/verify-cert-chain # needs the X.509 chain validation of the real platform
+PUT /service/dataprep/v1/rules/{ruleName}/deployed # dataprep rule and test engine semantics are large
+PUT /service/dtm/assets/{assetId} # digital twin manager (models, assets, definitions) is a large microservice API
+PUT /service/dtm/assets/{assetId}/linkedSeries/{fragment}/{series}/label # digital twin manager (models, assets, definitions) is a large microservice API
+PUT /service/dtm/definitions/{kind} # digital twin manager (models, assets, definitions) is a large microservice API
+PUT /service/dtm/definitions/{kind}/{identifier} # digital twin manager (models, assets, definitions) is a large microservice API
+PUT /tenant/tenants/{tenantId}/applications/restricted-roles # restricted application roles are not modelled
