@@ -3,6 +3,7 @@ package fakeserver
 import (
 	"encoding/json"
 	"net/http"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -119,18 +120,13 @@ func (fs *FakeServer) handleServiceProxy(w http.ResponseWriter, r *http.Request)
 			writeError(w, http.StatusBadRequest, "general/badRequest", "Invalid body")
 			return
 		}
-		switch {
-		case payload.ConfiguredLevel == nil:
+		if payload.ConfiguredLevel == nil {
 			if logger != "ROOT" {
 				delete(configured, logger)
 			}
-		default:
+		} else {
 			level := strings.ToUpper(*payload.ConfiguredLevel)
-			valid := false
-			for _, l := range loggerLevels {
-				valid = valid || l == level
-			}
-			if !valid {
+			if !slices.Contains(loggerLevels, level) {
 				writeError(w, http.StatusBadRequest, "general/badRequest", "Invalid log level "+*payload.ConfiguredLevel)
 				return
 			}

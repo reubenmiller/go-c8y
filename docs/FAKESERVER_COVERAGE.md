@@ -443,4 +443,4 @@ for a new SDK endpoint that is neither handled nor listed.
 | PUT `/service/dtm/assets/{assetId}/linkedSeries/{fragment}/{series}/label` | digital twin manager (models, assets, definitions) is a large microservice API |
 | PUT `/service/dtm/definitions/{kind}` | digital twin manager (models, assets, definitions) is a large microservice API |
 | PUT `/service/dtm/definitions/{kind}/{identifier}` | digital twin manager (models, assets, definitions) is a large microservice API |
-| PUT `/tenant/tenants/{tenantId}/applications/restricted-roles` | restricted application roles are not modeled |
+| PUT `/tenant/tenants/{tenantId}/applications/restricted-roles` | restricted application roles are not modelled |

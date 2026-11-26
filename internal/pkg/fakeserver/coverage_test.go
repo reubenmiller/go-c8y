@@ -487,7 +487,7 @@ var gapReasons = []struct{ prefix, reason string }{
 	{"/tenant/statistics/files", "multipart upload of the usage statistics reports; low value"},
 	{"/tenant/tenants/{tenantId}/trusted-certificates/bulk", "bulk certificate upload needs the X.509 validation of the real platform"},
 	{"/tenant/trusted-certificates/verify-cert-chain", "needs the X.509 chain validation of the real platform"},
-	{"/tenant/tenants/{tenantId}/applications/restricted-roles", "restricted application roles are not modeled"},
+	{"/tenant/tenants/{tenantId}/applications/restricted-roles", "restricted application roles are not modelled"},
 }
 
 func gapReason(path string) string {
