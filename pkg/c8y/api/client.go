@@ -292,6 +292,10 @@ type ClientOptions struct {
 	// later with Client.Use.
 	Middleware []Middleware
 
+	// Retry configures how failed requests are retried (network errors, HTTP 5xx
+	// and 429). nil keeps the default: 3 retries, waiting between 2s and 30s.
+	Retry *RetryOptions
+
 	// Timeout sets a global HTTP-level timeout for all requests made by this client.
 	// A value of zero means no timeout. Per-request timeouts can still be applied
 	// by passing a context with a deadline: ctx, cancel := context.WithTimeout(ctx, d)
@@ -313,6 +317,20 @@ type ClientOptions struct {
 	// (POST /tenant/oauth/certificate) instead of the password. Return an
 	// empty tls.Certificate to use the password for that tenant.
 	ContextCertificateSource func(tenant string) (tls.Certificate, error)
+}
+
+// RetryOptions configures the retries of failed requests, see ClientOptions.Retry.
+type RetryOptions struct {
+	// Count is the maximum number of retries after the first attempt. 0 sends
+	// every request once.
+	Count int
+
+	// WaitMin is the time to wait before the first retry. 0 keeps the default (2s).
+	WaitMin time.Duration
+
+	// WaitMax is the maximum time to wait between two retries. 0 keeps the
+	// default (30s).
+	WaitMax time.Duration
 }
 
 // Realtime returns the realtime (Bayeux) client of this API client.
@@ -404,6 +422,16 @@ func newRestyClient(opts ClientOptions, targetBaseURL *url.URL) *resty.Client {
 		SetResultError(core.APIError{}).
 		SetCircuitBreaker(circuitBreaker).
 		SetLogger(restyLogger{opts.Logger})
+
+	if r := opts.Retry; r != nil {
+		rclient.SetRetryCount(max(r.Count, 0))
+		if r.WaitMin > 0 {
+			rclient.SetRetryWaitTime(r.WaitMin)
+		}
+		if r.WaitMax > 0 {
+			rclient.SetRetryMaxWaitTime(r.WaitMax)
+		}
+	}
 
 	if opts.Timeout > 0 {
 		rclient.SetTimeout(opts.Timeout)

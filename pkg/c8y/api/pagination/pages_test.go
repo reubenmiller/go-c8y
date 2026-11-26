@@ -103,3 +103,50 @@ func TestPages_NewIteratorEmpty(t *testing.T) {
 	})
 	assert.Empty(t, collectPages(t, it))
 }
+
+// SinglePage sends the caller's request unchanged (CurrentPage kept, no
+// forced currentPage=1, no keyset cursor) and fetches exactly one page even
+// when the server reports a next page.
+func TestSinglePage_SendsRequestUnchanged(t *testing.T) {
+	var seen []PageRequest
+	it := PaginateWith(
+		context.Background(),
+		PageRequest{PaginationOptions: PaginationOptions{PageSize: 2, CurrentPage: 0, SinglePage: true}},
+		IDKeysetStrategy{},
+		func(req PageRequest) op.Result[fakeCollection] {
+			seen = append(seen, req)
+			return twoPageFetch()(PaginationOptions{CurrentPage: 1})
+		},
+		func(b []byte) string { return string(b) },
+	)
+	var items []string
+	for item, err := range it.Items() {
+		assert.NoError(t, err)
+		items = append(items, item)
+	}
+	assert.Len(t, items, 2)
+	if assert.Len(t, seen, 1) {
+		assert.Equal(t, 0, seen[0].CurrentPage, "the caller's currentPage is not forced to 1")
+		assert.Empty(t, seen[0].AfterID, "no keyset cursor is added")
+	}
+}
+
+// The caller's explicit page is kept.
+func TestSinglePage_KeepsCurrentPage(t *testing.T) {
+	var seen []PageRequest
+	it := PaginateWith(
+		context.Background(),
+		PageRequest{PaginationOptions: PaginationOptions{PageSize: 2, CurrentPage: 3, SinglePage: true}},
+		OffsetStrategy{},
+		func(req PageRequest) op.Result[fakeCollection] {
+			seen = append(seen, req)
+			return twoPageFetch()(PaginationOptions{CurrentPage: 1})
+		},
+		func(b []byte) string { return string(b) },
+	)
+	for range it.Items() {
+	}
+	if assert.Len(t, seen, 1) {
+		assert.Equal(t, 3, seen[0].CurrentPage)
+	}
+}
