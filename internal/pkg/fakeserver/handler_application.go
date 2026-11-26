@@ -169,6 +169,7 @@ func (fs *FakeServer) handleApplications(w http.ResponseWriter, r *http.Request)
 				"self":   fs.URL() + "/tenant/tenants/t12345",
 			})
 			body = setDefaultField(body, "availability", "PRIVATE")
+			body = withMicroserviceRoles(body)
 			_, doc := fs.Applications.Create(body, fs.URL()+"/application/applications")
 			writeJSON(w, http.StatusCreated, doc)
 
@@ -713,6 +714,32 @@ func setDefaultFieldAny(doc json.RawMessage, key string, value any) json.RawMess
 		return out
 	}
 	return doc
+}
+
+// withMicroserviceRoles adds the roles and requiredRoles of a microservice
+// application, as the platform does: they are taken from the manifest when it
+// declares them and are empty lists otherwise. Other application types and
+// values which are already set are left alone.
+func withMicroserviceRoles(doc json.RawMessage) json.RawMessage {
+	if getJSONString(doc, "type") != "MICROSERVICE" {
+		return doc
+	}
+	var manifest struct {
+		Manifest struct {
+			Roles         []string `json:"roles"`
+			RequiredRoles []string `json:"requiredRoles"`
+		} `json:"manifest"`
+	}
+	_ = json.Unmarshal(doc, &manifest)
+	roles, required := manifest.Manifest.Roles, manifest.Manifest.RequiredRoles
+	if roles == nil {
+		roles = []string{}
+	}
+	if required == nil {
+		required = []string{}
+	}
+	doc = setDefaultFieldAny(doc, "roles", roles)
+	return setDefaultFieldAny(doc, "requiredRoles", required)
 }
 
 // handleBootstrapUser handles GET /application/applications/{id}/bootstrapUser:

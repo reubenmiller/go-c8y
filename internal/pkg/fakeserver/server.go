@@ -412,7 +412,11 @@ func (fs *FakeServer) registerRoutes(mux *http.ServeMux) {
 			fs.handleEST(w, r)
 
 		default:
-			writeError(w, http.StatusNotFound, "general/notFound", "Endpoint not found: "+path)
+			// Like the platform's gateway, an unknown endpoint answers with an
+			// HTML page, not the JSON error of a known resource.
+			w.Header().Set("Content-Type", "text/html")
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte("<html>\n<head><title>404 Not Found</title></head>\n<body>\n<h1>404 Not Found</h1>\n</body>\n</html>\n"))
 		}
 	})
 }
@@ -624,7 +628,7 @@ func (fs *FakeServer) seedDefaults() {
 		"opcua-mgmt-service", "loriot-agent", "snmp",
 	}
 	for _, name := range msNames {
-		fs.Applications.Create(marshalJSON(map[string]any{
+		fs.Applications.Create(withMicroserviceRoles(marshalJSON(map[string]any{
 			"name":        name,
 			"key":         name + "-key",
 			"type":        "MICROSERVICE",
@@ -634,7 +638,7 @@ func (fs *FakeServer) seedDefaults() {
 				"self":   fs.URL() + "/tenant/tenants/t12345",
 			},
 			"availability": "MARKET",
-		}), fs.URL()+"/application/applications")
+		})), fs.URL()+"/application/applications")
 	}
 
 	// The shared plugin that every tenant can install into its web applications
@@ -674,7 +678,7 @@ func (fs *FakeServer) seedSharedPlugin(name, contextPath, version string, module
 // managed object (type c8y_Application_<id>) in which the platform tracks the
 // status of its running instances (c8y_Status.instances).
 func (fs *FakeServer) seedMicroserviceWithInstance(name string, instances ...string) {
-	id, _ := fs.Applications.Create(marshalJSON(map[string]any{
+	id, _ := fs.Applications.Create(withMicroserviceRoles(marshalJSON(map[string]any{
 		"name":        name,
 		"key":         name + "-key",
 		"type":        "MICROSERVICE",
@@ -684,7 +688,7 @@ func (fs *FakeServer) seedMicroserviceWithInstance(name string, instances ...str
 			"self":   fs.URL() + "/tenant/tenants/t12345",
 		},
 		"availability": "MARKET",
-	}), fs.URL()+"/application/applications")
+	})), fs.URL()+"/application/applications")
 
 	status := map[string]any{}
 	for _, instance := range instances {

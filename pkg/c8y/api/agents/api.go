@@ -62,13 +62,14 @@ func ByID(id string) AgentRef { return AgentRef(id) }
 // ByName creates a reference resolved by agent name (wildcards allowed).
 func ByName(name string) AgentRef { return AgentRef("name:" + name) }
 
-// ListOptions filters agents. The Query field is the fully-built q expression
-// (e.g. from model.InventoryQuery); restrict it to agents with ScopeToAgents
-// when the caller has not already done so.
+// ListOptions filters agents. The Query field is the fully-built inventory
+// query (e.g. from model.InventoryQuery). It is sent as the `q` parameter, like
+// go-c8y-cli does, not as `query`. Restrict it to agents with ScopeToAgents when
+// the caller has not already done so.
 type ListOptions struct {
 	Type         string `url:"type,omitempty"`
 	FragmentType string `url:"fragmentType,omitempty"`
-	Query        string `url:"query"`
+	Query        string `url:"q,omitempty"`
 
 	managedobjects.GetOptions
 	pagination.PaginationOptions

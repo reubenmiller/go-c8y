@@ -113,6 +113,7 @@ func NewCachedTransport(baseTransport http.RoundTripper, ttl time.Duration, dir 
 			dir: dir,
 			ttl: ttl,
 			mu:  &sync.RWMutex{},
+			log: options.Logger,
 		},
 		isCacheable: isCacheable,
 		options:     options,
@@ -232,6 +233,11 @@ type CacheOptions struct {
 
 	// BodyKeys Only cache on specific json keys on the body
 	BodyKeys []string
+
+	// Logger receives the cache log lines (for example "Using cached
+	// response"). Pass the client's logger, client.Logger(), so the cache logs
+	// like the rest of the SDK. Defaults to slog.Default().
+	Logger *slog.Logger
 }
 
 func cacheKey(req *http.Request, opt CacheOptions) (string, error) {
@@ -284,6 +290,7 @@ type fileStorage struct {
 	dir string
 	ttl time.Duration
 	mu  *sync.RWMutex
+	log *slog.Logger // nil: slog.Default()
 }
 
 func (fs *fileStorage) filePath(key string) string {
@@ -315,7 +322,11 @@ func (fs *fileStorage) read(key string) (*http.Response, error) {
 		return nil, errors.New("cache expired")
 	}
 
-	slog.Info("Using cached response", "file", cacheFile, "age", age, "ttl", fs.ttl)
+	logger := fs.log
+	if logger == nil {
+		logger = slog.Default()
+	}
+	logger.Info("Using cached response", "file", cacheFile, "age", age, "ttl", fs.ttl)
 
 	body := &bytes.Buffer{}
 	_, err = io.Copy(body, f)

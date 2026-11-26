@@ -65,6 +65,10 @@ func Execute[T any](ctx context.Context, req *TryRequest, fromBytes func([]byte)
 		return op.WithRequest(result, httpReq)
 	}
 
+	if isPureDryRun(ctx) {
+		return dryRunResult(ctx, fromBytes(nil), resp, meta)
+	}
+
 	var result op.Result[T]
 	switch {
 	case resp.StatusCode() == http.StatusCreated:
@@ -167,6 +171,10 @@ func ExecuteBinary(ctx context.Context, req *TryRequest) op.Result[core.BinaryRe
 
 	httpReq := dryRunRequest(ctx, resp)
 
+	if isPureDryRun(ctx) {
+		return dryRunResult(ctx, *bin, resp, nil)
+	}
+
 	if resp.StatusCode() == http.StatusCreated {
 		return op.WithRequest(op.WithHTTPStatus(op.WithDuration(op.Created(*bin), resp.Duration()), resp.StatusCode()), httpReq)
 	}
@@ -213,6 +221,9 @@ func ExecuteNoContent(ctx context.Context, req *TryRequest, extraMeta ...map[str
 		return op.WithRequest(result, httpReq)
 	}
 	var empty core.NoContent
+	if isPureDryRun(ctx) {
+		return dryRunResult(ctx, empty, resp, meta)
+	}
 	if resp.StatusCode() == http.StatusNoContent {
 		return op.WithRequest(op.WithHTTPStatus(op.WithDuration(op.NoContent(empty, meta), resp.Duration()), resp.StatusCode()), httpReq)
 	}

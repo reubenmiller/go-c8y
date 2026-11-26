@@ -28,6 +28,8 @@ v2 is a new module, `github.com/reubenmiller/go-c8y/v2`. Entries marked **Breaki
 
   Everything that reads a result stays a method: `IsError`, `IsSuccess`, `IsNotFound`, `IsRetryable`, `IsDeferred`, `IgnoreNotFound`, `IgnoreConflict`, `IgnoreStatusCodes`, `Unwrap`, `Items`, `Seq`, `First`, `Collect`, `Execute`, `Documents` and the generic methods. A test in `pkg/c8y/internal/compilecost` fails when the count grows past its budget.
 * Added `r.Decode[U]()` on results, and `Map` and `As[U]()` on `pagination.Iterator`. `model.ErrFragmentNotFound` is now the same value as `jsondoc.ErrKeyNotFound`.
+* **Behavior change**: `r.IsSuccess()` is now true for a successful delete (`StatusNoContent`, HTTP 204); it was false. The rule is: no error and a status of `StatusOK`, `StatusCreated`, `StatusUpdated`, `StatusNoContent` or `StatusSkipped` (a no-op, an ignored 404, a dry run). `StatusDuplicate`, `StatusNoMatch`, `StatusPartial` and `StatusFailed` are not success, and a result with `Err` set never is.
+* **Behavior change**: under a pure dry run (`api.WithDryRun`, without mock responses) the result of a request is now `StatusSkipped` with `Meta["reason"]` "dry run: request not sent", no error and the request in `Request`, like the websocket dry run (`notification2.DryRunStream`). It was `StatusCreated` (POST) or `StatusOK` with an empty `Data`, and `HTTPStatus` was a synthetic 204; `HTTPStatus` is now 0. Code which only checks `Err == nil` or `IsSuccess()` keeps working; code which compares `Status` or `HTTPStatus` must handle `StatusSkipped`. Dry runs with mock responses are unchanged.
 
 ### HTTP client and middleware
 
@@ -184,6 +186,11 @@ The realtime, notification2 and remote access clients now connect like an HTTP c
 * The fake server (`c8y-fakeserver`) serves the remote access websocket of a stored configuration, with an echo server as the device, so local proxies can be tested end to end.
 * Added model accessors `Application.ContextPath`, `Application.OwnerTenantID`, `Tenant.Company`, `TrustedCertificate.Issuer` and `Notification2Subscription.SourceName`.
 * The fake server matches `*` wildcards anywhere in an inventory query value (`name eq '*device*'`), not only at the end, and `GET /features` returns a plain JSON array like the platform (it returned a paged collection, which `Features.List` could not read).
+
+* **Behavior change**: `agents.ListOptions.Query` is sent as the `q` parameter (the platform's device query, as go-c8y-cli uses), not as `query`, and an empty query sends no parameter. The platform adds `fragmentType=c8y_IsDevice` to a `q` query. Note: `devicegroups`, `deviceprofiles`, `smartgroups` and `configuration` list options still send `query`.
+* `tenants/usagestatisticsfiles` is now reachable as `Client.Tenants.UsageStatisticsFiles` (generated usage statistics files, `/tenant/statistics/files`). Its Go package name is now `usagestatisticsfiles` (it was `usagestatistics`, the same as the sibling package); the package was not importable through the client before.
+* `c8y.CacheOptions` has a `Logger` field. Pass `client.Logger()` and the response cache logs "Using cached response" through it; it used the global `slog` default (still the default when `Logger` is nil).
+* The fake server is closer to the platform: `GET /user/{tenant}/users` honours `username` (case-insensitive prefix) and `usernameContains`; `GET /tenant/statistics/allTenantsSummary` returns a JSON array; an inventory `q` query only matches devices (`c8y_IsDevice`) while `query` matches all objects; microservice applications have `roles` and `requiredRoles` (from the manifest, otherwise empty); an unknown endpoint answers 404 with an HTML body, known resources keep the JSON error body.
 
 ### Errors and robustness
 

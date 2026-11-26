@@ -66,6 +66,7 @@ result := client.Measurements.Create(ctx, measurements.CreateOptions{...})
 | `Applications.Versions` | `Client.ApplicationVersions` |
 | `Tenants.DeviceStatistics` | `Client.DeviceStatistics` |
 | `Tenants.LoginTokens` | `Client.LoginTokens` |
+| `Tenants.UsageStatisticsFiles` | (none, new) |
 | `Users.DevicePermissions` | `Client.DevicePermissions` |
 | `UserRoles.Inventory` | `Client.InventoryRoles` |
 | `Users.Current` | `Users.CurrentUser` |

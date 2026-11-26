@@ -139,7 +139,7 @@ func (fs *FakeServer) handleTenantUsers(w http.ResponseWriter, r *http.Request, 
 		// /user/{tenant}/users (collection)
 		switch r.Method {
 		case http.MethodGet:
-			items := FilterItems(r, fs.Users.List())
+			items := filterUsersByName(r, FilterItems(r, fs.Users.List()))
 			page := Paginate(r, items)
 			writeJSON(w, http.StatusOK, BuildCollectionResponse(r, fs.URL(), "users", page))
 
@@ -659,4 +659,28 @@ func (fs *FakeServer) createUserGroup(body json.RawMessage, tenant string) json.
 		doc, _ = fs.UserGroups.Update(id, marshalJSON(map[string]any{"id": n}))
 	}
 	return doc
+}
+
+// filterUsersByName applies the user collection's name filters: username is a
+// case-insensitive prefix (or full) match and usernameContains a
+// case-insensitive substring match, both on the userName.
+func filterUsersByName(r *http.Request, items []json.RawMessage) []json.RawMessage {
+	q := r.URL.Query()
+	prefix := strings.ToLower(q.Get("username"))
+	contains := strings.ToLower(q.Get("usernameContains"))
+	if prefix == "" && contains == "" {
+		return items
+	}
+	var result []json.RawMessage
+	for _, item := range items {
+		name := strings.ToLower(getJSONString(item, "userName"))
+		if prefix != "" && !strings.HasPrefix(name, prefix) {
+			continue
+		}
+		if contains != "" && !strings.Contains(name, contains) {
+			continue
+		}
+		result = append(result, item)
+	}
+	return result
 }

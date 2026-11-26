@@ -441,7 +441,30 @@ func (fs *FakeServer) handleTenantStatistics(w http.ResponseWriter, r *http.Requ
 
 	path := r.URL.Path
 
-	if strings.HasSuffix(path, "/summary") || strings.HasSuffix(path, "/allTenantsSummary") {
+	// /tenant/statistics/allTenantsSummary answers a plain JSON array with one
+	// summary per tenant (SummaryAllTenantsUsageStatisticsCollection), not a
+	// collection envelope.
+	if strings.HasSuffix(path, "/allTenantsSummary") {
+		summary := marshalJSON(map[string]any{
+			"alarmsCreatedCount":       0,
+			"alarmsUpdatedCount":       0,
+			"deviceCount":              1,
+			"deviceEndpointCount":      0,
+			"deviceRequestCount":       0,
+			"deviceWithChildrenCount":  0,
+			"eventsCreatedCount":       0,
+			"eventsUpdatedCount":       0,
+			"inventoriesCreatedCount":  5,
+			"inventoriesUpdatedCount":  0,
+			"measurementsCreatedCount": 0,
+			"operationsCreatedCount":   0,
+			"operationsUpdatedCount":   0,
+		})
+		writeJSON(w, http.StatusOK, marshalJSON([]json.RawMessage{summary}))
+		return
+	}
+
+	if strings.HasSuffix(path, "/summary") {
 		resp := marshalJSON(map[string]any{
 			"self":                    fs.URL() + path,
 			"day":                     "2024-01-01",

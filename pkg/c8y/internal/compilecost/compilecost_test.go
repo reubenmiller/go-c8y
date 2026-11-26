@@ -31,7 +31,10 @@ import (
 // Raised to 3,950 for the Data Preparation service (client.DataPreparation),
 // 3,920 with both services: its rule, deployment status and test result
 // models add about 63 functions.
-const budget = 3950
+//
+// Raised to 3,975 for Tenants.UsageStatisticsFiles, which wires an existing
+// generated service into the client (3,954).
+const budget = 3975
 
 func TestCompiledFunctionBudget(t *testing.T) {
 	if testing.Short() {
