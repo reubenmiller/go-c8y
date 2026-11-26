@@ -603,7 +603,7 @@ func (fs *FakeServer) handleAppBinaries(w http.ResponseWriter, r *http.Request, 
 			name = header.Filename
 		} else {
 			// Raw upload: keep the bytes as sent (readBody would turn an
-			// empty body into {} and normalize the numbers of a JSON file).
+			// empty body into {} and normalise the numbers of a JSON file).
 			data, _ = io.ReadAll(r.Body)
 			_ = r.Body.Close()
 		}

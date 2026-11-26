@@ -35,7 +35,7 @@ func normalizeJSONNumbers(doc []byte) []byte {
 				d := doc[i]
 				if d == '.' || d == 'e' || d == 'E' {
 					isFloat = true
-				} else if !(d >= '0' && d <= '9') && d != '+' && d != '-' {
+				} else if (d < '0' || d > '9') && d != '+' && d != '-' {
 					break
 				}
 				i++
@@ -67,7 +67,7 @@ func normalizeJSONNumbers(doc []byte) []byte {
 
 // javaDoubleString formats a float64 like Java's Double.toString: plain
 // decimal notation (always with a fractional digit) for 1e-3 <= |f| < 1e7 and
-// computerized scientific notation (d.dddEn) otherwise.
+// computerised scientific notation (d.dddEn) otherwise.
 func javaDoubleString(f float64) string {
 	if f == 0 {
 		if math.Signbit(f) {

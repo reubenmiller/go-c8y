@@ -32,21 +32,21 @@ func TestManagedObjectExponentNumber(t *testing.T) {
 	id := postJSON(t, fs, "/inventory/managedObjects", `{"c8y_Kpi":{"max":19.1010101E19}}`)
 	_, created := doRequest(t, fs, http.MethodGet, "/inventory/managedObjects/"+id, "", jsonAccept)
 	if !strings.Contains(created, `"max":1.91010101E20`) {
-		t.Fatalf("create: expected normalized number, got %s", created)
+		t.Fatalf("create: expected normalised number, got %s", created)
 	}
 
 	_, upd := doRequest(t, fs, http.MethodPut, "/inventory/managedObjects/"+id, `{"c8y_Kpi":{"min":0.50}}`, jsonAccept)
 	if !strings.Contains(upd, `"min":0.5`) {
-		t.Fatalf("update: expected normalized number, got %s", upd)
+		t.Fatalf("update: expected normalised number, got %s", upd)
 	}
 	_, got := doRequest(t, fs, http.MethodGet, "/inventory/managedObjects/"+id, "", jsonAccept)
 	if !strings.Contains(got, `"min":0.5`) {
-		t.Fatalf("get: expected normalized number, got %s", got)
+		t.Fatalf("get: expected normalised number, got %s", got)
 	}
 }
 
 // A non-JSON request body (here a raw application binary upload) must be
-// stored byte for byte: the number normalization only applies to JSON.
+// stored byte for byte: the number normalisation only applies to JSON.
 func TestRawBinaryUploadIsNotNormalized(t *testing.T) {
 	fs := New(t)
 	app := postJSON(t, fs, "/application/applications", `{"name":"raw1","key":"raw1-key","contextPath":"raw1","type":"HOSTED"}`)
