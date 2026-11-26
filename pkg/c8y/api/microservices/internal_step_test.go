@@ -58,7 +58,7 @@ func TestDeployAlreadySubscribedWithConflictAsError(t *testing.T) {
 }
 
 // TestSubscribeAndDeleteKeepErrorsWithOptions verifies direct calls still
-// honor WithConflictAsError and WithNotFoundAsError.
+// keep WithConflictAsError and WithNotFoundAsError.
 func TestSubscribeAndDeleteKeepErrorsWithOptions(t *testing.T) {
 	svc, closeFn := testService(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {

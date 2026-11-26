@@ -31,7 +31,7 @@ func TestGetOrCreateByExternalIDIdentityStepIgnoresOptions(t *testing.T) {
 					raw, _ := io.ReadAll(r.Body)
 					if strings.Contains(string(raw), "externalIds") {
 						w.WriteHeader(http.StatusBadRequest)
-						_, _ = w.Write([]byte(`{"error":"general/badRequest","message":"Unrecognized field externalIds"}`))
+						_, _ = w.Write([]byte(`{"error":"general/badRequest","message":"Unknown field externalIds"}`))
 						return
 					}
 					w.WriteHeader(http.StatusCreated)

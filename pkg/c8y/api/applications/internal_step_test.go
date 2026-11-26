@@ -85,7 +85,7 @@ func TestRotateBinariesMissingBinaryWithNotFoundAsError(t *testing.T) {
 }
 
 // TestDeleteBinaryKeepsNotFoundWithOption verifies a direct DeleteBinary still
-// honors WithNotFoundAsError.
+// keeps WithNotFoundAsError.
 func TestDeleteBinaryKeepsNotFoundWithOption(t *testing.T) {
 	svc, closeFn := testService(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
