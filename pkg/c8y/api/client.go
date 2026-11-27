@@ -331,6 +331,13 @@ type RetryOptions struct {
 	// WaitMax is the maximum time to wait between two retries. 0 keeps the
 	// default (30s).
 	WaitMax time.Duration
+
+	// Exponential waits WaitMin before the first retry, twice as long before the
+	// second, and so on (4x, 8x, ...), but at most WaitMax, without jitter. This
+	// is the schedule of hashicorp/go-retryablehttp. The default schedule (false)
+	// starts at twice WaitMin, with jitter. In both cases the Retry-After header
+	// of a 429 or 503 response is used instead.
+	Exponential bool
 }
 
 // Realtime returns the realtime (Bayeux) client of this API client.
@@ -410,6 +417,29 @@ func setTLSConfig(transport http.RoundTripper, insecureSkipVerify bool) error {
 	return fmt.Errorf("transport does not support TLS configuration")
 }
 
+func retryWaitOrDefault(v, def time.Duration) time.Duration {
+	if v > 0 {
+		return v
+	}
+	return def
+}
+
+// exponentialRetryDelay returns the delay strategy of RetryOptions.Exponential:
+// min before the first retry, doubling for each further retry up to max.
+func exponentialRetryDelay(minWait, maxWait time.Duration) resty.RetryDelayStrategyFunc {
+	return func(res *resty.Response, _ error) (time.Duration, error) {
+		retry := 1
+		if res != nil && res.Request != nil && res.Request.Attempt > 1 {
+			retry = res.Request.Attempt
+		}
+		delay := minWait
+		for i := 1; i < retry && delay < maxWait; i++ {
+			delay *= 2
+		}
+		return min(delay, maxWait), nil
+	}
+}
+
 // newRestyClient creates the resty client with the default retry, error and
 // circuit breaker settings, and applies the timeout and base URL from opts.
 func newRestyClient(opts ClientOptions, targetBaseURL *url.URL) *resty.Client {
@@ -430,6 +460,9 @@ func newRestyClient(opts ClientOptions, targetBaseURL *url.URL) *resty.Client {
 		}
 		if r.WaitMax > 0 {
 			rclient.SetRetryMaxWaitTime(r.WaitMax)
+		}
+		if r.Exponential {
+			rclient.SetRetryDelayStrategy(exponentialRetryDelay(retryWaitOrDefault(r.WaitMin, 2*time.Second), retryWaitOrDefault(r.WaitMax, 30*time.Second)))
 		}
 	}
 

@@ -338,10 +338,17 @@ func hasResourceID(path string) bool {
 	return false
 }
 
+// middlewareAddUserAgent sets the User-Agent and X-Application headers which
+// identify the client. A header the caller already set (e.g. with
+// WithExtraHeaders or in the request options) is kept.
 func middlewareAddUserAgent(application string, userAgent string) resty.RequestMiddleware {
 	return func(c *resty.Client, r *resty.Request) error {
-		r.SetHeader("User-Agent", userAgent)
-		r.SetHeader("X-APPLICATION", application)
+		if r.Header.Get("User-Agent") == "" {
+			r.SetHeader("User-Agent", userAgent)
+		}
+		if r.Header.Get("X-Application") == "" {
+			r.SetHeader("X-APPLICATION", application)
+		}
 		return nil
 	}
 }
