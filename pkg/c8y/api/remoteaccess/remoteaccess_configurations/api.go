@@ -2,6 +2,7 @@ package remoteaccess_configurations
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -109,6 +110,18 @@ func (s *Service) ResolveID(ctx context.Context, managedObjectID, ref string) (s
 	return "", fmt.Errorf("remote access configuration not found: name=%s", name)
 }
 
+var (
+	// ErrPassthroughNotFound is matched (errors.Is) by the error [Service.Detect]
+	// returns when no passthrough configuration has the requested id, name or
+	// name pattern.
+	ErrPassthroughNotFound = errors.New("remote access passthrough configuration not found")
+
+	// ErrNoPassthrough is matched (errors.Is) by the error [Service.Detect]
+	// returns when it was not given a name and the device has no passthrough
+	// configuration.
+	ErrNoPassthrough = errors.New("device has no remote access passthrough configuration")
+)
+
 // DetectOptions selects the passthrough configuration of a device for a
 // remote access connection (see [Service.Detect]).
 type DetectOptions struct {
@@ -161,12 +174,12 @@ func (s *Service) Detect(ctx context.Context, opt DetectOptions) (jsonmodels.Rem
 				return cfg, nil
 			}
 		}
-		return jsonmodels.RemoteAccessConfiguration{}, fmt.Errorf("remote access passthrough configuration not found: name=%s", opt.Name)
+		return jsonmodels.RemoteAccessConfiguration{}, fmt.Errorf("%w: name=%s", ErrPassthroughNotFound, opt.Name)
 	}
 
 	switch len(passthrough) {
 	case 0:
-		return jsonmodels.RemoteAccessConfiguration{}, fmt.Errorf("device has no remote access passthrough configuration: id=%s", opt.ManagedObjectID)
+		return jsonmodels.RemoteAccessConfiguration{}, fmt.Errorf("%w: id=%s", ErrNoPassthrough, opt.ManagedObjectID)
 	case 1:
 		return passthrough[0], nil
 	}
