@@ -107,3 +107,34 @@ func mustGlob(t *testing.T, pattern string) *matcher.Glob {
 	require.NoError(t, err)
 	return g
 }
+
+func Test_DialFailure_ReturnsConnectError(t *testing.T) {
+	c, err := NewClientE(nil, ClientOptions{Host: "http://127.0.0.1:1"})
+	require.NoError(t, err)
+	err = c.Connect()
+	require.Error(t, err)
+
+	var connErr *ConnectError
+	require.True(t, errors.As(err, &connErr), "want a *ConnectError, got %T", err)
+	assert.Equal(t, "ws://127.0.0.1:1/cep/realtime", connErr.URL)
+	require.Error(t, connErr.Err)
+	assert.Equal(t, errors.Unwrap(err), connErr.Err)
+	assert.Equal(t, "realtime: failed to connect to ws://127.0.0.1:1/cep/realtime: "+connErr.Err.Error(), err.Error())
+}
+
+func Test_ConnectError_NotUsedForOtherErrors(t *testing.T) {
+	c, err := NewClientE(nil, ClientOptions{Host: "http://localhost:1"})
+	require.NoError(t, err)
+	c.dialer = nil
+	err = c.Connect()
+	var connErr *ConnectError
+	assert.False(t, errors.As(err, &connErr))
+	assert.True(t, errors.Is(err, ErrMissingDialer))
+}
+
+func Test_ConnectError_UnwrapsCause(t *testing.T) {
+	cause := errors.New("boom")
+	err := error(&ConnectError{URL: "ws://h/cep/realtime", Err: cause})
+	assert.True(t, errors.Is(err, cause))
+	assert.Equal(t, "realtime: failed to connect to ws://h/cep/realtime: boom", err.Error())
+}
