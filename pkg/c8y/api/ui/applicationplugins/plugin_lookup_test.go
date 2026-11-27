@@ -29,15 +29,15 @@ func pluginServer(t *testing.T) (*api.Client, func() []string) {
 			mu.Unlock()
 		}
 		w.Header().Set("Content-Type", "application/json")
-		switch {
-		case r.URL.Path == "/application/applications/11":
+		switch r.URL.Path {
+		case "/application/applications/11":
 			_, _ = w.Write([]byte(appJSON))
-		case r.URL.Path == "/application/applications/12":
+		case "/application/applications/12":
 			_, _ = w.Write([]byte(pluginJSON))
-		case r.URL.Path == "/application/applications/99":
+		case "/application/applications/99":
 			w.WriteHeader(http.StatusNotFound)
 			_, _ = w.Write([]byte(`{"error":"general/Not Found","message":"not found"}`))
-		case r.URL.Path == "/application/applications":
+		case "/application/applications":
 			_, _ = w.Write([]byte(`{"applications":[` + pluginJSON + `],"statistics":{"pageSize":2000,"currentPage":1}}`))
 		default:
 			w.WriteHeader(http.StatusNotFound)
