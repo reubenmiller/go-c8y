@@ -20,11 +20,13 @@ import (
 	"strings"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/applications"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/ui/plugins"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/refresolve"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
@@ -230,10 +232,7 @@ func (s *Service) Update(ctx context.Context, applicationID string, opt UpdateOp
 	if app.Err != nil {
 		return app
 	}
-	catalog, err := s.catalog(ctx)
-	if err != nil {
-		return op.Failed[ApplicationWithPlugins](err, false)
-	}
+	lookup := &pluginLookup{s: s, ctx: ctx}
 
 	remotes := map[string]InstalledPlugin{} // by contextPath
 	var install []string
@@ -254,7 +253,10 @@ func (s *Service) Update(ctx context.Context, applicationID string, opt UpdateOp
 	var errs []error
 	for _, ref := range install {
 		name, version, _ := strings.Cut(ref, "@")
-		plugin, ok := catalog.find(name)
+		plugin, ok, err := lookup.find(name)
+		if err != nil {
+			return op.Failed[ApplicationWithPlugins](err, false)
+		}
 		if !ok {
 			if opt.RemoveInvalid {
 				slog.Warn("removing reference to orphaned plugin", "remote", ref)
@@ -279,7 +281,11 @@ func (s *Service) Update(ctx context.Context, applicationID string, opt UpdateOp
 	}
 	for _, ref := range opt.Remove {
 		name, _, _ := strings.Cut(ref, "@")
-		if plugin, ok := catalog.find(name); ok {
+		plugin, ok, err := lookup.find(name)
+		if err != nil {
+			return op.Failed[ApplicationWithPlugins](err, false)
+		}
+		if ok {
 			delete(remotes, plugin.ContextPath())
 		} else {
 			delete(remotes, name)
@@ -428,6 +434,38 @@ func (c pluginCatalog) find(name string) (jsonmodels.UIPlugin, bool) {
 	return jsonmodels.UIPlugin{}, false
 }
 
+// pluginLookup finds the plugins which an update refers to. A reference which
+// is an id is fetched by id (one request, whatever the plugin's availability);
+// any other reference is looked up by name or contextPath in the catalog, which
+// is listed once and only when needed.
+type pluginLookup struct {
+	s       *Service
+	ctx     context.Context
+	catalog *pluginCatalog
+}
+
+func (l *pluginLookup) find(ref string) (jsonmodels.UIPlugin, bool, error) {
+	if refresolve.IsDigits(ref) {
+		res := l.s.plugins.Get(ctxhelpers.ResolutionContext(l.ctx), ref)
+		if res.Err == nil {
+			return res.Data, true, nil
+		}
+		if !core.IsNotFound(res.Err) {
+			return jsonmodels.UIPlugin{}, false, res.Err
+		}
+		// not an id: the name of a plugin may be made of digits
+	}
+	if l.catalog == nil {
+		catalog, err := l.s.catalog(l.ctx)
+		if err != nil {
+			return jsonmodels.UIPlugin{}, false, err
+		}
+		l.catalog = &catalog
+	}
+	plugin, ok := l.catalog.find(ref)
+	return plugin, ok, nil
+}
+
 // catalog lists the plugins the tenant can use (also in a dry run).
 func (s *Service) catalog(ctx context.Context) (pluginCatalog, error) {
 	lookupCtx := ctxhelpers.ResolutionContext(ctx)
@@ -439,7 +477,10 @@ func (s *Service) catalog(ctx context.Context) (pluginCatalog, error) {
 	} {
 		opt.PaginationOptions = pagination.PaginationOptions{MaxItems: 2000}
 		it := s.plugins.ListAll(lookupCtx, opt)
-		for item := range it.Items() {
+		for item, err := range it.Items() {
+			if err != nil {
+				return c, err
+			}
 			if seen[item.ID()] {
 				continue
 			}

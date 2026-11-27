@@ -110,7 +110,8 @@ func (s *Service) Create(ctx context.Context, softwareID string, opt CreateOptio
 //   - "version:1.0.0:software:12345" - lookup by version and software ID
 //   - "version:1.0.0:name:MySoftware" - lookup by version and software name
 //   - "version:1.0.0:name:MySoftware:application" - lookup by version, software name and type
-func (s *Service) ResolveID(ctx context.Context, identifier string, meta map[string]any) (string, error) {
+func (s *Service) ResolveID(ctx context.Context, identifier string, meta map[string]any) (_ string, resolveErr error) {
+	defer func() { resolveErr = core.WrapLookup("software version", identifier, resolveErr) }()
 	return s.Resolver.ResolveID(ctx, identifier, meta)
 }
 
@@ -278,7 +279,8 @@ func (r *Resolver) ByVersionAndName(ctx context.Context, version, softwareName, 
 //   - "version:1.0.0:software:12345" - lookup by version and software ID
 //   - "version:1.0.0:name:MySoftware" - lookup by version and software name
 //   - "version:1.0.0:name:MySoftware:application" - lookup by version, software name and type
-func (r *Resolver) ResolveID(ctx context.Context, identifier string, meta map[string]any) (string, error) {
+func (r *Resolver) ResolveID(ctx context.Context, identifier string, meta map[string]any) (_ string, resolveErr error) {
+	defer func() { resolveErr = core.WrapLookup("software version", identifier, resolveErr) }()
 	if meta == nil {
 		meta = make(map[string]any)
 	}

@@ -202,7 +202,8 @@ func extractIDFromURL(url string) string {
 }
 
 // ResolveID resolves a configuration identifier to an ID using the resolver
-func (s *Service) ResolveID(ctx context.Context, identifier string, meta map[string]any) (string, error) {
+func (s *Service) ResolveID(ctx context.Context, identifier string, meta map[string]any) (_ string, resolveErr error) {
+	defer func() { resolveErr = core.WrapLookup("configuration", identifier, resolveErr) }()
 	return s.Resolver.ResolveID(ctx, identifier, meta)
 }
 
@@ -322,7 +323,8 @@ func (r *Resolver) ByQuery(ctx context.Context, query string) (string, error) {
 }
 
 // ResolveID resolves a configuration identifier string to an ID
-func (r *Resolver) ResolveID(ctx context.Context, identifier string, meta map[string]any) (string, error) {
+func (r *Resolver) ResolveID(ctx context.Context, identifier string, meta map[string]any) (_ string, resolveErr error) {
+	defer func() { resolveErr = core.WrapLookup("configuration", identifier, resolveErr) }()
 	if meta == nil {
 		meta = make(map[string]any)
 	}
@@ -393,9 +395,9 @@ func (r *Resolver) resolveByNameAndType(ctx context.Context, name, configuration
 	}
 
 	if configurationType != "" {
-		return "", core.ErrNotFound("configuration not found: name=%s, configurationType=%s", name, configurationType)
+		return "", core.NewNameNotFoundError("configuration", name, "configuration not found: name=%s, configurationType=%s", name, configurationType)
 	}
-	return "", core.ErrNotFound("configuration not found: name=%s", name)
+	return "", core.NewNameNotFoundError("configuration", name, "configuration not found: name=%s", name)
 }
 
 // resolveByQuery resolves by custom query

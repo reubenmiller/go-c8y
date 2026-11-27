@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core/artifact" //nolint:misspell
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
@@ -218,7 +219,7 @@ func (s *Service) findOrCreateHosted(ctx context.Context, details *model.Applica
 		Owner: owner,
 	})
 	if existing.Err != nil {
-		existing.Err = fmt.Errorf("failed to find hosted application. name=%s. %w", details.Name, existing.Err)
+		existing.Err = core.WrapLookup("hosted application", details.Name, fmt.Errorf("failed to find hosted application. name=%s. %w", details.Name, existing.Err))
 		return existing, false
 	}
 	for item := range existing.Data.Iter() {

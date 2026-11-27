@@ -72,7 +72,7 @@ func Select(kind, identifier string, candidates []Candidate) (Candidate, error) 
 	}
 	switch len(matches) {
 	case 0:
-		return Candidate{}, core.ErrNotFound("%s not found: %s", kind, identifier)
+		return Candidate{}, core.NewNameNotFoundError(kind, identifier, "%s not found: %s", kind, identifier)
 	case 1:
 		return matches[0], nil
 	}

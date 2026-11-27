@@ -160,7 +160,8 @@ func IsFingerprint(ref string) bool {
 // mirroring the v1 by-name resolver. An empty tenant defaults to the current
 // tenant (handled by the client). Resolution runs for real even under dry-run /
 // deferred execution so the rendered request shows the resolved fingerprint.
-func (s *Service) ResolveID(ctx context.Context, tenant, ref string) (string, error) {
+func (s *Service) ResolveID(ctx context.Context, tenant, ref string) (_ string, resolveErr error) {
+	defer func() { resolveErr = core.WrapLookup("trusted certificate", ref, resolveErr) }()
 	if ref == "" {
 		return "", fmt.Errorf("empty trusted certificate reference")
 	}
@@ -188,7 +189,7 @@ func (s *Service) ResolveID(ctx context.Context, tenant, ref string) (string, er
 			return cert.Fingerprint(), nil
 		}
 	}
-	return "", fmt.Errorf("trusted certificate not found: %s", name)
+	return "", core.NewNameNotFoundError("trusted certificate", name, "trusted certificate not found: %s", name)
 }
 
 type GetOptions struct {

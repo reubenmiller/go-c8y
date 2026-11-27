@@ -235,7 +235,8 @@ func (s *Service) Delete(ctx context.Context, ref ConfigurationRef, opt DeleteOp
 // ResolveID resolves a configuration reference to an id. A plain string is used
 // as-is; "name:<name>" and "query:<q>" are looked up scoped to configuration
 // files.
-func (s *Service) ResolveID(ctx context.Context, ref string, meta map[string]any) (string, error) {
+func (s *Service) ResolveID(ctx context.Context, ref string, meta map[string]any) (_ string, resolveErr error) {
+	defer func() { resolveErr = core.WrapLookup("configuration", ref, resolveErr) }()
 	if ref == "" {
 		return "", fmt.Errorf("empty configuration reference")
 	}
@@ -253,9 +254,9 @@ func (s *Service) ResolveID(ctx context.Context, ref string, meta map[string]any
 			AddFilterEqStr("type", TypeConfiguration).
 			AddFilterEqStr("name", value).
 			AddOrderBy("name").
-			Build(), value, meta)
+			Build(), value, true, meta)
 	case "query":
-		return s.lookupByQuery(ctx, ScopeToConfiguration(value), value, meta)
+		return s.lookupByQuery(ctx, ScopeToConfiguration(value), value, false, meta)
 	default:
 		return "", fmt.Errorf("unknown configuration resolver scheme: %q", scheme)
 	}
@@ -263,7 +264,7 @@ func (s *Service) ResolveID(ctx context.Context, ref string, meta map[string]any
 
 // lookupByQuery returns the id of the first configuration file matching query.
 // label is the original reference, for error messages and metadata.
-func (s *Service) lookupByQuery(ctx context.Context, query, label string, meta map[string]any) (string, error) {
+func (s *Service) lookupByQuery(ctx context.Context, query, label string, byName bool, meta map[string]any) (string, error) {
 	opt := ListOptions{Query: query}
 	opt.PageSize = 1
 	result := s.List(ctx, opt)
@@ -277,6 +278,9 @@ func (s *Service) lookupByQuery(ctx context.Context, query, label string, meta m
 			meta["source"] = "name"
 		}
 		return item.ID(), nil
+	}
+	if byName {
+		return "", core.NewNameNotFoundError("configuration", label, "configuration not found: %s", label)
 	}
 	return "", fmt.Errorf("configuration not found: %s", label)
 }

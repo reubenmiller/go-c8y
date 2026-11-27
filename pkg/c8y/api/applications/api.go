@@ -82,7 +82,10 @@ func NewService(common *httpcore.Service) *Service {
 		}
 
 		// Client-side filtering with wildcard support
-		for item := range it.Items() {
+		for item, err := range it.Items() {
+			if err != nil {
+				return "", nil, err
+			}
 			if found, _ := matcher.MatchWithWildcards(item.Name(), name); found {
 				return item.ID(), map[string]any{
 					"id":   item.ID(),
@@ -93,9 +96,9 @@ func NewService(common *httpcore.Service) *Service {
 		}
 
 		if appType != "" {
-			return "", nil, core.ErrNotFound("application not found with name: %s, type: %s", name, appType)
+			return "", nil, core.NewNameNotFoundError("application", name, "application not found with name: %s, type: %s", name, appType)
 		}
-		return "", nil, core.ErrNotFound("application not found with name: %s", name)
+		return "", nil, core.NewNameNotFoundError("application", name, "application not found with name: %s", name)
 	}
 
 	return service
@@ -546,7 +549,8 @@ func (s *Service) ByName(name string, appType string) string {
 //   - "12345" -> "12345" (plain ID, meta: {"source": "direct-id"})
 //   - "name:cockpit" -> "<id>" (meta: {"name": "cockpit", "type": "...", ...})
 //   - "name:cockpit:HOSTED" -> "<id>" (meta: {"name": "cockpit", "type": "HOSTED", ...})
-func (s *Service) ResolveID(ctx context.Context, id string, meta map[string]any) (string, error) {
+func (s *Service) ResolveID(ctx context.Context, id string, meta map[string]any) (_ string, resolveErr error) {
+	defer func() { resolveErr = core.WrapLookup("application", id, resolveErr) }()
 	resolver, err := s.parseResolver(id)
 	if err != nil {
 		return "", err

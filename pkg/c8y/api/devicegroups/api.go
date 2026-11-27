@@ -170,7 +170,8 @@ func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Man
 
 // ResolveID resolves a device-group reference to an id. A plain string is used
 // as-is; "name:<name>" and "query:<q>" are looked up scoped to device groups.
-func (s *Service) ResolveID(ctx context.Context, ref string, meta map[string]any) (string, error) {
+func (s *Service) ResolveID(ctx context.Context, ref string, meta map[string]any) (_ string, resolveErr error) {
+	defer func() { resolveErr = core.WrapLookup("device group", ref, resolveErr) }()
 	if ref == "" {
 		return "", fmt.Errorf("empty device group reference")
 	}
@@ -188,9 +189,9 @@ func (s *Service) ResolveID(ctx context.Context, ref string, meta map[string]any
 			HasFragment(FragmentIsDeviceGroup).
 			AddFilterEqStr("name", value).
 			AddOrderBy("name").
-			Build(), value, meta)
+			Build(), value, true, meta)
 	case "query":
-		return s.lookupByQuery(ctx, ScopeToGroups(value), value, meta)
+		return s.lookupByQuery(ctx, ScopeToGroups(value), value, false, meta)
 	default:
 		return "", fmt.Errorf("unknown device group resolver scheme: %q", scheme)
 	}
@@ -198,7 +199,7 @@ func (s *Service) ResolveID(ctx context.Context, ref string, meta map[string]any
 
 // lookupByQuery returns the id of the first device group matching query.
 // label is the original reference, for error messages and metadata.
-func (s *Service) lookupByQuery(ctx context.Context, query, label string, meta map[string]any) (string, error) {
+func (s *Service) lookupByQuery(ctx context.Context, query, label string, byName bool, meta map[string]any) (string, error) {
 	opt := ListOptions{Query: query}
 	opt.PageSize = 1
 	result := s.List(ctx, opt)
@@ -212,6 +213,9 @@ func (s *Service) lookupByQuery(ctx context.Context, query, label string, meta m
 			meta["source"] = "name"
 		}
 		return item.ID(), nil
+	}
+	if byName {
+		return "", core.NewNameNotFoundError("device group", label, "device group not found: %s", label)
 	}
 	return "", fmt.Errorf("device group not found: %s", label)
 }

@@ -163,7 +163,8 @@ func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Man
 
 // ResolveID resolves a smart-group reference to an id. A plain string is used
 // as-is; "name:<name>" and "query:<q>" are looked up scoped to smart groups.
-func (s *Service) ResolveID(ctx context.Context, ref string, meta map[string]any) (string, error) {
+func (s *Service) ResolveID(ctx context.Context, ref string, meta map[string]any) (_ string, resolveErr error) {
+	defer func() { resolveErr = core.WrapLookup("smart group", ref, resolveErr) }()
 	if ref == "" {
 		return "", fmt.Errorf("empty smart group reference")
 	}
@@ -181,9 +182,9 @@ func (s *Service) ResolveID(ctx context.Context, ref string, meta map[string]any
 			AddFilterEqStr("type", TypeDynamicGroup).
 			AddFilterEqStr("name", value).
 			AddOrderBy("name").
-			Build(), value, meta)
+			Build(), value, true, meta)
 	case "query":
-		return s.lookupByQuery(ctx, ScopeToSmartGroups(value), value, meta)
+		return s.lookupByQuery(ctx, ScopeToSmartGroups(value), value, false, meta)
 	default:
 		return "", fmt.Errorf("unknown smart group resolver scheme: %q", scheme)
 	}
@@ -191,7 +192,7 @@ func (s *Service) ResolveID(ctx context.Context, ref string, meta map[string]any
 
 // lookupByQuery returns the id of the first smart group matching query. label is
 // the original reference, for error messages and metadata.
-func (s *Service) lookupByQuery(ctx context.Context, query, label string, meta map[string]any) (string, error) {
+func (s *Service) lookupByQuery(ctx context.Context, query, label string, byName bool, meta map[string]any) (string, error) {
 	opt := ListOptions{Query: query}
 	opt.PageSize = 1
 	result := s.List(ctx, opt)
@@ -205,6 +206,9 @@ func (s *Service) lookupByQuery(ctx context.Context, query, label string, meta m
 			meta["source"] = "name"
 		}
 		return item.ID(), nil
+	}
+	if byName {
+		return "", core.NewNameNotFoundError("smart group", label, "smart group not found: %s", label)
 	}
 	return "", fmt.Errorf("smart group not found: %s", label)
 }

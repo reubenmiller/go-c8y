@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/refresolve"
@@ -23,7 +24,8 @@ var tenantIDPattern = regexp.MustCompile(`^(t\d+|management)$`)
 // (meta: {"source": "name", "domain": ..., "company": ...}). It returns a not
 // found error when nothing matches and an error when more than one tenant
 // matches. meta may be nil.
-func (s *Service) ResolveID(ctx context.Context, identifier string, meta map[string]any) (string, error) {
+func (s *Service) ResolveID(ctx context.Context, identifier string, meta map[string]any) (_ string, resolveErr error) {
+	defer func() { resolveErr = core.WrapLookup("tenant", identifier, resolveErr) }()
 	identifier = strings.TrimSpace(identifier)
 	if identifier == "" {
 		return "", fmt.Errorf("empty tenant identifier")

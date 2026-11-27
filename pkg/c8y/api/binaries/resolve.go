@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/refresolve"
@@ -18,7 +19,8 @@ import (
 // of the binaries (meta: {"source": "name", "name": "<name>"}). It returns a
 // not found error when nothing matches and an error when more than one binary
 // matches. meta may be nil.
-func (s *Service) ResolveID(ctx context.Context, identifier string, meta map[string]any) (string, error) {
+func (s *Service) ResolveID(ctx context.Context, identifier string, meta map[string]any) (_ string, resolveErr error) {
+	defer func() { resolveErr = core.WrapLookup("binary", identifier, resolveErr) }()
 	identifier = strings.TrimSpace(identifier)
 	if identifier == "" {
 		return "", fmt.Errorf("empty binary identifier")

@@ -10,6 +10,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
 	"github.com/reubenmiller/go-c8y/v2/pkg/matcher"
 
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	inventoryroles "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/userroles/inventory"
@@ -126,7 +127,8 @@ func (s *Service) RoleSelfLink(ref string) string {
 // and the first match is used; the roles are requested also in a dry run.
 // If meta is not nil, it is given the role's "id" and "name" and the "source"
 // of the id ("id" or "name").
-func (s *Service) ResolveID(ctx context.Context, ref string, meta map[string]any) (string, error) {
+func (s *Service) ResolveID(ctx context.Context, ref string, meta map[string]any) (_ string, resolveErr error) {
+	defer func() { resolveErr = core.WrapLookup("user role", ref, resolveErr) }()
 	id := s.RoleID(ref)
 	if id == "" {
 		return "", fmt.Errorf("empty role reference")
@@ -157,7 +159,7 @@ func (s *Service) ResolveID(ctx context.Context, ref string, meta map[string]any
 			return role.ID(), nil
 		}
 	}
-	return "", fmt.Errorf("role not found: %s", id)
+	return "", core.NewNameNotFoundError("user role", id, "role not found: %s", id)
 }
 
 // RoleID returns the role id (which equals the role name in Cumulocity) for a
