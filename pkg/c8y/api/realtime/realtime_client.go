@@ -240,6 +240,32 @@ var ErrHandshakeFailed = errors.New("realtime: handshake failed (check the tenan
 // client must neither retry nor handshake again.
 var ErrServerNoReconnect = errors.New("realtime: server indicated that no retry or handshake should be done")
 
+// ConnectError is the error of a connect which could not open the websocket
+// (connection refused, a rejected upgrade, a TLS failure, ...). Use
+// errors.As to recognise it and errors.Unwrap (or the Err field) for the cause:
+//
+//	var connErr *realtime.ConnectError
+//	if errors.As(err, &connErr) {
+//		fmt.Println("could not open", connErr.URL, "because", connErr.Err)
+//	}
+//
+// The errors which are not a connection failure (ErrMissingDialer, ErrDryRun)
+// are not wrapped in it.
+type ConnectError struct {
+	// URL is the websocket url which could not be opened.
+	URL string
+	// Err is the cause reported by the websocket dialer.
+	Err error
+}
+
+// Error returns "realtime: failed to connect to <url>: <cause>".
+func (e *ConnectError) Error() string {
+	return fmt.Sprintf("realtime: failed to connect to %s: %v", e.URL, e.Err)
+}
+
+// Unwrap returns the cause, so errors.Is matches e.g. a context error.
+func (e *ConnectError) Unwrap() error { return e.Err }
+
 func errChan(err error) chan error {
 	ch := make(chan error, 1)
 	ch <- err
@@ -700,7 +726,7 @@ func (c *Client) connect(ctx context.Context) chan error {
 		if errors.Is(err, ErrMissingDialer) || errors.Is(err, wsdial.ErrDryRun) {
 			return errChan(err)
 		}
-		return errChan(fmt.Errorf("realtime: failed to connect to %s: %w", c.url.String(), err))
+		return errChan(&ConnectError{URL: c.url.String(), Err: err})
 	}
 
 	c.mtx.Lock()
