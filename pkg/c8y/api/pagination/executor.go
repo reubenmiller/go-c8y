@@ -147,7 +147,7 @@ func runSequential[D JSONDocument](
 		req := startReq
 		pages := pagesSoFar
 		for {
-			result := fetch(withMeta(req))
+			result := fetch(req)
 			if !emit(req, result) {
 				return
 			}
@@ -186,7 +186,7 @@ func runSequential[D JSONDocument](
 				return
 			default:
 			}
-			result := fetch(withMeta(req))
+			result := fetch(req)
 
 			// Compute the continuation before handing the page off, so the
 			// consumer has exclusive access to the result.

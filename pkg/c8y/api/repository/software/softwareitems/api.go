@@ -129,13 +129,9 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *SoftwareIterat
 	)
 }
 
-type GetOptions struct {
-	// Query options
-	WithParents       bool `url:"withParents,omitempty"`
-	WithChildren      bool `url:"withChildren,omitempty"`
-	WithChildrenCount bool `url:"withChildrenCount,omitempty"`
-	SkipChildrenNames bool `url:"skipChildrenNames,omitempty"`
-}
+// GetOptions are the managed object get options (withParents, withChildren,
+// withChildrenCount, skipChildrenNames, withLatestValues and withGroups).
+type GetOptions = managedobjects.GetOptions
 
 // DeleteOptions options to delete a software item
 type DeleteOptions struct {

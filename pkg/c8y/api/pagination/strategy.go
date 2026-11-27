@@ -134,12 +134,14 @@ type OffsetStrategy struct{}
 
 func (OffsetStrategy) Name() string { return "offset" }
 
-// First starts at the caller's CurrentPage, or at page 1 when it is not set,
-// so a walk can resume part way through a collection (e.g. a CLI's
-// --currentPage 3 --totalPages 2 reads pages 3 and 4).
+// First starts at the caller's CurrentPage, so a walk can resume part way
+// through a collection (e.g. a CLI's --currentPage 3 --totalPages 2 reads
+// pages 3 and 4). A CurrentPage which is not set stays unset: the first request
+// has no currentPage parameter (the server returns the first page), as the
+// plain list request has.
 func (OffsetStrategy) First(base PageRequest) PageRequest {
 	if base.CurrentPage < 1 {
-		base.CurrentPage = 1
+		base.CurrentPage = 0
 	}
 	return base
 }
@@ -151,10 +153,11 @@ func (OffsetStrategy) Advance(prev PageRequest, page PageView) (PageRequest, boo
 	if next, ok := page.Meta["next"].(string); !ok || next == "" {
 		return prev, false
 	}
-	if tp, ok := page.Meta["totalPages"].(int64); ok && int64(prev.CurrentPage) >= tp {
+	if tp, ok := page.Meta["totalPages"].(int64); ok && int64(max(prev.CurrentPage, 1)) >= tp {
 		return prev, false
 	}
-	prev.CurrentPage++
+	// an unset current page is the first page
+	prev.CurrentPage = max(prev.CurrentPage, 1) + 1
 	return prev, true
 }
 
