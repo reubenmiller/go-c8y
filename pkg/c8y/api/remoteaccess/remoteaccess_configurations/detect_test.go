@@ -2,6 +2,7 @@ package remoteaccess_configurations
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 	"testing"
@@ -92,5 +93,26 @@ func TestDetectAutomatic(t *testing.T) {
 				t.Errorf("id = %q, want %q", cfg.ID(), tc.wantID)
 			}
 		})
+	}
+}
+
+func TestDetectSentinelErrors(t *testing.T) {
+	svc, closeFn := detectServer(t, `[{"id":"1","name":"vnc","protocol":"VNC","port":5900}]`)
+	defer closeFn()
+
+	_, err := svc.Detect(context.Background(), DetectOptions{ManagedObjectID: "d1"})
+	if !errors.Is(err, ErrNoPassthrough) || errors.Is(err, ErrPassthroughNotFound) {
+		t.Errorf("no passthrough configuration: error = %v, want ErrNoPassthrough", err)
+	}
+	if err == nil || err.Error() != "device has no remote access passthrough configuration: id=d1" {
+		t.Errorf("message changed: %v", err)
+	}
+
+	_, err = svc.Detect(context.Background(), DetectOptions{ManagedObjectID: "d1", Name: "nope"})
+	if !errors.Is(err, ErrPassthroughNotFound) || errors.Is(err, ErrNoPassthrough) {
+		t.Errorf("unknown name: error = %v, want ErrPassthroughNotFound", err)
+	}
+	if err == nil || err.Error() != "remote access passthrough configuration not found: name=nope" {
+		t.Errorf("message changed: %v", err)
 	}
 }
