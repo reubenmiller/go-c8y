@@ -90,7 +90,8 @@ func (s *Service) getB(opt GetOptions) *httpcore.TryRequest {
 // "name:<name>" reference is matched case-insensitively against the device's
 // configurations (first match wins), mirroring the v1 by-name resolver. The
 // managedObjectID must already be a concrete id.
-func (s *Service) ResolveID(ctx context.Context, managedObjectID, ref string) (string, error) {
+func (s *Service) ResolveID(ctx context.Context, managedObjectID, ref string) (_ string, resolveErr error) {
+	defer func() { resolveErr = core.WrapLookup("remote access configuration", ref, resolveErr) }()
 	name, isName := strings.CutPrefix(ref, "name:")
 	if !isName {
 		return ref, nil
@@ -107,7 +108,35 @@ func (s *Service) ResolveID(ctx context.Context, managedObjectID, ref string) (s
 			return cfg.ID(), nil
 		}
 	}
-	return "", fmt.Errorf("remote access configuration not found: name=%s", name)
+	return "", &ConfigurationNotFoundError{Name: name}
+}
+
+// ErrConfigurationNotFound is matched (errors.Is) by the error [Service.ResolveID]
+// returns when no configuration of the device has the requested name. The
+// error is a [*ConfigurationNotFoundError], and also matches
+// [core.ErrNameNotFound].
+var ErrConfigurationNotFound = errors.New("remote access configuration not found")
+
+// ConfigurationNotFoundError is the error of [Service.ResolveID] for a name
+// which no configuration of the device has. Its text is
+// "remote access configuration not found: name=<name>".
+type ConfigurationNotFoundError struct {
+	// Name is the name which matched nothing.
+	Name string
+}
+
+func (e *ConfigurationNotFoundError) Error() string {
+	return fmt.Sprintf("%s: name=%s", ErrConfigurationNotFound.Error(), e.Name)
+}
+
+// Is reports whether target is [ErrConfigurationNotFound] or [core.ErrNameNotFound].
+func (e *ConfigurationNotFoundError) Is(target error) bool {
+	return target == ErrConfigurationNotFound || target == core.ErrNameNotFound
+}
+
+// NotFoundName returns the resource and the name, see [core.NameNotFound].
+func (e *ConfigurationNotFoundError) NotFoundName() (resource, name string) {
+	return "remote access configuration", e.Name
 }
 
 var (

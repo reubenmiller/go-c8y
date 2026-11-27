@@ -211,7 +211,8 @@ func (s *AssetService) countB(opt CountOptions) *httpcore.TryRequest {
 // A name: or query: reference must match exactly one asset; no match returns
 // a 404 error (core.IsNotFound) and several matches return
 // ErrAmbiguousAssetRef.
-func (s *AssetService) ResolveID(ctx context.Context, ref AssetRef, meta map[string]any) (string, error) {
+func (s *AssetService) ResolveID(ctx context.Context, ref AssetRef, meta map[string]any) (_ string, resolveErr error) {
+	defer func() { resolveErr = core.WrapLookup("asset", string(ref), resolveErr) }()
 	value := string(ref)
 	if value == "" {
 		return "", fmt.Errorf("empty asset reference")

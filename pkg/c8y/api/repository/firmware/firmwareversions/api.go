@@ -109,7 +109,8 @@ func (s *Service) Create(ctx context.Context, firmwareID string, opt CreateOptio
 //   - "12345" - direct ID
 //   - "version:1.0.0:firmware:12345" - lookup by version and firmware ID
 //   - "version:1.0.0:name:MyFirmware" - lookup by version and firmware name
-func (s *Service) ResolveID(ctx context.Context, identifier string, meta map[string]any) (string, error) {
+func (s *Service) ResolveID(ctx context.Context, identifier string, meta map[string]any) (_ string, resolveErr error) {
+	defer func() { resolveErr = core.WrapLookup("firmware version", identifier, resolveErr) }()
 	return s.Resolver.ResolveID(ctx, identifier, meta)
 }
 
@@ -270,7 +271,8 @@ func (r *Resolver) ByVersionAndName(ctx context.Context, version, firmwareName s
 //   - "12345" - direct ID
 //   - "version:1.0.0:firmware:12345" - lookup by version and firmware ID
 //   - "version:1.0.0:name:MyFirmware" - lookup by version and firmware name
-func (r *Resolver) ResolveID(ctx context.Context, identifier string, meta map[string]any) (string, error) {
+func (r *Resolver) ResolveID(ctx context.Context, identifier string, meta map[string]any) (_ string, resolveErr error) {
+	defer func() { resolveErr = core.WrapLookup("firmware version", identifier, resolveErr) }()
 	if meta == nil {
 		meta = make(map[string]any)
 	}

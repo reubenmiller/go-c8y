@@ -19,6 +19,30 @@ func IsNotFound(err error) bool {
 	return core.IsNotFound(err)
 }
 
+// ErrNameNotFound matches (errors.Is) the error of a lookup by name which found
+// nothing, for any resource. See [NameNotFound] for the resource and the name.
+var ErrNameNotFound = core.ErrNameNotFound
+
+// NameNotFoundError is the error of a lookup by name which found nothing.
+type NameNotFoundError = core.NameNotFoundError
+
+// LookupError marks an error which happened while a reference (a name, an
+// external id, a query) was resolved to an id, as opposed to an error of the
+// request the caller asked for. Use errors.As to find it, or [IsLookupError].
+type LookupError = core.LookupError
+
+// NameNotFound reports whether err is the error of a lookup by name which found
+// nothing, and returns the kind of resource ("managed object") and the name.
+func NameNotFound(err error) (resource, name string, ok bool) {
+	return core.NameNotFound(err)
+}
+
+// IsLookupError reports whether err happened while a reference was being
+// resolved to an id (see [LookupError]).
+func IsLookupError(err error) bool {
+	return core.IsLookupError(err)
+}
+
 // IsUnauthorized reports whether err is an HTTP 401 error.
 func IsUnauthorized(err error) bool {
 	return core.ErrHasStatus(err, http.StatusUnauthorized)

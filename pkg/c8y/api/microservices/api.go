@@ -80,7 +80,10 @@ func NewServiceWithApplications(common *httpcore.Service, apps *applications.Ser
 		}
 
 		// Client-side filtering with wildcard support
-		for item := range it.Items() {
+		for item, err := range it.Items() {
+			if err != nil {
+				return "", nil, err
+			}
 			if found, _ := matcher.MatchWithWildcards(item.Name(), name); found {
 				return item.ID(), map[string]any{
 					"id":          item.ID(),
@@ -90,7 +93,7 @@ func NewServiceWithApplications(common *httpcore.Service, apps *applications.Ser
 			}
 		}
 
-		return "", nil, core.ErrNotFound("microservice not found with name: %s", name)
+		return "", nil, core.NewNameNotFoundError("microservice", name, "microservice not found with name: %s", name)
 	}
 
 	// Setup lookup function for contextPath-based resolution
@@ -107,7 +110,10 @@ func NewServiceWithApplications(common *httpcore.Service, apps *applications.Ser
 		}
 
 		// Client-side filtering with wildcard support
-		for item := range it.Items() {
+		for item, err := range it.Items() {
+			if err != nil {
+				return "", nil, err
+			}
 			if found, _ := matcher.MatchWithWildcards(item.ContextPath(), contextPath); found {
 				return item.ID(), map[string]any{
 					"id":          item.ID(),
@@ -228,7 +234,8 @@ func (s *Service) ByContextPath(contextPath string) string {
 //   - "12345" -> "12345" (plain ID, meta: {"source": "direct-id"})
 //   - "name:my-microservice" -> "<id>" (meta: {"name": "my-microservice", ...})
 //   - "contextPath:/my-microservice" -> "<id>" (meta: {"contextPath": "/my-microservice", ...})
-func (s *Service) ResolveID(ctx context.Context, id string, meta map[string]any) (string, error) {
+func (s *Service) ResolveID(ctx context.Context, id string, meta map[string]any) (_ string, resolveErr error) {
+	defer func() { resolveErr = core.WrapLookup("microservice", id, resolveErr) }()
 	resolver, err := s.parseResolver(id)
 	if err != nil {
 		return "", err

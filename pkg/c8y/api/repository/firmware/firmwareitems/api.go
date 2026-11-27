@@ -211,7 +211,8 @@ func extractIDFromURL(url string) string {
 }
 
 // ResolveID resolves a firmware identifier to an ID using the resolver
-func (s *Service) ResolveID(ctx context.Context, identifier string, meta map[string]any) (string, error) {
+func (s *Service) ResolveID(ctx context.Context, identifier string, meta map[string]any) (_ string, resolveErr error) {
+	defer func() { resolveErr = core.WrapLookup("firmware", identifier, resolveErr) }()
 	return s.Resolver.ResolveID(ctx, identifier, meta)
 }
 
@@ -341,7 +342,8 @@ func (r *Resolver) ByQuery(ctx context.Context, query string) (string, error) {
 }
 
 // ResolveID resolves a firmware identifier string to an ID
-func (r *Resolver) ResolveID(ctx context.Context, identifier string, meta map[string]any) (string, error) {
+func (r *Resolver) ResolveID(ctx context.Context, identifier string, meta map[string]any) (_ string, resolveErr error) {
+	defer func() { resolveErr = core.WrapLookup("firmware", identifier, resolveErr) }()
 	if meta == nil {
 		meta = make(map[string]any)
 	}
@@ -403,7 +405,7 @@ func (r *Resolver) resolveByName(ctx context.Context, name string) (string, erro
 		return found.ID(), nil
 	}
 
-	return "", core.ErrNotFound("firmware not found: name=%s", name)
+	return "", core.NewNameNotFoundError("firmware", name, "firmware not found: name=%s", name)
 }
 
 // resolveByQuery resolves by custom query

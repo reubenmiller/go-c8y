@@ -55,7 +55,8 @@ func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Sof
 //   - "name:MySoftware" - lookup by name
 //   - "name:MySoftware:application" - lookup by name and softwareType
 //   - "query:name eq 'MySoftware'" - custom query
-func (s *Service) ResolveID(ctx context.Context, identifier string, meta map[string]any) (string, error) {
+func (s *Service) ResolveID(ctx context.Context, identifier string, meta map[string]any) (_ string, resolveErr error) {
+	defer func() { resolveErr = core.WrapLookup("software", identifier, resolveErr) }()
 	return s.Resolver.ResolveID(ctx, identifier, meta)
 }
 
@@ -202,7 +203,8 @@ func (r *Resolver) ByQuery(ctx context.Context, query string) (string, error) {
 //   - "name:MySoftware" - lookup by name
 //   - "name:MySoftware:application" - lookup by name and softwareType
 //   - "query:name eq 'MySoftware'" - custom query
-func (r *Resolver) ResolveID(ctx context.Context, identifier string, meta map[string]any) (string, error) {
+func (r *Resolver) ResolveID(ctx context.Context, identifier string, meta map[string]any) (_ string, resolveErr error) {
+	defer func() { resolveErr = core.WrapLookup("software", identifier, resolveErr) }()
 	if meta == nil {
 		meta = make(map[string]any)
 	}
@@ -290,9 +292,9 @@ func (r *Resolver) resolveByNameAndType(ctx context.Context, name, softwareType 
 	}
 
 	if softwareType != "" {
-		return "", core.ErrNotFound("software not found with name=%s, softwareType=%s", name, softwareType)
+		return "", core.NewNameNotFoundError("software", name, "software not found with name=%s, softwareType=%s", name, softwareType)
 	}
-	return "", core.ErrNotFound("software not found with name=%s", name)
+	return "", core.NewNameNotFoundError("software", name, "software not found with name=%s", name)
 }
 
 // resolveByQuery resolves using a custom query

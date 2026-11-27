@@ -83,7 +83,7 @@ func NewService(s *httpcore.Service) *Service {
 			}, nil
 		}
 
-		return "", nil, core.ErrNotFound("managed object not found with name: %s", name)
+		return "", nil, core.NewNameNotFoundError("managed object", name, "managed object not found with name: %s", name)
 	}
 
 	service.lookupByQuery = func(ctx context.Context, query string) (string, map[string]any, error) {
@@ -355,7 +355,8 @@ func (s *Service) deleteB(ID string, opt DeleteOptions) *httpcore.TryRequest {
 //   - "name:device01" -> "<id>" (meta: {"name": "device01", "resolver": "name:device01", ...})
 //   - "ext:c8y_Serial:ABC123" -> "<id>" (meta: {"externalType": "c8y_Serial", "externalID": "ABC123", ...})
 //   - "query:name eq 'device01'" -> "<id>" (meta: {"query": "...", ...})
-func (s *Service) ResolveID(ctx context.Context, id string, meta map[string]any) (string, error) {
+func (s *Service) ResolveID(ctx context.Context, id string, meta map[string]any) (_ string, resolveErr error) {
+	defer func() { resolveErr = core.WrapLookup("managed object", id, resolveErr) }()
 	resolver, err := s.parseResolver(id)
 	if err != nil {
 		return "", err

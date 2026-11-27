@@ -2,7 +2,9 @@ package usergroups
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
@@ -97,7 +99,8 @@ func ByName(name string) GroupRef { return GroupRef("name:" + name) }
 // via the groupByName endpoint. An empty tenant defaults to the current tenant
 // (handled by the client). User groups are not managed objects, so there is no
 // inventory query — name resolution uses the dedicated group-by-name endpoint.
-func (s *Service) ResolveID(ctx context.Context, tenant, ref string) (string, error) {
+func (s *Service) ResolveID(ctx context.Context, tenant, ref string) (_ string, resolveErr error) {
+	defer func() { resolveErr = core.WrapLookup("user group", ref, resolveErr) }()
 	if ref == "" {
 		return "", fmt.Errorf("empty user group reference")
 	}
@@ -113,6 +116,11 @@ func (s *Service) ResolveID(ctx context.Context, tenant, ref string) (string, er
 	case "name":
 		result := s.GetByName(ctx, GetByNameOptions{Tenant: tenant, GroupName: value})
 		if result.Err != nil {
+			// the group name endpoint answers 404 for a name which matches nothing
+			var apiErr *core.Error
+			if errors.As(result.Err, &apiErr) && apiErr.StatusCode() == http.StatusNotFound {
+				return "", &core.NameNotFoundError{NotFound: apiErr, Resource: "user group", Name: value}
+			}
 			return "", result.Err
 		}
 		return result.Data.ID(), nil

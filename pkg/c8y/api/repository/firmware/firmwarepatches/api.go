@@ -244,7 +244,8 @@ func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.R
 //   - "version:1.0.1:firmware:12345" - by version and firmware ID
 //   - "version:1.0.1:name:MyFirmware" - by version and firmware name
 //   - "version:1.0.1:dependency:1.0.0:firmware:12345" - by version, dependency and firmware ID
-func (s *Service) ResolveID(ctx context.Context, identifier string, meta map[string]any) (string, error) {
+func (s *Service) ResolveID(ctx context.Context, identifier string, meta map[string]any) (_ string, resolveErr error) {
+	defer func() { resolveErr = core.WrapLookup("firmware patch", identifier, resolveErr) }()
 	return s.Resolver.ResolveID(ctx, identifier, meta)
 }
 
@@ -292,7 +293,8 @@ func (Ref) ByVersionAndDependency(version, dependency, firmwareID string) string
 //   - "version:1.0.1:firmware:12345" - by version and firmware ID
 //   - "version:1.0.1:name:MyFirmware" - by version and firmware name
 //   - "version:1.0.1:dependency:1.0.0:firmware:12345" - by version, dependency and firmware ID
-func (r *Resolver) ResolveID(ctx context.Context, identifier string, meta map[string]any) (string, error) {
+func (r *Resolver) ResolveID(ctx context.Context, identifier string, meta map[string]any) (_ string, resolveErr error) {
+	defer func() { resolveErr = core.WrapLookup("firmware patch", identifier, resolveErr) }()
 	if meta == nil {
 		meta = make(map[string]any)
 	}

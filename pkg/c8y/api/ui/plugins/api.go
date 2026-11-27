@@ -64,7 +64,10 @@ func NewService(s *httpcore.Service) *Service {
 			return "", nil, it.Err()
 		}
 
-		for item := range it.Items() {
+		for item, err := range it.Items() {
+			if err != nil {
+				return "", nil, err
+			}
 			matchedName, _ := matcher.MatchWithWildcards(item.Name(), name)
 			matchedPath, _ := matcher.MatchWithWildcards(item.ContextPath(), name)
 			if matchedName || matchedPath {
@@ -76,7 +79,7 @@ func NewService(s *httpcore.Service) *Service {
 			}
 		}
 
-		return "", nil, core.ErrNotFound("ui plugin not found with name: %s", name)
+		return "", nil, core.NewNameNotFoundError("ui plugin", name, "ui plugin not found with name: %s", name)
 	}
 
 	return service
@@ -415,7 +418,8 @@ func (s *Service) ByName(name string) string {
 // ResolveID resolves a UI plugin ID string that may contain a resolver scheme.
 // Plain IDs pass through unchanged (so it is safe under --dry); "name:" refs
 // trigger a lookup. Any resolved metadata is merged into meta.
-func (s *Service) ResolveID(ctx context.Context, id string, meta map[string]any) (string, error) {
+func (s *Service) ResolveID(ctx context.Context, id string, meta map[string]any) (_ string, resolveErr error) {
+	defer func() { resolveErr = core.WrapLookup("ui plugin", id, resolveErr) }()
 	resolver, err := s.parseResolver(id)
 	if err != nil {
 		return "", err

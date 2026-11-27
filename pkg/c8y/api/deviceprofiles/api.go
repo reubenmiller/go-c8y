@@ -166,7 +166,8 @@ func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Man
 
 // ResolveID resolves a device-profile reference to an id. A plain string is used
 // as-is; "name:<name>" and "query:<q>" are looked up scoped to device profiles.
-func (s *Service) ResolveID(ctx context.Context, ref string, meta map[string]any) (string, error) {
+func (s *Service) ResolveID(ctx context.Context, ref string, meta map[string]any) (_ string, resolveErr error) {
+	defer func() { resolveErr = core.WrapLookup("device profile", ref, resolveErr) }()
 	if ref == "" {
 		return "", fmt.Errorf("empty device profile reference")
 	}
@@ -184,9 +185,9 @@ func (s *Service) ResolveID(ctx context.Context, ref string, meta map[string]any
 			AddFilterEqStr("type", TypeProfile).
 			AddFilterEqStr("name", value).
 			AddOrderBy("name").
-			Build(), value, meta)
+			Build(), value, true, meta)
 	case "query":
-		return s.lookupByQuery(ctx, ScopeToDeviceProfiles(value), value, meta)
+		return s.lookupByQuery(ctx, ScopeToDeviceProfiles(value), value, false, meta)
 	default:
 		return "", fmt.Errorf("unknown device profile resolver scheme: %q", scheme)
 	}
@@ -194,7 +195,7 @@ func (s *Service) ResolveID(ctx context.Context, ref string, meta map[string]any
 
 // lookupByQuery returns the id of the first device profile matching query. label
 // is the original reference, for error messages and metadata.
-func (s *Service) lookupByQuery(ctx context.Context, query, label string, meta map[string]any) (string, error) {
+func (s *Service) lookupByQuery(ctx context.Context, query, label string, byName bool, meta map[string]any) (string, error) {
 	opt := ListOptions{Query: query}
 	opt.PageSize = 1
 	result := s.List(ctx, opt)
@@ -208,6 +209,9 @@ func (s *Service) lookupByQuery(ctx context.Context, query, label string, meta m
 			meta["source"] = "name"
 		}
 		return item.ID(), nil
+	}
+	if byName {
+		return "", core.NewNameNotFoundError("device profile", label, "device profile not found: %s", label)
 	}
 	return "", fmt.Errorf("device profile not found: %s", label)
 }
