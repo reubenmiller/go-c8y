@@ -34,7 +34,7 @@ func Test_Registration_CreateBulk(t *testing.T) {
 	var csv strings.Builder
 	csv.WriteString("ID\tCREDENTIALS\tNAME\tTYPE\tIDTYPE\n")
 	for _, id := range ids {
-		fmt.Fprintf(&csv, "%s\t%s\t%s\tc8y_Test\tc8y_Serial\n", id, "Pass-7x!"+testingutils.RandomString(16), id)
+		fmt.Fprintf(&csv, "%s\t%s\t%s\tc8y_Test\tc8y_Serial\n", id, registrationPassword(), id)
 	}
 
 	result := client.Devices.Registration.CreateBulk(ctx, registration.UploadFileOptions{
@@ -79,7 +79,7 @@ func Test_Registration_Register(t *testing.T) {
 	opt := registration.RegisterOptions{
 		ExternalID:  id,
 		AuthType:    registration.AuthTypeBasic,
-		Credentials: "Pass-" + testingutils.RandomString(16),
+		Credentials: registrationPassword(),
 		Type:        "c8y_Test",
 	}
 	result := client.Devices.Registration.Register(ctx, opt)
@@ -95,7 +95,7 @@ func Test_Registration_Register(t *testing.T) {
 	assert.Contains(t, again.Err.Error(), id)
 
 	// With a new password the platform updates the device's credentials.
-	opt.Credentials = "Pass-" + testingutils.RandomString(16)
+	opt.Credentials = registrationPassword()
 	updated := client.Devices.Registration.Register(ctx, opt)
 	require.NoError(t, updated.Err, "an external ID that exists gets its credentials updated")
 	assert.Equal(t, result.Data.ManagedObjectID(), updated.Data.ManagedObjectID())
@@ -120,4 +120,12 @@ func Test_Registration_Register_DryRun(t *testing.T) {
 		n++
 	}
 	assert.Zero(t, n)
+}
+
+// registrationPassword returns a password which always meets the tenant's
+// password policy (upper and lower case letters, a digit and a special
+// character), which "Pass-" plus random letters and digits does not when the
+// random part has no digit.
+func registrationPassword() string {
+	return "Pass-7x!" + testingutils.RandomString(16)
 }
