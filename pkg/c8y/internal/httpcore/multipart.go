@@ -27,7 +27,12 @@ func NewMultiPartFileFields(opt core.UploadFileOptions) []*resty.MultipartField 
 	// or an unknown extension is application/octet-stream (its content is not
 	// sniffed). This is what go-c8y-cli v2.59.0 sent: `--name x.json` on a
 	// config.ini keeps text/plain, and a file named "nofile" is octet-stream.
-	obj["type"] = selectFirstNonEmptyValue(opt.ContentType, asString(obj["type"]), mime.TypeByExtension(filepath.Ext(opt.FilePath)), "application/octet-stream")
+	// An upload from a Reader (no FilePath) uses the extension of its name.
+	typeSource := opt.FilePath
+	if typeSource == "" {
+		typeSource = name
+	}
+	obj["type"] = selectFirstNonEmptyValue(opt.ContentType, asString(obj["type"]), mime.TypeByExtension(filepath.Ext(typeSource)), "application/octet-stream")
 	var objB []byte
 	if opt.ObjectIndent != "" {
 		objB, _ = json.MarshalIndent(obj, "", opt.ObjectIndent)

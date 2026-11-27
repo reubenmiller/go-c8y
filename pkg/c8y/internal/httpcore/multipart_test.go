@@ -102,7 +102,8 @@ func TestNewMultiPartFileFieldsObjectType(t *testing.T) {
 		{"the upload name does not change the type", core.UploadFileOptions{FilePath: txt, Name: "x.json"}, "text/plain; charset=utf-8"},
 		{"the extension of the file wins over a name without one", core.UploadFileOptions{FilePath: jsonFile, Name: "noext"}, "application/json"},
 		{"a name does not type a file without extension", core.UploadFileOptions{FilePath: text, Name: "x.json"}, "application/octet-stream"},
-		{"a reader has no extension", core.UploadFileOptions{Reader: strings.NewReader("x"), Name: "x.json"}, "application/octet-stream"},
+		{"a reader is typed by the extension of its name", core.UploadFileOptions{Reader: strings.NewReader("x"), Name: "x.json"}, "application/json"},
+		{"a reader without an extension", core.UploadFileOptions{Reader: strings.NewReader("x"), Name: "x"}, "application/octet-stream"},
 		{"explicit type", core.UploadFileOptions{FilePath: txt, ContentType: "my/type"}, "my/type"},
 	}
 	for _, tt := range tests {
