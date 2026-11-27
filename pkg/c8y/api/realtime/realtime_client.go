@@ -132,6 +132,19 @@ type RealtimeData struct {
 	Data           jsondoc.JSONDoc `json:"data,omitempty"`
 }
 
+// MarshalJSON writes the frame data. An empty frame is written as {}: the
+// zero value of the JSON document of the data can not be encoded as it is.
+func (d RealtimeData) MarshalJSON() ([]byte, error) {
+	out := struct {
+		RealtimeAction string          `json:"realtimeAction,omitempty"`
+		Data           json.RawMessage `json:"data,omitempty"`
+	}{RealtimeAction: d.RealtimeAction}
+	if raw := d.Data.Raw(); len(raw) > 0 {
+		out.Data = json.RawMessage(raw)
+	}
+	return json.Marshal(out)
+}
+
 type subscription struct {
 	glob       *matcher.Glob
 	out        chan<- *Message

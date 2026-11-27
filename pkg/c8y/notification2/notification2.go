@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
+	"net"
 	"net/http"
 	"net/url"
 	"sync"
@@ -84,6 +85,9 @@ type Notification2Client struct {
 
 	hub  *Hub
 	send chan []byte
+
+	// writeMu serialises the writes to the websocket (the write handler and Unsubscribe)
+	writeMu sync.Mutex
 
 	// done is closed by Close and stops the hub, the write handler, the
 	// worker and any reconnect loop.
@@ -502,9 +506,17 @@ func (c *Notification2Client) writeHandler() {
 			}
 
 			if c.ws != nil {
+				c.writeMu.Lock()
 				c.ws.SetWriteDeadline(time.Now().Add(c.ConnectionOptions.GetWriteDuration()))
-				if err := c.ws.WriteMessage(websocket.TextMessage, message); err != nil {
-					slog.Warn("Failed to send message", "err", err)
+				err := c.ws.WriteMessage(websocket.TextMessage, message)
+				c.writeMu.Unlock()
+				if err != nil {
+					if c.isClosed() || errors.Is(err, net.ErrClosed) {
+						// the client was closed while the message was waiting: nobody is left to read it
+						slog.Debug("Dropped message as the connection is closed", "err", err)
+					} else {
+						slog.Warn("Failed to send message", "err", err)
+					}
 				}
 			}
 
@@ -513,8 +525,11 @@ func (c *Notification2Client) writeHandler() {
 			if c.ws != nil {
 				// A websocket ping should initiate a websocket pong response from the server
 				// If the pong is not received in the minimum time, then the connection will be reset
+				c.writeMu.Lock()
 				c.ws.SetWriteDeadline(time.Now().Add(c.ConnectionOptions.GetWriteDuration()))
-				if err := c.ws.WriteMessage(websocket.PingMessage, nil); err != nil {
+				err := c.ws.WriteMessage(websocket.PingMessage, nil)
+				c.writeMu.Unlock()
+				if err != nil {
 					slog.Warn("Failed to send ping message to server", "err", err)
 					// go c.reconnect()
 					continue
@@ -611,13 +626,23 @@ func (c *Notification2Client) worker() {
 	slog.Info("Worker is shutting down")
 }
 
-// Unsubscribe unsubscribe to a given pattern
+// Unsubscribe tells the server that the subscriber is done. The message is
+// written before Unsubscribe returns, so that closing the client afterwards
+// does not drop it (a message queued for the write handler could be written to
+// the connection which Close has closed).
 func (c *Notification2Client) Unsubscribe() error {
 	slog.Info("unsubscribing")
-	select {
-	case c.send <- []byte("unsubscribe_subscriber"):
-		return nil
-	case <-c.done:
+	if c.isClosed() {
 		return ErrClientClosed
 	}
+	c.mtx.RLock()
+	ws := c.ws
+	c.mtx.RUnlock()
+	if ws == nil {
+		return ErrClientClosed
+	}
+	c.writeMu.Lock()
+	defer c.writeMu.Unlock()
+	ws.SetWriteDeadline(time.Now().Add(c.ConnectionOptions.GetWriteDuration()))
+	return ws.WriteMessage(websocket.TextMessage, []byte("unsubscribe_subscriber"))
 }
