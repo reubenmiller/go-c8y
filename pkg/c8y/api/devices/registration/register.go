@@ -9,6 +9,7 @@ import (
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/identity"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 )
@@ -84,7 +85,7 @@ func (s *Service) Register(ctx context.Context, opt RegisterOptions) op.Result[j
 	if err != nil {
 		return op.Failed[jsonmodels.Identity](err, false)
 	}
-	result := s.CreateBulk(ctx, UploadFileOptions{Reader: bytes.NewReader(file), Name: "devices.csv"})
+	result := httpcore.Execute(ctx, s.createBulkFieldB(file), jsonmodels.NewBulkNewDeviceRequests)
 	if result.Err != nil || ctxhelpers.IsDryRun(ctx) {
 		// Keeps the error, or the dry-run request, without any data.
 		return result.Map[jsonmodels.Identity](func(jsonmodels.BulkNewDeviceRequests) jsonmodels.Identity { return jsonmodels.Identity{} })

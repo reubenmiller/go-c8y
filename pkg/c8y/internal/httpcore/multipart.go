@@ -22,11 +22,17 @@ func NewMultiPartFileFields(opt core.UploadFileOptions) []*resty.MultipartField 
 	maps.Copy(obj, opt.Properties)
 	name := selectFirstNonEmptyValue(opt.Name, asString(obj["name"]), filepath.Base(opt.FilePath))
 	obj["name"] = name
-	// The object metadata "type" prefers the (overridable) name's extension, then
-	// the source file's extension, then sniffed content — keeping any
-	// "; charset=..." parameter. `--name myCustomName.json` on a config.ini yields
-	// application/json; `--name override` on data.csv keeps text/csv from the file.
-	obj["type"] = selectFirstNonEmptyValue(opt.ContentType, asString(obj["type"]), detectUploadType(name, opt.FilePath, true), "application/octet-stream")
+	// The object metadata "type" is the explicit type, then a "type" of the
+	// properties, then the type of the source file's extension; a file with no
+	// or an unknown extension is application/octet-stream (its content is not
+	// sniffed). This is what go-c8y-cli v2.59.0 sent: `--name x.json` on a
+	// config.ini keeps text/plain, and a file named "nofile" is octet-stream.
+	// An upload from a Reader (no FilePath) uses the extension of its name.
+	typeSource := opt.FilePath
+	if typeSource == "" {
+		typeSource = name
+	}
+	obj["type"] = selectFirstNonEmptyValue(opt.ContentType, asString(obj["type"]), mime.TypeByExtension(filepath.Ext(typeSource)), "application/octet-stream")
 	var objB []byte
 	if opt.ObjectIndent != "" {
 		objB, _ = json.MarshalIndent(obj, "", opt.ObjectIndent)
@@ -39,7 +45,7 @@ func NewMultiPartFileFields(opt core.UploadFileOptions) []*resty.MultipartField 
 	// the charset parameter stripped — matching v1's detectContentType. So
 	// `--name override` on data.csv sends a sniffed "text/plain" file part while
 	// the object metadata keeps "text/csv; charset=utf-8".
-	filePartType := stripMediaParams(selectFirstNonEmptyValue(opt.ContentType, detectUploadType(name, opt.FilePath, false), "application/octet-stream"))
+	filePartType := stripMediaParams(selectFirstNonEmptyValue(opt.ContentType, detectUploadType(name, opt.FilePath), "application/octet-stream"))
 
 	fields := make([]*resty.MultipartField, 0, 2)
 	// v1 ordered the parts file-then-object; the curl/markdown dry-run renderers
@@ -109,21 +115,14 @@ func asString(v any) string {
 	return ""
 }
 
-// detectUploadType resolves a file's MIME type from the (overridable) upload
-// name's extension, falling back to content sniffing the source file when the
-// extension is unknown — matching v1's detectContentType (e.g. a config.ini or
-// an extension-less file is sniffed to text/plain rather than left as the
-// generic octet-stream). Returns "" when nothing can be determined.
-func detectUploadType(name, filePath string, useFileExt bool) string {
+// detectUploadType resolves the MIME type of the file part from the (overridable)
+// upload name's extension, falling back to content sniffing the source file
+// when the extension is unknown — matching v1's detectContentType (e.g. a
+// config.ini or an extension-less file is sniffed to text/plain rather than
+// left as the generic octet-stream). Returns "" when nothing can be determined.
+func detectUploadType(name, filePath string) string {
 	if ct := mime.TypeByExtension(filepath.Ext(name)); ct != "" {
 		return ct
-	}
-	// The object metadata (useFileExt) falls back to the source file's extension
-	// before sniffing; the file part header skips straight to sniffing.
-	if useFileExt {
-		if ct := mime.TypeByExtension(filepath.Ext(filePath)); ct != "" {
-			return ct
-		}
 	}
 	if filePath != "" {
 		if f, err := os.Open(filePath); err == nil {

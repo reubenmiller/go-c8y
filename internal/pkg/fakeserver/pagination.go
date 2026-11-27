@@ -32,10 +32,9 @@ func Paginate(r *http.Request, items []json.RawMessage) PaginationResult {
 	}
 
 	total := len(items)
+	// An empty collection has no pages (totalPages 0), as on the platform: a
+	// count read from withTotalPages and a page size of 1 is then 0.
 	totalPages := int(math.Ceil(float64(total) / float64(pageSize)))
-	if totalPages < 1 {
-		totalPages = 1
-	}
 
 	start := (currentPage - 1) * pageSize
 	if start > total {

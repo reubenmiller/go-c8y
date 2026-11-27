@@ -21,7 +21,7 @@ func (IDKeysetStrategy) Name() string { return "id" }
 // First seeds the cursor at "0" (every real id is greater) so the first page is
 // also served by the keyset filter.
 func (IDKeysetStrategy) First(base PageRequest) PageRequest {
-	base.CurrentPage = 1
+	base.CurrentPage = 0 // the cursor selects the page, no currentPage is sent
 	if base.AfterID == "" {
 		base.AfterID = "0"
 	}
@@ -44,7 +44,7 @@ func (IDKeysetStrategy) Advance(prev PageRequest, page PageView) (PageRequest, b
 		return prev, false
 	}
 	next := prev
-	next.CurrentPage = 1
+	next.CurrentPage = 0
 	next.AfterID = lastID
 	if prev.PageSize > 0 && page.Count < prev.PageSize {
 		return next, false

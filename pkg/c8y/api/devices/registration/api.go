@@ -286,6 +286,18 @@ func (s *Service) createBulkB(opt UploadFileOptions) *httpcore.TryRequest {
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
+// createBulkFieldB builds the bulk registration request of Register: the CSV
+// is the plain "file" form field, without a file name and a content type (the
+// request go-c8y-cli v2 sent). The platform reads the part by its name.
+func (s *Service) createBulkFieldB(csv []byte) *httpcore.TryRequest {
+	req := s.svc.Client.R().
+		SetMethod(resty.MethodPost).
+		SetMultipartFields(&resty.MultipartField{Name: "file", Values: []string{string(csv)}}).
+		SetHeader("Accept", types.MimeTypeApplicationJSON).
+		SetURL(ApiBulkDeviceRequests)
+	return httpcore.NewTryRequest(s.svc.Client, req)
+}
+
 // GeneratePassword generates a device password with the recommended password length by default
 // and uses symbols which are compatible with the Bulk Registration API.
 func (s *Service) GeneratePassword(opts ...password.PasswordOption) (string, error) {

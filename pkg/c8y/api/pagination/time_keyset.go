@@ -27,7 +27,7 @@ type TimeKeysetStrategy struct{}
 func (TimeKeysetStrategy) Name() string { return "time" }
 
 func (TimeKeysetStrategy) First(base PageRequest) PageRequest {
-	base.CurrentPage = 1
+	base.CurrentPage = 0 // the time window selects the page, no currentPage is sent
 	return base
 }
 
@@ -97,9 +97,9 @@ func (s TimeKeysetStrategy) Advance(prev PageRequest, page PageView) (PageReques
 	if stuck {
 		// The whole window is (at least) one timestamp wider than a page; page
 		// through it with offset, keeping the cursor fixed.
-		next.CurrentPage = prev.CurrentPage + 1
+		next.CurrentPage = max(prev.CurrentPage, 1) + 1
 	} else {
-		next.CurrentPage = 1
+		next.CurrentPage = 0
 		if prev.Ascending {
 			next.After = boundary
 		} else {

@@ -2,8 +2,11 @@ package pagination
 
 import (
 	"context"
+	"fmt"
 	"iter"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
@@ -34,7 +37,7 @@ func twoPageFetch() func(PaginationOptions) op.Result[fakeCollection] {
 	page2 := op.WithMeta(op.WithMeta(op.WithMeta(op.WithResponse(op.OK(fakeCollection{items: []string{`{"id":"3"}`}}), []byte(`{"managedObjects":[{"id":"3"}],"statistics":{"currentPage":2,"pageSize":2,"totalPages":2,"totalElements":3}}`)), "next", ""), "totalPages", int64(2)), "totalElements", int64(3))
 
 	return func(opts PaginationOptions) op.Result[fakeCollection] {
-		switch opts.CurrentPage {
+		switch max(opts.CurrentPage, 1) { // an unset currentPage is the first page
 		case 1:
 			return page1
 		case 2:
@@ -149,4 +152,88 @@ func TestSinglePage_KeepsCurrentPage(t *testing.T) {
 	if assert.Len(t, seen, 1) {
 		assert.Equal(t, 3, seen[0].CurrentPage)
 	}
+}
+
+// The walk of the offset strategy sends no currentPage on its first request and
+// no totals on the next ones (only the caller's flags), like the plain list
+// request: currentPage 2 follows.
+func TestOffsetWalk_RequestsOfTheCaller(t *testing.T) {
+	var seen []PaginationOptions
+	fetch := twoPageFetch()
+	it := Paginate(context.Background(), PaginationOptions{PageSize: 2}, func(opts PaginationOptions) op.Result[fakeCollection] {
+		seen = append(seen, opts)
+		return fetch(opts)
+	}, func(b []byte) string { return string(b) })
+
+	for _, err := range it.Items() {
+		assert.NoError(t, err)
+	}
+
+	assert.Len(t, seen, 2)
+	assert.Equal(t, 0, seen[0].CurrentPage, "the first request has no currentPage")
+	assert.Equal(t, 2, seen[1].CurrentPage)
+	for _, opts := range seen {
+		assert.False(t, opts.WithTotalPages, "totals are not forced")
+		assert.False(t, opts.WithTotalElements, "totals are not forced")
+	}
+}
+
+// timeSeriesFetch serves n items (id n is at the second n, newest first) like a
+// time-series collection: dateTo (the cursor Before, inclusive) and currentPage
+// select the page.
+func timeSeriesFetch(n int, requests *atomic.Int32) func(PageRequest) op.Result[fakeCollection] {
+	return func(req PageRequest) op.Result[fakeCollection] {
+		requests.Add(1)
+		var items []string
+		for id := n; id >= 1; id-- {
+			ts := time.Date(2024, 1, 1, 10, 0, id, 0, time.UTC)
+			if !req.Before.IsZero() && ts.After(req.Before) {
+				continue
+			}
+			items = append(items, fmt.Sprintf(`{"id":"%d","time":"%s"}`, id, ts.Format("2006-01-02T15:04:05.000Z")))
+		}
+		page := max(req.CurrentPage, 1)
+		start := min((page-1)*req.PageSize, len(items))
+		end := min(start+req.PageSize, len(items))
+		return op.OK(fakeCollection{items: items[start:end]})
+	}
+}
+
+// MaxItems items are returned by the time keyset although every page after the
+// first starts with the boundary item of the previous page (a duplicate which is
+// dropped), and the walk stops when they are read.
+func TestTimeKeyset_MaxItemsIsReached(t *testing.T) {
+	var requests atomic.Int32
+	it := PaginateWith(context.Background(),
+		PageRequest{PaginationOptions: PaginationOptions{PageSize: 2, MaxItems: 6}},
+		TimeKeysetStrategy{}, timeSeriesFetch(10, &requests),
+		func(b []byte) string { return string(jsondoc.New(b).Get("id").String()) })
+
+	var ids []string
+	for id, err := range it.Items() {
+		assert.NoError(t, err)
+		ids = append(ids, id)
+	}
+
+	assert.Equal(t, []string{"10", "9", "8", "7", "6", "5"}, ids)
+	// 5 pages hold the 6 items; the read-ahead may have fetched up to 2 more
+	assert.LessOrEqual(t, requests.Load(), int32(7), "the walk stops once MaxItems items are read")
+}
+
+// One page of items (MaxItems == page size) is one request.
+func TestTimeKeyset_OnePageIsOneRequest(t *testing.T) {
+	var requests atomic.Int32
+	it := PaginateWith(context.Background(),
+		PageRequest{PaginationOptions: PaginationOptions{PageSize: 2, MaxItems: 2}},
+		TimeKeysetStrategy{}, timeSeriesFetch(10, &requests),
+		func(b []byte) string { return string(jsondoc.New(b).Get("id").String()) })
+
+	var ids []string
+	for id, err := range it.Items() {
+		assert.NoError(t, err)
+		ids = append(ids, id)
+	}
+
+	assert.Equal(t, []string{"10", "9"}, ids)
+	assert.Equal(t, int32(1), requests.Load())
 }

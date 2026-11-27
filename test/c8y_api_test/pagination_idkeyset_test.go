@@ -73,7 +73,7 @@ func TestIDKeyset_CompleteAndMatchesOffset(t *testing.T) {
 }
 
 // TestIDKeyset_RequestPattern proves the optimisation is actually engaged: every
-// keyset request re-asks for page 1 with an advancing "_id gt" cursor, while
+// keyset request has no currentPage (the first page) and an advancing "_id gt" cursor, while
 // offset increments currentPage and never sends a cursor.
 func TestIDKeyset_RequestPattern(t *testing.T) {
 	client, srv := testcore.CreateTestClientWithFakeServer(t)
@@ -92,7 +92,7 @@ func TestIDKeyset_RequestPattern(t *testing.T) {
 	require.GreaterOrEqual(t, len(keysetReqs), 4, "expected multiple keyset pages")
 	for _, q := range keysetReqs {
 		require.Contains(t, q, "_id gt ", "keyset request must carry an _id cursor: %s", q)
-		require.Contains(t, q, "currentPage=1", "keyset must always re-request page 1: %s", q)
+		require.True(t, strings.HasPrefix(q, "currentPage= |"), "the cursor selects the page, a keyset request has no currentPage: %s", q)
 		require.Contains(t, q, "$orderby=_id asc", "keyset must order by _id asc: %s", q)
 	}
 

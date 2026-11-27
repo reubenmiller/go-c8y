@@ -264,6 +264,13 @@ func PaginateWith[T any, D JSONDocument](
 	maxItems := base.GetMaxItems()
 	readAhead := resolveReadAhead(base.PaginationOptions, strategy)
 	pageLimit := pageCap(maxItems, base.PageSize)
+	if _, ok := strategy.(TimeKeysetStrategy); ok {
+		// The time cursor is inclusive: each page after the first starts with the
+		// items of the boundary timestamp, which are dropped as duplicates. A page
+		// is then not a page of new items, so the number of pages does not say
+		// when MaxItems items were read. The item cap stops the walk instead.
+		pageLimit = 0
+	}
 
 	iterator.items = func(yield func(T, error) bool) {
 		if ctxhelpers.IsDryRun(ctx) && !ctxhelpers.IsMockResponses(ctx) {
@@ -298,7 +305,8 @@ func PaginateWith[T any, D JSONDocument](
 					}
 					count++
 				}
-				return true
+				// MaxItems items are read: no further page is requested
+				return maxItems <= 0 || count < maxItems
 			})
 	}
 

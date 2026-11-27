@@ -181,12 +181,9 @@ func (s *Service) ListAll(ctx context.Context, opts ListOptions) *pagination.Ite
 	)
 }
 
-type GetOptions struct {
-	WithParents       bool `url:"withParents,omitempty"`
-	WithChildren      bool `url:"withChildren,omitempty"`
-	WithChildrenCount bool `url:"withChildrenCount,omitempty"`
-	SkipChildrenNames bool `url:"skipChildrenNames,omitempty"`
-}
+// GetOptions are the managed object get options (withParents, withChildren,
+// withChildrenCount, skipChildrenNames, withLatestValues and withGroups).
+type GetOptions = managedobjects.GetOptions
 
 // Get retrieves a firmware patch
 func (s *Service) Get(ctx context.Context, ID string, opt GetOptions) op.Result[jsonmodels.FirmwarePatch] {
@@ -678,13 +675,10 @@ func (s *Service) createB(firmwareID string, body any) *httpcore.TryRequest {
 }
 
 func (s *Service) getB(ID string, opt GetOptions) *httpcore.TryRequest {
-	getOpts := managedobjects.GetOptions{
-		WithParents: opt.WithParents,
-	}
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetPathParam("id", ID).
-		SetQueryParamsFromValues(httpcore.QueryParameters(getOpts)).
+		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(managedobjects.ApiManagedObject)
 	return httpcore.NewTryRequest(s.svc.Client, req, "")

@@ -2,6 +2,9 @@ package httpcore
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
@@ -68,5 +71,47 @@ func TestNewMultiPartFileFieldsProperties(t *testing.T) {
 	obj = objectField(t, core.UploadFileOptions{FilePath: "dir/report.pdf"})
 	if obj["name"] != "report.pdf" {
 		t.Errorf("name = %v, want report.pdf", obj["name"])
+	}
+}
+
+// TestNewMultiPartFileFieldsObjectType verifies the object "type" follows go-c8y-cli
+// v2.59.0: the type of the source file's extension, application/octet-stream when
+// the file has none (its content is not sniffed), and an explicit type wins.
+func TestNewMultiPartFileFieldsObjectType(t *testing.T) {
+	dir := t.TempDir()
+	write := func(name, content string) string {
+		p := filepath.Join(dir, name)
+		if err := os.WriteFile(p, []byte(content), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
+	text := write("nofile", "hello text\n")
+	unknown := write("c.foo", "hello text\n")
+	txt := write("a.txt", "hello text\n")
+	jsonFile := write("b.json", `{"a":1}`)
+
+	tests := []struct {
+		name string
+		opt  core.UploadFileOptions
+		want string
+	}{
+		{"no extension is not sniffed", core.UploadFileOptions{FilePath: text}, "application/octet-stream"},
+		{"unknown extension is not sniffed", core.UploadFileOptions{FilePath: unknown}, "application/octet-stream"},
+		{"known extension", core.UploadFileOptions{FilePath: txt}, "text/plain; charset=utf-8"},
+		{"the upload name does not change the type", core.UploadFileOptions{FilePath: txt, Name: "x.json"}, "text/plain; charset=utf-8"},
+		{"the extension of the file wins over a name without one", core.UploadFileOptions{FilePath: jsonFile, Name: "noext"}, "application/json"},
+		{"a name does not type a file without extension", core.UploadFileOptions{FilePath: text, Name: "x.json"}, "application/octet-stream"},
+		{"a reader is typed by the extension of its name", core.UploadFileOptions{Reader: strings.NewReader("x"), Name: "x.json"}, "application/json"},
+		{"a reader without an extension", core.UploadFileOptions{Reader: strings.NewReader("x"), Name: "x"}, "application/octet-stream"},
+		{"explicit type", core.UploadFileOptions{FilePath: txt, ContentType: "my/type"}, "my/type"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			obj := objectField(t, tt.opt)
+			if obj["type"] != tt.want {
+				t.Errorf("type = %v, want %v", obj["type"], tt.want)
+			}
+		})
 	}
 }
