@@ -33,8 +33,9 @@ func TestClient_IdentityHeadersDefaults(t *testing.T) {
 	var seen http.Header
 	client := identityHeadersClient(t, &seen)
 	_ = client.ManagedObjects.List(context.Background(), managedobjects.ListOptions{})
-	assert.NotEmpty(t, seen.Get("User-Agent"))
-	assert.NotEmpty(t, seen.Get("X-Application"))
+	// not the resty default ("go-resty/...")
+	assert.Equal(t, "go-client", seen.Get("User-Agent"))
+	assert.Equal(t, "my-agent", seen.Get("X-Application"))
 }
 
 func TestClient_IdentityHeadersCanBeOverridden(t *testing.T) {

@@ -335,8 +335,8 @@ type RetryOptions struct {
 	// Exponential waits WaitMin before the first retry, twice as long before the
 	// second, and so on (4x, 8x, ...), but at most WaitMax, without jitter. This
 	// is the schedule of hashicorp/go-retryablehttp. The default schedule (false)
-	// starts at twice WaitMin, with jitter. A Retry-After header of the response
-	// is honored in both cases.
+	// starts at twice WaitMin, with jitter. In both cases the Retry-After header
+	// of a 429 or 503 response is used instead.
 	Exponential bool
 }
 
