@@ -60,7 +60,7 @@ func (hs *headerServer) last(t *testing.T) *http.Request {
 }
 
 func newOptionsTestClient(hs *headerServer) *Client {
-	return NewClient(ClientOptions{
+	return mustNewClient(ClientOptions{
 		BaseURL: hs.server.URL,
 		Auth: authentication.AuthOptions{
 			Tenant:   "t100",

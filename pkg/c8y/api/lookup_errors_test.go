@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/reubenmiller/go-c8y/v2/internal/pkg/testclient"
+
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/remoteaccess/remoteaccess_configurations"
@@ -95,7 +97,7 @@ func TestLookupErrorsNameNotFound(t *testing.T) {
 		_, _ = w.Write([]byte(`{"managedObjects":[],"applications":[],"statistics":{"pageSize":5,"currentPage":1}}`))
 	}))
 	defer srv.Close()
-	client := api.NewClient(api.ClientOptions{BaseURL: srv.URL})
+	client := testclient.Must(api.ClientOptions{BaseURL: srv.URL})
 
 	for _, tc := range lookupCalls(client) {
 		t.Run(tc.message, func(t *testing.T) {
@@ -138,7 +140,7 @@ func TestLookupErrorsTransport(t *testing.T) {
 	}
 	addr := l.Addr().String()
 	_ = l.Close()
-	client := api.NewClient(api.ClientOptions{BaseURL: "http://" + addr})
+	client := testclient.Must(api.ClientOptions{BaseURL: "http://" + addr})
 
 	for _, tc := range lookupCalls(client) {
 		t.Run(tc.message, func(t *testing.T) {
@@ -170,7 +172,7 @@ func TestLookupErrorsListFailure(t *testing.T) {
 		_, _ = w.Write([]byte(`{"error":"general/internalError","message":"boom"}`))
 	}))
 	defer srv.Close()
-	client := api.NewClient(api.ClientOptions{BaseURL: srv.URL})
+	client := testclient.Must(api.ClientOptions{BaseURL: srv.URL})
 
 	calls := map[string]func() error{
 		"applications": func() error {
@@ -213,7 +215,7 @@ func TestLookupErrorsRemoteAccessConfiguration(t *testing.T) {
 		_, _ = w.Write([]byte(`[{"id":"1","name":"webssh","protocol":"SSH"}]`))
 	}))
 	defer srv.Close()
-	client := api.NewClient(api.ClientOptions{BaseURL: srv.URL})
+	client := testclient.Must(api.ClientOptions{BaseURL: srv.URL})
 
 	_, err := client.RemoteAccess.Configurations.ResolveID(context.Background(), "d1", "name:missing")
 	if err == nil || err.Error() != "remote access configuration not found: name=missing" {
@@ -236,7 +238,7 @@ func TestLookupErrorsRemoteAccessConfiguration(t *testing.T) {
 
 // TestLookupErrorsDirectID checks that a plain id is no lookup.
 func TestLookupErrorsDirectID(t *testing.T) {
-	client := api.NewClient(api.ClientOptions{BaseURL: "http://127.0.0.1:1"})
+	client := testclient.Must(api.ClientOptions{BaseURL: "http://127.0.0.1:1"})
 	id, err := client.ManagedObjects.ResolveID(context.Background(), "123", nil)
 	if err != nil || id != "123" {
 		t.Fatalf("ResolveID = (%q, %v)", id, err)

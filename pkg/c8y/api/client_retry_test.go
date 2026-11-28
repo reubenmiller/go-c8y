@@ -23,7 +23,7 @@ func retryTestClient(t *testing.T, retry *RetryOptions) (*Client, *atomic.Int32)
 		_, _ = w.Write([]byte(`{}`))
 	}))
 	t.Cleanup(srv.Close)
-	client := NewClient(ClientOptions{
+	client := mustNewClient(ClientOptions{
 		BaseURL:          srv.URL,
 		SkipTenantLookup: true,
 		Auth:             authentication.AuthOptions{Username: "u", Password: "p", Tenant: "t", AuthType: []authentication.AuthType{authentication.AuthTypeBasic}},

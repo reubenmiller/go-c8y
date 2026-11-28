@@ -62,10 +62,10 @@ func Test_Microservices_CRUD(t *testing.T) {
 	updRes := client.Microservices.Update(ctx, id, map[string]any{"availability": "MARKET"})
 	require.NoError(t, updRes.Err)
 
-	subRes := client.Microservices.Subscribe(ctx, client.Auth.Tenant, createRes.Data.Self())
+	subRes := client.Microservices.Subscribe(ctx, client.Auth().Tenant, createRes.Data.Self())
 	require.NoError(t, subRes.Err)
 
-	unsubRes := client.Microservices.Unsubscribe(ctx, client.Auth.Tenant, id)
+	unsubRes := client.Microservices.Unsubscribe(ctx, client.Auth().Tenant, id)
 	require.NoError(t, unsubRes.Err)
 
 	upload := client.Microservices.Upload(ctx, id, microservices.UploadFileOptions{

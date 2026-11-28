@@ -78,7 +78,7 @@ func (ss *scriptServer) total() int {
 }
 
 func newScriptClient(ss *scriptServer) *Client {
-	c := NewClient(ClientOptions{
+	c := mustNewClient(ClientOptions{
 		BaseURL:          ss.server.URL,
 		SkipTenantLookup: true,
 		Auth: authentication.AuthOptions{

@@ -84,7 +84,7 @@ func Test_GetCurrentTenant(t *testing.T) {
 
 	require.NoError(t, result.Err)
 	assert.Equal(t, 200, result.HTTPStatus)
-	assert.Equal(t, client.Auth.Tenant, result.Data.Get("name").String())
+	assert.Equal(t, client.Auth().Tenant, result.Data.Get("name").String())
 	assert.NotEmpty(t, result.Data.Get("domainName").String(), "Domain name should not be empty")
 }
 
@@ -110,7 +110,7 @@ func Test_CRUD_Tenant(t *testing.T) {
 	ctx := context.Background()
 
 	company := "redmilldesigns"
-	domain := "mydomain." + client.BaseURL.Hostname()
+	domain := "mydomain." + client.BaseURL().Hostname()
 
 	tenantInput := map[string]any{
 		"company": company,

@@ -15,17 +15,17 @@ import (
 )
 
 func Test_InvalidHost_ReturnsError(t *testing.T) {
-	_, err := NewClientE(nil, ClientOptions{Host: "http://exa mple.com"})
+	_, err := NewClient(nil, ClientOptions{Host: "http://exa mple.com"})
 	require.Error(t, err)
 
-	// the deprecated constructor must not exit the process
-	c := NewClient(nil, ClientOptions{Host: "http://exa mple.com"})
-	require.NotNil(t, c)
-	assert.Error(t, c.Connect())
+	// no client (and no goroutine) is created for an invalid host
+	c, err := NewClient(nil, ClientOptions{Host: "http://exa mple.com"})
+	assert.Nil(t, c)
+	assert.Error(t, err)
 }
 
 func Test_MissingDialer_ReturnsError(t *testing.T) {
-	c, err := NewClientE(nil, ClientOptions{Host: "http://localhost:1"})
+	c, err := NewClient(nil, ClientOptions{Host: "http://localhost:1"})
 	require.NoError(t, err)
 	c.dialer = nil
 	assert.NotPanics(t, func() { err = c.Connect() })
@@ -33,7 +33,7 @@ func Test_MissingDialer_ReturnsError(t *testing.T) {
 }
 
 func Test_DialFailure_ReturnsError(t *testing.T) {
-	c, err := NewClientE(nil, ClientOptions{Host: "http://127.0.0.1:1"})
+	c, err := NewClient(nil, ClientOptions{Host: "http://127.0.0.1:1"})
 	require.NoError(t, err)
 	assert.NotPanics(t, func() { err = c.Connect() })
 	assert.Error(t, err)
@@ -65,7 +65,7 @@ func newBayeuxServer(t *testing.T, handshakeReply string) string {
 
 func Test_RejectedHandshake_ReturnsErrorAndReleasesSubscribers(t *testing.T) {
 	host := newBayeuxServer(t, `[{"channel":"/meta/handshake","id":"1","successful":false}]`)
-	c, err := NewClientE(nil, ClientOptions{Host: host, Tenant: "t", Username: "u", Password: "bad"})
+	c, err := NewClient(nil, ClientOptions{Host: host, Tenant: "t", Username: "u", Password: "bad"})
 	require.NoError(t, err)
 
 	// a subscriber registered before the failure is released when it happens
@@ -94,7 +94,7 @@ func Test_RejectedHandshake_ReturnsErrorAndReleasesSubscribers(t *testing.T) {
 
 func Test_ServerAdviceNone_StopsClientWithoutPanic(t *testing.T) {
 	host := newBayeuxServer(t, `[{"channel":"/meta/handshake","id":"1","successful":true,"clientId":"abc"},{"channel":"/meta/connect","successful":true,"advice":{"reconnect":"none"}}]`)
-	c, err := NewClientE(nil, ClientOptions{Host: host, Tenant: "t", Username: "u", Password: "p"})
+	c, err := NewClient(nil, ClientOptions{Host: host, Tenant: "t", Username: "u", Password: "p"})
 	require.NoError(t, err)
 	_ = c.Connect()
 	assert.Eventually(t, func() bool { return errors.Is(c.Err(), ErrServerNoReconnect) }, 10*time.Second, 50*time.Millisecond)
@@ -109,7 +109,7 @@ func mustGlob(t *testing.T, pattern string) *matcher.Glob {
 }
 
 func Test_DialFailure_ReturnsConnectError(t *testing.T) {
-	c, err := NewClientE(nil, ClientOptions{Host: "http://127.0.0.1:1"})
+	c, err := NewClient(nil, ClientOptions{Host: "http://127.0.0.1:1"})
 	require.NoError(t, err)
 	err = c.Connect()
 	require.Error(t, err)
@@ -123,7 +123,7 @@ func Test_DialFailure_ReturnsConnectError(t *testing.T) {
 }
 
 func Test_ConnectError_NotUsedForOtherErrors(t *testing.T) {
-	c, err := NewClientE(nil, ClientOptions{Host: "http://localhost:1"})
+	c, err := NewClient(nil, ClientOptions{Host: "http://localhost:1"})
 	require.NoError(t, err)
 	c.dialer = nil
 	err = c.Connect()

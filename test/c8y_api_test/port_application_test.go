@@ -56,7 +56,7 @@ func Test_GetApplicationsByOwner(t *testing.T) {
 	ctx := context.Background()
 
 	result := client.Applications.ListByOwner(ctx, applications.ListByOwnerOptions{
-		TenantID: client.Auth.Tenant,
+		TenantID: client.Auth().Tenant,
 	})
 
 	require.NoError(t, result.Err)
@@ -72,7 +72,7 @@ func Test_GetApplicationsByTenant(t *testing.T) {
 	ctx := context.Background()
 
 	result := client.Applications.ListByTenant(ctx, applications.ListByTenantOptions{
-		TenantID: client.Auth.Tenant,
+		TenantID: client.Auth().Tenant,
 	})
 
 	require.NoError(t, result.Err)

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/reubenmiller/go-c8y/v2/internal/pkg/testclient"
+
 	api "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/realtime"
@@ -15,7 +17,7 @@ import (
 // ends immediately without an error. The channels which would have been
 // subscribed to are in the result's metadata.
 func ExampleClient_Realtime() {
-	client := api.NewClient(api.ClientOptions{
+	client := testclient.Must(api.ClientOptions{
 		BaseURL:          "https://example.invalid",
 		SkipTenantLookup: true,
 		Auth: authentication.AuthOptions{

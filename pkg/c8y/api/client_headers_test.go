@@ -19,7 +19,7 @@ func identityHeadersClient(t *testing.T, seen *http.Header) *Client {
 		_, _ = w.Write([]byte(`{"managedObjects":[]}`))
 	}))
 	t.Cleanup(srv.Close)
-	return NewClient(ClientOptions{
+	return mustNewClient(ClientOptions{
 		BaseURL:          srv.URL,
 		SkipTenantLookup: true,
 		Agent:            "my-agent",
@@ -33,9 +33,31 @@ func TestClient_IdentityHeadersDefaults(t *testing.T) {
 	var seen http.Header
 	client := identityHeadersClient(t, &seen)
 	_ = client.ManagedObjects.List(context.Background(), managedobjects.ListOptions{})
-	// not the resty default ("go-resty/...")
-	assert.Equal(t, "go-client", seen.Get("User-Agent"))
-	assert.Equal(t, "my-agent", seen.Get("X-Application"))
+	// ClientOptions.Agent is the User-Agent (not the resty default "go-resty/...")
+	assert.Equal(t, "my-agent", seen.Get("User-Agent"))
+	assert.Equal(t, "go-client", seen.Get("X-Application"))
+	assert.Equal(t, "my-agent", client.UserAgent())
+}
+
+// Without ClientOptions.Agent the User-Agent is "go-client-v2". The websocket
+// upgrade request sends the same identity headers as a REST request.
+func TestClient_IdentityHeadersDefaultAgent(t *testing.T) {
+	var seen http.Header
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		seen = r.Header.Clone()
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"managedObjects":[]}`))
+	}))
+	t.Cleanup(srv.Close)
+	client := mustNewClient(ClientOptions{BaseURL: srv.URL, SkipTenantLookup: true})
+	_ = client.ManagedObjects.List(context.Background(), managedobjects.ListOptions{})
+	assert.Equal(t, "go-client-v2", seen.Get("User-Agent"))
+	assert.Equal(t, "go-client", seen.Get("X-Application"))
+
+	wsHeader, err := client.WebsocketHeader(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, seen.Get("User-Agent"), wsHeader.Get("User-Agent"))
+	assert.Equal(t, seen.Get("X-Application"), wsHeader.Get("X-Application"))
 }
 
 func TestClient_IdentityHeadersCanBeOverridden(t *testing.T) {

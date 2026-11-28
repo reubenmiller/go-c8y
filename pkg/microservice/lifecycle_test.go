@@ -72,11 +72,15 @@ func (lp *lifecyclePlatform) setUsers(users ...model.ServiceUser) {
 }
 
 func newLifecycleMicroservice(lp *lifecyclePlatform) *Microservice {
-	return NewMicroservice(lp.server.URL, func(o *api.ClientOptions) {
+	ms, err := NewMicroservice(lp.server.URL, func(o *api.ClientOptions) {
 		o.SkipTenantLookup = true
 		o.Auth = authentication.AuthOptions{Tenant: "management", Username: "bootstrap", Password: "x",
 			AuthType: []authentication.AuthType{authentication.AuthTypeBasic}}
 	})
+	if err != nil {
+		panic(err)
+	}
+	return ms
 }
 
 var (

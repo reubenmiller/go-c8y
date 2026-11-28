@@ -88,7 +88,11 @@ func cmdRun(args []string) error {
 
 	var client *api.Client
 	if !*dryRun {
-		client = api.NewClientFromEnvironment(api.ClientOptions{})
+		var err error
+		client, err = api.NewClientFromEnvironment(api.ClientOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to create the Cumulocity client: %w", err)
+		}
 		if *debug {
 			client.SetDebug(true)
 		}

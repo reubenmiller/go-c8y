@@ -55,7 +55,7 @@ func (s *approvalServer) sent() []string {
 }
 
 func (s *approvalServer) client() *Client {
-	return NewClient(ClientOptions{
+	return mustNewClient(ClientOptions{
 		BaseURL:          s.server.URL,
 		SkipTenantLookup: true,
 		Auth: authentication.AuthOptions{

@@ -103,9 +103,6 @@ type Client struct {
 
 	pendingRequests sync.Map
 
-	// initErr is set when the client was created with an invalid host
-	initErr error
-
 	// fatalErr is set when the client stopped permanently, see Err
 	fatalErr error
 
@@ -327,29 +324,9 @@ type ClientOptions struct {
 	Connector wsdial.Connector
 }
 
-// NewClient initialises a new Bayeux client.
-//
-// Deprecated: use [NewClientE]. When opt.Host is invalid this still returns a
-// client (it never exits the process), but Connect then returns the error.
-func NewClient(wsDialer *websocket.Dialer, opt ClientOptions) *Client {
-	c, err := newClient(wsDialer, opt)
-	if err != nil {
-		c.initErr = err
-	}
-	return c
-}
-
-// NewClientE initialises a new Bayeux client and returns an error when
-// opt.Host is not a valid host URL.
-func NewClientE(wsDialer *websocket.Dialer, opt ClientOptions) (*Client, error) {
-	c, err := newClient(wsDialer, opt)
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
-}
-
-func newClient(wsDialer *websocket.Dialer, opt ClientOptions) (*Client, error) {
+// NewClient initialises a new Bayeux client and returns an error when
+// opt.Host is not a valid host URL. No goroutine is started when it fails.
+func NewClient(wsDialer *websocket.Dialer, opt ClientOptions) (*Client, error) {
 	if wsDialer == nil {
 		// Default client ignores self signed certificates (to enable compatibility to the edge which uses self signed certs)
 		wsDialer = &websocket.Dialer{
@@ -368,8 +345,8 @@ func newClient(wsDialer *websocket.Dialer, opt ClientOptions) (*Client, error) {
 
 	// Convert url to a websocket
 	websocketURL, urlErr := getRealtimeURL(opt.Host)
-	if websocketURL == nil {
-		websocketURL = &url.URL{}
+	if urlErr != nil {
+		return nil, urlErr
 	}
 	c8yURL, _ := url.Parse(opt.Host)
 
@@ -393,7 +370,7 @@ func newClient(wsDialer *websocket.Dialer, opt ClientOptions) (*Client, error) {
 
 	go client.hub.Run()
 	go client.writeHandler()
-	return client, urlErr
+	return client, nil
 }
 
 // SetConnector sets the connector used to open the websocket (see
@@ -491,9 +468,6 @@ func (c *Client) Connect() error {
 // and ConnectContext returns an error for which errors.Is(err,
 // wsdial.ErrDryRun) is true; wsdial.DryRunRequest(err) is the upgrade request.
 func (c *Client) ConnectContext(ctx context.Context) error {
-	if c.initErr != nil {
-		return c.initErr
-	}
 	if ctx == nil {
 		ctx = context.Background()
 	}

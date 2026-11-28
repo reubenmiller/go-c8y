@@ -90,7 +90,7 @@ func Test_MicroserviceUpload(t *testing.T) {
 
 	app := client.Microservices.Deploy(context.Background(), microservices.CreateOptions{
 		File:       filename,
-		TenantID:   client.Auth.Tenant,
+		TenantID:   client.Auth().Tenant,
 		SkipUpload: false,
 	})
 	assert.NoError(t, app.Err)

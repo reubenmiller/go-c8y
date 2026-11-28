@@ -13,6 +13,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/reubenmiller/go-c8y/v2/internal/pkg/testclient"
+
 	"github.com/gorilla/websocket"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
@@ -77,9 +79,13 @@ func raBasicAuth() authentication.AuthOptions {
 	}
 }
 
-func raClient(url string, auth authentication.AuthOptions, insecure bool, mw ...api.Middleware) *RemoteAccessClient {
-	client := api.NewClient(api.ClientOptions{BaseURL: url, Auth: auth, InsecureSkipVerify: insecure, SkipTenantLookup: true, Middleware: mw})
-	return NewRemoteAccessClient(client, RemoteAccessOptions{ManagedObjectID: "12345", RemoteAccessID: "1"})
+func raClient(url string, auth authentication.AuthOptions, insecure bool, mw ...api.Middleware) *Client {
+	client := testclient.Must(api.ClientOptions{BaseURL: url, Auth: auth, InsecureSkipVerify: insecure, SkipTenantLookup: true, Middleware: mw})
+	ra, err := NewClient(client, ClientOptions{ManagedObjectID: "12345", RemoteAccessID: "1"})
+	if err != nil {
+		panic(err)
+	}
+	return ra
 }
 
 func TestRemoteAccessDialTLS(t *testing.T) {

@@ -94,6 +94,7 @@ EXAMPLES:
 		if host == "" {
 			return fmt.Errorf("host is required: use --host or set C8Y_HOST")
 		}
+		var clientErr error
 		clientOnce.Do(func() {
 			auth := authentication.AuthOptions{
 				Tenant:   orEnv(tenantFlag, authentication.EnvironmentTenant...),
@@ -101,15 +102,15 @@ EXAMPLES:
 				Password: orEnv(passwordFlag, authentication.EnvironmentPassword...),
 				Token:    orEnv(tokenFlag, authentication.EnvironmentToken...),
 			}
-			sharedClient = api.NewClient(api.ClientOptions{
+			sharedClient, clientErr = api.NewClient(api.ClientOptions{
 				BaseURL: host,
 				Auth:    auth,
 			})
-			if verboseFlag {
+			if clientErr == nil && verboseFlag {
 				sharedClient.SetDebug(true)
 			}
 		})
-		return nil
+		return clientErr
 	},
 }
 

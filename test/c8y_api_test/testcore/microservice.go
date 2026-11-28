@@ -92,7 +92,7 @@ var sweepStaleApplicationsOnce sync.Once
 func sweepStaleTestApplications(t *testing.T, client *api.Client) {
 	ctx := context.Background()
 	items := client.Microservices.ListAll(ctx, microservices.ListOptions{
-		Owner: client.Auth.Tenant,
+		Owner: client.Auth().Tenant,
 	})
 	for item := range items.Items() {
 		if !staleTestApplication.MatchString(item.Name()) {
@@ -193,7 +193,7 @@ func BootstrapApplication(t *testing.T, appName ...string) *microservice.Microse
 	// Subscribe to application
 	result := client.Microservices.Subscribe(
 		context.Background(),
-		client.Auth.Tenant,
+		client.Auth().Tenant,
 		app.Data.Self(),
 	)
 
@@ -220,7 +220,11 @@ func BootstrapApplication(t *testing.T, appName ...string) *microservice.Microse
 	os.Setenv(microservices.EnvironmentBootstrapPassword, appCredentials.Data.Password())
 	// os.Unsetenv("C8Y_TOKEN")
 
-	ms := microservice.New(microservice.Options{})
+	ms, err := microservice.New(microservice.Options{})
+	if err != nil {
+		slog.Error("Microservice setup failed", "err", err)
+		t.FailNow()
+	}
 
 	if err := ms.Bootstrap(context.Background()); err != nil {
 		slog.Error("Microservice bootstrap failed", "err", err)

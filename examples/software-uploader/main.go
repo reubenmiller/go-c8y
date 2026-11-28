@@ -140,7 +140,12 @@ func main() {
 
 	var client *api.Client
 	if !*dryRun {
-		client = api.NewClientFromEnvironment(api.ClientOptions{})
+		var err error
+		client, err = api.NewClientFromEnvironment(api.ClientOptions{})
+		if err != nil {
+			slog.Error("Failed to create the Cumulocity client", "err", err)
+			os.Exit(1)
+		}
 
 		// Enable HTTP debug logging on the underlying resty client if debug mode is enabled
 		if *debug {

@@ -73,7 +73,7 @@ func newProgressClient(t *testing.T, size int) (*Client, *httptest.Server) {
 		}
 	}))
 	t.Cleanup(srv.Close)
-	client := NewClient(ClientOptions{
+	client := mustNewClient(ClientOptions{
 		BaseURL:          srv.URL,
 		SkipTenantLookup: true,
 		Auth: authentication.AuthOptions{

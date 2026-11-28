@@ -63,7 +63,7 @@ func (ms *mwServer) last(t *testing.T) *http.Request {
 }
 
 func newMWClient(ms *mwServer, mw ...Middleware) *Client {
-	return NewClient(ClientOptions{
+	return mustNewClient(ClientOptions{
 		BaseURL:          ms.server.URL,
 		SkipTenantLookup: true,
 		Auth: authentication.AuthOptions{

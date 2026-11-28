@@ -181,7 +181,7 @@ func wsHangingServer(t *testing.T) *httptest.Server {
 }
 
 func wsTestClient(url string, auth authentication.AuthOptions, insecure bool, mw ...Middleware) *Client {
-	return NewClient(ClientOptions{
+	return mustNewClient(ClientOptions{
 		BaseURL:            url,
 		Auth:               auth,
 		InsecureSkipVerify: insecure,
@@ -263,7 +263,7 @@ func TestWebsocketDialerUsesTransportSettings(t *testing.T) {
 		proxied.Add(1)
 		return proxyURL, nil
 	}
-	client := NewClient(ClientOptions{
+	client := mustNewClient(ClientOptions{
 		BaseURL:            "https://example.invalid",
 		Transport:          transport,
 		InsecureSkipVerify: true,

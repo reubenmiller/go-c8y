@@ -73,7 +73,7 @@ type StreamData[T any] struct {
 // 2. defer cancel() - cleanup when context cancelled
 // 3. Context timeout - cleanup as safety fallback
 type Stream[T any] struct {
-	client        *Notification2Client
+	client        *Client
 	messages      <-chan *Message
 	ctx           context.Context
 	cancel        context.CancelFunc // Cancel function for the stream context
@@ -92,7 +92,7 @@ type Stream[T any] struct {
 // to explicitly trigger cleanup before the context timeout.
 func NewStream[T any](
 	ctx context.Context,
-	client *Notification2Client,
+	client *Client,
 	messages <-chan *Message,
 	transform func(*Message) T,
 	cleanup func(),

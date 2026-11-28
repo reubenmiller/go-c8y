@@ -18,7 +18,7 @@ func newShapeClient(t *testing.T, h http.HandlerFunc) *Client {
 	t.Helper()
 	ts := httptest.NewServer(h)
 	t.Cleanup(ts.Close)
-	return NewClient(ClientOptions{
+	return mustNewClient(ClientOptions{
 		BaseURL:          ts.URL,
 		SkipTenantLookup: true,
 		Auth: authentication.AuthOptions{

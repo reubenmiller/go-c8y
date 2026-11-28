@@ -129,9 +129,7 @@ func (c *Client) WebsocketHeader(ctx context.Context) (http.Header, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	c.clientMu.Lock()
-	base := *c.BaseURL
-	c.clientMu.Unlock()
+	base := *c.BaseURL()
 	req, err := c.websocketRequest(ctx, base.String(), nil)
 	if err != nil {
 		return nil, err
@@ -282,12 +280,12 @@ func (c *Client) websocketRequest(ctx context.Context, rawURL string, extra http
 		return nil, err
 	}
 
-	ua := c.UserAgent
+	ua := c.userAgent
 	if ua == "" {
 		ua = defaultUserAgent
 	}
 	req.Header.Set("User-Agent", ua)
-	req.Header.Set("X-APPLICATION", "go-client")
+	req.Header.Set("X-APPLICATION", defaultApplication)
 	req.Header.Set("Upgrade", "websocket")
 	req.Header.Set("Connection", "Upgrade")
 	req.Header.Set("Sec-WebSocket-Version", "13")
@@ -360,9 +358,7 @@ func (c *Client) websocketAuthorization(ctx context.Context) (string, error) {
 	if _, hasCtxAuth := authentication.AuthFromContext(ctx); hasCtxAuth {
 		return authz, nil
 	}
-	c.clientMu.Lock()
-	auth := c.Auth
-	c.clientMu.Unlock()
+	auth := c.Auth()
 	if auth.Token != "" || auth.Username == "" || auth.Password == "" {
 		return authz, nil
 	}

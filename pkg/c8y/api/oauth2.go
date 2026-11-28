@@ -490,7 +490,10 @@ func (c *Client) AuthorizeWithBrowserFlow(ctx context.Context, initRequest strin
 		if code == "" {
 			return nil, fmt.Errorf("browser flow: SSO callback returned an error")
 		}
-		tokenClient := NewClient(ClientOptions{BaseURL: c.httpClient.BaseURL()})
+		tokenClient, err := NewClient(ClientOptions{BaseURL: c.httpClient.BaseURL()})
+		if err != nil {
+			return nil, err
+		}
 		tokenClient.SetDebug(c.debugEnabled)
 		tok := tokenClient.Tenants.LoginTokens.Create(ctx, logintokens.CreateTokenOptions{
 			GrantType:     logintokens.GrantTypeAuthorizationCode,

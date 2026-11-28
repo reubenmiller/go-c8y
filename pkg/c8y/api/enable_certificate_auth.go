@@ -61,7 +61,7 @@ var ErrCertificateNotTrusted = errors.New("certificate chain is not trusted by t
 // password" email flow for users, or applications.Service.ResetAuthType by a
 // tenant administrator for service users.
 func (c *Client) EnableCertificateAuth(ctx context.Context, opts EnableCertificateAuthOptions) error {
-	cert, err := loadClientKeyPair(c.Auth.Certificate, c.Auth.CertificateKey)
+	cert, err := loadClientKeyPair(c.Auth().Certificate, c.Auth().CertificateKey)
 	if err != nil {
 		return fmt.Errorf("enable certificate auth: load certificate: %w", err)
 	}
@@ -79,7 +79,7 @@ func (c *Client) EnableCertificateAuth(ctx context.Context, opts EnableCertifica
 	if !opts.SkipChainVerification {
 		res := c.TrustedCertificates.VerifyChain(ctx, trustedcertificates.VerifyChainOptions{
 			Chain:  certificateChainPEM(cert),
-			Tenant: c.Auth.Tenant,
+			Tenant: c.Auth().Tenant,
 		})
 		if res.Err != nil {
 			if core.ErrHasStatus(res.Err, 403) {
@@ -105,7 +105,7 @@ func (c *Client) EnableCertificateAuth(ctx context.Context, opts EnableCertifica
 		}
 	}
 
-	token, _, err := c.exchangeCertificate(ctx, c.Auth.Tenant, cert, nil)
+	token, _, err := c.exchangeCertificate(ctx, c.Auth().Tenant, cert, nil)
 	if err != nil {
 		return fmt.Errorf("enable certificate auth: the account now requires certificates, but the certificate exchange failed (%s): %w", recovery, err)
 	}

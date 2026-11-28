@@ -52,10 +52,13 @@ func (r *EnrollCmd) Run(ctx *cli.Context) error {
 		return fmt.Errorf("🚫 device id (external id) is not set")
 	}
 
-	client := api.NewClient(api.ClientOptions{
+	client, err := api.NewClient(api.ClientOptions{
 		BaseURL:            ctx.Host,
 		InsecureSkipVerify: true,
 	})
+	if err != nil {
+		return err
+	}
 
 	if r.Overwrite {
 		slog.Info("Removing any existing private key, or certificate")

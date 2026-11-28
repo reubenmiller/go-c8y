@@ -117,15 +117,17 @@ func (s *Syncer) resolveServiceUserCredentials(ctx context.Context, targets []Ta
 		return fmt.Errorf("failed to get bootstrap user of credentials application %q: %w", name, bootstrap.Err)
 	}
 
-	bootstrapClient := api.NewClient(api.ClientOptions{
-		BaseURL: s.Client.BaseURL.String(),
+	bootstrapClient, err := api.NewClient(api.ClientOptions{
+		BaseURL: s.Client.BaseURL().String(),
 		Auth: authentication.AuthOptions{
 			Tenant:   bootstrap.Data.Tenant(),
 			Username: bootstrap.Data.Username(),
 			Password: bootstrap.Data.Password(),
 		},
 	})
-	bootstrapClient.UseTenantInUsername = true
+	if err != nil {
+		return fmt.Errorf("failed to create the client of credentials application %q: %w", name, err)
+	}
 
 	// Service users for freshly subscribed tenants can take a moment to
 	// appear, so retry a few times before giving up

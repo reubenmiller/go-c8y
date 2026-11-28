@@ -45,9 +45,13 @@ func createCachedClient(keys []string) *api.Client {
 	transport := c8y.NewCachedTransport(nil, 100*time.Second, cacheDir, isCacheableRequest, c8y.CacheOptions{
 		BodyKeys: keys,
 	})
-	return api.NewClientFromEnvironment(api.ClientOptions{
+	client, err := api.NewClientFromEnvironment(api.ClientOptions{
 		Transport: transport,
 	})
+	if err != nil {
+		panic(err)
+	}
+	return client
 }
 
 func Test_CachedClientWithMissingBodyKeys(t *testing.T) {

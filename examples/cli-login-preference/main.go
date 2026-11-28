@@ -255,12 +255,16 @@ func main() {
 		}
 	}
 
-	client := api.NewClient(api.ClientOptions{
+	client, err := api.NewClient(api.ClientOptions{
 		BaseURL:       baseURL,
 		Auth:          auth,
 		Debug:         debugFlag,
 		ShowSensitive: debugFlag,
 	})
+	if err != nil {
+		slog.Error("Invalid client options", "err", err)
+		os.Exit(1)
+	}
 
 	// -- Print what we are about to do ----------------------------------------
 	switch {
@@ -417,7 +421,7 @@ func main() {
 	}
 
 	// -- Login ----------------------------------------------------------------
-	_, err := client.LoginWithOptions(ctx, loginOpts)
+	_, err = client.LoginWithOptions(ctx, loginOpts)
 	if err != nil {
 		slog.Error("Login failed", "err", err)
 		os.Exit(1)

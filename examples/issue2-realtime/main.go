@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
 )
 
 func main() {
@@ -21,10 +20,10 @@ func main() {
 	//
 	// Create the client from the following environment variables
 	// C8Y_HOST, C8Y_TENANT, C8Y_USER, C8Y_PASSWORD
-	client := api.NewClient(api.ClientOptions{
-		BaseURL: authentication.HostFromEnvironment(),
-		Auth:    authentication.FromEnvironment(),
-	})
+	client, err := api.NewClientFromEnvironment(api.ClientOptions{})
+	if err != nil {
+		log.Fatalf("Could not create the client: %v", err)
+	}
 
 	// Get arguments
 	var deviceID string

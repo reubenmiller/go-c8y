@@ -8,6 +8,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/reubenmiller/go-c8y/v2/internal/pkg/testclient"
+
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
 )
 
@@ -44,7 +46,7 @@ func pluginServer(t *testing.T) (*api.Client, func() []string) {
 		}
 	}))
 	t.Cleanup(srv.Close)
-	client := api.NewClient(api.ClientOptions{BaseURL: srv.URL})
+	client := testclient.Must(api.ClientOptions{BaseURL: srv.URL})
 	return client, func() []string {
 		mu.Lock()
 		defer mu.Unlock()

@@ -60,7 +60,7 @@ func Test_AuthorizationHeader_MatchesRequestsSentByClient(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			rs, _ := newTokenExchangeServer(http.StatusOK)
 			defer rs.server.Close()
-			client := NewClient(ClientOptions{BaseURL: rs.server.URL, Auth: tt.auth, ContextTokenExchange: tt.exchange})
+			client := mustNewClient(ClientOptions{BaseURL: rs.server.URL, Auth: tt.auth, ContextTokenExchange: tt.exchange})
 
 			ctx := t.Context()
 			if tt.withCtx != nil {
@@ -78,7 +78,7 @@ func Test_AuthorizationHeader_MatchesRequestsSentByClient(t *testing.T) {
 }
 
 func Test_AuthorizationHeader_NoCredentials(t *testing.T) {
-	client := NewClient(ClientOptions{BaseURL: "http://localhost:1"})
+	client := mustNewClient(ClientOptions{BaseURL: "http://localhost:1"})
 	got, err := client.AuthorizationHeader(context.Background())
 	require.NoError(t, err)
 	assert.Empty(t, got)
@@ -90,7 +90,7 @@ func Test_AuthorizationHeader_NoCredentials(t *testing.T) {
 }
 
 func Test_AuthorizationHeader_NoAuthContext(t *testing.T) {
-	client := NewClient(ClientOptions{
+	client := mustNewClient(ClientOptions{
 		BaseURL: "http://localhost:1",
 		Auth:    authentication.AuthOptions{Token: "static-token"},
 	})
@@ -108,7 +108,7 @@ func Test_AuthorizationHeader_TokenSourceRenewal(t *testing.T) {
 			Expiry:      time.Now().Add(time.Hour),
 		}, nil
 	}))
-	client := NewClient(ClientOptions{
+	client := mustNewClient(ClientOptions{
 		BaseURL: "http://localhost:1",
 		Auth:    authentication.AuthOptions{TokenSource: source},
 	})
@@ -139,7 +139,7 @@ func Test_AuthorizationHeader_TokenSourceError(t *testing.T) {
 		}
 		return &authentication.Token{AccessToken: "t", Expiry: time.Now().Add(time.Hour)}, nil
 	}))
-	client := NewClient(ClientOptions{BaseURL: "http://localhost:1", Auth: authentication.AuthOptions{TokenSource: source}})
+	client := mustNewClient(ClientOptions{BaseURL: "http://localhost:1", Auth: authentication.AuthOptions{TokenSource: source}})
 
 	fail = true
 	source.Invalidate()
@@ -173,7 +173,7 @@ func Test_AuthorizationHeader_MatchesWire(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client := NewClient(ClientOptions{BaseURL: srv.URL, SkipTenantLookup: true})
+			client := mustNewClient(ClientOptions{BaseURL: srv.URL, SkipTenantLookup: true})
 			client.SetAuth(tt.auth)
 			client.tokenSource = nil // static credentials only
 			got = ""

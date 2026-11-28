@@ -237,13 +237,13 @@ func (m *Microservice) validateCaller(r *http.Request, auth authentication.AuthO
 // currentUser validates the request's credentials with GET /user/currentUser,
 // forwarding the caller's Authorization header (or cookie and XSRF token).
 func (m *Microservice) currentUser(r *http.Request, auth authentication.AuthOptions, fromCookie bool) (CallerInfo, error) {
-	if m.Client == nil || m.Client.BaseURL == nil {
+	if m.Client == nil || m.Client.BaseURL() == nil {
 		return CallerInfo{}, fmt.Errorf("%w: no platform client", ErrValidationUnavailable)
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
 
-	u := strings.TrimSuffix(m.Client.BaseURL.String(), "/") + "/user/currentUser"
+	u := strings.TrimSuffix(m.Client.BaseURL().String(), "/") + "/user/currentUser"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		return CallerInfo{}, fmt.Errorf("%w: %v", ErrValidationUnavailable, err) //nolint:errorlint // the second error is described, not wrapped

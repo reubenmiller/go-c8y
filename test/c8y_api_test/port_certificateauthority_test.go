@@ -21,7 +21,7 @@ func Test_CertificateAuthority_Get(t *testing.T) {
 	// Delete (setup) - use the new composed Delete method
 	// Ignore error as certificate may not exist
 	client.TrustedCertificates.CertificateAuthority.Delete(ctx, certificateauthority.DeleteOptions{
-		TenantID: client.Auth.Tenant,
+		TenantID: client.Auth().Tenant,
 	})
 
 	// Create
@@ -34,7 +34,7 @@ func Test_CertificateAuthority_Get(t *testing.T) {
 	// Create returns conflict but GetOrCreate handles it
 	if createDuplicateResult.HTTPStatus == 409 {
 		getResult := client.TrustedCertificates.CertificateAuthority.Get(ctx, certificateauthority.GetOptions{
-			TenantID: client.Auth.Tenant,
+			TenantID: client.Auth().Tenant,
 		})
 		require.NoError(t, getResult.Err)
 		assert.Equal(t, createResult.Data.Fingerprint(), getResult.Data.Fingerprint())
@@ -45,7 +45,7 @@ func Test_CertificateAuthority_Get(t *testing.T) {
 
 	// Get
 	getResult := client.TrustedCertificates.CertificateAuthority.Get(ctx, certificateauthority.GetOptions{
-		TenantID: client.Auth.Tenant,
+		TenantID: client.Auth().Tenant,
 	})
 	require.NoError(t, getResult.Err)
 	assert.Equal(t, createResult.Data.Fingerprint(), getResult.Data.Fingerprint())
@@ -56,7 +56,7 @@ func Test_CertificateAuthority_Get(t *testing.T) {
 		"status":                  "DISABLED",
 	}
 	updateResult := client.TrustedCertificates.Update(ctx, trustedcertificates.UpdateOptions{
-		TenantID:    client.Auth.Tenant,
+		TenantID:    client.Auth().Tenant,
 		Fingerprint: getResult.Data.Fingerprint(),
 	}, updateBody)
 	require.NoError(t, updateResult.Err)
@@ -65,7 +65,7 @@ func Test_CertificateAuthority_Get(t *testing.T) {
 
 	// Delete
 	deleteResult := client.TrustedCertificates.CertificateAuthority.Delete(ctx, certificateauthority.DeleteOptions{
-		TenantID: client.Auth.Tenant,
+		TenantID: client.Auth().Tenant,
 	})
 	require.NoError(t, deleteResult.Err)
 	assert.Equal(t, 204, deleteResult.HTTPStatus)
@@ -85,20 +85,20 @@ func Test_CertificateAuthority_Delete_DryRun(t *testing.T) {
 
 	// The CA lookup is sent also in a dry run (it is a read), so the dry run
 	// shows the DELETE with the real fingerprint, and nothing is deleted.
-	ca := client.TrustedCertificates.CertificateAuthority.Get(context.Background(), certificateauthority.GetOptions{TenantID: client.Auth.Tenant})
+	ca := client.TrustedCertificates.CertificateAuthority.Get(context.Background(), certificateauthority.GetOptions{TenantID: client.Auth().Tenant})
 	if ca.Err != nil {
 		t.Skip("no certificate authority to delete")
 	}
 	ctx := c8yapi.WithDryRun(context.Background(), true)
 
 	result := client.TrustedCertificates.CertificateAuthority.Delete(ctx, certificateauthority.DeleteOptions{
-		TenantID: client.Auth.Tenant,
+		TenantID: client.Auth().Tenant,
 	})
 	require.NoError(t, result.Err)
 	require.NotNil(t, result.Request, "the dry run returns the prepared request")
 	assert.Equal(t, http.MethodDelete, result.Request.Method)
 	assert.Contains(t, result.Request.URL.Path, ca.Data.Fingerprint())
 
-	after := client.TrustedCertificates.CertificateAuthority.Get(context.Background(), certificateauthority.GetOptions{TenantID: client.Auth.Tenant})
+	after := client.TrustedCertificates.CertificateAuthority.Get(context.Background(), certificateauthority.GetOptions{TenantID: client.Auth().Tenant})
 	require.NoError(t, after.Err, "a dry run must not delete the certificate authority")
 }

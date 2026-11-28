@@ -15,6 +15,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/reubenmiller/go-c8y/v2/internal/pkg/testclient"
+
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
@@ -107,7 +109,7 @@ func writeJSON(w http.ResponseWriter, status int, body string) {
 }
 
 func (f *fakeDTM) client() *dtm.Service {
-	c := api.NewClient(api.ClientOptions{
+	c := testclient.Must(api.ClientOptions{
 		BaseURL:          f.server.URL,
 		SkipTenantLookup: true,
 		Auth: authentication.AuthOptions{

@@ -18,7 +18,7 @@ func New() (*api.Client, func()) {
 	if err != nil {
 		panic(err)
 	}
-	client := api.NewClient(api.ClientOptions{
+	client, err := api.NewClient(api.ClientOptions{
 		BaseURL: fs.URL(),
 		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
 		Auth: authentication.AuthOptions{
@@ -26,5 +26,8 @@ func New() (*api.Client, func()) {
 			AuthType: []authentication.AuthType{authentication.AuthTypeBasic},
 		},
 	})
+	if err != nil {
+		panic(err)
+	}
 	return client, fs.Server.Close
 }

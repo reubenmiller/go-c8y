@@ -18,7 +18,8 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/proxy"
 )
 
-type RemoteAccessOptions struct {
+// ClientOptions configures a [Client].
+type ClientOptions struct {
 	ManagedObjectID string
 	RemoteAccessID  string
 
@@ -56,9 +57,11 @@ func parseListenerAddress(v string) (network string, addr string, err error) {
 	return network, addr, err
 }
 
-type RemoteAccessClient struct {
+// Client forwards local connections to a device through a Cloud Remote Access
+// configuration. Create it with [NewClient].
+type Client struct {
 	client   *api.Client
-	ctx      RemoteAccessOptions
+	ctx      ClientOptions
 	listener net.Listener
 	mux      multiplexer
 	log      *slog.Logger
@@ -67,24 +70,32 @@ type RemoteAccessClient struct {
 	dryRunRequest *http.Request
 }
 
-// Create new Remote Access client to allow local clients
-// to connect to a device via the Cloud Remote Access feature
-func NewRemoteAccessClient(client *api.Client, opt RemoteAccessOptions) *RemoteAccessClient {
+// NewClient creates a Remote Access client which allows local clients to
+// connect to a device via the Cloud Remote Access feature. It returns an error
+// when client is nil or its base URL is not an http(s) URL, since the
+// websocket address of the configuration cannot be derived from it.
+func NewClient(client *api.Client, opt ClientOptions) (*Client, error) {
+	if client == nil {
+		return nil, errors.New("remoteaccess: the Cumulocity client is nil")
+	}
+	if u := client.BaseURL(); u == nil || (u.Scheme != "http" && u.Scheme != "https") {
+		return nil, fmt.Errorf("remoteaccess: the base URL %q of the Cumulocity client must use http or https", u)
+	}
 	log := opt.Logger
 	if log == nil {
 		log = client.Logger()
 	}
-	return &RemoteAccessClient{
+	return &Client{
 		client:   client,
 		ctx:      opt,
 		listener: nil,
 		log:      log,
-	}
+	}, nil
 }
 
 // remoteAccessURL is the websocket URL of the remote access configuration.
-func (c *RemoteAccessClient) remoteAccessURL() string {
-	host := c.client.BaseURL.String()
+func (c *Client) remoteAccessURL() string {
+	host := c.client.BaseURL().String()
 	wsHost := ""
 	if strings.HasPrefix(host, "http://") {
 		wsHost = "ws://" + host[7:]
@@ -103,21 +114,21 @@ func (c *RemoteAccessClient) remoteAccessURL() string {
 // upgrade request is handed to the dry-run handler (api.WithDryRunHandler) or
 // logged, like an HTTP request, and the error returned matches
 // wsdial.ErrDryRun; wsdial.DryRunRequest(err) is the request, and
-// [RemoteAccessClient.DryRunRequest] returns it too.
-func (c *RemoteAccessClient) DialContext(ctx context.Context) (*websocket.Conn, error) {
+// [Client.DryRunRequest] returns it too.
+func (c *Client) DialContext(ctx context.Context) (*websocket.Conn, error) {
 	conn, _, err := c.createRemoteAccessConnection(ctx)
 	return conn, err
 }
 
 // DryRunRequest returns the upgrade request which the last dry-run connection
 // would have sent, or nil if there was none.
-func (c *RemoteAccessClient) DryRunRequest() *http.Request {
+func (c *Client) DryRunRequest() *http.Request {
 	c.dryRunMu.Lock()
 	defer c.dryRunMu.Unlock()
 	return c.dryRunRequest
 }
 
-func (c *RemoteAccessClient) createRemoteAccessConnection(ctx context.Context) (*websocket.Conn, string, error) {
+func (c *Client) createRemoteAccessConnection(ctx context.Context) (*websocket.Conn, string, error) {
 	remoteURL := c.remoteAccessURL()
 
 	requestHeader := http.Header{}
@@ -139,7 +150,7 @@ func (c *RemoteAccessClient) createRemoteAccessConnection(ctx context.Context) (
 
 // Get the listener address. Useful when using the "free port" option, and need
 // to know which port the listener chose
-func (c *RemoteAccessClient) GetListenerAddress() string {
+func (c *Client) GetListenerAddress() string {
 	if c.listener != nil {
 		return c.listener.Addr().String()
 	}
@@ -148,14 +159,14 @@ func (c *RemoteAccessClient) GetListenerAddress() string {
 
 // Listen and serve a single connection. It bridges between the websocket and the given reader/writer
 // Typically it can be used to setup proxying to stdin/stdout
-func (c *RemoteAccessClient) ListenServe(r io.ReadCloser, w io.Writer) error {
+func (c *Client) ListenServe(r io.ReadCloser, w io.Writer) error {
 	return c.ListenServeContext(context.Background(), r, w)
 }
 
 // ListenServeContext is like ListenServe. ctx is used to connect (see
 // DialContext); under dry run nothing is connected and it returns nil, the
 // request is available from DryRunRequest.
-func (c *RemoteAccessClient) ListenServeContext(ctx context.Context, r io.ReadCloser, w io.Writer) error {
+func (c *Client) ListenServeContext(ctx context.Context, r io.ReadCloser, w io.Writer) error {
 	clientWsConn, remoteURL, err := c.createRemoteAccessConnection(ctx)
 	if wsdial.IsDryRun(err) {
 		return nil
@@ -174,7 +185,7 @@ func (c *RemoteAccessClient) ListenServeContext(ctx context.Context, r io.ReadCl
 // Start a client using which listens to either incoming requests via a TCP or Unix socket
 // Set local stream address to listen to
 // Example: :8080, 127.0.0.1:8080, 127.0.0.1:0 (first free port)
-func (c *RemoteAccessClient) Listen(addr string) error {
+func (c *Client) Listen(addr string) error {
 	network, localAddress, err := parseListenerAddress(addr)
 	if err != nil {
 		return err
@@ -194,7 +205,7 @@ func (c *RemoteAccessClient) Listen(addr string) error {
 
 // Serve requests to the local TCP server or Unix socket
 // The Listen must be called prior to trying to serve
-func (c *RemoteAccessClient) Serve() error {
+func (c *Client) Serve() error {
 	return c.ServeContext(context.Background())
 }
 
@@ -205,7 +216,7 @@ func (c *RemoteAccessClient) Serve() error {
 // Under dry run (api.WithDryRun) it does not accept connections: it reports the
 // upgrade request once (see DialContext), makes it available from DryRunRequest
 // and returns nil.
-func (c *RemoteAccessClient) ServeContext(ctx context.Context) error {
+func (c *Client) ServeContext(ctx context.Context) error {
 	if c.listener == nil {
 		return fmt.Errorf("listen must be called before serve")
 	}

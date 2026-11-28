@@ -65,8 +65,8 @@ func Test_GetUserTFA(t *testing.T) {
 
 	// Use the currently authenticated user — always exists and accessible
 	result := client.Users.GetTFA(ctx, users.GetTFAOptions{
-		ID:     users.ByID(client.Auth.Username),
-		Tenant: client.Auth.Tenant,
+		ID:     users.ByID(client.Auth().Username),
+		Tenant: client.Auth().Tenant,
 	})
 
 	assert.NoError(t, result.Err)

@@ -15,8 +15,8 @@ func Test_Microservices_ListServiceUsers(t *testing.T) {
 	ctx := context.Background()
 
 	// Only the tenant that owns a microservice can read its bootstrap user.
-	app, err := client.Microservices.FindFirst(ctx, microservices.ListOptions{Owner: client.Auth.Tenant})
-	if err != nil || app.Owner() != client.Auth.Tenant {
+	app, err := client.Microservices.FindFirst(ctx, microservices.ListOptions{Owner: client.Auth().Tenant})
+	if err != nil || app.Owner() != client.Auth().Tenant {
 		t.Skip("the tenant owns no microservice to read the service users of")
 	}
 

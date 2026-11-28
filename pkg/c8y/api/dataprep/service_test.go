@@ -16,6 +16,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/reubenmiller/go-c8y/v2/internal/pkg/testclient"
+
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
@@ -83,7 +85,7 @@ func (f *fakeServer) count() int {
 }
 
 func (f *fakeServer) client() *dataprep.Service {
-	return api.NewClient(api.ClientOptions{
+	return testclient.Must(api.ClientOptions{
 		BaseURL:          f.server.URL,
 		SkipTenantLookup: true,
 		Auth: authentication.AuthOptions{

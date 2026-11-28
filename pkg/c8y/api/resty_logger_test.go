@@ -22,7 +22,7 @@ func Test_ClientOptions_Logger(t *testing.T) {
 
 	newClient := func(level slog.Level) (*Client, *bytes.Buffer) {
 		var buf bytes.Buffer
-		return NewClient(ClientOptions{
+		return mustNewClient(ClientOptions{
 			BaseURL:          srv.URL,
 			SkipTenantLookup: true,
 			Auth: authentication.AuthOptions{

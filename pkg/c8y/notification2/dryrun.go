@@ -11,7 +11,7 @@ import (
 )
 
 // IsDryRun reports whether err stands for a connection which was not made
-// because of dry run (see Notification2Client.ConnectContext).
+// because of dry run (see Client.ConnectContext).
 func IsDryRun(err error) bool {
 	return errors.Is(err, wsdial.ErrDryRun)
 }
@@ -30,7 +30,7 @@ const (
 // ok=true and a result with Status Skipped, no error, the upgrade request in
 // Request, the consumer and the redacted URL in Meta, and a stream which ends
 // immediately without error. For any other err it returns ok=false.
-func DryRunStream[T any](ctx context.Context, client *Notification2Client, err error) (result op.Result[*Stream[T]], ok bool) {
+func DryRunStream[T any](ctx context.Context, client *Client, err error) (result op.Result[*Stream[T]], ok bool) {
 	if !IsDryRun(err) {
 		return result, false
 	}

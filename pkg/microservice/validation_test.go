@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/reubenmiller/go-c8y/v2/internal/pkg/testclient"
+
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
@@ -66,7 +68,7 @@ func newFakePlatform(t *testing.T) *fakePlatform {
 
 func newValidatingMicroservice(fp *fakePlatform) *Microservice {
 	ms := &Microservice{
-		Client: api.NewClient(api.ClientOptions{
+		Client: testclient.Must(api.ClientOptions{
 			BaseURL:          fp.server.URL,
 			SkipTenantLookup: true,
 			Auth: authentication.AuthOptions{Tenant: "management", Username: "bootstrap", Password: "x",

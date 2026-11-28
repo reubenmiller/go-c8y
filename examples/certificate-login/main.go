@@ -25,7 +25,7 @@ func main() {
 	if len(os.Args) != 3 {
 		log.Fatal("usage: certificate-login <certificate> <key>")
 	}
-	client := api.NewClient(api.ClientOptions{
+	client, err := api.NewClient(api.ClientOptions{
 		BaseURL: os.Getenv("C8Y_HOST"),
 		Auth: authentication.AuthOptions{
 			Tenant:         os.Getenv("C8Y_TENANT"),
@@ -33,6 +33,9 @@ func main() {
 			CertificateKey: os.Args[2],
 		},
 	})
+	if err != nil {
+		log.Fatalf("Could not create the client: %v", err)
+	}
 
 	ctx := context.Background()
 	if _, err := client.LoginWithOptions(ctx, api.LoginOptions{

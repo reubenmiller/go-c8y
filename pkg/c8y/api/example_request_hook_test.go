@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 
+	"github.com/reubenmiller/go-c8y/v2/internal/pkg/testclient"
+
 	api "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/binaries"
@@ -20,7 +22,7 @@ func exampleClient() (*api.Client, func()) {
 		w.WriteHeader(http.StatusCreated)
 		_, _ = w.Write([]byte(`{"id":"1","name":"firmware.bin"}`))
 	}))
-	client := api.NewClient(api.ClientOptions{
+	client := testclient.Must(api.ClientOptions{
 		BaseURL:          srv.URL,
 		SkipTenantLookup: true,
 		Auth: authentication.AuthOptions{

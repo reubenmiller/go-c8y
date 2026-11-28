@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/reubenmiller/go-c8y/v2/internal/pkg/testclient"
+
 	api "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/alarms"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
@@ -99,7 +101,7 @@ func ExampleNewClient_withTokenSource() {
 	// The underlying source is called only when the cached token has expired.
 	ts := authentication.NewCachedTokenSource(rawSource)
 
-	client := api.NewClient(api.ClientOptions{
+	client := testclient.Must(api.ClientOptions{
 		BaseURL: "https://tenant.cumulocity.com",
 		Auth: authentication.AuthOptions{
 			TokenSource: ts,
@@ -125,7 +127,7 @@ func ExampleNewClient_withTokenSourceFunc() {
 		return "my-token", time.Now().Add(time.Hour), nil
 	}
 
-	client := api.NewClient(api.ClientOptions{
+	client := testclient.Must(api.ClientOptions{
 		BaseURL: "https://tenant.cumulocity.com",
 		Auth: authentication.AuthOptions{
 			TokenSource: authentication.NewCachedTokenSource(
@@ -178,7 +180,7 @@ func ExampleNewClient_withTokenSourceFunc() {
 //	    Scopes:       []string{"cumulocity"},
 //	}
 //
-//	client := api.NewClient(api.ClientOptions{
+//	client := testclient.Must(api.ClientOptions{
 //	    BaseURL: "https://tenant.cumulocity.com",
 //	    Auth: authentication.AuthOptions{
 //	        // x/oauth2 already caches and refreshes internally, so no need to
@@ -189,7 +191,7 @@ func ExampleNewClient_withTokenSourceFunc() {
 func ExampleNewClient_withOAuth2Adapter() {
 	// Stub so the example appears in the docs. The real code is shown above
 	// in the function comment.
-	_ = api.NewClient(api.ClientOptions{BaseURL: "https://tenant.cumulocity.com"})
+	_ = testclient.Must(api.ClientOptions{BaseURL: "https://tenant.cumulocity.com"})
 }
 
 // ExampleNewClient_withClientCredentials shows the minimal setup for the
@@ -208,7 +210,7 @@ func ExampleNewClient_withClientCredentials() {
 		},
 	}
 
-	client := api.NewClient(api.ClientOptions{
+	client := testclient.Must(api.ClientOptions{
 		BaseURL: "https://example.cumulocity.com",
 		Auth: authentication.AuthOptions{
 			// CachedTokenSource only calls cfg.Token() when the cached
@@ -221,7 +223,7 @@ func ExampleNewClient_withClientCredentials() {
 			WithTotalElements: true,
 		},
 	})
-	fmt.Printf("Token: %s\n", client.Auth.Token)
+	fmt.Printf("Token: %s\n", client.Auth().Token)
 
 	if result.Err != nil {
 		panic(result.Err)

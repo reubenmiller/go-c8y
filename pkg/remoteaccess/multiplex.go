@@ -38,7 +38,7 @@ var errMultiplexNoAnswer = errors.New("no answer to the remote access multiplexi
 var errMultiplexDisabled = fmt.Errorf("%w: multiplexing was disabled", ErrMultiplexNotSupported)
 
 // DefaultMultiplexNegotiationTimeout is the maximum time to wait for the device to acknowledge
-// multiplexing, unless RemoteAccessOptions.MultiplexNegotiationTimeout is set. It includes the time
+// multiplexing, unless ClientOptions.MultiplexNegotiationTimeout is set. It includes the time
 // for the device to connect to the remote access session.
 var DefaultMultiplexNegotiationTimeout = 15 * time.Second
 
@@ -62,13 +62,13 @@ type multiplexer struct {
 // It returns ErrMultiplexNotSupported if the device answered with anything other than an
 // acknowledgement. If the device did not answer (in time), e.g. the websocket was closed before,
 // the error wraps errMultiplexNoAnswer.
-func (c *RemoteAccessClient) OpenMultiplexedSession() (*yamux.Session, error) {
+func (c *Client) OpenMultiplexedSession() (*yamux.Session, error) {
 	return c.OpenMultiplexedSessionContext(context.Background())
 }
 
 // OpenMultiplexedSessionContext is like OpenMultiplexedSession; ctx is used to
 // connect (see DialContext).
-func (c *RemoteAccessClient) OpenMultiplexedSessionContext(ctx context.Context) (*yamux.Session, error) {
+func (c *Client) OpenMultiplexedSessionContext(ctx context.Context) (*yamux.Session, error) {
 	wsConn, remoteURL, err := c.createRemoteAccessConnection(ctx)
 	if err != nil {
 		return nil, err
@@ -131,7 +131,7 @@ func (c *countingConn) Read(p []byte) (int, error) {
 }
 
 // getSession returns the open multiplexed session, opening a new one if required
-func (m *multiplexer) getSession(ctx context.Context, c *RemoteAccessClient) (*yamux.Session, error) {
+func (m *multiplexer) getSession(ctx context.Context, c *Client) (*yamux.Session, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.unsupported {
@@ -170,7 +170,7 @@ func (m *multiplexer) close() {
 
 // serveMultiplexed carries a local connection as a stream of the multiplexed session.
 // It returns false if the connection could not be multiplexed (and was not used).
-func (c *RemoteAccessClient) serveMultiplexed(ctx context.Context, localConn net.Conn) bool {
+func (c *Client) serveMultiplexed(ctx context.Context, localConn net.Conn) bool {
 	session, err := c.mux.getSession(ctx, c)
 	if err != nil {
 		switch {

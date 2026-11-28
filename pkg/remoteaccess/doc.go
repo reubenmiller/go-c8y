@@ -8,6 +8,6 @@
 // context aborts connecting, and ServeContext stops serving.
 //
 // Under api.WithDryRun no websocket is connected: the upgrade request goes to the
-// dry-run handler (or is logged), RemoteAccessClient.DryRunRequest returns it,
+// dry-run handler (or is logged), Client.DryRunRequest returns it,
 // and ListenServeContext and ServeContext return nil.
 package remoteaccess

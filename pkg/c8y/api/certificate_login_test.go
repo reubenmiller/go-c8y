@@ -192,7 +192,7 @@ func serverPort(t *testing.T, s *httptest.Server) string {
 }
 
 func certClient(cs *certServer, cert testCert, transport authentication.CertificateTransport, mtlsPort string) *Client {
-	c := NewClient(ClientOptions{
+	c := mustNewClient(ClientOptions{
 		BaseURL:          cs.server.URL,
 		SkipTenantLookup: true,
 		MTLSPort:         mtlsPort,
@@ -275,8 +275,9 @@ func Test_CertLogin_RequestFormat(t *testing.T) {
 
 	cs := newCertServer(t, &leafKey.PublicKey)
 	client := certClient(cs, chain, authentication.CertificateTransportAuto, "")
-	client.Auth.Tenant = "t123"
-	client.SetAuth(client.Auth)
+	auth := client.Auth()
+	auth.Tenant = "t123"
+	client.SetAuth(auth)
 	cs.reset()
 
 	_, err := client.LoginWithOptions(context.Background(), LoginOptions{Method: authentication.LoginMethodCertificate})
@@ -320,7 +321,7 @@ func Test_CertLogin_TamperedToken(t *testing.T) {
 	_, err := client.LoginWithOptions(context.Background(), LoginOptions{Method: authentication.LoginMethodCertificate})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "decrypt")
-	assert.Empty(t, client.Auth.Token, "no token is stored")
+	assert.Empty(t, client.Auth().Token, "no token is stored")
 }
 
 func Test_CertLogin_TOTPChallenge(t *testing.T) {
@@ -409,7 +410,7 @@ func Test_ContextCertificateSource_ServiceUser(t *testing.T) {
 	tlsCert, err := tls.X509KeyPair(cert.certPEM, cert.keyPEM)
 	require.NoError(t, err)
 
-	client := NewClient(ClientOptions{
+	client := mustNewClient(ClientOptions{
 		BaseURL:              cs.server.URL,
 		SkipTenantLookup:     true,
 		ContextTokenExchange: true,

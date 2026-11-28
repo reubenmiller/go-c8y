@@ -40,11 +40,16 @@ type Options struct {
 // Call Bootstrap() afterwards to load the application metadata and the
 // per-tenant service users:
 //
-//	ms := microservice.New(microservice.Options{})
+//	ms, err := microservice.New(microservice.Options{})
+//	if err != nil {
+//		log.Fatal(err)
+//	}
 //	if err := ms.Bootstrap(context.Background()); err != nil {
 //		log.Fatal(err)
 //	}
-func New(opts Options) *Microservice {
+//
+// It returns an error when the host is missing or not a valid URL.
+func New(opts Options) (*Microservice, error) {
 	config := NewConfiguration()
 	config.InitConfiguration()
 
@@ -65,10 +70,14 @@ func New(opts Options) *Microservice {
 	if opts.HTTPClient != nil {
 		bootstrapOpts.Transport = opts.HTTPClient.Transport
 	}
-	ms.Client = NewBootstrapClient(bootstrapOpts)
+	client, err := NewBootstrapClient(bootstrapOpts)
+	if err != nil {
+		return nil, err
+	}
+	ms.Client = client
 	ms.installClientMiddleware()
 
-	return ms
+	return ms, nil
 }
 
 // Bootstrap loads the current application metadata and the service users for
@@ -93,37 +102,12 @@ func (m *Microservice) Bootstrap(ctx context.Context) error {
 	return nil
 }
 
-// NewDefaultMicroservice returns a new microservice instance and immediately
-// bootstraps it (loads application metadata and service users) and verifies
-// platform connectivity. Errors during bootstrap are logged but do not prevent
-// the microservice from being returned.
-//
-// NOTE: The microservice agent is not registered automatically. Call
-// RegisterMicroserviceAgent() after setting any default configuration values
-// via Config.SetDefault().
-//
-// Deprecated: Use New() followed by Bootstrap() for explicit error handling.
-func NewDefaultMicroservice(opts Options) *Microservice {
-	ms := New(opts)
-
-	if err := ms.Bootstrap(context.Background()); err != nil {
-		slog.Warn("Failed to bootstrap microservice", "err", err)
-	}
-
-	// Verify connectivity using the first available service user.
-	if err := ms.TestClientConnection(); err != nil {
-		slog.Error("Could not connect to Cumulocity. If running locally, check bootstrap credentials.", "err", err)
-	}
-
-	return ms
-}
-
 // NewMicroservice creates a Microservice with a custom host and optional client
-// option overrides. Unlike NewDefaultMicroservice it does not call
-// Config.InitConfiguration() or RefreshServiceUsers() – the caller is
-// responsible for doing so.
+// option overrides. Unlike New it does not call Config.InitConfiguration() or
+// RefreshServiceUsers() – the caller is responsible for doing so.
 // Bootstrap credentials are read from the C8Y_BOOTSTRAP_* environment variables.
-func NewMicroservice(host string, clientOpts ...func(*api.ClientOptions)) *Microservice {
+// It returns an error when the host is missing or not a valid URL.
+func NewMicroservice(host string, clientOpts ...func(*api.ClientOptions)) (*Microservice, error) {
 	opts := api.ClientOptions{}
 	for _, o := range clientOpts {
 		o(&opts)
@@ -131,7 +115,10 @@ func NewMicroservice(host string, clientOpts ...func(*api.ClientOptions)) *Micro
 	if host != "" {
 		opts.BaseURL = host
 	}
-	client := NewBootstrapClient(opts)
+	client, err := NewBootstrapClient(opts)
+	if err != nil {
+		return nil, err
+	}
 
 	ms := &Microservice{
 		Client:              client,
@@ -139,7 +126,7 @@ func NewMicroservice(host string, clientOpts ...func(*api.ClientOptions)) *Micro
 		RealtimeClientCache: NewRealtimeClientCache(host),
 	}
 	ms.installClientMiddleware()
-	return ms
+	return ms, nil
 }
 
 // NewBootstrapClient returns an *api.Client pre-configured for use inside a
@@ -155,7 +142,8 @@ func NewMicroservice(host string, clientOpts ...func(*api.ClientOptions)) *Micro
 //
 // Use this when you want the raw *api.Client without the full Microservice
 // wrapper (no agent registration, scheduler, or configuration management).
-func NewBootstrapClient(opts api.ClientOptions) *api.Client {
+// It returns an error when the base URL is missing or not a valid URL.
+func NewBootstrapClient(opts api.ClientOptions) (*api.Client, error) {
 	if opts.BaseURL == "" {
 		opts.BaseURL = microservices.GetBootstrapBaseURLFromEnvironment()
 	}
@@ -167,9 +155,7 @@ func NewBootstrapClient(opts api.ClientOptions) *api.Client {
 			Password: password,
 		}
 	}
-	client := api.NewClient(opts)
-	client.UseTenantInUsername = true
-	return client
+	return api.NewClient(opts)
 }
 
 // Microservice represents a running Cumulocity microservice.
@@ -397,7 +383,7 @@ func (s *RealtimeClientCache) LoadOrNewClient(user model.ServiceUser) (*realtime
 	if client, err := s.GetClient(user); err == nil {
 		return client, nil
 	}
-	client, err := realtime.NewClientE(nil, realtime.ClientOptions{
+	client, err := realtime.NewClient(nil, realtime.ClientOptions{
 		Host:     s.host,
 		Tenant:   user.Tenant,
 		Username: user.Username,
@@ -447,20 +433,10 @@ func (m *Microservice) TestClientConnection() error {
 
 /* Getters, Setters */
 
-// SetMicroserviceHost overrides the host used for outbound requests.
-// Useful when the microservice is not deployed in Cumulocity (e.g. local dev).
-//
-// Deprecated: use [Microservice.SetMicroserviceHostE]. This logs an invalid
-// host and leaves the current host unchanged.
-func (m *Microservice) SetMicroserviceHost(host string) {
-	if err := m.SetMicroserviceHostE(host); err != nil {
-		slog.Error("Could not set microservice host", "err", err)
-	}
-}
-
-// SetMicroserviceHostE overrides the host used for outbound requests and
-// returns an error, leaving the host unchanged, when host is not a valid URL.
-func (m *Microservice) SetMicroserviceHostE(host string) error {
+// SetHost overrides the host used for outbound requests, for example when the
+// microservice is not deployed in Cumulocity (local development). It returns an
+// error, leaving the host unchanged, when host is not a valid URL.
+func (m *Microservice) SetHost(host string) error {
 	if _, err := url.Parse(host); err != nil {
 		return fmt.Errorf("invalid microservice host: %w", err)
 	}
@@ -472,9 +448,9 @@ func (m *Microservice) SetMicroserviceHostE(host string) error {
 // the microservice bootstrap client.
 func (m *Microservice) WithBootstrapUserCredentials() model.ServiceUser {
 	return model.ServiceUser{
-		Tenant:   m.Client.Auth.Tenant,
-		Username: m.Client.Auth.Username,
-		Password: m.Client.Auth.Password,
+		Tenant:   m.Client.Auth().Tenant,
+		Username: m.Client.Auth().Username,
+		Password: m.Client.Auth().Password,
 	}
 }
 

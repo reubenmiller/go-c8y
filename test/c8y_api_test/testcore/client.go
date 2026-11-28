@@ -109,7 +109,8 @@ func CreateTestClient(t *testing.T) *api.Client {
 	if rec := setupRecorder(t); rec != nil {
 		opts.Transport = rec
 	}
-	client := api.NewClientFromEnvironment(opts)
+	client, err := api.NewClientFromEnvironment(opts)
+	require.NoError(t, err)
 	client.Resty().SetRetryCount(1)
 	return client
 }
@@ -130,7 +131,8 @@ func CreateTestClientBasicAuth(t *testing.T) *api.Client {
 	if rec := setupRecorder(t); rec != nil {
 		opts.Transport = rec
 	}
-	client := api.NewClient(opts)
+	client, err := api.NewClient(opts)
+	require.NoError(t, err)
 	client.Resty().SetRetryCount(1)
 	return client
 }
@@ -145,7 +147,8 @@ func CreateTestClientWithFakeServer(t *testing.T) (*api.Client, *fakeserver.Fake
 	if rec := setupRecorder(t); rec != nil {
 		opts.Transport = rec
 	}
-	client := api.NewClientFromEnvironment(opts)
+	client, err := api.NewClientFromEnvironment(opts)
+	require.NoError(t, err)
 	client.Resty().SetRetryCount(1)
 	return client, srv
 }
@@ -171,7 +174,9 @@ func CreateTestClientNoAuth(t *testing.T) *api.Client {
 	if rec := setupRecorder(t); rec != nil {
 		opts.Transport = rec
 	}
-	return api.NewClientFromEnvironment(opts)
+	client, err := api.NewClientFromEnvironment(opts)
+	require.NoError(t, err)
+	return client
 }
 
 func CreateTestClientWithToken(t *testing.T) *api.Client {
@@ -180,7 +185,9 @@ func CreateTestClientWithToken(t *testing.T) *api.Client {
 	if rec := setupRecorder(t); rec != nil {
 		opts.Transport = rec
 	}
-	return api.NewClientFromEnvironment(opts)
+	client, err := api.NewClientFromEnvironment(opts)
+	require.NoError(t, err)
+	return client
 }
 
 func CreateManagedObject(t *testing.T, client *api.Client) op.Result[jsonmodels.ManagedObject] {

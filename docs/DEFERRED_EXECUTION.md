@@ -170,7 +170,11 @@ func deleteWithConfirmation(client *api.Client, deviceID string) error {
 }
 
 func main() {
-    client := api.NewClientFromEnvironment(api.ClientOptions{})
+    client, err := api.NewClientFromEnvironment(api.ClientOptions{})
+    if err != nil {
+        fmt.Fprintln(os.Stderr, err)
+        os.Exit(1)
+    }
     if err := deleteWithConfirmation(client, os.Args[1]); err != nil {
         fmt.Fprintln(os.Stderr, err)
         os.Exit(1)

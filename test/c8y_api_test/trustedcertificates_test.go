@@ -23,7 +23,7 @@ func Test_TrustedCertificateListWithCACertificateOnly(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	client.SetDebug(true)
 	certs := client.TrustedCertificates.List(context.Background(), trustedcertificates.ListOptions{
-		TenantID:             client.Auth.Tenant,
+		TenantID:             client.Auth().Tenant,
 		CertificateAuthority: true,
 	})
 	assert.NoError(t, certs.Err)
@@ -61,7 +61,7 @@ func Test_TrustedCertifcates(t *testing.T) {
 
 	// create
 	cert := client.TrustedCertificates.Create(context.Background(), trustedcertificates.CreateOptions{
-		TenantID: client.Auth.Tenant,
+		TenantID: client.Auth().Tenant,
 	}, localCert)
 	assert.NoError(t, err)
 	assert.Equal(t, cert.Data.Fingerprint(), localCert.Fingerprint)
@@ -70,7 +70,7 @@ func Test_TrustedCertifcates(t *testing.T) {
 		// always run a cleanup in case the test fails before the cert is deleted
 		client.TrustedCertificates.Delete(context.Background(), trustedcertificates.DeleteOptions{
 			Fingerprint: cert.Data.Fingerprint(),
-			TenantID:    client.Auth.Tenant,
+			TenantID:    client.Auth().Tenant,
 		})
 	})
 
@@ -85,7 +85,7 @@ func Test_TrustedCertifcates(t *testing.T) {
 	// proof of possession
 	verifiedCertificate := client.TrustedCertificates.ProofEndToEnd(context.Background(), trustedcertificates.ProofOptions{
 		Fingerprint: cert.Data.Fingerprint(),
-		TenantID:    client.Auth.Tenant,
+		TenantID:    client.Auth().Tenant,
 		PrivateKey:  keyFile,
 	})
 	assert.NoError(t, verifiedCertificate.Err)
@@ -101,7 +101,7 @@ func Test_TrustedCertifcates(t *testing.T) {
 	// update
 	updatedCert := client.TrustedCertificates.Update(context.Background(), trustedcertificates.UpdateOptions{
 		Fingerprint: cert.Data.Fingerprint(),
-		TenantID:    client.Auth.Tenant,
+		TenantID:    client.Auth().Tenant,
 	}, model.TrustedCertificate{
 		Status: model.TrustedCertificateStatusDisabled,
 	})
@@ -111,14 +111,14 @@ func Test_TrustedCertifcates(t *testing.T) {
 	// get
 	getCert := client.TrustedCertificates.Get(context.Background(), trustedcertificates.GetOptions{
 		Fingerprint: cert.Data.Fingerprint(),
-		TenantID:    client.Auth.Tenant,
+		TenantID:    client.Auth().Tenant,
 	})
 	assert.NoError(t, getCert.Err)
 	assert.Equal(t, getCert.Data.Fingerprint(), cert.Data.Fingerprint())
 
 	// list
 	listCerts := client.TrustedCertificates.List(context.Background(), trustedcertificates.ListOptions{
-		TenantID: client.Auth.Tenant,
+		TenantID: client.Auth().Tenant,
 	})
 	assert.NoError(t, listCerts.Err)
 	assert.GreaterOrEqual(t, listCerts.Data.Length(), 1)
@@ -126,7 +126,7 @@ func Test_TrustedCertifcates(t *testing.T) {
 	// delete
 	result := client.TrustedCertificates.Delete(context.Background(), trustedcertificates.DeleteOptions{
 		Fingerprint: updatedCert.Data.Fingerprint(),
-		TenantID:    client.Auth.Tenant,
+		TenantID:    client.Auth().Tenant,
 	})
 	assert.NoError(t, result.Err)
 

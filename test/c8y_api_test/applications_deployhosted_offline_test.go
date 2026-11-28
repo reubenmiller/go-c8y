@@ -199,7 +199,7 @@ func Test_Applications_DeployHosted_IgnoresAppOfOtherOwner(t *testing.T) {
 	result := client.Applications.DeployHosted(ctx, applications.DeployHostedOptions{
 		Path:  dir,
 		Name:  appName,
-		Owner: client.Auth.Tenant,
+		Owner: client.Auth().Tenant,
 	})
 	require.NoError(t, result.Err)
 	assert.Equal(t, op.StatusCreated, result.Status)

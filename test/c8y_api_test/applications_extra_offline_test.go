@@ -63,10 +63,10 @@ func Test_Applications_SubscribeUnsubscribe(t *testing.T) {
 	require.NoError(t, createResult.Err)
 	defer client.Applications.Delete(ctx, createResult.Data.ID(), applications.DeleteOptions{})
 
-	subResult := client.Applications.Subscribe(ctx, client.Auth.Tenant, createResult.Data.Self())
+	subResult := client.Applications.Subscribe(ctx, client.Auth().Tenant, createResult.Data.Self())
 	require.NoError(t, subResult.Err)
 
-	unsubResult := client.Applications.Unsubscribe(ctx, client.Auth.Tenant, createResult.Data.ID())
+	unsubResult := client.Applications.Unsubscribe(ctx, client.Auth().Tenant, createResult.Data.ID())
 	require.NoError(t, unsubResult.Err)
 }
 
