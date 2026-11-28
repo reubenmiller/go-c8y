@@ -4,6 +4,66 @@
 
 v2 is a new module, `github.com/reubenmiller/go-c8y/v2`. Entries marked **Breaking** change behavior or remove API compared with earlier v2 pre-releases; each one says what to use instead.
 
+### Removed deprecated API and cleanups
+
+go-c8y v2 is not tagged yet, so the deprecated aliases are removed instead of kept for the whole major version, and a few names and types are made consistent in place. The only known consumer is go-c8y-cli v3, which is updated in the same change.
+
+* **Breaking**: removed deprecated aliases and helpers:
+
+  | Before | After |
+  |---|---|
+  | `Client.ApplicationVersions` | `Client.Applications.Versions` |
+  | `Client.DeviceStatistics` | `Client.Tenants.DeviceStatistics` |
+  | `Client.LoginTokens` | `Client.Tenants.LoginTokens` |
+  | `Client.DevicePermissions` | `Client.Users.DevicePermissions` |
+  | `Client.InventoryRoles` | `Client.UserRoles.Inventory` |
+  | `Users.CurrentUser` | `Users.Current` |
+  | `Microservices.CurrentMicroservice` (a value field) | `Microservices.Current` (a pointer) |
+  | `Devices.CreateDevice(ctx, name)` | `Devices.Create(ctx, jsonmodels.NewDevice(name))` |
+  | `Agents.CreateAgent(ctx, name)` | `Agents.Create(ctx, jsonmodels.NewAgent(name))` |
+  | `Microservice.SubscribeToNotifications`, `Microservice.SubscribeToOperations` (CometD) | `Microservice.SubscribeNotifications` (Notification 2.0) |
+  | `device.PollToken(c, url, clientID, code)` | `device.Wait(ctx, c, url, device.WaitOptions{ClientID: clientID, DeviceCode: code})` |
+* **Breaking**: the singular option types are renamed to the plural form used by every other option type:
+
+  | Before | After |
+  |---|---|
+  | `systemoptions.GetOption`, `tenantoptions.GetOption`, `userroles.GetOption` | `...GetOptions` |
+  | `tenantoptions.UpdateOption` | `tenantoptions.UpdateOptions` |
+  | `tenantoptions.UpdateByCategoryOption` | `tenantoptions.UpdateByCategoryOptions` |
+  | `tenantoptions.UpdateEditableFlagOption` | `tenantoptions.UpdateEditableFlagOptions` |
+  | `enrollment.DeviceEnrollmentOption` | `enrollment.DeviceEnrollmentOptions` |
+* **Breaking**: ids are strings everywhere:
+
+  | Before | After |
+  |---|---|
+  | `UserRoles.Inventory.Get/Update/Delete(ctx, id int64, ...)` | `(ctx, id string, ...)` |
+  | `devicepermissions.GetInventoryRoleAssignmentOptions.ID int64` | `ID string` |
+  | `operations.ListOptions.BulkOperationID int` | `BulkOperationID string` |
+  | `jsonmodels.Operation.BulkOperationID() int64` | `BulkOperationID() string` |
+* **Breaking**: `Client.Request` is the only raw request API. `Client.SendRequest` and `api.RequestResult` are removed. `Client.Request` returns an `op.Result[jsondoc.JSONDoc]`, which now also carries what `RequestResult` had: the new `Result.Header` (response headers), `Result.Response` (the raw body, also for non-JSON bodies and for an HTTP error), `Result.HTTPStatus`, and `Result.Request` (also set in a dry run). `RequestOptions.DoNotParseResponse` is removed, as a result cannot hold a stream: use the typed download methods or `Client.Resty()` for streamed bodies.
+
+  | Before | After |
+  |---|---|
+  | `res := client.SendRequest(ctx, opts)` | `res := client.Request(ctx, opts)` |
+  | `res.Error`, `res.IsError()` | `res.Err`, `res.IsError()` |
+  | `res.StatusCode()` | `res.HTTPStatus` |
+  | `res.Body()`, `res.String()` | `res.Response`, `string(res.Response)` |
+  | `res.JSON(path)` | `res.Data.Get(path)` |
+  | `res.Header(key)` | `res.Header.Get(key)` |
+  | `res.Unmarshal(&v)` | `json.Unmarshal(res.Response, &v)` |
+  | `res.Response.Request` | `res.Request` |
+* **Breaking**: "first of a list" has one shape, `(item, error)` with `op.ErrNotFound` when there is none, as `Result.First()` does:
+
+  | Before | After |
+  |---|---|
+  | `op.First(seq)` (returned `(Result, bool)`) | `r.First()` |
+  | `op.Collect(seq)` (alias of `op.ToSlice`) | `op.ToSlice(seq)` or `r.Collect()` |
+  | `Microservices.FindFirst(ctx, opt)` returned `(Result, bool)` | returns `(jsonmodels.Microservice, error)` |
+  | digital twin `DefinitionService.Find` returned `(Result, bool)` | returns `(jsonmodels.DigitalTwinDefinition, error)` |
+  | `microservices.First` (a predicate which was always true) | removed |
+* **Breaking**: the URL templates and property names of the service packages are no longer exported. The package variables `ApiXxx` (about 210, mutable), the path parameter names `ParamXxx` and the `ResultProperty` constants are now unexported (`apiXxx`, `paramXxx`, `resultProperty`) since they only describe how a service builds its requests. The path list for tooling is `pkg/c8y/api/spec`, which stays public. go-c8y-cli did not use them.
+* **Breaking**: removed unused exported v1 leftovers: `model.NewNumber`, `model.NewTimestamp`, `model.NewSimpleMeasurementRepresentation`, `model.NewSoftwareBinary`, `model.NewTrustedCertificateFromFile` (use `model.NewTrustedCertificate` with `os.ReadFile`), `core.NewUploadFileOptions` and `jsondoc.MapIter`. The jsonmodels constructors `NewAlarmWithType`, `NewEventWithType`, `NewMeasurementWithType`, `NewOperationWithStatus`, `NewDeviceWithType`, `New{Configuration,Firmware,FirmwareVersion,Software,SoftwareVersion}WithOptions`, `NewMeasurementSeriesWithDevice`, `NewMicroserviceSetting`, `NewRemoteAccessCredentials` and `c8y.NewCachedClient` stay as public helpers, now documented and tested.
+
 ### Go version, results and JSON
 
 * **Breaking**: go-c8y v2 requires Go 1.27. Generic helpers are now methods (Go 1.27 generic methods), and the free functions they replace are removed:
@@ -55,9 +115,9 @@ v2 is a new module, `github.com/reubenmiller/go-c8y/v2`. Entries marked **Breaki
 * **Breaking**: services no longer embed the HTTP client, so `client.Alarms.Client` and similar fields are gone.
 * Added `api.Middleware`, `api.RoundTripperFunc`, `ClientOptions.Middleware`, `Client.Use`, and `task check-api-surface` (run in CI) to keep resty types out of the public API.
 * **Breaking**: the root package `pkg/c8y` now holds only the HTTP response cache (`NewCachedTransport`, `NewCachedClient`, `CacheOptions`) and `IsID`, all supported v2 API. The unused v1 leftovers are removed: `Response`, `ProxyReader`, `NewProxyReader`, `NewStringReader`, `NewByteReader`, `Upload`, `RequestMiddleware`, and `DecodeJSONBytes` (use `api.DecodeJSONBytes`). `IsID("")` now returns `false`. `pkg/c8y/api/mock` and `pkg/jsonUtilities` are now internal. `pkg/zipUtilities` stays public as supported v2 API.
-* `Client.SendRequest`, `RequestOptions`, and `RequestResult` are supported v2 API for endpoints without a typed service method.
-* `SendRequest` now handles a request like the typed service methods do:
-  * **Breaking (behavior)**: a response with an HTTP error status sets `RequestResult.Error` to a `*core.Error` with the status, the Cumulocity error type and message (or the body, when it is not a Cumulocity error). The body stays readable with `Body()`. Before, `Error` was only set when the request could not be sent; `IsError()` is unchanged.
+* `Client.Request` and `RequestOptions` are supported v2 API for endpoints without a typed service method (`SendRequest` and `RequestResult` are removed, see "Removed deprecated API and cleanups").
+* `Request` handles a request like the typed service methods do:
+  * **Breaking (behavior)**: a response with an HTTP error status sets the result's `Err` to a `*core.Error` with the status, the Cumulocity error type and message (or the body, when it is not a Cumulocity error). The body stays readable in `Response`. Before, the error was only set when the request could not be sent; `IsError()` is unchanged.
   * It applies the context's processing mode and custom headers and query parameters (`WithProcessingMode`, `WithExtraHeaders`, `WithExtraQueryParams`). The request's own options win.
   * A query parameter given several times (in the path or in `Query`) keeps every value. Before, only the last one was sent. `WithExtraQueryParams` now also keeps every value of a key for the typed service methods.
   * A `DELETE` request sends its `Body`. Before, the HTTP client dropped it.
@@ -118,7 +178,7 @@ v2 is a new module, `github.com/reubenmiller/go-c8y/v2`. Entries marked **Breaki
   * `api.WithResponseBodyWrapper(ctx, func(*http.Response) io.ReadCloser)` replaces the response body, for example for downloads.
   * `api.WithUploadProgress` and `api.WithDownloadProgress` report `(read, total)` through the new `core.ProgressFunc`; `core.NewProgressReader` and `core.ReaderSize` are the building blocks.
   * `core.UploadFileOptions.Progress` reports the uploaded file bytes of every typed upload (binaries, event binaries, applications and versions, microservices, firmware, software, configuration, certificate revocation lists, bulk device registration), with the file size as total.
-* Added `Client.Request(ctx, RequestOptions) op.Result[jsondoc.JSONDoc]`, a typed escape hatch for endpoints without a service method. It shares middleware, authentication, dry run and error handling with `SendRequest` and the typed services.
+* Added `Client.Request(ctx, RequestOptions) op.Result[jsondoc.JSONDoc]`, a typed escape hatch for endpoints without a service method. It shares middleware, authentication, dry run and error handling with the typed services.
 
 ### Authentication and certificates
 
@@ -159,7 +219,7 @@ v2 is a new module, `github.com/reubenmiller/go-c8y/v2`. Entries marked **Breaki
 * Added `Microservice.WatchSubscriptions` (tenant added, removed and credentials-changed callbacks), `Microservice.Settings` (per-tenant settings with a 10-minute cache, `SettingsTTL`), and `Microservice.SubscribeNotifications` (Notification 2.0 per tenant with acknowledgements, reconnect, and clean shutdown).
 * `Microservice.ForEachTenant` accepts optional `pipeline.Options` to process tenants concurrently; without options it behaves as before.
 * `PER_TENANT` isolation (`C8Y_MICROSERVICE_ISOLATION`) uses `C8Y_TENANT`/`C8Y_USER`/`C8Y_PASSWORD`; `APPLICATION_KEY` adds `X-Cumulocity-Application-Key`; a `401` on a service-user request refreshes the service users.
-* Fixed the reader goroutine leak in `Microservice.SubscribeToNotifications`; it and `SubscribeToOperations` are deprecated in favour of `SubscribeNotifications`.
+* Added the Notification 2.0 helper `Microservice.SubscribeNotifications`; the CometD helpers `SubscribeToNotifications` and `SubscribeToOperations` are removed.
 
 ### Notification 2.0
 
@@ -184,19 +244,9 @@ The realtime, notification2 and remote access clients now connect like an HTTP c
 
 ### API coverage
 
-* Service tree, non-breaking. Sub-resources are now reachable from the service that owns them, and the old `Client` fields stay as deprecated aliases of the same instance:
+* Service tree. Sub-resources are reachable from the service that owns them: `Applications.Versions`, `Tenants.DeviceStatistics`, `Tenants.LoginTokens`, `Users.DevicePermissions`, `UserRoles.Inventory`, `Users.Current` and `Microservices.Current` (the old flat `Client` fields and `CurrentUser`/`CurrentMicroservice` are removed, see "Removed deprecated API and cleanups").
 
-  | Canonical | Deprecated alias |
-  |---|---|
-  | `Applications.Versions` | `Client.ApplicationVersions` |
-  | `Tenants.DeviceStatistics` | `Client.DeviceStatistics` |
-  | `Tenants.LoginTokens` | `Client.LoginTokens` |
-  | `Users.DevicePermissions` | `Client.DevicePermissions` |
-  | `UserRoles.Inventory` | `Client.InventoryRoles` |
-  | `Users.Current` | `Users.CurrentUser` |
-  | `Microservices.Current` | `Microservices.CurrentMicroservice` |
-
-  `Devices` and `Microservices` now share `Client.ManagedObjects` and `Client.Applications` instead of holding copies (`devices.NewServiceWithManagedObjects`, `microservices.NewServiceWithApplications`). `Devices.CreateDevice` and `Agents.CreateAgent` are deprecated in favor of `Create` with `jsonmodels.NewDevice` / `jsonmodels.NewAgent`. `docs/API_DESIGN.md` documents the `Raw` suffix.
+  `Devices` and `Microservices` now share `Client.ManagedObjects` and `Client.Applications` instead of holding copies (`devices.NewServiceWithManagedObjects`, `microservices.NewServiceWithApplications`). `Devices.CreateDevice` and `Agents.CreateAgent` are removed in favor of `Create` with `jsonmodels.NewDevice` / `jsonmodels.NewAgent`. `docs/API_DESIGN.md` documents the `Raw` suffix.
 * Added `ResolveID(ctx, identifier, meta)` to `Users` (by user name, `*` wildcards), `Tenants` (by id, domain or company) and `Binaries` (by id or name). They return a not found error for no match and an error for more than one match.
 * **Breaking**: `UIApplicationPlugins` (`ui/applicationplugins`) now manages the plugins in the application's `config.remotes` (`"<contextPath>@<version>": [modules]`), the model the Cumulocity UI uses. It wrote `applicationBuilder.plugins` before, which the UI does not read. Plugins are given as `"<name or contextPath>[@<version or tag>]"` and looked up among the tenant's own and the shared plugins:
 

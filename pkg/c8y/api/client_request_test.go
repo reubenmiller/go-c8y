@@ -51,7 +51,7 @@ func readFormParts(t *testing.T, r *http.Request, body string) []formPart {
 	return parts
 }
 
-func Test_SendRequest_FormParts(t *testing.T) {
+func Test_Request_FormParts(t *testing.T) {
 	ms := newMWServer(t)
 	client := newMWClient(ms)
 
@@ -60,7 +60,7 @@ func Test_SendRequest_FormParts(t *testing.T) {
 	f, err := os.Open(file)
 	require.NoError(t, err)
 
-	result := client.SendRequest(context.Background(), RequestOptions{
+	result := client.Request(context.Background(), RequestOptions{
 		Method: http.MethodPost,
 		Path:   "/example",
 		FormData: map[string]io.Reader{
@@ -72,7 +72,7 @@ func Test_SendRequest_FormParts(t *testing.T) {
 			"file":    strings.NewReader("raw"),
 		},
 	})
-	require.NoError(t, result.Error)
+	require.NoError(t, result.Err)
 
 	parts := readFormParts(t, ms.last(t), ms.bodies[len(ms.bodies)-1])
 	assert.Equal(t, []formPart{
@@ -85,22 +85,22 @@ func Test_SendRequest_FormParts(t *testing.T) {
 	}, parts)
 }
 
-func Test_SendRequest_HostKeepsQueryOnce(t *testing.T) {
+func Test_Request_HostKeepsQueryOnce(t *testing.T) {
 	ms := newMWServer(t)
 	client := newMWClient(ms)
 
-	result := client.SendRequest(context.Background(), RequestOptions{
+	result := client.Request(context.Background(), RequestOptions{
 		Method: http.MethodGet,
 		Host:   ms.server.URL + "/service/example",
 		Path:   "/items?id=1",
 	})
-	require.NoError(t, result.Error)
+	require.NoError(t, result.Err)
 	req := ms.last(t)
 	assert.Equal(t, "/service/example/items", req.URL.Path)
 	assert.Equal(t, "id=1", req.URL.RawQuery)
 }
 
-func Test_SendRequest_HTTPError(t *testing.T) {
+func Test_Request_HTTPError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/html" {
 			w.Header().Set("Content-Type", "text/html")
@@ -116,21 +116,21 @@ func Test_SendRequest_HTTPError(t *testing.T) {
 	client := newMWClient(&mwServer{server: server})
 	client.Resty().SetRetryCount(0)
 
-	result := client.SendRequest(context.Background(), RequestOptions{Method: http.MethodGet, Path: "/inventory/managedObjects/1"})
+	result := client.Request(context.Background(), RequestOptions{Method: http.MethodGet, Path: "/inventory/managedObjects/1"})
 	var apiErr *core.Error
-	require.ErrorAs(t, result.Error, &apiErr)
+	require.ErrorAs(t, result.Err, &apiErr)
 	assert.Equal(t, http.StatusNotFound, apiErr.StatusCode())
 	assert.Equal(t, "inventory/notFound", apiErr.Type)
 	assert.Equal(t, "Finding device data from database failed", apiErr.Message)
-	assert.NotEmpty(t, result.Body(), "the body stays readable")
+	assert.NotEmpty(t, result.Response, "the body stays readable")
 
-	result = client.SendRequest(context.Background(), RequestOptions{Method: http.MethodGet, Path: "/html"})
-	require.ErrorAs(t, result.Error, &apiErr)
+	result = client.Request(context.Background(), RequestOptions{Method: http.MethodGet, Path: "/html"})
+	require.ErrorAs(t, result.Err, &apiErr)
 	assert.Equal(t, http.StatusForbidden, apiErr.StatusCode())
 	assert.Equal(t, "<html>denied</html>", apiErr.Message)
 }
 
-func Test_SendRequest_ContextOptionsAndRepeatedQueryKeys(t *testing.T) {
+func Test_Request_ContextOptionsAndRepeatedQueryKeys(t *testing.T) {
 	ms := newMWServer(t)
 	client := newMWClient(ms)
 
@@ -138,15 +138,47 @@ func Test_SendRequest_ContextOptionsAndRepeatedQueryKeys(t *testing.T) {
 	ctx = WithExtraQueryParams(ctx, url.Values{"extra": {"a", "b"}})
 	ctx = WithProcessingMode(ctx, "TRANSIENT")
 
-	result := client.SendRequest(ctx, RequestOptions{
+	result := client.Request(ctx, RequestOptions{
 		Method: http.MethodGet,
 		Path:   "/items?type=a&type=b",
 		Query:  "other=1",
 	})
-	require.NoError(t, result.Error)
+	require.NoError(t, result.Err)
 	req := ms.last(t)
 	assert.Equal(t, url.Values{"type": {"a", "b"}, "other": {"1"}, "extra": {"a", "b"}}, req.URL.Query())
 	assert.Equal(t, "1", req.Header.Get("X-Custom"))
 	assert.Equal(t, "TRANSIENT", req.Header.Get("X-Cumulocity-Processing-Mode"))
 	assert.Equal(t, "application/json", req.Header.Get("Accept"))
+}
+
+func Test_Request_KeepsHeaderBodyAndRequest(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/download" {
+			w.Header().Set("Content-Type", "text/plain")
+			w.Header().Set("Content-Disposition", `attachment; filename="a.txt"`)
+			_, _ = w.Write([]byte("not json"))
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error":"inventory/notFound","message":"gone"}`))
+	}))
+	t.Cleanup(server.Close)
+	client := newMWClient(&mwServer{server: server})
+	client.Resty().SetRetryCount(0)
+
+	res := client.Request(context.Background(), RequestOptions{Method: http.MethodGet, Path: "/download"})
+	require.NoError(t, res.Err)
+	assert.Equal(t, http.StatusOK, res.HTTPStatus)
+	assert.Equal(t, "not json", string(res.Response), "a body which is not JSON is kept as is")
+	assert.Equal(t, "text/plain", res.Header.Get("Content-Type"))
+	assert.Equal(t, `attachment; filename="a.txt"`, res.Header.Get("Content-Disposition"))
+	require.NotNil(t, res.Request)
+	assert.Equal(t, "/download", res.Request.URL.Path)
+
+	res = client.Request(context.Background(), RequestOptions{Method: http.MethodGet, Path: "/missing"})
+	require.Error(t, res.Err)
+	assert.Equal(t, http.StatusNotFound, res.HTTPStatus)
+	assert.Contains(t, string(res.Response), "inventory/notFound", "the body of an HTTP error stays readable")
+	assert.Equal(t, "application/json", res.Header.Get("Content-Type"))
 }

@@ -20,7 +20,7 @@ func Test_UserRoles(t *testing.T) {
 	firstItem, err := collection.First()
 	assert.NoError(t, err)
 
-	role := client.UserRoles.Get(context.Background(), userroles.GetOption{
+	role := client.UserRoles.Get(context.Background(), userroles.GetOptions{
 		Name: firstItem.Name(),
 	})
 	assert.NoError(t, role.Err)

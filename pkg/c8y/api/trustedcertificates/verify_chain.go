@@ -13,8 +13,8 @@ import (
 	"resty.dev/v3"
 )
 
-// ApiVerifyCertChain verifies a certificate chain against a tenant.
-var ApiVerifyCertChain = "/tenant/trusted-certificates/verify-cert-chain"
+// apiVerifyCertChain verifies a certificate chain against a tenant.
+var apiVerifyCertChain = "/tenant/trusted-certificates/verify-cert-chain"
 
 // HeaderClientCertChain carries a certificate chain in a header.
 const HeaderClientCertChain = "X-Cumulocity-Client-Cert-Chain"
@@ -47,7 +47,7 @@ func (s *Service) verifyChainB(opt VerifyChainOptions) *httpcore.TryRequest {
 		SetHeader(HeaderClientCertChain, ChainHeader(opt.Chain)).
 		SetFileReader("file", "chain.pem", bytes.NewReader(opt.Chain)).
 		SetMultipartFormData(form).
-		SetURL(ApiVerifyCertChain)
+		SetURL(apiVerifyCertChain)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 

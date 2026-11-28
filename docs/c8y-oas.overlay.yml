@@ -146,6 +146,8 @@ resources:
               or cast a string variable with managedobjects.DeviceRef(id).
           status:
             type: types.OperationStatus
+          bulkOperationId:
+            type: string # ids are strings everywhere in the SDK
         embeds:
           - import: github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination
             type: pagination.PaginationOptions
@@ -155,6 +157,7 @@ resources:
     models:
       - type: Operation
         schema: operation
+        skip: [bulkOperationId] # the OAS says integer; BulkOperationID() is hand-written and returns a string
         # deviceExternalIDs (object) is auto-skipped; deviceName/Description are not in
         # the schema, so those accessors stay hand-written.
 

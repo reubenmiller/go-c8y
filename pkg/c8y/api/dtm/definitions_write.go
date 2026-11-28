@@ -93,11 +93,11 @@ func definitionKey(body map[string]any) (string, []string, error) {
 func (s *DefinitionService) Create(ctx context.Context, body any) op.Result[jsonmodels.DigitalTwinDefinition] {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
-		SetPathParam(ParamKind, string(s.kind)).
+		SetPathParam(paramKind, string(s.kind)).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
-		SetURL(ApiDefinitions)
+		SetURL(apiDefinitions)
 	return classifyDefinitionError(httpcore.Execute(ctx, httpcore.NewTryRequest(s.svc.Client, req), jsonmodels.NewDigitalTwinDefinition))
 }
 
@@ -133,16 +133,16 @@ func (s *DefinitionService) Update(ctx context.Context, identifier string, body 
 
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
-		SetPathParam(ParamKind, string(s.kind)).
+		SetPathParam(paramKind, string(s.kind)).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(m)
 	if s.kind == KindProperties {
-		req.SetPathParam(ParamIdentifier, identifier).
+		req.SetPathParam(paramIdentifier, identifier).
 			SetQueryParamsFromValues(httpcore.QueryParameters(contextsQuery(opt))).
-			SetURL(ApiDefinition)
+			SetURL(apiDefinition)
 	} else {
-		req.SetURL(ApiDefinitions)
+		req.SetURL(apiDefinitions)
 	}
 	return classifyDefinitionError(httpcore.Execute(ctx, httpcore.NewTryRequest(s.svc.Client, req), jsonmodels.NewDigitalTwinDefinition))
 }
@@ -164,9 +164,9 @@ func (s *DefinitionService) Delete(ctx context.Context, identifier string, opt D
 	}
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamKind, string(s.kind)).
-		SetPathParam(ParamIdentifier, identifier).
-		SetURL(ApiDefinition)
+		SetPathParam(paramKind, string(s.kind)).
+		SetPathParam(paramIdentifier, identifier).
+		SetURL(apiDefinition)
 	if s.kind == KindProperties {
 		req.SetQueryParamsFromValues(httpcore.QueryParameters(contextsQuery(opt)))
 	}
@@ -176,12 +176,26 @@ func (s *DefinitionService) Delete(ctx context.Context, identifier string, opt D
 
 // Find returns the definition with the identifier and contexts of body, as
 // used by GetOrCreate and Upsert. For property definitions the contexts
-// must match exactly (in any order).
+// must match exactly (in any order). It returns [op.ErrNotFound] when the
+// definition does not exist.
+func (s *DefinitionService) Find(ctx context.Context, identifier string, contexts []string) (jsonmodels.DigitalTwinDefinition, error) {
+	found, ok := s.find(ctx, identifier, contexts)
+	if found.Err != nil {
+		return jsonmodels.DigitalTwinDefinition{}, found.Err
+	}
+	if !ok {
+		return jsonmodels.DigitalTwinDefinition{}, op.ErrNotFound
+	}
+	return found.Data, nil
+}
+
+// find is Find with the result of the lookup, as used by GetOrCreate and
+// Upsert.
 //
 // The bool is true when the definition exists. When it does not, the
 // result has StatusNoMatch and no error; result.Err is only set when the
 // lookup itself failed.
-func (s *DefinitionService) Find(ctx context.Context, identifier string, contexts []string) (op.Result[jsonmodels.DigitalTwinDefinition], bool) {
+func (s *DefinitionService) find(ctx context.Context, identifier string, contexts []string) (op.Result[jsonmodels.DigitalTwinDefinition], bool) {
 	if s.kind != KindProperties {
 		res := s.Get(ctx, identifier, GetDefinitionOptions{})
 		if core.IsNotFound(res.Err) {
@@ -219,7 +233,7 @@ func (s *DefinitionService) GetOrCreate(ctx context.Context, body any) op.Result
 		if err != nil {
 			return op.Failed[jsonmodels.DigitalTwinDefinition](err, false)
 		}
-		if existing, ok := s.Find(ctx, id, contexts); ok {
+		if existing, ok := s.find(ctx, id, contexts); ok {
 			return op.WithMeta(existing, "existing", true)
 		} else if existing.Err != nil {
 			return existing
@@ -258,7 +272,7 @@ func (s *DefinitionService) Upsert(ctx context.Context, body any) op.Result[json
 			return op.Failed[jsonmodels.DigitalTwinDefinition](err, false)
 		}
 
-		existing, found := s.Find(ctx, id, contexts)
+		existing, found := s.find(ctx, id, contexts)
 		if !found {
 			if existing.Err != nil {
 				return existing
@@ -453,6 +467,6 @@ func (s *DefinitionService) Compose(ctx context.Context, items []ComposeItem) op
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(items).
-		SetURL(ApiDefinitionsCompose)
+		SetURL(apiDefinitionsCompose)
 	return httpcore.Execute(ctx, httpcore.NewTryRequest(s.svc.Client, req), jsondoc.New)
 }

@@ -463,8 +463,8 @@ func (s *Service) Get(ctx context.Context, id string) op.Result[jsonmodels.Alarm
 func (s *Service) getB(id string) *httpcore.TryRequest {
     req := s.svc.Client.R().
         SetMethod(resty.MethodGet).
-        SetPathParam(ParamId, id).
-        SetURL(ApiAlarm)
+        SetPathParam(paramID, id).
+        SetURL(apiAlarm)
     return httpcore.NewTryRequest(s.svc.Client, req)
 }
 ```

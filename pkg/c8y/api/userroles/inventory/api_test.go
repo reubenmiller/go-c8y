@@ -52,7 +52,7 @@ func TestGet(t *testing.T) {
 	})
 	defer closeFn()
 
-	res := svc.Get(context.Background(), 42)
+	res := svc.Get(context.Background(), "42")
 	if res.Err != nil {
 		t.Fatalf("Get: %v", res.Err)
 	}

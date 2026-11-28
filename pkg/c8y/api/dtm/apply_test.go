@@ -243,7 +243,7 @@ func (f *statefulDTM) serve(w http.ResponseWriter, r *http.Request) {
 		}
 		notFound()
 
-	case p == dtm.ApiAssets && r.Method == http.MethodPost:
+	case p == "/service/dtm/assets" && r.Method == http.MethodPost:
 		var b map[string]any
 		_ = json.Unmarshal(body, &b)
 		for id, a := range f.assets {

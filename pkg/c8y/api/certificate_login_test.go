@@ -220,7 +220,7 @@ func Test_CertLogin_RSAUsesHTTPS(t *testing.T) {
 	assert.Empty(t, cs.find("/devicecontrol/deviceAccessToken"))
 
 	// Later API requests carry the decrypted token.
-	require.NoError(t, get(client, context.Background()).Error)
+	require.NoError(t, get(client, context.Background()).Err)
 	cs.mu.Lock()
 	last := cs.auth[len(cs.auth)-1]
 	cs.mu.Unlock()
@@ -425,7 +425,7 @@ func Test_ContextCertificateSource_ServiceUser(t *testing.T) {
 	})
 
 	ctx := WithServiceUser(context.Background(), model.ServiceUser{Tenant: "t123", Username: "service_app", Password: "pw"})
-	require.NoError(t, get(client, ctx).Error)
+	require.NoError(t, get(client, ctx).Err)
 
 	reqs := cs.find("/tenant/oauth/certificate")
 	require.Len(t, reqs, 1)

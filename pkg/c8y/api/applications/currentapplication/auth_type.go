@@ -10,9 +10,9 @@ import (
 	"resty.dev/v3"
 )
 
-// ApiApplicationAuthType is the endpoint for the service user's required
+// apiApplicationAuthType is the endpoint for the service user's required
 // authentication method.
-const ApiApplicationAuthType = "/application/currentApplication/authType"
+const apiApplicationAuthType = "/application/currentApplication/authType"
 
 // SetAuthType sets the authentication method required for the microservice's
 // own service user in the current tenant: "NONE" or "CERTIFICATES". It only
@@ -31,6 +31,6 @@ func (s *Service) setAuthTypeB(authType string) *httpcore.TryRequest {
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(map[string]any{"requiredAuthType": authType}).
-		SetURL(ApiApplicationAuthType)
+		SetURL(apiApplicationAuthType)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

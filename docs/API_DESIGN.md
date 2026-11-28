@@ -64,16 +64,16 @@ result := client.Measurements.Create(ctx, measurements.CreateOptions{...})
 
 **Service tree.** A service that owns a sub-resource exposes it as a field, and the sub-resource is the same instance wherever it is reachable. The current-entity sub-resource is always called `Current`:
 
-| Canonical path | Deprecated alias (same instance) |
+| Path | Service |
 |---|---|
-| `Applications.Versions` | `Client.ApplicationVersions` |
-| `Tenants.DeviceStatistics` | `Client.DeviceStatistics` |
-| `Tenants.LoginTokens` | `Client.LoginTokens` |
-| `Tenants.UsageStatisticsFiles` | (none, new) |
-| `Users.DevicePermissions` | `Client.DevicePermissions` |
-| `UserRoles.Inventory` | `Client.InventoryRoles` |
-| `Users.Current` | `Users.CurrentUser` |
-| `Microservices.Current` | `Microservices.CurrentMicroservice` |
+| `Applications.Versions` | application versions |
+| `Tenants.DeviceStatistics` | device statistics |
+| `Tenants.LoginTokens` | login tokens |
+| `Tenants.UsageStatisticsFiles` | usage statistics files |
+| `Users.DevicePermissions` | device permissions |
+| `UserRoles.Inventory` | inventory roles |
+| `Users.Current` | current user |
+| `Microservices.Current` | current microservice |
 
 `Tenants.Current` and `Applications.Current` already followed this. `Client.UIPlugins`, `Client.UIApplicationPlugins` and `Client.Configuration` stay flat: UI plugins are their own resource, and `Configuration` (configuration files) is not `Repository.Configuration` (the repository of configuration items).
 
@@ -528,7 +528,7 @@ Delete(ctx context.Context, ID string) op.Result[T]
 
 ### Naming conventions
 
-* `Create(ctx, body any)` is the canonical create verb. Helpers that only wrap it (`Devices.CreateDevice(name)`, `Agents.CreateAgent(name)`) are deprecated: pass `jsonmodels.NewDevice(name)` or `jsonmodels.NewAgent(name)` to `Create`.
+* `Create(ctx, body any)` is the canonical create verb. There are no helpers that only wrap it: pass `jsonmodels.NewDevice(name)` or `jsonmodels.NewAgent(name)` to `Create`.
 * The software and firmware `CreateVersion` / `CreatePatch` are not duplicates of `Create`: `Create(ctx, parentID, opt)` adds a version or patch to an item that exists, while `CreateVersion` / `CreatePatch` first look up or create the item and upload the file.
 * The `Raw` suffix (`CreateRaw`, `UpdateRaw`, `UpsertRaw`, `CreateTokenRaw`) means the method takes a pre-built body (`any`, e.g. a map or `json.RawMessage`) that is sent as-is, instead of the typed options struct of the method without the suffix. Device references in the body (`source.id`, `groupId`) are still resolved. It is the escape hatch for bodies the typed options do not cover. Services whose `Create` already takes a body do not have a `Raw` variant.
 * `ResolveID(ctx, identifier string, meta map[string]any) (string, error)` is the signature for new resolvers. `meta` may be nil. Users, user roles, tenants and binaries resolve by name: a user or role name without a wildcard is its id and is returned without a request, a `*` wildcard (case-insensitive) is looked up and must match exactly one resource. Tenants are found by id, domain or company name, binaries by id or name; a not found error is a 404 `core.Error` (`core.IsNotFound`).
@@ -615,7 +615,7 @@ ctx = api.WithDownloadProgress(ctx, func(read, total int64) { /* response body b
 
 For the file size of a typed upload (binaries, event binaries, applications, firmware, software) set `UploadFileOptions.Progress`. `total` is -1 when the size is not known.
 
-`Client.Request(ctx, api.RequestOptions{...})` calls an endpoint which has no service method and returns an `op.Result[jsondoc.JSONDoc]`. It shares authentication, middleware, dry run and error handling with the typed services. See `ExampleWithRequestHook` and `ExampleClient_Request_uploadProgress`.
+`Client.Request(ctx, api.RequestOptions{...})` calls an endpoint which has no service method and returns an `op.Result[jsondoc.JSONDoc]`. It shares authentication, middleware, dry run and error handling with the typed services. The result keeps the raw body (`Response`), the response headers (`Header`), the status (`HTTPStatus`) and the request that was sent (`Request`, also in a dry run), so it is the only raw API: there is no separate raw result type, and the response body is not streamed (use the typed download methods, or `Client.Resty()`, for streams). See `ExampleWithRequestHook` and `ExampleClient_Request_uploadProgress`.
 
 `client.Resty()` returns the underlying resty client for cases these cannot
 cover. It is not covered by the v2 compatibility guarantee.
@@ -680,6 +680,7 @@ case result.Err != nil:
 Notes:
 
 * The status is available for every HTTP error response, also when the body is not JSON (an HTML page from a proxy, plain text, or an empty body). The message then falls back to the status text.
+* A lookup of the first item returns `(item, error)` with this error when nothing matches (`Result.First()`, `Microservices.FindFirst`, `DigitalTwin` definition `Find`). A `bool` is not used to report "not found".
 * "Not found" is one concept. `errors.Is(err, api.ErrNotFound)` is true for a real 404, for "no result" from `Result.First()` on an empty collection (`op.ErrNotFound`), and for the not-found errors the SDK builds itself, such as when looking up an item by name (`core.ErrNotFound`).
 * A name which matches nothing (`ManagedObjects.Get` with `ByName`, `ResolveID` of any service) returns an error for which `errors.Is(err, api.ErrNameNotFound)` is true. `api.NameNotFound(err)` returns the kind of resource and the name, or use `errors.As` with `*api.NameNotFoundError`. It is also a 404, so `api.IsNotFound` is true. The remote access `Configurations.ResolveID` returns `*remoteaccess_configurations.ConfigurationNotFoundError`, which matches `remoteaccess_configurations.ErrConfigurationNotFound` and `api.ErrNameNotFound` too.
 * An error which happens while a reference is resolved (the request which looks the name up fails, or finds nothing) is a `*api.LookupError` (`errors.As`, or `api.IsLookupError`), with the kind of resource and the reference. This tells it apart from an error of the request the caller asked for, for example a connection error while resolving the device name of `Alarms.List`. The error of the lookup stays reachable with `errors.Is` and `errors.As`, and its message does not change.

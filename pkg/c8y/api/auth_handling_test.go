@@ -10,6 +10,8 @@ import (
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	oauth2_api "github.com/reubenmiller/go-c8y/v2/pkg/oauth/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/oauth/device"
 	"github.com/stretchr/testify/assert"
@@ -92,8 +94,8 @@ func (s *authServer) newClient(auth authentication.AuthOptions, eager bool) *Cli
 
 const probePath = "/inventory/managedObjects"
 
-func probe(c *Client, ctx context.Context) *RequestResult {
-	return c.SendRequest(ctx, RequestOptions{Method: http.MethodGet, Path: probePath})
+func probe(c *Client, ctx context.Context) op.Result[jsondoc.JSONDoc] {
+	return c.Request(ctx, RequestOptions{Method: http.MethodGet, Path: probePath})
 }
 
 func basicHeader(user, pass string) string {
@@ -142,11 +144,11 @@ func Test_SetAuth_ClearsPreviousCredentials(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			srv := newAuthServer(t)
 			client := srv.newClient(tt.first, false)
-			require.NoError(t, probe(client, t.Context()).Error)
+			require.NoError(t, probe(client, t.Context()).Err)
 			assert.NotEmpty(t, srv.last(), "the first credentials are used")
 
 			client.SetAuth(tt.second)
-			require.NoError(t, probe(client, t.Context()).Error)
+			require.NoError(t, probe(client, t.Context()).Err)
 			assert.Equal(t, tt.want, srv.last())
 		})
 	}
@@ -156,17 +158,17 @@ func Test_SetAuth_DropsTokenOfPreviousTokenSource(t *testing.T) {
 	srv := newAuthServer(t)
 	// username and password: the client exchanges them for jwt-1
 	client := srv.newClient(authentication.AuthOptions{Username: "u", Password: "p"}, false)
-	require.NoError(t, probe(client, t.Context()).Error)
+	require.NoError(t, probe(client, t.Context()).Err)
 	assert.Equal(t, "Bearer jwt-1", srv.last())
 
 	// a different static token must replace the exchanged one
 	client.SetAuth(authentication.AuthOptions{Token: "static"})
-	require.NoError(t, probe(client, t.Context()).Error)
+	require.NoError(t, probe(client, t.Context()).Err)
 	assert.Equal(t, "Bearer static", srv.last())
 
 	// and back to credentials: a new exchange, not a cached token of the old source
 	client.SetAuth(authentication.AuthOptions{Username: "u2", Password: "p2"})
-	require.NoError(t, probe(client, t.Context()).Error)
+	require.NoError(t, probe(client, t.Context()).Err)
 	assert.Equal(t, "Bearer jwt-2", srv.last())
 }
 
@@ -178,8 +180,8 @@ func Test_NewClient_DoesNoNetworkIO(t *testing.T) {
 	assert.Empty(t, srv.calls(), "NewClient with credentials must not send requests")
 
 	// the token is requested on the first request, once
-	require.NoError(t, probe(client, t.Context()).Error)
-	require.NoError(t, probe(client, t.Context()).Error)
+	require.NoError(t, probe(client, t.Context()).Err)
+	require.NoError(t, probe(client, t.Context()).Err)
 	assert.Len(t, srv.api("/tenant/oauth/token"), 1)
 	assert.Equal(t, "Bearer jwt-1", srv.last())
 }
@@ -190,7 +192,7 @@ func Test_NewClient_LazyWithBasicAuthType(t *testing.T) {
 		Username: "u", Password: "p",
 		AuthType: []authentication.AuthType{authentication.AuthTypeBasic},
 	}, false)
-	require.NoError(t, probe(client, t.Context()).Error)
+	require.NoError(t, probe(client, t.Context()).Err)
 	assert.Empty(t, srv.api("/tenant/oauth/token"), "AuthType basic never exchanges a token")
 	assert.Equal(t, basicHeader("u", "p"), srv.last())
 }
@@ -201,7 +203,7 @@ func Test_NewClient_EagerLoginOptIn(t *testing.T) {
 	assert.Len(t, srv.api("/tenant/oauth/token"), 1, "EagerLogin requests the token in NewClient")
 	assert.Equal(t, "jwt-1", client.Auth().Token)
 
-	require.NoError(t, probe(client, t.Context()).Error)
+	require.NoError(t, probe(client, t.Context()).Err)
 	assert.Len(t, srv.api("/tenant/oauth/token"), 1)
 	assert.Equal(t, "Bearer jwt-1", srv.last())
 }
@@ -210,7 +212,7 @@ func Test_NewClient_EagerLoginFailureIsNotFatal(t *testing.T) {
 	srv := newAuthServer(t)
 	srv.tokenStatus = http.StatusUnauthorized
 	client := srv.newClient(authentication.AuthOptions{Username: "u", Password: "p"}, true)
-	require.NoError(t, probe(client, t.Context()).Error)
+	require.NoError(t, probe(client, t.Context()).Err)
 	// no token: basic credentials take over
 	assert.Equal(t, basicHeader("u", "p"), srv.last())
 }
@@ -221,7 +223,7 @@ func Test_Login_ReusesTokenForRequests(t *testing.T) {
 	tok, err := client.Login(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, "jwt-1", tok)
-	require.NoError(t, probe(client, t.Context()).Error)
+	require.NoError(t, probe(client, t.Context()).Err)
 	assert.Len(t, srv.api("/tenant/oauth/token"), 1, "the request uses the token of Login")
 	assert.Equal(t, "Bearer jwt-1", srv.last())
 }
@@ -288,7 +290,7 @@ func Test_AuthorizeWithDeviceFlow_OnlySetsToken(t *testing.T) {
 	assert.Equal(t, "p", client.Auth().Password)
 	assert.Equal(t, original.AuthType, client.Auth().AuthType)
 
-	require.NoError(t, probe(client, t.Context()).Error)
+	require.NoError(t, probe(client, t.Context()).Err)
 	assert.Equal(t, []string{"Bearer flow-token"}, seen)
 
 	// SetAuth with the previous values restores the old credentials
@@ -320,7 +322,7 @@ func Test_AuthType_HonouredPerRequest(t *testing.T) {
 			srv.tokenStatus = http.StatusNotFound
 			client := srv.newClient(authentication.AuthOptions{}, false)
 			client.SetAuth(tt.auth)
-			require.NoError(t, probe(client, t.Context()).Error)
+			require.NoError(t, probe(client, t.Context()).Err)
 			assert.Equal(t, tt.want, srv.last())
 
 			// the Authorization header helper (websocket) agrees
@@ -341,7 +343,7 @@ func Test_AuthType_AppliesAfterSetAuth(t *testing.T) {
 	basic := creds
 	basic.AuthType = []authentication.AuthType{authentication.AuthTypeBasic}
 	client.SetAuth(basic)
-	require.NoError(t, probe(client, t.Context()).Error)
+	require.NoError(t, probe(client, t.Context()).Err)
 	assert.Equal(t, basicHeader("u", "p"), srv.last())
 
 	// switch the preference back without changing credentials
@@ -349,7 +351,7 @@ func Test_AuthType_AppliesAfterSetAuth(t *testing.T) {
 	bearer.AuthType = []authentication.AuthType{authentication.AuthTypeBearer}
 	srv.tokenStatus = http.StatusNotFound
 	client.SetAuth(bearer)
-	require.NoError(t, probe(client, t.Context()).Error)
+	require.NoError(t, probe(client, t.Context()).Err)
 	assert.Equal(t, "Bearer tok", srv.last())
 }
 
@@ -374,7 +376,7 @@ func Test_AuthType_RequestOverridesClient(t *testing.T) {
 	assert.Equal(t, basicHeader("u", "p"), run(authentication.AuthTypeBasic))
 
 	// without a type of its own the request follows the client
-	require.NoError(t, probe(client, t.Context()).Error)
+	require.NoError(t, probe(client, t.Context()).Err)
 	assert.Equal(t, basicHeader("u", "p"), srv.last())
 }
 
@@ -387,17 +389,17 @@ func Test_AuthType_PerRequestContextAuth(t *testing.T) {
 		Username: "u", Password: "p", Token: "ctx-token",
 		AuthType: []authentication.AuthType{authentication.AuthTypeBasic},
 	})
-	require.NoError(t, probe(client, ctx).Error)
+	require.NoError(t, probe(client, ctx).Err)
 	assert.Equal(t, basicHeader("u", "p"), srv.last())
 
 	ctx = WithAuth(t.Context(), authentication.AuthOptions{
 		Token: "ctx-token", AuthType: []authentication.AuthType{authentication.AuthTypeNone},
 	})
-	require.NoError(t, probe(client, ctx).Error)
+	require.NoError(t, probe(client, ctx).Err)
 	assert.Equal(t, "", srv.last())
 
 	ctx = WithAuth(t.Context(), authentication.AuthOptions{Token: "ctx-token"})
-	require.NoError(t, probe(client, ctx).Error)
+	require.NoError(t, probe(client, ctx).Err)
 	assert.Equal(t, "Bearer ctx-token", srv.last())
 }
 

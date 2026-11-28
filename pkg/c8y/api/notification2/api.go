@@ -27,14 +27,14 @@ var (
 	MinTokenMinutes int64 = 1
 )
 
-var ApiSubscriptions = "/notification2/subscriptions"
-var ApiSubscription = "/notification2/subscriptions/{id}"
-var ApiToken = "/notification2/token"
-var ApiUnsubscribe = "/notification2/unsubscribe"
+var apiSubscriptions = "/notification2/subscriptions"
+var apiSubscription = "/notification2/subscriptions/{id}"
+var apiToken = "/notification2/token"
+var apiUnsubscribe = "/notification2/unsubscribe"
 
-var ParamID = "id"
+var paramID = "id"
 
-const ResultProperty = "subscriptions"
+const resultProperty = "subscriptions"
 
 // NewService creates a new notification2 service with device resolution
 // capabilities, so the subscription source (a managed object / device) can be
@@ -140,8 +140,8 @@ func (s *Service) getB(id string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamID, id).
-		SetURL(ApiSubscription)
+		SetPathParam(paramID, id).
+		SetURL(apiSubscription)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -162,7 +162,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 		return op.Failed[jsonmodels.Notification2Subscription](err, true)
 	}
 	opt.Source = resolved
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewNotification2Subscription)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewNotification2Subscription)
 }
 
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *SubscriptionIterator {
@@ -183,8 +183,8 @@ func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiSubscriptions)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiSubscriptions)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 func (s *Service) Create(ctx context.Context, opt CreateOptions) op.Result[jsonmodels.Notification2Subscription] {
@@ -209,7 +209,7 @@ func (s *Service) createB(body any) *httpcore.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetBody(body).
-		SetURL(ApiSubscriptions)
+		SetURL(apiSubscriptions)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -220,8 +220,8 @@ func (s *Service) Delete(ctx context.Context, id string) op.Result[core.NoConten
 func (s *Service) deleteB(id string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamID, id).
-		SetURL(ApiSubscription)
+		SetPathParam(paramID, id).
+		SetURL(apiSubscription)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -238,7 +238,7 @@ func (s *Service) deleteBySourceB(opt DeleteBySourceOptions) *httpcore.TryReques
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiSubscriptions)
+		SetURL(apiSubscriptions)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -263,7 +263,7 @@ func (s *Service) createTokenB(body any) *httpcore.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetBody(body).
-		SetURL(ApiToken)
+		SetURL(apiToken)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -280,7 +280,7 @@ func (s *Service) unsubscribeSubscriberB(token string) *httpcore.TryRequest {
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParam("token", token).
-		SetURL(ApiUnsubscribe)
+		SetURL(apiUnsubscribe)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 

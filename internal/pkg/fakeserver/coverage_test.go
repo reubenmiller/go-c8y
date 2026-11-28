@@ -268,7 +268,7 @@ func (sc *coverageScanner) scan() coverageScan {
 	var unresolved []string
 	for _, u := range out.unresolved {
 		switch u {
-		case "client: SendRequest (unresolved)":
+		case "client: send (unresolved)":
 			// generic request escape hatch: the caller picks the path
 		case "devices: createAccessTokenB (unresolved)":
 			// the URL is the mTLS host (mtlsEndpoint) plus the path
@@ -565,7 +565,7 @@ func TestFakeServerCoverage(t *testing.T) {
 
 const (
 	coverageMaxUnresolved  = 0
-	devicesAccessTokenPath = "/devicecontrol/deviceAccessToken" // devices.ApiDeviceControlAccessToken
+	devicesAccessTokenPath = "/devicecontrol/deviceAccessToken" // "/devicecontrol/deviceAccessToken"
 )
 
 func gapsFor(unhandled []string, old map[string]string) map[string]string {

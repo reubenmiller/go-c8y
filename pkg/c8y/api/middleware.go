@@ -129,7 +129,7 @@ func (t *DryRunTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 
 	// Keep an SDK-owned copy of the request (including its body) for callers
-	// that inspect it after the call, e.g. RequestResult.Response.Request.
+	// that inspect it after the call, e.g. Result.Request.
 	if capture := ctxhelpers.GetRequestCapture(ctx); capture != nil {
 		body, err := snapshotRequestBody(req)
 		if err != nil {

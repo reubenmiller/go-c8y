@@ -65,6 +65,10 @@ type Result[T any] struct {
 	// items in Data. Empty when Data already holds the whole body.
 	Response []byte
 
+	// Header holds the response headers. It is set by Client.Request, which
+	// returns the response as is; typed service methods leave it nil.
+	Header http.Header
+
 	// keepNotFound makes IgnoreNotFound keep the 404 error. Set from the request
 	// context (see WithKeepNotFound).
 	keepNotFound bool
@@ -330,10 +334,9 @@ func (r Result[T]) First() (T, error) {
 // Items returns an iterator over the decoded items in a collection result.
 // Each iteration yields an item and any decoding error.
 //
-// This is designed to work directly with [First] and range loops without
-// needing to import additional packages:
+// This is designed to work directly with range loops without needing to import
+// additional packages. For the first item only, use [Result.First]:
 //
-//	first, ok := op.First(collection.Items())
 //	for item, err := range collection.Items() { ... }
 func (r Result[T]) Items() iter.Seq2[T, error] {
 	return func(yield func(T, error) bool) {
@@ -380,18 +383,6 @@ func Combine[T, U, V any](r1 Result[T], r2 Result[U], fn func(T, U) V) Result[V]
 		Status:    StatusOK,
 		Timestamp: time.Now(),
 	}
-}
-
-// First returns a Result containing the first item from an iterator, or NoMatch if empty.
-// If the iterator yields an error, First returns a Failed result with that error.
-func First[T any](items iter.Seq2[T, error]) (Result[T], bool) {
-	for item, err := range items {
-		if err != nil {
-			return Failed[T](err, false), true
-		}
-		return OK(item), true
-	}
-	return NoMatch[T](), false
 }
 
 // Unwrapper is a constraint for types that can provide their raw bytes
@@ -455,7 +446,7 @@ func SingleWithItem[T any](original T, r Result[T]) iter.Seq2[T, error] {
 //
 // Example:
 //
-//	alarms, err := op.ToSlice(alarmCollection.Data.Iter2())
+//	alarms, err := op.ToSlice(alarmCollection.Items())
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
@@ -469,9 +460,4 @@ func ToSlice[T any](items iter.Seq2[T, error]) ([]T, error) {
 		result = append(result, item)
 	}
 	return result, nil
-}
-
-// Collect is an alias for ToSlice for familiarity with other iterator patterns
-func Collect[T any](items iter.Seq2[T, error]) ([]T, error) {
-	return ToSlice(items)
 }

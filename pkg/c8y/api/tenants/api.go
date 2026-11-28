@@ -20,17 +20,16 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiTenants = "/tenant/tenants"
-var ApiTenant = "/tenant/tenants/{id}"
-var ApiTenantCurrent = "/tenant/currentTenant"
-var ApiTenantApplications = "/tenant/tenants/{tenantId}/applications"
-var ApiTenantApplication = "/tenant/tenants/{tenantId}/applications/{applicationId}"
-var ApiTenantTFA = "/tenant/tenants/{tenantId}/tfa"
+var apiTenants = "/tenant/tenants"
+var apiTenant = "/tenant/tenants/{id}"
+var apiTenantApplications = "/tenant/tenants/{tenantId}/applications"
+var apiTenantApplication = "/tenant/tenants/{tenantId}/applications/{applicationId}"
+var apiTenantTFA = "/tenant/tenants/{tenantId}/tfa"
 
-const ParamID = "id"
-const ParamApplicationID = "applicationId"
+const paramID = "id"
+const paramApplicationID = "applicationId"
 
-const ResultProperty = "tenants"
+const resultProperty = "tenants"
 const ApplicationReferencesResultProperty = "references"
 
 func NewService(s *httpcore.Service) *Service {
@@ -61,12 +60,10 @@ type Service struct {
 	RestrictedRoles      *restrictedroles.Service
 
 	// DeviceStatistics is the device statistics sub-resource
-	// (/tenant/statistics/device). Client.DeviceStatistics is a deprecated
-	// alias for the same instance.
+	// (/tenant/statistics/device).
 	DeviceStatistics *devicestatistics.Service
 
 	// LoginTokens is the login token sub-resource (/tenant/oauth/token).
-	// Client.LoginTokens is a deprecated alias for the same instance.
 	LoginTokens *logintokens.Service
 }
 
@@ -77,7 +74,7 @@ type TenantIterator = pagination.Iterator[jsonmodels.Tenant]
 
 // List tenants
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Tenant] {
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTenant)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewTenant)
 }
 
 // ListAll returns an iterator for all tenants
@@ -99,8 +96,8 @@ func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiTenants)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiTenants)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 // Create a tenant
@@ -114,7 +111,7 @@ func (s *Service) createB(body any) *httpcore.TryRequest {
 		SetBody(body).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiTenants)
+		SetURL(apiTenants)
 	return httpcore.NewTryRequest(s.svc.Client, req, "")
 }
 
@@ -126,9 +123,9 @@ func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Tenan
 func (s *Service) getB(ID string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamID, ID).
+		SetPathParam(paramID, ID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiTenant)
+		SetURL(apiTenant)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -140,11 +137,11 @@ func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jso
 func (s *Service) updateB(ID string, body any) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
-		SetPathParam(ParamID, ID).
+		SetPathParam(paramID, ID).
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiTenant)
+		SetURL(apiTenant)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -162,9 +159,9 @@ func (s *Service) Delete(ctx context.Context, ID string, opt DeleteOptions) op.R
 func (s *Service) deleteB(ID string, opt DeleteOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamID, ID).
+		SetPathParam(paramID, ID).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiTenant)
+		SetURL(apiTenant)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -203,7 +200,7 @@ func (s *Service) listApplicationReferencesB(tenantID string, opt ListApplicatio
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, tenantID).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiTenantApplications)
+		SetURL(apiTenantApplications)
 	return httpcore.NewTryRequest(s.svc.Client, req, ApplicationReferencesResultProperty)
 }
 
@@ -226,7 +223,7 @@ func (s *Service) subscribeApplicationB(tenantID string, body any) *httpcore.Try
 		SetBody(body).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiTenantApplications)
+		SetURL(apiTenantApplications)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -242,8 +239,8 @@ func (s *Service) unsubscribeApplicationB(tenantID string, applicationID string)
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(core.PathParamTenantID, tenantID).
-		SetPathParam(ParamApplicationID, applicationID).
-		SetURL(ApiTenantApplication)
+		SetPathParam(paramApplicationID, applicationID).
+		SetURL(apiTenantApplication)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -258,7 +255,7 @@ func (s *Service) getTFAB(tenantID string) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetPathParam(core.PathParamTenantID, tenantID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiTenantTFA)
+		SetURL(apiTenantTFA)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -276,6 +273,6 @@ func (s *Service) updateTFAB(tenantID string, body any) *httpcore.TryRequest {
 		SetBody(body).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiTenantTFA)
+		SetURL(apiTenantTFA)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

@@ -35,28 +35,17 @@ func (r fixedResolver) ResolveID(context.Context) (source.ResolveResult, error) 
 }
 func (r fixedResolver) String() string { return "fixed:" + r.id }
 
-// The deprecated flat Client fields and the nested accessors are the same
-// service instance.
-//
-//nolint:staticcheck // checks the deprecated aliases on purpose
-func TestClient_NestedServiceAliases(t *testing.T) {
+// The nested accessors are set on a new client.
+func TestClient_NestedServices(t *testing.T) {
 	c := newShapeClient(t, func(http.ResponseWriter, *http.Request) {})
 
 	assert.NotNil(t, c.Applications.Versions)
-	assert.Same(t, c.ApplicationVersions, c.Applications.Versions)
 	assert.NotNil(t, c.Tenants.DeviceStatistics)
-	assert.Same(t, c.DeviceStatistics, c.Tenants.DeviceStatistics)
 	assert.NotNil(t, c.Tenants.LoginTokens)
-	assert.Same(t, c.LoginTokens, c.Tenants.LoginTokens)
 	assert.NotNil(t, c.Users.DevicePermissions)
-	assert.Same(t, c.DevicePermissions, c.Users.DevicePermissions)
 	assert.NotNil(t, c.UserRoles.Inventory)
-	assert.Same(t, c.InventoryRoles, c.UserRoles.Inventory)
-
 	assert.NotNil(t, c.Users.Current)
-	assert.Same(t, c.Users.CurrentUser, c.Users.Current)
 	assert.NotNil(t, c.Microservices.Current)
-	assert.Same(t, &c.Microservices.CurrentMicroservice, c.Microservices.Current)
 }
 
 // A resolver registered on Client.ManagedObjects applies to Devices.

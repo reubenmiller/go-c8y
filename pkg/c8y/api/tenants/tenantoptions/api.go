@@ -13,15 +13,15 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiTenantOptions = "/tenant/options"
-var ApiTenantOption = "/tenant/options/{category}/{key}"
-var ApiTenantOptionEditable = "/tenant/options/{category}/{key}/editable"
-var ApiTenantOptionByCategory = "/tenant/options/{category}"
+var apiTenantOptions = "/tenant/options"
+var apiTenantOption = "/tenant/options/{category}/{key}"
+var apiTenantOptionEditable = "/tenant/options/{category}/{key}/editable"
+var apiTenantOptionByCategory = "/tenant/options/{category}"
 
-const ParamKey = "key"
-const ParamCategory = "category"
+const paramKey = "key"
+const paramCategory = "category"
 
-const ResultProperty = "options"
+const resultProperty = "options"
 
 func NewService(s *httpcore.Service) *Service {
 	return &Service{
@@ -46,7 +46,7 @@ type TenantOptionIterator = pagination.Iterator[jsonmodels.TenantOption]
 
 // List tenant options
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.TenantOption] {
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTenantOption)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewTenantOption)
 }
 
 // ListAll returns an iterator for all tenant options
@@ -68,8 +68,8 @@ func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiTenantOptions)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiTenantOptions)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 // Create a tenant option
@@ -83,31 +83,31 @@ func (s *Service) createB(body any) *httpcore.TryRequest {
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiTenantOptions)
+		SetURL(apiTenantOptions)
 	return httpcore.NewTryRequest(s.svc.Client, req, "")
 }
 
-type GetOption struct {
+type GetOptions struct {
 	Key      string `url:"-"`
 	Category string `url:"-"`
 }
 
 // Get a tenant option
-func (s *Service) Get(ctx context.Context, opt GetOption) op.Result[jsonmodels.TenantOption] {
+func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.TenantOption] {
 	return httpcore.Execute(ctx, s.getB(opt), jsonmodels.NewTenantOption)
 }
 
-func (s *Service) getB(opt GetOption) *httpcore.TryRequest {
+func (s *Service) getB(opt GetOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamCategory, opt.Category).
-		SetPathParam(ParamKey, opt.Key).
+		SetPathParam(paramCategory, opt.Category).
+		SetPathParam(paramKey, opt.Key).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiTenantOption)
+		SetURL(apiTenantOption)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
-type UpdateOption struct {
+type UpdateOptions struct {
 	Category string `url:"-"`
 	Key      string `url:"-"`
 
@@ -115,23 +115,23 @@ type UpdateOption struct {
 }
 
 // Update a tenant option
-func (s *Service) Update(ctx context.Context, opt UpdateOption) op.Result[jsonmodels.TenantOption] {
+func (s *Service) Update(ctx context.Context, opt UpdateOptions) op.Result[jsonmodels.TenantOption] {
 	return httpcore.Execute(ctx, s.updateB(opt), jsonmodels.NewTenantOption)
 }
 
-func (s *Service) updateB(opt UpdateOption) *httpcore.TryRequest {
+func (s *Service) updateB(opt UpdateOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
-		SetPathParam(ParamCategory, opt.Category).
-		SetPathParam(ParamKey, opt.Key).
+		SetPathParam(paramCategory, opt.Category).
+		SetPathParam(paramKey, opt.Key).
 		SetBody(opt.Body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiTenantOption)
+		SetURL(apiTenantOption)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
-type UpdateEditableFlagOption struct {
+type UpdateEditableFlagOptions struct {
 	Category string `url:"-"`
 	Key      string `url:"-"`
 
@@ -143,22 +143,22 @@ type UpdateEditableFlagOption struct {
 }
 
 // Updates the editable flag of a specific option (by a given category and key) on target tenant which determines if the option can be edited
-func (s *Service) UpdateEditableFlag(ctx context.Context, opt UpdateEditableFlagOption) op.Result[jsonmodels.TenantOption] {
+func (s *Service) UpdateEditableFlag(ctx context.Context, opt UpdateEditableFlagOptions) op.Result[jsonmodels.TenantOption] {
 	return httpcore.Execute(ctx, s.updateEditableFlagB(opt), jsonmodels.NewTenantOption)
 }
 
-func (s *Service) updateEditableFlagB(opt UpdateEditableFlagOption) *httpcore.TryRequest {
+func (s *Service) updateEditableFlagB(opt UpdateEditableFlagOptions) *httpcore.TryRequest {
 	body := map[string]any{
 		"editable": opt.Editable,
 	}
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
-		SetPathParam(ParamCategory, opt.Category).
-		SetPathParam(ParamKey, opt.Key).
+		SetPathParam(paramCategory, opt.Category).
+		SetPathParam(paramKey, opt.Key).
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiTenantOptionEditable)
+		SetURL(apiTenantOptionEditable)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -176,10 +176,10 @@ func (s *Service) Delete(ctx context.Context, opt DeleteOptions) op.Result[core.
 func (s *Service) deleteB(opt DeleteOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamCategory, opt.Category).
-		SetPathParam(ParamKey, opt.Key).
+		SetPathParam(paramCategory, opt.Category).
+		SetPathParam(paramKey, opt.Key).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiTenantOption)
+		SetURL(apiTenantOption)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -204,20 +204,20 @@ func (s *Service) listByCategoryB(opt ListByCategoryOptions) *httpcore.TryReques
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamCategory, opt.Category).
+		SetPathParam(paramCategory, opt.Category).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiTenantOptionByCategory)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiTenantOptionByCategory)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
-type UpdateByCategoryOption struct {
+type UpdateByCategoryOptions struct {
 	Category string `url:"-"`
 
 	Body map[string]string `url:"-"`
 }
 
 // Update a tenant option
-func (s *Service) UpdateByCategory(ctx context.Context, opt UpdateByCategoryOption) op.Result[map[string]string] {
+func (s *Service) UpdateByCategory(ctx context.Context, opt UpdateByCategoryOptions) op.Result[map[string]string] {
 	return httpcore.Execute(ctx, s.updateByCategoryOptionB(opt), func(b []byte) map[string]string {
 		data := make(map[string]string)
 		_ = json.Unmarshal(b, &data)
@@ -225,13 +225,13 @@ func (s *Service) UpdateByCategory(ctx context.Context, opt UpdateByCategoryOpti
 	})
 }
 
-func (s *Service) updateByCategoryOptionB(opt UpdateByCategoryOption) *httpcore.TryRequest {
+func (s *Service) updateByCategoryOptionB(opt UpdateByCategoryOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
-		SetPathParam(ParamCategory, opt.Category).
+		SetPathParam(paramCategory, opt.Category).
 		SetBody(opt.Body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiTenantOptionByCategory)
+		SetURL(apiTenantOptionByCategory)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

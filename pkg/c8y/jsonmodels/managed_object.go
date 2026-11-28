@@ -39,7 +39,7 @@ func NewDevice(name string) ManagedObject {
 	return ManagedObject{jsondoc.Facade{JSONDoc: jsondoc.New(b)}}
 }
 
-// NewDeviceWithType creates a new device with both name and type
+// NewDeviceWithType creates a new device with both name and type.
 func NewDeviceWithType(name, deviceType string) ManagedObject {
 	data := map[string]any{
 		"name":         name,

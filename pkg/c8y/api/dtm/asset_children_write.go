@@ -28,11 +28,11 @@ func (s *SubAssetService) Create(ctx context.Context, parent AssetRef, body any)
 func (s *SubAssetService) createB(parentID string, body any) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
-		SetPathParam(ParamAssetID, parentID).
+		SetPathParam(paramAssetID, parentID).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
-		SetURL(ApiSubAssets)
+		SetURL(apiSubAssets)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -85,7 +85,7 @@ func (s *SubAssetService) Assign(ctx context.Context, parent, child AssetRef) op
 	if err != nil {
 		return op.Failed[jsonmodels.DigitalTwinAsset](err, false)
 	}
-	return httpcore.Execute(ctx, s.assets.linkB(resty.MethodPost, ApiSubAsset, ParamSubAssetID, parentID, childID), jsonmodels.NewDigitalTwinAsset, meta)
+	return httpcore.Execute(ctx, s.assets.linkB(resty.MethodPost, apiSubAsset, paramSubAssetID, parentID, childID), jsonmodels.NewDigitalTwinAsset, meta)
 }
 
 // Unassign removes child from parent without deleting it. A child that is
@@ -100,7 +100,7 @@ func (s *SubAssetService) Unassign(ctx context.Context, parent, child AssetRef) 
 		}
 		return op.Failed[core.NoContent](err, false)
 	}
-	return unassignResult(httpcore.ExecuteNoContent(ctx, s.assets.linkB(resty.MethodDelete, ApiSubAsset, ParamSubAssetID, parentID, childID), meta))
+	return unassignResult(httpcore.ExecuteNoContent(ctx, s.assets.linkB(resty.MethodDelete, apiSubAsset, paramSubAssetID, parentID, childID), meta))
 }
 
 // Assign assigns device to asset. device accepts the device resolver
@@ -112,7 +112,7 @@ func (s *AssetDeviceService) Assign(ctx context.Context, asset AssetRef, device 
 	if err != nil {
 		return op.Failed[jsonmodels.DigitalTwinAsset](err, false)
 	}
-	return httpcore.Execute(ctx, s.assets.linkB(resty.MethodPost, ApiAssetDevice, ParamDeviceID, assetID, deviceID), jsonmodels.NewDigitalTwinAsset, meta)
+	return httpcore.Execute(ctx, s.assets.linkB(resty.MethodPost, apiAssetDevice, paramDeviceID, assetID, deviceID), jsonmodels.NewDigitalTwinAsset, meta)
 }
 
 // Unassign removes device from asset without deleting it. A device that is
@@ -127,7 +127,7 @@ func (s *AssetDeviceService) Unassign(ctx context.Context, asset AssetRef, devic
 		}
 		return op.Failed[core.NoContent](err, false)
 	}
-	return unassignResult(httpcore.ExecuteNoContent(ctx, s.assets.linkB(resty.MethodDelete, ApiAssetDevice, ParamDeviceID, assetID, deviceID), meta))
+	return unassignResult(httpcore.ExecuteNoContent(ctx, s.assets.linkB(resty.MethodDelete, apiAssetDevice, paramDeviceID, assetID, deviceID), meta))
 }
 
 // unassignResult maps "already unassigned" responses to StatusSkipped: the
@@ -144,7 +144,7 @@ func unassignResult(r op.Result[core.NoContent]) op.Result[core.NoContent] {
 func (s *AssetService) linkB(method, path, childParam, assetID, childID string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(method).
-		SetPathParam(ParamAssetID, assetID).
+		SetPathParam(paramAssetID, assetID).
 		SetPathParam(childParam, childID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(path)

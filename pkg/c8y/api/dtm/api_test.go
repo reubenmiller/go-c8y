@@ -140,7 +140,7 @@ func collect[T any](r op.Result[T]) []T {
 
 func TestAssetsList(t *testing.T) {
 	f := newFakeDTM(t)
-	f.fixture(http.MethodGet, dtm.ApiAssets, "assets_list.json")
+	f.fixture(http.MethodGet, "/service/dtm/assets", "assets_list.json")
 	svc := f.client()
 
 	res := svc.Assets.List(context.Background(), dtm.ListOptions{
@@ -169,7 +169,7 @@ func TestAssetsList(t *testing.T) {
 		t.Errorf("pump parents = %v", parents)
 	}
 
-	q := f.last(dtm.ApiAssets).URL.Query()
+	q := f.last("/service/dtm/assets").URL.Query()
 	if got := q.Get("query"); got != "$filter=(name eq 'gocy-proposal*')" {
 		t.Errorf("query = %q, want bare filter wrapped in $filter=(...)", got)
 	}
@@ -249,7 +249,7 @@ func TestAssetsGetByName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			f := newFakeDTM(t)
-			f.handle(http.MethodGet, dtm.ApiAssets, func(w http.ResponseWriter, _ *http.Request) {
+			f.handle(http.MethodGet, "/service/dtm/assets", func(w http.ResponseWriter, _ *http.Request) {
 				writeJSON(w, http.StatusOK, tt.list)
 			})
 			gets := 0
@@ -273,7 +273,7 @@ func TestAssetsGetByName(t *testing.T) {
 			if gets != tt.wantGets {
 				t.Errorf("GET by id calls = %d, want %d", gets, tt.wantGets)
 			}
-			q := f.last(dtm.ApiAssets).URL.Query()
+			q := f.last("/service/dtm/assets").URL.Query()
 			if q.Get("query") != "$filter=(name eq 'gocy-proposal pump')" || q.Get("pageSize") != "2" {
 				t.Errorf("lookup query = %v", q)
 			}
@@ -283,7 +283,7 @@ func TestAssetsGetByName(t *testing.T) {
 
 func TestDeferredGetResolvesButDoesNotSend(t *testing.T) {
 	f := newFakeDTM(t)
-	f.handle(http.MethodGet, dtm.ApiAssets, func(w http.ResponseWriter, _ *http.Request) {
+	f.handle(http.MethodGet, "/service/dtm/assets", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, `{"assets":[{"id":"205477"}],"statistics":{"currentPage":1,"pageSize":2}}`)
 	})
 	f.fixture(http.MethodGet, "/service/dtm/assets/205477", "asset_pump.json")
@@ -312,14 +312,14 @@ func TestDeferredGetResolvesButDoesNotSend(t *testing.T) {
 
 func TestAssetsCount(t *testing.T) {
 	f := newFakeDTM(t)
-	f.handle(http.MethodGet, dtm.ApiAssetsCount, func(w http.ResponseWriter, _ *http.Request) {
+	f.handle(http.MethodGet, "/service/dtm/assets/count", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, "2\n")
 	})
 	n := mustOK(t, f.client().Assets.Count(context.Background(), dtm.CountOptions{Query: "name eq 'x'", OnlyRoots: true}))
 	if n != 2 {
 		t.Errorf("count = %d", n)
 	}
-	q := f.last(dtm.ApiAssetsCount).URL.Query()
+	q := f.last("/service/dtm/assets/count").URL.Query()
 	if q.Get("query") != "$filter=(name eq 'x')" || q.Get("onlyRoots") != "true" {
 		t.Errorf("query = %v", q)
 	}
@@ -371,14 +371,14 @@ func TestSubAssetsByExternalIDParent(t *testing.T) {
 
 func TestListByParentsRequiresParents(t *testing.T) {
 	f := newFakeDTM(t)
-	f.fixture(http.MethodGet, dtm.ApiSubAssetsByParents, "subassets_by_external_id.json")
+	f.fixture(http.MethodGet, "/service/dtm/assets/subAssets", "subassets_by_external_id.json")
 	svc := f.client()
 
 	if res := svc.Assets.SubAssets.ListByParents(context.Background(), dtm.ListByParentsOptions{}); res.Err == nil {
 		t.Error("expected an error without parents")
 	}
 	mustOK(t, svc.Assets.SubAssets.ListByParents(context.Background(), dtm.ListByParentsOptions{Parents: []string{"1", "2"}}))
-	if got := f.last(dtm.ApiSubAssetsByParents).URL.Query().Get("parents"); got != "1,2" {
+	if got := f.last("/service/dtm/assets/subAssets").URL.Query().Get("parents"); got != "1,2" {
 		t.Errorf("parents = %q, want comma-separated", got)
 	}
 }
@@ -437,7 +437,7 @@ func TestLinkedSeriesEnvelopeAlsoWorks(t *testing.T) {
 func TestLinkedSeriesSourceAndAcrossAssets(t *testing.T) {
 	f := newFakeDTM(t)
 	f.fixture(http.MethodGet, "/service/dtm/assets/205477/linkedSeries/c8y_Flow/F/source", "linked_series_source.json")
-	f.fixture(http.MethodGet, dtm.ApiAllLinkedSeries, "linked_series_across_assets.json")
+	f.fixture(http.MethodGet, "/service/dtm/assets/linkedSeries", "linked_series_across_assets.json")
 	svc := f.client()
 
 	src := mustOK(t, svc.Assets.LinkedSeries.GetSource(context.Background(), "205477", "c8y_Flow", "F"))
@@ -453,7 +453,7 @@ func TestLinkedSeriesSourceAndAcrossAssets(t *testing.T) {
 	if mustOK(t, res); len(assets) != 1 {
 		t.Fatalf("assets = %v", assets)
 	}
-	if got := f.last(dtm.ApiAllLinkedSeries).URL.Query().Get("assetIds"); got != "205477" {
+	if got := f.last("/service/dtm/assets/linkedSeries").URL.Query().Get("assetIds"); got != "205477" {
 		t.Errorf("assetIds = %q", got)
 	}
 }

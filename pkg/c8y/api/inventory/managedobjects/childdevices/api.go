@@ -14,13 +14,13 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiManagedObjectChildDevices = "/inventory/managedObjects/{id}/childDevices"
-var ApiManagedObjectChildDevice = "/inventory/managedObjects/{id}/childDevices/{child}"
+var apiManagedObjectChildDevices = "/inventory/managedObjects/{id}/childDevices"
+var apiManagedObjectChildDevice = "/inventory/managedObjects/{id}/childDevices/{child}"
 
-const ParamID = "id"
-const ParamChild = "child"
+const paramID = "id"
+const paramChild = "child"
 
-const ResultProperty = child.ResultProperty
+const resultProperty = httpcore.ResultPropertyChildReferences
 
 // Service
 type Service struct{ svc httpcore.Service }
@@ -36,7 +36,7 @@ type ManagedObjectIterator = pagination.Iterator[jsonmodels.ManagedObject]
 
 // List child devices of a parent
 func (s *Service) List(ctx context.Context, parentID string, opt ListOptions) op.Result[jsonmodels.ManagedObject] {
-	return httpcore.ExecuteCollection(ctx, s.listB(parentID, opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
+	return httpcore.ExecuteCollection(ctx, s.listB(parentID, opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
 // ListAll returns an iterator for all child devices
@@ -57,10 +57,10 @@ func (s *Service) listB(parentID string, opt ListOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamID, parentID).
+		SetPathParam(paramID, parentID).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiManagedObjectChildDevices)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiManagedObjectChildDevices)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 // Get existing child device from a parent. The response is a managedObjectReference;
@@ -72,10 +72,10 @@ func (s *Service) Get(ctx context.Context, parentID string, childID string) op.R
 func (s *Service) getB(parentID string, childID string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamID, parentID).
-		SetPathParam(ParamChild, childID).
+		SetPathParam(paramID, parentID).
+		SetPathParam(paramChild, childID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiManagedObjectChildDevice)
+		SetURL(apiManagedObjectChildDevice)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -87,11 +87,11 @@ func (s *Service) Create(ctx context.Context, parentID string, body any) op.Resu
 func (s *Service) createB(parentID string, body any) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
-		SetPathParam(ParamID, parentID).
+		SetPathParam(paramID, parentID).
 		SetContentType(types.MimeTypeManagedObject).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
-		SetURL(ApiManagedObjectChildDevices)
+		SetURL(apiManagedObjectChildDevices)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -108,8 +108,8 @@ func (s *Service) assignB(parentID string, child any) *httpcore.TryRequest {
 		SetMethod(resty.MethodPost).
 		SetContentType(contentType).
 		SetBody(body).
-		SetPathParam(ParamID, parentID).
-		SetURL(ApiManagedObjectChildDevices)
+		SetPathParam(paramID, parentID).
+		SetURL(apiManagedObjectChildDevices)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -123,8 +123,8 @@ func (s *Service) Unassign(ctx context.Context, parentID string, childID string)
 func (s *Service) unassignB(parentID string, childID string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamID, parentID).
-		SetPathParam(ParamChild, childID).
-		SetURL(ApiManagedObjectChildDevice)
+		SetPathParam(paramID, parentID).
+		SetPathParam(paramChild, childID).
+		SetURL(apiManagedObjectChildDevice)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

@@ -41,6 +41,7 @@ type RemoteAccessCredentials struct {
 	jsondoc.JSONDoc
 }
 
+// NewRemoteAccessCredentials wraps the JSON of the credentials of a remote access configuration.
 func NewRemoteAccessCredentials(b []byte) RemoteAccessCredentials {
 	return RemoteAccessCredentials{jsondoc.New(b)}
 }

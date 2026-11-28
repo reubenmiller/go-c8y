@@ -22,13 +22,13 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiMeasurements = "/measurement/measurements"
-var ApiMeasurement = "/measurement/measurements/{id}"
-var ApiMeasurementsSeries = "/measurement/measurements/series"
+var apiMeasurements = "/measurement/measurements"
+var apiMeasurement = "/measurement/measurements/{id}"
+var apiMeasurementsSeries = "/measurement/measurements/series"
 
-const ParamID = "id"
+const paramID = "id"
 
-const ResultProperty = "measurements"
+const resultProperty = "measurements"
 
 // Measurement service
 type Service struct {
@@ -68,7 +68,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 		opt.Source = managedobjects.DeviceRef(resolvedID)
 	}
 
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewMeasurement)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewMeasurement)
 }
 
 // ListAll returns an iterator for all measurements. By default it uses the
@@ -131,7 +131,7 @@ func (s *Service) Export(ctx context.Context, opt ListOptions, accept string) op
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", accept).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiMeasurements)
+		SetURL(apiMeasurements)
 	return httpcore.ExecuteBinary(ctx, httpcore.NewTryRequest(s.svc.Client, req))
 }
 
@@ -140,8 +140,8 @@ func (s *Service) listB(opt any) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiMeasurements)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiMeasurements)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 // DeleteListOptions to control which measurements are to be deleted
@@ -187,7 +187,7 @@ func (s *Service) deleteListB(opt DeleteListOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiMeasurements)
+		SetURL(apiMeasurements)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -200,8 +200,8 @@ func (s *Service) getB(ID string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamID, ID).
-		SetURL(ApiMeasurement)
+		SetPathParam(paramID, ID).
+		SetURL(apiMeasurement)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -213,8 +213,8 @@ func (s *Service) Delete(ctx context.Context, ID string) op.Result[core.NoConten
 func (s *Service) deleteB(ID string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamID, ID).
-		SetURL(ApiMeasurement)
+		SetPathParam(paramID, ID).
+		SetURL(apiMeasurement)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -334,7 +334,7 @@ func (s *Service) createB(body any) *httpcore.TryRequest {
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
-		SetURL(ApiMeasurements)
+		SetURL(apiMeasurements)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -344,7 +344,7 @@ func (s *Service) createBWithJSON(bodyJSON []byte) *httpcore.TryRequest {
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(bodyJSON).
-		SetURL(ApiMeasurements)
+		SetURL(apiMeasurements)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -357,7 +357,7 @@ func (s *Service) CreateList(ctx context.Context, body any) op.Result[jsonmodels
 	if err != nil {
 		return op.Failed[jsonmodels.Measurement](err, false)
 	}
-	return httpcore.ExecuteCollection(ctx, s.createListB(body), ResultProperty, "", jsonmodels.NewMeasurement)
+	return httpcore.ExecuteCollection(ctx, s.createListB(body), resultProperty, "", jsonmodels.NewMeasurement)
 }
 
 // resolveListSources resolves the device references of the measurements in a
@@ -380,10 +380,10 @@ func (s *Service) resolveListSources(ctx context.Context, body any) (any, error)
 			return body, err
 		}
 	}
-	n := gjson.GetBytes(raw, ResultProperty+".#").Int()
+	n := gjson.GetBytes(raw, resultProperty+".#").Int()
 	paths := make([]string, n)
 	for i := range paths {
-		paths[i] = fmt.Sprintf("%s.%d.source.id", ResultProperty, i)
+		paths[i] = fmt.Sprintf("%s.%d.source.id", resultProperty, i)
 	}
 	ids := map[string]string{}
 	return source.ResolveBodyRefs(ctx, body, func(ctx context.Context, ref string) (string, error) {
@@ -404,8 +404,8 @@ func (s *Service) createListB(body any) *httpcore.TryRequest {
 		SetContentType(types.MimeTypeCumulocityMeasurementCollection).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
-		SetURL(ApiMeasurements)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiMeasurements)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 // ListSeriesOptions todo
@@ -478,7 +478,7 @@ func (s *Service) listSeriesB(opt ListSeriesOptions) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiMeasurementsSeries)
+		SetURL(apiMeasurementsSeries)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 

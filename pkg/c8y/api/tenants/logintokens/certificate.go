@@ -10,8 +10,8 @@ import (
 	"resty.dev/v3"
 )
 
-// ApiOAuthCertificate is the certificate token exchange endpoint.
-var ApiOAuthCertificate = "/tenant/oauth/certificate"
+// apiOAuthCertificate is the certificate token exchange endpoint.
+var apiOAuthCertificate = "/tenant/oauth/certificate"
 
 // HeaderTFACode carries the second factor for the certificate exchange.
 const HeaderTFACode = "X-Cumulocity-TFA-Code"
@@ -46,7 +46,7 @@ func (s *Service) createWithCertificateB(opt CertificateTokenOptions) *httpcore.
 		SetHeader("Content-Type", types.MimeTypePEMFile).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(opt.Chain).
-		SetURL(ApiOAuthCertificate)
+		SetURL(apiOAuthCertificate)
 	if opt.TFACode != "" {
 		req.SetHeader(HeaderTFACode, opt.TFACode)
 	}

@@ -11,10 +11,10 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiFeatureByTenant = "/features/{key}/by-tenant"
-var ApiFeatureForTenant = "/features/{key}/by-tenant/{tenantId}"
+var apiFeatureByTenant = "/features/{key}/by-tenant"
+var apiFeatureForTenant = "/features/{key}/by-tenant/{tenantId}"
 
-const ParamKey = "key"
+const paramKey = "key"
 
 // featureToggleValue is the request body for setting a feature toggle override.
 type featureToggleValue struct {
@@ -42,8 +42,8 @@ func (s *Service) listB(key string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamKey, key).
-		SetURL(ApiFeatureByTenant)
+		SetPathParam(paramKey, key).
+		SetURL(apiFeatureByTenant)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -57,9 +57,9 @@ func (s *Service) setB(key string, active bool) *httpcore.TryRequest {
 		SetMethod(resty.MethodPut).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamKey, key).
+		SetPathParam(paramKey, key).
 		SetBody(&featureToggleValue{Active: active}).
-		SetURL(ApiFeatureByTenant)
+		SetURL(apiFeatureByTenant)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -81,8 +81,8 @@ func (s *Service) Delete(ctx context.Context, key string) op.Result[core.NoConte
 func (s *Service) deleteB(key string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamKey, key).
-		SetURL(ApiFeatureByTenant)
+		SetPathParam(paramKey, key).
+		SetURL(apiFeatureByTenant)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -97,10 +97,10 @@ func (s *Service) setForTenantB(key string, tenantID string, active bool) *httpc
 		SetMethod(resty.MethodPut).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamKey, key).
+		SetPathParam(paramKey, key).
 		SetPathParam(core.PathParamTenantID, tenantID).
 		SetBody(&featureToggleValue{Active: active}).
-		SetURL(ApiFeatureForTenant)
+		SetURL(apiFeatureForTenant)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -125,8 +125,8 @@ func (s *Service) DeleteForTenant(ctx context.Context, key string, tenantID stri
 func (s *Service) deleteForTenantB(key string, tenantID string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamKey, key).
+		SetPathParam(paramKey, key).
 		SetPathParam(core.PathParamTenantID, tenantID).
-		SetURL(ApiFeatureForTenant)
+		SetURL(apiFeatureForTenant)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

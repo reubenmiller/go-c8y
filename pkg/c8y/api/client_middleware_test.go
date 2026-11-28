@@ -13,6 +13,8 @@ import (
 	"testing"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -74,8 +76,8 @@ func newMWClient(ms *mwServer, mw ...Middleware) *Client {
 	})
 }
 
-func get(c *Client, ctx context.Context) *RequestResult {
-	return c.SendRequest(ctx, RequestOptions{Method: http.MethodGet, Path: "/inventory/managedObjects"})
+func get(c *Client, ctx context.Context) op.Result[jsondoc.JSONDoc] {
+	return c.Request(ctx, RequestOptions{Method: http.MethodGet, Path: "/inventory/managedObjects"})
 }
 
 func Test_Middleware_AddsHeader(t *testing.T) {
@@ -88,8 +90,8 @@ func Test_Middleware_AddsHeader(t *testing.T) {
 	}
 	client := newMWClient(ms, addHeader)
 
-	require.NoError(t, get(client, context.Background()).Error)
-	require.NoError(t, get(client, context.Background()).Error)
+	require.NoError(t, get(client, context.Background()).Err)
+	require.NoError(t, get(client, context.Background()).Err)
 	assert.Equal(t, 2, ms.count())
 	assert.Equal(t, "1", ms.last(t).Header.Get("X-Test"))
 }
@@ -114,7 +116,7 @@ func Test_Middleware_Order(t *testing.T) {
 	}
 	client := newMWClient(ms, record("A"), record("B"))
 
-	require.NoError(t, get(client, context.Background()).Error)
+	require.NoError(t, get(client, context.Background()).Err)
 	assert.Equal(t, []string{"A:request", "B:request", "B:response", "A:response"}, events)
 }
 
@@ -124,7 +126,7 @@ func Test_Middleware_UseAfterCreation(t *testing.T) {
 	var n int64
 	client.Use(CountRequests(&n))
 
-	require.NoError(t, get(client, context.Background()).Error)
+	require.NoError(t, get(client, context.Background()).Err)
 	assert.EqualValues(t, 1, atomic.LoadInt64(&n))
 }
 
@@ -134,7 +136,7 @@ func Test_CountRequests(t *testing.T) {
 	client := newMWClient(ms, CountRequests(&n))
 
 	for range 3 {
-		require.NoError(t, get(client, context.Background()).Error)
+		require.NoError(t, get(client, context.Background()).Err)
 	}
 	assert.EqualValues(t, 3, atomic.LoadInt64(&n))
 }
@@ -147,8 +149,8 @@ func Test_CountRequests_CountsRetryAttempts(t *testing.T) {
 	client.Resty().SetRetryWaitTime(0).SetRetryMaxWaitTime(0)
 
 	result := get(client, context.Background())
-	require.NoError(t, result.Error)
-	assert.Equal(t, http.StatusOK, result.StatusCode())
+	require.NoError(t, result.Err)
+	assert.Equal(t, http.StatusOK, result.HTTPStatus)
 	assert.Equal(t, 2, ms.count(), "the server should see the failed attempt and the retry")
 	assert.EqualValues(t, 2, atomic.LoadInt64(&n))
 }
@@ -170,8 +172,8 @@ func Test_CountByMethodAndPath(t *testing.T) {
 	stats := NewStatsMap()
 	client := newMWClient(ms, CountByMethodAndPath(stats))
 
-	require.NoError(t, get(client, context.Background()).Error)
-	require.NoError(t, get(client, context.Background()).Error)
+	require.NoError(t, get(client, context.Background()).Err)
+	require.NoError(t, get(client, context.Background()).Err)
 	assert.EqualValues(t, 2, stats.Get(http.MethodGet, "/inventory/managedObjects"))
 }
 
@@ -179,7 +181,7 @@ func Test_PrepareRequest_ChangesRequest(t *testing.T) {
 	ms := newMWServer(t)
 	client := newMWClient(ms)
 
-	result := client.SendRequest(context.Background(), RequestOptions{
+	result := client.Request(context.Background(), RequestOptions{
 		Method: http.MethodGet,
 		Path:   "/inventory/managedObjects",
 		PrepareRequest: func(r *http.Request) error {
@@ -189,7 +191,7 @@ func Test_PrepareRequest_ChangesRequest(t *testing.T) {
 			return nil
 		},
 	})
-	require.NoError(t, result.Error)
+	require.NoError(t, result.Err)
 	assert.Equal(t, "true", ms.last(t).URL.Query().Get("withParents"))
 }
 
@@ -199,13 +201,13 @@ func Test_PrepareRequest_ErrorAbortsRequest(t *testing.T) {
 	client.Resty().SetRetryCount(0)
 	hookErr := errors.New("hook failed")
 
-	result := client.SendRequest(context.Background(), RequestOptions{
+	result := client.Request(context.Background(), RequestOptions{
 		Method:         http.MethodGet,
 		Path:           "/inventory/managedObjects",
 		PrepareRequest: func(r *http.Request) error { return hookErr },
 	})
-	require.Error(t, result.Error)
-	assert.ErrorIs(t, result.Error, hookErr)
+	require.Error(t, result.Err)
+	assert.ErrorIs(t, result.Err, hookErr)
 	assert.Equal(t, 0, ms.count(), "no request should reach the server")
 }
 
@@ -214,7 +216,7 @@ func Test_OnResponse_ReadingBodyKeepsCallerBody(t *testing.T) {
 	client := newMWClient(ms)
 
 	var hookBody string
-	result := client.SendRequest(context.Background(), RequestOptions{
+	result := client.Request(context.Background(), RequestOptions{
 		Method: http.MethodGet,
 		Path:   "/inventory/managedObjects",
 		OnResponse: func(resp *http.Response) error {
@@ -223,36 +225,33 @@ func Test_OnResponse_ReadingBodyKeepsCallerBody(t *testing.T) {
 			return err
 		},
 	})
-	require.NoError(t, result.Error)
+	require.NoError(t, result.Err)
 	assert.Contains(t, hookBody, `"name":"server"`)
-	assert.Contains(t, result.String(), `"name":"server"`)
-	callerBody, err := io.ReadAll(result.Response.Body)
-	require.NoError(t, err)
-	assert.Contains(t, string(callerBody), `"name":"server"`)
+	assert.Contains(t, string(result.Response), `"name":"server"`)
 }
 
-func Test_RequestResult_RequestBodyStaysStable(t *testing.T) {
+func Test_Request_RequestBodyStaysStable(t *testing.T) {
 	ms := newMWServer(t)
 	client := newMWClient(ms)
 
-	kept := client.SendRequest(context.Background(), RequestOptions{
+	kept := client.Request(context.Background(), RequestOptions{
 		Method: http.MethodPost,
 		Path:   "/inventory/managedObjects",
 		Body:   map[string]any{"name": "original"},
 	})
-	require.NoError(t, kept.Error)
-	require.NotNil(t, kept.Response.Request)
+	require.NoError(t, kept.Err)
+	require.NotNil(t, kept.Request)
 
 	for i := range 100 {
-		r := client.SendRequest(context.Background(), RequestOptions{
+		r := client.Request(context.Background(), RequestOptions{
 			Method: http.MethodPost,
 			Path:   "/inventory/managedObjects",
 			Body:   map[string]any{"name": fmt.Sprintf("other-%d", i)},
 		})
-		require.NoError(t, r.Error)
+		require.NoError(t, r.Err)
 	}
 
-	body, err := io.ReadAll(kept.Response.Request.Body)
+	body, err := io.ReadAll(kept.Request.Body)
 	require.NoError(t, err)
 	assert.True(t, strings.Contains(string(body), `"original"`), "kept request body changed: %s", body)
 }

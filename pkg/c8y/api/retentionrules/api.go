@@ -12,12 +12,12 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiRetentionRules = "/retention/retentions"
-var ApiRetentionRule = "/retention/retentions/{id}"
+var apiRetentionRules = "/retention/retentions"
+var apiRetentionRule = "/retention/retentions/{id}"
 
-var ParamID = "id"
+var paramID = "id"
 
-const ResultProperty = "retentionRules"
+const resultProperty = "retentionRules"
 
 func NewService(s *httpcore.Service) *Service {
 	return &Service{
@@ -40,7 +40,7 @@ type RetentionRuleIterator = pagination.Iterator[jsonmodels.RetentionRule]
 
 // Retrieve all login options available in the tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.RetentionRule] {
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewRetentionRule)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewRetentionRule)
 }
 
 // ListAll returns an iterator for all retention rules
@@ -62,8 +62,8 @@ func (s *Service) listB(opt any) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiRetentionRules)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiRetentionRules)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 // Get a retention rule
@@ -75,8 +75,8 @@ func (s *Service) getB(ID string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamID, ID).
-		SetURL(ApiRetentionRule)
+		SetPathParam(paramID, ID).
+		SetURL(apiRetentionRule)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -91,7 +91,7 @@ func (s *Service) createB(body any) *httpcore.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetBody(body).
-		SetURL(ApiRetentionRules)
+		SetURL(apiRetentionRules)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -105,9 +105,9 @@ func (s *Service) updateB(ID string, body any) *httpcore.TryRequest {
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamID, ID).
+		SetPathParam(paramID, ID).
 		SetBody(body).
-		SetURL(ApiRetentionRule)
+		SetURL(apiRetentionRule)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -119,7 +119,7 @@ func (s *Service) Delete(ctx context.Context, ID string) op.Result[core.NoConten
 func (s *Service) deleteB(ID string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamID, ID).
-		SetURL(ApiRetentionRule)
+		SetPathParam(paramID, ID).
+		SetURL(apiRetentionRule)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

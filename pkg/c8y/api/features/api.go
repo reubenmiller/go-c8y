@@ -13,15 +13,15 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiFeatures = "/features"
-var ApiFeature = "/features/{key}"
+var apiFeatures = "/features"
+var apiFeature = "/features/{key}"
 
-// ApiFeatureByTenant is the per-tenant feature-toggle override endpoint. The
+// apiFeatureByTenant is the per-tenant feature-toggle override endpoint. The
 // platform requires it for mutating a tenant's value (PUT/DELETE); the plain
-// ApiFeature path is read-only for the current tenant.
-var ApiFeatureByTenant = "/features/{key}/by-tenant"
+// apiFeature path is read-only for the current tenant.
+var apiFeatureByTenant = "/features/{key}/by-tenant"
 
-var ParamKey = "key"
+var paramKey = "key"
 
 func NewService(s *httpcore.Service) *Service {
 	return &Service{
@@ -47,7 +47,7 @@ func (s *Service) listB() *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiFeatures)
+		SetURL(apiFeatures)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -60,8 +60,8 @@ func (s *Service) getB(key string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamKey, key).
-		SetURL(ApiFeature)
+		SetPathParam(paramKey, key).
+		SetURL(apiFeature)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -75,9 +75,9 @@ func (s *Service) updateB(key string, body any) *httpcore.TryRequest {
 		SetMethod(resty.MethodPut).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamKey, key).
+		SetPathParam(paramKey, key).
 		SetBody(body).
-		SetURL(ApiFeatureByTenant)
+		SetURL(apiFeatureByTenant)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -103,7 +103,7 @@ func (s *Service) Delete(ctx context.Context, key string) op.Result[core.NoConte
 func (s *Service) deleteB(key string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamKey, key).
-		SetURL(ApiFeatureByTenant)
+		SetPathParam(paramKey, key).
+		SetURL(apiFeatureByTenant)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

@@ -29,22 +29,22 @@ import (
 
 // Endpoint templates — {tenantId} and {date} are path parameters.
 var (
-	ApiDeviceStatisticsMonthly = "/tenant/statistics/device/{tenantId}/monthly/{date}"
-	ApiDeviceStatisticsDaily   = "/tenant/statistics/device/{tenantId}/daily/{date}"
+	apiDeviceStatisticsMonthly = "/tenant/statistics/device/{tenantId}/monthly/{date}"
+	apiDeviceStatisticsDaily   = "/tenant/statistics/device/{tenantId}/daily/{date}"
 )
 
 // Path-parameter names.
 const (
-	ParamDate = "date"
+	paramDate = "date"
 )
 
-// ResultProperty is the JSON key wrapping the device-statistics array in a
+// resultProperty is the JSON key wrapping the device-statistics array in a
 // collection response.
 //
 // OAS DeviceStatisticsCollection uses "statistics" as the array key (the same
 // name as the paging-statistics object used in other collection types, but
 // DeviceStatisticsCollection has no separate paging-statistics object).
-const ResultProperty = "statistics"
+const resultProperty = "statistics"
 
 // NewService creates a new Service backed by the provided httpcore.Service.
 func NewService(s *httpcore.Service) *Service {
@@ -90,7 +90,7 @@ type ListOptions struct {
 // month. The Date field of opt must be in YYYY-MM-dd format; the day
 // component is ignored by the platform.
 func (s *Service) ListMonthly(ctx context.Context, opt ListOptions) op.Result[jsonmodels.DeviceStatistics] {
-	return httpcore.ExecuteCollection(ctx, s.listMonthlyB(opt), ResultProperty, "", jsonmodels.NewDeviceStatistics)
+	return httpcore.ExecuteCollection(ctx, s.listMonthlyB(opt), resultProperty, "", jsonmodels.NewDeviceStatistics)
 }
 
 // ListAllMonthly returns a lazy iterator that transparently pages through all
@@ -113,10 +113,10 @@ func (s *Service) listMonthlyB(opt ListOptions) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
-		SetPathParam(ParamDate, opt.Date).
+		SetPathParam(paramDate, opt.Date).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiDeviceStatisticsMonthly)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiDeviceStatisticsMonthly)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 // ---------------------------------------------------------------------------
@@ -126,7 +126,7 @@ func (s *Service) listMonthlyB(opt ListOptions) *httpcore.TryRequest {
 // ListDaily retrieves a single page of device statistics for the given day.
 // The Date field of opt must be in YYYY-MM-dd format.
 func (s *Service) ListDaily(ctx context.Context, opt ListOptions) op.Result[jsonmodels.DeviceStatistics] {
-	return httpcore.ExecuteCollection(ctx, s.listDailyB(opt), ResultProperty, "", jsonmodels.NewDeviceStatistics)
+	return httpcore.ExecuteCollection(ctx, s.listDailyB(opt), resultProperty, "", jsonmodels.NewDeviceStatistics)
 }
 
 // ListAllDaily returns a lazy iterator that transparently pages through all
@@ -149,8 +149,8 @@ func (s *Service) listDailyB(opt ListOptions) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
-		SetPathParam(ParamDate, opt.Date).
+		SetPathParam(paramDate, opt.Date).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiDeviceStatisticsDaily)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiDeviceStatisticsDaily)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,6 +14,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/microservices"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"gopkg.in/yaml.v3"
 )
 
@@ -65,17 +67,18 @@ func (s *Syncer) resolveServiceUserCredentials(ctx context.Context, targets []Ta
 	}
 
 	// Ensure the placeholder microservice exists with the required roles
-	existing, found := s.Client.Microservices.FindFirst(ctx, microservices.ListOptions{Name: name})
-	if existing.Err != nil {
-		return fmt.Errorf("failed to look up credentials application %q: %w", name, existing.Err)
+	existing, err := s.Client.Microservices.FindFirst(ctx, microservices.ListOptions{Name: name})
+	found := err == nil
+	if err != nil && !errors.Is(err, op.ErrNotFound) {
+		return fmt.Errorf("failed to look up credentials application %q: %w", name, err)
 	}
 
 	var appID, selfLink string
 	rolesUpToDate := false
 	if found {
-		appID = existing.Data.ID()
-		selfLink = existing.Data.Self()
-		rolesUpToDate = stringSetEqual(existing.Data.RequiredRoles(), serviceUserRequiredRoles)
+		appID = existing.ID()
+		selfLink = existing.Self()
+		rolesUpToDate = stringSetEqual(existing.RequiredRoles(), serviceUserRequiredRoles)
 	} else {
 		app := model.NewMicroservice(name)
 		app.ContextPath = name

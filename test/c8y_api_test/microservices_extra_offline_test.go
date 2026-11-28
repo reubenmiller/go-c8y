@@ -28,9 +28,9 @@ func Test_Microservices_FindFirst(t *testing.T) {
 	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	ctx := context.Background()
-	res, ok := client.Microservices.FindFirst(ctx, microservices.ListOptions{})
-	require.NoError(t, res.Err)
-	assert.True(t, ok)
+	ms, err := client.Microservices.FindFirst(ctx, microservices.ListOptions{})
+	require.NoError(t, err)
+	assert.NotEmpty(t, ms.ID())
 }
 
 func Test_Microservices_ByID_ByName_ByContextPath(t *testing.T) {
@@ -130,7 +130,6 @@ func Test_Microservices_ByNameFilter(t *testing.T) {
 	pred := microservices.ByName("foo")
 	assert.True(t, pred(modelMicroservice("foo")))
 	assert.False(t, pred(modelMicroservice("bar")))
-	assert.True(t, microservices.First(modelMicroservice("anything")))
 }
 
 func modelMicroservice(name string) model.Microservice {

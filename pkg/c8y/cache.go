@@ -21,8 +21,13 @@ import (
 
 const TimeFormat = "Mon, 02 Jan 2006 15:04:05 GMT"
 
+// Cacheable reports whether the response to a request may be cached.
 type Cacheable func(*http.Request) bool
 
+// NewCachedClient returns an http.Client which caches the responses of
+// cacheable requests (by default GET and HEAD) in cacheDir (default: a
+// go-c8y-cache directory in the temp directory) for cacheTTL, on top of the
+// transport of httpClient.
 func NewCachedClient(httpClient *http.Client, cacheDir string, cacheTTL time.Duration, isCacheable Cacheable, opts CacheOptions) *http.Client {
 	if cacheDir == "" {
 		cacheDir = filepath.Join(os.TempDir(), "go-c8y-cache")

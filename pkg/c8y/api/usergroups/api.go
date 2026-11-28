@@ -18,16 +18,15 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiGroups = "/user/{tenantId}/groups"
-var ApiGroup = "/user/{tenantId}/groups/{id}"
-var ApiGroupsWithUser = "/user/{tenantId}/users/{id}/groups"
-var ApiGroupByName = "/user/{tenantId}/groupByName/{groupName}"
+var apiGroups = "/user/{tenantId}/groups"
+var apiGroup = "/user/{tenantId}/groups/{id}"
+var apiGroupsWithUser = "/user/{tenantId}/users/{id}/groups"
+var apiGroupByName = "/user/{tenantId}/groupByName/{groupName}"
 
-var ParamID = "id"
-var ParamUsername = "username"
-var ParamGroupName = "groupName"
+var paramID = "id"
+var paramGroupName = "groupName"
 
-const ResultProperty = "groups"
+const resultProperty = "groups"
 
 func NewService(s *httpcore.Service) *Service {
 	return &Service{
@@ -56,7 +55,7 @@ type UserGroupIterator = pagination.Iterator[jsonmodels.UserGroup]
 
 // Retrieve all groups in the tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.UserGroup] {
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewUserGroup)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewUserGroup)
 }
 
 // ListAll returns an iterator for all user groups
@@ -79,8 +78,8 @@ func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiGroups)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiGroups)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 // GroupRef is a typed reference to a user group. Construct it using ByID or
@@ -150,8 +149,8 @@ func (s *Service) getB(target GetOptions) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, target.Tenant).
-		SetPathParam(ParamID, string(target.ID)).
-		SetURL(ApiGroup)
+		SetPathParam(paramID, string(target.ID)).
+		SetURL(apiGroup)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -170,8 +169,8 @@ func (s *Service) getByNameB(opt GetByNameOptions) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
-		SetPathParam(ParamGroupName, opt.GroupName).
-		SetURL(ApiGroupByName)
+		SetPathParam(paramGroupName, opt.GroupName).
+		SetURL(apiGroupByName)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -186,7 +185,7 @@ func (s *Service) createB(body any) *httpcore.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetBody(body).
-		SetURL(ApiGroups)
+		SetURL(apiGroups)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -214,10 +213,10 @@ func (s *Service) updateB(opt UpdateOptions, body any) *httpcore.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
-		SetPathParam(ParamID, string(opt.ID)).
+		SetPathParam(paramID, string(opt.ID)).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetBody(body).
-		SetURL(ApiGroup)
+		SetURL(apiGroup)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -243,9 +242,9 @@ func (s *Service) deleteB(opt DeleteOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
-		SetPathParam(ParamID, string(opt.ID)).
+		SetPathParam(paramID, string(opt.ID)).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiGroup)
+		SetURL(apiGroup)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -269,8 +268,8 @@ func (s *Service) listByUserB(opt ListByUserOptions) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
-		SetPathParam(ParamID, opt.UserID).
+		SetPathParam(paramID, opt.UserID).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiGroupsWithUser)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiGroupsWithUser)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }

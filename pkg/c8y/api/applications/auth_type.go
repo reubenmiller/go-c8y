@@ -10,9 +10,9 @@ import (
 	"resty.dev/v3"
 )
 
-// ApiApplicationAuthType is the endpoint to reset a service user's required
+// apiApplicationAuthType is the endpoint to reset a service user's required
 // authentication method.
-const ApiApplicationAuthType = "/application/applications/{id}/authType"
+const apiApplicationAuthType = "/application/applications/{id}/authType"
 
 // ResetAuthType resets the authentication method of the service user of the
 // given application (in the current tenant) to "NONE". This is the recovery
@@ -29,6 +29,6 @@ func (s *Service) resetAuthTypeB(id string) *httpcore.TryRequest {
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(map[string]any{"requiredAuthType": "NONE"}).
-		SetURL(ApiApplicationAuthType)
+		SetURL(apiApplicationAuthType)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

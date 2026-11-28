@@ -29,8 +29,8 @@ func TestList(t *testing.T) {
 	if res.Err != nil {
 		t.Fatalf("List: %v", res.Err)
 	}
-	if gotPath != ApiConnectors {
-		t.Errorf("path = %q, want %q", gotPath, ApiConnectors)
+	if gotPath != apiConnectors {
+		t.Errorf("path = %q, want %q", gotPath, apiConnectors)
 	}
 	var ids []string
 	for c, err := range res.Items() {
