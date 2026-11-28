@@ -24,5 +24,5 @@ func TestCreateTokenB(t *testing.T) {
 	certChain := req.Request.Header.Get(types.HeaderSSLCertificateChain)
 	assert.NotEmpty(t, certChain)
 	assert.Equal(t, "example.cumulocity.com:8443", req.URL().Host)
-	assert.Equal(t, ApiDeviceControlAccessToken, req.URL().Path)
+	assert.Equal(t, apiDeviceControlAccessToken, req.URL().Path)
 }

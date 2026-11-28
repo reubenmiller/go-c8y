@@ -20,10 +20,10 @@ import (
 	"resty.dev/v3"
 )
 
-const ApiManagedObjects = "/inventory/managedObjects"
-const ApiManagedObject = "/inventory/managedObjects/{id}"
-const ParamID = "id"
-const ResultProperty = "managedObjects"
+const apiManagedObjects = "/inventory/managedObjects"
+const apiManagedObject = "/inventory/managedObjects/{id}"
+const paramID = "id"
+const resultProperty = "managedObjects"
 
 func NewService(s *httpcore.Service) *Service {
 	service := &Service{
@@ -118,7 +118,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 		opt.FirmwareID = firmwareResult.Data.ID()
 	}
 
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewFirmwarePatch)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewFirmwarePatch)
 }
 
 // isPlainID reports whether s is a non-empty all-digit managed-object id, which
@@ -163,8 +163,8 @@ func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(httpcore.QueryParameters(listOpts)).
-		SetURL(managedobjects.ApiManagedObjects)
-	return httpcore.NewTryRequest(s.svc.Client, req, managedobjects.ResultProperty)
+		SetURL("/inventory/managedObjects")
+	return httpcore.NewTryRequest(s.svc.Client, req, httpcore.ResultPropertyManagedObjects)
 }
 
 // ListAll returns an iterator for all firmware patches
@@ -682,7 +682,7 @@ func (s *Service) getB(ID string, opt GetOptions) *httpcore.TryRequest {
 		SetPathParam("id", ID).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(managedobjects.ApiManagedObject)
+		SetURL("/inventory/managedObjects/{id}")
 	return httpcore.NewTryRequest(s.svc.Client, req, "")
 }
 
@@ -693,7 +693,7 @@ func (s *Service) updateB(ID string, body any) *httpcore.TryRequest {
 		SetBody(body).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(managedobjects.ApiManagedObject)
+		SetURL("/inventory/managedObjects/{id}")
 	return httpcore.NewTryRequest(s.svc.Client, req, "")
 }
 
@@ -705,6 +705,6 @@ func (s *Service) deleteB(ID string, opt DeleteOptions) *httpcore.TryRequest {
 		SetMethod(resty.MethodDelete).
 		SetPathParam("id", ID).
 		SetQueryParamsFromValues(httpcore.QueryParameters(deleteOpts)).
-		SetURL(managedobjects.ApiManagedObject)
+		SetURL("/inventory/managedObjects/{id}")
 	return httpcore.NewTryRequest(s.svc.Client, req, "")
 }

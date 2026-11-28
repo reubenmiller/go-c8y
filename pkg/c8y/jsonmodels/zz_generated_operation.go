@@ -14,9 +14,6 @@ import "time"
 // Generated façade accessors for the "operation" schema. Nested-object and non-derivable
 // accessors (e.g. SourceID) and constructors are hand-written in operation.go.
 
-// BulkOperationID Reference to a bulk operation ID if this operation was scheduled from a bulk operation.
-func (m Operation) BulkOperationID() int64 { return m.Get("bulkOperationId").Int() }
-
 // CreationTime Date and time when the operation was created in the database.
 func (m Operation) CreationTime() time.Time { return m.Get("creationTime").Time() }
 

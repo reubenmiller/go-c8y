@@ -182,7 +182,7 @@ func (s *Service) deploy(ctx context.Context, opt CreateOptions) op.Result[jsonm
 // binaries) is not allowed. The lookup is sent also in a dry run.
 func (s *Service) findOrCreate(ctx context.Context, details *model.Microservice) (op.Result[jsonmodels.Microservice], bool) {
 	lookupCtx := ctxhelpers.ResolutionContext(ctx)
-	found, exists := s.FindFirst(lookupCtx, ListOptions{Name: details.Name})
+	found, exists := s.findFirst(lookupCtx, ListOptions{Name: details.Name})
 	if found.Err != nil {
 		return found, false
 	}

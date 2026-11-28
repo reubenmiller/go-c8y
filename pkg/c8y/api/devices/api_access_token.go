@@ -31,7 +31,7 @@ func (s *Service) createAccessTokenB() *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(mtlsEndpoint(s.svc.MTLSPort, s.svc.Client.BaseURL(), ApiDeviceControlAccessToken))
+		SetURL(mtlsEndpoint(s.svc.MTLSPort, s.svc.Client.BaseURL(), apiDeviceControlAccessToken))
 	if s.svc.CertChainHeader != "" {
 		req.SetHeader(types.HeaderSSLCertificateChain, s.svc.CertChainHeader)
 	}

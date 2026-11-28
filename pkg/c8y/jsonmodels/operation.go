@@ -14,6 +14,8 @@ func NewOperation(b []byte) Operation {
 	return Operation{jsondoc.Facade{JSONDoc: jsondoc.New(b)}}
 }
 
+// NewOperationWithStatus returns an operation document for the device with the
+// status, and the extra fragments (the operation's own fragment).
 func NewOperationWithStatus(deviceID, status string, fragments map[string]any) Operation {
 	data := map[string]any{
 		"deviceId": deviceID,
@@ -25,6 +27,11 @@ func NewOperationWithStatus(deviceID, status string, fragments map[string]any) O
 	b, _ := json.Marshal(data)
 	return Operation{jsondoc.Facade{JSONDoc: jsondoc.New(b)}}
 }
+
+// BulkOperationID returns the reference to the bulk operation this operation was
+// scheduled from. Hand-written so that it is a string like every other id (the
+// OAS declares it as an integer).
+func (m Operation) BulkOperationID() string { return m.Get("bulkOperationId").String() }
 
 // DeviceName returns the operation's device name. Hand-written: `deviceName` is not a
 // property in the OAS operation schema. The scalar accessors (ID, DeviceID, Status,

@@ -14,15 +14,15 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiInventoryAccessMappings = "/tenant/loginOptions/{typeOrId}/inventoryAccessMappings"
-var ApiInventoryAccessMapping = "/tenant/loginOptions/{typeOrId}/inventoryAccessMappings/{id}"
+var apiInventoryAccessMappings = "/tenant/loginOptions/{typeOrId}/inventoryAccessMappings"
+var apiInventoryAccessMapping = "/tenant/loginOptions/{typeOrId}/inventoryAccessMappings/{id}"
 
 const (
-	ParamTypeOrID = "typeOrId"
-	ParamID       = "id"
+	paramTypeOrID = "typeOrId"
+	paramID       = "id"
 )
 
-const ResultProperty = "inventoryAccessMappings"
+const resultProperty = "inventoryAccessMappings"
 
 // Service provides access to a login option's inventory access mappings.
 type Service struct{ svc httpcore.Service }
@@ -33,16 +33,16 @@ func NewService(s *httpcore.Service) *Service {
 
 // List returns all inventory access mappings for a login option (identified by type or id).
 func (s *Service) List(ctx context.Context, typeOrID string) op.Result[jsonmodels.InventoryAccessMapping] {
-	return httpcore.ExecuteCollection(ctx, s.listB(typeOrID), ResultProperty, "", jsonmodels.NewInventoryAccessMapping)
+	return httpcore.ExecuteCollection(ctx, s.listB(typeOrID), resultProperty, "", jsonmodels.NewInventoryAccessMapping)
 }
 
 func (s *Service) listB(typeOrID string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamTypeOrID, typeOrID).
-		SetURL(ApiInventoryAccessMappings)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetPathParam(paramTypeOrID, typeOrID).
+		SetURL(apiInventoryAccessMappings)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 // Get retrieves a single inventory access mapping by id.
@@ -54,9 +54,9 @@ func (s *Service) getB(typeOrID, id string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamTypeOrID, typeOrID).
-		SetPathParam(ParamID, id).
-		SetURL(ApiInventoryAccessMapping)
+		SetPathParam(paramTypeOrID, typeOrID).
+		SetPathParam(paramID, id).
+		SetURL(apiInventoryAccessMapping)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -70,9 +70,9 @@ func (s *Service) createB(typeOrID string, body any) *httpcore.TryRequest {
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeApplicationJSON).
-		SetPathParam(ParamTypeOrID, typeOrID).
+		SetPathParam(paramTypeOrID, typeOrID).
 		SetBody(body).
-		SetURL(ApiInventoryAccessMappings)
+		SetURL(apiInventoryAccessMappings)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -86,10 +86,10 @@ func (s *Service) updateB(typeOrID, id string, body any) *httpcore.TryRequest {
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeApplicationJSON).
-		SetPathParam(ParamTypeOrID, typeOrID).
-		SetPathParam(ParamID, id).
+		SetPathParam(paramTypeOrID, typeOrID).
+		SetPathParam(paramID, id).
 		SetBody(body).
-		SetURL(ApiInventoryAccessMapping)
+		SetURL(apiInventoryAccessMapping)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -101,8 +101,8 @@ func (s *Service) Delete(ctx context.Context, typeOrID, id string) op.Result[cor
 func (s *Service) deleteB(typeOrID, id string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamTypeOrID, typeOrID).
-		SetPathParam(ParamID, id).
-		SetURL(ApiInventoryAccessMapping)
+		SetPathParam(paramTypeOrID, typeOrID).
+		SetPathParam(paramID, id).
+		SetURL(apiInventoryAccessMapping)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

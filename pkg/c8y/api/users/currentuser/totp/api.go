@@ -14,9 +14,9 @@ import (
 )
 
 var (
-	ApiTOTPSecret         = "/user/currentUser/totpSecret"
-	ApiTOTPSecretVerify   = "/user/currentUser/totpSecret/verify"
-	ApiTOTPSecretActivity = "/user/currentUser/totpSecret/activity"
+	apiTOTPSecret         = "/user/currentUser/totpSecret"
+	apiTOTPSecretVerify   = "/user/currentUser/totpSecret/verify"
+	apiTOTPSecretActivity = "/user/currentUser/totpSecret/activity"
 )
 
 // TOTPChallenge describes the context in which a TOTP code is being requested.
@@ -58,7 +58,7 @@ func (s *Service) generateSecretB() *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiTOTPSecret)
+		SetURL(apiTOTPSecret)
 	return httpcore.NewTryRequest(s.svc.Client, req).
 		WithAuthType(authentication.AuthTypeBasic)
 }
@@ -77,7 +77,7 @@ func (s *Service) verifyCodeB(code string) *httpcore.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetBody(map[string]any{"code": code}).
-		SetURL(ApiTOTPSecretVerify)
+		SetURL(apiTOTPSecretVerify)
 	return httpcore.NewTryRequest(s.svc.Client, req).WithAuthType(authentication.AuthTypeBasic)
 }
 
@@ -96,6 +96,6 @@ func (s *Service) setActivityB(isActive bool) *httpcore.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetBody(map[string]any{"isActive": isActive}).
-		SetURL(ApiTOTPSecretActivity)
+		SetURL(apiTOTPSecretActivity)
 	return httpcore.NewTryRequest(s.svc.Client, req).WithAuthType(authentication.AuthTypeBasic)
 }

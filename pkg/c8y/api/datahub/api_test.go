@@ -33,8 +33,8 @@ func TestQuery(t *testing.T) {
 	if res.Err != nil {
 		t.Fatalf("Query: %v", res.Err)
 	}
-	if gotPath != ApiSQL || gotVersion != "v1" {
-		t.Errorf("query = %s ?version=%s, want %s ?version=v1", gotPath, gotVersion, ApiSQL)
+	if gotPath != apiSQL || gotVersion != "v1" {
+		t.Errorf("query = %s ?version=%s, want %s ?version=v1", gotPath, gotVersion, apiSQL)
 	}
 	if body["sql"] != "SELECT 1" {
 		t.Errorf("body sql = %v", body["sql"])
@@ -113,8 +113,8 @@ func TestListOffloadingConfigurations(t *testing.T) {
 	if res.Err != nil {
 		t.Fatalf("ListOffloadingConfigurations: %v", res.Err)
 	}
-	if gotPath != ApiOffloadingConfigurations {
-		t.Errorf("path = %q, want %q", gotPath, ApiOffloadingConfigurations)
+	if gotPath != apiOffloadingConfigurations {
+		t.Errorf("path = %q, want %q", gotPath, apiOffloadingConfigurations)
 	}
 	if gotQuery["locale"][0] != "en" || gotQuery["limit"][0] != "10" {
 		t.Errorf("query = %v", gotQuery)
@@ -148,8 +148,8 @@ func TestListLatestJobs(t *testing.T) {
 	if res.Err != nil {
 		t.Fatalf("ListLatestJobs: %v", res.Err)
 	}
-	if gotPath != ApiSchedulerLatestJobs {
-		t.Errorf("path = %q, want %q", gotPath, ApiSchedulerLatestJobs)
+	if gotPath != apiSchedulerLatestJobs {
+		t.Errorf("path = %q, want %q", gotPath, apiSchedulerLatestJobs)
 	}
 	if gotQuery["jobType"][0] != "COMPACTION" || gotQuery["offset"][0] != "5" {
 		t.Errorf("query = %v", gotQuery)
@@ -173,8 +173,8 @@ func TestGetTenant(t *testing.T) {
 	if res.Err != nil {
 		t.Fatalf("GetTenant: %v", res.Err)
 	}
-	if gotPath != ApiTenant {
-		t.Errorf("path = %q, want %q", gotPath, ApiTenant)
+	if gotPath != apiTenant {
+		t.Errorf("path = %q, want %q", gotPath, apiTenant)
 	}
 	// The "data" object is unwrapped.
 	if res.Data.Get("tenantId").String() != "t123" || res.Data.Get("status").Exists() {
@@ -195,8 +195,8 @@ func TestListUsers(t *testing.T) {
 	if res.Err != nil {
 		t.Fatalf("ListUsers: %v", res.Err)
 	}
-	if gotPath != ApiDremioUsers {
-		t.Errorf("path = %q, want %q", gotPath, ApiDremioUsers)
+	if gotPath != apiDremioUsers {
+		t.Errorf("path = %q, want %q", gotPath, apiDremioUsers)
 	}
 	n := 0
 	for _, err := range res.Items() {

@@ -6,12 +6,12 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 )
 
-var ApiManagedObjects = "/inventory/managedObjects"
-var ApiManagedObject = "/inventory/managedObjects/{id}"
+var apiManagedObjects = "/inventory/managedObjects"
+var apiManagedObject = "/inventory/managedObjects/{id}"
 
-const ParamID = "id"
+const paramID = "id"
 
-const ResultProperty = "managedObjects"
+const resultProperty = "managedObjects"
 
 const FragmentSoftware = "c8y_Software"
 const FragmentSoftwareBinary = "c8y_SoftwareBinary"

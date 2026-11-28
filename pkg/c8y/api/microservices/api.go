@@ -3,6 +3,7 @@ package microservices
 import (
 	"context"
 	"fmt"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/spec"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/applications"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
@@ -22,7 +23,7 @@ import (
 	"resty.dev/v3"
 )
 
-const ResultProperty = "applications"
+const resultProperty = "applications"
 
 // Service to manage binaries
 // Managed objects can perform operations to store, retrieve and delete binaries. One binary can store only one file. Together with the binary, a managed object is created which acts as a metadata information for the binary.
@@ -30,16 +31,11 @@ type Service struct {
 	svc            httpcore.Service
 	applicationAPI *applications.Service
 	BootstrapUser  bootstrapuser.Service
-	// CurrentMicroservice is the current-microservice sub-resource.
-	//
-	// Deprecated: use Client.Microservices.Current.
-	CurrentMicroservice currentmicroservice.Service
-	Loggers             loggers.Service
+	Loggers        loggers.Service
 
 	// Current is the current-microservice sub-resource (/application/currentApplication
 	// as seen by a microservice). It is the canonical name, matching
-	// Tenants.Current, Applications.Current and Users.Current, and points at
-	// the same instance as CurrentMicroservice.
+	// Tenants.Current, Applications.Current and Users.Current.
 	Current *currentmicroservice.Service
 
 	lookupByName        func(ctx context.Context, name string) (string, map[string]any, error)
@@ -56,15 +52,13 @@ func NewService(common *httpcore.Service) *Service {
 // Client.Applications) are shared rather than copied.
 func NewServiceWithApplications(common *httpcore.Service, apps *applications.Service) *Service {
 	service := &Service{
-		svc:                 *common,
-		applicationAPI:      apps,
-		BootstrapUser:       *bootstrapuser.NewService(common),
-		CurrentMicroservice: *currentmicroservice.NewService(common),
-		Loggers:             *loggers.NewService(common),
-		customResolvers:     make(map[string]source.Resolver),
+		svc:             *common,
+		applicationAPI:  apps,
+		BootstrapUser:   *bootstrapuser.NewService(common),
+		Current:         currentmicroservice.NewService(common),
+		Loggers:         *loggers.NewService(common),
+		customResolvers: make(map[string]source.Resolver),
 	}
-
-	service.Current = &service.CurrentMicroservice
 
 	// Setup lookup function for name-based resolution
 	service.lookupByName = func(ctx context.Context, name string) (string, map[string]any, error) {
@@ -171,25 +165,43 @@ func ByName(v string) func(model.Microservice) bool {
 		return m.Name == v
 	}
 }
-func First(m model.Microservice) bool {
-	return true
-}
 
 // MicroserviceIterator provides iteration over microservices
 type MicroserviceIterator = pagination.Iterator[jsonmodels.Microservice]
 
-func (s *Service) FindFirst(ctx context.Context, opt ListOptions) (op.Result[jsonmodels.Microservice], bool) {
+// FindFirst returns the first microservice matching opt, or [op.ErrNotFound]
+// when there is none.
+func (s *Service) FindFirst(ctx context.Context, opt ListOptions) (jsonmodels.Microservice, error) {
+	found, exists := s.findFirst(ctx, opt)
+	if found.Err != nil {
+		return jsonmodels.Microservice{}, found.Err
+	}
+	if !exists {
+		return jsonmodels.Microservice{}, op.ErrNotFound
+	}
+	return found.Data, nil
+}
+
+// findFirst is FindFirst with the result of the lookup: the boolean is false
+// when no microservice matches (or the lookup failed, see the result's Err).
+func (s *Service) findFirst(ctx context.Context, opt ListOptions) (op.Result[jsonmodels.Microservice], bool) {
 	opt.MaxItems = 1
 	iterator := s.ListAll(ctx, opt)
 	if iterator.Err() != nil {
 		return op.Failed[jsonmodels.Microservice](iterator.Err(), false), false
 	}
-	return op.First(iterator.Items())
+	for item, err := range iterator.Items() {
+		if err != nil {
+			return op.Failed[jsonmodels.Microservice](err, false), false
+		}
+		return op.OK(item), true
+	}
+	return op.NoMatch[jsonmodels.Microservice](), false
 }
 
 // List all microservices on your tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Microservice] {
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewMicroservice)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewMicroservice)
 }
 
 // ListAll returns an iterator for all microservices
@@ -265,8 +277,8 @@ func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt.options())).
-		SetURL(applications.ApiApplications)
-	return httpcore.NewTryRequest(s.svc.Client, req, applications.ResultProperty)
+		SetURL(spec.ApplicationApplications)
+	return httpcore.NewTryRequest(s.svc.Client, req, httpcore.ResultPropertyApplications)
 }
 
 // Get a microservice by ID or resolver string
@@ -295,7 +307,7 @@ func (s *Service) getB(ID string) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetPathParam("id", ID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(applications.ApiApplication)
+		SetURL(spec.ApplicationApplicationsID)
 	return httpcore.NewTryRequest(s.svc.Client, req, "")
 }
 
@@ -311,7 +323,7 @@ func (s *Service) createB(body any) *httpcore.TryRequest {
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(applications.ApiApplications)
+		SetURL(spec.ApplicationApplications)
 	return httpcore.NewTryRequest(s.svc.Client, req, "")
 }
 
@@ -340,7 +352,7 @@ func (s *Service) updateB(ID string, body any) *httpcore.TryRequest {
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(applications.ApiApplication)
+		SetURL(spec.ApplicationApplicationsID)
 	return httpcore.NewTryRequest(s.svc.Client, req, "")
 }
 
@@ -373,7 +385,7 @@ func (s *Service) deleteB(ID string, opt DeleteOptions) *httpcore.TryRequest {
 		SetMethod(resty.MethodDelete).
 		SetPathParam("id", ID).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(applications.ApiApplication)
+		SetURL(spec.ApplicationApplicationsID)
 	return httpcore.NewTryRequest(s.svc.Client, req, "")
 }
 

@@ -14,8 +14,8 @@ import (
 )
 
 var (
-	ApiApplication              = "/application/currentApplication"
-	ApiApplicationSubscriptions = "/application/currentApplication/subscriptions"
+	apiApplication              = "/application/currentApplication"
+	apiApplicationSubscriptions = "/application/currentApplication/subscriptions"
 )
 
 // SubscriptionsResultProperty is the gjson path to the subscribed users embedded
@@ -39,7 +39,7 @@ func (s *Service) getB() *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiApplication)
+		SetURL(apiApplication)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -55,7 +55,7 @@ func (s *Service) updateB(body any) *httpcore.TryRequest {
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiApplication)
+		SetURL(apiApplication)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -70,6 +70,6 @@ func (s *Service) listSubscriptionsB() *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiApplicationSubscriptions)
+		SetURL(apiApplicationSubscriptions)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

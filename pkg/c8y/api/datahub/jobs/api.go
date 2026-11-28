@@ -11,14 +11,14 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiSQL = "/service/datahub/dremio/api/v3/sql"
-var ApiJob = "/service/datahub/dremio/api/v3/job/{id}"
-var ApiJobCancel = "/service/datahub/dremio/api/v3/job/{id}/cancel"
-var ApiJobResults = "/service/datahub/dremio/api/v3/job/{id}/results"
+var apiSQL = "/service/datahub/dremio/api/v3/sql"
+var apiJob = "/service/datahub/dremio/api/v3/job/{id}"
+var apiJobCancel = "/service/datahub/dremio/api/v3/job/{id}/cancel"
+var apiJobResults = "/service/datahub/dremio/api/v3/job/{id}/results"
 
-const ParamID = "id"
+const paramID = "id"
 
-const ResultProperty = "rows"
+const resultProperty = "rows"
 
 // Service interacts with DataHub query jobs.
 type Service struct {
@@ -41,7 +41,7 @@ func (s *Service) createB(body any) *httpcore.TryRequest {
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiSQL)
+		SetURL(apiSQL)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -53,9 +53,9 @@ func (s *Service) Get(ctx context.Context, id string) op.Result[jsonmodels.DataH
 func (s *Service) getB(id string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamID, id).
+		SetPathParam(paramID, id).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiJob)
+		SetURL(apiJob)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -67,9 +67,9 @@ func (s *Service) Cancel(ctx context.Context, id string) op.Result[jsonmodels.Da
 func (s *Service) cancelB(id string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
-		SetPathParam(ParamID, id).
+		SetPathParam(paramID, id).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiJobCancel)
+		SetURL(apiJobCancel)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -80,15 +80,15 @@ type ResultsOptions struct {
 
 // GetResults returns the result rows of a completed job.
 func (s *Service) GetResults(ctx context.Context, id string, opt ResultsOptions) op.Result[jsonmodels.DataHubResult] {
-	return httpcore.ExecuteCollection(ctx, s.getResultsB(id, opt), ResultProperty, "", jsonmodels.NewDataHubResult)
+	return httpcore.ExecuteCollection(ctx, s.getResultsB(id, opt), resultProperty, "", jsonmodels.NewDataHubResult)
 }
 
 func (s *Service) getResultsB(id string, opt ResultsOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamID, id).
+		SetPathParam(paramID, id).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiJobResults)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiJobResults)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }

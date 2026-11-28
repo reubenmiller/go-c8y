@@ -33,7 +33,7 @@ func TestListB(t *testing.T) {
 
 	assert.Equal(t, resty.MethodGet, req.Request.Method)
 	assert.Equal(t, types.MimeTypeApplicationJSON, req.Request.Header.Get("Accept"))
-	assert.Equal(t, ApiPlugins, req.URL().Path)
+	assert.Equal(t, apiPlugins, req.URL().Path)
 }
 
 func TestGetB(t *testing.T) {
@@ -41,7 +41,7 @@ func TestGetB(t *testing.T) {
 	req := s.getB("12345")
 
 	assert.Equal(t, resty.MethodGet, req.Request.Method)
-	assert.Equal(t, ApiPlugin, req.URL().Path)
+	assert.Equal(t, apiPlugin, req.URL().Path)
 }
 
 func TestCreateB(t *testing.T) {
@@ -50,7 +50,7 @@ func TestCreateB(t *testing.T) {
 	req := s.createB(plugin)
 
 	assert.Equal(t, resty.MethodPost, req.Request.Method)
-	assert.Equal(t, ApiPlugins, req.URL().Path)
+	assert.Equal(t, apiPlugins, req.URL().Path)
 }
 
 func TestUpdateB(t *testing.T) {
@@ -59,7 +59,7 @@ func TestUpdateB(t *testing.T) {
 	req := s.updateB("12345", plugin)
 
 	assert.Equal(t, resty.MethodPut, req.Request.Method)
-	assert.Equal(t, ApiPlugin, req.URL().Path)
+	assert.Equal(t, apiPlugin, req.URL().Path)
 }
 
 func TestDeleteB(t *testing.T) {
@@ -67,7 +67,7 @@ func TestDeleteB(t *testing.T) {
 	req := s.deleteB("12345")
 
 	assert.Equal(t, resty.MethodDelete, req.Request.Method)
-	assert.Equal(t, ApiPlugin, req.URL().Path)
+	assert.Equal(t, apiPlugin, req.URL().Path)
 }
 
 func TestNewPlugin(t *testing.T) {

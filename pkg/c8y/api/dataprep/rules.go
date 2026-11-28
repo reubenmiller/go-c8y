@@ -59,7 +59,7 @@ func (s *RuleService) List(ctx context.Context, opt ListOptions) op.Result[jsonm
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiRules)
+		SetURL(apiRules)
 	return httpcore.Execute(ctx, httpcore.NewTryRequest(s.svc.Client, req), func(b []byte) jsonmodels.DataPrepRule {
 		return jsonmodels.NewDataPrepRule(rulesArray(b, opt.keep))
 	})
@@ -96,13 +96,13 @@ func withName(b []byte, name string) []byte {
 // Get returns the deployed rule, including its smart function code
 // (JSCode) and tests. A rule that does not exist returns a 404 error.
 func (s *RuleService) Get(ctx context.Context, name string) op.Result[jsonmodels.DataPrepRule] {
-	return s.get(ctx, name, ApiRuleDeployed)
+	return s.get(ctx, name, apiRuleDeployed)
 }
 
 // GetDraft returns the version of the rule being edited in the Data
 // Preparation application.
 func (s *RuleService) GetDraft(ctx context.Context, name string) op.Result[jsonmodels.DataPrepRule] {
-	return s.get(ctx, name, ApiRuleDraft)
+	return s.get(ctx, name, apiRuleDraft)
 }
 
 func (s *RuleService) get(ctx context.Context, name, url string) op.Result[jsonmodels.DataPrepRule] {
@@ -111,7 +111,7 @@ func (s *RuleService) get(ctx context.Context, name, url string) op.Result[jsonm
 	}
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamRuleName, name).
+		SetPathParam(paramRuleName, name).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(url)
 	return httpcore.Execute(ctx, httpcore.NewTryRequest(s.svc.Client, req), func(b []byte) jsonmodels.DataPrepRule {
@@ -141,8 +141,8 @@ func (s *RuleService) Delete(ctx context.Context, name string) op.Result[core.No
 	}
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamRuleName, name).
-		SetURL(ApiRule)
+		SetPathParam(paramRuleName, name).
+		SetURL(apiRule)
 	res := httpcore.ExecuteNoContent(ctx, httpcore.NewTryRequest(s.svc.Client, req), map[string]any{"rule": name})
 	if core.IsNotFound(res.Err) {
 		skipped := op.Skipped(core.NoContent{}, "not found")
@@ -270,10 +270,10 @@ func composite[T any](ctx context.Context, meta map[string]any, fn func(context.
 func (s *RuleService) deploy(ctx context.Context, name string, body []byte, existed bool, previous *jsonmodels.DataPrepRule, wait WaitOptions) op.Result[jsonmodels.DataPrepRule] {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
-		SetPathParam(ParamRuleName, name).
+		SetPathParam(paramRuleName, name).
 		SetContentType(MimeTypeGzip).
 		SetBody(body).
-		SetURL(ApiRuleDeployed)
+		SetURL(apiRuleDeployed)
 	put := httpcore.ExecuteNoContent(ctx, httpcore.NewTryRequest(s.svc.Client, req))
 	if put.Err != nil {
 		return op.WithRequest(op.WithHTTPStatus(op.Failed[jsonmodels.DataPrepRule](put.Err, false), put.HTTPStatus), put.Request)

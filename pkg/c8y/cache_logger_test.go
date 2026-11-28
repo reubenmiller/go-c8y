@@ -45,3 +45,23 @@ func TestCachedTransport_LogsThroughConfiguredLogger(t *testing.T) {
 	assert.Contains(t, buf.String(), "Using cached response")
 	assert.Empty(t, global.String())
 }
+
+// NewCachedClient caches the responses of GET requests in the cache directory.
+func TestNewCachedClient_CachesGet(t *testing.T) {
+	var hits int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits++
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer srv.Close()
+
+	client := c8y.NewCachedClient(&http.Client{}, t.TempDir(), time.Minute, nil, c8y.CacheOptions{Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
+	for range 2 {
+		res, err := client.Get(srv.URL + "/inventory/managedObjects")
+		require.NoError(t, err)
+		_, _ = io.Copy(io.Discard, res.Body)
+		_ = res.Body.Close()
+	}
+	assert.Equal(t, 1, hits, "the second request is served from the cache")
+}

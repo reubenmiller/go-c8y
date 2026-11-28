@@ -45,7 +45,7 @@ This is a **mature, thoughtfully-architected, mid-rewrite SDK**. The v2 design (
 - **Uniform CRUD surface.** Services expose `List`/`Get`/`Create`/`Update`/`Delete` (+ `ListAll` iterator) with consistent shapes. *(HIGH)*
 - **Uniform return type.** Every operation returns `op.Result[T]`; deletes return `op.Result[core.NoContent]`; collections go through `core.ExecuteCollection`. *(HIGH — `pkg/c8y/op/result.go`, `pkg/c8y/api/core/execute.go`)*
 - **Uniform options.** `<Operation>Options` naming, `pagination.PaginationOptions` embedding, `url:"field,omitempty,omitzero"` tags (time fields use `omitzero` to drop zero values). *(HIGH — `alarms/api.go:43-99`)*
-- **Uniform internals.** Each service embeds `core.Service`; constructors follow `NewService(s *core.Service) *Service`; conventions like `var ApiXxx = "/..."`, `const ResultProperty`, `type XxxIterator = pagination.Iterator[T]` are applied everywhere. *(HIGH — confirmed `core.Service` embedded in 66 packages)*
+- **Uniform internals.** Each service embeds `core.Service`; constructors follow `NewService(s *core.Service) *Service`; conventions like the unexported `apiXxx` path variables and `resultProperty` constant, `type XxxIterator = pagination.Iterator[T]` are applied everywhere. *(HIGH — confirmed `core.Service` embedded in 66 packages)*
 - **Clean v1/v2 separation.** The root `package c8y` is only 6 shared helper files; v2 lives entirely under `pkg/c8y/api/`. A deliberate `client_compat.go` shim provides the migration path. This is a clean rewrite, **not** a tangled v1/v2 mix. *(HIGH)*
 
 ### Inconsistencies / outliers

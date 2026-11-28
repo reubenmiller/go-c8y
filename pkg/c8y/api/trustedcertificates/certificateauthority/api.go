@@ -14,14 +14,14 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiCertificateAuthority = "/certificate-authority"
-var ApiCertificateAuthorityRenew = "/certificate-authority/renew"
-var ApiTrustedCertificates = "/tenant/tenants/{tenantId}/trusted-certificates"
-var ApiTrustedCertificate = "/tenant/tenants/{tenantId}/trusted-certificates/{fingerprint}"
+var apiCertificateAuthority = "/certificate-authority"
+var apiCertificateAuthorityRenew = "/certificate-authority/renew"
+var apiTrustedCertificates = "/tenant/tenants/{tenantId}/trusted-certificates"
+var apiTrustedCertificate = "/tenant/tenants/{tenantId}/trusted-certificates/{fingerprint}"
 
-const ParamFingerprint = "fingerprint"
+const paramFingerprint = "fingerprint"
 
-const ResultProperty = "certificates"
+const resultProperty = "certificates"
 
 func NewService(s *httpcore.Service) *Service {
 	return &Service{
@@ -56,7 +56,7 @@ type GetOptions struct {
 
 // Get the certificate authority
 func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.TrustedCertificate] {
-	result := httpcore.ExecuteCollection(ctx, s.getB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTrustedCertificate)
+	result := httpcore.ExecuteCollection(ctx, s.getB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewTrustedCertificate)
 	if result.Err != nil {
 		return result
 	}
@@ -92,8 +92,8 @@ func (s *Service) getB(opt GetOptions) *httpcore.TryRequest {
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetQueryParam("certificateAuthority", "true").
-		SetURL(ApiTrustedCertificates)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiTrustedCertificates)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 // Create certificate authority.
@@ -149,11 +149,11 @@ func (s *Service) updateB(tenantID, fingerprint string, body any) *httpcore.TryR
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam(core.PathParamTenantID, tenantID).
-		SetPathParam(ParamFingerprint, fingerprint).
+		SetPathParam(paramFingerprint, fingerprint).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
-		SetURL(ApiTrustedCertificate)
+		SetURL(apiTrustedCertificate)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -161,7 +161,7 @@ func (s *Service) createB(opt CreateOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiCertificateAuthority)
+		SetURL(apiCertificateAuthority)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -214,8 +214,8 @@ func (s *Service) deleteB(opt DeleteOptions, fingerprint string) *httpcore.TryRe
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
-		SetPathParam(ParamFingerprint, fingerprint).
-		SetURL(ApiTrustedCertificate)
+		SetPathParam(paramFingerprint, fingerprint).
+		SetURL(apiTrustedCertificate)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -230,6 +230,6 @@ func (s *Service) renewB(opt CreateOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiCertificateAuthorityRenew)
+		SetURL(apiCertificateAuthorityRenew)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

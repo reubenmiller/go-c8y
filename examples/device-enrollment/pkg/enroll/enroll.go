@@ -96,7 +96,7 @@ func (r *EnrollCmd) Run(ctx *cli.Context) error {
 		clientCtx := context.Background()
 
 		// Enroll device
-		result := <-client.Devices.Enrollment.PollEnroll(clientCtx, enrollment.DeviceEnrollmentOption{
+		result := <-client.Devices.Enrollment.PollEnroll(clientCtx, enrollment.DeviceEnrollmentOptions{
 			ExternalID:      deviceID,
 			OneTimePassword: r.OneTimePassword, // Generate random one-time password if empty
 

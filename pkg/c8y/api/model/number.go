@@ -11,13 +11,6 @@ type Number struct {
 	json.Number
 }
 
-// NewNumber returns a new number
-func NewNumber(value string) *Number {
-	return &Number{
-		Number: json.Number(value),
-	}
-}
-
 // IsNull checks if the number is null/valid or not
 func (s *Number) IsNull() bool {
 	if _, err := s.Float64(); err != nil {

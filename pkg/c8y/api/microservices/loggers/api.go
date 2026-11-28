@@ -15,19 +15,19 @@ import (
 )
 
 var (
-	// ApiLoggers lists the loggers of a microservice.
-	ApiLoggers = "/service/{name}/loggers"
-	// ApiLogger addresses a single logger (by qualified package/class name).
-	ApiLogger = "/service/{name}/loggers/{loggerName}"
+	// apiLoggers lists the loggers of a microservice.
+	apiLoggers = "/service/{name}/loggers"
+	// apiLogger addresses a single logger (by qualified package/class name).
+	apiLogger = "/service/{name}/loggers/{loggerName}"
 )
 
 const (
-	ParamName       = "name"
-	ParamLoggerName = "loggerName"
+	paramName       = "name"
+	paramLoggerName = "loggerName"
 
-	// ResultProperty is the field in the /loggers response that holds the
+	// resultProperty is the field in the /loggers response that holds the
 	// logger-name -> configuration map.
-	ResultProperty = "loggers"
+	resultProperty = "loggers"
 )
 
 // Service manages microservice log levels.
@@ -41,16 +41,16 @@ func NewService(common *httpcore.Service) *Service {
 // with {levels, loggers, groups}; the "loggers" map is plucked and rendered
 // as-is (it is keyed by logger name, not an array).
 func (s *Service) List(ctx context.Context, name string) op.Result[jsonmodels.MicroserviceLogger] {
-	return httpcore.ExecuteCollection(ctx, s.listB(name), ResultProperty, "", jsonmodels.NewMicroserviceLogger)
+	return httpcore.ExecuteCollection(ctx, s.listB(name), resultProperty, "", jsonmodels.NewMicroserviceLogger)
 }
 
 func (s *Service) listB(name string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamName, name).
-		SetURL(ApiLoggers)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetPathParam(paramName, name).
+		SetURL(apiLoggers)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 // Get returns the configured/effective log level of a single logger (a
@@ -63,9 +63,9 @@ func (s *Service) getB(name string, loggerName string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamName, name).
-		SetPathParam(ParamLoggerName, loggerName).
-		SetURL(ApiLogger)
+		SetPathParam(paramName, name).
+		SetPathParam(paramLoggerName, loggerName).
+		SetURL(apiLogger)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -83,8 +83,8 @@ func (s *Service) setB(name string, loggerName string, body any) *httpcore.TryRe
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamName, name).
-		SetPathParam(ParamLoggerName, loggerName).
-		SetURL(ApiLogger)
+		SetPathParam(paramName, name).
+		SetPathParam(paramLoggerName, loggerName).
+		SetURL(apiLogger)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

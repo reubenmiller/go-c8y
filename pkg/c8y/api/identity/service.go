@@ -38,5 +38,5 @@ func (s *Service) Delete(ctx context.Context, opts IdentityOptions) op.Result[co
 //	    },
 //	})
 func (s *Service) Search(ctx context.Context, opts SearchOptions) op.Result[jsonmodels.Identity] {
-	return httpcore.ExecuteCollection(ctx, s.searchB(opts), ResultProperty, "", jsonmodels.NewIdentity)
+	return httpcore.ExecuteCollection(ctx, s.searchB(opts), resultProperty, "", jsonmodels.NewIdentity)
 }

@@ -11,8 +11,8 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiCurrentUser = "/user/currentUser"
-var ApiCurrentUserPassword = "/user/currentUser/password"
+var apiCurrentUser = "/user/currentUser"
+var apiCurrentUserPassword = "/user/currentUser/password"
 
 func NewService(s *httpcore.Service) *Service {
 	return &Service{
@@ -37,7 +37,7 @@ func (s *Service) getB() *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiCurrentUser)
+		SetURL(apiCurrentUser)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -52,7 +52,7 @@ func (s *Service) updateB(body any) *httpcore.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetBody(body).
-		SetURL(ApiCurrentUser)
+		SetURL(apiCurrentUser)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -75,6 +75,6 @@ func (s *Service) updatePasswordB(body any) *httpcore.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetBody(body).
-		SetURL(ApiCurrentUserPassword)
+		SetURL(apiCurrentUserPassword)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

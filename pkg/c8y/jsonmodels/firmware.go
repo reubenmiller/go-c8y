@@ -15,6 +15,8 @@ func NewFirmware(b []byte) Firmware {
 	return Firmware{jsondoc.Facade{JSONDoc: jsondoc.New(b)}}
 }
 
+// NewFirmwareWithOptions returns a firmware item document with the name
+// (omitted when empty).
 func NewFirmwareWithOptions(name string) Firmware {
 	data := map[string]any{
 		"type": "c8y_Firmware",

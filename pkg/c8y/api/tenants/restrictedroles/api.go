@@ -15,12 +15,12 @@ import (
 )
 
 var (
-	ApiRestrictedRoles = "/tenant/tenants/{tenantId}/applications/restricted-roles"
-	ApiRestrictedRole  = "/tenant/tenants/{tenantId}/applications/restricted-roles/{roleId}"
+	apiRestrictedRoles = "/tenant/tenants/{tenantId}/applications/restricted-roles"
+	apiRestrictedRole  = "/tenant/tenants/{tenantId}/applications/restricted-roles/{roleId}"
 )
 
-// ParamRoleID is the role path parameter.
-const ParamRoleID = "roleId"
+// paramRoleID is the role path parameter.
+const paramRoleID = "roleId"
 
 // Options selects the tenant. Tenant defaults to the client's tenant.
 type Options struct {
@@ -46,7 +46,7 @@ func (s *Service) listB(opt Options) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
-		SetURL(ApiRestrictedRoles)
+		SetURL(apiRestrictedRoles)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -65,7 +65,7 @@ func (s *Service) replaceB(opt Options, roles []string) *httpcore.TryRequest {
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetBody(roles).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
-		SetURL(ApiRestrictedRoles)
+		SetURL(apiRestrictedRoles)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -84,8 +84,8 @@ func (s *Service) roleB(method string, opt Options, role string) *httpcore.TryRe
 		SetMethod(method).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.Tenant).
-		SetPathParam(ParamRoleID, role).
-		SetURL(ApiRestrictedRole)
+		SetPathParam(paramRoleID, role).
+		SetURL(apiRestrictedRole)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 

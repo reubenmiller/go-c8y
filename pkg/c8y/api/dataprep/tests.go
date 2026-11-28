@@ -91,7 +91,7 @@ func (s *TestService) Run(ctx context.Context, opt RunTestsOptions) op.Result[js
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
-		SetURL(ApiRunTests)
+		SetURL(apiRunTests)
 	return httpcore.Execute(ctx, httpcore.NewTryRequest(s.svc.Client, req), jsonmodels.NewDataPrepTestResults)
 }
 

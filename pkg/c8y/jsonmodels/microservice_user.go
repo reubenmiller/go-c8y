@@ -32,6 +32,7 @@ type MicroserviceSetting struct {
 	jsondoc.JSONDoc
 }
 
+// NewMicroserviceSetting wraps the JSON of a microservice setting.
 func NewMicroserviceSetting(b []byte) MicroserviceSetting {
 	return MicroserviceSetting{jsondoc.New(b)}
 }

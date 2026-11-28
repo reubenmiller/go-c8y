@@ -12,12 +12,12 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiOAuth = "/tenant/oauth"
-var ApiOAuthToken = "/tenant/oauth/token"
+var apiOAuth = "/tenant/oauth"
+var apiOAuthToken = "/tenant/oauth/token"
 
-var ParamID = "id"
+var paramID = "id"
 
-const ResultProperty = "events"
+const resultProperty = "events"
 
 func NewService(s *httpcore.Service) *Service {
 	return &Service{
@@ -75,7 +75,7 @@ func (s *Service) createB(opt CreateTokenOptions) *httpcore.TryRequest {
 		SetQueryParams(params).
 		SetFormDataFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiOAuthToken).
+		SetURL(apiOAuthToken).
 		SetRetryCount(1).
 		SetRetryDelayStrategy(func(r *resty.Response, err error) (time.Duration, error) {
 			return 100 * time.Millisecond, nil
@@ -126,6 +126,6 @@ func (s *Service) createCookiesB(opt CreateTokenOptions) *httpcore.TryRequest {
 		SetQueryParams(params).
 		SetFormDataFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiOAuth)
+		SetURL(apiOAuth)
 	return httpcore.NewTryRequest(s.svc.Client, req).WithNoAuth()
 }

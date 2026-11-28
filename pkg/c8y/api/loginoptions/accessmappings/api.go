@@ -14,15 +14,15 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiAccessMappings = "/tenant/loginOptions/{typeOrId}/accessMappings"
-var ApiAccessMapping = "/tenant/loginOptions/{typeOrId}/accessMappings/{id}"
+var apiAccessMappings = "/tenant/loginOptions/{typeOrId}/accessMappings"
+var apiAccessMapping = "/tenant/loginOptions/{typeOrId}/accessMappings/{id}"
 
 const (
-	ParamTypeOrID = "typeOrId"
-	ParamID       = "id"
+	paramTypeOrID = "typeOrId"
+	paramID       = "id"
 )
 
-const ResultProperty = "accessMappings"
+const resultProperty = "accessMappings"
 
 // Service provides access to a login option's access mappings.
 type Service struct{ svc httpcore.Service }
@@ -33,16 +33,16 @@ func NewService(s *httpcore.Service) *Service {
 
 // List returns all access mappings for a login option (identified by type or id).
 func (s *Service) List(ctx context.Context, typeOrID string) op.Result[jsonmodels.AccessMapping] {
-	return httpcore.ExecuteCollection(ctx, s.listB(typeOrID), ResultProperty, "", jsonmodels.NewAccessMapping)
+	return httpcore.ExecuteCollection(ctx, s.listB(typeOrID), resultProperty, "", jsonmodels.NewAccessMapping)
 }
 
 func (s *Service) listB(typeOrID string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamTypeOrID, typeOrID).
-		SetURL(ApiAccessMappings)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetPathParam(paramTypeOrID, typeOrID).
+		SetURL(apiAccessMappings)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 // Get retrieves a single access mapping by id.
@@ -54,9 +54,9 @@ func (s *Service) getB(typeOrID, id string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamTypeOrID, typeOrID).
-		SetPathParam(ParamID, id).
-		SetURL(ApiAccessMapping)
+		SetPathParam(paramTypeOrID, typeOrID).
+		SetPathParam(paramID, id).
+		SetURL(apiAccessMapping)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -70,9 +70,9 @@ func (s *Service) createB(typeOrID string, body any) *httpcore.TryRequest {
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeApplicationJSON).
-		SetPathParam(ParamTypeOrID, typeOrID).
+		SetPathParam(paramTypeOrID, typeOrID).
 		SetBody(body).
-		SetURL(ApiAccessMappings)
+		SetURL(apiAccessMappings)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -86,10 +86,10 @@ func (s *Service) updateB(typeOrID, id string, body any) *httpcore.TryRequest {
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeApplicationJSON).
-		SetPathParam(ParamTypeOrID, typeOrID).
-		SetPathParam(ParamID, id).
+		SetPathParam(paramTypeOrID, typeOrID).
+		SetPathParam(paramID, id).
 		SetBody(body).
-		SetURL(ApiAccessMapping)
+		SetURL(apiAccessMapping)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -101,8 +101,8 @@ func (s *Service) Delete(ctx context.Context, typeOrID, id string) op.Result[cor
 func (s *Service) deleteB(typeOrID, id string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamTypeOrID, typeOrID).
-		SetPathParam(ParamID, id).
-		SetURL(ApiAccessMapping)
+		SetPathParam(paramTypeOrID, typeOrID).
+		SetPathParam(paramID, id).
+		SetURL(apiAccessMapping)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

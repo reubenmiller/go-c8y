@@ -114,7 +114,7 @@ func (s *Syncer) ensureGroupRoles(ctx context.Context, groupID string, created b
 		}
 		selfLink, ok := roleSelfLinks[roleName]
 		if !ok {
-			role := s.Client.UserRoles.Get(ctx, userroles.GetOption{Name: roleName})
+			role := s.Client.UserRoles.Get(ctx, userroles.GetOptions{Name: roleName})
 			if role.Err != nil {
 				return nil, fmt.Errorf("role %q: %w", roleName, role.Err)
 			}

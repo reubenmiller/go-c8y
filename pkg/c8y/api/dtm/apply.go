@@ -279,7 +279,7 @@ func (s *Service) definitionStep(svc *DefinitionService, kind string, d Definiti
 				it.Err = err
 				return []ApplyItem{it}
 			}
-			existing, found := svc.Find(ctx, d.Identifier, d.Contexts)
+			existing, found := svc.find(ctx, d.Identifier, d.Contexts)
 			switch {
 			case !found && existing.Err != nil:
 				it.Err = existing.Err
@@ -334,13 +334,13 @@ func (s *Service) assetStep(a ModelAsset, opt ApplyOptions) step {
 			existing := s.Assets.GetByExternalID(ctx, a.ExternalID, GetOptions{})
 			switch {
 			case core.IsNotFound(existing.Err):
-				it.Action, it.Method, it.Path = ActionCreate, http.MethodPost, ApiAssets
+				it.Action, it.Method, it.Path = ActionCreate, http.MethodPost, apiAssets
 			case existing.Err != nil:
 				it.Err = existing.Err
 			case op.DesiredStateMatches(desired, existing.Data.Bytes()):
 				it.Action = ActionNone
 			default:
-				it.Action, it.Method, it.Path = ActionUpdate, http.MethodPost, ApiAssets
+				it.Action, it.Method, it.Path = ActionUpdate, http.MethodPost, apiAssets
 				it.Changed = changedKeys(desired, existing.Data.Bytes())
 			}
 			return []ApplyItem{it}
@@ -351,9 +351,9 @@ func (s *Service) assetStep(a ModelAsset, opt ApplyOptions) step {
 			it.Status, it.Err = res.Status, res.Err
 			switch res.Status {
 			case op.StatusCreated:
-				it.Action, it.Method, it.Path = ActionCreate, http.MethodPost, ApiAssets
+				it.Action, it.Method, it.Path = ActionCreate, http.MethodPost, apiAssets
 			case op.StatusUpdated:
-				it.Action, it.Method, it.Path = ActionUpdate, http.MethodPost, ApiAssets
+				it.Action, it.Method, it.Path = ActionUpdate, http.MethodPost, apiAssets
 			default:
 				it.Action = ActionNone
 			}

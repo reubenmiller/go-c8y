@@ -29,8 +29,8 @@ func Test_Microservices_Deploy_Offline(t *testing.T) {
 	require.NoError(t, dry.Err)
 	require.NotNil(t, dry.Request, "the dry run returns the prepared create request")
 	assert.Equal(t, "POST", dry.Request.Method)
-	_, exists := client.Microservices.FindFirst(ctx, microservices.ListOptions{Name: name})
-	assert.False(t, exists, "a dry run must not create the microservice")
+	_, err := client.Microservices.FindFirst(ctx, microservices.ListOptions{Name: name})
+	assert.ErrorIs(t, err, op.ErrNotFound, "a dry run must not create the microservice")
 
 	// A manifest (not a zip): the microservice is created and its roles set
 	res := client.Microservices.Deploy(ctx, microservices.CreateOptions{File: manifest, Name: name, SkipSubscription: true})

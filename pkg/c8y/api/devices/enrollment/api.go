@@ -27,8 +27,8 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiEnroll = ".well-known/est/simpleenroll"
-var ApiReEnroll = ".well-known/est/simplereenroll"
+var apiEnroll = ".well-known/est/simpleenroll"
+var apiReEnroll = ".well-known/est/simplereenroll"
 
 // Service provides device enrollment functionality to enroll new devices and receive device certificates
 type Service struct{ svc httpcore.Service }
@@ -55,7 +55,7 @@ func (s *Service) Enroll(ctx context.Context, opt EnrollOptions) op.Result[X509C
 		SetHeader("Content-Transfer-Encoding", "base64").
 		SetContentType("application/pkcs10").
 		SetBody(base64.StdEncoding.EncodeToString(opt.CSR.Raw)).
-		SetURL(ApiEnroll)
+		SetURL(apiEnroll)
 
 	b := httpcore.NewTryRequest(s.svc.Client, req).
 		SetBasicAuth(opt.ExternalID, opt.OneTimePassword)
@@ -82,7 +82,7 @@ func (s *Service) ReEnroll(ctx context.Context, opt ReEnrollOptions) op.Result[X
 		SetHeader("Content-Transfer-Encoding", "base64").
 		SetContentType("application/pkcs10").
 		SetBody(base64.StdEncoding.EncodeToString(opt.CSR.Raw)).
-		SetURL(ApiReEnroll)
+		SetURL(apiReEnroll)
 
 	b := httpcore.NewTryRequest(s.svc.Client, req)
 	if opt.Token != "" {
@@ -198,7 +198,7 @@ type X509Certificate struct {
 
 // Helper types and methods for polling enrollment
 
-type DeviceEnrollmentOption struct {
+type DeviceEnrollmentOptions struct {
 	ExternalID                string
 	InitDelay                 time.Duration
 	Interval                  time.Duration
@@ -333,7 +333,7 @@ func (s *Service) WriteBanner(w io.Writer, externalID string, oneTimePassword st
 }
 
 // PollEnroll continuously tries to download the x509 certificate for the given device
-func (s *Service) PollEnroll(ctx context.Context, opts DeviceEnrollmentOption) <-chan DeviceEnrollmentPollResult {
+func (s *Service) PollEnroll(ctx context.Context, opts DeviceEnrollmentOptions) <-chan DeviceEnrollmentPollResult {
 	if opts.Interval == 0 {
 		opts.Interval = 5 * time.Second
 	}

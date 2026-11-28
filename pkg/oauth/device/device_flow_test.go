@@ -296,7 +296,7 @@ func TestRequestCode(t *testing.T) {
 	}
 }
 
-func TestPollToken(t *testing.T) {
+func TestWait(t *testing.T) {
 	makeFakePoller := func(maxWaits int) pollerFactory {
 		return func(ctx context.Context, interval, expiresIn time.Duration) (context.Context, poller) {
 			return ctx, &fakePoller{maxWaits: maxWaits}
@@ -502,14 +502,14 @@ func TestPollToken(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := Wait(context.Background(), &tt.args.http, tt.args.url, tt.args.opts)
 			if (err != nil) != (tt.wantErr != "") {
-				t.Errorf("PollToken() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Wait() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if tt.wantErr != "" && err.Error() != tt.wantErr {
-				t.Errorf("PollToken error = %q, want %q", err.Error(), tt.wantErr)
+				t.Errorf("Wait error = %q, want %q", err.Error(), tt.wantErr)
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("PollToken() = %v, want %v", got, tt.want)
+				t.Errorf("Wait() = %v, want %v", got, tt.want)
 			}
 			if !reflect.DeepEqual(tt.args.http.calls, tt.posts) {
 				t.Errorf("PostForm() = %v, want %v", tt.args.http.calls, tt.posts)

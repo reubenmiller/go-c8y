@@ -52,7 +52,7 @@ func Test_Enrollment_PollEnroll(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, deviceID, csr.Subject.CommonName)
 
-	result := <-client.Devices.Enrollment.PollEnroll(ctx, enrollment.DeviceEnrollmentOption{
+	result := <-client.Devices.Enrollment.PollEnroll(ctx, enrollment.DeviceEnrollmentOptions{
 		ExternalID:                deviceID,
 		OneTimePassword:           "",
 		Interval:                  1 * time.Second,

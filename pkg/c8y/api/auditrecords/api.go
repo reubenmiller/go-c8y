@@ -11,12 +11,12 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiAuditRecords = "/audit/auditRecords"
-var ApiAuditRecord = "/audit/auditRecords/{id}"
+var apiAuditRecords = "/audit/auditRecords"
+var apiAuditRecord = "/audit/auditRecords/{id}"
 
-var ParamID = "id"
+var paramID = "id"
 
-const ResultProperty = "auditRecords"
+const resultProperty = "auditRecords"
 
 // Service provides api to get/set/delete audit entries in Cumulocity
 type Service struct{ svc httpcore.Service }
@@ -34,7 +34,7 @@ type AuditRecordIterator = pagination.Iterator[jsonmodels.AuditRecord]
 
 // List the audit records
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.AuditRecord] {
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewAuditRecord)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewAuditRecord)
 }
 
 // ListAll returns an iterator for all audit records
@@ -56,8 +56,8 @@ func (s *Service) listB(opt any) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiAuditRecords)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiAuditRecords)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 // Get an audit record
@@ -68,9 +68,9 @@ func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Audit
 func (s *Service) getB(ID string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamID, ID).
+		SetPathParam(paramID, ID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiAuditRecord)
+		SetURL(apiAuditRecord)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -85,6 +85,6 @@ func (s *Service) createB(body any) *httpcore.TryRequest {
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
-		SetURL(ApiAuditRecords)
+		SetURL(apiAuditRecords)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

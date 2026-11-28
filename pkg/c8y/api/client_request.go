@@ -3,7 +3,6 @@ package api
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,16 +14,14 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
-	"github.com/tidwall/gjson"
 	"resty.dev/v3"
 )
 
-// RequestOptions defines a custom HTTP request for [Client.SendRequest]. It is
-// supported v2 API.
+// RequestOptions defines a custom HTTP request for [Client.Request].
 //
 // Example:
 //
-//	result := client.SendRequest(ctx, api.RequestOptions{
+//	result := client.Request(ctx, api.RequestOptions{
 //	    Method: "GET",
 //	    Path:   "/inventory/managedObjects",
 //	    Query:  "pageSize=100&type=c8y_Device",
@@ -81,124 +78,36 @@ type RequestOptions struct {
 	// error aborts the request.
 	PrepareRequest func(*http.Request) error
 
-	// OnResponse is called with the response before SendRequest returns. With
-	// DoNotParseResponse, Body is the unread stream and the hook may replace
-	// it (for example to track progress). Otherwise Body is a copy of the
-	// cached body, so reading it does not affect RequestResult.Body. An error
-	// is returned as RequestResult.Error.
+	// OnResponse is called with the response before Request returns. Its Body
+	// is a copy of the buffered body, so reading it does not affect the
+	// result. An error is returned as the result's error.
 	OnResponse func(response *http.Response) error
-
-	DoNotParseResponse bool
 }
 
-// RequestResult is the result of SendRequest. Response and its Request are
-// SDK-owned copies: they stay valid after the client sends more requests.
-type RequestResult struct {
-	// Response is the HTTP response. Its Request field is a copy of the request
-	// that was sent, including its body.
-	Response *http.Response
-	// Error is the error of a request which could not be sent, or a
-	// *core.Error for a response with an HTTP error status (400 or above,
-	// unless DoNotParseResponse is set).
-	Error      error
-	cachedBody []byte
+// rawResponse is the outcome of a request made by Client.Request. Response and
+// its Request are SDK-owned copies: they stay valid after the client sends more
+// requests.
+type rawResponse struct {
+	// response is the HTTP response, or nil when none was received (a failed
+	// or dry-run request).
+	response *http.Response
+	// request is the request that was sent, or would be sent in a dry run.
+	request *http.Request
+	// err is the error of a request which could not be sent, or a *core.Error
+	// for a response with an HTTP error status (400 or above).
+	err  error
+	body []byte
 }
 
-// IsError returns true if the request failed
-func (r *RequestResult) IsError() bool {
-	return r.Error != nil || (r.Response != nil && r.Response.StatusCode > 399)
-}
-
-// StatusCode returns the HTTP status code
-func (r *RequestResult) StatusCode() int {
-	if r.Response == nil {
+func (r *rawResponse) statusCode() int {
+	if r.response == nil {
 		return 0
 	}
-	return r.Response.StatusCode
+	return r.response.StatusCode
 }
 
-// Body returns the response body as bytes.
-// The body is cached when the request completes to allow multiple accesses.
-func (r *RequestResult) Body() []byte {
-	return r.cachedBody
-}
-
-// String returns the response body as a string
-func (r *RequestResult) String() string {
-	return string(r.Body())
-}
-
-// JSON parses the response body as JSON using gjson.
-// If a path is provided, it returns the value at that path.
-// Otherwise, it returns the entire JSON document.
-func (r *RequestResult) JSON(path ...string) gjson.Result {
-	body := r.Body()
-	if len(body) == 0 {
-		return gjson.Result{}
-	}
-	if len(path) > 0 {
-		return gjson.GetBytes(body, path[0])
-	}
-	return gjson.ParseBytes(body)
-}
-
-// Unmarshal deserializes the response body into v
-func (r *RequestResult) Unmarshal(v any) error {
-	if r.Response == nil {
-		return fmt.Errorf("no response to unmarshal")
-	}
-	return json.Unmarshal(r.Body(), v)
-}
-
-// Header returns the response header value for the given key
-func (r *RequestResult) Header(key string) string {
-	if r.Response == nil {
-		return ""
-	}
-	return r.Response.Header.Get(key)
-}
-
-// SendRequest creates and sends a custom HTTP request. It is supported v2 API
-// and the intended way to call endpoints that have no typed service method; it
-// also eases migration from the v1 client. Prefer the typed services where
-// they exist, since they return op.Result with metadata and pagination.
-//
-// Example - Simple GET:
-//
-//	result := client.SendRequest(ctx, api.RequestOptions{
-//	    Method: "GET",
-//	    Path:   "/inventory/managedObjects",
-//	    Query:  "pageSize=100&type=c8y_Device",
-//	})
-//	if result.IsError() {
-//	    return result.Error
-//	}
-//	items := result.JSON("managedObjects").Array()
-//
-// Example - POST with body:
-//
-//	result := client.SendRequest(ctx, api.RequestOptions{
-//	    Method: "POST",
-//	    Path:   "/event/events",
-//	    Body: map[string]any{
-//	        "source": map[string]string{"id": "12345"},
-//	        "type":   "testEvent",
-//	        "text":   "Test event",
-//	    },
-//	})
-//
-// Example - Struct query parameters:
-//
-//	type ListOptions struct {
-//	    PageSize int    `url:"pageSize"`
-//	    Type     string `url:"type"`
-//	}
-//	result := client.SendRequest(ctx, api.RequestOptions{
-//	    Method: "GET",
-//	    Path:   "/inventory/managedObjects",
-//	    Query:  ListOptions{PageSize: 100, Type: "c8y_Device"},
-//	})
-func (c *Client) SendRequest(ctx context.Context, options RequestOptions) *RequestResult {
+// send builds and sends the request of options and returns the buffered response.
+func (c *Client) send(ctx context.Context, options RequestOptions) *rawResponse {
 	ctxRequest := ctx
 	if options.DryRun != nil {
 		ctxRequest = WithDryRun(ctxRequest, *options.DryRun)
@@ -217,7 +126,7 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) *Reque
 		// Parse path to extract any inline query params
 		u, err := url.Parse(options.Path)
 		if err != nil {
-			return &RequestResult{Error: fmt.Errorf("invalid path: %w", err)}
+			return &rawResponse{err: fmt.Errorf("invalid path: %w", err)}
 		}
 		req.SetURL(u.Path)
 
@@ -292,7 +201,7 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) *Reque
 	if len(options.FormData) > 0 {
 		fields, err := multipartFields(options.FormData)
 		if err != nil {
-			return &RequestResult{Error: fmt.Errorf("invalid form data: %w", err)}
+			return &rawResponse{err: fmt.Errorf("invalid form data: %w", err)}
 		}
 		req.SetMultipartFields(fields...)
 	}
@@ -310,10 +219,6 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) *Reque
 		fullURL = strings.TrimSuffix(fullURL, "/") + path
 	}
 
-	if options.DoNotParseResponse {
-		req.SetResponseDoNotParse(true)
-	}
-
 	// Send request (use full URL if host override was set)
 	var resp *resty.Response
 	var err error
@@ -324,51 +229,45 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) *Reque
 		resp, err = req.Send()
 	}
 
-	result := &RequestResult{Error: err}
+	result := &rawResponse{err: err, request: capture.Request()}
 	if resp == nil || resp.RawResponse == nil {
 		return result
 	}
 
 	httpResp := *resp.RawResponse
-	httpResp.Request = capture.Request()
-	result.Response = &httpResp
+	httpResp.Request = result.request
+	result.response = &httpResp
 
-	if err != nil || options.DoNotParseResponse {
-		// The caller reads the unread stream from Response.Body.
+	if err != nil {
 		httpResp.Body = resp.Body
-		if options.OnResponse != nil && err == nil {
-			if onResponseErr := options.OnResponse(&httpResp); onResponseErr != nil {
-				result.Error = onResponseErr
-			}
-		}
 		return result
 	}
 
-	// Cache the body so it can be read multiple times.
+	// Buffer the body so it can be read more than once.
 	if resp.Body != nil {
 		body, readErr := io.ReadAll(resp.Body)
 		if readErr == nil {
-			result.cachedBody = body
+			result.body = body
 		}
 		resp.Body.Close()
 	}
-	httpResp.Body = io.NopCloser(bytes.NewReader(result.cachedBody))
+	httpResp.Body = io.NopCloser(bytes.NewReader(result.body))
 
 	if httpResp.StatusCode >= 400 {
-		apiErr := responseError(resp, &httpResp, result.cachedBody)
-		if len(result.cachedBody) == 0 {
+		apiErr := responseError(resp, &httpResp, result.body)
+		if len(result.body) == 0 {
 			// A JSON error body was parsed by the client: keep it readable
-			result.cachedBody = []byte(apiErr.MessageRaw)
-			httpResp.Body = io.NopCloser(bytes.NewReader(result.cachedBody))
+			result.body = []byte(apiErr.MessageRaw)
+			httpResp.Body = io.NopCloser(bytes.NewReader(result.body))
 		}
-		result.Error = apiErr
+		result.err = apiErr
 	}
 
 	if options.OnResponse != nil {
 		hookResp := httpResp
-		hookResp.Body = io.NopCloser(bytes.NewReader(result.cachedBody))
+		hookResp.Body = io.NopCloser(bytes.NewReader(result.body))
 		if onResponseErr := options.OnResponse(&hookResp); onResponseErr != nil {
-			result.Error = onResponseErr
+			result.err = onResponseErr
 		}
 	}
 
@@ -377,16 +276,16 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) *Reque
 
 // Request sends a custom HTTP request and returns the response as an
 // [op.Result] of the JSON body, like the typed service methods do. It is the
-// typed escape hatch for endpoints without a service method, and takes the
-// same path as them: middleware, authentication, dry run, mock responses,
-// context options (tenant, processing mode, request hook, ...) and API error
-// handling apply. An HTTP status of 400 or above is returned as the result's
-// error (a *core.Error); errors found while building the request are returned
-// the same way.
+// intended way to call endpoints that have no typed service method. It takes
+// the same path as the typed services: middleware, authentication, dry run,
+// mock responses, context options (tenant, processing mode, request hook, ...)
+// and API error handling apply. An HTTP status of 400 or above is returned as
+// the result's error (a *core.Error); errors found while building the request
+// are returned the same way.
 //
-// Use [Client.SendRequest] instead when you need the raw response, a streamed
-// body (DoNotParseResponse) or the response headers; Request keeps the status,
-// duration, request and raw body on the result.
+// The result keeps what a caller of a raw request needs: HTTPStatus, the
+// response Header, the raw body in Response (also when it is not JSON, and for an HTTP error), the
+// Request that was sent (or would be, in a dry run).
 //
 // Example:
 //
@@ -399,33 +298,51 @@ func (c *Client) SendRequest(ctx context.Context, options RequestOptions) *Reque
 //	    return result.Err
 //	}
 //	name := result.Data.Get("managedObjects.0.name").String()
+//
+// Example, a POST with a body:
+//
+//	result := client.Request(ctx, api.RequestOptions{
+//	    Method: "POST",
+//	    Path:   "/event/events",
+//	    Body: map[string]any{
+//	        "source": map[string]string{"id": "12345"},
+//	        "type":   "testEvent",
+//	        "text":   "Test event",
+//	    },
+//	})
+//
+// Example, struct query parameters:
+//
+//	type ListOptions struct {
+//	    PageSize int    `url:"pageSize"`
+//	    Type     string `url:"type"`
+//	}
+//	result := client.Request(ctx, api.RequestOptions{
+//	    Method: "GET",
+//	    Path:   "/inventory/managedObjects",
+//	    Query:  ListOptions{PageSize: 100, Type: "c8y_Device"},
+//	})
 func (c *Client) Request(ctx context.Context, options RequestOptions) op.Result[jsondoc.JSONDoc] {
-	raw := c.SendRequest(ctx, options)
-
-	var httpReq *http.Request
-	status := raw.StatusCode()
-	if raw.Response != nil {
-		httpReq = raw.Response.Request
-	}
+	raw := c.send(ctx, options)
+	status := raw.statusCode()
 
 	var result op.Result[jsondoc.JSONDoc]
 	switch {
-	case raw.Error != nil:
-		result = op.Failed[jsondoc.JSONDoc](raw.Error, false)
+	case raw.err != nil:
+		result = op.Failed[jsondoc.JSONDoc](raw.err, false)
 	case status == http.StatusCreated:
-		result = op.Created(jsondoc.New(raw.Body()))
+		result = op.Created(jsondoc.New(raw.body))
 	case status == http.StatusOK && (options.Method == http.MethodPut || options.Method == http.MethodPatch):
-		result = op.Updated(jsondoc.New(raw.Body()))
+		result = op.Updated(jsondoc.New(raw.body))
 	default:
-		result = op.OK(jsondoc.New(raw.Body()))
+		result = op.OK(jsondoc.New(raw.body))
 	}
-	if raw.Response != nil {
+	if raw.response != nil {
 		result = op.WithHTTPStatus(result, status)
-		result = op.WithRequestID(result, raw.Header("X-Request-ID"))
+		result = op.WithRequestID(result, raw.response.Header.Get("X-Request-ID"))
+		result.Header = raw.response.Header
 	}
-	result = op.WithRequest(result, httpReq)
-	if raw.Error == nil {
-		result = op.WithResponse(result, raw.Body())
-	}
+	result = op.WithRequest(result, raw.request)
+	result = op.WithResponse(result, raw.body)
 	return result
 }

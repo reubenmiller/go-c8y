@@ -20,8 +20,8 @@ func (s *Service) downloadBinaryB(id string, binaryID string) *httpcore.TryReque
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", "application/octet-stream").
-		SetPathParam(ParamID, id).
+		SetPathParam(paramID, id).
 		SetPathParam("binaryId", binaryID).
-		SetURL(ApiApplicationBinary)
+		SetURL(apiApplicationBinary)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

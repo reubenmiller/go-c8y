@@ -11,9 +11,9 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiEventBinary = "/event/events/{id}/binaries"
+var apiEventBinary = "/event/events/{id}/binaries"
 
-var ParamID = "id"
+var paramID = "id"
 
 // Service provides api to get/set/delete audit entries in Cumulocity
 type Service struct{ svc httpcore.Service }
@@ -30,8 +30,8 @@ func (s *Service) Get(ctx context.Context, eventID string) op.Result[core.Binary
 func (s *Service) getB(eventID string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamID, eventID).
-		SetURL(ApiEventBinary)
+		SetPathParam(paramID, eventID).
+		SetURL(apiEventBinary)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -46,9 +46,9 @@ func (s *Service) createB(eventID string, opt UploadFileOptions) *httpcore.TryRe
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetMultipartFields(httpcore.NewMultiPartFileFields(opt)...).
-		SetPathParam(ParamID, eventID).
+		SetPathParam(paramID, eventID).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiEventBinary)
+		SetURL(apiEventBinary)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -78,11 +78,11 @@ func (s *Service) Update(ctx context.Context, eventID string, opt UploadFileOpti
 func (s *Service) updateB(eventID string, opt UploadFileOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
-		SetPathParam(ParamID, eventID).
+		SetPathParam(paramID, eventID).
 		SetBody(opt.GetReader()).
 		SetContentType(types.MimeTypeApplicationOctetStream).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiEventBinary)
+		SetURL(apiEventBinary)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -94,7 +94,7 @@ func (s *Service) Delete(ctx context.Context, eventID string) op.Result[core.NoC
 func (s *Service) deleteB(eventID string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamID, eventID).
-		SetURL(ApiEventBinary)
+		SetPathParam(paramID, eventID).
+		SetURL(apiEventBinary)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

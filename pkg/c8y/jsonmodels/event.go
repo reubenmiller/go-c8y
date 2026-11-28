@@ -15,6 +15,8 @@ func NewEvent(b []byte) Event {
 	return Event{jsondoc.Facade{JSONDoc: jsondoc.New(b)}}
 }
 
+// NewEventWithType returns an event document for the source with the type and
+// text, the current time, and the extra fragments.
 func NewEventWithType(sourceID, eventType, text string, fragments map[string]any) Event {
 	data := map[string]any{
 		"source": map[string]any{

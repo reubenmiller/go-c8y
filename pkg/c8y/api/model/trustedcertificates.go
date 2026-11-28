@@ -6,10 +6,8 @@ import (
 	"encoding/base64"
 	"encoding/csv"
 	"encoding/pem"
-	"errors"
 	"fmt"
 	"io"
-	"os"
 	"time"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/certutil"
@@ -146,18 +144,6 @@ func (c *TrustedCertificate) CalculateFingerprint() string {
 	fingerprint := fmt.Sprintf("%x", hash)
 	c.Fingerprint = fingerprint
 	return fingerprint
-}
-
-func NewTrustedCertificateFromFile(p string) (*TrustedCertificate, error) {
-	if _, err := os.Stat(p); errors.Is(err, os.ErrNotExist) {
-		return nil, err
-	}
-
-	r, err := os.ReadFile(p)
-	if err != nil {
-		return nil, err
-	}
-	return NewTrustedCertificate(r)
 }
 
 func NewTrustedCertificate(in []byte) (*TrustedCertificate, error) {

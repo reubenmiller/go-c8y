@@ -48,6 +48,6 @@ func (s *Service) listServiceUsersB() *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(currentapplication.ApiApplicationSubscriptions)
+		SetURL("/application/currentApplication/subscriptions")
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

@@ -18,16 +18,16 @@ import (
 
 // API paths
 const (
-	ApiRules        = "/service/dataprep/v1/rules"
-	ApiRule         = "/service/dataprep/v1/rules/{ruleName}"
-	ApiRuleDeployed = "/service/dataprep/v1/rules/{ruleName}/deployed"
-	ApiRuleDraft    = "/service/dataprep/v1/rules/{ruleName}/draft"
-	ApiRunTests     = "/service/dataprep/v1/run-tests"
-	ApiDiagnostics  = "/service/dataprep/v1/diagnostics"
+	apiRules        = "/service/dataprep/v1/rules"
+	apiRule         = "/service/dataprep/v1/rules/{ruleName}"
+	apiRuleDeployed = "/service/dataprep/v1/rules/{ruleName}/deployed"
+	apiRuleDraft    = "/service/dataprep/v1/rules/{ruleName}/draft"
+	apiRunTests     = "/service/dataprep/v1/run-tests"
+	apiDiagnostics  = "/service/dataprep/v1/diagnostics"
 )
 
-// ParamRuleName is the rule name path parameter.
-const ParamRuleName = "ruleName"
+// paramRuleName is the rule name path parameter.
+const paramRuleName = "ruleName"
 
 // Content types
 const (

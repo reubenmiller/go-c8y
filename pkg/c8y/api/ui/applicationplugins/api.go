@@ -35,10 +35,10 @@ import (
 )
 
 var (
-	ApiApplication = "/application/applications/{id}"
+	apiApplication = "/application/applications/{id}"
 )
 
-var ParamID = "id"
+var paramID = "id"
 
 // VersionLatest selects the newest version of a plugin (its "latest" tag).
 const VersionLatest = "latest"
@@ -121,8 +121,8 @@ func (s *Service) getB(applicationID string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamID, applicationID).
-		SetURL(ApiApplication)
+		SetPathParam(paramID, applicationID).
+		SetURL(apiApplication)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -131,9 +131,9 @@ func (s *Service) updateB(applicationID string, body any) *httpcore.TryRequest {
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeApplicationJSON).
-		SetPathParam(ParamID, applicationID).
+		SetPathParam(paramID, applicationID).
 		SetBody(body).
-		SetURL(ApiApplication)
+		SetURL(apiApplication)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 

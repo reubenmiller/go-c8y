@@ -20,49 +20,49 @@ import (
 
 // API paths
 const (
-	ApiAssets                 = "/service/dtm/assets"
-	ApiAssetsCount            = "/service/dtm/assets/count"
-	ApiAsset                  = "/service/dtm/assets/{assetId}"
-	ApiAssetByExternalID      = "/service/dtm/assets/externalIds/{externalId}"
-	ApiSubAssets              = "/service/dtm/assets/{assetId}/subAssets"
-	ApiSubAssetsByExternalID  = "/service/dtm/assets/externalIds/{externalId}/subAssets"
-	ApiSubAssetsByParents     = "/service/dtm/assets/subAssets"
-	ApiSubAsset               = "/service/dtm/assets/{assetId}/subAssets/{subAssetId}"
-	ApiAssetDevices           = "/service/dtm/assets/{assetId}/devices"
-	ApiAssetDevice            = "/service/dtm/assets/{assetId}/devices/{deviceId}"
-	ApiLinkedSeriesLabel      = "/service/dtm/assets/{assetId}/linkedSeries/{fragment}/{series}/label"
-	ApiAssetLinkedSeries      = "/service/dtm/assets/{assetId}/linkedSeries"
-	ApiAssetLinkedSeriesCount = "/service/dtm/assets/{assetId}/linkedSeries/count"
-	ApiLinkedSeriesSource     = "/service/dtm/assets/{assetId}/linkedSeries/{fragment}/{series}/source"
-	ApiAllLinkedSeries        = "/service/dtm/assets/linkedSeries"
-	ApiLinkedSeriesOpposites  = "/service/dtm/assets/linkedSeries/opposites/{deviceId}"
+	apiAssets                 = "/service/dtm/assets"
+	apiAssetsCount            = "/service/dtm/assets/count"
+	apiAsset                  = "/service/dtm/assets/{assetId}"
+	apiAssetByExternalID      = "/service/dtm/assets/externalIds/{externalId}"
+	apiSubAssets              = "/service/dtm/assets/{assetId}/subAssets"
+	apiSubAssetsByExternalID  = "/service/dtm/assets/externalIds/{externalId}/subAssets"
+	apiSubAssetsByParents     = "/service/dtm/assets/subAssets"
+	apiSubAsset               = "/service/dtm/assets/{assetId}/subAssets/{subAssetId}"
+	apiAssetDevices           = "/service/dtm/assets/{assetId}/devices"
+	apiAssetDevice            = "/service/dtm/assets/{assetId}/devices/{deviceId}"
+	apiLinkedSeriesLabel      = "/service/dtm/assets/{assetId}/linkedSeries/{fragment}/{series}/label"
+	apiAssetLinkedSeries      = "/service/dtm/assets/{assetId}/linkedSeries"
+	apiAssetLinkedSeriesCount = "/service/dtm/assets/{assetId}/linkedSeries/count"
+	apiLinkedSeriesSource     = "/service/dtm/assets/{assetId}/linkedSeries/{fragment}/{series}/source"
+	apiAllLinkedSeries        = "/service/dtm/assets/linkedSeries"
+	apiLinkedSeriesOpposites  = "/service/dtm/assets/linkedSeries/opposites/{deviceId}"
 
-	ApiDefinitionsCompose = "/service/dtm/definitions/properties/compose"
+	apiDefinitionsCompose = "/service/dtm/definitions/properties/compose"
 
-	ApiDefinitions      = "/service/dtm/definitions/{kind}"
-	ApiDefinition       = "/service/dtm/definitions/{kind}/{identifier}"
-	ApiDefinitionsCount = "/service/dtm/definitions/{kind}/count"
-	ApiDefinitionsTags  = "/service/dtm/definitions/{kind}/tags"
+	apiDefinitions      = "/service/dtm/definitions/{kind}"
+	apiDefinition       = "/service/dtm/definitions/{kind}/{identifier}"
+	apiDefinitionsCount = "/service/dtm/definitions/{kind}/count"
+	apiDefinitionsTags  = "/service/dtm/definitions/{kind}/tags"
 )
 
 // Path parameters
 const (
-	ParamAssetID    = "assetId"
-	ParamSubAssetID = "subAssetId"
-	ParamExternalID = "externalId"
-	ParamDeviceID   = "deviceId"
-	ParamFragment   = "fragment"
-	ParamSeries     = "series"
-	ParamKind       = "kind"
-	ParamIdentifier = "identifier"
+	paramAssetID    = "assetId"
+	paramSubAssetID = "subAssetId"
+	paramExternalID = "externalId"
+	paramDeviceID   = "deviceId"
+	paramFragment   = "fragment"
+	paramSeries     = "series"
+	paramKind       = "kind"
+	paramIdentifier = "identifier"
 )
 
 // Collection property names in DTM responses
 const (
-	ResultPropertyAssets       = "assets"
-	ResultPropertyDefinitions  = "definitions"
-	ResultPropertyLinkedSeries = "linkedSeries"
-	ResultPropertyDevices      = "devices"
+	resultPropertyAssets       = "assets"
+	resultPropertyDefinitions  = "definitions"
+	resultPropertyLinkedSeries = "linkedSeries"
+	resultPropertyDevices      = "devices"
 )
 
 // MimeTypeLinkedAssetsCollection selects the LinkedAsset representation of

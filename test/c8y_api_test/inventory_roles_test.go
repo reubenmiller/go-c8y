@@ -67,7 +67,7 @@ func Test_InventoryRoles_Get_DryRun(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := api.WithDryRun(context.Background(), true)
 
-	result := client.UserRoles.Inventory.Get(ctx, 1)
+	result := client.UserRoles.Inventory.Get(ctx, "1")
 
 	assert.NoError(t, result.Err)
 	assert.Equal(t, http.StatusOK, result.HTTPStatus)
@@ -77,7 +77,7 @@ func Test_InventoryRoles_Get_RequestInspection(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := api.WithDeferredExecution(context.Background(), true)
 
-	prepared := client.UserRoles.Inventory.Get(ctx, 42)
+	prepared := client.UserRoles.Inventory.Get(ctx, "42")
 
 	require.True(t, prepared.IsDeferred())
 	require.NotNil(t, prepared.Request)
@@ -133,7 +133,7 @@ func Test_InventoryRoles_Update_DryRun(t *testing.T) {
 		"description": "Updated description",
 	}
 
-	result := client.UserRoles.Inventory.Update(ctx, 42, body)
+	result := client.UserRoles.Inventory.Update(ctx, "42", body)
 
 	assert.NoError(t, result.Err)
 }
@@ -146,7 +146,7 @@ func Test_InventoryRoles_Update_RequestInspection(t *testing.T) {
 		"name": "UpdatedInventoryRole",
 	}
 
-	prepared := client.UserRoles.Inventory.Update(ctx, 42, body)
+	prepared := client.UserRoles.Inventory.Update(ctx, "42", body)
 
 	require.True(t, prepared.IsDeferred())
 	require.NotNil(t, prepared.Request)
@@ -162,7 +162,7 @@ func Test_InventoryRoles_Delete_DryRun(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := api.WithDryRun(context.Background(), true)
 
-	result := client.UserRoles.Inventory.Delete(ctx, 42)
+	result := client.UserRoles.Inventory.Delete(ctx, "42")
 
 	assert.NoError(t, result.Err)
 	assert.Equal(t, http.StatusNoContent, result.HTTPStatus)
@@ -172,7 +172,7 @@ func Test_InventoryRoles_Delete_RequestInspection(t *testing.T) {
 	client := testcore.CreateTestClient(t)
 	ctx := api.WithDeferredExecution(context.Background(), true)
 
-	prepared := client.UserRoles.Inventory.Delete(ctx, 42)
+	prepared := client.UserRoles.Inventory.Delete(ctx, "42")
 
 	require.True(t, prepared.IsDeferred())
 	require.NotNil(t, prepared.Request)
