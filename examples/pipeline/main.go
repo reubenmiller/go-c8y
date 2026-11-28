@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"iter"
 	"log"
@@ -127,19 +128,21 @@ func main() {
 
 	if err != nil {
 		// Display detailed error information
-		switch e := err.(type) {
-		case *pipeline.PipelineError:
-			log.Printf("Pipeline completed with %d errors out of %d items", e.Failed, e.Completed)
+		var pipelineErr *pipeline.PipelineError
+		var abortErr *pipeline.AbortError
+		switch {
+		case errors.As(err, &pipelineErr):
+			log.Printf("Pipeline completed with %d errors out of %d items", pipelineErr.Failed, pipelineErr.Completed)
 			log.Printf("Sample errors:")
-			for i, sampleErr := range e.SampleErrors {
+			for i, sampleErr := range pipelineErr.SampleErrors {
 				log.Printf("  %d: %v", i+1, sampleErr)
 			}
-		case *pipeline.AbortError:
-			log.Printf("Pipeline aborted: %s", e.Reason)
-			log.Printf("Failed: %d/%d", e.Failed, e.Completed)
-			if len(e.SampleErrors) > 0 {
+		case errors.As(err, &abortErr):
+			log.Printf("Pipeline aborted: %s", abortErr.Reason)
+			log.Printf("Failed: %d/%d", abortErr.Failed, abortErr.Completed)
+			if len(abortErr.SampleErrors) > 0 {
 				log.Printf("Sample errors:")
-				for i, sampleErr := range e.SampleErrors {
+				for i, sampleErr := range abortErr.SampleErrors {
 					log.Printf("  %d: %v", i+1, sampleErr)
 				}
 			}

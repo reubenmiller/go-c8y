@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -92,7 +93,10 @@ func TestFormResponse_Err(t *testing.T) {
 			if err == nil {
 				t.Fatalf("FormResponse.Err() = %v, want %v", nil, tt.wantErr)
 			}
-			apiError := err.(*Error)
+			var apiError *Error
+			if !errors.As(err, &apiError) {
+				t.Fatalf("error %v is not an *Error", err)
+			}
 			if apiError.Code != tt.wantErr.Code {
 				t.Errorf("Error.Code = %v, want %v", apiError.Code, tt.wantErr.Code)
 			}

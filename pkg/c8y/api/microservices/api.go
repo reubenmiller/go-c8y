@@ -18,7 +18,6 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
-	"github.com/reubenmiller/go-c8y/v2/pkg/matcher"
 	"resty.dev/v3"
 )
 
@@ -44,7 +43,7 @@ type Service struct {
 
 	lookupByName        func(ctx context.Context, name string) (string, map[string]any, error)
 	lookupByContextPath func(ctx context.Context, contextPath string) (string, map[string]any, error)
-	customResolvers     map[string]source.Resolver
+	resolvers           *source.Registry
 }
 
 func NewService(common *httpcore.Service) *Service {
@@ -61,10 +60,10 @@ func NewServiceWithApplications(common *httpcore.Service, apps *applications.Ser
 		BootstrapUser:       *bootstrapuser.NewService(common),
 		CurrentMicroservice: *currentmicroservice.NewService(common),
 		Loggers:             *loggers.NewService(common),
-		customResolvers:     make(map[string]source.Resolver),
 	}
 
 	service.Current = &service.CurrentMicroservice
+	service.resolvers = service.newResolvers()
 
 	// Setup lookup function for name-based resolution
 	service.lookupByName = func(ctx context.Context, name string) (string, map[string]any, error) {
@@ -74,23 +73,12 @@ func NewServiceWithApplications(common *httpcore.Service, apps *applications.Ser
 			},
 		}
 
-		it := service.ListAll(ctx, opts)
-		if it.Err() != nil {
-			return "", nil, it.Err()
+		ms, found, err := pagination.FindWildcard(service.ListAll(ctx, opts), name, func(m jsonmodels.Microservice) []string { return []string{m.Name()} })
+		if err != nil {
+			return "", nil, err
 		}
-
-		// Client-side filtering with wildcard support
-		for item, err := range it.Items() {
-			if err != nil {
-				return "", nil, err
-			}
-			if found, _ := matcher.MatchWithWildcards(item.Name(), name); found {
-				return item.ID(), map[string]any{
-					"id":          item.ID(),
-					"name":        item.Name(),
-					"contextPath": item.ContextPath(),
-				}, nil
-			}
+		if found {
+			return ms.ID(), microserviceMeta(ms), nil
 		}
 
 		return "", nil, core.NewNameNotFoundError("microservice", name, "microservice not found with name: %s", name)
@@ -104,29 +92,27 @@ func NewServiceWithApplications(common *httpcore.Service, apps *applications.Ser
 			},
 		}
 
-		it := service.ListAll(ctx, opts)
-		if it.Err() != nil {
-			return "", nil, it.Err()
+		ms, found, err := pagination.FindWildcard(service.ListAll(ctx, opts), contextPath, func(m jsonmodels.Microservice) []string { return []string{m.ContextPath()} })
+		if err != nil {
+			return "", nil, err
+		}
+		if found {
+			return ms.ID(), microserviceMeta(ms), nil
 		}
 
-		// Client-side filtering with wildcard support
-		for item, err := range it.Items() {
-			if err != nil {
-				return "", nil, err
-			}
-			if found, _ := matcher.MatchWithWildcards(item.ContextPath(), contextPath); found {
-				return item.ID(), map[string]any{
-					"id":          item.ID(),
-					"name":        item.Name(),
-					"contextPath": item.ContextPath(),
-				}, nil
-			}
-		}
-
-		return "", nil, core.ErrNotFound("microservice not found with contextPath: %s", contextPath)
+		return "", nil, core.NewNameNotFoundError("microservice", contextPath, "microservice not found with contextPath: %s", contextPath)
 	}
 
 	return service
+}
+
+// microserviceMeta is the metadata of a resolved microservice.
+func microserviceMeta(ms jsonmodels.Microservice) map[string]any {
+	return map[string]any{
+		"id":          ms.ID(),
+		"name":        ms.Name(),
+		"contextPath": ms.ContextPath(),
+	}
 }
 
 // ListOptions filter options
@@ -235,28 +221,14 @@ func (s *Service) ByContextPath(contextPath string) string {
 //   - "name:my-microservice" -> "<id>" (meta: {"name": "my-microservice", ...})
 //   - "contextPath:/my-microservice" -> "<id>" (meta: {"contextPath": "/my-microservice", ...})
 func (s *Service) ResolveID(ctx context.Context, id string, meta map[string]any) (_ string, resolveErr error) {
-	defer func() { resolveErr = core.WrapLookup("microservice", id, resolveErr) }()
-	resolver, err := s.parseResolver(id)
-	if err != nil {
-		return "", err
-	}
-	result, err := resolver.ResolveID(ctx)
-	if err != nil {
-		return "", err
-	}
-	if meta != nil {
-		for k, v := range result.Meta {
-			meta[k] = v
-		}
-	}
-	return result.ID, nil
+	return s.resolvers.Resolve(ctx, id, meta)
 }
 
 // RegisterResolver allows registering custom ID resolvers for use with ResolveID
 // Example: RegisterResolver("custom", myResolver)
 // Then use: ResolveID(ctx, "custom:value")
 func (s *Service) RegisterResolver(scheme string, resolver source.Resolver) {
-	s.customResolvers[scheme] = resolver
+	s.resolvers.Register(scheme, resolver)
 }
 
 func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {

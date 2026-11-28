@@ -101,7 +101,10 @@ func ExecuteCollection[T any](ctx context.Context, req *TryRequest, arrayPath, m
 		return op.WithRequest(failedWithStatus[T](err, resp), httpReq)
 	}
 
-	// TODO: how to do this more efficiently
+	// The envelope is scanned once for the array and the metadata; the array
+	// is then handed on as its own document, so each item is parsed lazily by
+	// the typed model. Avoiding the copy of the array would need the models to
+	// accept a slice of the response, which is not worth the added aliasing risk.
 	doc := jsondoc.New(resp.Bytes())
 
 	// Extract the array as the main data

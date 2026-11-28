@@ -200,7 +200,7 @@ func (c *Client) AuthorizeWithDeviceFlow(ctx context.Context, initRequest string
 		return nil, displayErr
 	}
 
-	accessToken, err := device.Wait(context.TODO(), httpClient, oauth2_api.GetEndpointUrl(endpoint.URL, auth_endpoints.TokenURL), device.WaitOptions{
+	accessToken, err := device.Wait(ctx, httpClient, oauth2_api.GetEndpointUrl(endpoint.URL, auth_endpoints.TokenURL), device.WaitOptions{
 		ClientID:   endpoint.ClientID,
 		DeviceCode: code,
 	})

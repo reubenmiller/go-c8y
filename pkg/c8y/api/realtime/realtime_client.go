@@ -251,6 +251,9 @@ var ErrServerNoReconnect = errors.New("realtime: server indicated that no retry 
 //
 // The errors which are not a connection failure (ErrMissingDialer, ErrDryRun)
 // are not wrapped in it.
+//
+// The text of the error is for people, not for programs: do not match it, use
+// errors.As and the fields.
 type ConnectError struct {
 	// URL is the websocket url which could not be opened.
 	URL string
@@ -1026,7 +1029,7 @@ func (c *Client) Subscribe(ctx context.Context, pattern string, out chan<- *Mess
 	glob, err := matcher.Compile(pattern)
 	if err != nil {
 		errCh := make(chan error, 1)
-		errCh <- fmt.Errorf("invalid pattern: %s", err)
+		errCh <- fmt.Errorf("invalid pattern: %w", err)
 		close(errCh)
 		close(out)
 		return errCh

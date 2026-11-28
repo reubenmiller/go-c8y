@@ -5,9 +5,13 @@
 ```bash
 task test-ci        # offline gate: unit tests + offline integration suite + coverage
 task test-offline   # just the offline integration suite (no Cumulocity tenant needed)
+task lint           # golangci-lint; only code added after the baseline commit is checked
 task lint-api       # report drift between the OpenAPI spec and the SDK
 task generate       # regenerate the spec-derived code (see below)
 ```
+
+`task test-ci` also fails when the coverage of a package under `pkg/c8y/api` is below its floor in
+`tools/coverfloor/floors.txt`. Raise the floor when you add tests (`go run ./tools/coverfloor -update`).
 
 The offline suite runs against an in-memory fake server and needs no live tenant.
 See [docs/OFFLINE_TESTING.md](docs/OFFLINE_TESTING.md).

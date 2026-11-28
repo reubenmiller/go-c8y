@@ -85,7 +85,7 @@ func (c *RemoteAccessClient) OpenMultiplexedSessionContext(ctx context.Context) 
 		conn.Close()
 		elapsed := time.Since(started).Round(time.Millisecond)
 		if conn.received.Load() > 0 {
-			return nil, fmt.Errorf("%w: the device answered with something else after %s: %v", ErrMultiplexNotSupported, elapsed, err)
+			return nil, fmt.Errorf("%w: the device answered with something else after %s: %v", ErrMultiplexNotSupported, elapsed, err) //nolint:errorlint // the second error is described, not wrapped
 		}
 		return nil, fmt.Errorf("%w: %s", errMultiplexNoAnswer, describeNoAnswer(err, elapsed, timeout))
 	}
@@ -144,7 +144,7 @@ func (m *multiplexer) getSession(ctx context.Context, c *RemoteAccessClient) (*y
 	if errors.Is(err, errMultiplexNoAnswer) {
 		m.noAnswers++
 		if m.noAnswers >= multiplexMaxNoAnswers {
-			err = fmt.Errorf("%w: no answer to %d requests, last error: %v", ErrMultiplexNotSupported, m.noAnswers, err)
+			err = fmt.Errorf("%w: no answer to %d requests, last error: %v", ErrMultiplexNotSupported, m.noAnswers, err) //nolint:errorlint // the second error is described, not wrapped
 		} else {
 			err = fmt.Errorf("%w (attempt %d of %d, multiplexing is disabled after %d attempts without an answer)", err, m.noAnswers, multiplexMaxNoAnswers, multiplexMaxNoAnswers)
 		}

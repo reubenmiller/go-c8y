@@ -33,6 +33,7 @@ tasks:
       - go test -timeout 5m ./pkg/...
       - go test -timeout 5m -coverpkg=./pkg/c8y/api/... -coverprofile=coverage.out ./test/c8y_api_test/...
       - go tool cover -func=coverage.out | tail -n 1
+      - go run ./tools/coverfloor -profile coverage.out
 
   test-live:
     desc: Run integration tests against a real Cumulocity server

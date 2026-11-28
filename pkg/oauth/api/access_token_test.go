@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"net/url"
 	"reflect"
 	"testing"
@@ -67,7 +68,10 @@ func TestFormResponse_AccessToken(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := tt.response.AccessToken()
 			if err != nil {
-				apiError := err.(*Error)
+				var apiError *Error
+				if !errors.As(err, &apiError) {
+					t.Fatalf("error %v is not an *Error", err)
+				}
 				if !reflect.DeepEqual(apiError, tt.wantErr) {
 					t.Fatalf("error %v, want %v", apiError, tt.wantErr)
 				}

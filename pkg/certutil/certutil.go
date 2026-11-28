@@ -108,15 +108,15 @@ func LoadOrGenerateKeyFile(keyPath string) (data []byte, wasGenerated bool, err 
 		return loadedData, false, err
 	}
 	if !os.IsNotExist(err) {
-		return nil, false, fmt.Errorf("error loading key from %s: %v", keyPath, err)
+		return nil, false, fmt.Errorf("error loading key from %s: %w", keyPath, err)
 	}
 
 	generatedData, err := MakeEllipticPrivateKeyPEM()
 	if err != nil {
-		return nil, false, fmt.Errorf("error generating key: %v", err)
+		return nil, false, fmt.Errorf("error generating key: %w", err)
 	}
 	if err := WriteKey(keyPath, generatedData); err != nil {
-		return nil, false, fmt.Errorf("error writing key to %s: %v", keyPath, err)
+		return nil, false, fmt.Errorf("error writing key to %s: %w", keyPath, err)
 	}
 	return generatedData, true, nil
 }
@@ -155,7 +155,7 @@ func PrivateKeyFromFile(file string) (any, error) {
 	}
 	key, err := ParsePrivateKeyPEM(data)
 	if err != nil {
-		return nil, fmt.Errorf("error reading private key file %s: %v", file, err)
+		return nil, fmt.Errorf("error reading private key file %s: %w", file, err)
 	}
 	return key, nil
 }
@@ -169,7 +169,7 @@ func PublicKeysFromFile(file string) ([]any, error) {
 	}
 	keys, err := ParsePublicKeysPEM(data)
 	if err != nil {
-		return nil, fmt.Errorf("error reading public key file %s: %v", file, err)
+		return nil, fmt.Errorf("error reading public key file %s: %w", file, err)
 	}
 	return keys, nil
 }

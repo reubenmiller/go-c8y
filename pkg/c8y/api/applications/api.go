@@ -15,7 +15,6 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
-	"github.com/reubenmiller/go-c8y/v2/pkg/matcher"
 	"resty.dev/v3"
 )
 
@@ -55,17 +54,17 @@ type Service struct {
 	Versions *versions.Service
 
 	// Resolver lookup function
-	lookupByName    func(ctx context.Context, name, appType string) (string, map[string]any, error)
-	customResolvers map[string]source.Resolver
+	lookupByName func(ctx context.Context, name, appType string) (string, map[string]any, error)
+	resolvers    *source.Registry
 }
 
 func NewService(common *httpcore.Service) *Service {
 	service := &Service{
-		svc:             *common,
-		Current:         currentapplication.NewService(common),
-		Versions:        versions.NewService(common),
-		customResolvers: make(map[string]source.Resolver),
+		svc:      *common,
+		Current:  currentapplication.NewService(common),
+		Versions: versions.NewService(common),
 	}
+	service.resolvers = service.newResolvers()
 
 	// Setup lookup function for name-based resolution
 	service.lookupByName = func(ctx context.Context, name, appType string) (string, map[string]any, error) {
@@ -76,23 +75,16 @@ func NewService(common *httpcore.Service) *Service {
 			},
 		}
 
-		it := service.ListAll(ctx, opts)
-		if it.Err() != nil {
-			return "", nil, it.Err()
+		app, found, err := pagination.FindWildcard(service.ListAll(ctx, opts), name, func(a jsonmodels.Application) []string { return []string{a.Name()} })
+		if err != nil {
+			return "", nil, err
 		}
-
-		// Client-side filtering with wildcard support
-		for item, err := range it.Items() {
-			if err != nil {
-				return "", nil, err
-			}
-			if found, _ := matcher.MatchWithWildcards(item.Name(), name); found {
-				return item.ID(), map[string]any{
-					"id":   item.ID(),
-					"name": item.Name(),
-					"type": item.Type(),
-				}, nil
-			}
+		if found {
+			return app.ID(), map[string]any{
+				"id":   app.ID(),
+				"name": app.Name(),
+				"type": app.Type(),
+			}, nil
 		}
 
 		if appType != "" {
@@ -550,26 +542,12 @@ func (s *Service) ByName(name string, appType string) string {
 //   - "name:cockpit" -> "<id>" (meta: {"name": "cockpit", "type": "...", ...})
 //   - "name:cockpit:HOSTED" -> "<id>" (meta: {"name": "cockpit", "type": "HOSTED", ...})
 func (s *Service) ResolveID(ctx context.Context, id string, meta map[string]any) (_ string, resolveErr error) {
-	defer func() { resolveErr = core.WrapLookup("application", id, resolveErr) }()
-	resolver, err := s.parseResolver(id)
-	if err != nil {
-		return "", err
-	}
-	result, err := resolver.ResolveID(ctx)
-	if err != nil {
-		return "", err
-	}
-	if meta != nil {
-		for k, v := range result.Meta {
-			meta[k] = v
-		}
-	}
-	return result.ID, nil
+	return s.resolvers.Resolve(ctx, id, meta)
 }
 
 // RegisterResolver allows registering custom ID resolvers for use with ResolveID
 // Example: RegisterResolver("custom", myResolver)
 // Then use: ResolveID(ctx, "custom:value")
 func (s *Service) RegisterResolver(scheme string, resolver source.Resolver) {
-	s.customResolvers[scheme] = resolver
+	s.resolvers.Register(scheme, resolver)
 }

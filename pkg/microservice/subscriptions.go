@@ -34,7 +34,7 @@ func (m *Microservice) SubscribeToNotifications(user model.ServiceUser, realtime
 	}
 
 	if connErr := realtimeClient.Connect(); connErr != nil {
-		return fmt.Errorf("failed to connect. %s", connErr)
+		return fmt.Errorf("failed to connect. %w", connErr)
 	}
 	ch := make(chan *realtime.Message)
 

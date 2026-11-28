@@ -8,15 +8,14 @@ package deviceprofiles
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/lookup"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"resty.dev/v3"
@@ -166,54 +165,28 @@ func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Man
 
 // ResolveID resolves a device-profile reference to an id. A plain string is used
 // as-is; "name:<name>" and "query:<q>" are looked up scoped to device profiles.
-func (s *Service) ResolveID(ctx context.Context, ref string, meta map[string]any) (_ string, resolveErr error) {
-	defer func() { resolveErr = core.WrapLookup("device profile", ref, resolveErr) }()
-	if ref == "" {
-		return "", fmt.Errorf("empty device profile reference")
-	}
-	scheme, value, hasScheme := strings.Cut(ref, ":")
-	if !hasScheme {
-		return ref, nil
-	}
-	// Resolve for real even under dry run / deferred execution.
-	ctx = contexthelpers.ResolutionContext(ctx)
-	switch scheme {
-	case "id":
-		return value, nil
-	case "name":
-		return s.lookupByQuery(ctx, model.NewInventoryQuery().
-			AddFilterEqStr("type", TypeProfile).
-			AddFilterEqStr("name", value).
-			AddOrderBy("name").
-			Build(), value, true, meta)
-	case "query":
-		return s.lookupByQuery(ctx, ScopeToDeviceProfiles(value), value, false, meta)
-	default:
-		return "", fmt.Errorf("unknown device profile resolver scheme: %q", scheme)
-	}
+func (s *Service) ResolveID(ctx context.Context, ref string, meta map[string]any) (string, error) {
+	return s.lookup().ResolveID(ctx, ref, meta)
 }
 
-// lookupByQuery returns the id of the first device profile matching query. label
-// is the original reference, for error messages and metadata.
-func (s *Service) lookupByQuery(ctx context.Context, query, label string, byName bool, meta map[string]any) (string, error) {
-	opt := ListOptions{Query: query}
-	opt.PageSize = 1
-	result := s.List(ctx, opt)
-	if result.Err != nil {
-		return "", result.Err
+// lookup describes how the "name:" and "query:" references are looked up.
+func (s *Service) lookup() lookup.Scoped[jsonmodels.ManagedObject] {
+	return lookup.Scoped[jsonmodels.ManagedObject]{
+		Resource: "device profile",
+		NameQuery: func(name string) string {
+			return model.NewInventoryQuery().
+				AddFilterEqStr("type", TypeProfile).
+				AddFilterEqStr("name", name).
+				AddOrderBy("name").
+				Build()
+		},
+		ScopeQuery: ScopeToDeviceProfiles,
+		First: func(ctx context.Context, query string) op.Result[jsonmodels.ManagedObject] {
+			opt := ListOptions{Query: query}
+			opt.PageSize = 1
+			return s.List(ctx, opt)
+		},
 	}
-	for item := range result.Seq() {
-		if meta != nil {
-			meta["id"] = item.ID()
-			meta["name"] = item.Name()
-			meta["source"] = "name"
-		}
-		return item.ID(), nil
-	}
-	if byName {
-		return "", core.NewNameNotFoundError("device profile", label, "device profile not found: %s", label)
-	}
-	return "", fmt.Errorf("device profile not found: %s", label)
 }
 
 // ScopeToDeviceProfiles builds a query that restricts results to device

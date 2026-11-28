@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	stderrors "errors"
 	"iter"
 	"sync"
 	"sync/atomic"
@@ -636,7 +637,8 @@ func execute[T, R any](
 		copy(sampleErrs, errors)
 		errorsMu.Unlock()
 
-		if ae, ok := abortErr.(*AbortError); ok {
+		var ae *AbortError
+		if stderrors.As(abortErr, &ae) {
 			ae.SampleErrors = sampleErrs
 		}
 		return collected, abortErr

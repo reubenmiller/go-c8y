@@ -34,7 +34,8 @@ func Test_ErrorHandlingCreateEvent(t *testing.T) {
 	assert.True(t, api.ErrHasStatus(err, 422))
 	assert.True(t, errors.Is(err, api.Error{Code: 422}))
 	assert.True(t, errors.Is(err, api.ErrUnprocessableEntity))
-	sdkError := err.(*api.Error)
+	var sdkError *api.Error
+	assert.True(t, errors.As(err, &sdkError))
 	assert.NotEmpty(t, sdkError.MessageRaw)
 
 }
