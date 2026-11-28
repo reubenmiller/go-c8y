@@ -30,7 +30,7 @@ type ListOptions struct {
 	AgentID managedobjects.DeviceRef `url:"agentId,omitempty"`
 
 	// The bulk operation ID that this operation belongs to.
-	BulkOperationID int `url:"bulkOperationId,omitempty"`
+	BulkOperationID string `url:"bulkOperationId,omitempty"`
 
 	// Start date or date and time of the operation.
 	DateFrom time.Time `url:"dateFrom,omitempty,omitzero" layout:"2006-01-02T15:04:05.999999999Z07:00"`

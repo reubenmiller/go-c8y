@@ -51,7 +51,7 @@ func (s *LinkedSeriesService) List(ctx context.Context, asset AssetRef, opt Link
 // linkedSeriesItems returns the array of linked series from either response
 // shape.
 func linkedSeriesItems(b []byte) jsonmodels.DigitalTwinLinkedSeries {
-	if v := gjson.GetBytes(b, ResultPropertyLinkedSeries); v.IsArray() {
+	if v := gjson.GetBytes(b, resultPropertyLinkedSeries); v.IsArray() {
 		return jsonmodels.NewDigitalTwinLinkedSeries([]byte(v.Raw))
 	}
 	return jsonmodels.NewDigitalTwinLinkedSeries(b)
@@ -60,11 +60,11 @@ func linkedSeriesItems(b []byte) jsonmodels.DigitalTwinLinkedSeries {
 func (s *LinkedSeriesService) listB(assetID string, opt LinkedSeriesListOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamAssetID, assetID).
+		SetPathParam(paramAssetID, assetID).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiAssetLinkedSeries)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultPropertyLinkedSeries)
+		SetURL(apiAssetLinkedSeries)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultPropertyLinkedSeries)
 }
 
 // ListAll returns an iterator over all linked series of asset.
@@ -99,10 +99,10 @@ func (s *LinkedSeriesService) Count(ctx context.Context, asset AssetRef, opt Lin
 func (s *LinkedSeriesService) countB(assetID string, opt LinkedSeriesCountOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamAssetID, assetID).
+		SetPathParam(paramAssetID, assetID).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiAssetLinkedSeriesCount)
+		SetURL(apiAssetLinkedSeriesCount)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -123,11 +123,11 @@ func (s *LinkedSeriesService) GetSource(ctx context.Context, asset AssetRef, fra
 func (s *LinkedSeriesService) getSourceB(assetID, fragment, series string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamAssetID, assetID).
-		SetPathParam(ParamFragment, fragment).
-		SetPathParam(ParamSeries, series).
+		SetPathParam(paramAssetID, assetID).
+		SetPathParam(paramFragment, fragment).
+		SetPathParam(paramSeries, series).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiLinkedSeriesSource)
+		SetURL(apiLinkedSeriesSource)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -147,7 +147,7 @@ type ListAcrossAssetsOptions struct {
 // matching opt (GET /assets/linkedSeries). Each asset includes its
 // c8y_LinkedSeries.
 func (s *LinkedSeriesService) ListAcrossAssets(ctx context.Context, opt ListAcrossAssetsOptions) op.Result[jsonmodels.DigitalTwinAsset] {
-	return httpcore.ExecuteCollection(ctx, s.listAcrossAssetsB(opt), ResultPropertyAssets, types.ResponseFieldStatistics, jsonmodels.NewDigitalTwinAsset)
+	return httpcore.ExecuteCollection(ctx, s.listAcrossAssetsB(opt), resultPropertyAssets, types.ResponseFieldStatistics, jsonmodels.NewDigitalTwinAsset)
 }
 
 func (s *LinkedSeriesService) listAcrossAssetsB(opt ListAcrossAssetsOptions) *httpcore.TryRequest {
@@ -155,8 +155,8 @@ func (s *LinkedSeriesService) listAcrossAssetsB(opt ListAcrossAssetsOptions) *ht
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiAllLinkedSeries)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultPropertyAssets)
+		SetURL(apiAllLinkedSeries)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultPropertyAssets)
 }
 
 // OppositesOptions filters the assets linked to a device.
@@ -184,9 +184,9 @@ func (s *LinkedSeriesService) Opposites(ctx context.Context, device string, opt 
 func (s *LinkedSeriesService) oppositesB(deviceID string, opt OppositesOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamDeviceID, deviceID).
+		SetPathParam(paramDeviceID, deviceID).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", MimeTypeLinkedAssetsCollection).
-		SetURL(ApiLinkedSeriesOpposites)
+		SetURL(apiLinkedSeriesOpposites)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

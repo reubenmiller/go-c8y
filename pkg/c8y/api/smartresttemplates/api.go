@@ -179,7 +179,7 @@ type ListOptions struct {
 
 // List the SmartREST 2.0 template collections in the tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.SmartRestTemplateCollection] {
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), managedobjects.ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewSmartRestTemplateCollection)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), httpcore.ResultPropertyManagedObjects, types.ResponseFieldStatistics, jsonmodels.NewSmartRestTemplateCollection)
 }
 
 // SmartRestTemplateCollectionIterator provides iteration over template collections
@@ -211,8 +211,8 @@ func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(httpcore.QueryParameters(listOpts)).
-		SetURL(managedobjects.ApiManagedObjects)
-	return httpcore.NewTryRequest(s.svc.Client, req, managedobjects.ResultProperty)
+		SetURL("/inventory/managedObjects")
+	return httpcore.NewTryRequest(s.svc.Client, req, httpcore.ResultPropertyManagedObjects)
 }
 
 // Get retrieves a template collection by name, resolved via its external identity

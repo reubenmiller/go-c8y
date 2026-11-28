@@ -6,17 +6,17 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiIdentities = "/identity/globalIds/{id}/externalIds"
-var ApiIdentity = "/identity/externalIds/{type}/{externalID}"
-var ApiSearch = "/identity/search"
+var apiIdentities = "/identity/globalIds/{id}/externalIds"
+var apiIdentity = "/identity/externalIds/{type}/{externalID}"
+var apiSearch = "/identity/search"
 
-var ParamID = "id"
-var ParamType = "type"
-var ParamExternalID = "externalID"
+var paramID = "id"
+var paramType = "type"
+var paramExternalID = "externalID"
 
 var DefaultType = "c8y_Global"
 
-const ResultProperty = "externalIds"
+const resultProperty = "externalIds"
 
 // Service provides api to get/set/delete external identities in Cumulocity
 type Service struct{ svc httpcore.Service }
@@ -52,9 +52,9 @@ func (s *Service) listB(id string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamID, id).
-		SetURL(ApiIdentities)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetPathParam(paramID, id).
+		SetURL(apiIdentities)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 func (s *Service) getB(opts IdentityOptions) *httpcore.TryRequest {
@@ -62,20 +62,20 @@ func (s *Service) getB(opts IdentityOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamExternalID, opts.ExternalID).
-		SetPathParam(ParamType, opts.Type).
-		SetURL(ApiIdentity)
+		SetPathParam(paramExternalID, opts.ExternalID).
+		SetPathParam(paramType, opts.Type).
+		SetURL(apiIdentity)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 func (s *Service) createB(id string, opts IdentityOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
-		SetPathParam(ParamID, id).
+		SetPathParam(paramID, id).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(opts.withDefaults()).
-		SetURL(ApiIdentities)
+		SetURL(apiIdentities)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -91,16 +91,16 @@ func (s *Service) searchB(opts SearchOptions) *httpcore.TryRequest {
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(opts).
-		SetURL(ApiSearch)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiSearch)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 func (s *Service) deleteB(opts IdentityOptions) *httpcore.TryRequest {
 	opts.withDefaults()
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamType, opts.Type).
-		SetPathParam(ParamExternalID, opts.ExternalID).
-		SetURL(ApiIdentity)
+		SetPathParam(paramType, opts.Type).
+		SetPathParam(paramExternalID, opts.ExternalID).
+		SetURL(apiIdentity)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

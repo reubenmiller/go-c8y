@@ -20,6 +20,6 @@ func (s *Service) getActivityB() *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiTOTPSecretActivity)
+		SetURL(apiTOTPSecretActivity)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

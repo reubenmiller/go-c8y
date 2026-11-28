@@ -59,7 +59,7 @@ The SDK SHALL provide `TrustedCertificates.CreateBulk` for `POST /tenant/tenants
 - **THEN** the SDK sends `POST /tenant/trusted-certificates/verify-cert-chain` and returns the platform's validation result
 
 ### Requirement: Operations found by method-level drift
-The SDK SHALL implement the operations that method-level drift detection found missing on paths it already used: removing several children at once (`ChildDevices`, `ChildAssets`, `ChildAdditions` `.UnassignMany`, `DELETE` with a reference collection body), reading the TOTP activity (`Users.CurrentUser.TOTP.GetActivity`), and downloading an application binary (`Applications.DownloadBinary`).
+The SDK SHALL implement the operations that method-level drift detection found missing on paths it already used: removing several children at once (`ChildDevices`, `ChildAssets`, `ChildAdditions` `.UnassignMany`, `DELETE` with a reference collection body), reading the TOTP activity (`Users.Current.TOTP.GetActivity`), and downloading an application binary (`Applications.DownloadBinary`).
 
 #### Scenario: Remove several child devices
 - **WHEN** `ChildDevices.UnassignMany(ctx, "1", "2", "3")` is called

@@ -12,12 +12,12 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiConnectors = "/databroker/connectors"
-var ApiConnector = "/databroker/connectors/{id}"
+var apiConnectors = "/databroker/connectors"
+var apiConnector = "/databroker/connectors/{id}"
 
-const ParamID = "id"
+const paramID = "id"
 
-const ResultProperty = "connectors"
+const resultProperty = "connectors"
 
 // Service interacts with data-broker connectors.
 type Service struct {
@@ -39,7 +39,7 @@ type ListOptions struct {
 
 // List returns a page of data-broker connectors.
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.DatabrokerConnector] {
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewDatabrokerConnector)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewDatabrokerConnector)
 }
 
 // ListAll returns an iterator over all data-broker connectors.
@@ -61,8 +61,8 @@ func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiConnectors)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiConnectors)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 // Get returns a data-broker connector by id.
@@ -73,9 +73,9 @@ func (s *Service) Get(ctx context.Context, id string) op.Result[jsonmodels.Datab
 func (s *Service) getB(id string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamID, id).
+		SetPathParam(paramID, id).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiConnector)
+		SetURL(apiConnector)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -87,10 +87,10 @@ func (s *Service) Update(ctx context.Context, id string, body any) op.Result[jso
 func (s *Service) updateB(id string, body any) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
-		SetPathParam(ParamID, id).
+		SetPathParam(paramID, id).
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiConnector)
+		SetURL(apiConnector)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

@@ -16,20 +16,20 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiGroupUsers = "/user/{tenantId}/groups/{groupId}/users"
-var ApiGroupUser = "/user/{tenantId}/groups/{groupId}/users/{userId}"
+var apiGroupUsers = "/user/{tenantId}/groups/{groupId}/users"
+var apiGroupUser = "/user/{tenantId}/groups/{groupId}/users/{userId}"
 
-var ParamGroupId = "groupId"
-var ParamUserId = "userId"
+var paramGroupId = "groupId"
+var paramUserId = "userId"
 
-// ResultProperty is the JSON path used to extract the member users from a user
+// resultProperty is the JSON path used to extract the member users from a user
 // reference collection response. The response format is:
 //
 //	{ references: [{ self: ..., user: {...} }] }
 //
 // Each item is plucked down to its embedded user, matching the v1
 // listGroupMembership surface (a collection of users, not of references).
-const ResultProperty = "references.#.user"
+const resultProperty = "references.#.user"
 
 func NewService(s *httpcore.Service) *Service {
 	return &Service{
@@ -58,7 +58,7 @@ type UserIterator = pagination.Iterator[jsonmodels.User]
 // ID) in a specific tenant (by a given tenant ID). Each item is the embedded
 // user; the reference wrapper is unwrapped.
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.User] {
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewUser)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewUser)
 }
 
 // ListAll returns an iterator over all users belonging to a group, automatically paginating.
@@ -80,10 +80,10 @@ func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
-		SetPathParam(ParamGroupId, opt.GroupID).
+		SetPathParam(paramGroupId, opt.GroupID).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiGroupUsers)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiGroupUsers)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 type AssignUserOptions struct {
@@ -104,9 +104,9 @@ func (s *Service) assignUserB(opt AssignUserOptions, body any) *httpcore.TryRequ
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeUserReference).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
-		SetPathParam(ParamGroupId, opt.GroupID).
+		SetPathParam(paramGroupId, opt.GroupID).
 		SetBody(body).
-		SetURL(ApiGroupUsers)
+		SetURL(apiGroupUsers)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -126,8 +126,8 @@ func (s *Service) unassignUserB(opt UnassignUserOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
-		SetPathParam(ParamGroupId, opt.GroupID).
-		SetPathParam(ParamUserId, opt.UserID).
-		SetURL(ApiGroupUser)
+		SetPathParam(paramGroupId, opt.GroupID).
+		SetPathParam(paramUserId, opt.UserID).
+		SetURL(apiGroupUser)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

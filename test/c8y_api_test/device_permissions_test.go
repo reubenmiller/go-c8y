@@ -196,7 +196,7 @@ func Test_DevicePermissions_GetAssignment_DryRun(t *testing.T) {
 
 	result := client.Users.DevicePermissions.GetInventoryRoleAssignment(ctx, devicepermissions.GetInventoryRoleAssignmentOptions{
 		UserScopedOptions: devicepermissions.UserScopedOptions{UserID: "testuser"},
-		ID:                1,
+		ID:                "1",
 	})
 
 	assert.NoError(t, result.Err)
@@ -209,7 +209,7 @@ func Test_DevicePermissions_GetAssignment_RequestInspection(t *testing.T) {
 
 	prepared := client.Users.DevicePermissions.GetInventoryRoleAssignment(ctx, devicepermissions.GetInventoryRoleAssignmentOptions{
 		UserScopedOptions: devicepermissions.UserScopedOptions{UserID: "testuser"},
-		ID:                42,
+		ID:                "42",
 	})
 
 	require.True(t, prepared.IsDeferred())
@@ -232,7 +232,7 @@ func Test_DevicePermissions_UpdateAssignment_DryRun(t *testing.T) {
 
 	result := client.Users.DevicePermissions.UpdateInventoryRoleAssignment(ctx, devicepermissions.GetInventoryRoleAssignmentOptions{
 		UserScopedOptions: devicepermissions.UserScopedOptions{UserID: "testuser"},
-		ID:                42,
+		ID:                "42",
 	}, body)
 
 	assert.NoError(t, result.Err)
@@ -248,7 +248,7 @@ func Test_DevicePermissions_UpdateAssignment_RequestInspection(t *testing.T) {
 
 	prepared := client.Users.DevicePermissions.UpdateInventoryRoleAssignment(ctx, devicepermissions.GetInventoryRoleAssignmentOptions{
 		UserScopedOptions: devicepermissions.UserScopedOptions{UserID: "testuser"},
-		ID:                42,
+		ID:                "42",
 	}, body)
 
 	require.True(t, prepared.IsDeferred())
@@ -267,7 +267,7 @@ func Test_DevicePermissions_DeleteAssignment_DryRun(t *testing.T) {
 
 	result := client.Users.DevicePermissions.DeleteInventoryRoleAssignment(ctx, devicepermissions.GetInventoryRoleAssignmentOptions{
 		UserScopedOptions: devicepermissions.UserScopedOptions{UserID: "testuser"},
-		ID:                42,
+		ID:                "42",
 	})
 
 	assert.NoError(t, result.Err)
@@ -280,7 +280,7 @@ func Test_DevicePermissions_DeleteAssignment_RequestInspection(t *testing.T) {
 
 	prepared := client.Users.DevicePermissions.DeleteInventoryRoleAssignment(ctx, devicepermissions.GetInventoryRoleAssignmentOptions{
 		UserScopedOptions: devicepermissions.UserScopedOptions{UserID: "testuser"},
-		ID:                42,
+		ID:                "42",
 	})
 
 	require.True(t, prepared.IsDeferred())

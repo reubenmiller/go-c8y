@@ -24,6 +24,6 @@ func (s *DiagnosticsService) Download(ctx context.Context) op.Result[core.Binary
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", MimeTypeZip).
-		SetURL(ApiDiagnostics)
+		SetURL(apiDiagnostics)
 	return httpcore.ExecuteBinary(ctx, httpcore.NewTryRequest(s.svc.Client, req))
 }

@@ -13,6 +13,6 @@ import (
 // UnassignMany removes several child additions from a parent managed object in one
 // request (DELETE …/ChildAdditions with a reference collection body).
 func (s *Service) UnassignMany(ctx context.Context, parentID string, childIDs ...string) op.Result[core.NoContent] {
-	req := s.svc.Client.R().SetMethod(resty.MethodDelete).SetURL(ApiManagedObjectChildAdditions)
-	return httpcore.ExecuteNoContent(ctx, childrefs.WithReferences(s.svc, req, ParamID, parentID, childIDs))
+	req := s.svc.Client.R().SetMethod(resty.MethodDelete).SetURL(apiManagedObjectChildAdditions)
+	return httpcore.ExecuteNoContent(ctx, childrefs.WithReferences(s.svc, req, paramID, parentID, childIDs))
 }

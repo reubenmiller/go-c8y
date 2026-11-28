@@ -37,8 +37,8 @@ func TestGet(t *testing.T) {
 	if gotMethod != http.MethodGet {
 		t.Errorf("method = %q, want GET", gotMethod)
 	}
-	if gotPath != ApiApplication {
-		t.Errorf("path = %q, want %q", gotPath, ApiApplication)
+	if gotPath != apiApplication {
+		t.Errorf("path = %q, want %q", gotPath, apiApplication)
 	}
 	if name := res.Data.Name(); name != "my-app" {
 		t.Errorf("name = %q, want my-app", name)
@@ -65,8 +65,8 @@ func TestUpdate(t *testing.T) {
 	if gotMethod != http.MethodPut {
 		t.Errorf("method = %q, want PUT", gotMethod)
 	}
-	if gotPath != ApiApplication {
-		t.Errorf("path = %q, want %q", gotPath, ApiApplication)
+	if gotPath != apiApplication {
+		t.Errorf("path = %q, want %q", gotPath, apiApplication)
 	}
 	if gotBody["name"] != "my-app" || gotBody["contextPath"] != "demo" {
 		t.Errorf("body = %v, want name=my-app contextPath=demo (passthrough)", gotBody)
@@ -89,8 +89,8 @@ func TestListSubscriptions(t *testing.T) {
 	if res.Err != nil {
 		t.Fatalf("ListSubscriptions: %v", res.Err)
 	}
-	if gotPath != ApiApplicationSubscriptions {
-		t.Errorf("path = %q, want %q", gotPath, ApiApplicationSubscriptions)
+	if gotPath != apiApplicationSubscriptions {
+		t.Errorf("path = %q, want %q", gotPath, apiApplicationSubscriptions)
 	}
 	var names []string
 	for u, err := range res.Items() {

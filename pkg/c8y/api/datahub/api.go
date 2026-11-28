@@ -15,13 +15,13 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiSQL = "/service/datahub/sql"
-var ApiOffloadingConfigurations = "/service/datahub/offloadingconfigurations"
-var ApiSchedulerLatestJobs = "/service/datahub/scheduler/latestjobs"
-var ApiTenant = "/service/datahub/tenant"
-var ApiDremioUsers = "/service/datahub/dremio/users"
+var apiSQL = "/service/datahub/sql"
+var apiOffloadingConfigurations = "/service/datahub/offloadingconfigurations"
+var apiSchedulerLatestJobs = "/service/datahub/scheduler/latestjobs"
+var apiTenant = "/service/datahub/tenant"
+var apiDremioUsers = "/service/datahub/dremio/users"
 
-const ResultProperty = "rows"
+const resultProperty = "rows"
 
 // Service interacts with DataHub.
 type Service struct {
@@ -41,7 +41,7 @@ func NewService(s *httpcore.Service) *Service {
 // Query runs a SQL query against the high-performance API and returns the result
 // rows. version selects the API version (e.g. "v1"); body carries sql/limit/format.
 func (s *Service) Query(ctx context.Context, version string, body any) op.Result[jsonmodels.DataHubResult] {
-	return httpcore.ExecuteCollection(ctx, s.queryB(version, body), ResultProperty, "", jsonmodels.NewDataHubResult)
+	return httpcore.ExecuteCollection(ctx, s.queryB(version, body), resultProperty, "", jsonmodels.NewDataHubResult)
 }
 
 func (s *Service) queryB(version string, body any) *httpcore.TryRequest {
@@ -50,11 +50,11 @@ func (s *Service) queryB(version string, body any) *httpcore.TryRequest {
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiSQL)
+		SetURL(apiSQL)
 	if version != "" {
 		req.SetQueryParam("version", version)
 	}
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 // ListOffloadingConfigurationsOptions filters the offloading-configuration
@@ -77,7 +77,7 @@ func (s *Service) ListOffloadingConfigurations(ctx context.Context, opt ListOffl
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiOffloadingConfigurations)
+		SetURL(apiOffloadingConfigurations)
 	return httpcore.ExecuteCollection(ctx, httpcore.NewTryRequest(s.svc.Client, req, "data.offloadingConfigurations"), "data.offloadingConfigurations", "", jsonmodels.NewDataHubOffloadingConfiguration)
 }
 
@@ -104,7 +104,7 @@ func (s *Service) ListLatestJobs(ctx context.Context, opt ListLatestJobsOptions)
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiSchedulerLatestJobs)
+		SetURL(apiSchedulerLatestJobs)
 	return httpcore.Execute(ctx, httpcore.NewTryRequest(s.svc.Client, req), jsonmodels.NewDataHubSchedulerJobs)
 }
 
@@ -116,7 +116,7 @@ func (s *Service) GetTenant(ctx context.Context) op.Result[jsonmodels.DataHubTen
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiTenant)
+		SetURL(apiTenant)
 	return httpcore.Execute(ctx, httpcore.NewTryRequest(s.svc.Client, req), func(b []byte) jsonmodels.DataHubTenant {
 		if v := gjson.GetBytes(b, "data"); v.Exists() {
 			return jsonmodels.NewDataHubTenant([]byte(v.Raw))
@@ -131,6 +131,6 @@ func (s *Service) ListUsers(ctx context.Context) op.Result[jsonmodels.DataHubUse
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiDremioUsers)
+		SetURL(apiDremioUsers)
 	return httpcore.ExecuteCollection(ctx, httpcore.NewTryRequest(s.svc.Client, req, "data.users"), "data.users", "", jsonmodels.NewDataHubUser)
 }

@@ -7,9 +7,9 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/systemoptions"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_SystemOptions(t *testing.T) {
@@ -28,16 +28,20 @@ func Test_SystemOptions(t *testing.T) {
 		_ = item
 	}
 
-	firstOption, found := op.First(jsondoc.DecodeSeq2[model.SystemOption](it.Items()))
-	assert.True(t, found)
-	assert.NoError(t, firstOption.Err)
+	var firstOption *model.SystemOption
+	for item, err := range jsondoc.DecodeSeq2[model.SystemOption](it.Items()) {
+		require.NoError(t, err)
+		firstOption = item
+		break
+	}
+	require.NotNil(t, firstOption)
 
 	// get
-	option := client.Tenants.SystemOptions.Get(context.Background(), systemoptions.GetOption{
-		Category: firstOption.Data.Category,
-		Key:      firstOption.Data.Key,
+	option := client.Tenants.SystemOptions.Get(context.Background(), systemoptions.GetOptions{
+		Category: firstOption.Category,
+		Key:      firstOption.Key,
 	})
 	assert.NoError(t, option.Err)
-	assert.Equal(t, option.Data.Category(), firstOption.Data.Category)
-	assert.Equal(t, option.Data.Key(), firstOption.Data.Key)
+	assert.Equal(t, option.Data.Category(), firstOption.Category)
+	assert.Equal(t, option.Data.Key(), firstOption.Key)
 }

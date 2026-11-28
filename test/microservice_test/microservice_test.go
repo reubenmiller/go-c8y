@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/realtime"
 	"github.com/reubenmiller/go-c8y/v2/pkg/microservice"
 	"github.com/reubenmiller/go-c8y/v2/test/c8y_api_test/testcore"
 	"github.com/stretchr/testify/assert"
@@ -137,71 +135,4 @@ prop2=2
 	require.NotNil(t, msConfig, "configuration update hook was not called")
 	assert.Equal(t, "1", msConfig.GetString("prop1"))
 	assert.Equal(t, "2", msConfig.GetString("prop2"))
-}
-
-func TestMicroservice_SubscribeToNotifications(t *testing.T) {
-	/*
-		Microservice should be able to subscribe to notifications
-	*/
-	var eventCounter int64
-	var operationCounter int64
-	var err error
-
-	app := bootstrapApplication(t)
-	err = app.RegisterMicroserviceAgent()
-	assert.NoError(t, err)
-
-	err = app.SubscribeToNotifications( //nolint:staticcheck // tests the deprecated CometD helper
-		app.WithServiceUserCredentials(),
-		realtime.Events(app.AgentID),
-		func(msg *realtime.Message) {
-			// New message received
-			atomic.AddInt64(&eventCounter, 1)
-		},
-	)
-	assert.NoError(t, err)
-
-	err = app.SubscribeToNotifications( //nolint:staticcheck // tests the deprecated CometD helper
-		app.WithServiceUserCredentials(),
-		realtime.Operations(app.AgentID),
-		func(msg *realtime.Message) {
-			// New message received
-			atomic.AddInt64(&operationCounter, 1)
-		},
-	)
-	assert.NoError(t, err)
-
-	// Wait for subscriptions to be processed
-	time.Sleep(5 * time.Second)
-
-	// Create event
-	result1 := app.Client.Events.CreateRaw(
-		app.ServiceUserContext(),
-		&model.Event{
-			Time:   time.Now(),
-			Text:   "Something happened",
-			Source: model.NewSource(app.AgentID),
-			Type:   "testType1",
-		},
-	)
-	assert.NoError(t, result1.Err)
-
-	// Create operation
-	op := map[string]any{
-		"deviceId": app.AgentID,
-		"com_custom_Operation": map[string]any{
-			"name": "Custom Operation 1",
-		},
-	}
-	result2 := app.Client.Operations.CreateRaw(
-		app.ServiceUserContext(),
-		op,
-	)
-	assert.NoError(t, result2.Err)
-
-	// Give the cep engine a chance to send the notification
-	time.Sleep(2000 * time.Millisecond)
-
-	assert.EqualValues(t, 1, atomic.LoadInt64(&eventCounter))
-	assert.EqualValues(t, 1, atomic.LoadInt64(&operationCounter))
 }

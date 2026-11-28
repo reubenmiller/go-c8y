@@ -9,8 +9,8 @@ import (
 	"resty.dev/v3"
 )
 
-// ApiTemplateExternalID binds a SmartREST 1.0 template X-Id to a managed object.
-var ApiTemplateExternalID = "/inventory/templates/globalId/{globalId}/externalId"
+// apiTemplateExternalID binds a SmartREST 1.0 template X-Id to a managed object.
+var apiTemplateExternalID = "/inventory/templates/globalId/{globalId}/externalId"
 
 // ExternalIDTypeSmartRest is the external ID type of SmartREST template X-Ids.
 const ExternalIDTypeSmartRest = "c8y_SmartRestDeviceIdentifier"
@@ -28,6 +28,6 @@ func (s *Service) bindExternalIDB(globalID, xID string) *httpcore.TryRequest {
 		SetHeader("Accept", "application/json").
 		SetBody(map[string]string{"externalId": xID, "type": ExternalIDTypeSmartRest}).
 		SetPathParam("globalId", globalID).
-		SetURL(ApiTemplateExternalID)
+		SetURL(apiTemplateExternalID)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

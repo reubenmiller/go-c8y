@@ -28,18 +28,18 @@ import (
 	"resty.dev/v3"
 )
 
-// ApiBulkOperations is the collection endpoint for bulk operations.
-var ApiBulkOperations = "/devicecontrol/bulkoperations"
+// apiBulkOperations is the collection endpoint for bulk operations.
+var apiBulkOperations = "/devicecontrol/bulkoperations"
 
-// ApiBulkOperation is the single-item endpoint for bulk operations.
-var ApiBulkOperation = "/devicecontrol/bulkoperations/{id}"
+// apiBulkOperation is the single-item endpoint for bulk operations.
+var apiBulkOperation = "/devicecontrol/bulkoperations/{id}"
 
-// ParamID is the path-parameter name used in ApiBulkOperation.
-var ParamID = "id"
+// paramID is the path-parameter name used in apiBulkOperation.
+var paramID = "id"
 
-// ResultProperty is the JSON key that wraps the array of bulk operations
+// resultProperty is the JSON key that wraps the array of bulk operations
 // in a collection response.
-const ResultProperty = "bulkOperations"
+const resultProperty = "bulkOperations"
 
 // NewService creates a new BulkOperations service backed by the provided
 // httpcore.Service (HTTP client + tenant configuration).
@@ -77,7 +77,7 @@ type BulkOperationIterator = pagination.Iterator[jsonmodels.BulkOperation]
 
 // List returns a single page of bulk operations.
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.BulkOperation] {
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewBulkOperation)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewBulkOperation)
 }
 
 // ListAll returns a lazy iterator that transparently pages through all
@@ -100,8 +100,8 @@ func (s *Service) listB(opt any) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiBulkOperations)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiBulkOperations)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 // Get retrieves a single bulk operation by its ID.
@@ -113,8 +113,8 @@ func (s *Service) getB(ID string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamID, ID).
-		SetURL(ApiBulkOperation)
+		SetPathParam(paramID, ID).
+		SetURL(apiBulkOperation)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -145,7 +145,7 @@ func (s *Service) createB(body any) *httpcore.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetBody(body).
-		SetURL(ApiBulkOperations)
+		SetURL(apiBulkOperations)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -160,9 +160,9 @@ func (s *Service) updateB(ID string, body any) *httpcore.TryRequest {
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamID, ID).
+		SetPathParam(paramID, ID).
 		SetBody(body).
-		SetURL(ApiBulkOperation)
+		SetURL(apiBulkOperation)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -175,8 +175,8 @@ func (s *Service) Delete(ctx context.Context, ID string) op.Result[core.NoConten
 func (s *Service) deleteB(ID string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamID, ID).
-		SetURL(ApiBulkOperation)
+		SetPathParam(paramID, ID).
+		SetURL(apiBulkOperation)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -188,9 +188,9 @@ func (s *Service) deleteB(ID string) *httpcore.TryRequest {
 // operations straight from the BulkOperations service, so callers don't have to
 // reach for the operations service and remember the filter name.
 
-// ApiOperations is the operations collection endpoint, used to list the
+// apiOperations is the operations collection endpoint, used to list the
 // individual operations spawned by a bulk operation.
-var ApiOperations = "/devicecontrol/operations"
+var apiOperations = "/devicecontrol/operations"
 
 // OperationsResultProperty is the JSON key that wraps the array of operations
 // in a collection response.
@@ -250,6 +250,6 @@ func (s *Service) listOperationsB(opt any) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiOperations)
+		SetURL(apiOperations)
 	return httpcore.NewTryRequest(s.svc.Client, req, OperationsResultProperty)
 }

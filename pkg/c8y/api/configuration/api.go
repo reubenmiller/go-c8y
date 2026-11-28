@@ -98,7 +98,7 @@ type ListOptions struct {
 // ScopeToConfiguration are responsible for restricting results to configuration
 // files.
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.ManagedObject] {
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), managedobjects.ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), httpcore.ResultPropertyManagedObjects, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
 // ListAll returns an iterator over every configuration file matching opts. By
@@ -129,8 +129,8 @@ func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(managedobjects.ApiManagedObjects)
-	return httpcore.NewTryRequest(s.svc.Client, req, managedobjects.ResultProperty)
+		SetURL("/inventory/managedObjects")
+	return httpcore.NewTryRequest(s.svc.Client, req, httpcore.ResultPropertyManagedObjects)
 }
 
 // Get returns a configuration file by reference (id, name:, or query:).

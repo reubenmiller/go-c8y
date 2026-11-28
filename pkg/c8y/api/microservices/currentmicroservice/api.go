@@ -11,9 +11,9 @@ import (
 )
 
 var (
-	ApiApplication              = "/application/currentApplication"
-	ApiApplicationSubscriptions = "/application/currentApplication/subscriptions"
-	ApiApplicationSettings      = "/application/currentApplication/settings"
+	apiApplication              = "/application/currentApplication"
+	apiApplicationSubscriptions = "/application/currentApplication/subscriptions"
+	apiApplicationSettings      = "/application/currentApplication/settings"
 )
 
 // Service
@@ -32,7 +32,7 @@ func (s *Service) getB() *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiApplication)
+		SetURL(apiApplication)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -45,7 +45,7 @@ func (s *Service) listUsersB() *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiApplicationSubscriptions)
+		SetURL(apiApplicationSubscriptions)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -62,6 +62,6 @@ func (s *Service) listSettingsB() *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiApplicationSettings)
+		SetURL(apiApplicationSettings)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

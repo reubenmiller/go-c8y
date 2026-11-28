@@ -31,8 +31,8 @@ func TestList(t *testing.T) {
 	if res.Err != nil {
 		t.Fatalf("List: %v", res.Err)
 	}
-	if path != ApiBulkOperations {
-		t.Errorf("path = %q, want %q", path, ApiBulkOperations)
+	if path != apiBulkOperations {
+		t.Errorf("path = %q, want %q", path, apiBulkOperations)
 	}
 	var ids []string
 	for item := range res.Items() {
@@ -161,8 +161,8 @@ func TestListOperations(t *testing.T) {
 	if res.Err != nil {
 		t.Fatalf("ListOperations: %v", res.Err)
 	}
-	if path != ApiOperations {
-		t.Errorf("path = %q, want %q", path, ApiOperations)
+	if path != apiOperations {
+		t.Errorf("path = %q, want %q", path, apiOperations)
 	}
 	if got := query.Get("bulkOperationId"); got != "10" {
 		t.Errorf("bulkOperationId = %q, want 10", got)

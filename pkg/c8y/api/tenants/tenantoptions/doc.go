@@ -5,6 +5,6 @@
 //
 // Example, with a client and ctx in scope:
 //
-//	result := client.Tenants.Options.Get(ctx, tenantoptions.GetOption{Category: "access.control", Key: "allow.origin"})
+//	result := client.Tenants.Options.Get(ctx, tenantoptions.GetOptions{Category: "access.control", Key: "allow.origin"})
 //	fmt.Println(result.Data.Get("value").String(), result.Err)
 package tenantoptions

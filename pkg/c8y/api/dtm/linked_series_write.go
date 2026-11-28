@@ -58,12 +58,12 @@ func (s *LinkedSeriesService) Set(ctx context.Context, asset AssetRef, series []
 func (s *LinkedSeriesService) setB(assetID string, series []LinkedSeries, opt WriteOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
-		SetPathParam(ParamAssetID, assetID).
+		SetPathParam(paramAssetID, assetID).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(series).
-		SetURL(ApiAssetLinkedSeries)
+		SetURL(apiAssetLinkedSeries)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -88,9 +88,9 @@ func (s *LinkedSeriesService) Delete(ctx context.Context, asset AssetRef, fragme
 	}
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamAssetID, id).
+		SetPathParam(paramAssetID, id).
 		SetQueryParamsFromValues(httpcore.QueryParameters(seriesKey{fragment, series})).
-		SetURL(ApiAssetLinkedSeries)
+		SetURL(apiAssetLinkedSeries)
 	return skipIfNotFound(httpcore.ExecuteNoContent(ctx, httpcore.NewTryRequest(s.svc.Client, req), meta))
 }
 
@@ -109,14 +109,14 @@ func (s *LinkedSeriesService) SetSource(ctx context.Context, asset AssetRef, fra
 	source.ID = deviceID
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
-		SetPathParam(ParamAssetID, assetID).
-		SetPathParam(ParamFragment, fragment).
-		SetPathParam(ParamSeries, series).
+		SetPathParam(paramAssetID, assetID).
+		SetPathParam(paramFragment, fragment).
+		SetPathParam(paramSeries, series).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(source).
-		SetURL(ApiLinkedSeriesSource)
+		SetURL(apiLinkedSeriesSource)
 	return httpcore.Execute(ctx, httpcore.NewTryRequest(s.svc.Client, req), jsonmodels.NewDigitalTwinSeriesSource, meta)
 }
 
@@ -136,10 +136,10 @@ func (s *LinkedSeriesService) DeleteSource(ctx context.Context, asset AssetRef, 
 	}
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamAssetID, id).
-		SetPathParam(ParamFragment, fragment).
-		SetPathParam(ParamSeries, series).
-		SetURL(ApiLinkedSeriesSource)
+		SetPathParam(paramAssetID, id).
+		SetPathParam(paramFragment, fragment).
+		SetPathParam(paramSeries, series).
+		SetURL(apiLinkedSeriesSource)
 	return skipIfNotFound(httpcore.ExecuteNoContent(ctx, httpcore.NewTryRequest(s.svc.Client, req), meta))
 }
 
@@ -155,13 +155,13 @@ func (s *LinkedSeriesService) SetLabel(ctx context.Context, asset AssetRef, frag
 	}
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
-		SetPathParam(ParamAssetID, id).
-		SetPathParam(ParamFragment, fragment).
-		SetPathParam(ParamSeries, series).
+		SetPathParam(paramAssetID, id).
+		SetPathParam(paramFragment, fragment).
+		SetPathParam(paramSeries, series).
 		SetContentType(types.MimeTypeTextPlain).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(label).
-		SetURL(ApiLinkedSeriesLabel)
+		SetURL(apiLinkedSeriesLabel)
 	return httpcore.Execute(ctx, httpcore.NewTryRequest(s.svc.Client, req), jsonmodels.NewDigitalTwinLinkedSeries, meta)
 }
 

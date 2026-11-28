@@ -11,8 +11,8 @@ import (
 	"resty.dev/v3"
 )
 
-// ApiTrustedCertificatesBulk uploads several trusted certificates at once.
-var ApiTrustedCertificatesBulk = "/tenant/tenants/{tenantId}/trusted-certificates/bulk"
+// apiTrustedCertificatesBulk uploads several trusted certificates at once.
+var apiTrustedCertificatesBulk = "/tenant/tenants/{tenantId}/trusted-certificates/bulk"
 
 // CreateBulk uploads several trusted certificates in one request. body is
 // {"certificates": [...]}, each entry like the body of Create.
@@ -27,6 +27,6 @@ func (s *Service) createBulkB(opt CreateOptions, body any) *httpcore.TryRequest 
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetBody(body).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
-		SetURL(ApiTrustedCertificatesBulk)
+		SetURL(apiTrustedCertificatesBulk)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

@@ -91,11 +91,11 @@ func (s *DefinitionService) Get(ctx context.Context, identifier string, opt GetD
 func (s *DefinitionService) getB(identifier string, opt GetDefinitionOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamKind, string(s.kind)).
-		SetPathParam(ParamIdentifier, identifier).
+		SetPathParam(paramKind, string(s.kind)).
+		SetPathParam(paramIdentifier, identifier).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiDefinition)
+		SetURL(apiDefinition)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -138,17 +138,17 @@ func (s *DefinitionService) scoped(opt ListDefinitionsOptions) ListDefinitionsOp
 
 // List returns one page of definitions.
 func (s *DefinitionService) List(ctx context.Context, opt ListDefinitionsOptions) op.Result[jsonmodels.DigitalTwinDefinition] {
-	return httpcore.ExecuteCollection(ctx, s.listB(s.scoped(opt)), ResultPropertyDefinitions, types.ResponseFieldStatistics, jsonmodels.NewDigitalTwinDefinition)
+	return httpcore.ExecuteCollection(ctx, s.listB(s.scoped(opt)), resultPropertyDefinitions, types.ResponseFieldStatistics, jsonmodels.NewDigitalTwinDefinition)
 }
 
 func (s *DefinitionService) listB(opt ListDefinitionsOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamKind, string(s.kind)).
+		SetPathParam(paramKind, string(s.kind)).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiDefinitions)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultPropertyDefinitions)
+		SetURL(apiDefinitions)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultPropertyDefinitions)
 }
 
 // ListAll returns an iterator over all definitions matching opt.
@@ -185,10 +185,10 @@ func (s *DefinitionService) Count(ctx context.Context, opt CountDefinitionsOptio
 func (s *DefinitionService) countB(opt CountDefinitionsOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamKind, string(s.kind)).
+		SetPathParam(paramKind, string(s.kind)).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiDefinitionsCount)
+		SetURL(apiDefinitionsCount)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -212,10 +212,10 @@ func (s *DefinitionService) Tags(ctx context.Context, opt TagsOptions) op.Result
 func (s *DefinitionService) tagsB(opt TagsOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamKind, string(s.kind)).
+		SetPathParam(paramKind, string(s.kind)).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiDefinitionsTags)
+		SetURL(apiDefinitionsTags)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 

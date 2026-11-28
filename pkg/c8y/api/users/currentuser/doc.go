@@ -2,8 +2,7 @@
 // update the profile and password, and the TOTP settings
 // (client.Users.Current.TOTP).
 //
-// Reach it from a client with client.Users.Current (client.Users.CurrentUser
-// is deprecated).
+// Reach it from a client with client.Users.Current.
 //
 // Example, with a client and ctx in scope:
 //
