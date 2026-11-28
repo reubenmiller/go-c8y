@@ -198,6 +198,7 @@ type X509Certificate struct {
 
 // Helper types and methods for polling enrollment
 
+// DeviceEnrollmentOptions are the options of [Service.PollEnroll].
 type DeviceEnrollmentOptions struct {
 	ExternalID                string
 	InitDelay                 time.Duration
