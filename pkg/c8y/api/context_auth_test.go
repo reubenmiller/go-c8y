@@ -69,7 +69,7 @@ func Test_ContextAuth_OverridesClientCredentials(t *testing.T) {
 	rs := newRecordingServer()
 	defer rs.server.Close()
 
-	client := NewClient(ClientOptions{
+	client := mustNewClient(ClientOptions{
 		BaseURL: rs.server.URL,
 		Auth: authentication.AuthOptions{
 			Tenant:   "t100",
@@ -104,7 +104,7 @@ func Test_ContextAuth_TokenOverride(t *testing.T) {
 	rs := newRecordingServer()
 	defer rs.server.Close()
 
-	client := NewClient(ClientOptions{
+	client := mustNewClient(ClientOptions{
 		BaseURL: rs.server.URL,
 		Auth: authentication.AuthOptions{
 			Tenant:   "t100",
@@ -127,7 +127,7 @@ func Test_ContextAuth_SetsTenantPathParam(t *testing.T) {
 	rs := newRecordingServer()
 	defer rs.server.Close()
 
-	client := NewClient(ClientOptions{
+	client := mustNewClient(ClientOptions{
 		BaseURL: rs.server.URL,
 		Auth: authentication.AuthOptions{
 			Tenant:   "t100",
@@ -202,7 +202,7 @@ func Test_ContextTokenExchange_ExchangesAndCaches(t *testing.T) {
 	rs, tokenRequests := newTokenExchangeServer(http.StatusOK)
 	defer rs.server.Close()
 
-	client := NewClient(ClientOptions{
+	client := mustNewClient(ClientOptions{
 		BaseURL: rs.server.URL,
 		Auth: authentication.AuthOptions{
 			Tenant:   "t100",
@@ -253,7 +253,7 @@ func Test_ContextTokenExchange_FallsBackToBasicWithCooldown(t *testing.T) {
 	rs, tokenRequests := newTokenExchangeServer(http.StatusNotFound)
 	defer rs.server.Close()
 
-	client := NewClient(ClientOptions{
+	client := mustNewClient(ClientOptions{
 		BaseURL: rs.server.URL,
 		Auth: authentication.AuthOptions{
 			Tenant:   "t100",
@@ -288,7 +288,7 @@ func Test_ContextTokenExchange_Disabled(t *testing.T) {
 	rs, tokenRequests := newTokenExchangeServer(http.StatusOK)
 	defer rs.server.Close()
 
-	client := NewClient(ClientOptions{
+	client := mustNewClient(ClientOptions{
 		BaseURL: rs.server.URL,
 		Auth: authentication.AuthOptions{
 			Tenant:   "t100",
@@ -340,7 +340,7 @@ func Test_ContextTokenExchange_RetriesWithBasicAfter401(t *testing.T) {
 	}))
 	defer rs.server.Close()
 
-	client := NewClient(ClientOptions{
+	client := mustNewClient(ClientOptions{
 		BaseURL: rs.server.URL,
 		Auth: authentication.AuthOptions{
 			Tenant:   "t100",

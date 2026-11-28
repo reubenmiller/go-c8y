@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/reubenmiller/go-c8y/v2/internal/pkg/testclient"
+
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
 )
@@ -38,8 +40,11 @@ func TestRemoteAccessConnectionAuthorization(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := api.NewClient(api.ClientOptions{BaseURL: server.URL, Auth: tc.auth, SkipTenantLookup: true})
-			ra := NewRemoteAccessClient(client, RemoteAccessOptions{ManagedObjectID: "12345", RemoteAccessID: "1"})
+			client := testclient.Must(api.ClientOptions{BaseURL: server.URL, Auth: tc.auth, SkipTenantLookup: true})
+			ra, err := NewClient(client, ClientOptions{ManagedObjectID: "12345", RemoteAccessID: "1"})
+			if err != nil {
+				t.Fatal(err)
+			}
 			if _, _, err := ra.createRemoteAccessConnection(context.Background()); err == nil {
 				t.Fatal("expected the handshake to be rejected")
 			}

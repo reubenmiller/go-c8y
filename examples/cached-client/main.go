@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -10,7 +11,6 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/alarms"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 )
 
@@ -21,11 +21,12 @@ func main() {
 	// rt := http.DefaultTransport
 	cached := c8y.NewCachedTransport(nil, 5*time.Second, cacheDir, nil, c8y.CacheOptions{})
 
-	client := api.NewClient(api.ClientOptions{
-		BaseURL:   authentication.HostFromEnvironment(),
-		Auth:      authentication.FromEnvironment(),
+	client, err := api.NewClientFromEnvironment(api.ClientOptions{
 		Transport: cached,
 	})
+	if err != nil {
+		log.Fatalf("Could not create the client: %v", err)
+	}
 
 	// Get list of alarms with MAJOR Severity
 	alarmResult := client.Alarms.List(

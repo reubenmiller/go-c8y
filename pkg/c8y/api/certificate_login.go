@@ -27,11 +27,11 @@ func (c *Client) certificateLogin(ctx context.Context, opts *LoginOptions) (stri
 	// The exchange must not go through the token source, which would start
 	// another exchange (the token source is what calls this when it is empty).
 	ctx = ctxhelpers.WithSkipTokenSource(ctx)
-	cert, err := loadClientKeyPair(c.Auth.Certificate, c.Auth.CertificateKey)
+	cert, err := loadClientKeyPair(c.Auth().Certificate, c.Auth().CertificateKey)
 	if err != nil {
 		return "", time.Time{}, fmt.Errorf("certificate login: load certificate: %w", err)
 	}
-	transport, err := authentication.ResolveCertificateTransport(c.Auth.CertificateTransport, cert.PrivateKey)
+	transport, err := authentication.ResolveCertificateTransport(c.Auth().CertificateTransport, cert.PrivateKey)
 	if err != nil {
 		return "", time.Time{}, fmt.Errorf("certificate login: %w", err)
 	}
@@ -43,7 +43,7 @@ func (c *Client) certificateLogin(ctx context.Context, opts *LoginOptions) (stri
 		raw := tok.Data.AccessToken()
 		return raw, tokenExpiry(raw, 0), nil
 	}
-	return c.exchangeCertificate(ctx, c.Auth.Tenant, cert, opts)
+	return c.exchangeCertificate(ctx, c.Auth().Tenant, cert, opts)
 }
 
 // exchangeCertificate performs the HTTPS certificate exchange

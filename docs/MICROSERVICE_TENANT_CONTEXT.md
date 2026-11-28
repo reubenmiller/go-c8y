@@ -71,7 +71,7 @@ same behaviour as the Java SDK). The client can optionally exchange them for
 OAI-Secure bearer tokens, cached per tenant/user:
 
 ```go
-client := api.NewClient(api.ClientOptions{..., ContextTokenExchange: true})
+client, err := api.NewClient(api.ClientOptions{..., ContextTokenExchange: true})
 // or at runtime:
 client.SetContextTokenExchange(true)
 ```
@@ -96,7 +96,10 @@ Behaviour:
 Java SDK's per-request security context:
 
 ```go
-ms := microservice.New(microservice.Options{})
+ms, err := microservice.New(microservice.Options{})
+if err != nil {
+    log.Fatal(err)
+}
 _ = ms.Bootstrap(context.Background())
 
 mux := http.NewServeMux()
@@ -225,8 +228,8 @@ Isolation and headers:
 * **Construction / bootstrap split.** `New(opts)` builds the instance without
   contacting the platform; `Bootstrap(ctx)` loads application metadata and
   service users and returns an error instead of only logging.
-  `NewDefaultMicroservice` remains as a deprecated wrapper with the previous
-  log-and-continue behaviour.
+  `NewDefaultMicroservice` (log-and-continue) is removed; `New` returns an
+  error when the host is missing or invalid.
 * **cron removed from the module, along with built-in operation polling.**
   The `Scheduler` type, `StartOperationPolling` and the
   `agent.operations.pollRate` property are gone. The SDK no longer runs any
@@ -254,7 +257,7 @@ Isolation and headers:
 | Before | After |
 |---|---|
 | `ms.AddHealthEndpointHandlers(e)` (echo) | `ms.RegisterHealthEndpoints(mux)`, or per-handler `e.GET("/health", echo.WrapHandler(http.HandlerFunc(ms.HealthHandler)))` |
-| `NewDefaultMicroservice(opts)` | unchanged (deprecated) — prefer `New(opts)` + `Bootstrap(ctx)` |
+| `NewDefaultMicroservice(opts)` | removed — use `New(opts)` + `Bootstrap(ctx)` |
 | `ms.ServiceUserContext(tenant)` | unchanged — prefer `ms.WithServiceUser(ctx, tenant)` |
 | `ms.Scheduler.AddFunc(spec, fn)` + `Scheduler.Start()` | own `time.Ticker` (e.g. calling `ms.CheckForNewConfiguration()`) |
 | manual loop over `ms.ServiceUsers` | `ms.ForEachTenant(ctx, fn)` |

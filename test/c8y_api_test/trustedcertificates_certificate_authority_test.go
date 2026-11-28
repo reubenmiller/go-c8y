@@ -16,7 +16,7 @@ func Test_TrustedCertificatesCertificateAuthority(t *testing.T) {
 
 	// get
 	cert := client.TrustedCertificates.CertificateAuthority.Get(context.Background(), certificateauthority.GetOptions{
-		TenantID: client.Auth.Tenant,
+		TenantID: client.Auth().Tenant,
 	})
 	assert.NoError(t, cert.Err)
 	assert.NotEqual(t, 0, cert.Data.Length())

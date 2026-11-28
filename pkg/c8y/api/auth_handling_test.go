@@ -87,7 +87,7 @@ func (s *authServer) api(path string) []authRecord {
 }
 
 func (s *authServer) newClient(auth authentication.AuthOptions, eager bool) *Client {
-	return NewClient(ClientOptions{BaseURL: s.URL, SkipTenantLookup: true, Auth: auth, EagerLogin: eager})
+	return mustNewClient(ClientOptions{BaseURL: s.URL, SkipTenantLookup: true, Auth: auth, EagerLogin: eager})
 }
 
 const probePath = "/inventory/managedObjects"
@@ -199,7 +199,7 @@ func Test_NewClient_EagerLoginOptIn(t *testing.T) {
 	srv := newAuthServer(t)
 	client := srv.newClient(authentication.AuthOptions{Username: "u", Password: "p"}, true)
 	assert.Len(t, srv.api("/tenant/oauth/token"), 1, "EagerLogin requests the token in NewClient")
-	assert.Equal(t, "jwt-1", client.Auth.Token)
+	assert.Equal(t, "jwt-1", client.Auth().Token)
 
 	require.NoError(t, probe(client, t.Context()).Error)
 	assert.Len(t, srv.api("/tenant/oauth/token"), 1)
@@ -273,7 +273,7 @@ func Test_AuthorizeWithDeviceFlow_OnlySetsToken(t *testing.T) {
 		Tenant: "t1", Username: "u", Password: "p",
 		AuthType: []authentication.AuthType{authentication.AuthTypeBearer},
 	}
-	client := NewClient(ClientOptions{BaseURL: wrapped.URL, SkipTenantLookup: true, Auth: original})
+	client := mustNewClient(ClientOptions{BaseURL: wrapped.URL, SkipTenantLookup: true, Auth: original})
 
 	tok, err := client.AuthorizeWithDeviceFlow(t.Context(), idp.URL+"/init", oauth2_api.AuthEndpoints{
 		TokenURL:               idp.URL + "/token",
@@ -282,18 +282,18 @@ func Test_AuthorizeWithDeviceFlow_OnlySetsToken(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "flow-token", tok.Token)
 
-	assert.Equal(t, "flow-token", client.Auth.Token)
-	assert.Equal(t, "t1", client.Auth.Tenant)
-	assert.Equal(t, "u", client.Auth.Username)
-	assert.Equal(t, "p", client.Auth.Password)
-	assert.Equal(t, original.AuthType, client.Auth.AuthType)
+	assert.Equal(t, "flow-token", client.Auth().Token)
+	assert.Equal(t, "t1", client.Auth().Tenant)
+	assert.Equal(t, "u", client.Auth().Username)
+	assert.Equal(t, "p", client.Auth().Password)
+	assert.Equal(t, original.AuthType, client.Auth().AuthType)
 
 	require.NoError(t, probe(client, t.Context()).Error)
 	assert.Equal(t, []string{"Bearer flow-token"}, seen)
 
 	// SetAuth with the previous values restores the old credentials
 	client.SetAuth(original)
-	assert.Empty(t, client.Auth.Token)
+	assert.Empty(t, client.Auth().Token)
 }
 
 func Test_AuthType_HonouredPerRequest(t *testing.T) {
@@ -422,7 +422,7 @@ func Test_RevokedToken_ConcurrentRequestsRefreshOnce(t *testing.T) {
 		_, _ = w.Write([]byte(`{}`))
 	}))
 	defer srv.Close()
-	client := NewClient(ClientOptions{BaseURL: srv.URL, SkipTenantLookup: true,
+	client := mustNewClient(ClientOptions{BaseURL: srv.URL, SkipTenantLookup: true,
 		Auth: authentication.AuthOptions{Username: "u", Password: "p"}})
 	_, err := client.currentTokenSource().Token() // jwt-1 is cached and about to be revoked
 	require.NoError(t, err)

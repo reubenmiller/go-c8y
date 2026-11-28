@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"io"
-	"log/slog"
 	"os"
 )
 
@@ -18,24 +17,24 @@ func createHash(key string) string {
 	return hex.EncodeToString(hasher.Sum(nil))
 }
 
-// ErrCiphertextTooShort is returned by [DecryptE] when the data is shorter than
+// ErrCiphertextTooShort is returned by [Decrypt] when the data is shorter than
 // the nonce which prefixes every ciphertext.
 var ErrCiphertextTooShort = errors.New("ciphertext too short")
 
-// EncryptStringE encrypts data with AES-GCM using a key derived from passphrase.
-func EncryptStringE(data string, passphrase string) (string, error) {
-	b, err := EncryptE([]byte(data), passphrase)
+// EncryptString encrypts data with AES-GCM using a key derived from passphrase.
+func EncryptString(data string, passphrase string) (string, error) {
+	b, err := Encrypt([]byte(data), passphrase)
 	return string(b), err
 }
 
-// DecryptStringE decrypts data produced by [EncryptStringE].
-func DecryptStringE(data string, passphrase string) (string, error) {
-	b, err := DecryptE([]byte(data), passphrase)
+// DecryptString decrypts data produced by [EncryptString].
+func DecryptString(data string, passphrase string) (string, error) {
+	b, err := Decrypt([]byte(data), passphrase)
 	return string(b), err
 }
 
-// EncryptE encrypts data with AES-GCM using a key derived from passphrase.
-func EncryptE(data []byte, passphrase string) ([]byte, error) {
+// Encrypt encrypts data with AES-GCM using a key derived from passphrase.
+func Encrypt(data []byte, passphrase string) ([]byte, error) {
 	block, err := aes.NewCipher([]byte(createHash(passphrase)))
 	if err != nil {
 		return nil, err
@@ -51,9 +50,9 @@ func EncryptE(data []byte, passphrase string) ([]byte, error) {
 	return gcm.Seal(nonce, nonce, data, nil), nil
 }
 
-// DecryptE decrypts data produced by [EncryptE]. It returns an error (never
+// Decrypt decrypts data produced by [Encrypt]. It returns an error (never
 // panics) when the passphrase is wrong or the data is truncated or corrupt.
-func DecryptE(data []byte, passphrase string) ([]byte, error) {
+func Decrypt(data []byte, passphrase string) ([]byte, error) {
 	block, err := aes.NewCipher([]byte(createHash(passphrase)))
 	if err != nil {
 		return nil, err
@@ -69,61 +68,21 @@ func DecryptE(data []byte, passphrase string) ([]byte, error) {
 	return gcm.Open(nil, data[:nonceSize], data[nonceSize:], nil)
 }
 
-// EncryptString encrypts data. On failure it logs the error and returns "".
-//
-// Deprecated: use [EncryptStringE], which returns the error.
-func EncryptString(data string, passphrase string) string {
-	out, err := EncryptStringE(data, passphrase)
+// EncryptFile encrypts data with [Encrypt] and writes it to filename (created
+// or truncated).
+func EncryptFile(filename string, data []byte, passphrase string) error {
+	enc, err := Encrypt(data, passphrase)
 	if err != nil {
-		slog.Error("encrypt failed", "err", err)
-		return ""
+		return err
 	}
-	return out
+	return os.WriteFile(filename, enc, 0o600)
 }
 
-// DecryptString decrypts data. On failure it logs the error and returns "".
-//
-// Deprecated: use [DecryptStringE], which returns the error.
-func DecryptString(data string, passphrase string) string {
-	out, err := DecryptStringE(data, passphrase)
+// DecryptFile reads filename and decrypts it with [Decrypt].
+func DecryptFile(filename string, passphrase string) ([]byte, error) {
+	data, err := os.ReadFile(filename)
 	if err != nil {
-		slog.Error("decrypt failed", "err", err)
-		return ""
+		return nil, err
 	}
-	return out
-}
-
-// Encrypt encrypts data. On failure it logs the error and returns nil.
-//
-// Deprecated: use [EncryptE], which returns the error.
-func Encrypt(data []byte, passphrase string) []byte {
-	out, err := EncryptE(data, passphrase)
-	if err != nil {
-		slog.Error("encrypt failed", "err", err)
-		return nil
-	}
-	return out
-}
-
-// Decrypt decrypts data. On failure it logs the error and returns nil.
-//
-// Deprecated: use [DecryptE], which returns the error.
-func Decrypt(data []byte, passphrase string) []byte {
-	out, err := DecryptE(data, passphrase)
-	if err != nil {
-		slog.Error("decrypt failed", "err", err)
-		return nil
-	}
-	return out
-}
-
-func EncryptFile(filename string, data []byte, passphrase string) {
-	f, _ := os.Create(filename)
-	defer f.Close()
-	f.Write(Encrypt(data, passphrase))
-}
-
-func DecryptFile(filename string, passphrase string) []byte {
-	data, _ := os.ReadFile(filename)
 	return Decrypt(data, passphrase)
 }

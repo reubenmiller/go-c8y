@@ -13,6 +13,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/reubenmiller/go-c8y/v2/internal/pkg/testclient"
+
 	"github.com/gorilla/websocket"
 	"github.com/hashicorp/yamux"
 	"github.com/multiformats/go-multistream"
@@ -163,9 +165,9 @@ func echoServer(t *testing.T) string {
 	return listener.Addr().String()
 }
 
-func newClient(t *testing.T, fake *fakeRemoteAccess, opts RemoteAccessOptions) *RemoteAccessClient {
+func newClient(t *testing.T, fake *fakeRemoteAccess, opts ClientOptions) *Client {
 	t.Helper()
-	client := api.NewClient(api.ClientOptions{
+	client := testclient.Must(api.ClientOptions{
 		BaseURL: fake.server.URL,
 		Auth: authentication.AuthOptions{
 			Token: "dummy",
@@ -173,7 +175,10 @@ func newClient(t *testing.T, fake *fakeRemoteAccess, opts RemoteAccessOptions) *
 	})
 	opts.ManagedObjectID = "1234"
 	opts.RemoteAccessID = "1"
-	ra := NewRemoteAccessClient(client, opts)
+	ra, err := NewClient(client, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := ra.Listen("127.0.0.1:0"); err != nil {
 		t.Fatal(err)
 	}
@@ -182,7 +187,7 @@ func newClient(t *testing.T, fake *fakeRemoteAccess, opts RemoteAccessOptions) *
 
 func startClient(t *testing.T, fake *fakeRemoteAccess, multiplex bool) string {
 	t.Helper()
-	ra := newClient(t, fake, RemoteAccessOptions{Multiplex: multiplex})
+	ra := newClient(t, fake, ClientOptions{Multiplex: multiplex})
 	go func() { _ = ra.Serve() }()
 	return ra.GetListenerAddress()
 }
@@ -290,7 +295,7 @@ func TestMultiplexingIsDisabledAfterRepeatedNegotiationsWithoutAnswer(t *testing
 func TestMultiplexingNegotiationTimeoutIsConfigurable(t *testing.T) {
 	fake := newFakeRemoteAccess(t, true)
 	fake.silent = true
-	ra := newClient(t, fake, RemoteAccessOptions{Multiplex: true, MultiplexNegotiationTimeout: 100 * time.Millisecond})
+	ra := newClient(t, fake, ClientOptions{Multiplex: true, MultiplexNegotiationTimeout: 100 * time.Millisecond})
 	go func() { _ = ra.Serve() }()
 
 	for i := 0; i < multiplexMaxNoAnswers+1; i++ {
@@ -309,7 +314,7 @@ func TestMultiplexingNegotiationTimeoutIsConfigurable(t *testing.T) {
 
 func TestServeReturnsWhenListenerIsClosed(t *testing.T) {
 	fake := newFakeRemoteAccess(t, true)
-	ra := newClient(t, fake, RemoteAccessOptions{Multiplex: true})
+	ra := newClient(t, fake, ClientOptions{Multiplex: true})
 	done := make(chan error, 1)
 	go func() { done <- ra.Serve() }()
 

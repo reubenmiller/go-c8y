@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/reubenmiller/go-c8y/v2/internal/pkg/testclient"
+
 	"github.com/reubenmiller/go-c8y/v2/internal/pkg/testingutils"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
@@ -92,7 +94,7 @@ func Test_Enrollment_Register(t *testing.T) {
 		}
 		client.Users.Delete(ctx, users.DeleteOptions{
 			ID:     users.ByDeviceUser(deviceID),
-			Tenant: client.Auth.Tenant,
+			Tenant: client.Auth().Tenant,
 		})
 	})
 
@@ -141,7 +143,7 @@ func Test_Enrollment_Register(t *testing.T) {
 
 	// Create client which uses the device certificate
 	// It requests a token to use for API calls (EagerLogin: at construction)
-	deviceClient := api.NewClient(api.ClientOptions{
+	deviceClient := testclient.Must(api.ClientOptions{
 		EagerLogin:    true,
 		BaseURL:       client.Resty().BaseURL(),
 		Debug:         true,
@@ -151,7 +153,7 @@ func Test_Enrollment_Register(t *testing.T) {
 			Certificate:    string(certutil.MarshalCertificateToPEM(enrollResult.Data.Raw)),
 		},
 	})
-	assert.NotEmpty(t, deviceClient.Auth.Token)
+	assert.NotEmpty(t, deviceClient.Auth().Token)
 
 	// Query data
 	deviceResult := deviceClient.ManagedObjects.List(context.Background(), managedobjects.ListOptions{})
@@ -173,7 +175,7 @@ func Test_Enrollment_Register(t *testing.T) {
 	assert.Greater(t, len(secondCertPEM), 0, "certificate should not be empty")
 
 	// Open another client using the newly issued certificate
-	deviceClient2 := api.NewClient(api.ClientOptions{
+	deviceClient2 := testclient.Must(api.ClientOptions{
 		EagerLogin: true,
 		BaseURL:    client.Resty().BaseURL(),
 		Auth: authentication.AuthOptions{
@@ -181,5 +183,5 @@ func Test_Enrollment_Register(t *testing.T) {
 			Certificate:    string(secondCertPEM),
 		},
 	})
-	assert.NotEmpty(t, deviceClient2.Auth.Token)
+	assert.NotEmpty(t, deviceClient2.Auth().Token)
 }

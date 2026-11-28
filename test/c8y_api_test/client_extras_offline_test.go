@@ -13,7 +13,7 @@ func Test_Client_SetBaseURL(t *testing.T) {
 	testcore.SkipLive(t)
 	client := testcore.CreateTestClient(t)
 	require.NoError(t, client.SetBaseURL("https://new.example.com"))
-	assert.Contains(t, client.BaseURL.String(), "new.example.com")
+	assert.Contains(t, client.BaseURL().String(), "new.example.com")
 }
 
 func Test_Client_SetDebugWithAuth(t *testing.T) {

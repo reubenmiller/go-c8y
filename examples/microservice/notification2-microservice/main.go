@@ -8,6 +8,7 @@ package main
 
 import (
 	"context"
+	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -23,7 +24,10 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	ms := microservice.New(microservice.Options{})
+	ms, err := microservice.New(microservice.Options{})
+	if err != nil {
+		log.Fatalf("Could not create the microservice: %v", err)
+	}
 	if err := ms.Bootstrap(ctx); err != nil {
 		slog.Error("Failed to bootstrap microservice", "err", err)
 		os.Exit(1)

@@ -7,16 +7,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_SetMicroserviceHost_InvalidReturnsError(t *testing.T) {
+func Test_SetHost_InvalidReturnsError(t *testing.T) {
 	m := &Microservice{MicroserviceHost: "http://ok"}
-	assert.Error(t, m.SetMicroserviceHostE("http://exa mple.com"))
+	assert.Error(t, m.SetHost("http://exa mple.com"))
 	assert.Equal(t, "http://ok", m.MicroserviceHost)
 
-	// deprecated form no longer panics
-	assert.NotPanics(t, func() { m.SetMicroserviceHost("http://exa mple.com") })
-	assert.Equal(t, "http://ok", m.MicroserviceHost)
-
-	assert.NoError(t, m.SetMicroserviceHostE("http://other:8080"))
+	assert.NoError(t, m.SetHost("http://other:8080"))
 	assert.Equal(t, "http://other:8080", m.MicroserviceHost)
 }
 

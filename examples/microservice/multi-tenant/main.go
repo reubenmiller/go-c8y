@@ -27,7 +27,10 @@ import (
 )
 
 func main() {
-	ms := microservice.New(microservice.Options{})
+	ms, err := microservice.New(microservice.Options{})
+	if err != nil {
+		log.Fatalf("Could not create the microservice: %v", err)
+	}
 	if err := ms.Bootstrap(context.Background()); err != nil {
 		log.Fatalf("Failed to bootstrap microservice: %s", err)
 	}

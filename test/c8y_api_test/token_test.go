@@ -35,7 +35,7 @@ func Test_DeviceCertificates(t *testing.T) {
 
 	_, err := client.Login(context.Background())
 	assert.NoError(t, err)
-	assert.NotEmpty(t, client.Auth.Token)
+	assert.NotEmpty(t, client.Auth().Token)
 
 	collection := client.Devices.List(context.Background(), devices.ListOptions{})
 	assert.NoError(t, collection.Err)

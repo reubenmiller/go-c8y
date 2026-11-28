@@ -12,7 +12,7 @@ import (
 
 func main() {
 	// Create a client
-	client := api.NewClient(api.ClientOptions{
+	client, err := api.NewClient(api.ClientOptions{
 		BaseURL: "https://example.c8y.io",
 		Auth: authentication.AuthOptions{
 			Tenant:   "t12345",
@@ -20,6 +20,9 @@ func main() {
 			Password: "pass",
 		},
 	})
+	if err != nil {
+		log.Fatalf("Could not create the client: %v", err)
+	}
 
 	// Example 1: Normal request (will be sent to server)
 	fmt.Println("=== Normal Request ===")

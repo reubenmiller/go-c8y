@@ -66,6 +66,38 @@ v2 is a new module, `github.com/reubenmiller/go-c8y/v2`. Entries marked **Breaki
 * Added `Client.AuthorizationHeader(ctx)` returning the `Authorization` header value the client would send for a request with that context (context credentials, token source with renewal, then the client credentials as the HTTP client sends them: a token wins over Basic), for requests forwarded without going through the client. `MiddlewareAuthorization` no longer logs the bearer token
 * Added `ClientOptions.SkipTenantLookup` to skip the `/tenant/currentTenant` call `NewClient` makes when no tenant is given (for clients built only to produce credentials or headers), and `Client.ResolveTenant(ctx)` to run that lookup later with the caller's context
 
+### Client construction and errors
+
+* **Breaking**: constructors return an error instead of panicking or hiding a bad configuration, and the `E` variants and deprecated no-error forms are gone, so the natural names are the final ones. A bad host used to be a nil pointer panic in `api.NewClient`, a silent "no Host in request URL" at the first request, or a client whose `Connect` failed later.
+
+  | Before | After |
+  |---|---|
+  | `api.NewClient(opts) *Client` | `api.NewClient(opts) (*Client, error)`; an empty or invalid `BaseURL` is `api.ErrInvalidBaseURL` |
+  | `api.NewClientFromEnvironment(opts) *Client` (overwrote `opts.BaseURL` and `opts.Auth`) | `api.NewClientFromEnvironment(opts) (*Client, error)`; the environment only fills an empty `BaseURL`, empty credentials, and an empty tenant |
+  | `realtime.NewClient(dialer, opts) *Client` (deprecated), `realtime.NewClientE` | `realtime.NewClient(dialer, opts) (*Client, error)` |
+  | `notification2.NewNotification2Client`, `NewNotification2ClientE`, type `Notification2Client` | `notification2.NewClient(...) (*Client, error)`, type `notification2.Client` |
+  | `remoteaccess.NewRemoteAccessClient(client, opts) *RemoteAccessClient`, `RemoteAccessOptions` | `remoteaccess.NewClient(client, opts) (*Client, error)`, `remoteaccess.ClientOptions`; an error for a nil client or a base URL that is not http(s) |
+  | `encrypt.EncryptE`, `DecryptE`, `EncryptStringE`, `DecryptStringE` and the deprecated forms that logged and returned `nil` or `""` | `encrypt.Encrypt`, `Decrypt`, `EncryptString`, `DecryptString`, all returning `(value, error)` |
+  | `encrypt.EncryptFile(...)`, `DecryptFile(...)` (ignored errors) | `EncryptFile(...) error`, `DecryptFile(...) ([]byte, error)`; the file is written with mode 0600 |
+  | `microservice.New(opts) *Microservice` | `microservice.New(opts) (*Microservice, error)` |
+  | `microservice.NewMicroservice(host, ...)`, `NewBootstrapClient(opts)` | return `(..., error)` |
+  | `microservice.NewDefaultMicroservice(opts)` (deprecated, logged errors) | removed: `New(opts)` then `Bootstrap(ctx)` |
+  | `ms.SetMicroserviceHost(host)`, `ms.SetMicroserviceHostE(host)` | `ms.SetHost(host) error` |
+
+  `realtime.NewClient`, `notification2.NewClient` and `api.NewClient` no longer start goroutines or return a half-built client when the host is invalid.
+* **Breaking**: the state of `api.Client` that `SetBaseURL`, `SetAuth` and `SetToken` change is no longer a public field, because writing it directly raced with requests in flight. Read it with accessors, change it with the setters.
+
+  | Before | After |
+  |---|---|
+  | `client.BaseURL` (`*url.URL` field) | `client.BaseURL()` (a copy; change it with `SetBaseURL`) |
+  | `client.Auth` (field) | `client.Auth()` (a copy; change it with `SetAuth` or `SetToken`) |
+  | `client.UserAgent` | `client.UserAgent()` |
+  | `client.UseKeyRing` | set `ClientOptions.UseKeyRing` |
+  | `client.Domain`, `client.Version`, `client.UseTenantInUsername`, `client.RealtimeClient` | Removed (never set or read). `client.Realtime()` returns the realtime client |
+  | `ClientOptions.Realtime`, `api.DefaultRequestOptions` | Removed (never used) |
+* **Breaking (behavior)**: the REST client sends `ClientOptions.Agent` (default `go-client-v2`) as the `User-Agent` header and the constant `go-client` as `X-Application`. They were swapped: `User-Agent` was always `go-client` and `X-Application` held the agent. The websocket requests already sent them this way. A caller who sets `Agent: "go-client"` sends the same two values as before.
+* Added `RetryOptions.CircuitBreaker` (`api.CircuitBreakerOptions`: `Disabled`, `FailureThreshold`, `SuccessThreshold`, `ResetTimeout`). The client always had a circuit breaker (10 failures, 5 successes, 15s); the defaults are unchanged and are now documented. `ClientOptions.Timeout` 0 (the default) means no timeout.
+
 ### Request context
 
 * Added `api.WithConflictAsError(ctx)`, the counterpart for 409: creates, assigns and subscribes that ignore a conflict by default (`Status == op.StatusDuplicate`) keep the 409 error, so a caller such as go-c8y-cli can report an existing resource as an error.

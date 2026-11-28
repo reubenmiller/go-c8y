@@ -1,7 +1,8 @@
 // Package api is the Go client for the Cumulocity REST API.
 //
 // Create a client with [NewClient], or with [NewClientFromEnvironment] which
-// reads C8Y_HOST, C8Y_TENANT, C8Y_USER and C8Y_PASSWORD (or C8Y_TOKEN). The
+// reads C8Y_HOST, C8Y_TENANT, C8Y_USER and C8Y_PASSWORD (or C8Y_TOKEN). Both
+// return an error, and never panic, when the base URL is empty or invalid. The
 // services hang off the client, one field per API: client.Alarms,
 // client.Events, client.Measurements, client.Operations,
 // client.ManagedObjects, client.Devices, client.Binaries, client.Repository,
@@ -11,7 +12,10 @@
 // client.Users.Current. The package of each service has its own
 // documentation.
 //
-//	client := api.NewClientFromEnvironment(api.ClientOptions{})
+//	client, err := api.NewClientFromEnvironment(api.ClientOptions{})
+//	if err != nil {
+//		return err
+//	}
 //
 //	result := client.Alarms.List(ctx, alarms.ListOptions{
 //		Severity: []model.AlarmSeverity{model.AlarmSeverityMajor},

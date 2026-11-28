@@ -15,6 +15,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/reubenmiller/go-c8y/v2/internal/pkg/testclient"
+
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/dtm"
@@ -56,7 +58,7 @@ func newStatefulDTM(t *testing.T) *statefulDTM {
 }
 
 func (f *statefulDTM) client() *dtm.Service {
-	return api.NewClient(api.ClientOptions{
+	return testclient.Must(api.ClientOptions{
 		BaseURL:          f.server.URL,
 		SkipTenantLookup: true,
 		Auth: authentication.AuthOptions{

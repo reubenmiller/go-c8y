@@ -25,7 +25,7 @@ func Test_GetUsers(t *testing.T) {
 	ctx := context.Background()
 
 	result := client.Users.List(ctx, users.ListOptions{
-		Tenant: client.Auth.Tenant,
+		Tenant: client.Auth().Tenant,
 	})
 
 	require.NoError(t, result.Err)
@@ -41,13 +41,13 @@ func Test_GetUser(t *testing.T) {
 	ctx := context.Background()
 
 	result := client.Users.Get(ctx, users.GetOptions{
-		ID:     users.ByID(client.Auth.Username),
-		Tenant: client.Auth.Tenant,
+		ID:     users.ByID(client.Auth().Username),
+		Tenant: client.Auth().Tenant,
 	})
 
 	require.NoError(t, result.Err)
 	assert.Equal(t, 200, result.HTTPStatus)
-	assert.Equal(t, client.Auth.Username, result.Data.ID())
+	assert.Equal(t, client.Auth().Username, result.Data.ID())
 }
 
 func Test_GetUserByUsername(t *testing.T) {
@@ -55,13 +55,13 @@ func Test_GetUserByUsername(t *testing.T) {
 	ctx := context.Background()
 
 	result := client.Users.GetByUsername(ctx, users.GetByUsernameOptions{
-		Username: client.Auth.Username,
-		Tenant:   client.Auth.Tenant,
+		Username: client.Auth().Username,
+		Tenant:   client.Auth().Tenant,
 	})
 
 	require.NoError(t, result.Err)
 	assert.Equal(t, 200, result.HTTPStatus)
-	assert.Equal(t, client.Auth.Username, result.Data.ID())
+	assert.Equal(t, client.Auth().Username, result.Data.ID())
 }
 
 func Test_CRUD_User(t *testing.T) {
@@ -94,14 +94,14 @@ func Test_CRUD_User(t *testing.T) {
 	t.Cleanup(func() {
 		client.Users.Delete(ctx, users.DeleteOptions{
 			ID:     users.ByID(userID),
-			Tenant: client.Auth.Tenant,
+			Tenant: client.Auth().Tenant,
 		})
 	})
 
 	// Update user
 	updateResult := client.Users.Update(ctx, users.UpdateOptions{
 		ID:     users.ByID(userID),
-		Tenant: client.Auth.Tenant,
+		Tenant: client.Auth().Tenant,
 	}, model.User{
 		FirstName: "Alfred",
 		LastName:  "Peabody",
@@ -117,7 +117,7 @@ func Test_CRUD_User(t *testing.T) {
 	// Delete user
 	deleteResult := client.Users.Delete(ctx, users.DeleteOptions{
 		ID:     users.ByID(userID),
-		Tenant: client.Auth.Tenant,
+		Tenant: client.Auth().Tenant,
 	})
 
 	require.NoError(t, deleteResult.Err)
@@ -132,7 +132,7 @@ func Test_GetCurrentUser(t *testing.T) {
 
 	require.NoError(t, result.Err)
 	assert.Equal(t, 200, result.HTTPStatus)
-	assert.Equal(t, client.Auth.Username, result.Data.UserName())
+	assert.Equal(t, client.Auth().Username, result.Data.UserName())
 }
 
 func Test_UpdateCurrentUser(t *testing.T) {
@@ -146,7 +146,7 @@ func Test_UpdateCurrentUser(t *testing.T) {
 
 	require.NoError(t, result.Err)
 	assert.Equal(t, 200, result.HTTPStatus)
-	assert.Equal(t, client.Auth.Username, result.Data.UserName())
+	assert.Equal(t, client.Auth().Username, result.Data.UserName())
 	assert.Equal(t, randomFirstName, result.Data.FirstName())
 }
 
@@ -156,7 +156,7 @@ func Test_GetGroupByName(t *testing.T) {
 
 	result := client.UserGroups.GetByName(ctx, usergroups.GetByNameOptions{
 		GroupName: "admins",
-		Tenant:    client.Auth.Tenant,
+		Tenant:    client.Auth().Tenant,
 	})
 
 	require.NoError(t, result.Err)
@@ -167,7 +167,7 @@ func Test_GetGroupByName(t *testing.T) {
 	groupID := result.Data.ID()
 	getResult := client.UserGroups.Get(ctx, usergroups.GetOptions{
 		ID:     usergroups.ByID(groupID),
-		Tenant: client.Auth.Tenant,
+		Tenant: client.Auth().Tenant,
 	})
 
 	require.NoError(t, getResult.Err)
@@ -181,8 +181,8 @@ func Test_AddUserToGroup(t *testing.T) {
 
 	// Get current user
 	currentUser := client.Users.GetByUsername(ctx, users.GetByUsernameOptions{
-		Username: client.Auth.Username,
-		Tenant:   client.Auth.Tenant,
+		Username: client.Auth().Username,
+		Tenant:   client.Auth().Tenant,
 	})
 	require.NoError(t, currentUser.Err)
 
@@ -198,14 +198,14 @@ func Test_AddUserToGroup(t *testing.T) {
 	t.Cleanup(func() {
 		client.UserGroups.Delete(ctx, usergroups.DeleteOptions{
 			ID:     usergroups.ByID(groupID),
-			Tenant: client.Auth.Tenant,
+			Tenant: client.Auth().Tenant,
 		})
 	})
 
 	// Get group
 	getGroupResult := client.UserGroups.GetByName(ctx, usergroups.GetByNameOptions{
 		GroupName: groupName,
-		Tenant:    client.Auth.Tenant,
+		Tenant:    client.Auth().Tenant,
 	})
 	require.NoError(t, getGroupResult.Err)
 	assert.Equal(t, 200, getGroupResult.HTTPStatus)
@@ -214,7 +214,7 @@ func Test_AddUserToGroup(t *testing.T) {
 	// Add user to group
 	assignResult := client.UserGroups.Users.AssignUser(ctx, usersgroups.AssignUserOptions{
 		GroupID:  groupID,
-		TenantID: client.Auth.Tenant,
+		TenantID: client.Auth().Tenant,
 	}, map[string]any{
 		"user": map[string]any{
 			"self": currentUser.Data.Self(),
@@ -228,7 +228,7 @@ func Test_AddUserToGroup(t *testing.T) {
 	// Get the users in the group
 	listUsersResult := client.UserGroups.Users.List(ctx, usersgroups.ListOptions{
 		GroupID:  groupID,
-		TenantID: client.Auth.Tenant,
+		TenantID: client.Auth().Tenant,
 	})
 	require.NoError(t, listUsersResult.Err)
 	assert.Equal(t, 200, listUsersResult.HTTPStatus)
@@ -241,7 +241,7 @@ func Test_AddUserToGroup(t *testing.T) {
 	unassignResult := client.UserGroups.Users.UnassignUser(ctx, usersgroups.UnassignUserOptions{
 		UserID:   currentUser.Data.ID(),
 		GroupID:  groupID,
-		TenantID: client.Auth.Tenant,
+		TenantID: client.Auth().Tenant,
 	})
 
 	require.NoError(t, unassignResult.Err)
@@ -254,8 +254,8 @@ func Test_GetUsersByGroup(t *testing.T) {
 
 	// Get current user
 	currentUser := client.Users.GetByUsername(ctx, users.GetByUsernameOptions{
-		Username: client.Auth.Username,
-		Tenant:   client.Auth.Tenant,
+		Username: client.Auth().Username,
+		Tenant:   client.Auth().Tenant,
 	})
 	require.NoError(t, currentUser.Err)
 
@@ -273,7 +273,7 @@ func Test_GetUsersByGroup(t *testing.T) {
 	// Add user to temp group
 	assignResult := client.UserGroups.Users.AssignUser(ctx, usersgroups.AssignUserOptions{
 		GroupID:  groupID,
-		TenantID: client.Auth.Tenant,
+		TenantID: client.Auth().Tenant,
 	}, map[string]any{
 		"user": map[string]any{
 			"self": currentUser.Data.Self(),
@@ -285,7 +285,7 @@ func Test_GetUsersByGroup(t *testing.T) {
 	// Get users in group
 	listUsersResult := client.UserGroups.Users.List(ctx, usersgroups.ListOptions{
 		GroupID:  groupID,
-		TenantID: client.Auth.Tenant,
+		TenantID: client.Auth().Tenant,
 	})
 	require.NoError(t, listUsersResult.Err)
 	assert.Equal(t, 200, listUsersResult.HTTPStatus)
@@ -299,7 +299,7 @@ func Test_GetUsersByGroup(t *testing.T) {
 	updatedName := name + "-UpdatedName"
 	updateResult := client.UserGroups.Update(ctx, usergroups.UpdateOptions{
 		ID:     usergroups.ByID(groupID),
-		Tenant: client.Auth.Tenant,
+		Tenant: client.Auth().Tenant,
 	}, map[string]any{
 		"name": updatedName,
 	})
@@ -310,7 +310,7 @@ func Test_GetUsersByGroup(t *testing.T) {
 	// Remove temp group
 	deleteResult := client.UserGroups.Delete(ctx, usergroups.DeleteOptions{
 		ID:     usergroups.ByID(groupID),
-		Tenant: client.Auth.Tenant,
+		Tenant: client.Auth().Tenant,
 	})
 	require.NoError(t, deleteResult.Err)
 	assert.Equal(t, 204, deleteResult.HTTPStatus)
@@ -321,7 +321,7 @@ func Test_GetGroups(t *testing.T) {
 	ctx := context.Background()
 
 	result := client.UserGroups.List(ctx, usergroups.ListOptions{
-		Tenant: client.Auth.Tenant,
+		Tenant: client.Auth().Tenant,
 	})
 
 	require.NoError(t, result.Err)
@@ -338,8 +338,8 @@ func Test_GetGroupsByUser(t *testing.T) {
 	ctx := context.Background()
 
 	result := client.UserGroups.ListByUser(ctx, usergroups.ListByUserOptions{
-		UserID: client.Auth.Username,
-		Tenant: client.Auth.Tenant,
+		UserID: client.Auth().Username,
+		Tenant: client.Auth().Tenant,
 	})
 
 	require.NoError(t, result.Err)
@@ -381,8 +381,8 @@ func Test_AssignRoleToUser(t *testing.T) {
 
 	// Assign role to user
 	assignResult := client.UserRoles.Users.AssignRole(ctx, userrolesusers.AssignRoleOptions{
-		UserID:   client.Auth.Username,
-		TenantID: client.Auth.Tenant,
+		UserID:   client.Auth().Username,
+		TenantID: client.Auth().Tenant,
 	}, map[string]any{
 		"role": map[string]any{
 			"self": roles[0].Self(),
@@ -394,8 +394,8 @@ func Test_AssignRoleToUser(t *testing.T) {
 
 	// Get roles by user using ListGroupsWithUser to verify
 	groupsResult := client.Users.ListGroupsWithUser(ctx, users.ListGroupsOptions{
-		UserID: client.Auth.Username,
-		Tenant: client.Auth.Tenant,
+		UserID: client.Auth().Username,
+		Tenant: client.Auth().Tenant,
 	})
 	require.NoError(t, groupsResult.Err)
 	assert.Equal(t, 200, groupsResult.HTTPStatus)
@@ -407,9 +407,9 @@ func Test_AssignRoleToUser(t *testing.T) {
 
 	// Unassign role from user
 	unassignResult := client.UserRoles.Users.UnassignRole(ctx, userrolesusers.UnassignRoleOptions{
-		UserID:   client.Auth.Username,
+		UserID:   client.Auth().Username,
 		RoleID:   assignResult.Data.ID(),
-		TenantID: client.Auth.Tenant,
+		TenantID: client.Auth().Tenant,
 	})
 	require.NoError(t, unassignResult.Err)
 	assert.Equal(t, 204, unassignResult.HTTPStatus)
@@ -429,7 +429,7 @@ func Test_AssignRoleToGroup(t *testing.T) {
 	// Get group
 	groupResult := client.UserGroups.GetByName(ctx, usergroups.GetByNameOptions{
 		GroupName: "devices",
-		Tenant:    client.Auth.Tenant,
+		Tenant:    client.Auth().Tenant,
 	})
 	require.NoError(t, groupResult.Err)
 	assert.Equal(t, 200, groupResult.HTTPStatus)
@@ -442,13 +442,13 @@ func Test_AssignRoleToGroup(t *testing.T) {
 	client.UserRoles.Groups.UnassignRole(ctx, userrolesgroups.UnassignRoleOptions{
 		GroupID:  groupID,
 		RoleID:   roles[0].ID(),
-		TenantID: client.Auth.Tenant,
+		TenantID: client.Auth().Tenant,
 	})
 
 	// Assign role to group
 	assignResult := client.UserRoles.Groups.AssignRole(ctx, userrolesgroups.AssignRoleOptions{
 		GroupID:  groupID,
-		TenantID: client.Auth.Tenant,
+		TenantID: client.Auth().Tenant,
 	}, map[string]any{
 		"role": map[string]any{
 			"self": roles[0].Self(),
@@ -461,7 +461,7 @@ func Test_AssignRoleToGroup(t *testing.T) {
 	// Get roles by group
 	groupRolesResult := client.UserRoles.Groups.List(ctx, userrolesgroups.ListOptions{
 		GroupID:  groupID,
-		TenantID: client.Auth.Tenant,
+		TenantID: client.Auth().Tenant,
 		PaginationOptions: pagination.PaginationOptions{
 			PageSize: 2000,
 		},
@@ -487,7 +487,7 @@ func Test_AssignRoleToGroup(t *testing.T) {
 	unassignResult := client.UserRoles.Groups.UnassignRole(ctx, userrolesgroups.UnassignRoleOptions{
 		GroupID:  groupID,
 		RoleID:   assignResult.Data.ID(),
-		TenantID: client.Auth.Tenant,
+		TenantID: client.Auth().Tenant,
 	})
 	require.NoError(t, unassignResult.Err)
 	assert.Equal(t, 204, unassignResult.HTTPStatus)

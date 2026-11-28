@@ -31,15 +31,18 @@ Client
 The `Client` is the entry point to the SDK, providing access to all service operations:
 
 ```go
-client := api.NewClient(api.ClientOptions{
+client, err := api.NewClient(api.ClientOptions{
     BaseURL: "https://example.cumulocity.com",
     Auth: authentication.AuthOptions{
         Tenant: "t12345", Username: "user", Password: "password",
         AuthType: []authentication.AuthType{authentication.AuthTypeBasic},
     },
 })
+if err != nil {
+    return err // an empty or invalid BaseURL (api.ErrInvalidBaseURL)
+}
 // or read C8Y_HOST, C8Y_TENANT, C8Y_USER and C8Y_PASSWORD from the environment:
-// client := api.NewClientFromEnvironment(api.ClientOptions{})
+// client, err := api.NewClientFromEnvironment(api.ClientOptions{})
 
 // Service access
 result := client.Operations.List(ctx, operations.ListOptions{
@@ -277,7 +280,7 @@ result := client.Alarms.SubscribeStream(ctx, "12345")
 // result.Data          a stream which ends immediately, without an error
 ```
 
-The same applies to the other `SubscribeStream` and `Subscribe` methods, `realtime.Client.SubscribeStream` and `Notification2.SubscribeStream` (`Meta["consumer"]` and `Meta["url"]`, token redacted). Lower level code gets an error for which `errors.Is(err, wsdial.ErrDryRun)` is true from `Connect`/`ConnectContext`/`DialWebsocket`; `wsdial.DryRunRequest(err)` is the request. For remote access, `RemoteAccessClient.DialContext` returns that error, `ListenServeContext` and `ServeContext` return `nil`, and `RemoteAccessClient.DryRunRequest()` returns the request.
+The same applies to the other `SubscribeStream` and `Subscribe` methods, `realtime.Client.SubscribeStream` and `Notification2.SubscribeStream` (`Meta["consumer"]` and `Meta["url"]`, token redacted). Lower level code gets an error for which `errors.Is(err, wsdial.ErrDryRun)` is true from `Connect`/`ConnectContext`/`DialWebsocket`; `wsdial.DryRunRequest(err)` is the request. For remote access, `remoteaccess.Client.DialContext` returns that error, `ListenServeContext` and `ServeContext` return `nil`, and `remoteaccess.Client.DryRunRequest()` returns the request.
 
 As for HTTP, the request returned to the caller still has the real `Authorization` header: redact it before you print it.
 
@@ -591,7 +594,8 @@ To change every request a client sends, use `api.Middleware`, a standard
 `http.RoundTripper` wrapper:
 
 ```go
-client := api.NewClient(api.ClientOptions{
+client, err := api.NewClient(api.ClientOptions{
+    BaseURL:    "https://example.cumulocity.com",
     Middleware: []api.Middleware{api.CountRequests(&requests)},
 })
 ```
@@ -733,7 +737,7 @@ The v2 client supports multiple authentication methods via `ClientOptions`:
 
 ```go
 // Username / password (OAI-Secure — exchanges credentials for a short-lived token)
-client := api.NewClient(api.ClientOptions{
+client, err := api.NewClient(api.ClientOptions{
     BaseURL: "https://mytenant.cumulocity.com",
     Auth: authentication.AuthOptions{
         Username: "admin",
@@ -742,7 +746,7 @@ client := api.NewClient(api.ClientOptions{
 })
 
 // Bearer token (skip login, use a pre-obtained token directly)
-client := api.NewClient(api.ClientOptions{
+client, err := api.NewClient(api.ClientOptions{
     BaseURL: "https://mytenant.cumulocity.com",
     Auth: authentication.AuthOptions{
         Token: "eyJ...",
@@ -750,7 +754,7 @@ client := api.NewClient(api.ClientOptions{
 })
 
 // Client certificate
-client := api.NewClient(api.ClientOptions{
+client, err := api.NewClient(api.ClientOptions{
     BaseURL: "https://mytenant.cumulocity.com",
     Auth: authentication.AuthOptions{
         Certificate:    "/path/to/cert.pem",
@@ -758,8 +762,9 @@ client := api.NewClient(api.ClientOptions{
     },
 })
 
-// Populate from environment variables (C8Y_BASEURL, C8Y_USER, C8Y_PASSWORD, C8Y_TOKEN)
-client := api.NewClientFromEnvironment(api.ClientOptions{})
+// Populate from environment variables (C8Y_HOST, C8Y_TENANT, C8Y_USER, C8Y_PASSWORD, C8Y_TOKEN).
+// What ClientOptions already sets (BaseURL, credentials) is kept.
+client, err := api.NewClientFromEnvironment(api.ClientOptions{})
 ```
 
 ### LoginWithOptions
@@ -871,7 +876,7 @@ before sending anything. If mTLS fails because port 8443 is blocked, the error
 says so.
 
 ```go
-client := api.NewClient(api.ClientOptions{
+client, err := api.NewClient(api.ClientOptions{
     BaseURL: "https://example.cumulocity.com",
     Auth: authentication.AuthOptions{
         Tenant:         "t12345",            // required for the HTTPS exchange

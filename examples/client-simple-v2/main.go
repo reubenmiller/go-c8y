@@ -12,7 +12,6 @@ import (
 	"github.com/destel/rill"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/alarms"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/binaries"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/inventory/managedobjects"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/measurements"
@@ -34,10 +33,10 @@ type ExampleMO struct {
 func main() {
 	// Create the client from the following environment variables
 	// C8Y_HOST, C8Y_TENANT, C8Y_USER, C8Y_PASSWORD
-	client := api.NewClient(api.ClientOptions{
-		BaseURL: authentication.HostFromEnvironment(),
-		Auth:    authentication.FromEnvironment(),
-	})
+	client, err := api.NewClientFromEnvironment(api.ClientOptions{})
+	if err != nil {
+		log.Fatalf("Could not create the client: %v", err)
+	}
 
 	if enabledDebug, err := strconv.ParseBool(os.Getenv("DEBUG")); err == nil {
 		client.SetDebug(enabledDebug)

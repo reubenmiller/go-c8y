@@ -43,7 +43,11 @@ import (
 
 func main() {
 	// Reads C8Y_HOST, C8Y_TENANT, C8Y_USER, C8Y_PASSWORD (or C8Y_TOKEN)
-	client := api.NewClientFromEnvironment(api.ClientOptions{})
+	client, err := api.NewClientFromEnvironment(api.ClientOptions{})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "could not create the client:", err)
+		os.Exit(1)
+	}
 
 	result := client.Alarms.List(context.Background(), alarms.ListOptions{
 		Severity: []model.AlarmSeverity{model.AlarmSeverityMajor},
@@ -119,7 +123,10 @@ import (
 )
 
 func main() {
-	client := api.NewClientFromEnvironment(api.ClientOptions{})
+	client, err := api.NewClientFromEnvironment(api.ClientOptions{})
+	if err != nil {
+		panic(err)
+	}
 
 	ctx := api.WithDryRun(context.Background(), true)
 	ctx = api.WithDryRunHandler(ctx, func(req *http.Request) {

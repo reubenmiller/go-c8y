@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/reubenmiller/go-c8y/v2/internal/pkg/testclient"
+
 	"log/slog"
 
 	"github.com/reubenmiller/go-c8y/v2/internal/pkg/fakeserver"
@@ -19,17 +21,20 @@ import (
 // A local TCP connection is proxied over the remote access websocket (the
 // fake server's device side echoes every message). The client logs to the
 // logger of the Cumulocity client.
-func TestRemoteAccessClientProxiesTCP(t *testing.T) {
+func TestClientProxiesTCP(t *testing.T) {
 	fs := fakeserver.New(t)
 	configID, _ := fs.RemoteAccessConfigs.Create([]byte(`{"name":"ssh","protocol":"PASSTHROUGH","hostname":"127.0.0.1","port":22}`), "")
 
 	var logs syncBuffer
-	client := api.NewClient(api.ClientOptions{
+	client := testclient.Must(api.ClientOptions{
 		Logger:  slog.New(slog.NewTextHandler(&logs, &slog.HandlerOptions{Level: slog.LevelDebug})),
 		BaseURL: fs.URL(),
 		Auth:    authentication.AuthOptions{Tenant: "t12345", Username: "admin", Password: "admin-pass"},
 	})
-	ra := NewRemoteAccessClient(client, RemoteAccessOptions{ManagedObjectID: "12345", RemoteAccessID: configID})
+	ra, err := NewClient(client, ClientOptions{ManagedObjectID: "12345", RemoteAccessID: configID})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := ra.Listen("127.0.0.1:0"); err != nil {
 		t.Fatal(err)
 	}

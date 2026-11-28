@@ -65,11 +65,10 @@ func (o *ConnectionOptions) GetPingDuration() time.Duration {
 	return o.PingInterval
 }
 
-// Notification2Client is a client used for the notification2 interface
-type Notification2Client struct {
+// Client is a client used for the notification2 interface
+type Client struct {
 	mtx               sync.RWMutex
 	host              string
-	initErr           error // set when the client was built with an invalid host
 	url               *url.URL
 	ctx               context.Context
 	cancel            context.CancelFunc
@@ -146,30 +145,9 @@ func getEndpoint(host string, subscription Subscription) (*url.URL, error) {
 	return c8yHost, nil
 }
 
-// NewNotification2Client initialises a new notification2 client.
-//
-// Deprecated: use [NewNotification2ClientE]. When host is invalid this still
-// returns a client (it never exits the process), but [Notification2Client.Connect]
-// then returns the error.
-func NewNotification2Client(host string, wsDialer *websocket.Dialer, subscription Subscription, options ConnectionOptions) *Notification2Client {
-	client, err := NewNotification2ClientE(host, wsDialer, subscription, options)
-	if err != nil {
-		return &Notification2Client{
-			host:              host,
-			url:               &url.URL{},
-			initErr:           err,
-			Subscription:      subscription,
-			ConnectionOptions: options,
-			done:              make(chan struct{}),
-			hub:               NewHub(),
-		}
-	}
-	return client
-}
-
-// NewNotification2ClientE initialises a new notification2 client used to subscribe to
+// NewClient initialises a new notification2 client used to subscribe to
 // realtime notifications from Cumulocity. It returns an error when host is invalid.
-func NewNotification2ClientE(host string, wsDialer *websocket.Dialer, subscription Subscription, options ConnectionOptions) (*Notification2Client, error) {
+func NewClient(host string, wsDialer *websocket.Dialer, subscription Subscription, options ConnectionOptions) (*Client, error) {
 	endpoint, err := getEndpoint(host, subscription)
 	if err != nil {
 		return nil, err
@@ -186,7 +164,7 @@ func NewNotification2ClientE(host string, wsDialer *websocket.Dialer, subscripti
 		}
 	}
 
-	client := &Notification2Client{
+	client := &Client{
 		host:              host,
 		url:               endpoint,
 		dialer:            wsDialer,
@@ -210,7 +188,7 @@ func NewNotification2ClientE(host string, wsDialer *websocket.Dialer, subscripti
 // request middleware and extra headers, and respects dry run. The notification2
 // token in the URL authenticates the connection, so the connector's
 // Authorization header is not sent. nil goes back to the client's own dialer.
-func (c *Notification2Client) SetConnector(connector wsdial.Connector) {
+func (c *Client) SetConnector(connector wsdial.Connector) {
 	c.mtx.Lock()
 	c.connector = connector
 	c.mtx.Unlock()
@@ -220,7 +198,7 @@ func (c *Notification2Client) SetConnector(connector wsdial.Connector) {
 // connection until `Close` is called on the client.
 //
 // Connect is ConnectContext with context.Background().
-func (c *Notification2Client) Connect() error {
+func (c *Client) Connect() error {
 	return c.ConnectContext(context.Background())
 }
 
@@ -231,10 +209,7 @@ func (c *Notification2Client) Connect() error {
 // Dry run: when the connector is in dry run (api.WithDryRun) nothing is connected
 // and ConnectContext returns an error for which errors.Is(err,
 // wsdial.ErrDryRun) is true; wsdial.DryRunRequest(err) is the upgrade request.
-func (c *Notification2Client) ConnectContext(ctx context.Context) error {
-	if c.initErr != nil {
-		return c.initErr
-	}
+func (c *Client) ConnectContext(ctx context.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -250,7 +225,7 @@ func (c *Notification2Client) ConnectContext(ctx context.Context) error {
 	return nil
 }
 
-func (c *Notification2Client) connectionContext() context.Context {
+func (c *Client) connectionContext() context.Context {
 	c.mtx.RLock()
 	defer c.mtx.RUnlock()
 	if c.reconnectCtx != nil {
@@ -259,11 +234,11 @@ func (c *Notification2Client) connectionContext() context.Context {
 	return context.Background()
 }
 
-func (c *Notification2Client) Endpoint() string {
+func (c *Client) Endpoint() string {
 	return c.url.String()
 }
 
-func (c *Notification2Client) URL(hideSensitive bool) string {
+func (c *Client) URL(hideSensitive bool) string {
 	endpoint, err := getEndpoint(c.url.String(), c.Subscription)
 	if err != nil {
 		return c.url.String()
@@ -284,7 +259,7 @@ func (c *Notification2Client) URL(hideSensitive bool) string {
 }
 
 // IsConnected returns true if the websocket is connected
-func (c *Notification2Client) IsConnected() bool {
+func (c *Client) IsConnected() bool {
 	c.mtx.RLock()
 	isConnected := c.connected
 	c.mtx.RUnlock()
@@ -293,7 +268,7 @@ func (c *Notification2Client) IsConnected() bool {
 
 // Close closes the connection and stops all of the client's goroutines,
 // including reconnect attempts. It is safe to call more than once.
-func (c *Notification2Client) Close() error {
+func (c *Client) Close() error {
 	c.closeOnce.Do(func() {
 		close(c.done)
 	})
@@ -302,7 +277,7 @@ func (c *Notification2Client) Close() error {
 }
 
 // isClosed reports whether Close was called.
-func (c *Notification2Client) isClosed() bool {
+func (c *Client) isClosed() bool {
 	select {
 	case <-c.done:
 		return true
@@ -313,7 +288,7 @@ func (c *Notification2Client) isClosed() bool {
 
 // stopWorker closes the websocket and stops the read worker, keeping the
 // client usable for a reconnect.
-func (c *Notification2Client) stopWorker() {
+func (c *Client) stopWorker() {
 	if err := c.disconnect(); err != nil {
 		slog.Warn("Failed to disconnect", "err", err)
 	}
@@ -331,7 +306,7 @@ func (c *Notification2Client) stopWorker() {
 	c.mtx.Unlock()
 }
 
-func (c *Notification2Client) disconnect() error {
+func (c *Client) disconnect() error {
 	// Change to disconnected state, as the server will not send a reply upon receiving the /meta/disconnect command
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
@@ -343,7 +318,7 @@ func (c *Notification2Client) disconnect() error {
 	return nil
 }
 
-func (c *Notification2Client) createWebsocket(ctx context.Context) (*websocket.Conn, error) {
+func (c *Client) createWebsocket(ctx context.Context) (*websocket.Conn, error) {
 
 	if c.Subscription.TokenRenewal != nil {
 		token, err := c.Subscription.TokenRenewal(c.Subscription.Token)
@@ -367,7 +342,7 @@ func (c *Notification2Client) createWebsocket(ctx context.Context) (*websocket.C
 }
 
 // dial opens the websocket with the connector, or with the client's dialer.
-func (c *Notification2Client) dial(ctx context.Context) (*websocket.Conn, error) {
+func (c *Client) dial(ctx context.Context) (*websocket.Conn, error) {
 	c.mtx.RLock()
 	connector := c.connector
 	dialer := c.dialer
@@ -385,7 +360,7 @@ func (c *Notification2Client) dial(ctx context.Context) (*websocket.Conn, error)
 	return ws, err
 }
 
-func (c *Notification2Client) reconnect() error {
+func (c *Client) reconnect() error {
 	c.stopWorker()
 
 	connected := false
@@ -414,10 +389,7 @@ func (c *Notification2Client) reconnect() error {
 }
 
 // StartWebsocket opens a websocket to cumulocity
-func (c *Notification2Client) connect(ctx context.Context) error {
-	if c.initErr != nil {
-		return c.initErr
-	}
+func (c *Client) connect(ctx context.Context) error {
 	c.mtx.RLock()
 	hasDialer := c.dialer != nil || c.connector != nil
 	c.mtx.RUnlock()
@@ -490,7 +462,7 @@ func parseMessage(raw []byte) *Message {
 	return message
 }
 
-func (c *Notification2Client) writeHandler() {
+func (c *Client) writeHandler() {
 	ticker := time.NewTicker(c.ConnectionOptions.GetPingDuration())
 
 	defer ticker.Stop()
@@ -540,7 +512,7 @@ func (c *Notification2Client) writeHandler() {
 	}
 }
 
-func (c *Notification2Client) Register(pattern string, out chan<- Message) {
+func (c *Client) Register(pattern string, out chan<- Message) {
 	slog.Debug(fmt.Sprintf("Subscribing to %s", pattern))
 
 	select {
@@ -553,7 +525,7 @@ func (c *Notification2Client) Register(pattern string, out chan<- Message) {
 	}
 }
 
-func (c *Notification2Client) SendMessageAck(messageIdentifier string) error {
+func (c *Client) SendMessageAck(messageIdentifier string) error {
 	slog.Debug("Sending message ack", "identifier", messageIdentifier)
 	select {
 	case c.send <- []byte(messageIdentifier):
@@ -563,7 +535,7 @@ func (c *Notification2Client) SendMessageAck(messageIdentifier string) error {
 	}
 }
 
-func (c *Notification2Client) worker() {
+func (c *Client) worker() {
 	defer close(c.workerDone)
 	done := make(chan struct{})
 
@@ -630,7 +602,7 @@ func (c *Notification2Client) worker() {
 // written before Unsubscribe returns, so that closing the client afterwards
 // does not drop it (a message queued for the write handler could be written to
 // the connection which Close has closed).
-func (c *Notification2Client) Unsubscribe() error {
+func (c *Client) Unsubscribe() error {
 	slog.Info("unsubscribing")
 	if c.isClosed() {
 		return ErrClientClosed

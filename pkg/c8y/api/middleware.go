@@ -417,9 +417,7 @@ func (c *Client) AuthorizationHeader(ctx context.Context) (string, error) {
 		case authentication.AuthTypeNone:
 			return "", nil
 		case authentication.AuthTypeBasic:
-			c.clientMu.Lock()
-			auth := c.Auth
-			c.clientMu.Unlock()
+			auth := c.Auth()
 			return basicStaticAuthorization(auth), nil
 		}
 	}
@@ -428,9 +426,7 @@ func (c *Client) AuthorizationHeader(ctx context.Context) (string, error) {
 			return v, err
 		}
 	}
-	c.clientMu.Lock()
-	auth := c.Auth
-	c.clientMu.Unlock()
+	auth := c.Auth()
 	return staticAuthorization(auth), nil
 }
 

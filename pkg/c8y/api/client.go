@@ -94,17 +94,6 @@ var ErrNoLoginMethodAvailable = errors.New("login: no method available (all pref
 
 type AuthFunc func(r *http.Request) (string, error)
 
-// DefaultRequestOptions default request options which are added to each outgoing request
-type DefaultRequestOptions struct {
-	DryRun bool
-
-	// DryRunResponse return a mock response when using dry run
-	DryRunResponse bool
-
-	// DryRunHandler called when a request should be called
-	// DryRunHandler func(options *RequestOptions, req *http.Request)
-}
-
 // A Client manages communication with the Cumulocity API.
 type Client struct {
 	clientMu   sync.Mutex    // clientMu protects the client during calls that modify the CheckRedirect func.
@@ -116,26 +105,26 @@ type Client struct {
 	baseTransport   http.RoundTripper
 	middleware      []Middleware
 
-	RealtimeClient *realtime.Client
-
 	// Show sensitive information
 	showSensitive bool
 
 	// debugEnabled controls whether the debug response middleware produces output.
 	debugEnabled bool
 
-	// Base URL for API requests. Defaults to the public Cumulocity API, but can be
-	// set to a domain endpoint to use with Cumulocity. BaseURL should
-	// always be specified with a trailing slash.
-	BaseURL *url.URL
+	// stateMu protects baseURL and auth, which SetBaseURL, SetAuth, SetToken,
+	// ResolveTenant and the login flows change while requests are in flight.
+	// Read them with BaseURL and Auth.
+	stateMu sync.RWMutex
 
-	// Domain. This can be different to the BaseURL when using a proxy or a custom alias
-	Domain string
+	// baseURL is the base URL for API requests, always with a trailing slash.
+	baseURL *url.URL
 
-	// User agent used when communicating with the Cumulocity API.
-	UserAgent string
+	// userAgent is sent as the User-Agent header (ClientOptions.Agent); it
+	// never changes after NewClient.
+	userAgent string
 
-	Auth authentication.AuthOptions
+	// auth are the static credentials of the client.
+	auth authentication.AuthOptions
 
 	// tokenSource is the active bearer-token provider. It is set automatically
 	// from Auth credentials in NewClient, or can be supplied via AuthOptions.TokenSource.
@@ -153,12 +142,8 @@ type Client struct {
 	// contextCertificateSource, see ClientOptions.ContextCertificateSource.
 	contextCertificateSource func(tenant string) (tls.Certificate, error)
 
-	UseKeyRing bool
-
-	// Cumulocity Version
-	Version string
-
-	UseTenantInUsername bool
+	// useKeyRing is ClientOptions.UseKeyRing; it never changes after NewClient.
+	useKeyRing bool
 
 	common httpcore.Service // Reuse a single struct instead of allocating one for each service on the heap.
 
@@ -216,7 +201,11 @@ type Client struct {
 }
 
 const (
+	// defaultUserAgent is the User-Agent of requests when ClientOptions.Agent is empty.
 	defaultUserAgent = "go-client-v2"
+
+	// defaultApplication is the X-Application header of every request.
+	defaultApplication = "go-client"
 )
 
 var (
@@ -243,9 +232,6 @@ type ClientOptions struct {
 	BaseURL string
 
 	Auth authentication.AuthOptions
-
-	// Create a realtime client
-	Realtime bool
 
 	// Show sensitive information in the logs (e.g. credentials in Authorization headers).
 	// When true, sensitive headers are NOT redacted in debug output.
@@ -293,11 +279,12 @@ type ClientOptions struct {
 	Middleware []Middleware
 
 	// Retry configures how failed requests are retried (network errors, HTTP 5xx
-	// and 429). nil keeps the default: 3 retries, waiting between 2s and 30s.
+	// and 429). nil keeps the default: 3 retries, waiting between 2s and 30s,
+	// with the default circuit breaker (see [CircuitBreakerOptions]).
 	Retry *RetryOptions
 
 	// Timeout sets a global HTTP-level timeout for all requests made by this client.
-	// A value of zero means no timeout. Per-request timeouts can still be applied
+	// A value of zero (the default) means no timeout. Per-request timeouts can still be applied
 	// by passing a context with a deadline: ctx, cancel := context.WithTimeout(ctx, d)
 	Timeout time.Duration
 
@@ -338,7 +325,41 @@ type RetryOptions struct {
 	// starts at twice WaitMin, with jitter. In both cases the Retry-After header
 	// of a 429 or 503 response is used instead.
 	Exponential bool
+
+	// CircuitBreaker configures the circuit breaker of the client. nil keeps the
+	// default, see [CircuitBreakerOptions].
+	CircuitBreaker *CircuitBreakerOptions
 }
+
+// CircuitBreakerOptions configures the circuit breaker which stops sending
+// requests to a server that keeps failing: when FailureThreshold requests
+// failed (HTTP 5xx or a network error) within the sliding window, further
+// requests fail immediately without being sent, until ResetTimeout has passed.
+// Then single probe requests are let through, and the breaker closes again
+// after SuccessThreshold consecutive successes. The defaults are 10 failures,
+// 5 successes and 15 seconds.
+type CircuitBreakerOptions struct {
+	// Disabled turns the circuit breaker off. The other fields are then ignored.
+	Disabled bool
+
+	// FailureThreshold is the number of failures which opens the breaker. 0
+	// keeps the default (10).
+	FailureThreshold int
+
+	// SuccessThreshold is the number of consecutive successful probe requests
+	// which closes the breaker again. 0 keeps the default (5).
+	SuccessThreshold int
+
+	// ResetTimeout is how long the breaker stays open before it lets probe
+	// requests through. 0 keeps the default (15s).
+	ResetTimeout time.Duration
+}
+
+const (
+	defaultCircuitBreakerFailures  = 10
+	defaultCircuitBreakerSuccesses = 5
+	defaultCircuitBreakerReset     = 15 * time.Second
+)
 
 // Realtime returns the realtime (Bayeux) client of this API client.
 //
@@ -348,26 +369,53 @@ type RetryOptions struct {
 // since the first call is used), applies request middleware and respects dry run
 // ([WithDryRun]) and the other context options of [realtime.Client.ConnectContext].
 func (c *Client) Realtime() *realtime.Client {
-	c.clientMu.Lock()
-	defer c.clientMu.Unlock()
-	if c.common.RealtimeClient == nil {
-		c.common.RealtimeClient = c.newRealtimeClient()
-	}
 	return c.common.RealtimeClient
 }
 
-func (c *Client) newRealtimeClient() *realtime.Client {
-	return realtime.NewClient(nil, //nolint:staticcheck // an invalid host is reported by Connect
-		realtime.ClientOptions{
-			Host:      c.BaseURL.String(),
-			Connector: c,
-		})
+func (c *Client) newRealtimeClient(baseURL *url.URL) (*realtime.Client, error) {
+	return realtime.NewClient(nil, realtime.ClientOptions{
+		Host:      baseURL.String(),
+		Connector: c,
+	})
 }
 
-func NewClientFromEnvironment(opt ClientOptions) *Client {
-	opt.BaseURL = authentication.HostFromEnvironment()
-	opt.Auth = authentication.FromEnvironment()
+// NewClientFromEnvironment creates a client from the C8Y_* environment
+// variables (see authentication.HostFromEnvironment and
+// authentication.FromEnvironment). The environment only fills what opt leaves
+// empty: opt.BaseURL when it is empty, and opt.Auth when it carries no
+// credentials (the tenant of the environment is also used when opt.Auth has
+// credentials but no tenant). What the caller sets in opt is kept. It returns
+// an error when no host is available or the host is invalid, see [NewClient].
+func NewClientFromEnvironment(opt ClientOptions) (*Client, error) {
+	if opt.BaseURL == "" {
+		opt.BaseURL = authentication.HostFromEnvironment()
+	}
+	opt.Auth = mergeAuth(opt.Auth, authentication.FromEnvironment())
 	return NewClient(opt)
+}
+
+// mergeAuth returns explicit, with the tenant of fallback when explicit has
+// none. When explicit has no credentials at all, fallback is used as a whole.
+func mergeAuth(explicit, fallback authentication.AuthOptions) authentication.AuthOptions {
+	hasCredentials := explicit.Username != "" || explicit.Password != "" ||
+		explicit.Token != "" || explicit.Certificate != "" ||
+		explicit.CertificateKey != "" || explicit.TokenSource != nil
+	if !hasCredentials {
+		if len(explicit.AuthType) > 0 {
+			fallback.AuthType = explicit.AuthType
+		}
+		if explicit.CertificateTransport != "" {
+			fallback.CertificateTransport = explicit.CertificateTransport
+		}
+		if explicit.Tenant != "" {
+			fallback.Tenant = explicit.Tenant
+		}
+		return fallback
+	}
+	if explicit.Tenant == "" {
+		explicit.Tenant = fallback.Tenant
+	}
+	return explicit
 }
 
 // buildCertChainHeader returns the value for the X-SSL-CERT-CHAIN request header
@@ -417,6 +465,13 @@ func setTLSConfig(transport http.RoundTripper, insecureSkipVerify bool) error {
 	return fmt.Errorf("transport does not support TLS configuration")
 }
 
+func positiveOrDefault(v, def int) int {
+	if v > 0 {
+		return v
+	}
+	return def
+}
+
 func retryWaitOrDefault(v, def time.Duration) time.Duration {
 	if v > 0 {
 		return v
@@ -443,15 +498,24 @@ func exponentialRetryDelay(minWait, maxWait time.Duration) resty.RetryDelayStrat
 // newRestyClient creates the resty client with the default retry, error and
 // circuit breaker settings, and applies the timeout and base URL from opts.
 func newRestyClient(opts ClientOptions, targetBaseURL *url.URL) *resty.Client {
-	circuitBreaker := resty.NewCircuitBreakerCount(10, 5, 15*time.Second)
-
 	rclient := resty.New().
 		SetRetryCount(3).
 		SetRetryWaitTime(2 * time.Second).
 		SetRetryMaxWaitTime(30 * time.Second).
 		SetResultError(core.APIError{}).
-		SetCircuitBreaker(circuitBreaker).
 		SetLogger(restyLogger{opts.Logger})
+
+	cb := CircuitBreakerOptions{}
+	if r := opts.Retry; r != nil && r.CircuitBreaker != nil {
+		cb = *r.CircuitBreaker
+	}
+	if !cb.Disabled {
+		rclient.SetCircuitBreaker(resty.NewCircuitBreakerCount(
+			uint64(positiveOrDefault(cb.FailureThreshold, defaultCircuitBreakerFailures)),
+			uint64(positiveOrDefault(cb.SuccessThreshold, defaultCircuitBreakerSuccesses)),
+			retryWaitOrDefault(cb.ResetTimeout, defaultCircuitBreakerReset),
+		))
+	}
 
 	if r := opts.Retry; r != nil {
 		rclient.SetRetryCount(max(r.Count, 0))
@@ -613,7 +677,7 @@ func (c *Client) currentTokenSource() authentication.TokenSource {
 func (c *Client) authType() authentication.AuthType {
 	c.clientMu.Lock()
 	defer c.clientMu.Unlock()
-	return effectiveAuthType(c.Auth)
+	return effectiveAuthType(c.Auth())
 }
 
 // bootstrapAuth applies the initial auth. The token is only fetched here when
@@ -639,12 +703,39 @@ func (c *Client) bootstrapAuth(auth authentication.AuthOptions, eager bool) {
 	}
 }
 
-// NewClient returns a new Cumulocity API client. If a nil httpClient is
-// provided, http.DefaultClient will be used. To use API methods which require
-// authentication, provide an http.Client that will perform the authentication
-// for you (such as that provided by the golang.org/x/oauth2 library).
-func NewClient(opts ClientOptions) *Client {
-	targetBaseURL, _ := url.Parse(FormatBaseURL(opts.BaseURL))
+// ErrInvalidBaseURL is returned by [NewClient] when ClientOptions.BaseURL is
+// missing or not a valid URL with a host. Match it with errors.Is.
+var ErrInvalidBaseURL = errors.New("invalid base URL")
+
+// parseBaseURL normalises and parses a base URL (see FormatBaseURL) and checks
+// that it has a host.
+func parseBaseURL(v string) (*url.URL, error) {
+	if strings.TrimSpace(v) == "" {
+		return nil, fmt.Errorf("%w: the base URL (ClientOptions.BaseURL or C8Y_HOST) is empty", ErrInvalidBaseURL)
+	}
+	u, err := url.Parse(FormatBaseURL(v))
+	if err != nil {
+		return nil, fmt.Errorf("%w %q: %w", ErrInvalidBaseURL, v, err)
+	}
+	if u.Host == "" {
+		return nil, fmt.Errorf("%w %q: no host", ErrInvalidBaseURL, v)
+	}
+	return u, nil
+}
+
+// NewClient returns a new Cumulocity API client. It returns an error, and never
+// panics, when opts.BaseURL is empty or not a valid URL (see
+// [ErrInvalidBaseURL]).
+//
+// Unless ClientOptions.SkipTenantLookup is set, NewClient looks up the tenant
+// of the credentials (GET /tenant/currentTenant) when opts.Auth has none; a
+// failed lookup is only logged, so an unreachable server is not an error of
+// NewClient.
+func NewClient(opts ClientOptions) (*Client, error) {
+	targetBaseURL, err := parseBaseURL(opts.BaseURL)
+	if err != nil {
+		return nil, err
+	}
 	rclient := newRestyClient(opts, targetBaseURL)
 
 	// Transport chain: DryRunTransport (answers dry-run and mock requests) ->
@@ -663,32 +754,35 @@ func NewClient(opts ClientOptions) *Client {
 	if opts.Agent != "" {
 		userAgent = opts.Agent
 	}
-	rclient.AddRequestMiddleware(middlewareAddUserAgent(userAgent, "go-client"))
+	rclient.AddRequestMiddleware(middlewareAddUserAgent(defaultApplication, userAgent))
 	rclient.AddRequestMiddleware(middlewareAddHost("domain"))
 	rclient.AddRequestMiddleware(middlewareRemoveEmptyTenantID())
 	rclient.SetPathParam(core.PathParamTenantID, opts.Auth.Tenant)
 
 	c := &Client{
-		logger:              opts.Logger,
-		httpClient:          rclient,
-		dryRunTransport:     dryRunTransport,
-		baseTransport:       baseTransport,
-		middleware:          append([]Middleware(nil), opts.Middleware...),
-		BaseURL:             targetBaseURL,
-		UserAgent:           userAgent,
-		UseTenantInUsername: true,
-		Auth:                opts.Auth,
+		logger:          opts.Logger,
+		httpClient:      rclient,
+		dryRunTransport: dryRunTransport,
+		baseTransport:   baseTransport,
+		middleware:      append([]Middleware(nil), opts.Middleware...),
+		baseURL:         targetBaseURL,
+		userAgent:       userAgent,
+		auth:            opts.Auth,
 
 		debugEnabled:  opts.Debug,
 		showSensitive: opts.ShowSensitive,
-		UseKeyRing:    opts.UseKeyRing,
+		useKeyRing:    opts.UseKeyRing,
 	}
 	c.contextTokenExchange.Store(opts.ContextTokenExchange)
 	c.contextCertificateSource = opts.ContextCertificateSource
 	c.common.Client = rclient
 	c.common.MTLSPort = opts.MTLSPort
 	c.common.CertChainHeader = buildCertChainHeader(opts.Auth)
-	c.common.RealtimeClient = c.newRealtimeClient()
+	realtimeClient, err := c.newRealtimeClient(targetBaseURL)
+	if err != nil {
+		return nil, err
+	}
+	c.common.RealtimeClient = realtimeClient
 	c.common.Connector = c
 	c.initServices()
 
@@ -700,13 +794,13 @@ func NewClient(opts ClientOptions) *Client {
 	// Auto-resolve the tenant ID if it was not provided by the caller, so that
 	// path-param APIs (e.g. /application/applicationsByTenant/{tenantId}) work
 	// even when C8Y_TENANT is not set in the environment.
-	if c.Auth.Tenant == "" && !opts.SkipTenantLookup {
+	if c.Auth().Tenant == "" && !opts.SkipTenantLookup {
 		if err := c.ResolveTenant(context.Background()); err != nil {
 			slog.Debug("Failed to auto-resolve tenant ID", "err", err)
 		}
 	}
 
-	return c
+	return c, nil
 }
 
 // ResolveTenant looks up the tenant of the current credentials via
@@ -720,7 +814,7 @@ func (c *Client) ResolveTenant(ctx context.Context) error {
 		return result.Err
 	}
 	if id := result.Data.Name(); id != "" {
-		c.Auth.Tenant = id
+		c.modifyAuth(func(a *authentication.AuthOptions) { a.Tenant = id })
 		c.httpClient.SetPathParam(core.PathParamTenantID, id)
 	}
 	return nil
@@ -769,10 +863,43 @@ func (c *Client) SetBaseURL(v string) error {
 	if err != nil {
 		return err
 	}
-	c.clientMu.Lock()
-	defer c.clientMu.Unlock()
-	c.BaseURL = targetBaseURL
+	c.stateMu.Lock()
+	defer c.stateMu.Unlock()
+	c.baseURL = targetBaseURL
 	return nil
+}
+
+// BaseURL returns the base URL of the client, with a trailing slash. The
+// returned URL is a copy: change the base URL of the client with SetBaseURL.
+func (c *Client) BaseURL() *url.URL {
+	c.stateMu.RLock()
+	defer c.stateMu.RUnlock()
+	if c.baseURL == nil {
+		return nil
+	}
+	u := *c.baseURL
+	return &u
+}
+
+// Auth returns a copy of the credentials of the client. Change them with
+// SetAuth or SetToken.
+func (c *Client) Auth() authentication.AuthOptions {
+	c.stateMu.RLock()
+	defer c.stateMu.RUnlock()
+	return c.auth
+}
+
+// UserAgent returns the User-Agent header the client sends: ClientOptions.Agent,
+// or "go-client-v2" when it is empty.
+func (c *Client) UserAgent() string {
+	return c.userAgent
+}
+
+// modifyAuth changes the credentials of the client under the state lock.
+func (c *Client) modifyAuth(fn func(a *authentication.AuthOptions)) {
+	c.stateMu.Lock()
+	defer c.stateMu.Unlock()
+	fn(&c.auth)
 }
 
 // SetAuth replaces the credentials of the client. Nothing of the previous
@@ -784,7 +911,9 @@ func (c *Client) SetBaseURL(v string) error {
 func (c *Client) SetAuth(opt authentication.AuthOptions) {
 	c.clientMu.Lock()
 	defer c.clientMu.Unlock()
-	c.Auth = opt
+	c.stateMu.Lock()
+	c.auth = opt
+	c.stateMu.Unlock()
 	c.tokenSource = c.buildTokenSource(opt)
 	if opt.Tenant != "" {
 		c.httpClient.SetPathParam(core.PathParamTenantID, opt.Tenant)
@@ -792,7 +921,7 @@ func (c *Client) SetAuth(opt authentication.AuthOptions) {
 	c.updateClientAuth()
 }
 
-// refreshAuth applies c.Auth to the HTTP client after the client itself changed
+// refreshAuth applies the credentials of the client to the HTTP client after the client itself changed
 // it (e.g. a token came back from a login). Unlike SetAuth it keeps the token
 // source.
 func (c *Client) refreshAuth() {
@@ -814,17 +943,18 @@ func (c *Client) useToken(token string) {
 }
 
 func (c *Client) updateClientAuth() {
-	setAuth(c.httpClient, c.Auth)
+	setAuth(c.httpClient, c.Auth())
 }
 
 func (c *Client) SetToken(v string) {
 	c.clientMu.Lock()
 	defer c.clientMu.Unlock()
-	c.Auth.Token = v
+	c.modifyAuth(func(a *authentication.AuthOptions) { a.Token = v })
 	if v != "" {
-		if c.UseKeyRing {
+		if c.useKeyRing {
 			slog.Warn("Trying to save token to keyring")
-			if err := keyring.Set(KeyringName(c.BaseURL, c.Auth.Tenant), c.Auth.Username, c.Auth.Token); err != nil {
+			auth := c.Auth()
+			if err := keyring.Set(KeyringName(c.BaseURL(), auth.Tenant), auth.Username, auth.Token); err != nil {
 				slog.Warn("Failed to save token")
 			} else {
 				slog.Warn("Saved token in keyring")
@@ -1423,10 +1553,10 @@ func sanitiseHeaders(headers http.Header) http.Header {
 }
 
 func (c *Client) Login(ctx context.Context) (token string, err error) {
-	if len(c.Auth.Certificate) > 0 && len(c.Auth.CertificateKey) > 0 {
+	if len(c.Auth().Certificate) > 0 && len(c.Auth().CertificateKey) > 0 {
 		// Client certificate (HTTPS exchange or mTLS, see AuthOptions.CertificateTransport)
 		token, _, err = c.certificateLogin(ctx, nil)
-	} else if len(c.Auth.Username) > 0 && len(c.Auth.Password) > 0 {
+	} else if len(c.Auth().Username) > 0 && len(c.Auth().Password) > 0 {
 		// Internal SSO
 		token, err = c.loginInternalSSO(ctx)
 	} else {
@@ -1456,7 +1586,7 @@ type PasswordChangeChallenge struct {
 	// Token is the one-time reset token from the "passwordresettoken" header.
 	// It must be forwarded as-is when calling the password-reset API.
 	Token string
-	// Email is the pre-populated value from c.Auth.Username. It is provided as
+	// Email is the pre-populated value from c.Auth().Username. It is provided as
 	// a hint only — the username is not always the user's email address, so the
 	// callback should confirm or prompt for the actual email before using it.
 	Email string
@@ -1629,9 +1759,9 @@ func (c *Client) LoginWithOptions(ctx context.Context, opts LoginOptions) (token
 func (c *Client) isLoginMethodAvailable(m authentication.LoginMethod) bool {
 	switch m {
 	case authentication.LoginMethodBasic, authentication.LoginMethodOAuth2Internal:
-		return c.Auth.Username != "" && c.Auth.Password != ""
+		return c.Auth().Username != "" && c.Auth().Password != ""
 	case authentication.LoginMethodCertificate:
-		return c.Auth.Certificate != "" && c.Auth.CertificateKey != ""
+		return c.Auth().Certificate != "" && c.Auth().CertificateKey != ""
 	case authentication.LoginMethodOAuth2DeviceFlow, authentication.LoginMethodOAuth2BrowserFlow:
 		// SSO availability requires a network call; assume available and let
 		// AuthorizeWith* return ErrNoAuth2Provider if the tenant lacks a provider.
@@ -1649,12 +1779,12 @@ func (c *Client) loginWithMethod(ctx context.Context, m authentication.LoginMeth
 		needsPrompt := false
 		switch m {
 		case authentication.LoginMethodBasic, authentication.LoginMethodOAuth2Internal:
-			needsPrompt = c.Auth.Username == "" || c.Auth.Password == ""
+			needsPrompt = c.Auth().Username == "" || c.Auth().Password == ""
 		case authentication.LoginMethodCertificate:
-			needsPrompt = c.Auth.Certificate == "" || c.Auth.CertificateKey == ""
+			needsPrompt = c.Auth().Certificate == "" || c.Auth().CertificateKey == ""
 		}
 		if needsPrompt {
-			auth := c.Auth
+			auth := c.Auth()
 			if err := opts.CredentialPrompt(ctx, m, &auth); err != nil {
 				return "", err
 			}
@@ -1664,12 +1794,12 @@ func (c *Client) loginWithMethod(ctx context.Context, m authentication.LoginMeth
 
 	switch m {
 	case authentication.LoginMethodBasic:
-		if c.Auth.Username == "" || c.Auth.Password == "" {
+		if c.Auth().Username == "" || c.Auth().Password == "" {
 			return "", fmt.Errorf("basic auth: username and password are required")
 		}
 		// Basic auth requires no token exchange; just pin the auth type so
 		// the middleware always sends an Authorization: Basic header.
-		auth := c.Auth
+		auth := c.Auth()
 		auth.AuthType = []authentication.AuthType{authentication.AuthTypeBasic}
 		c.SetAuth(auth)
 		return "", nil
@@ -1764,9 +1894,9 @@ func (c *Client) loginInternalSSOWithTFA(ctx context.Context, opts LoginOptions)
 			rawSecret := secretResult.Data.RawSecret()
 			otpauthURL := fmt.Sprintf(
 				"otpauth://totp/%s?secret=%s&issuer=%s",
-				c.Auth.Username,
+				c.Auth().Username,
 				rawSecret,
-				c.BaseURL.Host,
+				c.BaseURL().Host,
 			)
 			opts.QRCode(otpauthURL, rawSecret)
 		}
@@ -1807,14 +1937,14 @@ func (c *Client) loginInternalSSOWithTFA(ctx context.Context, opts LoginOptions)
 		var email, newPassword string
 		email, newPassword, err = opts.PasswordChange(ctx, PasswordChangeChallenge{
 			Token:   resetToken,
-			Email:   c.Auth.Username,
+			Email:   c.Auth().Username,
 			Message: errorMessage,
 		})
 		if err != nil {
 			return "", fmt.Errorf("password change: %w", err)
 		}
 		if r := c.Users.ResetPassword(ctx, users.ResetPasswordOptions{
-			Tenant:           c.Auth.Tenant,
+			Tenant:           c.Auth().Tenant,
 			Token:            resetToken,
 			Email:            email,
 			NewPassword:      newPassword,
@@ -1822,7 +1952,7 @@ func (c *Client) loginInternalSSOWithTFA(ctx context.Context, opts LoginOptions)
 		}); r.Err != nil {
 			return "", fmt.Errorf("password change: reset: %w", r.Err)
 		}
-		c.Auth.Password = newPassword
+		c.modifyAuth(func(a *authentication.AuthOptions) { a.Password = newPassword })
 		// Re-run the full login flow so that any additional challenges
 		// (TOTP, SMS TFA) that follow the password change are handled too.
 		token, err = c.LoginWithOptions(ctx, opts)
@@ -1852,9 +1982,9 @@ func (c *Client) loginInternalSSOWithTFA(ctx context.Context, opts LoginOptions)
 
 	// Retry login with the TOTP code supplied.
 	tok := c.Tenants.LoginTokens.Create(ctx, logintokens.CreateTokenOptions{
-		Tenant:    c.Auth.Tenant,
-		Username:  c.Auth.Username,
-		Password:  c.Auth.Password,
+		Tenant:    c.Auth().Tenant,
+		Username:  c.Auth().Username,
+		Password:  c.Auth().Password,
 		TFACode:   tfaCode,
 		GrantType: logintokens.GrantTypePassword,
 	})
@@ -1908,8 +2038,8 @@ func (c *Client) loginInternalSSO(ctx context.Context) (string, error) {
 	// Do not start a token source exchange for the token request itself.
 	ctx = ctxhelpers.WithSkipTokenSource(ctx)
 	tok := c.Tenants.LoginTokens.Create(ctx, logintokens.CreateTokenOptions{
-		Username:  c.Auth.Username,
-		Password:  c.Auth.Password,
+		Username:  c.Auth().Username,
+		Password:  c.Auth().Password,
 		GrantType: logintokens.GrantTypePassword,
 	})
 	if tok.IsError() {
@@ -1925,14 +2055,14 @@ func (c *Client) loginInternalSSO(ctx context.Context) (string, error) {
 func (c *Client) fetchToken(ctx context.Context) (*authentication.Token, error) {
 	var raw string
 	var err error
-	if len(c.Auth.Certificate) > 0 && len(c.Auth.CertificateKey) > 0 {
+	if len(c.Auth().Certificate) > 0 && len(c.Auth().CertificateKey) > 0 {
 		var expiry time.Time
 		raw, expiry, err = c.certificateLogin(ctx, nil)
 		if err != nil {
 			return nil, err
 		}
 		return &authentication.Token{AccessToken: raw, Expiry: expiry}, nil
-	} else if len(c.Auth.Username) > 0 && len(c.Auth.Password) > 0 {
+	} else if len(c.Auth().Username) > 0 && len(c.Auth().Password) > 0 {
 		raw, err = c.loginInternalSSO(ctx)
 	} else {
 		return nil, nil
@@ -1981,7 +2111,7 @@ func (c *Client) seedTokenSource(raw string) {
 // propagated. CachedTokenSource never caches a failed fetch, meaning the
 // source retries on every subsequent request until the mTLS endpoint responds.
 func (c *Client) newInternalTokenSource() *authentication.CachedTokenSource {
-	certAuth := c.Auth.Certificate != "" && c.Auth.CertificateKey != ""
+	certAuth := c.Auth().Certificate != "" && c.Auth().CertificateKey != ""
 	var oauth2Unavailable atomic.Bool
 	return authentication.NewCachedTokenSource(
 		authentication.TokenSourceFunc(func() (*authentication.Token, error) {
@@ -2026,24 +2156,21 @@ func (c *Client) HideSensitiveInformationIfActive(message string) string {
 	if os.Getenv("USERNAME") != "" {
 		message = strings.ReplaceAll(message, os.Getenv("USERNAME"), "******")
 	}
-	if c.Auth.Tenant != "" {
-		message = strings.ReplaceAll(message, c.Auth.Tenant, "{tenant}")
+	if c.Auth().Tenant != "" {
+		message = strings.ReplaceAll(message, c.Auth().Tenant, "{tenant}")
 	}
-	if c.Auth.Username != "" {
-		message = strings.ReplaceAll(message, c.Auth.Username, "{username}")
+	if c.Auth().Username != "" {
+		message = strings.ReplaceAll(message, c.Auth().Username, "{username}")
 	}
-	if c.Auth.Password != "" {
-		message = strings.ReplaceAll(message, c.Auth.Password, "{password}")
+	if c.Auth().Password != "" {
+		message = strings.ReplaceAll(message, c.Auth().Password, "{password}")
 	}
-	if c.Auth.Token != "" {
-		message = strings.ReplaceAll(message, c.Auth.Token, "{token}")
+	if c.Auth().Token != "" {
+		message = strings.ReplaceAll(message, c.Auth().Token, "{token}")
 	}
 
-	if c.BaseURL != nil {
-		message = strings.ReplaceAll(message, strings.TrimRight(c.BaseURL.Host, "/"), "{host}")
-	}
-	if c.Domain != "" {
-		message = strings.ReplaceAll(message, c.Domain, "{domain}")
+	if baseURL := c.BaseURL(); baseURL != nil {
+		message = strings.ReplaceAll(message, strings.TrimRight(baseURL.Host, "/"), "{host}")
 	}
 
 	basicAuthMatcher := regexp.MustCompile(`(Basic\s+)[A-Za-z0-9=]+`)

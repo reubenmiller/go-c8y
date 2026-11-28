@@ -10,4 +10,4 @@ import (
 
 // BaseURL only reads a field, so everything compiled into this package is
 // what the SDK costs any package that refers to api.Client.
-func BaseURL(c *api.Client) *url.URL { return c.BaseURL }
+func BaseURL(c *api.Client) *url.URL { return c.BaseURL() }

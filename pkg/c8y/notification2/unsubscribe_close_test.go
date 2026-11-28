@@ -48,7 +48,7 @@ func Test_UnsubscribeThenClose_SendsMessageWithoutWarning(t *testing.T) {
 			}()
 		}))
 
-		c, err := NewNotification2ClientE(srv.URL, nil, Subscription{Token: "t"}, ConnectionOptions{})
+		c, err := NewClient(srv.URL, nil, Subscription{Token: "t"}, ConnectionOptions{})
 		require.NoError(t, err)
 		require.NoError(t, c.ConnectContext(context.Background()))
 

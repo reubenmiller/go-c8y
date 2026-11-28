@@ -380,16 +380,16 @@ func (s *Service) RenewToken(ctx context.Context, opt ClientOptions) (string, er
 // CreateClient renews or creates the notification2 token and returns a client
 // for it. The client connects through the Cumulocity client (TLS, proxy,
 // request middleware and extra headers, dry run), see
-// [notification2.Notification2Client.SetConnector]. ctx supplies the context
+// [notification2.Client.SetConnector]. ctx supplies the context
 // values of the token renewal done on every reconnect, but not its cancellation.
-func (s *Service) CreateClient(ctx context.Context, opt ClientOptions) (*notification2.Notification2Client, error) {
+func (s *Service) CreateClient(ctx context.Context, opt ClientOptions) (*notification2.Client, error) {
 	token, err := s.RenewToken(ctx, opt)
 	if err != nil {
 		return nil, err
 	}
 
 	renewCtx := context.WithoutCancel(ctx)
-	client, err := notification2.NewNotification2ClientE(s.svc.Client.BaseURL(), nil, notification2.Subscription{
+	client, err := notification2.NewClient(s.svc.Client.BaseURL(), nil, notification2.Subscription{
 		TokenRenewal: func(v string) (string, error) {
 			return s.RenewToken(renewCtx, ClientOptions{
 				Token: v,
