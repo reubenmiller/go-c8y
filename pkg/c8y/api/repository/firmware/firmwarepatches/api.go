@@ -20,9 +20,6 @@ import (
 	"resty.dev/v3"
 )
 
-const apiManagedObjects = "/inventory/managedObjects"
-const apiManagedObject = "/inventory/managedObjects/{id}"
-const paramID = "id"
 const resultProperty = "managedObjects"
 
 func NewService(s *httpcore.Service) *Service {

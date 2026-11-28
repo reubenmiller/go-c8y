@@ -22,7 +22,6 @@ import (
 
 var apiTenants = "/tenant/tenants"
 var apiTenant = "/tenant/tenants/{id}"
-var apiTenantCurrent = "/tenant/currentTenant"
 var apiTenantApplications = "/tenant/tenants/{tenantId}/applications"
 var apiTenantApplication = "/tenant/tenants/{tenantId}/applications/{applicationId}"
 var apiTenantTFA = "/tenant/tenants/{tenantId}/tfa"

@@ -15,10 +15,6 @@ import (
 var apiOAuth = "/tenant/oauth"
 var apiOAuthToken = "/tenant/oauth/token"
 
-var paramID = "id"
-
-const resultProperty = "events"
-
 func NewService(s *httpcore.Service) *Service {
 	return &Service{
 		svc: *s,

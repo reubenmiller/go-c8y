@@ -21,10 +21,6 @@ import (
 
 var apiDeviceControlAccessToken = "/devicecontrol/deviceAccessToken"
 
-const paramID = "id"
-
-const resultProperty = httpcore.ResultPropertyManagedObjects
-
 func NewService(s *httpcore.Service) *Service {
 	return NewServiceWithManagedObjects(s, managedobjects.NewService(s))
 }

@@ -3,7 +3,6 @@ package microservices
 import (
 	"context"
 	"fmt"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/spec"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/applications"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
@@ -13,6 +12,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/source"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/spec"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"

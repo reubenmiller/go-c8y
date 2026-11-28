@@ -17,7 +17,6 @@ var apiTenantStatisticsFile = "/tenant/statistics/files/{id}"
 var apiTenantStatisticsFileLatestByMonth = "/tenant/statistics/files/latest/{month}"
 
 const paramID = "id"
-const paramChild = "child"
 
 const resultProperty = "statisticsFiles"
 

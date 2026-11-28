@@ -18,10 +18,8 @@ import (
 	"resty.dev/v3"
 )
 
-var apiManagedObjects = "/inventory/managedObjects"
 var apiManagedObject = "/inventory/managedObjects/{id}"
 
-const paramID = "id"
 const resultProperty = "managedObjects"
 const FragmentConfiguration = "c8y_ConfigurationDump"
 

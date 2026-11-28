@@ -24,7 +24,6 @@ var apiGroupsWithUser = "/user/{tenantId}/users/{id}/groups"
 var apiGroupByName = "/user/{tenantId}/groupByName/{groupName}"
 
 var paramID = "id"
-var paramUsername = "username"
 var paramGroupName = "groupName"
 
 const resultProperty = "groups"

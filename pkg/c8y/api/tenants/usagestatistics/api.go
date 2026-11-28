@@ -16,9 +16,6 @@ var apiTenantStatistics = "/tenant/statistics"
 var apiTenantStatisticsSummary = "/tenant/statistics/summary"
 var apiTenantStatisticsAllTenantsSummary = "/tenant/statistics/allTenantsSummary"
 
-const paramID = "id"
-const paramChild = "child"
-
 const resultProperty = "usageStatistics"
 
 // Service

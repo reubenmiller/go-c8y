@@ -6,11 +6,6 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-// resultProperty is the gjson path to the child managed objects inside a
-// managedObjectReferenceCollection response ({"references":[{"managedObject":{…}}]}).
-// All child-reference endpoints (childAdditions/childAssets/childDevices) share it.
-const resultProperty = "references.#.managedObject"
-
 type ListOptions struct {
 	Query             string `url:"query,omitempty"`
 	WithParents       bool   `url:"withParents,omitempty"`

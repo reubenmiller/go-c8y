@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -12,6 +10,8 @@ import (
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsondoc"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
 	oauth2_api "github.com/reubenmiller/go-c8y/v2/pkg/oauth/api"
 	"github.com/reubenmiller/go-c8y/v2/pkg/oauth/device"
 	"github.com/stretchr/testify/assert"
