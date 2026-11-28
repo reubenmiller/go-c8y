@@ -544,6 +544,31 @@ func TestDefinitionUpsertCreatesMissing(t *testing.T) {
 	}
 }
 
+// Find returns the definition, op.ErrNotFound when it does not exist, and the
+// lookup error otherwise.
+func TestDefinitionFind(t *testing.T) {
+	f := newFakeDTM(t)
+	f.handle(http.MethodGet, "/service/dtm/definitions/events/door", reply(http.StatusOK, `{"identifier":"door","jsonSchema":{"title":"Door"}}`))
+	f.handle(http.MethodGet, "/service/dtm/definitions/events/missing", reply(http.StatusNotFound, `{"messages":["not found"]}`))
+	f.handle(http.MethodGet, "/service/dtm/definitions/events/broken", reply(http.StatusForbidden, `{"messages":["access denied"]}`))
+	events := f.client().Definitions.Events
+	ctx := context.Background()
+
+	def, err := events.Find(ctx, "door", nil)
+	if err != nil {
+		t.Fatalf("Find(door): %v", err)
+	}
+	if got := def.Get("identifier").String(); got != "door" {
+		t.Errorf("identifier = %q, want door", got)
+	}
+	if _, err := events.Find(ctx, "missing", nil); !errors.Is(err, op.ErrNotFound) {
+		t.Errorf("Find(missing) error = %v, want op.ErrNotFound", err)
+	}
+	if _, err := events.Find(ctx, "broken", nil); err == nil || errors.Is(err, op.ErrNotFound) {
+		t.Errorf("Find(broken) error = %v, want the server error", err)
+	}
+}
+
 func TestDefinitionGetOrCreate(t *testing.T) {
 	f := newFakeDTM(t)
 	f.handle(http.MethodGet, "/service/dtm/definitions/events/door", reply(http.StatusOK, `{"identifier":"door","jsonSchema":{"title":"Door"}}`))

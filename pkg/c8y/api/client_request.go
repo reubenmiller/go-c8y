@@ -284,8 +284,9 @@ func (c *Client) send(ctx context.Context, options RequestOptions) *rawResponse 
 // are returned the same way.
 //
 // The result keeps what a caller of a raw request needs: HTTPStatus, the
-// response Header, the raw body in Response (also when it is not JSON, and for an HTTP error), the
-// Request that was sent (or would be, in a dry run).
+// response Header, the raw body in Response (also when it is not JSON, and
+// for an HTTP error), and the Request that was sent (or would be, in a dry
+// run).
 //
 // Example:
 //

@@ -64,10 +64,10 @@ The middleware that `NewClient` installs itself, and the unused middleware helpe
 - **THEN** the caller still receives the full response body
 
 ### Requirement: Raw responses are SDK-owned
-Public functions that return a raw HTTP response (`api.Client.SendRequest`, through `api.RequestResult`) SHALL return SDK-owned copies of the response body and the sent request, so their contents do not change after the call returns. Lower-level helpers that return resty responses (`ExecuteResponseOnly`) SHALL be internal.
+Public functions that return a raw HTTP response (`api.Client.Request`, through `op.Result.Response` and `op.Result.Request`) SHALL return SDK-owned copies of the response body and the sent request, so their contents do not change after the call returns. Lower-level helpers that return resty responses (`ExecuteResponseOnly`) SHALL be internal.
 
 #### Scenario: Request body stays stable after later requests
-- **WHEN** a caller keeps `RequestResult.Response.Request` from `SendRequest` and the client then sends 100 more requests with different bodies
+- **WHEN** a caller keeps `Result.Request` from `Client.Request` and the client then sends 100 more requests with different bodies
 - **THEN** reading the kept request's body returns the original body
 
 ### Requirement: Service types do not expose core internals
