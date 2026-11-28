@@ -272,6 +272,28 @@ The realtime, notification2 and remote access clients now connect like an HTTP c
 * Added `api.IsUnauthorized`, `api.IsForbidden`, `api.IsConflict` and `api.StatusCode(err) (int, bool)`. `api.IsNotFound` and `api.ErrHasStatus` now also work with the `api.Err*` sentinel values (they are `Error` values, not pointers).
 * Docs: added an "Errors" section to the README and "Checking errors" to `docs/API_DESIGN.md`, and fixed examples there which used methods that do not exist (`Operations.Delete`, `ManagedObjects.GetOrCreate`).
 
+### Shared lookup code and lint
+
+The reference resolution of the services was copied between packages. It is now shared, so the services behave the same, and the repository lints for new copies. No exported identifier changes; the behavior changes are:
+
+* The `ResolveID` of agents, device groups, smart groups and device profiles share one implementation (`pkg/c8y/internal/lookup`). The `ResolveID` and `RegisterResolver` of applications, microservices, UI plugins and managed objects share `source.Registry` (new, exported: `source.NewRegistry`, `Parse`, `Resolve`, `Register`). The client-side wildcard lookups of applications, microservices, UI plugins and user roles use the new `pagination.FindFirst` and `pagination.FindWildcard`.
+* **Breaking (behavior)**: the messages of an empty and of an unknown reference are the same in every service:
+
+  | Before | After |
+  |---|---|
+  | `empty application reference string` (also microservice, ui plugin) | `empty application reference` |
+  | `empty source string` (managed objects) | `empty managed object reference` |
+  | `unknown application resolver scheme: cockpit` (also microservice, ui plugin) | `unknown application resolver scheme: "cockpit"` |
+  | `unknown resolver scheme: x` (managed objects) | `unknown managed object resolver scheme: "x"` |
+* **Fixed**: a `query:` reference of agents, device groups, smart groups and device profiles which matches nothing now reports `core.IsNotFound(err)` as true (the message is unchanged: `agent not found: <query>`), like a `name:` reference. The metadata of the lookup has `source` "query" for a `query:` reference; it was "name".
+* **Fixed**: a `contextPath:` reference of a microservice which matches nothing is a `*core.NameNotFoundError` (still a 404, same message), like the `name:` reference.
+* `fmt.Errorf` calls which formatted the only error with `%v` or `%s` now use `%w`, so `errors.Is` and `errors.As` reach it (certutil, microservice registration, realtime patterns, measurement fragments). The messages are unchanged. Calls which deliberately only describe a second error (the last error of an enrollment timeout, a failed recovery or cleanup, the cause of an unavailable validation) keep `%v` and are marked `//nolint:errorlint`. `pipeline` finds an `*AbortError` with `errors.As`.
+* Removed three copies of `isPlainID` (use `source.IsID`), the unused commented-out `Type` field of the alarm bulk-update options, and 10 comments about a refactoring which was finished.
+* `AuthorizeWithDeviceFlow` passes its `ctx` to the token polling (it used `context.TODO()`), so cancelling the context stops the wait. `TrustedCertificates.Confirm` documents the roles the platform requires (a management tenant admin; it answers 403 otherwise). The retry of the token request on a 400 is documented.
+* Lint: `.golangci.yml` enables `errorlint`, `nilerr`, `bodyclose`, `revive` (exported), `dupl` and `forbidigo` (no global `slog` in `pkg/c8y`). Only code added after commit `56caae4` is checked (`new-from-rev`), so the existing findings do not fail CI; the lint job fetches the full history for it. Generated files (`zz_generated*`, `pkg/c8y/jsonmodels`) are excluded from the linters and from the Sonar analysis (`.sonarcloud.properties`).
+* `task test-ci` fails when the coverage of a package under `pkg/c8y/api` drops below its floor (`tools/coverfloor`, floors in `tools/coverfloor/floors.txt`, two points below the coverage of this change). The offline suite covers agents, device groups, smart groups and device profiles at 83% to 88% (they were 37% to 57%).
+* Tests: `TestScopedServices` runs the verbs and the references of the four inventory-backed services against the fake server; `source.Registry` and `pagination.FindFirst`/`FindWildcard` have unit tests.
+
 ### Tooling and documentation
 
 * `c8ygen lint` now compares operations (method + path) and requires a reason for every drift waiver; waivers can name a method (`POST /path`).

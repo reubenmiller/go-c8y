@@ -68,6 +68,7 @@ func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
+// GetOptions are the options of [Service.Get].
 type GetOptions struct {
 	Key      string `url:"-"`
 	Category string `url:"-"`

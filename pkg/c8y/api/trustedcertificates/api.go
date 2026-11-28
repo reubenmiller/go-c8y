@@ -365,8 +365,12 @@ type ConfirmOptions struct {
 	TenantID string `url:"-"`
 }
 
-// Confirm the proof of possession of an already uploaded certificate (by a given fingerprint) for a specific tenant
-// TODO: This api calls always returns a 403 error
+// Confirm the proof of possession of an already uploaded certificate (by a given fingerprint) for a specific tenant.
+//
+// The platform only allows this request for a user with the role
+// ROLE_TENANT_MANAGEMENT_ADMIN or ROLE_TENANT_ADMIN of the management tenant, so
+// it fails with 403 Forbidden for any other tenant or user. A tenant provides
+// the proof of possession of its own certificates with ProofEndToEnd instead.
 func (s *Service) Confirm(ctx context.Context, opt ConfirmOptions) op.Result[jsonmodels.TrustedCertificate] {
 	return httpcore.Execute(ctx, s.confirmB(opt), jsonmodels.NewTrustedCertificate)
 }

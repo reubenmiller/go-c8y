@@ -444,7 +444,7 @@ func verifyImageTarball(file string) error {
 	reader := tar.NewReader(f)
 	for {
 		hdr, err := reader.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return nil
 		}
 		if err != nil {

@@ -82,12 +82,3 @@ func TestListEmptySoftwareListsAll(t *testing.T) {
 		t.Errorf("query = %q, want no bygroupid for empty software", rawQuery)
 	}
 }
-
-func TestIsPlainID(t *testing.T) {
-	cases := map[string]bool{"": false, "12345": true, "name:python3": false, "python3": false, "12a": false}
-	for in, want := range cases {
-		if got := isPlainID(in); got != want {
-			t.Errorf("isPlainID(%q) = %v, want %v", in, got, want)
-		}
-	}
-}

@@ -50,12 +50,3 @@ func TestListPlainIDSkipsFirmwareLookup(t *testing.T) {
 		t.Errorf("withParents = %q, want true", withParents)
 	}
 }
-
-func TestIsPlainID(t *testing.T) {
-	cases := map[string]bool{"": false, "12345": true, "name:linux": false, "linux": false, "12a": false}
-	for in, want := range cases {
-		if got := isPlainID(in); got != want {
-			t.Errorf("isPlainID(%q) = %v, want %v", in, got, want)
-		}
-	}
-}

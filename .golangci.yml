@@ -7,12 +7,59 @@ run:
 linters:
   enable:
     - misspell
+    # Error handling
+    - errorlint
+    - nilerr
+    - bodyclose
+    # API hygiene
+    - revive
+    # Duplication
+    - dupl
+    # Logging: the SDK logs through the logger of the client, never the global slog.
+    - forbidigo
   disable:
     - errcheck
+  exclusions:
+    paths:
+      # Generated code and the generated models repeat by design.
+      - zz_generated
+      - pkg/c8y/jsonmodels
+    rules:
+      # The global slog rule is for the SDK packages, not for tools, examples and tests.
+      - path-except: ^pkg/c8y/
+        linters:
+          - forbidigo
+      - path: _test\.go$
+        linters:
+          - forbidigo
+          - dupl
+          - revive
   settings:
     govet:
       disable:
         - fieldalignment
+    errorlint:
+      # fmt.Errorf with a %v of an error drops the chain; use %w.
+      errorf: true
+      asserts: true
+      comparison: true
+    revive:
+      # Only the documentation of the exported API is gated; the other revive
+      # rules are style opinions the repo does not follow.
+      enable-all-rules: false
+      rules:
+        - name: exported
+          arguments:
+            - checkPrivateReceivers
+            - sayRepetitiveInsteadOfStutters
+    dupl:
+      # Tokens in a duplicated sequence; ~100 catches a copied function.
+      threshold: 120
+    forbidigo:
+      forbid:
+        - pattern: '^slog\.(Debug|Info|Warn|Error|Log|DebugContext|InfoContext|WarnContext|ErrorContext|LogAttrs)$'
+          msg: use the logger of the client (or the one passed in), not the global slog logger
+      analyze-types: false
     misspell:
       # Correct spellings using locale preferences for US or UK.
       # Setting locale to US will correct the British spelling of 'colour' to 'color'.
@@ -30,3 +77,8 @@ formatters:
   enable:
     - goimports
     - gofmt
+
+issues:
+  # Gate only new code: the findings which existed when these linters were
+  # added are not reported, so they can be fixed gradually.
+  new-from-rev: 56caae4

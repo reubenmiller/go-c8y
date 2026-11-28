@@ -78,8 +78,9 @@ func (s *Service) createB(opt CreateTokenOptions) *httpcore.TryRequest {
 		}).
 		SetRetryAllowNonIdempotent(true).
 		AddRetryConditions(func(r *resty.Response, err error) bool {
-			// FIXME: retry as sometimes the server's first response to the authorization provider
-			// can fail, but subsequent requests are ok
+			// The first token request after a new login or token can fail with
+			// 400 because the authorization provider is not ready yet, while the
+			// request sent right after succeeds. Retry it once (see SetRetryCount).
 			shouldRetry := r != nil && r.StatusCode() == 400
 			return shouldRetry
 		})

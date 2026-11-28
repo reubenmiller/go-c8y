@@ -145,7 +145,7 @@ func (s *Service) Enroll(ctx context.Context, opt EnrollOptions) op.Result[enrol
 		}
 		if err := wait(ctx, timeout.C, opt.Interval); err != nil {
 			// The last error is only described: it is the reason for the timeout, not the error
-			return op.Failed[enrollment.X509Certificate](fmt.Errorf("%w. last error: %v", err, result.Err), false)
+			return op.Failed[enrollment.X509Certificate](fmt.Errorf("%w. last error: %v", err, result.Err), false) //nolint:errorlint // the second error is described, not wrapped
 		}
 	}
 }

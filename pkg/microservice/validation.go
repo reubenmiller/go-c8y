@@ -205,7 +205,7 @@ func (m *Microservice) validateCaller(r *http.Request, auth authentication.AuthO
 			caller, err = m.currentUser(r, auth, fromCookie)
 		}
 		if err != nil && !errors.Is(err, ErrValidationUnavailable) && !errors.Is(err, ErrInvalidCredentials) {
-			err = fmt.Errorf("%w: %v", ErrInvalidCredentials, err)
+			err = fmt.Errorf("%w: %v", ErrInvalidCredentials, err) //nolint:errorlint // the second error is described, not wrapped
 		}
 		if caller.Tenant == "" && err == nil {
 			caller.Tenant = auth.Tenant
@@ -246,7 +246,7 @@ func (m *Microservice) currentUser(r *http.Request, auth authentication.AuthOpti
 	u := strings.TrimSuffix(m.Client.BaseURL.String(), "/") + "/user/currentUser"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
-		return CallerInfo{}, fmt.Errorf("%w: %v", ErrValidationUnavailable, err)
+		return CallerInfo{}, fmt.Errorf("%w: %v", ErrValidationUnavailable, err) //nolint:errorlint // the second error is described, not wrapped
 	}
 	req.Header.Set("Accept", "application/json")
 	if fromCookie {
@@ -262,7 +262,7 @@ func (m *Microservice) currentUser(r *http.Request, auth authentication.AuthOpti
 
 	resp, err := m.httpClientForValidation().Do(req)
 	if err != nil {
-		return CallerInfo{}, fmt.Errorf("%w: %v", ErrValidationUnavailable, err)
+		return CallerInfo{}, fmt.Errorf("%w: %v", ErrValidationUnavailable, err) //nolint:errorlint // the second error is described, not wrapped
 	}
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
@@ -284,7 +284,7 @@ func (m *Microservice) currentUser(r *http.Request, auth authentication.AuthOpti
 		} `json:"effectiveRoles"`
 	}
 	if err := json.Unmarshal(body, &user); err != nil {
-		return CallerInfo{}, fmt.Errorf("%w: unreadable current user: %v", ErrValidationUnavailable, err)
+		return CallerInfo{}, fmt.Errorf("%w: unreadable current user: %v", ErrValidationUnavailable, err) //nolint:errorlint // the second error is described, not wrapped
 	}
 	caller := CallerInfo{Tenant: auth.Tenant, UserName: user.UserName}
 	for _, role := range user.EffectiveRoles {

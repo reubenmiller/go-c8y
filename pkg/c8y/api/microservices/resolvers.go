@@ -3,7 +3,6 @@ package microservices
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/source"
 )
@@ -60,52 +59,23 @@ func (c contextPathResolver) String() string {
 	return fmt.Sprintf("contextPath:%s", c.ContextPath)
 }
 
-// parseResolver parses a source reference string into a resolver
-// Supports formats specific to microservices:
+// newResolvers builds the reference schemes specific to microservices:
 //   - "12345" -> direct ID
 //   - "id:12345" -> direct ID
 //   - "name:my-microservice" -> name lookup
 //   - "contextPath:/my-microservice" -> contextPath lookup
 //   - "custom:..." -> custom resolver (if registered)
-func (s *Service) parseResolver(str string) (source.Resolver, error) {
-	if str == "" {
-		return nil, fmt.Errorf("empty microservice reference string")
-	}
-
-	// Try to parse with prefix
-	idx := strings.IndexByte(str, ':')
-	if idx == -1 {
-		// No prefix, treat as direct ID
-		return source.ID(str), nil
-	}
-
-	prefix := str[:idx]
-	value := str[idx+1:]
-
-	// Check custom resolvers first
-	if s.customResolvers != nil {
-		if resolver, ok := s.customResolvers[prefix]; ok {
-			return resolver, nil
-		}
-	}
-
-	switch prefix {
-	case "id":
-		return source.ID(value), nil
-
-	case "name":
-		return nameResolver{
-			Name:   value,
-			Lookup: s.lookupByName,
-		}, nil
-
-	case "contextPath":
-		return contextPathResolver{
-			ContextPath: value,
-			Lookup:      s.lookupByContextPath,
-		}, nil
-
-	default:
-		return nil, fmt.Errorf("unknown microservice resolver scheme: %s", prefix)
-	}
+func (s *Service) newResolvers() *source.Registry {
+	return source.NewRegistry("microservice", map[string]source.SchemeParser{
+		"name": func(value string) (source.Resolver, error) {
+			return nameResolver{Name: value, Lookup: func(ctx context.Context, name string) (string, map[string]any, error) {
+				return s.lookupByName(ctx, name)
+			}}, nil
+		},
+		"contextPath": func(value string) (source.Resolver, error) {
+			return contextPathResolver{ContextPath: value, Lookup: func(ctx context.Context, contextPath string) (string, map[string]any, error) {
+				return s.lookupByContextPath(ctx, contextPath)
+			}}, nil
+		},
+	})
 }

@@ -87,7 +87,6 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 }
 
 func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
-	// Build request directly since managedObjects.listB is now private
 	listOpts := managedobjects.ListOptions{
 		Query: model.NewInventoryQuery().
 			AddOrderBy("name").

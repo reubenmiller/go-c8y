@@ -43,7 +43,6 @@ func NewService(s *httpcore.Service) *Service {
 		ChildAdditions:  childadditions.NewService(s),
 		ChildAssets:     childassets.NewService(s),
 		ChildDevices:    childdevices.NewService(s),
-		customResolvers: make(map[string]source.Resolver),
 	}
 
 	// Setup lookup functions for resolvers
@@ -104,6 +103,8 @@ func NewService(s *httpcore.Service) *Service {
 		return "", nil, core.ErrNotFound("managed object not found with query: %s", query)
 	}
 
+	service.resolvers = service.newResolvers()
+
 	return service
 }
 
@@ -120,7 +121,7 @@ type Service struct {
 	lookupByExternalID func(ctx context.Context, typ, extID string) (string, map[string]any, error)
 	lookupByName       func(ctx context.Context, name string) (string, map[string]any, error)
 	lookupByQuery      func(ctx context.Context, query string) (string, map[string]any, error)
-	customResolvers    map[string]source.Resolver
+	resolvers          *source.Registry
 }
 
 // ListOptions filter managed object
@@ -356,28 +357,14 @@ func (s *Service) deleteB(ID string, opt DeleteOptions) *httpcore.TryRequest {
 //   - "ext:c8y_Serial:ABC123" -> "<id>" (meta: {"externalType": "c8y_Serial", "externalID": "ABC123", ...})
 //   - "query:name eq 'device01'" -> "<id>" (meta: {"query": "...", ...})
 func (s *Service) ResolveID(ctx context.Context, id string, meta map[string]any) (_ string, resolveErr error) {
-	defer func() { resolveErr = core.WrapLookup("managed object", id, resolveErr) }()
-	resolver, err := s.parseResolver(id)
-	if err != nil {
-		return "", err
-	}
-	result, err := resolver.ResolveID(ctx)
-	if err != nil {
-		return "", err
-	}
-	if meta != nil {
-		for k, v := range result.Meta {
-			meta[k] = v
-		}
-	}
-	return result.ID, nil
+	return s.resolvers.Resolve(ctx, id, meta)
 }
 
 // RegisterResolver allows registering custom ID resolvers for use with ResolveID
 // Example: RegisterResolver("custom", myResolver)
 // Then use: ResolveID(ctx, "custom:value")
 func (s *Service) RegisterResolver(scheme string, resolver source.Resolver) {
-	s.customResolvers[scheme] = resolver
+	s.resolvers.Register(scheme, resolver)
 }
 
 // ByID creates a direct ID reference string (no lookup needed).

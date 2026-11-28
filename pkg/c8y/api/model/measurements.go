@@ -420,7 +420,7 @@ func (m MeasurementRepresentation) MarshalJSON() ([]byte, error) {
 
 		b, err := json.Marshal(valueFragmentType)
 		if err != nil {
-			return nil, fmt.Errorf("could not marshal valueFragmentType. %s", err)
+			return nil, fmt.Errorf("could not marshal valueFragmentType. %w", err)
 		}
 
 		// Remove the "{" and "}" object brackets from the returned result as we need to merge the

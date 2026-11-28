@@ -87,6 +87,7 @@ func (s *Service) createB(body any) *httpcore.TryRequest {
 	return httpcore.NewTryRequest(s.svc.Client, req, "")
 }
 
+// GetOptions are the options of [Service.Get].
 type GetOptions struct {
 	Key      string `url:"-"`
 	Category string `url:"-"`
@@ -107,6 +108,7 @@ func (s *Service) getB(opt GetOptions) *httpcore.TryRequest {
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
+// UpdateOptions are the options of [Service.Update].
 type UpdateOptions struct {
 	Category string `url:"-"`
 	Key      string `url:"-"`
@@ -131,6 +133,7 @@ func (s *Service) updateB(opt UpdateOptions) *httpcore.TryRequest {
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
+// UpdateEditableFlagOptions are the options of [Service.UpdateEditableFlag].
 type UpdateEditableFlagOptions struct {
 	Category string `url:"-"`
 	Key      string `url:"-"`
@@ -210,6 +213,7 @@ func (s *Service) listByCategoryB(opt ListByCategoryOptions) *httpcore.TryReques
 	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
+// UpdateByCategoryOptions are the options of [Service.UpdateByCategory].
 type UpdateByCategoryOptions struct {
 	Category string `url:"-"`
 

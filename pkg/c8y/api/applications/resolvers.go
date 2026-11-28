@@ -41,55 +41,25 @@ func (n nameResolver) String() string {
 	return fmt.Sprintf("name:%s", n.Name)
 }
 
-// parseResolver parses a source reference string into a resolver
-// Supports formats specific to applications:
+// newResolvers builds the reference schemes specific to applications:
 //   - "12345" -> direct ID
 //   - "id:12345" -> direct ID
 //   - "name:cockpit" -> name lookup
 //   - "name:cockpit:HOSTED" -> name lookup with type filter
 //   - "custom:..." -> custom resolver (if registered)
-func (s *Service) parseResolver(str string) (source.Resolver, error) {
-	if str == "" {
-		return nil, fmt.Errorf("empty application reference string")
-	}
-
-	// Try to parse with prefix
-	idx := strings.IndexByte(str, ':')
-	if idx == -1 {
-		// No prefix, treat as direct ID
-		return source.ID(str), nil
-	}
-
-	prefix := str[:idx]
-	value := str[idx+1:]
-
-	// Check custom resolvers first
-	if s.customResolvers != nil {
-		if resolver, ok := s.customResolvers[prefix]; ok {
-			return resolver, nil
-		}
-	}
-
-	switch prefix {
-	case "id":
-		return source.ID(value), nil
-
-	case "name":
-		// Format: name:appName or name:appName:type
-		appName := value
-		appType := ""
-		idx2 := strings.IndexByte(value, ':')
-		if idx2 != -1 {
-			appName = value[:idx2]
-			appType = value[idx2+1:]
-		}
-		return nameResolver{
-			Name:   appName,
-			Type:   appType,
-			Lookup: s.lookupByName,
-		}, nil
-
-	default:
-		return nil, fmt.Errorf("unknown application resolver scheme: %s", prefix)
-	}
+func (s *Service) newResolvers() *source.Registry {
+	return source.NewRegistry("application", map[string]source.SchemeParser{
+		"name": func(value string) (source.Resolver, error) {
+			// Format: name:appName or name:appName:type
+			appName, appType, _ := strings.Cut(value, ":")
+			return nameResolver{
+				Name: appName,
+				Type: appType,
+				// s.lookupByName is read at resolve time, so it can be replaced.
+				Lookup: func(ctx context.Context, name, appType string) (string, map[string]any, error) {
+					return s.lookupByName(ctx, name, appType)
+				},
+			}, nil
+		},
+	})
 }

@@ -469,10 +469,6 @@ type BulkUpdateOptions struct {
 	// or cast a string variable with managedobjects.DeviceRef(id).
 	Source managedobjects.DeviceRef `url:"source,omitempty"`
 
-	// TODO: Check if this is supported or not
-	// The types of alarm to search for
-	// Type []string `url:"type,omitempty"`
-
 	// The status of the alarm to search for. Should not be used when resolved parameter is provided
 	Status []model.AlarmStatus `url:"status,omitempty"`
 
@@ -552,10 +548,6 @@ type DeleteListOptions struct {
 	// Use the typed helpers: managedobjects.ByName, ByExternalID, ByQuery, ByID,
 	// or cast a string variable with managedobjects.DeviceRef(id).
 	Source managedobjects.DeviceRef `url:"source,omitempty"`
-
-	// TODO: Check if this is supported or not
-	// The types of alarm to search for
-	// Type []string `url:"type,omitempty"`
 
 	// The status of the alarm to search for. Should not be used when resolved parameter is provided
 	Status []model.AlarmStatus `url:"status,omitempty"`

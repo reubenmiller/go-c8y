@@ -54,15 +54,6 @@ func TestListPlainIDSkipsFirmwareLookup(t *testing.T) {
 	}
 }
 
-func TestIsPlainID(t *testing.T) {
-	cases := map[string]bool{"": false, "12345": true, "name:linux": false, "linux": false, "12a": false}
-	for in, want := range cases {
-		if got := isPlainID(in); got != want {
-			t.Errorf("isPlainID(%q) = %v, want %v", in, got, want)
-		}
-	}
-}
-
 // TestServiceResolveID verifies the service's ResolveID uses the patch
 // resolver: a plain id is used as is, and a version is looked up scoped to its
 // firmware.

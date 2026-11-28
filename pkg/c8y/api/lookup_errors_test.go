@@ -44,6 +44,10 @@ func lookupCalls(c *api.Client) []struct {
 			_, err := c.Microservices.ResolveID(ctx, "name:nosuch", nil)
 			return err
 		}},
+		{"microservice", "microservice not found with contextPath: nosuch", func(ctx context.Context) error {
+			_, err := c.Microservices.ResolveID(ctx, "contextPath:nosuch", nil)
+			return err
+		}},
 		{"ui plugin", "ui plugin not found with name: nosuch", func(ctx context.Context) error {
 			_, err := c.UIPlugins.ResolveID(ctx, "name:nosuch", nil)
 			return err

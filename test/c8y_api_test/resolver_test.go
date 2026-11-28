@@ -68,7 +68,7 @@ func Test_Resolver_UnknownScheme(t *testing.T) {
 
 	// Should fail with unknown resolver error
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "unknown resolver scheme")
+	assert.Contains(t, err.Error(), "unknown managed object resolver scheme")
 }
 
 func Test_Resolver_WithDeferredExecution(t *testing.T) {

@@ -58,8 +58,15 @@ func skipIfNotFound[T any](r op.Result[T]) op.Result[T] {
 // isNotAChild reports whether err is the 422 the DTM returns when removing a
 // sub-asset or device that is not assigned to the asset.
 func isNotAChild(err error) bool {
-	return core.ErrHasStatus(err, http.StatusUnprocessableEntity) &&
-		strings.Contains(err.Error(), "is not a child")
+	if !core.ErrHasStatus(err, http.StatusUnprocessableEntity) {
+		return false
+	}
+	// The platform reports the reason only in the text of the response.
+	var apiErr *core.Error
+	if errors.As(err, &apiErr) {
+		return strings.Contains(apiErr.Message, "is not a child")
+	}
+	return strings.Contains(err.Error(), "is not a child")
 }
 
 // toMap converts a request body (map, struct, or anything that marshals to a

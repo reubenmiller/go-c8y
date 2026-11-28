@@ -12,6 +12,7 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/model"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/repository/firmware/firmwareitems"
+	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/source"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/types"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
@@ -129,7 +130,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 	// Resolve firmware name to ID if needed. A plain numeric id is used directly:
 	// this avoids a redundant GET and, under --dry, keeps the bygroupid filter
 	// correct (the GET would otherwise be intercepted and return an empty id).
-	if !isPlainID(opt.FirmwareID) {
+	if !source.IsID(opt.FirmwareID) {
 		firmwareResult := s.firmware.Get(ctx, opt.FirmwareID, firmwareitems.GetOptions{})
 		if firmwareResult.Err != nil {
 			return op.Failed[jsonmodels.FirmwareVersion](
@@ -143,22 +144,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 	return httpcore.ExecuteCollection(ctx, s.listB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewFirmwareVersion)
 }
 
-// isPlainID reports whether s is a non-empty all-digit managed-object id, which
-// can be used directly without a name -> id resolution lookup.
-func isPlainID(s string) bool {
-	if s == "" {
-		return false
-	}
-	for _, r := range s {
-		if r < '0' || r > '9' {
-			return false
-		}
-	}
-	return true
-}
-
 func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
-	// Build request directly since managedObjects.listB is now private
 	listOpts := managedobjects.ListOptions{
 		Query: model.NewInventoryQuery().
 			AddFilterEqStr("type", "c8y_FirmwareBinary").
@@ -820,7 +806,6 @@ func (s *Service) deleteBinaryFromURL(ctx context.Context, url string) {
 // Builder methods
 
 func (s *Service) createB(firmwareID string, body any) *httpcore.TryRequest {
-	// Build request directly since childAdditions.createB is now private
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetPathParam("id", firmwareID).
@@ -842,7 +827,6 @@ func (s *Service) getB(ID string, opt GetOptions) *httpcore.TryRequest {
 }
 
 func (s *Service) updateB(ID string, body any) *httpcore.TryRequest {
-	// Build request directly since managedObjects.updateB is now private
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetPathParam("id", ID).
@@ -854,7 +838,6 @@ func (s *Service) updateB(ID string, body any) *httpcore.TryRequest {
 }
 
 func (s *Service) deleteB(ID string, opt DeleteOptions) *httpcore.TryRequest {
-	// Build request directly since managedObjects.deleteB is now private
 	deleteOpts := managedobjects.DeleteOptions{
 		ForceCascade: &opt.ForceCascade,
 	}

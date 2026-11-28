@@ -95,67 +95,38 @@ func (q queryResolver) String() string {
 	return fmt.Sprintf("query:%s", q.Query)
 }
 
-// parseResolver parses a source reference string into a resolver
-// Supports formats specific to managed objects:
+// newResolvers builds the reference schemes specific to managed objects:
 //   - "12345" -> direct ID
 //   - "id:12345" -> direct ID
 //   - "ext:c8y_Serial:ABC123" -> external ID lookup
 //   - "name:MyDevice" -> name lookup
 //   - "query:name eq 'MyDevice'" -> query lookup
 //   - "custom:..." -> custom resolver (if registered)
-func (s *Service) parseResolver(str string) (source.Resolver, error) {
-	if str == "" {
-		return nil, fmt.Errorf("empty source string")
-	}
-
-	// Try to parse with prefix
-	idx := strings.IndexByte(str, ':')
-	if idx == -1 {
-		// No prefix, treat as direct ID
-		return source.ID(str), nil
-	}
-
-	prefix := str[:idx]
-	value := str[idx+1:]
-
-	// Check custom resolvers first
-	if s.customResolvers != nil {
-		if resolver, ok := s.customResolvers[prefix]; ok {
-			return resolver, nil
-		}
-	}
-
-	switch prefix {
-	case "id":
-		return source.ID(value), nil
-
-	case "ext":
-		// Format: ext:type:externalId
-		idx2 := strings.IndexByte(value, ':')
-		if idx2 == -1 {
-			return nil, fmt.Errorf("invalid external ID format, expected ext:type:externalId")
-		}
-		typ := value[:idx2]
-		extID := value[idx2+1:]
-		return externalIDResolver{
-			Type:       typ,
-			ExternalID: extID,
-			Lookup:     s.lookupByExternalID,
-		}, nil
-
-	case "name":
-		return nameResolver{
-			Name:   value,
-			Lookup: s.lookupByName,
-		}, nil
-
-	case "query":
-		return queryResolver{
-			Query:  value,
-			Lookup: s.lookupByQuery,
-		}, nil
-
-	default:
-		return nil, fmt.Errorf("unknown resolver scheme: %s", prefix)
-	}
+func (s *Service) newResolvers() *source.Registry {
+	return source.NewRegistry("managed object", map[string]source.SchemeParser{
+		"ext": func(value string) (source.Resolver, error) {
+			// Format: ext:type:externalId
+			typ, extID, ok := strings.Cut(value, ":")
+			if !ok {
+				return nil, fmt.Errorf("invalid external ID format, expected ext:type:externalId")
+			}
+			return externalIDResolver{
+				Type:       typ,
+				ExternalID: extID,
+				Lookup: func(ctx context.Context, typ, extID string) (string, map[string]any, error) {
+					return s.lookupByExternalID(ctx, typ, extID)
+				},
+			}, nil
+		},
+		"name": func(value string) (source.Resolver, error) {
+			return nameResolver{Name: value, Lookup: func(ctx context.Context, name string) (string, map[string]any, error) {
+				return s.lookupByName(ctx, name)
+			}}, nil
+		},
+		"query": func(value string) (source.Resolver, error) {
+			return queryResolver{Query: value, Lookup: func(ctx context.Context, query string) (string, map[string]any, error) {
+				return s.lookupByQuery(ctx, query)
+			}}, nil
+		},
+	})
 }

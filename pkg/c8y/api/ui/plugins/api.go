@@ -16,7 +16,6 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/jsonmodels"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/op"
-	"github.com/reubenmiller/go-c8y/v2/pkg/matcher"
 	"resty.dev/v3"
 )
 
@@ -35,15 +34,15 @@ const ApplicationTypeHosted = "HOSTED"
 type Service struct {
 	svc httpcore.Service
 	// Resolver lookup function (name -> id), scoped to UI plugins
-	lookupByName    func(ctx context.Context, name string) (string, map[string]any, error)
-	customResolvers map[string]source.Resolver
+	lookupByName func(ctx context.Context, name string) (string, map[string]any, error)
+	resolvers    *source.Registry
 }
 
 func NewService(s *httpcore.Service) *Service {
 	service := &Service{
-		svc:             *s,
-		customResolvers: make(map[string]source.Resolver),
+		svc: *s,
 	}
+	service.resolvers = service.newResolvers()
 
 	// Setup lookup function for name-based resolution.
 	//
@@ -59,24 +58,16 @@ func NewService(s *httpcore.Service) *Service {
 			},
 		}
 
-		it := service.ListAll(ctx, opts)
-		if it.Err() != nil {
-			return "", nil, it.Err()
+		plugin, found, err := pagination.FindWildcard(service.ListAll(ctx, opts), name, func(p jsonmodels.UIPlugin) []string { return []string{p.Name(), p.ContextPath()} })
+		if err != nil {
+			return "", nil, err
 		}
-
-		for item, err := range it.Items() {
-			if err != nil {
-				return "", nil, err
-			}
-			matchedName, _ := matcher.MatchWithWildcards(item.Name(), name)
-			matchedPath, _ := matcher.MatchWithWildcards(item.ContextPath(), name)
-			if matchedName || matchedPath {
-				return item.ID(), map[string]any{
-					"id":   item.ID(),
-					"name": item.Name(),
-					"type": item.Type(),
-				}, nil
-			}
+		if found {
+			return plugin.ID(), map[string]any{
+				"id":   plugin.ID(),
+				"name": plugin.Name(),
+				"type": plugin.Type(),
+			}, nil
 		}
 
 		return "", nil, core.NewNameNotFoundError("ui plugin", name, "ui plugin not found with name: %s", name)
@@ -370,43 +361,19 @@ func (n nameResolver) String() string {
 	return fmt.Sprintf("name:%s", n.Name)
 }
 
-// parseResolver parses a UI plugin reference string into a resolver.
-// Supported formats:
+// newResolvers builds the reference schemes of UI plugins:
 //   - "12345" -> direct ID
 //   - "id:12345" -> direct ID
 //   - "name:my-plugin" -> name/contextPath lookup
 //   - "custom:..." -> custom resolver (if registered)
-func (s *Service) parseResolver(str string) (source.Resolver, error) {
-	if str == "" {
-		return nil, fmt.Errorf("empty ui plugin reference string")
-	}
-
-	idx := strings.IndexByte(str, ':')
-	if idx == -1 {
-		// No prefix, treat as direct ID
-		return source.ID(str), nil
-	}
-
-	prefix := str[:idx]
-	value := str[idx+1:]
-
-	if s.customResolvers != nil {
-		if resolver, ok := s.customResolvers[prefix]; ok {
-			return resolver, nil
-		}
-	}
-
-	switch prefix {
-	case "id":
-		return source.ID(value), nil
-	case "name":
-		return nameResolver{
-			Name:   value,
-			Lookup: s.lookupByName,
-		}, nil
-	default:
-		return nil, fmt.Errorf("unknown ui plugin resolver scheme: %s", prefix)
-	}
+func (s *Service) newResolvers() *source.Registry {
+	return source.NewRegistry("ui plugin", map[string]source.SchemeParser{
+		"name": func(value string) (source.Resolver, error) {
+			return nameResolver{Name: value, Lookup: func(ctx context.Context, name string) (string, map[string]any, error) {
+				return s.lookupByName(ctx, name)
+			}}, nil
+		},
+	})
 }
 
 // ByName creates a name-based reference string for UI plugin lookup.
@@ -419,24 +386,10 @@ func (s *Service) ByName(name string) string {
 // Plain IDs pass through unchanged (so it is safe under --dry); "name:" refs
 // trigger a lookup. Any resolved metadata is merged into meta.
 func (s *Service) ResolveID(ctx context.Context, id string, meta map[string]any) (_ string, resolveErr error) {
-	defer func() { resolveErr = core.WrapLookup("ui plugin", id, resolveErr) }()
-	resolver, err := s.parseResolver(id)
-	if err != nil {
-		return "", err
-	}
-	result, err := resolver.ResolveID(ctx)
-	if err != nil {
-		return "", err
-	}
-	if meta != nil {
-		for k, v := range result.Meta {
-			meta[k] = v
-		}
-	}
-	return result.ID, nil
+	return s.resolvers.Resolve(ctx, id, meta)
 }
 
 // RegisterResolver allows registering custom ID resolvers for use with ResolveID
 func (s *Service) RegisterResolver(scheme string, resolver source.Resolver) {
-	s.customResolvers[scheme] = resolver
+	s.resolvers.Register(scheme, resolver)
 }

@@ -106,7 +106,7 @@ func (m *Microservice) SaveConfiguration(rawConfiguration string) error {
 	body["c8y_Configuration"] = configuration
 
 	if result := m.Client.ManagedObjects.Update(m.ServiceUserContext(), m.AgentID, body); result.Err != nil {
-		return fmt.Errorf("error updating the configuration in the managed object. %s", result.Err)
+		return fmt.Errorf("error updating the configuration in the managed object. %w", result.Err)
 	}
 
 	return nil

@@ -328,7 +328,7 @@ func (s *Service) createBulkSeq(ctx context.Context, items iter.Seq2[any, error]
 				if opts.RecoverPartial && errors.As(result.Err, &be) && be.Applied == core.BatchAppliedPartial {
 					recovered, recoverErr := s.RecoverCreateBulk(ctx, batch, be)
 					if recoverErr != nil && recovered == nil {
-						yield(*new(jsonmodels.ManagedObject), withBatchOffset(fmt.Errorf("%w (recovery failed: %v)", result.Err, recoverErr), offset))
+						yield(*new(jsonmodels.ManagedObject), withBatchOffset(fmt.Errorf("%w (recovery failed: %v)", result.Err, recoverErr), offset)) //nolint:errorlint // the second error is described, not wrapped
 						return
 					}
 					for _, mo := range recovered {
@@ -665,7 +665,7 @@ func (s *Service) executeGetOrCreateByExternalID(
 		// Other failure - cleanup the created managed object
 		deleteResult := st.service.Delete(ctxhelpers.InternalStep(ctx), moID, DeleteOptions{})
 		if deleteResult.Err != nil {
-			st.err = fmt.Errorf("failed to assign identity and cleanup failed: identity error: %w, delete error: %v", identResult.Err, deleteResult.Err)
+			st.err = fmt.Errorf("failed to assign identity and cleanup failed: identity error: %w, delete error: %v", identResult.Err, deleteResult.Err) //nolint:errorlint // the second error is described, not wrapped
 		} else {
 			st.err = fmt.Errorf("failed to assign identity (managed object deleted): %w", identResult.Err)
 		}
