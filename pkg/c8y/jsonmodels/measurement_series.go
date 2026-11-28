@@ -24,7 +24,8 @@ func NewMeasurementSeries(b []byte) MeasurementSeries {
 	}
 }
 
-// WithDeviceInfo creates a MeasurementSeries with device metadata
+// NewMeasurementSeriesWithDevice wraps the JSON of a measurement series with
+// the id and name of the device it belongs to.
 func NewMeasurementSeriesWithDevice(b []byte, deviceID, deviceName string) MeasurementSeries {
 	return MeasurementSeries{
 		Facade:     jsondoc.Facade{JSONDoc: jsondoc.New(b)},

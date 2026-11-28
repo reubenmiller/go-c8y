@@ -15,6 +15,8 @@ func NewFirmwareVersion(b []byte) FirmwareVersion {
 	return FirmwareVersion{jsondoc.Facade{JSONDoc: jsondoc.New(b)}}
 }
 
+// NewFirmwareVersionWithOptions returns a firmware version document with the
+// version and the url of the binary (omitted when empty).
 func NewFirmwareVersionWithOptions(version, url string) FirmwareVersion {
 	data := map[string]any{
 		"type": "c8y_FirmwareBinary",

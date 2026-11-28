@@ -40,7 +40,7 @@ func (s *Syncer) SyncTenantOptions(ctx context.Context, specs []TenantOptionSpec
 			value = resolved
 		}
 
-		existing := s.Client.Tenants.Options.Get(ctx, tenantoptions.GetOption{
+		existing := s.Client.Tenants.Options.Get(ctx, tenantoptions.GetOptions{
 			Category: spec.Category,
 			Key:      spec.Key,
 		})
@@ -49,7 +49,7 @@ func (s *Syncer) SyncTenantOptions(ctx context.Context, specs []TenantOptionSpec
 		case existing.Err == nil && existing.Data.Value() == value:
 			s.record(SectionTenantOptions, item, ActionUnchanged, "", nil)
 		case existing.Err == nil:
-			result := s.Client.Tenants.Options.Update(ctx, tenantoptions.UpdateOption{
+			result := s.Client.Tenants.Options.Update(ctx, tenantoptions.UpdateOptions{
 				Category: spec.Category,
 				Key:      spec.Key,
 				Body:     map[string]any{"value": value},

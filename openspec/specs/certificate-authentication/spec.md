@@ -59,10 +59,10 @@ The cached token source SHALL refresh certificate tokens with the same transport
 - **THEN** the SDK performs a new exchange with the same transport before sending the request
 
 ### Requirement: Certificate opt-in helpers
-The SDK SHALL provide `Users.CurrentUser.SetRequiredAuthType(ctx, authType)`, `Applications.Current.SetAuthType(ctx, authType)`, `Applications.ResetAuthType(ctx, id)`, and `jsonmodels.User.RequiredAuthType()`, where `authType` is `NONE` or `CERTIFICATES`.
+The SDK SHALL provide `Users.Current.SetRequiredAuthType(ctx, authType)`, `Applications.Current.SetAuthType(ctx, authType)`, `Applications.ResetAuthType(ctx, id)`, and `jsonmodels.User.RequiredAuthType()`, where `authType` is `NONE` or `CERTIFICATES`.
 
 #### Scenario: Regular user opts in
-- **WHEN** `Users.CurrentUser.SetRequiredAuthType(ctx, "CERTIFICATES")` is called
+- **WHEN** `Users.Current.SetRequiredAuthType(ctx, "CERTIFICATES")` is called
 - **THEN** the SDK sends `PUT /user/currentUser` with `{"requiredAuthType":"CERTIFICATES"}`
 
 #### Scenario: Service user opts in

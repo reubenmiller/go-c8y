@@ -12,14 +12,11 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiTenantStatistics = "/tenant/statistics"
-var ApiTenantStatisticsSummary = "/tenant/statistics/summary"
-var ApiTenantStatisticsAllTenantsSummary = "/tenant/statistics/allTenantsSummary"
+var apiTenantStatistics = "/tenant/statistics"
+var apiTenantStatisticsSummary = "/tenant/statistics/summary"
+var apiTenantStatisticsAllTenantsSummary = "/tenant/statistics/allTenantsSummary"
 
-const ParamID = "id"
-const ParamChild = "child"
-
-const ResultProperty = "usageStatistics"
+const resultProperty = "usageStatistics"
 
 // Service
 type Service struct{ svc httpcore.Service }
@@ -43,7 +40,7 @@ type TenantUsageStatisticsIterator = pagination.Iterator[jsonmodels.TenantUsageS
 
 // List tenant statistics
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.TenantUsageStatistics] {
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewTenantUsageStatistics)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewTenantUsageStatistics)
 }
 
 // ListAll returns an iterator for all tenant usage statistics
@@ -64,8 +61,8 @@ func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiTenantStatistics)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiTenantStatistics)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 // ListSummaryOptions
@@ -86,8 +83,8 @@ func (s *Service) listSummaryB(opt ListSummaryOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiTenantStatisticsSummary)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiTenantStatisticsSummary)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 // ListSummaryAllTenantsOptions
@@ -106,6 +103,6 @@ func (s *Service) listSummaryAllTenantsB(opt ListSummaryAllTenantsOptions) *http
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiTenantStatisticsAllTenantsSummary)
+		SetURL(apiTenantStatisticsAllTenantsSummary)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

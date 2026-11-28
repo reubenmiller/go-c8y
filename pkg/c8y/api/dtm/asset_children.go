@@ -39,14 +39,14 @@ type SubAssetListOptions struct {
 func (s *SubAssetService) List(ctx context.Context, parent AssetRef, opt SubAssetListOptions) op.Result[jsonmodels.DigitalTwinAsset] {
 	opt.Query = normalizeQuery(opt.Query)
 	if ext, ok := parent.externalID(); ok {
-		return httpcore.ExecuteCollection(ctx, s.listB(ApiSubAssetsByExternalID, ParamExternalID, ext, opt), ResultPropertyAssets, types.ResponseFieldStatistics, jsonmodels.NewDigitalTwinAsset)
+		return httpcore.ExecuteCollection(ctx, s.listB(apiSubAssetsByExternalID, paramExternalID, ext, opt), resultPropertyAssets, types.ResponseFieldStatistics, jsonmodels.NewDigitalTwinAsset)
 	}
 	meta := map[string]any{}
 	id, err := s.assets.ResolveID(ctx, parent, meta)
 	if err != nil {
 		return op.Failed[jsonmodels.DigitalTwinAsset](err, false)
 	}
-	return httpcore.ExecuteCollection(ctx, s.listB(ApiSubAssets, ParamAssetID, id, opt), ResultPropertyAssets, types.ResponseFieldStatistics, jsonmodels.NewDigitalTwinAsset, meta)
+	return httpcore.ExecuteCollection(ctx, s.listB(apiSubAssets, paramAssetID, id, opt), resultPropertyAssets, types.ResponseFieldStatistics, jsonmodels.NewDigitalTwinAsset, meta)
 }
 
 func (s *SubAssetService) listB(path, param, value string, opt SubAssetListOptions) *httpcore.TryRequest {
@@ -56,7 +56,7 @@ func (s *SubAssetService) listB(path, param, value string, opt SubAssetListOptio
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetURL(path)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultPropertyAssets)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultPropertyAssets)
 }
 
 // ListAll returns an iterator over all sub-assets of parent. The parent is
@@ -96,7 +96,7 @@ func (s *SubAssetService) ListByParents(ctx context.Context, opt ListByParentsOp
 		return op.Failed[jsonmodels.DigitalTwinAsset](fmt.Errorf("at least one parent id is required"), false)
 	}
 	opt.Query = normalizeQuery(opt.Query)
-	return httpcore.ExecuteCollection(ctx, s.listByParentsB(opt), ResultPropertyAssets, types.ResponseFieldStatistics, jsonmodels.NewDigitalTwinAsset)
+	return httpcore.ExecuteCollection(ctx, s.listByParentsB(opt), resultPropertyAssets, types.ResponseFieldStatistics, jsonmodels.NewDigitalTwinAsset)
 }
 
 func (s *SubAssetService) listByParentsB(opt ListByParentsOptions) *httpcore.TryRequest {
@@ -104,8 +104,8 @@ func (s *SubAssetService) listByParentsB(opt ListByParentsOptions) *httpcore.Try
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiSubAssetsByParents)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultPropertyAssets)
+		SetURL(apiSubAssetsByParents)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultPropertyAssets)
 }
 
 // AssetDeviceService reads the devices assigned to assets.
@@ -131,17 +131,17 @@ func (s *AssetDeviceService) List(ctx context.Context, asset AssetRef, opt Devic
 		return op.Failed[jsonmodels.ManagedObject](err, false)
 	}
 	opt.Query = normalizeQuery(opt.Query)
-	return httpcore.ExecuteCollection(ctx, s.listB(id, opt), ResultPropertyDevices, types.ResponseFieldStatistics, jsonmodels.NewManagedObject, meta)
+	return httpcore.ExecuteCollection(ctx, s.listB(id, opt), resultPropertyDevices, types.ResponseFieldStatistics, jsonmodels.NewManagedObject, meta)
 }
 
 func (s *AssetDeviceService) listB(assetID string, opt DeviceListOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamAssetID, assetID).
+		SetPathParam(paramAssetID, assetID).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiAssetDevices)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultPropertyDevices)
+		SetURL(apiAssetDevices)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultPropertyDevices)
 }
 
 // ListAll returns an iterator over all devices assigned to asset.

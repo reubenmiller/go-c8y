@@ -15,6 +15,8 @@ func NewSoftware(b []byte) Software {
 	return Software{jsondoc.Facade{JSONDoc: jsondoc.New(b)}}
 }
 
+// NewSoftwareWithOptions returns a software item document with the name and
+// software type (omitted when empty).
 func NewSoftwareWithOptions(name, softwareType string) Software {
 	data := map[string]any{
 		"type": "c8y_Software",

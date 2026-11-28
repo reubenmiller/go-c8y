@@ -32,15 +32,6 @@ type SoftwareBinary struct {
 	C8Y_Global   *GlobalFragment `json:"c8y_Global,omitempty"`
 }
 
-func NewSoftwareBinary() *SoftwareBinary {
-	return &SoftwareBinary{
-		ManagedObject: ManagedObject{
-			Type: "c8y_SoftwareBinary",
-		},
-		C8Y_Global: &GlobalFragment{},
-	}
-}
-
 type SoftwareCollection struct {
 	*BaseResponse
 

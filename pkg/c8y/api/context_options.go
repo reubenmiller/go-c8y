@@ -269,7 +269,7 @@ func ResolutionContext(ctx context.Context) context.Context {
 // retries) and also for dry runs. fn may change headers or the URL, or replace
 // req.Body (for example to wrap it and count bytes). Returning an error aborts
 // the request. It applies to every request made with the context, typed or
-// raw; for a single [Client.SendRequest] use RequestOptions.PrepareRequest.
+// raw; for a single [Client.Request] use RequestOptions.PrepareRequest.
 // Hooks compose: a hook already on ctx (including the ones set by
 // WithUploadProgress and PrepareRequest) runs first, then fn.
 func WithRequestHook(ctx context.Context, fn func(req *http.Request) error) context.Context {

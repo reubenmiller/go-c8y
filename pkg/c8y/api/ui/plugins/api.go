@@ -20,13 +20,13 @@ import (
 )
 
 var (
-	ApiPlugins = "/application/applications"
-	ApiPlugin  = "/application/applications/{id}"
+	apiPlugins = "/application/applications"
+	apiPlugin  = "/application/applications/{id}"
 )
 
-var ParamID = "id"
+var paramID = "id"
 
-const ResultProperty = "applications"
+const resultProperty = "applications"
 const CumulocityUIManifestFile = "cumulocity.json"
 const ApplicationTagLatest = "latest"
 const ApplicationTypeHosted = "HOSTED"
@@ -223,7 +223,7 @@ func HasTag(tags []string, tag string) bool {
 // List returns UI plugins with version support
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.UIPlugin] {
 	opt.HasVersions = true
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewUIPlugin)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewUIPlugin)
 }
 
 func (s *Service) ListAll(ctx context.Context, opts ListOptions) *PluginIterator {
@@ -245,8 +245,8 @@ func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiPlugins)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiPlugins)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 // Get retrieves a UI plugin by ID or resolver string
@@ -266,8 +266,8 @@ func (s *Service) getB(id string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamID, id).
-		SetURL(ApiPlugin)
+		SetPathParam(paramID, id).
+		SetURL(apiPlugin)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -282,7 +282,7 @@ func (s *Service) createB(body *Plugin) *httpcore.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetBody(body).
-		SetURL(ApiPlugins)
+		SetURL(apiPlugins)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -303,9 +303,9 @@ func (s *Service) updateB(id string, body any) *httpcore.TryRequest {
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeApplicationJSON).
-		SetPathParam(ParamID, id).
+		SetPathParam(paramID, id).
 		SetBody(body).
-		SetURL(ApiPlugin)
+		SetURL(apiPlugin)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -325,8 +325,8 @@ func (s *Service) Delete(ctx context.Context, id string) op.Result[core.NoConten
 func (s *Service) deleteB(id string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamID, id).
-		SetURL(ApiPlugin)
+		SetPathParam(paramID, id).
+		SetURL(apiPlugin)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 

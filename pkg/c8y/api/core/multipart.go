@@ -2,9 +2,7 @@ package core
 
 import (
 	"io"
-	"mime"
 	"os"
-	"path/filepath"
 )
 
 type UploadFileOptions struct {
@@ -63,23 +61,6 @@ func (s *UploadFileOptions) Close() error {
 		return reader.Close()
 	}
 	return nil
-}
-
-func NewUploadFileOptions(filePath string, contentType ...string) (*UploadFileOptions, error) {
-	opt := &UploadFileOptions{
-		Name: filepath.Base(filePath),
-	}
-	if len(contentType) > 0 {
-		opt.ContentType = contentType[0]
-	} else {
-		opt.ContentType = mime.TypeByExtension(filepath.Ext(filePath))
-	}
-	file, err := os.Open(filePath)
-	if err != nil {
-		return nil, err
-	}
-	opt.Reader = file
-	return opt, nil
 }
 
 type ReaderError struct {

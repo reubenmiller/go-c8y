@@ -82,7 +82,7 @@ type ListOptions struct {
 // query is passed through as-is, like devices.List); the resolver and
 // ScopeToSmartGroups are responsible for restricting results to smart groups.
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.ManagedObject] {
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), managedobjects.ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), httpcore.ResultPropertyManagedObjects, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
 // ListAll returns an iterator over every smart group matching opts. By default
@@ -112,8 +112,8 @@ func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(managedobjects.ApiManagedObjects)
-	return httpcore.NewTryRequest(s.svc.Client, req, managedobjects.ResultProperty)
+		SetURL("/inventory/managedObjects")
+	return httpcore.NewTryRequest(s.svc.Client, req, httpcore.ResultPropertyManagedObjects)
 }
 
 // Get returns a smart group by reference (id, name:, or query:).

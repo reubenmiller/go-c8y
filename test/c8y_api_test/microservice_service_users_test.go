@@ -15,12 +15,12 @@ func Test_Microservices_ListServiceUsers(t *testing.T) {
 	ctx := context.Background()
 
 	// Only the tenant that owns a microservice can read its bootstrap user.
-	app, found := client.Microservices.FindFirst(ctx, microservices.ListOptions{Owner: client.Auth.Tenant})
-	if !found || app.Err != nil || app.Data.Owner() != client.Auth.Tenant {
+	app, err := client.Microservices.FindFirst(ctx, microservices.ListOptions{Owner: client.Auth.Tenant})
+	if err != nil || app.Owner() != client.Auth.Tenant {
 		t.Skip("the tenant owns no microservice to read the service users of")
 	}
 
-	users := client.Microservices.ListServiceUsers(ctx, app.Data.ID())
+	users := client.Microservices.ListServiceUsers(ctx, app.ID())
 	require.NoError(t, users.Err)
 	n := 0
 	for user, err := range users.Items() {
@@ -30,6 +30,6 @@ func Test_Microservices_ListServiceUsers(t *testing.T) {
 	}
 	assert.Positive(t, n, "a microservice has at least the service user of its own tenant")
 
-	byName := client.Microservices.ListServiceUsers(ctx, "name:"+app.Data.Name())
+	byName := client.Microservices.ListServiceUsers(ctx, "name:"+app.Name())
 	require.NoError(t, byName.Err, "the microservice can also be given by name")
 }

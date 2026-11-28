@@ -23,7 +23,7 @@ func Test_TenantOptions(t *testing.T) {
 	require.NoError(t, err)
 
 	// get
-	option := client.Tenants.Options.Get(context.Background(), tenantoptions.GetOption{
+	option := client.Tenants.Options.Get(context.Background(), tenantoptions.GetOptions{
 		Category: firstOption.Category(),
 		Key:      firstOption.Key(),
 	})

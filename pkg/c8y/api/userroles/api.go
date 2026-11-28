@@ -21,12 +21,12 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiRoles = "/user/roles"
-var ApiRole = "/user/roles/{name}"
+var apiRoles = "/user/roles"
+var apiRole = "/user/roles/{name}"
 
-var ParamName = "name"
+var paramName = "name"
 
-const ResultProperty = "roles"
+const resultProperty = "roles"
 
 func NewService(s *httpcore.Service) *Service {
 	return &Service{
@@ -43,8 +43,7 @@ type Service struct {
 	Groups *usergroups.Service
 	Users  *users.Service
 
-	// Inventory is the inventory roles sub-resource. Client.InventoryRoles is
-	// a deprecated alias for the same instance.
+	// Inventory is the inventory roles sub-resource.
 	Inventory *inventoryroles.Service
 }
 
@@ -58,7 +57,7 @@ type RoleIterator = pagination.Iterator[jsonmodels.Role]
 
 // Retrieve all user roles in the tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Role] {
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewRole)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewRole)
 }
 
 // ListAll returns an iterator for all user roles
@@ -80,25 +79,25 @@ func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiRoles)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiRoles)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
-type GetOption struct {
+type GetOptions struct {
 	Name string `url:"-"`
 }
 
 // Get a user role
-func (s *Service) Get(ctx context.Context, opt GetOption) op.Result[jsonmodels.Role] {
+func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.Role] {
 	return httpcore.Execute(ctx, s.getB(opt), jsonmodels.NewRole)
 }
 
-func (s *Service) getB(opt GetOption) *httpcore.TryRequest {
+func (s *Service) getB(opt GetOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamName, opt.Name).
-		SetURL(ApiRole)
+		SetPathParam(paramName, opt.Name).
+		SetURL(apiRole)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -117,7 +116,7 @@ func (s *Service) RoleSelfLink(ref string) string {
 	if strings.Contains(ref, "/roles/") {
 		return ref
 	}
-	return strings.TrimRight(s.svc.Client.BaseURL(), "/") + ApiRoles + "/" + ref
+	return strings.TrimRight(s.svc.Client.BaseURL(), "/") + apiRoles + "/" + ref
 }
 
 // ResolveID resolves a role reference to the role id (which equals the role

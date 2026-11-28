@@ -35,6 +35,6 @@ func (s *Service) countB(opt CountOptions) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeTextPlain).
-		SetURL(ApiAlarmsCount)
+		SetURL(apiAlarmsCount)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

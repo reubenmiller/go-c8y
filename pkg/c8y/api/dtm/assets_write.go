@@ -43,7 +43,7 @@ func (s *AssetService) createB(body any, opt WriteOptions, upsert bool) *httpcor
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
-		SetURL(ApiAssets)
+		SetURL(apiAssets)
 	if upsert {
 		req.SetHeader(HeaderUpsertMode, "true")
 	}
@@ -63,12 +63,12 @@ func (s *AssetService) Update(ctx context.Context, ref AssetRef, body any, opt W
 func (s *AssetService) updateB(id string, body any, opt WriteOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
-		SetPathParam(ParamAssetID, id).
+		SetPathParam(paramAssetID, id).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
-		SetURL(ApiAsset)
+		SetURL(apiAsset)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -120,9 +120,9 @@ func (s *AssetService) deleteB(id string, opt DeleteOptions) *httpcore.TryReques
 	}
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamAssetID, id).
+		SetPathParam(paramAssetID, id).
 		SetQueryParamsFromValues(httpcore.QueryParameters(q)).
-		SetURL(ApiAsset)
+		SetURL(apiAsset)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 

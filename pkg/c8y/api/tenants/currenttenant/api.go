@@ -10,10 +10,10 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiTenant = "/tenant/currentTenant"
+var apiTenant = "/tenant/currentTenant"
 
-// ApiSystemVersion is the system option holding the platform (backend) version.
-var ApiSystemVersion = "/tenant/system/options/system/version"
+// apiSystemVersion is the system option holding the platform (backend) version.
+var apiSystemVersion = "/tenant/system/options/system/version"
 
 // ApplicationsResultProperty is the gjson path to the application objects
 // embedded in the current-tenant response (applications.references[].application).
@@ -46,7 +46,7 @@ func (s *Service) getB(opt GetOptions) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiTenant)
+		SetURL(apiTenant)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -68,6 +68,6 @@ func (s *Service) getVersionB() *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiSystemVersion)
+		SetURL(apiSystemVersion)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

@@ -309,7 +309,7 @@ Everything remaining is a value/scope judgement rather than a generator limitati
   count and lists only undeclared drift. Patterns match normalized paths with a `*` prefix
   wildcard.
 - **One real wart removed.** The gate forced resolution of the dead, typo'd
-  `binaries.ApiManagedObject` (`/inventory/managedObject/{id}`, singular) the drift check
+  `binaries.apiManagedObject` (`/inventory/managedObject/{id}`, singular) the drift check
   first surfaced — deleted rather than waived.
 - **[CONTRIBUTING.md](../CONTRIBUTING.md)** documents the contract: edit the spec/overlay
   and the hand-written layer, never `zz_generated_*.go`; run `task generate`; how to add a

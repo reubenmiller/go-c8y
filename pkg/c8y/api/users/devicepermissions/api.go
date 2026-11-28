@@ -24,7 +24,6 @@ package devicepermissions
 
 import (
 	"context"
-	"strconv"
 
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/core"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/pagination"
@@ -37,22 +36,22 @@ import (
 
 // Endpoint templates.
 var (
-	// ApiDevicePermissions is the managed-object-scoped device permissions endpoint.
+	// apiDevicePermissions is the managed-object-scoped device permissions endpoint.
 	// The {id} path parameter is a managed-object ID.
-	ApiDevicePermissions        = "/user/devicePermissions/{id}"
-	ApiInventoryRoleAssignments = "/user/{tenantId}/users/{userId}/roles/inventory"
-	ApiInventoryRoleAssignment  = "/user/{tenantId}/users/{userId}/roles/inventory/{id}"
+	apiDevicePermissions        = "/user/devicePermissions/{id}"
+	apiInventoryRoleAssignments = "/user/{tenantId}/users/{userId}/roles/inventory"
+	apiInventoryRoleAssignment  = "/user/{tenantId}/users/{userId}/roles/inventory/{id}"
 )
 
 // Path-parameter names.
 var (
-	ParamUserID = "userId"
-	ParamID     = "id"
+	paramUserID = "userId"
+	paramID     = "id"
 )
 
-// ResultProperty is the JSON key wrapping the inventory-role assignment array
+// resultProperty is the JSON key wrapping the inventory-role assignment array
 // in a collection response.
-const ResultProperty = "inventoryAssignments"
+const resultProperty = "inventoryAssignments"
 
 // NewService creates a new Service backed by the provided httpcore.Service.
 func NewService(s *httpcore.Service) *Service {
@@ -101,8 +100,8 @@ type ListInventoryRoleAssignmentOptions struct {
 // inventory-role assignment.
 type GetInventoryRoleAssignmentOptions struct {
 	UserScopedOptions
-	// ID is the numeric identifier of the assignment.
-	ID int64 `url:"-"`
+	// ID is the identifier of the assignment.
+	ID string `url:"-"`
 }
 
 // ---------------------------------------------------------------------------
@@ -122,8 +121,8 @@ func (s *Service) getDevicePermissionsB(opt GetDevicePermissionsOptions) *httpco
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamID, opt.ManagedObjectID).
-		SetURL(ApiDevicePermissions)
+		SetPathParam(paramID, opt.ManagedObjectID).
+		SetURL(apiDevicePermissions)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -159,9 +158,9 @@ func (s *Service) updateDevicePermissionsB(opt GetDevicePermissionsOptions, body
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamID, opt.ManagedObjectID).
+		SetPathParam(paramID, opt.ManagedObjectID).
 		SetBody(body).
-		SetURL(ApiDevicePermissions)
+		SetURL(apiDevicePermissions)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -172,7 +171,7 @@ func (s *Service) updateDevicePermissionsB(opt GetDevicePermissionsOptions, body
 // ListInventoryRoleAssignments retrieves a single page of inventory-role
 // assignments for the specified user.
 func (s *Service) ListInventoryRoleAssignments(ctx context.Context, opt ListInventoryRoleAssignmentOptions) op.Result[jsonmodels.InventoryRoleAssignment] {
-	return httpcore.ExecuteCollection(ctx, s.listInventoryRoleAssignmentsB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewInventoryRoleAssignment)
+	return httpcore.ExecuteCollection(ctx, s.listInventoryRoleAssignmentsB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewInventoryRoleAssignment)
 }
 
 // ListAllInventoryRoleAssignments returns a lazy iterator that transparently
@@ -195,10 +194,10 @@ func (s *Service) listInventoryRoleAssignmentsB(opt ListInventoryRoleAssignmentO
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
-		SetPathParam(ParamUserID, opt.UserID).
+		SetPathParam(paramUserID, opt.UserID).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiInventoryRoleAssignments)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiInventoryRoleAssignments)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 // AssignInventoryRole assigns one or more inventory roles to a user for a
@@ -221,9 +220,9 @@ func (s *Service) assignInventoryRoleB(opt UserScopedOptions, body any) *httpcor
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
-		SetPathParam(ParamUserID, opt.UserID).
+		SetPathParam(paramUserID, opt.UserID).
 		SetBody(body).
-		SetURL(ApiInventoryRoleAssignments)
+		SetURL(apiInventoryRoleAssignments)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -241,9 +240,9 @@ func (s *Service) getInventoryRoleAssignmentB(opt GetInventoryRoleAssignmentOpti
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
-		SetPathParam(ParamUserID, opt.UserID).
-		SetPathParam(ParamID, strconv.FormatInt(opt.ID, 10)).
-		SetURL(ApiInventoryRoleAssignment)
+		SetPathParam(paramUserID, opt.UserID).
+		SetPathParam(paramID, opt.ID).
+		SetURL(apiInventoryRoleAssignment)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -259,10 +258,10 @@ func (s *Service) updateInventoryRoleAssignmentB(opt GetInventoryRoleAssignmentO
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
-		SetPathParam(ParamUserID, opt.UserID).
-		SetPathParam(ParamID, strconv.FormatInt(opt.ID, 10)).
+		SetPathParam(paramUserID, opt.UserID).
+		SetPathParam(paramID, opt.ID).
 		SetBody(body).
-		SetURL(ApiInventoryRoleAssignment)
+		SetURL(apiInventoryRoleAssignment)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -275,8 +274,8 @@ func (s *Service) deleteInventoryRoleAssignmentB(opt GetInventoryRoleAssignmentO
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
-		SetPathParam(ParamUserID, opt.UserID).
-		SetPathParam(ParamID, strconv.FormatInt(opt.ID, 10)).
-		SetURL(ApiInventoryRoleAssignment)
+		SetPathParam(paramUserID, opt.UserID).
+		SetPathParam(paramID, opt.ID).
+		SetURL(apiInventoryRoleAssignment)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

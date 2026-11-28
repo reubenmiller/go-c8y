@@ -21,12 +21,12 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiEvents = "/event/events"
-var ApiEvent = "/event/events/{id}"
+var apiEvents = "/event/events"
+var apiEvent = "/event/events/{id}"
 
-var ParamID = "id"
+var paramID = "id"
 
-const ResultProperty = "events"
+const resultProperty = "events"
 
 func NewService(s *httpcore.Service, moService *managedobjects.Service) *Service {
 	return &Service{
@@ -66,7 +66,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 		opt.Source = managedobjects.DeviceRef(resolvedID)
 	}
 
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewEvent)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewEvent)
 }
 
 // ListAll returns an iterator for all events. By default it uses the time-window
@@ -116,8 +116,8 @@ func (s *Service) listB(opt any) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiEvents)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiEvents)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 // Get an event
@@ -129,8 +129,8 @@ func (s *Service) getB(ID string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamID, ID).
-		SetURL(ApiEvent)
+		SetPathParam(paramID, ID).
+		SetURL(apiEvent)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -251,7 +251,7 @@ func (s *Service) createB(body any) *httpcore.TryRequest {
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
-		SetURL(ApiEvents)
+		SetURL(apiEvents)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -261,7 +261,7 @@ func (s *Service) createBWithJSON(bodyJSON []byte) *httpcore.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetBody(bodyJSON).
-		SetURL(ApiEvents)
+		SetURL(apiEvents)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -273,11 +273,11 @@ func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jso
 func (s *Service) updateB(ID string, body any) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
-		SetPathParam(ParamID, ID).
+		SetPathParam(paramID, ID).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
-		SetURL(ApiEvent)
+		SetURL(apiEvent)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -289,8 +289,8 @@ func (s *Service) Delete(ctx context.Context, ID string) op.Result[core.NoConten
 func (s *Service) deleteB(ID string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamID, ID).
-		SetURL(ApiEvent)
+		SetPathParam(paramID, ID).
+		SetURL(apiEvent)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -347,7 +347,7 @@ func (s *Service) deleteListB(opt DeleteListOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiEvents)
+		SetURL(apiEvents)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 

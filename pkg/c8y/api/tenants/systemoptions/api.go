@@ -11,13 +11,13 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiSystemOptions = "/tenant/system/options"
-var ApiSystemOption = "/tenant/system/options/{category}/{key}"
+var apiSystemOptions = "/tenant/system/options"
+var apiSystemOption = "/tenant/system/options/{category}/{key}"
 
-const ParamKey = "key"
-const ParamCategory = "category"
+const paramKey = "key"
+const paramCategory = "category"
 
-const ResultProperty = "options"
+const resultProperty = "options"
 
 func NewService(s *httpcore.Service) *Service {
 	return &Service{
@@ -42,7 +42,7 @@ type SystemOptionIterator = pagination.Iterator[jsonmodels.SystemOption]
 
 // List system options
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.SystemOption] {
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewSystemOption)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewSystemOption)
 }
 
 // ListAll returns an iterator for all system options
@@ -64,26 +64,26 @@ func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiSystemOptions)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiSystemOptions)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
-type GetOption struct {
+type GetOptions struct {
 	Key      string `url:"-"`
 	Category string `url:"-"`
 }
 
 // Get a system option
-func (s *Service) Get(ctx context.Context, opt GetOption) op.Result[jsonmodels.SystemOption] {
+func (s *Service) Get(ctx context.Context, opt GetOptions) op.Result[jsonmodels.SystemOption] {
 	return httpcore.Execute(ctx, s.getB(opt), jsonmodels.NewSystemOption)
 }
 
-func (s *Service) getB(opt GetOption) *httpcore.TryRequest {
+func (s *Service) getB(opt GetOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamCategory, opt.Category).
-		SetPathParam(ParamKey, opt.Key).
+		SetPathParam(paramCategory, opt.Category).
+		SetPathParam(paramKey, opt.Key).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiSystemOption)
+		SetURL(apiSystemOption)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

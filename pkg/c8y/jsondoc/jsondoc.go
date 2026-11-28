@@ -218,22 +218,6 @@ func IterWithErr[F Unwrapper, T any](seq iter.Seq[F], constructor func([]byte) (
 	}
 }
 
-func MapIter(
-	seq iter.Seq[JSONDoc],
-	fn func(JSONDoc) (JSONDoc, bool),
-) iter.Seq[JSONDoc] {
-
-	return func(yield func(JSONDoc) bool) {
-		for doc := range seq {
-			if out, ok := fn(doc); ok {
-				if !yield(out) {
-					return
-				}
-			}
-		}
-	}
-}
-
 func IterToChan[T any](seq iter.Seq[T]) <-chan T {
 	ch := make(chan T)
 

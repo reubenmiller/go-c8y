@@ -325,42 +325,6 @@ type ValueFragmentSeries struct {
 	Unit  string
 }
 
-// NewSimpleMeasurementRepresentation returns a measurement with one value Fragment type/series
-// It is a helper function to make it easier to create simple measurements that can be added to the platform
-func NewSimpleMeasurementRepresentation(opt SimpleMeasurementOptions) *MeasurementRepresentation {
-
-	if opt.Type == "" {
-		opt.Type = "measurement"
-	}
-
-	if opt.Timestamp.IsZero() {
-		opt.Timestamp = time.Now()
-	}
-
-	m := &MeasurementRepresentation{
-		Source: Source{
-			ID: opt.SourceID,
-		},
-		Timestamp: opt.Timestamp,
-		Type:      opt.Type,
-		Fragments: opt.FragmentType,
-		ValueFragmentTypes: []ValueFragmentType{
-			{
-				Name: opt.ValueFragmentType,
-				Values: []ValueFragmentSeries{
-					{
-						Name:  opt.ValueFragmentSeries,
-						Value: opt.Value,
-						Unit:  opt.Unit,
-					},
-				},
-			},
-		},
-	}
-
-	return m
-}
-
 var ErrInvalidMeasurementValueType = errors.New("only numbers are supported as measurement values")
 
 // MarshalJSON custom marshalling of the Value Fragment Type representation in a measurement

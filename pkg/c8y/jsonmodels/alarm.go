@@ -15,6 +15,8 @@ func NewAlarm(b []byte) Alarm {
 	return Alarm{jsondoc.Facade{JSONDoc: jsondoc.New(b)}}
 }
 
+// NewAlarmWithType returns an alarm document for the source with the type,
+// severity and text, the current time, and the extra fragments.
 func NewAlarmWithType(sourceID, alarmType, severity, text string, fragments map[string]any) Alarm {
 	data := map[string]any{
 		"source": map[string]any{

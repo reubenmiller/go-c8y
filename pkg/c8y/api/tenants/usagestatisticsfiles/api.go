@@ -12,14 +12,13 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiTenantStatisticsFiles = "/tenant/statistics/files"
-var ApiTenantStatisticsFile = "/tenant/statistics/files/{id}"
-var ApiTenantStatisticsFileLatestByMonth = "/tenant/statistics/files/latest/{month}"
+var apiTenantStatisticsFiles = "/tenant/statistics/files"
+var apiTenantStatisticsFile = "/tenant/statistics/files/{id}"
+var apiTenantStatisticsFileLatestByMonth = "/tenant/statistics/files/latest/{month}"
 
-const ParamID = "id"
-const ParamChild = "child"
+const paramID = "id"
 
-const ResultProperty = "statisticsFiles"
+const resultProperty = "statisticsFiles"
 
 // Service
 type Service struct{ svc httpcore.Service }
@@ -43,7 +42,7 @@ type UsageStatisticsFileIterator = pagination.Iterator[jsonmodels.UsageStatistic
 
 // List usage statistics summary files report metadata
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.UsageStatisticsFile] {
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewUsageStatisticsFile)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewUsageStatisticsFile)
 }
 
 // ListAll returns an iterator for all usage statistics files
@@ -64,8 +63,8 @@ func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiTenantStatisticsFiles)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiTenantStatisticsFiles)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 // Get a usage statistics file report
@@ -76,8 +75,8 @@ func (s *Service) Get(ctx context.Context, ID string) op.Result[jsonmodels.Usage
 func (s *Service) getB(ID string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamID, ID).
-		SetURL(ApiTenantStatisticsFile)
+		SetPathParam(paramID, ID).
+		SetURL(apiTenantStatisticsFile)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -95,7 +94,7 @@ func (s *Service) getByMonthB(opt GetByMonthOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiTenantStatisticsFileLatestByMonth)
+		SetURL(apiTenantStatisticsFileLatestByMonth)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -120,6 +119,6 @@ func (s *Service) createB(opt ListOptions) *httpcore.TryRequest {
 		SetMethod(resty.MethodPost).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiTenantStatisticsFiles)
+		SetURL(apiTenantStatisticsFiles)
 	return httpcore.NewTryRequest(s.svc.Client, req, "")
 }

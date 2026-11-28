@@ -17,12 +17,12 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiManagedObjects = "/inventory/managedObjects"
-var ApiManagedObject = "/inventory/managedObjects/{id}"
+var apiManagedObjects = "/inventory/managedObjects"
+var apiManagedObject = "/inventory/managedObjects/{id}"
 
-const ParamID = "id"
+const paramID = "id"
 
-const ResultProperty = "managedObjects"
+const resultProperty = "managedObjects"
 
 const FragmentSoftware = "c8y_Software"
 const FragmentSoftwareBinary = "c8y_SoftwareBinary"
@@ -83,7 +83,7 @@ type ListOptions struct {
 
 // List software
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Software] {
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewSoftware)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewSoftware)
 }
 
 func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
@@ -108,8 +108,8 @@ func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(httpcore.QueryParameters(listOpts)).
-		SetURL(managedobjects.ApiManagedObjects)
-	return httpcore.NewTryRequest(s.svc.Client, req, managedobjects.ResultProperty)
+		SetURL("/inventory/managedObjects")
+	return httpcore.NewTryRequest(s.svc.Client, req, httpcore.ResultPropertyManagedObjects)
 }
 
 // SoftwareIterator provides iteration over software items
@@ -592,37 +592,37 @@ func (s *Service) createB(body any) *httpcore.TryRequest {
 		SetBody(body).
 		SetContentType(types.MimeTypeManagedObject).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiManagedObjects)
+		SetURL(apiManagedObjects)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 func (s *Service) getB(ID string, opt GetOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamID, ID).
+		SetPathParam(paramID, ID).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiManagedObject)
+		SetURL(apiManagedObject)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 func (s *Service) updateB(ID string, body any) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
-		SetPathParam(ParamID, ID).
+		SetPathParam(paramID, ID).
 		SetBody(body).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiManagedObject)
+		SetURL(apiManagedObject)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
 func (s *Service) deleteB(ID string, opt DeleteOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamID, ID).
+		SetPathParam(paramID, ID).
 		SetQueryParam("forceCascade", fmt.Sprintf("%v", !opt.SkipCascade)).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiManagedObject)
+		SetURL(apiManagedObject)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

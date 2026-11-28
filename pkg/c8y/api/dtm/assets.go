@@ -110,10 +110,10 @@ func (s *AssetService) Get(ctx context.Context, ref AssetRef, opt GetOptions) op
 func (s *AssetService) getB(id string, opt GetOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamAssetID, id).
+		SetPathParam(paramAssetID, id).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiAsset)
+		SetURL(apiAsset)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -130,10 +130,10 @@ func (s *AssetService) GetByExternalID(ctx context.Context, externalID string, o
 func (s *AssetService) getByExternalIDB(externalID string, opt GetOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
-		SetPathParam(ParamExternalID, externalID).
+		SetPathParam(paramExternalID, externalID).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiAssetByExternalID)
+		SetURL(apiAssetByExternalID)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -160,7 +160,7 @@ type ListOptions struct {
 // List returns one page of assets.
 func (s *AssetService) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.DigitalTwinAsset] {
 	opt.Query = normalizeQuery(opt.Query)
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultPropertyAssets, types.ResponseFieldStatistics, jsonmodels.NewDigitalTwinAsset)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), resultPropertyAssets, types.ResponseFieldStatistics, jsonmodels.NewDigitalTwinAsset)
 }
 
 func (s *AssetService) listB(opt ListOptions) *httpcore.TryRequest {
@@ -168,8 +168,8 @@ func (s *AssetService) listB(opt ListOptions) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiAssets)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultPropertyAssets)
+		SetURL(apiAssets)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultPropertyAssets)
 }
 
 // ListAll returns an iterator over all assets matching opt.
@@ -199,7 +199,7 @@ func (s *AssetService) countB(opt CountOptions) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiAssetsCount)
+		SetURL(apiAssetsCount)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 

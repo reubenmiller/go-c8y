@@ -78,7 +78,7 @@ type ListOptions struct {
 // query is passed through as-is, like devices.List); the resolver and
 // ScopeToAgents are responsible for restricting results to agents.
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.ManagedObject] {
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), managedobjects.ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), httpcore.ResultPropertyManagedObjects, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
 // ListAll returns an iterator over every agent matching opts. By default it uses
@@ -108,8 +108,8 @@ func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(managedobjects.ApiManagedObjects)
-	return httpcore.NewTryRequest(s.svc.Client, req, managedobjects.ResultProperty)
+		SetURL("/inventory/managedObjects")
+	return httpcore.NewTryRequest(s.svc.Client, req, httpcore.ResultPropertyManagedObjects)
 }
 
 // Get returns an agent by reference (id, name:, or query:).
@@ -154,15 +154,6 @@ func (s *Service) Create(ctx context.Context, body any) op.Result[jsonmodels.Man
 		body = m
 	}
 	return s.managedObjects.Create(ctx, body)
-}
-
-// CreateAgent creates a new agent with the given name, including the
-// c8y_IsDevice and com_cumulocity_model_Agent fragments.
-//
-// Deprecated: use Create with jsonmodels.NewAgent(name), which is the
-// canonical create verb (Create takes a body in every service).
-func (s *Service) CreateAgent(ctx context.Context, name string) op.Result[jsonmodels.ManagedObject] {
-	return s.managedObjects.Create(ctx, jsonmodels.NewAgent(name))
 }
 
 // ResolveID resolves an agent reference to an id. A plain string is used as-is;

@@ -11,10 +11,10 @@ import (
 )
 
 var (
-	ApiApplicationBootstrapUser = "/application/applications/{id}/bootstrapUser"
+	apiApplicationBootstrapUser = "/application/applications/{id}/bootstrapUser"
 )
 
-var ParamID = "id"
+var paramID = "id"
 
 // Service to manage binaries
 // Managed objects can perform operations to store, retrieve and delete binaries. One binary can store only one file. Together with the binary, a managed object is created which acts as a metadata information for the binary.
@@ -33,7 +33,7 @@ func (s *Service) getB(ID string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamID, ID).
-		SetURL(ApiApplicationBootstrapUser)
+		SetPathParam(paramID, ID).
+		SetURL(apiApplicationBootstrapUser)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

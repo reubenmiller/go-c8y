@@ -15,6 +15,8 @@ func NewConfiguration(b []byte) Configuration {
 	return Configuration{jsondoc.Facade{JSONDoc: jsondoc.New(b)}}
 }
 
+// NewConfigurationWithOptions returns a configuration snapshot document of the
+// c8y_ConfigurationDump type with the name and configuration type (omitted when empty).
 func NewConfigurationWithOptions(name, configurationType string) Configuration {
 	data := map[string]any{
 		"type": "c8y_ConfigurationDump",

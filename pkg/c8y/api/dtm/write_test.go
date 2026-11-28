@@ -53,12 +53,12 @@ func wantStatus[T any](t *testing.T, r op.Result[T], want op.Status) {
 
 func TestAssetCreateAndUpdate(t *testing.T) {
 	f := newFakeDTM(t)
-	f.handle(http.MethodPost, dtm.ApiAssets, reply(http.StatusCreated, `{"id":"1","name":"Pump"}`))
+	f.handle(http.MethodPost, "/service/dtm/assets", reply(http.StatusCreated, `{"id":"1","name":"Pump"}`))
 	f.handle(http.MethodPut, "/service/dtm/assets/1", reply(http.StatusOK, `{"id":"1","name":"Pump 2"}`))
 	svc := f.client()
 
 	wantStatus(t, svc.Assets.Create(context.Background(), map[string]any{"name": "Pump"}, dtm.WriteOptions{FetchTypeFromSource: true}), op.StatusCreated)
-	reqs, _ := f.sent(http.MethodPost, dtm.ApiAssets)
+	reqs, _ := f.sent(http.MethodPost, "/service/dtm/assets")
 	if reqs[0].URL.Query().Get("fetchTypeFromSource") != "true" || reqs[0].Header.Get(dtm.HeaderUpsertMode) != "" {
 		t.Errorf("create request = %v %v", reqs[0].URL.Query(), reqs[0].Header)
 	}
@@ -111,13 +111,13 @@ func TestAssetDelete(t *testing.T) {
 func TestAssetGetOrCreate(t *testing.T) {
 	t.Run("creates", func(t *testing.T) {
 		f := newFakeDTM(t)
-		f.handle(http.MethodPost, dtm.ApiAssets, reply(http.StatusCreated, `{"id":"1","c8y_ExternalId":"pump-07"}`))
+		f.handle(http.MethodPost, "/service/dtm/assets", reply(http.StatusCreated, `{"id":"1","c8y_ExternalId":"pump-07"}`))
 		res := f.client().Assets.GetOrCreate(context.Background(), dtm.AssetCreateOptions{
 			ExternalID: "pump-07",
 			Body:       map[string]any{"name": "Pump 07"},
 		}, model.Frag("c8y_ExternalAsset", map[string]any{"system": "SAP"}))
 		wantStatus(t, res, op.StatusCreated)
-		_, bodies := f.sent(http.MethodPost, dtm.ApiAssets)
+		_, bodies := f.sent(http.MethodPost, "/service/dtm/assets")
 		body := decode(t, bodies[0])
 		if body["c8y_ExternalId"] != "pump-07" || body["name"] != "Pump 07" || body["c8y_ExternalAsset"] == nil {
 			t.Errorf("create body = %v", body)
@@ -125,7 +125,7 @@ func TestAssetGetOrCreate(t *testing.T) {
 	})
 	t.Run("returns existing on conflict", func(t *testing.T) {
 		f := newFakeDTM(t)
-		f.handle(http.MethodPost, dtm.ApiAssets, reply(http.StatusConflict, errExternalIDUsed))
+		f.handle(http.MethodPost, "/service/dtm/assets", reply(http.StatusConflict, errExternalIDUsed))
 		f.handle(http.MethodGet, "/service/dtm/assets/externalIds/pump-07", reply(http.StatusOK, `{"id":"535469","c8y_ExternalId":"pump-07"}`))
 		res := f.client().Assets.GetOrCreate(context.Background(), dtm.AssetCreateOptions{ExternalID: "pump-07", Body: map[string]any{"name": "x"}})
 		wantStatus(t, res, op.StatusOK)
@@ -162,19 +162,19 @@ func TestAssetUpsert(t *testing.T) {
 			AssetCreateOptions: dtm.AssetCreateOptions{ExternalID: "pump-07", Body: map[string]any{"name": "Pump 07", "maxFlow": 120}},
 		}, syncFrag)
 		wantStatus(t, res, op.StatusSkipped)
-		if reqs, _ := f.sent(http.MethodPost, dtm.ApiAssets); len(reqs) != 0 {
+		if reqs, _ := f.sent(http.MethodPost, "/service/dtm/assets"); len(reqs) != 0 {
 			t.Error("POST sent for an unchanged asset")
 		}
 	})
 	t.Run("updates with server upsert", func(t *testing.T) {
 		f := newFakeDTM(t)
 		f.handle(http.MethodGet, "/service/dtm/assets/externalIds/pump-07", reply(http.StatusOK, existing))
-		f.handle(http.MethodPost, dtm.ApiAssets, reply(http.StatusOK, `{"id":"1","maxFlow":150}`))
+		f.handle(http.MethodPost, "/service/dtm/assets", reply(http.StatusOK, `{"id":"1","maxFlow":150}`))
 		res := f.client().Assets.Upsert(context.Background(), dtm.AssetUpsertOptions{
 			AssetCreateOptions: dtm.AssetCreateOptions{ExternalID: "pump-07", Body: map[string]any{"maxFlow": 150}},
 		}, syncFrag)
 		wantStatus(t, res, op.StatusUpdated)
-		reqs, bodies := f.sent(http.MethodPost, dtm.ApiAssets)
+		reqs, bodies := f.sent(http.MethodPost, "/service/dtm/assets")
 		if reqs[0].Header.Get(dtm.HeaderUpsertMode) != "true" {
 			t.Error("missing X-Upsert-Mode header")
 		}
@@ -185,7 +185,7 @@ func TestAssetUpsert(t *testing.T) {
 	t.Run("creates when missing", func(t *testing.T) {
 		f := newFakeDTM(t)
 		f.handle(http.MethodGet, "/service/dtm/assets/externalIds/pump-07", reply(http.StatusNotFound, `{"messages":["not found"]}`))
-		f.handle(http.MethodPost, dtm.ApiAssets, reply(http.StatusCreated, `{"id":"1"}`))
+		f.handle(http.MethodPost, "/service/dtm/assets", reply(http.StatusCreated, `{"id":"1"}`))
 		res := f.client().Assets.Upsert(context.Background(), dtm.AssetUpsertOptions{
 			AssetCreateOptions: dtm.AssetCreateOptions{ExternalID: "pump-07", Body: map[string]any{"name": "Pump 07"}},
 		})
@@ -193,7 +193,7 @@ func TestAssetUpsert(t *testing.T) {
 	})
 	t.Run("skip compare sends one request", func(t *testing.T) {
 		f := newFakeDTM(t)
-		f.handle(http.MethodPost, dtm.ApiAssets, reply(http.StatusOK, `{"id":"1"}`))
+		f.handle(http.MethodPost, "/service/dtm/assets", reply(http.StatusOK, `{"id":"1"}`))
 		res := f.client().Assets.Upsert(context.Background(), dtm.AssetUpsertOptions{
 			AssetCreateOptions: dtm.AssetCreateOptions{ExternalID: "pump-07", Body: map[string]any{"name": "Pump 07"}},
 			SkipCompare:        true,
@@ -544,6 +544,31 @@ func TestDefinitionUpsertCreatesMissing(t *testing.T) {
 	}
 }
 
+// Find returns the definition, op.ErrNotFound when it does not exist, and the
+// lookup error otherwise.
+func TestDefinitionFind(t *testing.T) {
+	f := newFakeDTM(t)
+	f.handle(http.MethodGet, "/service/dtm/definitions/events/door", reply(http.StatusOK, `{"identifier":"door","jsonSchema":{"title":"Door"}}`))
+	f.handle(http.MethodGet, "/service/dtm/definitions/events/missing", reply(http.StatusNotFound, `{"messages":["not found"]}`))
+	f.handle(http.MethodGet, "/service/dtm/definitions/events/broken", reply(http.StatusForbidden, `{"messages":["access denied"]}`))
+	events := f.client().Definitions.Events
+	ctx := context.Background()
+
+	def, err := events.Find(ctx, "door", nil)
+	if err != nil {
+		t.Fatalf("Find(door): %v", err)
+	}
+	if got := def.Get("identifier").String(); got != "door" {
+		t.Errorf("identifier = %q, want door", got)
+	}
+	if _, err := events.Find(ctx, "missing", nil); !errors.Is(err, op.ErrNotFound) {
+		t.Errorf("Find(missing) error = %v, want op.ErrNotFound", err)
+	}
+	if _, err := events.Find(ctx, "broken", nil); err == nil || errors.Is(err, op.ErrNotFound) {
+		t.Errorf("Find(broken) error = %v, want the server error", err)
+	}
+}
+
 func TestDefinitionGetOrCreate(t *testing.T) {
 	f := newFakeDTM(t)
 	f.handle(http.MethodGet, "/service/dtm/definitions/events/door", reply(http.StatusOK, `{"identifier":"door","jsonSchema":{"title":"Door"}}`))
@@ -567,14 +592,14 @@ func TestDefinitionExtraFragments(t *testing.T) {
 
 func TestCompose(t *testing.T) {
 	f := newFakeDTM(t)
-	f.handle(http.MethodPost, dtm.ApiDefinitionsCompose, reply(http.StatusOK, `{"type":"object","properties":{"maxFlow":{"type":"number"}}}`))
+	f.handle(http.MethodPost, "/service/dtm/definitions/properties/compose", reply(http.StatusOK, `{"type":"object","properties":{"maxFlow":{"type":"number"}}}`))
 	svc := f.client()
 
 	res := svc.Definitions.Properties.Compose(context.Background(), []dtm.ComposeItem{{Identifier: "maxFlow", Context: dtm.ContextAsset}})
 	if mustOK(t, res).Get("properties.maxFlow.type").String() != "number" {
 		t.Errorf("schema = %s", res.Data.Bytes())
 	}
-	if _, bodies := f.sent(http.MethodPost, dtm.ApiDefinitionsCompose); strings.TrimSpace(bodies[0]) != `[{"identifier":"maxFlow","context":"asset"}]` {
+	if _, bodies := f.sent(http.MethodPost, "/service/dtm/definitions/properties/compose"); strings.TrimSpace(bodies[0]) != `[{"identifier":"maxFlow","context":"asset"}]` {
 		t.Errorf("compose body = %s", bodies[0])
 	}
 	if res := svc.Definitions.Events.Compose(context.Background(), []dtm.ComposeItem{{Identifier: "a"}}); res.Err == nil {

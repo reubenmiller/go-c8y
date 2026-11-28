@@ -37,7 +37,7 @@ func (s *Service) CreateBulk(ctx context.Context, managedObjects []any) op.Resul
 	if err := validateBulkItems(managedObjects, true); err != nil {
 		return op.Failed[jsonmodels.ManagedObject](err, false)
 	}
-	return httpcore.ExecuteCollection(ctx, s.createBulkB(managedObjects), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
+	return httpcore.ExecuteCollection(ctx, s.createBulkB(managedObjects), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
 // CreateWithBinaryOptions options for creating a managed object with an associated binary file
@@ -207,7 +207,7 @@ func (s *Service) UpdateBulk(ctx context.Context, managedObjects []any) op.Resul
 	if err := validateBulkItems(managedObjects, false); err != nil {
 		return op.Failed[jsonmodels.ManagedObject](err, false)
 	}
-	return httpcore.ExecuteCollection(ctx, s.updateBulkB(managedObjects), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
+	return httpcore.ExecuteCollection(ctx, s.updateBulkB(managedObjects), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
 // DefaultBulkBatchSize is the Cumulocity API limit for bulk managed object requests.
@@ -270,7 +270,7 @@ func (s *Service) updateBulkSeq(ctx context.Context, items iter.Seq2[any, error]
 			result := httpcore.ExecuteCollection(
 				ctx,
 				s.updateBulkB(batch),
-				ResultProperty,
+				resultProperty,
 				types.ResponseFieldStatistics,
 				jsonmodels.NewManagedObject,
 			)
@@ -319,7 +319,7 @@ func (s *Service) createBulkSeq(ctx context.Context, items iter.Seq2[any, error]
 			result := httpcore.ExecuteCollection(
 				ctx,
 				s.createBulkB(batch),
-				ResultProperty,
+				resultProperty,
 				types.ResponseFieldStatistics,
 				jsonmodels.NewManagedObject,
 			)
@@ -709,7 +709,7 @@ func (s *Service) executeGetOrCreateByExternalID(
 }
 
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.ManagedObject] {
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
 // Count returns the total number of managed objects matching the given filter

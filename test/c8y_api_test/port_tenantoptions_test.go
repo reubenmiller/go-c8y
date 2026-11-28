@@ -41,7 +41,7 @@ func Test_CRUD_TenantOption(t *testing.T) {
 	})
 
 	// Get option
-	getResult := client.Tenants.Options.Get(ctx, tenantoptions.GetOption{
+	getResult := client.Tenants.Options.Get(ctx, tenantoptions.GetOptions{
 		Category: category,
 		Key:      optionKey,
 	})
@@ -54,7 +54,7 @@ func Test_CRUD_TenantOption(t *testing.T) {
 
 	// Update option
 	optionValue2 := "value2"
-	updateResult := client.Tenants.Options.Update(ctx, tenantoptions.UpdateOption{
+	updateResult := client.Tenants.Options.Update(ctx, tenantoptions.UpdateOptions{
 		Category: category,
 		Key:      optionKey,
 		Body: map[string]any{
@@ -82,7 +82,7 @@ func Test_CRUD_TenantOptions(t *testing.T) {
 	category := "custom.ci.multi" + testingutils.RandomString(8)
 
 	// Update multiple options
-	updateResult := client.Tenants.Options.UpdateByCategory(ctx, tenantoptions.UpdateByCategoryOption{
+	updateResult := client.Tenants.Options.UpdateByCategory(ctx, tenantoptions.UpdateByCategoryOptions{
 		Category: category,
 		Body:     settings,
 	})
@@ -125,7 +125,7 @@ func Test_GetTenantOptions(t *testing.T) {
 		"prop1": "value1",
 		"prop2": "value2",
 	}
-	updateResult := client.Tenants.Options.UpdateByCategory(ctx, tenantoptions.UpdateByCategoryOption{
+	updateResult := client.Tenants.Options.UpdateByCategory(ctx, tenantoptions.UpdateByCategoryOptions{
 		Category: category,
 		Body:     settings,
 	})

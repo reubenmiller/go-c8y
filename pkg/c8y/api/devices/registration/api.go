@@ -21,15 +21,15 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiDeviceRequests = "/devicecontrol/newDeviceRequests"
-var ApiDeviceRequest = "/devicecontrol/newDeviceRequests/{id}"
-var ApiBulkDeviceRequests = "/devicecontrol/bulkNewDeviceRequests"
+var apiDeviceRequests = "/devicecontrol/newDeviceRequests"
+var apiDeviceRequest = "/devicecontrol/newDeviceRequests/{id}"
+var apiBulkDeviceRequests = "/devicecontrol/bulkNewDeviceRequests"
 
-var ApiDeviceCredentials = "/devicecontrol/deviceCredentials"
+var apiDeviceCredentials = "/devicecontrol/deviceCredentials"
 
-var ParamID = "id"
+var paramID = "id"
 
-const ResultProperty = "newDeviceRequests"
+const resultProperty = "newDeviceRequests"
 
 // Service provides api to get/set/delete device requests in Cumulocity
 type Service struct {
@@ -52,7 +52,7 @@ type DeviceRequestIterator = pagination.Iterator[jsonmodels.DeviceRequest]
 
 // List returns all device requests
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.DeviceRequest] {
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewDeviceRequest)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewDeviceRequest)
 }
 
 // ListAll returns an iterator over all device requests, following pagination.
@@ -74,8 +74,8 @@ func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiDeviceRequests)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiDeviceRequests)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 // Get retrieves a device request
@@ -87,8 +87,8 @@ func (s *Service) getB(id string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamID, id).
-		SetURL(ApiDeviceRequest)
+		SetPathParam(paramID, id).
+		SetURL(apiDeviceRequest)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -131,7 +131,7 @@ func (s *Service) createB(body any) *httpcore.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeNewDeviceRequest).
 		SetBody(body).
-		SetURL(ApiDeviceRequests)
+		SetURL(apiDeviceRequests)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -163,11 +163,11 @@ func (s *Service) UpdateRaw(ctx context.Context, id string, body any) op.Result[
 func (s *Service) updateB(id string, body any) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
-		SetPathParam(ParamID, id).
+		SetPathParam(paramID, id).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeNewDeviceRequest).
 		SetBody(body).
-		SetURL(ApiDeviceRequest)
+		SetURL(apiDeviceRequest)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -179,8 +179,8 @@ func (s *Service) Delete(ctx context.Context, id string) op.Result[core.NoConten
 func (s *Service) deleteB(id string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamID, id).
-		SetURL(ApiDeviceRequest)
+		SetPathParam(paramID, id).
+		SetURL(apiDeviceRequest)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -216,7 +216,7 @@ func (s *Service) createCredentialsB(body any) *httpcore.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeDeviceCredentials).
 		SetBody(body).
-		SetURL(ApiDeviceCredentials)
+		SetURL(apiDeviceCredentials)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -282,7 +282,7 @@ func (s *Service) createBulkB(opt UploadFileOptions) *httpcore.TryRequest {
 		SetMethod(resty.MethodPost).
 		SetMultipartFields(file).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiBulkDeviceRequests)
+		SetURL(apiBulkDeviceRequests)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -294,7 +294,7 @@ func (s *Service) createBulkFieldB(csv []byte) *httpcore.TryRequest {
 		SetMethod(resty.MethodPost).
 		SetMultipartFields(&resty.MultipartField{Name: "file", Values: []string{string(csv)}}).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiBulkDeviceRequests)
+		SetURL(apiBulkDeviceRequests)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 

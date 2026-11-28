@@ -10,9 +10,9 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiCertificateRevocationList = "/tenant/trusted-certificates/settings/crl"
+var apiCertificateRevocationList = "/tenant/trusted-certificates/settings/crl"
 
-const ResultProperty = "crls"
+const resultProperty = "crls"
 
 func NewService(s *httpcore.Service) *Service {
 	return &Service{
@@ -39,8 +39,8 @@ func (s *Service) getB(opt GetOptions) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
 		SetHeader("Accept", types.MimeTypePkixCRL).
-		SetURL(ApiCertificateRevocationList)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiCertificateRevocationList)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 // Add certificates to the revocation list
@@ -53,7 +53,7 @@ func (s *Service) createB(body any) *httpcore.TryRequest {
 		SetMethod(resty.MethodPut).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetBody(body).
-		SetURL(ApiCertificateRevocationList)
+		SetURL(apiCertificateRevocationList)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -68,6 +68,6 @@ func (s *Service) addFileB(opt AddFileFileOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
 		SetMultipartFields(httpcore.NewMultiPartFileFields(opt)...).
-		SetURL(ApiCertificateRevocationList)
+		SetURL(apiCertificateRevocationList)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

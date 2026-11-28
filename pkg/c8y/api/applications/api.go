@@ -19,17 +19,17 @@ import (
 )
 
 var (
-	ApiApplications          = "/application/applications"
-	ApiApplication           = "/application/applications/{id}"
-	ApiApplicationBinaries   = "/application/applications/{id}/binaries"
-	ApiApplicationBinary     = "/application/applications/{id}/binaries/{binaryId}"
-	ApiApplicationClone      = "/application/applications/{id}/clone"
-	ApiApplicationByName     = "/application/applicationsByName/{name}"
-	ApiApplicationByTenantID = "/application/applicationsByTenant/{tenantId}"
-	ApiApplicationByOwner    = "/application/applicationsByOwner/{tenantId}"
-	ApiApplicationByUser     = "/application/applicationsByUser/{username}"
-	ApiTenantApplications    = "/tenant/tenants/{tenantId}/applications"
-	ApiTenantApplication     = "/tenant/tenants/{tenantId}/applications/{id}"
+	apiApplications          = "/application/applications"
+	apiApplication           = "/application/applications/{id}"
+	apiApplicationBinaries   = "/application/applications/{id}/binaries"
+	apiApplicationBinary     = "/application/applications/{id}/binaries/{binaryId}"
+	apiApplicationClone      = "/application/applications/{id}/clone"
+	apiApplicationByName     = "/application/applicationsByName/{name}"
+	apiApplicationByTenantID = "/application/applicationsByTenant/{tenantId}"
+	apiApplicationByOwner    = "/application/applicationsByOwner/{tenantId}"
+	apiApplicationByUser     = "/application/applicationsByUser/{username}"
+	apiTenantApplications    = "/tenant/tenants/{tenantId}/applications"
+	apiTenantApplication     = "/tenant/tenants/{tenantId}/applications/{id}"
 )
 
 var (
@@ -37,11 +37,11 @@ var (
 	TypeHosted       = "HOSTED"
 )
 
-var ParamID = "id"
-var ParamName = "name"
-var ParamUsername = "username"
+var paramID = "id"
+var paramName = "name"
+var paramUsername = "username"
 
-const ResultProperty = "applications"
+const resultProperty = "applications"
 
 // Service to manage applications
 type Service struct {
@@ -49,8 +49,7 @@ type Service struct {
 	// Current is the current-application sub-resource (/application/currentApplication)
 	Current *currentapplication.Service
 
-	// Versions is the application versions sub-resource. Client.ApplicationVersions
-	// is a deprecated alias for the same instance.
+	// Versions is the application versions sub-resource.
 	Versions *versions.Service
 
 	// Resolver lookup function
@@ -136,7 +135,7 @@ type ApplicationIterator = pagination.Iterator[jsonmodels.Application]
 
 // List all applications on your tenant
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.Application] {
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
 }
 
 // ListAll returns an iterator for all applications
@@ -158,8 +157,8 @@ func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiApplications)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiApplications)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 type ListByNameOptions struct {
@@ -174,17 +173,17 @@ type ListByNameOptions struct {
 // (GET /application/applicationsByName/{name}). Use [Service.List] to combine
 // the name with other filters.
 func (s *Service) ListByName(ctx context.Context, opt ListByNameOptions) op.Result[jsonmodels.Application] {
-	return httpcore.ExecuteCollection(ctx, s.listByNameB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
+	return httpcore.ExecuteCollection(ctx, s.listByNameB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
 }
 
 func (s *Service) listByNameB(opt ListByNameOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamName, opt.Name).
+		SetPathParam(paramName, opt.Name).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiApplicationByName)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiApplicationByName)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 type ListByTenantOptions struct {
@@ -198,7 +197,7 @@ type ListByTenantOptions struct {
 // ListByTenant lists the applications that a tenant owns or is subscribed to
 // (GET /application/applicationsByTenant/{tenantId}).
 func (s *Service) ListByTenant(ctx context.Context, opt ListByTenantOptions) op.Result[jsonmodels.Application] {
-	return httpcore.ExecuteCollection(ctx, s.listByTenantB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
+	return httpcore.ExecuteCollection(ctx, s.listByTenantB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
 }
 
 func (s *Service) listByTenantB(opt ListByTenantOptions) *httpcore.TryRequest {
@@ -207,8 +206,8 @@ func (s *Service) listByTenantB(opt ListByTenantOptions) *httpcore.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiApplicationByTenantID)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiApplicationByTenantID)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 type ListByOwnerOptions struct {
@@ -221,7 +220,7 @@ type ListByOwnerOptions struct {
 
 // Retrieve all applications owned by a particular tenant (by a given tenant ID)
 func (s *Service) ListByOwner(ctx context.Context, opt ListByOwnerOptions) op.Result[jsonmodels.Application] {
-	return httpcore.ExecuteCollection(ctx, s.listByOwnerB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
+	return httpcore.ExecuteCollection(ctx, s.listByOwnerB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
 }
 
 func (s *Service) listByOwnerB(opt ListByOwnerOptions) *httpcore.TryRequest {
@@ -230,8 +229,8 @@ func (s *Service) listByOwnerB(opt ListByOwnerOptions) *httpcore.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetPathParam(core.PathParamTenantID, opt.TenantID).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiApplicationByOwner)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiApplicationByOwner)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 type ListByUserOptions struct {
@@ -244,17 +243,17 @@ type ListByUserOptions struct {
 
 // Retrieve all applications for a particular user (by a given username)
 func (s *Service) ListByUser(ctx context.Context, opt ListByUserOptions) op.Result[jsonmodels.Application] {
-	return httpcore.ExecuteCollection(ctx, s.listByUserB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
+	return httpcore.ExecuteCollection(ctx, s.listByUserB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplication)
 }
 
 func (s *Service) listByUserB(opt ListByUserOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamUsername, opt.Username).
+		SetPathParam(paramUsername, opt.Username).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiApplicationByUser)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiApplicationByUser)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 // Get an application by ID or resolver string
@@ -281,8 +280,8 @@ func (s *Service) getB(id string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamID, id).
-		SetURL(ApiApplication)
+		SetPathParam(paramID, id).
+		SetURL(apiApplication)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -297,7 +296,7 @@ func (s *Service) createB(body any) *httpcore.TryRequest {
 		SetBody(body).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiApplications)
+		SetURL(apiApplications)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -321,11 +320,11 @@ func (s *Service) Update(ctx context.Context, id string, body any) op.Result[jso
 func (s *Service) updateB(ID string, body any) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
-		SetPathParam(ParamID, ID).
+		SetPathParam(paramID, ID).
 		SetBody(body).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiApplication)
+		SetURL(apiApplication)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -357,9 +356,9 @@ func (s *Service) Delete(ctx context.Context, id string, opt DeleteOptions) op.R
 func (s *Service) deleteB(ID string, opt DeleteOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamID, ID).
+		SetPathParam(paramID, ID).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiApplication)
+		SetURL(apiApplication)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -392,8 +391,8 @@ func (s *Service) copyB(ID string, opt CopyOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamID, ID).
-		SetURL(ApiApplicationClone)
+		SetPathParam(paramID, ID).
+		SetURL(apiApplicationClone)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -409,7 +408,7 @@ func (s *Service) subscribeB(tenantID string, selfURL string) *httpcore.TryReque
 		SetPathParam(core.PathParamTenantID, tenantID).
 		SetBody(model.NewApplicationReference(selfURL)).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiTenantApplications)
+		SetURL(apiTenantApplications)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -437,8 +436,8 @@ func (s *Service) unsubscribeB(tenantID string, ID string) *httpcore.TryRequest 
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetPathParam(core.PathParamTenantID, tenantID).
-		SetPathParam(ParamID, ID).
-		SetURL(ApiTenantApplication)
+		SetPathParam(paramID, ID).
+		SetURL(apiTenantApplication)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -464,10 +463,10 @@ func (s *Service) Upload(ctx context.Context, id string, opt UploadFileOptions) 
 func (s *Service) uploadB(ID string, opt UploadFileOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
-		SetPathParam(ParamID, ID).
+		SetPathParam(paramID, ID).
 		SetMultipartFields(httpcore.NewMultiPartFile(opt)...).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetURL(ApiApplicationBinaries)
+		SetURL(apiApplicationBinaries)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -486,8 +485,8 @@ func (s *Service) listBinariesB(id string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamID, id).
-		SetURL(ApiApplicationBinaries)
+		SetPathParam(paramID, id).
+		SetURL(apiApplicationBinaries)
 	return httpcore.NewTryRequest(s.svc.Client, req, "attachments")
 }
 
@@ -507,9 +506,9 @@ func (s *Service) DeleteBinary(ctx context.Context, id string, binaryID string) 
 func (s *Service) deleteBinaryB(id string, binaryID string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamID, id).
+		SetPathParam(paramID, id).
 		SetPathParam("binaryId", binaryID).
-		SetURL(ApiApplicationBinary)
+		SetURL(apiApplicationBinary)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 

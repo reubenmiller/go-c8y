@@ -20,15 +20,15 @@ import (
 )
 
 var (
-	ApiVersions      = "/application/applications/{id}/versions"
-	ApiVersionByID   = "/application/applications/{id}/versions/{version}"
-	ApiVersionByName = "/application/applications/{id}/versions"
+	apiVersions      = "/application/applications/{id}/versions"
+	apiVersionByID   = "/application/applications/{id}/versions/{version}"
+	apiVersionByName = "/application/applications/{id}/versions"
 )
 
-var ParamID = "id"
-var ParamVersion = "version"
+var paramID = "id"
+var paramVersion = "version"
 
-const ResultProperty = "applicationVersions"
+const resultProperty = "applicationVersions"
 
 // Service for managing application versions
 type Service struct {
@@ -58,7 +58,7 @@ type VersionIterator = pagination.Iterator[jsonmodels.ApplicationVersion]
 
 // List retrieves all versions for a specific application
 func (s *Service) List(ctx context.Context, applicationID string, opt ListOptions) op.Result[jsonmodels.ApplicationVersion] {
-	return httpcore.ExecuteCollection(ctx, s.listB(applicationID, opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplicationVersion)
+	return httpcore.ExecuteCollection(ctx, s.listB(applicationID, opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewApplicationVersion)
 }
 
 func (s *Service) listB(applicationID string, opt ListOptions) *httpcore.TryRequest {
@@ -66,10 +66,10 @@ func (s *Service) listB(applicationID string, opt ListOptions) *httpcore.TryRequ
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetPathParam(ParamID, applicationID).
-		SetURL(ApiVersions)
+		SetPathParam(paramID, applicationID).
+		SetURL(apiVersions)
 
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 // ListAll returns an iterator for all versions
@@ -101,9 +101,9 @@ func (s *Service) listByVersionB(applicationID string, version string) *httpcore
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", MimeTypeApplicationVersion).
-		SetPathParam(ParamID, applicationID).
+		SetPathParam(paramID, applicationID).
 		SetQueryParam("version", version).
-		SetURL(ApiVersionByName)
+		SetURL(apiVersionByName)
 
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
@@ -117,9 +117,9 @@ func (s *Service) listByTagB(applicationID string, tag string) *httpcore.TryRequ
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", MimeTypeApplicationVersion).
-		SetPathParam(ParamID, applicationID).
+		SetPathParam(paramID, applicationID).
 		SetQueryParam("tag", tag).
-		SetURL(ApiVersionByName)
+		SetURL(apiVersionByName)
 
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
@@ -145,10 +145,10 @@ func (s *Service) createB(applicationID string, opts CreateOptions) *httpcore.Tr
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPost).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamID, applicationID).
+		SetPathParam(paramID, applicationID).
 		SetMultipartField("applicationBinary", filename, types.MimeTypeApplicationOctetStream, binary).
 		SetMultipartField("applicationVersion", "", types.MimeTypeApplicationJSON, bytes.NewReader(applicationVersion)).
-		SetURL(ApiVersions)
+		SetURL(apiVersions)
 
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
@@ -241,10 +241,10 @@ func (s *Service) updateB(applicationID string, version string, tags []string) *
 		SetMethod(resty.MethodPut).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeApplicationJSON).
-		SetPathParam(ParamID, applicationID).
-		SetPathParam(ParamVersion, version).
+		SetPathParam(paramID, applicationID).
+		SetPathParam(paramVersion, version).
 		SetBody(body).
-		SetURL(ApiVersionByID)
+		SetURL(apiVersionByID)
 
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
@@ -257,9 +257,9 @@ func (s *Service) DeleteByVersion(ctx context.Context, applicationID string, ver
 func (s *Service) deleteByVersionB(applicationID string, version string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamID, applicationID).
+		SetPathParam(paramID, applicationID).
 		SetQueryParam("version", version).
-		SetURL(ApiVersionByName)
+		SetURL(apiVersionByName)
 
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
@@ -272,9 +272,9 @@ func (s *Service) DeleteByTag(ctx context.Context, applicationID string, tag str
 func (s *Service) deleteByTagB(applicationID string, tag string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
-		SetPathParam(ParamID, applicationID).
+		SetPathParam(paramID, applicationID).
 		SetQueryParam("tag", tag).
-		SetURL(ApiVersionByName)
+		SetURL(apiVersionByName)
 
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }

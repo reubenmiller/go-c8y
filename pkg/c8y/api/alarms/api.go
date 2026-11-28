@@ -26,14 +26,14 @@ import (
 // resource in the SDK overlay. Runs from here since the generator is overlay-driven.
 //go:generate go run ../../../../tools/c8ygen resources --spec ../../../../docs/c8y-oas.yml --overlay ../../../../docs/c8y-oas.overlay.yml --root ../../../..
 
-var ApiAlarms = "/alarm/alarms"
-var ApiAlarmsCount = "/alarm/alarms/count"
-var ApiAlarmsUpsert = "/alarm/alarms/upsert"
-var ApiAlarm = "/alarm/alarms/{id}"
+var apiAlarms = "/alarm/alarms"
+var apiAlarmsCount = "/alarm/alarms/count"
+var apiAlarmsUpsert = "/alarm/alarms/upsert"
+var apiAlarm = "/alarm/alarms/{id}"
 
-var ParamID = "id"
+var paramID = "id"
 
-const ResultProperty = "alarms"
+const resultProperty = "alarms"
 
 // Service provides api to get/set/delete alarms in Cumulocity
 type Service struct {
@@ -72,7 +72,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 		opt.Source = managedobjects.DeviceRef(resolvedID)
 	}
 
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewAlarm)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewAlarm)
 }
 
 // ListAll returns an iterator for all alarms. By default it uses the time-window
@@ -113,8 +113,8 @@ func (s *Service) listB(opt any) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiAlarms)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiAlarms)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 // CountOptions to use when counting the active alarms
@@ -161,8 +161,8 @@ func (s *Service) getB(ID string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamID, ID).
-		SetURL(ApiAlarm)
+		SetPathParam(paramID, ID).
+		SetURL(apiAlarm)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -310,7 +310,7 @@ func (s *Service) createB(body any) *httpcore.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetBody(body).
-		SetURL(ApiAlarms)
+		SetURL(apiAlarms)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -320,7 +320,7 @@ func (s *Service) createBWithJSON(bodyJSON []byte) *httpcore.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetBody(bodyJSON).
-		SetURL(ApiAlarms)
+		SetURL(apiAlarms)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -380,7 +380,7 @@ func (s *Service) upsertB(body any) *httpcore.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetBody(body).
-		SetURL(ApiAlarmsUpsert)
+		SetURL(apiAlarmsUpsert)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -390,7 +390,7 @@ func (s *Service) upsertBWithJSON(bodyJSON []byte) *httpcore.TryRequest {
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetBody(bodyJSON).
-		SetURL(ApiAlarmsUpsert)
+		SetURL(apiAlarmsUpsert)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -435,11 +435,11 @@ func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jso
 func (s *Service) updateB(ID string, body any) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
-		SetPathParam(ParamID, ID).
+		SetPathParam(paramID, ID).
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
-		SetURL(ApiAlarm)
+		SetURL(apiAlarm)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -519,8 +519,8 @@ func (s *Service) updateListB(opt BulkUpdateOptions, body any) *httpcore.TryRequ
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
-		SetURL(ApiAlarms)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiAlarms)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 // DeleteListOptions option when deleting a collection of alarms
@@ -593,7 +593,7 @@ func (s *Service) deleteListB(opt DeleteListOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiAlarms)
+		SetURL(apiAlarms)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 

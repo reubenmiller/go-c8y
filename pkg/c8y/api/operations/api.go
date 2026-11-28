@@ -20,12 +20,12 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiOperations = "/devicecontrol/operations"
-var ApiOperation = "/devicecontrol/operations/{id}"
+var apiOperations = "/devicecontrol/operations"
+var apiOperation = "/devicecontrol/operations/{id}"
 
-var ParamID = "id"
+var paramID = "id"
 
-const ResultProperty = "operations"
+const resultProperty = "operations"
 
 // Service provides api to get/set/delete operations
 type Service struct {
@@ -75,7 +75,7 @@ func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodel
 		opt.AgentID = managedobjects.DeviceRef(resolvedID)
 	}
 
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewOperation)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), resultProperty, types.ResponseFieldStatistics, jsonmodels.NewOperation)
 }
 
 // ListAll returns an iterator for all operations
@@ -134,8 +134,8 @@ func (s *Service) listB(opt any) *httpcore.TryRequest {
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiOperations)
-	return httpcore.NewTryRequest(s.svc.Client, req, ResultProperty)
+		SetURL(apiOperations)
+	return httpcore.NewTryRequest(s.svc.Client, req, resultProperty)
 }
 
 // Get an operation
@@ -147,8 +147,8 @@ func (s *Service) getB(ID string) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
-		SetPathParam(ParamID, ID).
-		SetURL(ApiOperation)
+		SetPathParam(paramID, ID).
+		SetURL(apiOperation)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -257,7 +257,7 @@ func (s *Service) createB(body any) *httpcore.TryRequest {
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
-		SetURL(ApiOperations)
+		SetURL(apiOperations)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -267,7 +267,7 @@ func (s *Service) createBWithJSON(bodyJSON []byte) *httpcore.TryRequest {
 		SetHeader("Content-Type", types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(bodyJSON).
-		SetURL(ApiOperations)
+		SetURL(apiOperations)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -284,11 +284,11 @@ func (s *Service) Update(ctx context.Context, ID string, body any) op.Result[jso
 func (s *Service) updateB(ID string, body any) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodPut).
-		SetPathParam(ParamID, ID).
+		SetPathParam(paramID, ID).
 		SetContentType(types.MimeTypeApplicationJSON).
 		SetHeader("Accept", types.MimeTypeApplicationJSON).
 		SetBody(body).
-		SetURL(ApiOperation)
+		SetURL(apiOperation)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 
@@ -345,7 +345,7 @@ func (s *Service) deleteListB(opt DeleteListOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodDelete).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(ApiOperations)
+		SetURL(apiOperations)
 	return httpcore.NewTryRequest(s.svc.Client, req)
 }
 

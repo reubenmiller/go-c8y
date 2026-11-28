@@ -33,7 +33,6 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/agents"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/alarms"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/applications"
-	appversions "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/applications/versions"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/auditrecords"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/authentication"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/binaries"
@@ -64,17 +63,14 @@ import (
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/smartresttemplates"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/currenttenant"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/devicestatistics"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/tenants/logintokens"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/trustedcertificates"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/ui/applicationplugins"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/ui/plugins"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/usergroups"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/userroles"
-	inventoryroles "github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/userroles/inventory"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/users"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/users/currentuser/totp"
-	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/api/users/devicepermissions"
 	ctxhelpers "github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/contexthelpers"
 	"github.com/reubenmiller/go-c8y/v2/pkg/c8y/internal/httpcore"
 	"github.com/reubenmiller/go-c8y/v2/pkg/certutil"
@@ -173,25 +169,20 @@ type Client struct {
 
 	LoginOptions *loginoptions.Service
 
-	// Deprecated: use Client.Tenants.LoginTokens.
-	LoginTokens *logintokens.Service
-
-	Agents          *agents.Service
-	DataBroker      *databroker.Service
-	DataHub         *datahub.Service
-	DataPreparation *dataprep.Service
-	DigitalTwin     *dtm.Service
-	Devices         *devices.Service
-	DeviceGroups    *devicegroups.Service
-	DeviceProfiles  *deviceprofiles.Service
-	Configuration   *configuration.Service
-	ManagedObjects  *managedobjects.Service
-	Operations      *operations.Service
-	Tenants         *tenants.Service
-	Events          *events.Service
-	Applications    *applications.Service
-	// Deprecated: use Client.Applications.Versions.
-	ApplicationVersions  *appversions.Service
+	Agents               *agents.Service
+	DataBroker           *databroker.Service
+	DataHub              *datahub.Service
+	DataPreparation      *dataprep.Service
+	DigitalTwin          *dtm.Service
+	Devices              *devices.Service
+	DeviceGroups         *devicegroups.Service
+	DeviceProfiles       *deviceprofiles.Service
+	Configuration        *configuration.Service
+	ManagedObjects       *managedobjects.Service
+	Operations           *operations.Service
+	Tenants              *tenants.Service
+	Events               *events.Service
+	Applications         *applications.Service
 	Microservices        *microservices.Service
 	Repository           *repository.Service
 	UIPlugins            *plugins.Service
@@ -206,13 +197,7 @@ type Client struct {
 	Users                *users.Service
 	UserGroups           *usergroups.Service
 	UserRoles            *userroles.Service
-	// Deprecated: use Client.UserRoles.Inventory.
-	InventoryRoles *inventoryroles.Service
-	// Deprecated: use Client.Users.DevicePermissions.
-	DevicePermissions *devicepermissions.Service
-	// Deprecated: use Client.Tenants.DeviceStatistics.
-	DeviceStatistics *devicestatistics.Service
-	Features         *features.Service
+	Features             *features.Service
 }
 
 const (
@@ -563,7 +548,6 @@ func (c *Client) initServices() {
 	c.DeviceProfiles = deviceprofiles.NewService(&c.common)
 	c.Configuration = configuration.NewService(&c.common)
 	c.Applications = applications.NewService(&c.common)
-	c.ApplicationVersions = c.Applications.Versions
 	c.Microservices = microservices.NewServiceWithApplications(&c.common, c.Applications)
 	c.Repository = repository.NewService(&c.common)
 	c.UIPlugins = plugins.NewService(&c.common)
@@ -578,12 +562,8 @@ func (c *Client) initServices() {
 	c.UserGroups = usergroups.NewService(&c.common)
 	c.UserRoles = userroles.NewService(&c.common)
 	c.Tenants = tenants.NewService(&c.common)
-	c.InventoryRoles = c.UserRoles.Inventory
-	c.DevicePermissions = c.Users.DevicePermissions
-	c.DeviceStatistics = c.Tenants.DeviceStatistics
 	c.Features = features.NewService(&c.common)
 	c.LoginOptions = loginoptions.NewService(&c.common)
-	c.LoginTokens = c.Tenants.LoginTokens
 }
 
 // buildTokenSource determines the token source for auth.

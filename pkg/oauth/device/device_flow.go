@@ -6,7 +6,7 @@
 // Next, the user will need to navigate to VerificationURI in their web browser on any device and fill
 // in the UserCode.
 //
-// While the user is completing the web flow, the application should invoke PollToken, which blocks
+// While the user is completing the web flow, the application should invoke Wait, which blocks
 // the goroutine until the user has authorized the app on the server.
 //
 // https://docs.github.com/en/free-pro-team@latest/developers/apps/authorizing-oauth-apps#device-flow
@@ -124,16 +124,6 @@ func RequestCode(c httpClient, uri string, clientID string, scopes []string,
 }
 
 const defaultGrantType = "urn:ietf:params:oauth:grant-type:device_code"
-
-// PollToken polls the server at pollURL until an access token is granted or denied.
-//
-// Deprecated: use Wait.
-func PollToken(c httpClient, pollURL string, clientID string, code *CodeResponse) (*api.AccessToken, error) {
-	return Wait(context.Background(), c, pollURL, WaitOptions{
-		ClientID:   clientID,
-		DeviceCode: code,
-	})
-}
 
 // WaitOptions specifies parameters to poll the server with until authentication completes.
 type WaitOptions struct {

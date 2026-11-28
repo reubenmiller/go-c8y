@@ -37,8 +37,8 @@ func TestListApplications(t *testing.T) {
 	if res.Err != nil {
 		t.Fatalf("ListApplications: %v", res.Err)
 	}
-	if gotPath != ApiTenant {
-		t.Errorf("path = %q, want %q", gotPath, ApiTenant)
+	if gotPath != apiTenant {
+		t.Errorf("path = %q, want %q", gotPath, apiTenant)
 	}
 	var names []string
 	for app, err := range res.Items() {
@@ -65,8 +65,8 @@ func TestGetVersion(t *testing.T) {
 	if res.Err != nil {
 		t.Fatalf("GetVersion: %v", res.Err)
 	}
-	if gotPath != ApiSystemVersion {
-		t.Errorf("path = %q, want %q", gotPath, ApiSystemVersion)
+	if gotPath != apiSystemVersion {
+		t.Errorf("path = %q, want %q", gotPath, apiSystemVersion)
 	}
 	if v := res.Data.Get("value").String(); v != "1020.0.1" {
 		t.Errorf("version = %q, want 1020.0.1", v)

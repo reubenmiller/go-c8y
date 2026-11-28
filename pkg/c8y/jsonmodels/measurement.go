@@ -16,6 +16,8 @@ func NewMeasurement(b []byte) Measurement {
 	return Measurement{jsondoc.Facade{JSONDoc: jsondoc.New(b)}}
 }
 
+// NewMeasurementWithType returns a measurement document for the source with
+// the type, the current time, and the extra fragments (the series).
 func NewMeasurementWithType(sourceID, measurementType string, fragments map[string]any) Measurement {
 	data := map[string]any{
 		"source": map[string]any{

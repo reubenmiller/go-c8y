@@ -15,6 +15,8 @@ func NewSoftwareVersion(b []byte) SoftwareVersion {
 	return SoftwareVersion{jsondoc.Facade{JSONDoc: jsondoc.New(b)}}
 }
 
+// NewSoftwareVersionWithOptions returns a software version document with the
+// version and the url of the binary (omitted when empty).
 func NewSoftwareVersionWithOptions(version, url string) SoftwareVersion {
 	data := map[string]any{
 		"type": "c8y_SoftwareBinary",

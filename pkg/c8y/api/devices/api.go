@@ -19,11 +19,7 @@ import (
 	"resty.dev/v3"
 )
 
-var ApiDeviceControlAccessToken = "/devicecontrol/deviceAccessToken"
-
-const ParamID = "id"
-
-const ResultProperty = managedobjects.ResultProperty
+var apiDeviceControlAccessToken = "/devicecontrol/deviceAccessToken"
 
 func NewService(s *httpcore.Service) *Service {
 	return NewServiceWithManagedObjects(s, managedobjects.NewService(s))
@@ -82,7 +78,7 @@ type ManagedObjectIterator = pagination.Iterator[jsonmodels.ManagedObject]
 
 // List managed objects
 func (s *Service) List(ctx context.Context, opt ListOptions) op.Result[jsonmodels.ManagedObject] {
-	return httpcore.ExecuteCollection(ctx, s.listB(opt), managedobjects.ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
+	return httpcore.ExecuteCollection(ctx, s.listB(opt), httpcore.ResultPropertyManagedObjects, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
 // ListAll returns an iterator for all devices. By default it uses the _id
@@ -112,8 +108,8 @@ func (s *Service) listB(opt ListOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(managedobjects.ApiManagedObjects)
-	return httpcore.NewTryRequest(s.svc.Client, req, managedobjects.ResultProperty)
+		SetURL("/inventory/managedObjects")
+	return httpcore.NewTryRequest(s.svc.Client, req, httpcore.ResultPropertyManagedObjects)
 }
 
 // FindOptions filter devices
@@ -135,25 +131,15 @@ type FindOptions struct {
 
 // Find managed objects
 func (s *Service) Find(ctx context.Context, opt FindOptions) op.Result[jsonmodels.ManagedObject] {
-	return httpcore.ExecuteCollection(ctx, s.findB(opt), managedobjects.ResultProperty, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
+	return httpcore.ExecuteCollection(ctx, s.findB(opt), httpcore.ResultPropertyManagedObjects, types.ResponseFieldStatistics, jsonmodels.NewManagedObject)
 }
 
 func (s *Service) findB(opt FindOptions) *httpcore.TryRequest {
 	req := s.svc.Client.R().
 		SetMethod(resty.MethodGet).
 		SetQueryParamsFromValues(httpcore.QueryParameters(opt)).
-		SetURL(managedobjects.ApiManagedObjects)
-	return httpcore.NewTryRequest(s.svc.Client, req, managedobjects.ResultProperty)
-}
-
-// CreateDevice creates a new device with the given name.
-//
-// Deprecated: use Create with jsonmodels.NewDevice(name), which is the
-// canonical create verb (Create takes a body in every service).
-// It automatically includes the c8y_IsDevice fragment.
-// For more control, use jsonmodels.NewDevice() or jsonmodels.NewDeviceWithType() and pass to Create().
-func (s *Service) CreateDevice(ctx context.Context, name string) op.Result[jsonmodels.ManagedObject] {
-	return s.managedObjects.Create(ctx, jsonmodels.NewDevice(name))
+		SetURL("/inventory/managedObjects")
+	return httpcore.NewTryRequest(s.svc.Client, req, httpcore.ResultPropertyManagedObjects)
 }
 
 // Create creates a new managed object
